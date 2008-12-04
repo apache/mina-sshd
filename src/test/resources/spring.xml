@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+  http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <bean name="sshServer" class="org.apache.sshd.SshServer" factory-method="setUpDefaultServer" init-method="start" destroy-method="stop">
+        <property name="port" value="8000" />
+        <property name="shellFactory">
+            <bean class="org.apache.sshd.server.shell.ProcessShellFactory">
+                <property name="command">
+                    <list>
+                        <value>/bin/sh</value>
+                        <value>-i</value>
+                    </list>
+                </property>
+            </bean>
+        </property>
+        <property name="keyPairProvider">
+            <bean class="org.apache.sshd.common.keyprovider.FileKeyPairProvider">
+                <constructor-arg>
+                    <list>
+                        <value>src/test/resources/hostkey.pem</value>
+                    </list>
+                </constructor-arg>
+            </bean>
+        </property>
+        <property name="passwordAuthenticator">
+            <bean class="org.apache.sshd.util.BogusPasswordAuthenticator" />
+        </property>
+        <property name="publickeyAuthenticator">
+            <bean class="org.apache.sshd.util.BogusPublickeyAuthenticator" />
+        </property>
+        <!-- Standard properties -->
+        <!--
+        <property name="channelFactories">
+            <list>
+                <bean class="org.apache.sshd.server.channel.ChannelSession$Factory" />
+            </list>
+        </property>
+        <property name="cipherFactories">
+            <list>
+                <bean class="org.apache.sshd.common.cipher.AES128CBC$Factory" />
+                <bean class="org.apache.sshd.common.cipher.TripleDESCBC$Factory" />
+                <bean class="org.apache.sshd.common.cipher.BlowfishCBC$Factory" />
+                <bean class="org.apache.sshd.common.cipher.AES192CBC$Factory" />
+                <bean class="org.apache.sshd.common.cipher.AES256CBC$Factory" />
+            </list>
+        </property>
+        <property name="compressionFactories">
+            <list>
+                <bean class="org.apache.sshd.common.compression.CompressionNone$Factory" />
+            </list>
+        </property>
+        <property name="keyExchangeFactories">
+            <list>
+                <bean class="org.apache.sshd.server.kex.DHG1$Factory" />
+            </list>
+        </property>
+        <property name="macFactories">
+            <list>
+                <bean class="org.apache.sshd.common.mac.HMACMD5$Factory" />
+                <bean class="org.apache.sshd.common.mac.HMACSHA1$Factory" />
+                <bean class="org.apache.sshd.common.mac.HMACMD596$Factory" />
+                <bean class="org.apache.sshd.common.mac.HMACSHA196$Factory" />
+            </list>
+        </property>
+        <property name="randomFactory">
+            <bean class="org.apache.sshd.common.random.JceRandom$Factory" />
+        </property>
+        <property name="userAuthFactories">
+            <list>
+                <bean class="org.apache.sshd.server.auth.UserAuthPublicKey$Factory" />
+                <bean class="org.apache.sshd.server.auth.UserAuthPassword$Factory" />
+            </list>
+        </property>
+        <property name="signatureFactories">
+            <list>
+                <bean class="org.apache.sshd.common.signature.SignatureDSA$Factory" />
+                <bean class="org.apache.sshd.common.signature.SignatureRSA$Factory" />
+            </list>
+        </property>
+        -->
+    </bean>
+
+</beans>
