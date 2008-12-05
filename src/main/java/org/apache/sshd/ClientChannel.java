@@ -23,7 +23,9 @@ import java.io.OutputStream;
 import java.io.InputStream;
 
 /**
- * TODO Add javadoc
+ * A client channel used to communicate with
+ * the SSH server.  Client cannels can be shells,
+ * simple commands or subsystems
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @version $Rev$, $Date$

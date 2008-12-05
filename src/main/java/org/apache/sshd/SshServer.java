@@ -69,7 +69,25 @@ import org.apache.mina.transport.socket.nio.SocketAcceptor;
 import org.apache.mina.transport.socket.nio.SocketAcceptorConfig;
 
 /**
- * TODO Add javadoc
+ * The SshServer class is the main entry point for the server side of the SSH protocol.
+ *
+ * The SshServer has to be configured before being started.  Such configuration can be
+ * done either using a dependency injection mechanism (such as the Spring framework)
+ * or programmatically. Basic setup is usually done using the {@link #setUpDefaultServer()}
+ * method, which will known ciphers, macs, channels, etc...
+ * Besides this basic setup, a few things have to be manually configured such as the
+ * port number, {@link ShellFactory}, the {@link org.apache.sshd.common.KeyPairProvider}
+ * and the {@link PasswordAuthenticator}.
+ *
+ * Some properties can also be configured using the {@link #setProperties(java.util.Map)}
+ * method.
+ *
+ * Once the SshServer instance has been configured, it can be started using the
+ * {@link #start()} method and stopped using the {@link #stop()} method.
+ *
+ * @see ServerFactoryManager
+ * @see org.apache.sshd.common.FactoryManager
+ *
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @version $Rev$, $Date$
@@ -92,6 +110,11 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         return port;
     }
 
+    /**
+     * Configure the port number to use for this SSH server.
+     *
+     * @param port the port number for this SSH server
+     */
     public void setPort(int port) {
         this.port = port;
     }

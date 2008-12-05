@@ -50,6 +50,8 @@ import org.apache.mina.transport.socket.nio.SocketSessionConfig;
  *
  * TODO: use a single Timer for on the server for all sessions
  *
+ * TODO: save the identity of the user so that the shell can access it if needed
+ *
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>

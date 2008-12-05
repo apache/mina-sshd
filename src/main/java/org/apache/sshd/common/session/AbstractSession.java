@@ -45,26 +45,44 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * The AbstractSession handles all the basic SSH protocol such as key exchange, authentication,
+ * encoding and decoding. Both server side and client side sessions should inherit from this
+ * abstract class. Some basic packet processing methods are defined but the actual call to these
+ * methods should be done from the {@link #handleMessage(org.apache.sshd.common.util.Buffer)}
+ * method, which is dependant on the state and side of this session.
+ *
  * TODO: if there is any very big packet, decoderBuffer and uncompressBuffer will get quite big
  *        and they won't be resized down at any time. Though the packet size is really limited
  *        by the channel max packet size
- * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @version $Rev$, $Date$
  */
 public abstract class AbstractSession implements Closeable {
 
+    /**
+     * Name of the property where this session is stored in the attributes of the
+     * underlying MINA session. See {@link #getSession(org.apache.mina.common.IoSession, boolean)}
+     * and {@link #attachSession(org.apache.mina.common.IoSession, AbstractSession)}.
+     */
     public static final String SESSION = "com.google.code.sshd.session";
-
+    /** Our logger */
     protected final Logger log = LoggerFactory.getLogger(getClass());
+    /** The factory manager used to retrieve factories of Ciphers, Macs and other objects */
     protected final FactoryManager factoryManager;
+    /** The underlying MINA session */
     protected final IoSession ioSession;
+    /** The pseudo random generator */
     protected final Random random;
+    /** Lock object for this session state */
     protected final Object lock = new Object();
+    /** Boolean indicating if this session has been closed or not */
     protected boolean closed;
+    /** Boolean indicating if this session has been authenticated or not */
     protected boolean authed;
+    /** Map of channels keyed by the identifier */
     protected final Map<Integer, Channel> channels = new ConcurrentHashMap<Integer, Channel>();
+    /** Next channel identifier */
     protected int nextChannelId;
 
     //
@@ -101,17 +119,41 @@ public abstract class AbstractSession implements Closeable {
     protected final Object encodeLock = new Object();
     protected final Object decodeLock = new Object();
 
-
+    /**
+     * Create a new session.
+     *
+     * @param factoryManager the factory manager
+     * @param ioSession the underlying MINA session
+     */
     public AbstractSession(FactoryManager factoryManager, IoSession ioSession) {
         this.factoryManager = factoryManager;
         this.ioSession = ioSession;
         this.random = factoryManager.getRandomFactory().create();
     }
 
+    /**
+     * Retrieve the session from the MINA session.
+     * If the session has not been attached, an IllegalStateException
+     * will be thrown
+     *
+     * @param ioSession the MINA session
+     * @return the session attached to the MINA session
+     */
     public static final AbstractSession getSession(IoSession ioSession) {
         return getSession(ioSession, false);
     }
 
+    /**
+     * Retrieve the session from the MINA session.
+     * If the session has not been attached and allowNull is <code>false</code>,
+     * an IllegalStateException will be thrown, else a <code>null</code> will
+     * be returned
+     *
+     * @param ioSession the MINA session
+     * @param allowNull if <code>true</code>, a <code>null</code> value may be
+     *        returned if no session is attached
+     * @return the session attached to the MINA session or <code>null</code>
+     */
     public static final AbstractSession getSession(IoSession ioSession, boolean allowNull) {
         AbstractSession session = (AbstractSession) ioSession.getAttribute(SESSION);
         if (!allowNull && session == null) {
@@ -120,19 +162,34 @@ public abstract class AbstractSession implements Closeable {
         return session;
     }
 
+    /**
+     * Attach a session to the MINA session
+     *
+     * @param ioSession the MINA session
+     * @param session the session to attach
+     */
     public static final void attachSession(IoSession ioSession, AbstractSession session) {
         ioSession.setAttribute(SESSION, session);
     }
 
+    /**
+     * Retrieve the factory manager
+     *
+     * @return the factory manager for this session
+     */
     public FactoryManager getFactoryManager() {
         return factoryManager;
     }
 
     /**
-     * Main input point for the MINA framework
+     * Main input point for the MINA framework.
+     *
+     * This method will be called each time new data is received on
+     * the socket and will append it to the input buffer before
+     * calling the {@link #decode()} method.
      *
      * @param buffer the new buffer received
-     * @throws Exception
+     * @throws Exception if an error occurs while decoding or handling the data
      */
     public void messageReceived(ByteBuffer buffer) throws Exception {
         synchronized (decodeLock) {
@@ -151,9 +208,29 @@ public abstract class AbstractSession implements Closeable {
     }
 
 
+    /**
+     * Abstract method for processing incoming decoded packets.
+     * The given buffer will hold the decoded packet, starting from
+     * the command byte at the read position.
+     * Packets must be processed within this call or be copied because
+     * the given buffer is meant to be changed and updated when this
+     * method returns.
+     *
+     * @param buffer the buffer containing the packet
+     * @throws Exception if an exeption occurs while handling this packet.
+     */
     protected abstract void handleMessage(Buffer buffer) throws Exception;
 
-    public void exceptionCaught(Throwable t) throws IOException {
+    /**
+     * Handle any exceptions that occured on this session.
+     * The session will be closed and a disconnect packet will be
+     * sent before if the given exception is an
+     * {@link org.apache.sshd.common.SshException}.
+     * 
+     * @param t the exception to process
+     * @throws IOException
+     */
+    public void exceptionCaught(Throwable t) {
         log.warn("Exception caught", t);
         try {
             if (t instanceof SshException) {
@@ -168,6 +245,11 @@ public abstract class AbstractSession implements Closeable {
         close();
     }
 
+    /**
+     * Close this session.
+     * This method will close all channels, then close the underlying MINA session.
+     * The call will block until the mina session is actually closed.
+     */
     public void close() {
         if (!closed) {
             synchronized (lock) {
@@ -199,9 +281,9 @@ public abstract class AbstractSession implements Closeable {
      * The buffer has to have 5 bytes free at the beginning to allow the encoding to take place.
      * Also, the write position of the buffer has to be set to the position of the last byte to write.
      *
-     * @param buffer
-     * @return
-     * @throws java.io.IOException
+     * @param buffer the buffer to encode and send
+     * @return a future that can be used to check when the packet has actually been sent
+     * @throws java.io.IOException if an error occured when encoding sending the packet
      */
     public WriteFuture writePacket(Buffer buffer) throws IOException {
         // Synchronize all write requests as needed by the encoding algorithm
@@ -215,8 +297,8 @@ public abstract class AbstractSession implements Closeable {
     }
 
     /**
-     * Create a new buffer for the specified SSH packet and reserve the needed space for
-     * the packet header.
+     * Create a new buffer for the specified SSH packet and reserve the needed space
+     * (5 bytes) for the packet header.
      *
      * @param cmd the SSH command
      * @return a new buffer ready for write
@@ -240,7 +322,8 @@ public abstract class AbstractSession implements Closeable {
         try {
             // Check that the packet has some free space for the header
             if (buffer.rpos() < 5) {
-                log.warn("Performance cost: when sending a packet, ensure that 5 bytes are available in front of the buffer");
+                log.warn("Performance cost: when sending a packet, ensure that "
+                           + "5 bytes are available in front of the buffer");
                 Buffer nb = new Buffer();
                 nb.wpos(5);
                 nb.putBuffer(buffer);
@@ -298,6 +381,11 @@ public abstract class AbstractSession implements Closeable {
         }
     }
 
+    /**
+     * Decode the incoming buffer and handle packets as needed.
+     *
+     * @throws Exception
+     */
     protected void decode() throws Exception {
         // Decoding loop
         for (;;) {
@@ -351,11 +439,13 @@ public abstract class AbstractSession implements Closeable {
                                                    "MAC Error");
                         }
                     }
+                    // Increment incoming packet sequence number
                     seqi++;
-
+                    // Get padding
                     byte pad = decoderBuffer.getByte();
                     Buffer buf;
                     int wpos = decoderBuffer.wpos();
+                    // Decompress if needed
                     if (inCompression != null && (authed || !inCompression.isDelayed())) {
                         if (uncompressBuffer == null) {
                             uncompressBuffer = new Buffer();
@@ -372,7 +462,9 @@ public abstract class AbstractSession implements Closeable {
                     if (log.isTraceEnabled()) {
                         log.trace("Received packet #{}: {}", seqi, buf.printHex());
                     }
+                    // Process decoded packet
                     handleMessage(buf);
+                    // Set ready to handle next packet
                     decoderBuffer.rpos(decoderLength + 4 + macSize);
                     decoderBuffer.wpos(wpos);
                     decoderBuffer.compact();
@@ -385,6 +477,11 @@ public abstract class AbstractSession implements Closeable {
         }
     }
 
+    /**
+     * Send our identification.
+     *
+     * @param ident our identification to send
+     */
     protected void sendIdentification(String ident) {
         ByteBuffer buffer = ByteBuffer.allocate(32);
         buffer.setAutoExpand(true);
@@ -393,8 +490,28 @@ public abstract class AbstractSession implements Closeable {
         ioSession.write(buffer);
     }
 
+    /**
+     * Read the other side identification.
+     * This method is specific to the client or server side, but both should call
+     * {@link #doReadIdentification(org.apache.sshd.common.util.Buffer)} and
+     * store the result in the needed property.
+     *
+     * @param buffer the buffer containing the remote identification
+     * @return <code>true</code> if the identification has been fully read or
+     *         <code>false</code> if more data is needed
+     * @throws IOException if an error occurs such as a bad protocol version
+     */
     protected abstract boolean readIdentification(Buffer buffer) throws IOException;
 
+    /**
+     * Read the remote identification from this buffer.
+     * If more data is needed, the buffer will be reset to its original state
+     * and a <code>null</code> value will be returned.  Else the identification
+     * string will be returned and the data read will be consumed from the buffer.
+     *
+     * @param buffer the buffer containing the identification string
+     * @return the remote identification or <code>null</code> if more data is needed
+     */
     protected String doReadIdentification(Buffer buffer) {
         byte[] data = new byte[256];
         for (;;) {
@@ -433,6 +550,12 @@ public abstract class AbstractSession implements Closeable {
         }
     }
 
+    /**
+     * Create our proposal for SSH negociation
+     *
+     * @param hostKeyTypes the list of supported host key types
+     * @return an array of 10 strings holding this proposal
+     */
     protected String[] createProposal(String hostKeyTypes) {
         return new String[] {
                 NamedFactory.Utils.getNames(factoryManager.getKeyExchangeFactories()),
@@ -448,6 +571,14 @@ public abstract class AbstractSession implements Closeable {
         };
     }
 
+    /**
+     * Send the key exchange initialization packet.
+     * This packet contains random data along with our proposal.
+     *
+     * @param proposal our proposal for key exchange negociation
+     * @return the sent packet which must be kept for later use
+     * @throws IOException if an error occured sending the packet
+     */
     protected byte[] sendKexInit(String[] proposal) throws IOException {
         Buffer buffer = createBuffer(SshConstants.Message.SSH_MSG_KEXINIT);
         int p = buffer.wpos();
@@ -463,7 +594,15 @@ public abstract class AbstractSession implements Closeable {
         return data;
     }
 
-    protected byte[] receiveKexInit(Buffer buffer, String[] proposal) throws IOException {
+    /**
+     * Receive the remote key exchange init message.
+     * The packet data is returned for later use.
+     *
+     * @param buffer the buffer containing the key exchange init packet
+     * @param proposal the remote proposal to fill
+     * @return the packet data
+     */
+    protected byte[] receiveKexInit(Buffer buffer, String[] proposal) {
         // Recreate the packet payload which will be needed at a later time
         byte[] d = buffer.array();
         byte[] data = new byte[buffer.available() + 1];
@@ -482,12 +621,25 @@ public abstract class AbstractSession implements Closeable {
         return data;
     }
 
+    /**
+     * Send a message to put new keys into use.
+     *
+     * @throws IOException if an error occurs sending the message
+     */
     protected void sendNewKeys() throws IOException {
         log.info("Send SSH_MSG_NEWKEYS");
         Buffer buffer = createBuffer(SshConstants.Message.SSH_MSG_NEWKEYS);
         writePacket(buffer);
     }
 
+    /**
+     * Put new keys into use.
+     * This method will intialize the ciphers, digests, macs and compression
+     * according to the negociated server and client proposals.
+     *
+     * @param isServer boolean indicating if this session is on the server or the client side
+     * @throws Exception if an error occurs
+     */
     protected void receiveNewKeys(boolean isServer) throws Exception {
         byte[] IVc2s;
         byte[] IVs2c;
@@ -543,14 +695,14 @@ public abstract class AbstractSession implements Closeable {
         MACs2c = hash.digest();
 
         s2ccipher = NamedFactory.Utils.create(factoryManager.getCipherFactories(), negociated[SshConstants.PROPOSAL_ENC_ALGS_STOC]);
-        Es2c = resizeIfNeeded(Es2c, s2ccipher, hash, K, H);
+        Es2c = resizeKey(Es2c, s2ccipher.getBlockSize(), hash, K, H);
         s2ccipher.init(isServer ? Cipher.Mode.Encrypt : Cipher.Mode.Decrypt, Es2c, IVs2c);
 
         s2cmac = NamedFactory.Utils.create(factoryManager.getMacFactories(), negociated[SshConstants.PROPOSAL_MAC_ALGS_STOC]);
         s2cmac.init(MACs2c);
 
         c2scipher = NamedFactory.Utils.create(factoryManager.getCipherFactories(), negociated[SshConstants.PROPOSAL_ENC_ALGS_CTOS]);
-        Ec2s = resizeIfNeeded(Ec2s, c2scipher, hash, K, H);
+        Ec2s = resizeKey(Ec2s, c2scipher.getBlockSize(), hash, K, H);
         c2scipher.init(isServer ? Cipher.Mode.Decrypt : Cipher.Mode.Encrypt, Ec2s, IVc2s);
 
         c2smac = NamedFactory.Utils.create(factoryManager.getMacFactories(), negociated[SshConstants.PROPOSAL_MAC_ALGS_CTOS]);
@@ -585,8 +737,20 @@ public abstract class AbstractSession implements Closeable {
         }
     }
 
-    private byte[] resizeIfNeeded(byte[] E, Cipher cipher, Digest hash, byte[] K, byte[] H) throws Exception {
-        while (cipher.getBlockSize() > E.length) {
+    /**
+     * Private method used while putting new keys into use that will resize the key used to
+     * initialize the cipher to the needed length.
+     *
+     * @param E the key to resize
+     * @param blockSize the cipher block size
+     * @param hash the hash algorithm
+     * @param K the key exchange K parameter
+     * @param H the key exchange H parameter
+     * @return the resize key
+     * @throws Exception if a problem occur while resizing the key
+     */
+    private byte[] resizeKey(byte[] E, int blockSize, Digest hash, byte[] K, byte[] H) throws Exception {
+        while (blockSize > E.length) {
             Buffer buffer = new Buffer();
             buffer.putMPInt(K);
             buffer.putRawBytes(H);
@@ -601,6 +765,13 @@ public abstract class AbstractSession implements Closeable {
         return E;
     }
 
+    /**
+     * Send a disconnect packet with the given reason and message
+     *
+     * @param reason the reason code for this disconnect
+     * @param msg the text message
+     * @throws IOException if an error occured sending the packet
+     */
     public void disconnect(int reason, String msg) throws IOException {
         Buffer buffer = createBuffer(SshConstants.Message.SSH_MSG_DISCONNECT);
         buffer.putInt(reason);
@@ -611,12 +782,24 @@ public abstract class AbstractSession implements Closeable {
         close();
     }
 
+    /**
+     * Send an unimplemented packet.  This packet should contain the
+     * sequence id of the usupported packet: this number is assumed to
+     * be the last packet received.
+     *
+     * @throws IOException if an error occured sending the packet
+     */
     protected void notImplemented() throws IOException {
         Buffer buffer = createBuffer(SshConstants.Message.SSH_MSG_UNIMPLEMENTED);
         buffer.putInt(seqi - 1);
         writePacket(buffer);
     }
 
+    /**
+     * Compute the negociated proposals by merging the client and
+     * server proposal.  The negocatiated proposal will be stored in
+     * the {@link #negociated} property.
+     */
     protected void negociate() {
         String[] guess = new String[SshConstants.PROPOSAL_MAX];
         for (int i = 0; i < SshConstants.PROPOSAL_MAX; i++) {
@@ -640,16 +823,34 @@ public abstract class AbstractSession implements Closeable {
         negociated = guess;
     }
 
+    /**
+     * Process incoming data on a channel
+     *
+     * @param buffer the buffer containing the data
+     * @throws Exception if an error occurs
+     */
     protected void channelData(Buffer buffer) throws Exception {
         Channel channel = getChannel(buffer);
         channel.handleData(buffer);
     }
 
+    /**
+     * Process incoming extended data on a channel
+     *
+     * @param buffer the buffer containing the data
+     * @throws Exception if an error occurs
+     */
     protected void channelExtendedData(Buffer buffer) throws Exception {
         Channel channel = getChannel(buffer);
         channel.handleExtendedData(buffer);
     }
 
+    /**
+     * Process a window adjust packet on a channel
+     *
+     * @param buffer the buffer containing the window adjustement parameters
+     * @throws Exception if an error occurs
+     */
     protected void channelWindowAdjust(Buffer buffer) throws Exception {
         try {
             Channel channel = getChannel(buffer);
@@ -659,27 +860,58 @@ public abstract class AbstractSession implements Closeable {
         }
     }
 
+    /**
+     * Process end of file on a channel
+     *
+     * @param buffer the buffer containing the packet
+     * @throws Exception if an error occurs
+     */
     protected void channelEof(Buffer buffer) throws Exception {
         Channel channel = getChannel(buffer);
         channel.handleEof();
     }
 
+    /**
+     * Close a channel due to a close packet received
+     *
+     * @param buffer the buffer containing the packet
+     * @throws Exception if an error occurs
+     */
     protected void channelClose(Buffer buffer) throws Exception {
         Channel channel = getChannel(buffer);
         channel.close();
         channels.remove(channel.getId());
     }
 
+    /**
+     * Service a request on a channel
+     *
+     * @param buffer the buffer containing the request
+     * @throws Exception if an error occurs
+     */
     protected void channelRequest(Buffer buffer) throws IOException {
         Channel channel = getChannel(buffer);
         channel.handleRequest(buffer);
     }
 
+    /**
+     * Process a failure on a channel
+     *
+     * @param buffer the buffer containing the packet
+     * @throws Exception if an error occurs
+     */
     protected void channelFailure(Buffer buffer) throws Exception {
         Channel channel = getChannel(buffer);
         channel.handleFailure();
     }
 
+    /**
+     * Retrieve the channel designated by the given packet
+     *
+     * @param buffer the incoming packet
+     * @return the target channel
+     * @throws IOException if the channel does not exists
+     */
     protected Channel getChannel(Buffer buffer) throws IOException {
         int recipient = buffer.getInt();
         Channel channel = channels.get(recipient);
@@ -691,6 +923,13 @@ public abstract class AbstractSession implements Closeable {
         return channel;
     }
 
+    /**
+     * Retrieve a configuration property as an integer
+     *
+     * @param name the name of the property
+     * @param defaultValue the default value
+     * @return the value of the configuration property or the default value if not found
+     */
     public int getIntProperty(String name, int defaultValue) {
         try {
             String v = factoryManager.getProperties().get(name);

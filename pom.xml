@@ -45,11 +45,11 @@
 
     <mailingLists>
       <mailingList>
-        <name>FtpServer Users mailing list</name>
-        <subscribe>ftpserver-users-subscribe@mina.apache.org</subscribe>
-        <unsubscribe>ftpserver-users-unsubscribe@mina.apache.org</unsubscribe>
-        <post>ftpserver-users@mina.apache.org</post>
-        <archive>http://mail-archives.apache.org/mod_mbox/mina-ftpserver-users/</archive>
+        <name>Users mailing list</name>
+        <subscribe>users-subscribe@mina.apache.org</subscribe>
+        <unsubscribe>users-unsubscribe@mina.apache.org</unsubscribe>
+        <post>users@mina.apache.org</post>
+        <archive>http://mail-archives.apache.org/mod_mbox/mina-users/</archive>
       </mailingList>
       <mailingList>
         <name>MINA Development mailing list</name>

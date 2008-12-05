@@ -25,7 +25,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * TODO Add javadoc
+ * A password authenticator using PAM (Pluggable Authentication Module).
+ * Such an authenticator can be used to integrate into an Unix operating
+ * system. 
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @version $Rev$, $Date$

@@ -23,7 +23,23 @@ import java.io.Closeable;
 import java.io.IOException;
 
 /**
- * TODO Add javadoc
+ * An authenticated session to a given SSH server
+ *
+ * A client session is established using the {@link SshClient}.
+ * Once the session has been created, the user has to authenticate
+ * using either {@link #authPassword(String, String)} or
+ * {@link #authPublicKey(String, java.security.PublicKey)}.
+ *
+ * From this session, channels can be created using the
+ * {@link #createChannel(String)} method.  Multiple channels can
+ * be created on a given session concurrently.
+ *
+ * When using the client in an interactive mode, the
+ * {@link #waitFor(int, long)} method can be used to listen to specific
+ * events such as the session being established, authenticated or closed.
+ *
+ * When a given session is no longer used, it must be closed using the
+ * {@link #close()} method.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @version $Rev$, $Date$
