@@ -68,6 +68,12 @@ import org.apache.mina.common.IoSession;
 import org.apache.mina.transport.socket.nio.SocketAcceptor;
 import org.apache.mina.transport.socket.nio.SocketAcceptorConfig;
 
+/**
+ * TODO Add javadoc
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @version $Rev$, $Date$
+ */
 public class SshServer extends AbstractFactoryManager implements ServerFactoryManager {
 
     private IoAcceptor acceptor;

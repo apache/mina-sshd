@@ -27,6 +27,12 @@ import org.apache.sshd.server.ShellFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * TODO Add javadoc
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @version $Rev$, $Date$
+ */
 public class ProcessShellFactory implements ShellFactory {
 
     private static final Logger LOG = LoggerFactory.getLogger(ProcessShellFactory.class);

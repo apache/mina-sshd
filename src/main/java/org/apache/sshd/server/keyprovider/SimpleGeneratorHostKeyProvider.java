@@ -24,6 +24,12 @@ import java.io.OutputStream;
 import java.io.ObjectOutputStream;
 import java.io.ObjectInputStream;
 
+/**
+ * TODO Add javadoc
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @version $Rev$, $Date$
+ */
 public class SimpleGeneratorHostKeyProvider extends AbstractGeneratorHostKeyProvider {
 
     protected KeyPair doReadKeyPair(InputStream is) throws Exception {

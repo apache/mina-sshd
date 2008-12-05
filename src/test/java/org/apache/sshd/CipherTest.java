@@ -38,6 +38,12 @@ import org.apache.sshd.util.BogusPasswordAuthenticator;
 
 import static org.junit.Assert.assertEquals;
 
+/**
+ * TODO Add javadoc
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @version $Rev$, $Date$
+ */
 public class CipherTest {
 
     private SshServer sshd;

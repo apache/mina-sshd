@@ -20,6 +20,9 @@ package org.apache.sshd.common;
 
 /**
  * A pseudo random number generator
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @version $Rev$, $Date$
  */
 public interface Random {
 

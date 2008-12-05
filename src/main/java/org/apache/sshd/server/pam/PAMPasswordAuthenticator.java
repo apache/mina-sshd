@@ -24,6 +24,12 @@ import net.sf.jpam.PamReturnValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * TODO Add javadoc
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @version $Rev$, $Date$
+ */
 public class PAMPasswordAuthenticator implements PasswordAuthenticator {
 
     private static final Logger LOG = LoggerFactory.getLogger(PAMPasswordAuthenticator.class);

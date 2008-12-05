@@ -24,6 +24,12 @@ import java.io.IOException;
 
 import org.apache.sshd.server.CommandFactory;
 
+/**
+ * TODO Add javadoc
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @version $Rev$, $Date$
+ */
 public class UnknownCommand implements CommandFactory.Command {
 
     public UnknownCommand(String command) {

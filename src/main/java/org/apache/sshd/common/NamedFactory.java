@@ -25,6 +25,9 @@ import java.util.List;
  * Such names are used mainly in the algorithm negociation at the beginning of the SSH connection.
  *
  * @param <T>
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @version $Rev$, $Date$
  */
 public interface NamedFactory<T> {
 

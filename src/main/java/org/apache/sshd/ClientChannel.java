@@ -22,6 +22,12 @@ import java.io.Closeable;
 import java.io.OutputStream;
 import java.io.InputStream;
 
+/**
+ * TODO Add javadoc
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @version $Rev$, $Date$
+ */
 public interface ClientChannel extends Closeable {
 
     int TIMEOUT =     0x0001;

@@ -29,6 +29,12 @@ import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.BufferUtils;
 
+/**
+ * TODO Add javadoc
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @version $Rev$, $Date$
+ */
 public abstract class AbstractChannel implements Channel {
 
     public static final int DEFAULT_WINDOW_SIZE = 0x200000;

@@ -30,6 +30,12 @@ import org.apache.sshd.common.channel.AbstractChannel;
 import org.apache.sshd.ClientChannel;
 import org.apache.sshd.client.session.ClientSessionImpl;
 
+/**
+ * TODO Add javadoc
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @version $Rev$, $Date$
+ */
 public abstract class AbstractClientChannel extends AbstractChannel implements ClientChannel {
 
     protected boolean opened;

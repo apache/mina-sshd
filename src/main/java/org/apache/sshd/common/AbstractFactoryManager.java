@@ -24,6 +24,12 @@ import java.util.Map;
 import java.util.HashMap;
 import java.io.InputStream;
 
+/**
+ * TODO Add javadoc
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @version $Rev$, $Date$
+ */
 public abstract class AbstractFactoryManager implements FactoryManager {
 
     private Map<String,String> properties = new HashMap<String,String>();

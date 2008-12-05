@@ -25,6 +25,12 @@ import org.apache.sshd.common.Random;
 import org.bouncycastle.crypto.prng.RandomGenerator;
 import org.bouncycastle.crypto.prng.VMPCRandomGenerator;
 
+/**
+ * TODO Add javadoc
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @version $Rev$, $Date$
+ */
 public class BouncyCastleRandom implements Random {
 
     public static class Factory implements NamedFactory<Random> {

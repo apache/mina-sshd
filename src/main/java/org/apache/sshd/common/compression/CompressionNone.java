@@ -21,6 +21,12 @@ package org.apache.sshd.common.compression;
 import org.apache.sshd.common.Compression;
 import org.apache.sshd.common.NamedFactory;
 
+/**
+ * TODO Add javadoc
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @version $Rev$, $Date$
+ */
 public abstract class CompressionNone implements Compression {
 
     public static class Factory implements NamedFactory<Compression> {

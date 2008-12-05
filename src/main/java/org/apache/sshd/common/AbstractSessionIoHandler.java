@@ -23,6 +23,12 @@ import org.apache.mina.common.IoHandlerAdapter;
 import org.apache.mina.common.IoSession;
 import org.apache.sshd.common.session.AbstractSession;
 
+/**
+ * TODO Add javadoc
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @version $Rev$, $Date$
+ */
 public abstract class AbstractSessionIoHandler extends IoHandlerAdapter {
 
     protected abstract AbstractSession createSession(IoSession ioSession) throws Exception;

@@ -23,6 +23,12 @@ import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.UserAuth;
 
+/**
+ * TODO Add javadoc
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @version $Rev$, $Date$
+ */
 public class UserAuthNone implements UserAuth {
 
     public static class Factory implements NamedFactory<UserAuth> {

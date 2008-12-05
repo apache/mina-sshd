@@ -48,6 +48,10 @@ import org.slf4j.LoggerFactory;
  * TODO: if there is any very big packet, decoderBuffer and uncompressBuffer will get quite big
  *        and they won't be resized down at any time. Though the packet size is really limited
  *        by the channel max packet size
+ * TODO Add javadoc
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @version $Rev$, $Date$
  */
 public abstract class AbstractSession implements Closeable {
 

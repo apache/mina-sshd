@@ -21,6 +21,12 @@ package org.apache.sshd.common.cipher;
 import org.apache.sshd.common.Cipher;
 import org.apache.sshd.common.NamedFactory;
 
+/**
+ * TODO Add javadoc
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @version $Rev$, $Date$
+ */
 public class AES128CBC extends BaseCipher {
 
     public static class Factory implements NamedFactory<Cipher> {

@@ -21,6 +21,9 @@ package org.apache.sshd.common;
 /**
  * Message Authentication Code for use in SSH.
  * It usually wraps a javax.crypto.Mac class.
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @version $Rev$, $Date$
  */
 public interface Mac {
 

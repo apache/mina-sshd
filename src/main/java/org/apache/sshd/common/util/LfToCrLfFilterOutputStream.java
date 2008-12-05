@@ -22,6 +22,12 @@ import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
+/**
+ * TODO Add javadoc
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @version $Rev$, $Date$
+ */
 public class LfToCrLfFilterOutputStream extends FilterOutputStream {
 
     public LfToCrLfFilterOutputStream(OutputStream out) {

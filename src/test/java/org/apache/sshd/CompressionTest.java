@@ -35,6 +35,12 @@ import org.apache.sshd.SshServer;
 import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 
+/**
+ * TODO Add javadoc
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @version $Rev$, $Date$
+ */
 public class CompressionTest {
 
     private SshServer sshd;

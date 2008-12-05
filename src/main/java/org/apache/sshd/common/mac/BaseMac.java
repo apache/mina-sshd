@@ -23,6 +23,12 @@ import javax.crypto.spec.SecretKeySpec;
 import org.apache.sshd.common.Mac;
 import org.apache.sshd.common.util.SecurityUtils;
 
+/**
+ * TODO Add javadoc
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @version $Rev$, $Date$
+ */
 public class BaseMac implements Mac {
 
     private final String algorithm;

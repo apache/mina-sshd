@@ -21,6 +21,12 @@ package org.apache.sshd.common.mac;
 import org.apache.sshd.common.Mac;
 import org.apache.sshd.common.NamedFactory;
 
+/**
+ * TODO Add javadoc
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @version $Rev$, $Date$
+ */
 public class HMACSHA1 extends BaseMac {
 
     public static class Factory implements NamedFactory<Mac> {

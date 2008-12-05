@@ -26,7 +26,10 @@ import java.util.Map;
 /**
  *
  * TODO: remove InvertedShell and create a wrapper instead to keep the api cleaner
+ * TODO Add javadoc
  *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @version $Rev$, $Date$
  */
 public interface ShellFactory {
 

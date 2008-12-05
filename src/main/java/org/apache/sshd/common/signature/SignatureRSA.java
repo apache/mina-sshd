@@ -22,6 +22,12 @@ import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.Signature;
 
+/**
+ * TODO Add javadoc
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @version $Rev$, $Date$
+ */
 public class SignatureRSA extends AbstractSignature {
 
     public static class Factory implements NamedFactory<Signature> {

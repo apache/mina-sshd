@@ -21,6 +21,12 @@ package org.apache.sshd.server;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.server.session.ServerSession;
 
+/**
+ * TODO Add javadoc
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @version $Rev$, $Date$
+ */
 public interface UserAuth {
 
     /**

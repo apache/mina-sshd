@@ -22,6 +22,12 @@ import java.security.PublicKey;
 import java.io.Closeable;
 import java.io.IOException;
 
+/**
+ * TODO Add javadoc
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @version $Rev$, $Date$
+ */
 public interface ClientSession extends Closeable {
 
     int TIMEOUT =     0x0001;

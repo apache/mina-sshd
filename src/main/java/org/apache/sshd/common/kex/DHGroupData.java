@@ -18,6 +18,12 @@
  */
 package org.apache.sshd.common.kex;
 
+/**
+ * TODO Add javadoc
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @version $Rev$, $Date$
+ */
 public class DHGroupData {
 
     public static final byte[] G = { 2 };

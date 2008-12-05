@@ -21,6 +21,12 @@ package org.apache.sshd.common;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * TODO Add javadoc
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @version $Rev$, $Date$
+ */
 public interface FactoryManager {
 
     public static final String WINDOW_SIZE = "window-size";

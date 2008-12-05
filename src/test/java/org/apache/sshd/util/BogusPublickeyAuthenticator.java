@@ -22,6 +22,12 @@ import java.security.PublicKey;
 
 import org.apache.sshd.server.PublickeyAuthenticator;
 
+/**
+ * TODO Add javadoc
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @version $Rev$, $Date$
+ */
 public class BogusPublickeyAuthenticator implements PublickeyAuthenticator {
 
     public boolean hasKey(String username, PublicKey key) {

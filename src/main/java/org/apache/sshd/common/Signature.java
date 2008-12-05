@@ -24,6 +24,9 @@ import java.security.PublicKey;
 /**
  * Signature interface for SSH used to sign or verify packets
  * Usually wraps a javax.crypto.Signature object
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @version $Rev$, $Date$
  */
 public interface Signature {
 

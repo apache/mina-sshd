@@ -25,6 +25,12 @@ import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.server.session.ServerSession;
 
+/**
+ * TODO Add javadoc
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @version $Rev$, $Date$
+ */
 public interface ServerChannel extends Channel {
 
     void init(ServerSession session, int id, int recipient, int rwsize, int rmpsize);

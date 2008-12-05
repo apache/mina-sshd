@@ -33,6 +33,12 @@ import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.SshConstants;
 import org.apache.mina.common.ByteBuffer;
 
+/**
+ * TODO Add javadoc
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @version $Rev$, $Date$
+ */
 public final class Buffer {
 
     public static final int DEFAULT_SIZE = 256;

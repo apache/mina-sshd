@@ -21,6 +21,12 @@ package org.apache.sshd.client.channel;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.util.Buffer;
 
+/**
+ * TODO Add javadoc
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @version $Rev$, $Date$
+ */
 public class ChannelShell extends ChannelSession {
 
     @Override

@@ -22,6 +22,12 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.IOException;
 
+/**
+ * TODO Add javadoc
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @version $Rev$, $Date$
+ */
 public interface CommandFactory {
 
     Command createCommand(String command);
