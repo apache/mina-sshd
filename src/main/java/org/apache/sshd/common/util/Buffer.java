@@ -29,9 +29,9 @@ import java.security.spec.DSAPublicKeySpec;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPublicKeySpec;
 
+import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.SshConstants;
-import org.apache.mina.common.ByteBuffer;
 
 /**
  * TODO Add javadoc
@@ -244,7 +244,7 @@ public final class Buffer {
         wpos += r;
     }
 
-    public void putBuffer(ByteBuffer buffer) {
+    public void putBuffer(IoBuffer buffer) {
         int r = buffer.remaining();
         ensureCapacity(r);
         buffer.get(data, wpos, r);

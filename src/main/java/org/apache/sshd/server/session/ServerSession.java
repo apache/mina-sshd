@@ -36,9 +36,8 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.util.Buffer;
-import org.apache.mina.common.IoSession;
-import org.apache.mina.common.TransportType;
-import org.apache.mina.transport.socket.nio.SocketSessionConfig;
+import org.apache.mina.transport.socket.SocketSessionConfig;
+import org.apache.mina.core.session.IoSession;
 
 /**
  *
@@ -78,9 +77,6 @@ public class ServerSession extends AbstractSession {
         maxAuthRequests = getIntProperty(FactoryManager.MAX_AUTH_REQUESTS, maxAuthRequests);
         authTimeout = getIntProperty(FactoryManager.AUTH_TIMEOUT, authTimeout);
         log.info("Session created...");
-        if (ioSession.getTransportType() == TransportType.SOCKET) {
-            ((SocketSessionConfig) ioSession.getConfig() ).setReceiveBufferSize( 2048 );
-        }
         sendServerIdentification();
         sendKexInit();
     }

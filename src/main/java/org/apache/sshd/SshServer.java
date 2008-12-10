@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.Executors;
 
 import org.apache.sshd.common.AbstractFactoryManager;
 import org.apache.sshd.common.session.AbstractSession;
@@ -63,10 +62,9 @@ import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.kex.DHG1;
 import org.apache.sshd.server.kex.DHG14;
 import org.apache.sshd.server.shell.ProcessShellFactory;
-import org.apache.mina.common.IoAcceptor;
-import org.apache.mina.common.IoSession;
-import org.apache.mina.transport.socket.nio.SocketAcceptor;
-import org.apache.mina.transport.socket.nio.SocketAcceptorConfig;
+import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
+import org.apache.mina.core.session.IoSession;
+import org.apache.mina.core.service.IoAcceptor;
 
 /**
  * The SshServer class is the main entry point for the server side of the SSH protocol.
@@ -197,20 +195,27 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         }
     }
 
+    /**
+     * Start the SSH server and accept incoming exceptions on the configured port.
+     * 
+     * @throws IOException
+     */
     public void start() throws IOException {
         checkConfig();
-        acceptor = new SocketAcceptor(Runtime.getRuntime().availableProcessors(),
-                                      Executors.newCachedThreadPool());
-        SocketAcceptorConfig cfg = new SocketAcceptorConfig();
-        acceptor.bind(new InetSocketAddress(port), new AbstractSessionIoHandler() {
+        acceptor = new NioSocketAcceptor();
+        acceptor.setHandler(new AbstractSessionIoHandler() {
             protected AbstractSession createSession(IoSession ioSession) throws Exception {
                 return new ServerSession(SshServer.this, ioSession);
             }
-        }, cfg);
+        });
+        acceptor.bind(new InetSocketAddress(port));
     }
 
+    /**
+     * Stop the SSH server.  This method will block until all resources are actually disposed.
+     */
     public void stop() {
-        acceptor.unbindAll();
+        acceptor.dispose();
     }
 
     public static SshServer setUpDefaultServer() {

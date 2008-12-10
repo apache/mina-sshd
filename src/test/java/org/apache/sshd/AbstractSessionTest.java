@@ -21,9 +21,9 @@ package org.apache.sshd;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.SshServer;
+import org.apache.mina.core.buffer.IoBuffer;
 import org.junit.Before;
 import org.junit.Test;
-import org.apache.mina.common.ByteBuffer;
 
 import static org.junit.Assert.*;
 
@@ -106,7 +106,7 @@ public class AbstractSessionTest {
         public MySession() {
             super(SshServer.setUpDefaultServer(), null);
         }
-        public void messageReceived(ByteBuffer byteBuffer) throws Exception {
+        public void messageReceived(IoBuffer byteBuffer) throws Exception {
         }
         protected void handleMessage(Buffer buffer) throws Exception {
         }

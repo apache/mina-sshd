@@ -132,7 +132,7 @@ public class ClientTest {
         long t0 = System.currentTimeMillis();
 
         int bytes = 0;
-        for (int i = 0; i < 100000; i++) {
+        for (int i = 0; i < 10000; i++) {
             byte[] data = "01234567890123456789012345678901234567890123456789\n".getBytes();
             pipedIn.write(data);
             pipedIn.flush();

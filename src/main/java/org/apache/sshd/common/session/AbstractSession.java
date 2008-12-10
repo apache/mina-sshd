@@ -20,6 +20,7 @@ package org.apache.sshd.common.session;
 
 import java.io.IOException;
 import java.io.Closeable;
+import java.io.InterruptedIOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -37,10 +38,12 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.Digest;
 import org.apache.sshd.common.SshException;
-import org.apache.mina.common.ByteBuffer;
-import org.apache.mina.common.IoSession;
-import org.apache.mina.common.WriteFuture;
-import org.apache.mina.common.CloseFuture;
+import org.apache.mina.core.session.IoSession;
+import org.apache.mina.core.buffer.IoBuffer;
+import org.apache.mina.core.future.CloseFuture;
+import org.apache.mina.core.future.WriteFuture;
+import org.apache.mina.core.future.IoFutureListener;
+import org.apache.mina.core.future.IoFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,8 +65,8 @@ public abstract class AbstractSession implements Closeable {
 
     /**
      * Name of the property where this session is stored in the attributes of the
-     * underlying MINA session. See {@link #getSession(org.apache.mina.common.IoSession, boolean)}
-     * and {@link #attachSession(org.apache.mina.common.IoSession, AbstractSession)}.
+     * underlying MINA session. See {@link #getSession(IoSession, boolean)}
+     * and {@link #attachSession(IoSession, AbstractSession)}.
      */
     public static final String SESSION = "com.google.code.sshd.session";
     /** Our logger */
@@ -78,6 +81,8 @@ public abstract class AbstractSession implements Closeable {
     protected final Object lock = new Object();
     /** Boolean indicating if this session has been closed or not */
     protected boolean closed;
+    /** The session is being closed */
+    protected boolean closing;
     /** Boolean indicating if this session has been authenticated or not */
     protected boolean authed;
     /** Map of channels keyed by the identifier */
@@ -191,7 +196,7 @@ public abstract class AbstractSession implements Closeable {
      * @param buffer the new buffer received
      * @throws Exception if an error occurs while decoding or handling the data
      */
-    public void messageReceived(ByteBuffer buffer) throws Exception {
+    public void messageReceived(IoBuffer buffer) throws Exception {
         synchronized (decodeLock) {
             decoderBuffer.putBuffer(buffer);
             // One of those property will be set by the constructor and the other
@@ -237,6 +242,7 @@ public abstract class AbstractSession implements Closeable {
                 int code = ((SshException) t).getDisconnectCode();
                 if (code > 0) {
                     disconnect(code, t.getMessage());
+                    return;
                 }
             }
         } catch (Throwable t2) {
@@ -248,13 +254,14 @@ public abstract class AbstractSession implements Closeable {
     /**
      * Close this session.
      * This method will close all channels, then close the underlying MINA session.
-     * The call will block until the mina session is actually closed.
+     * The call will not block until the mina session is actually closed.
      */
     public void close() {
         if (!closed) {
             synchronized (lock) {
-                if (!closed) {
+                if (!closed && !closing) {
                     try {
+                        closing = true;
                         log.info("Closing session");
                         Channel[] channelToClose = channels.values().toArray(new Channel[0]);
                         for (Channel channel : channelToClose) {
@@ -262,15 +269,19 @@ public abstract class AbstractSession implements Closeable {
                             IoUtils.closeQuietly(channel);
                         }
                         log.debug("Closing IoSession");
-                        CloseFuture future = ioSession.close();
-                        log.debug("Waiting for IoSession to be closed");
-                        future.join();
-                        log.debug("IoSession closed");
+                        CloseFuture future = ioSession.close(true);
+                        future.addListener(new IoFutureListener() {
+                            public void operationComplete(IoFuture future) {
+                                synchronized (lock) {
+                                    log.debug("IoSession closed");
+                                    closed = true;
+                                    lock.notifyAll();
+                                }
+                            }
+                        });
                     } catch (Throwable t) {
                         log.warn("Error closing session", t);
                     }
-                    closed = true;
-                    lock.notifyAll();
                 }
             }
         }
@@ -291,7 +302,7 @@ public abstract class AbstractSession implements Closeable {
         // packets are sent in the correct order
         synchronized (encodeLock) {
             encode(buffer);
-            ByteBuffer bb = ByteBuffer.wrap(buffer.array(), buffer.rpos(), buffer.available());
+            IoBuffer bb = IoBuffer.wrap(buffer.array(), buffer.rpos(), buffer.available());
             return ioSession.write(bb);
         }
     }
@@ -483,7 +494,7 @@ public abstract class AbstractSession implements Closeable {
      * @param ident our identification to send
      */
     protected void sendIdentification(String ident) {
-        ByteBuffer buffer = ByteBuffer.allocate(32);
+        IoBuffer buffer = IoBuffer.allocate(32);
         buffer.setAutoExpand(true);
         buffer.put((ident + "\r\n").getBytes());
         buffer.flip();
@@ -766,7 +777,9 @@ public abstract class AbstractSession implements Closeable {
     }
 
     /**
-     * Send a disconnect packet with the given reason and message
+     * Send a disconnect packet with the given reason and message.
+     * Once the packet has been sent, the session will be closed
+     * asynchronously.
      *
      * @param reason the reason code for this disconnect
      * @param msg the text message
@@ -778,8 +791,11 @@ public abstract class AbstractSession implements Closeable {
         buffer.putString(msg);
         buffer.putString("");
         WriteFuture f = writePacket(buffer);
-        f.join();
-        close();
+        f.addListener(new IoFutureListener() {
+            public void operationComplete(IoFuture future) {
+                close();
+            }
+        });
     }
 
     /**

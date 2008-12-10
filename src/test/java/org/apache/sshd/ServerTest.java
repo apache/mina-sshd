@@ -18,6 +18,8 @@
  */
 package org.apache.sshd;
 
+import java.net.ServerSocket;
+
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
@@ -39,11 +41,16 @@ import org.junit.After;
 public class ServerTest {
 
     private SshServer sshd;
+    private int port;
 
     @Before
     public void setUp() throws Exception {
+        ServerSocket s = new ServerSocket(0);
+        port = s.getLocalPort();
+        s.close();
+
         sshd = SshServer.setUpDefaultServer();
-        sshd.setPort(8000);
+        sshd.setPort(port);
         sshd.setKeyPairProvider(new FileKeyPairProvider(new String[] { "src/test/resources/hostkey.pem" }));
         sshd.setShellFactory(new EchoShellFactory());
         sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
@@ -65,13 +72,13 @@ public class ServerTest {
 
         SshClient client = SshClient.setUpDefaultClient();
         client.start();
-        ClientSession s = client.connect("localhost", 8000);
+        ClientSession s = client.connect("localhost", port);
         int nbTrials = 0;
         int res = 0;
         while ((res & ClientSession.CLOSED) == 0) {
             nbTrials ++;
             s.authPassword("smx", "buggy");
-            res = s.waitFor(ClientSession.CLOSED | ClientSession.WAIT_AUTH, 1000);
+            res = s.waitFor(ClientSession.CLOSED | ClientSession.WAIT_AUTH, 0);
         }
         Assert.assertTrue(nbTrials > 10);
     }
@@ -82,7 +89,7 @@ public class ServerTest {
 
         SshClient client = SshClient.setUpDefaultClient();
         client.start();
-        ClientSession s = client.connect("localhost", 8000);
+        ClientSession s = client.connect("localhost", port);
         int res = s.waitFor(ClientSession.CLOSED, 1500);
         Assert.assertTrue((res & ClientSession.CLOSED) != 0);
     }

@@ -33,7 +33,6 @@ import java.util.concurrent.TimeUnit;
 import org.apache.sshd.client.session.ClientSessionImpl;
 import org.apache.sshd.client.kex.DHG1;
 import org.apache.sshd.client.kex.DHG14;
-import org.apache.sshd.ClientSession;
 import org.apache.sshd.common.AbstractFactoryManager;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.AbstractSessionIoHandler;
@@ -60,10 +59,11 @@ import org.apache.sshd.common.signature.SignatureRSA;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.NoCloseInputStream;
 import org.apache.sshd.common.util.NoCloseOutputStream;
-import org.apache.mina.common.ConnectFuture;
-import org.apache.mina.common.IoConnector;
-import org.apache.mina.common.IoSession;
-import org.apache.mina.transport.socket.nio.SocketConnector;
+import org.apache.mina.transport.socket.nio.NioSocketConnector;
+import org.apache.mina.transport.socket.SocketConnector;
+import org.apache.mina.core.service.IoConnector;
+import org.apache.mina.core.session.IoSession;
+import org.apache.mina.core.future.ConnectFuture;
 
 /**
  * Entry point for the client side of the SSH protocol.
@@ -115,36 +115,21 @@ import org.apache.mina.transport.socket.nio.SocketConnector;
 public class SshClient extends AbstractFactoryManager {
 
     private IoConnector connector;
-    private ExecutorService executor;
 
     public SshClient() {
     }
 
     public void start() {
-        executor = Executors.newCachedThreadPool();
-        connector = new SocketConnector(Runtime.getRuntime().availableProcessors(),
-                                        executor);
-        ((SocketConnector) connector).setWorkerTimeout(0);
+        connector = new NioSocketConnector();
+        connector.setHandler(new AbstractSessionIoHandler() {
+            protected AbstractSession createSession(IoSession ioSession) throws Exception {
+                return new ClientSessionImpl(SshClient.this, ioSession);
+            }
+        });
     }
 
     public void stop() {
-        Set<SocketAddress> addresses = connector.getManagedServiceAddresses();
-        for (SocketAddress address : addresses) {
-            Set<IoSession> sessions = connector.getManagedSessions(address);
-            for (IoSession ioSession : sessions) {
-                try {
-                    AbstractSession.getSession(ioSession).close();
-                } catch (Exception e) {
-                    // Ignore
-                }
-            }
-        }
-        executor.shutdown();
-        try {
-            executor.awaitTermination(5, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-        }
-        executor = null;
+        connector.dispose();
         connector = null;
     }
 
@@ -164,12 +149,8 @@ public class SshClient extends AbstractFactoryManager {
         if (connector == null) {
             throw new IllegalStateException("SshClient not started. Please call start() method before connecting to a server");
         }
-        ConnectFuture future = connector.connect(address, new AbstractSessionIoHandler() {
-            protected AbstractSession createSession(IoSession ioSession) throws Exception {
-                return new ClientSessionImpl(SshClient.this, ioSession);
-            }
-        });
-        future.join();
+        ConnectFuture future = connector.connect(address);
+        future.await();
         IoSession ioSession = future.getSession();
         ClientSessionImpl session = (ClientSessionImpl) AbstractSession.getSession(ioSession);
         session.waitFor(ClientSession.CLOSED | ClientSession.WAIT_AUTH, 0);

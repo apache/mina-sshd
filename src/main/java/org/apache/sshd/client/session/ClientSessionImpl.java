@@ -34,7 +34,7 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.util.Buffer;
-import org.apache.mina.common.IoSession;
+import org.apache.mina.core.session.IoSession;
 
 /**
  * TODO Add javadoc

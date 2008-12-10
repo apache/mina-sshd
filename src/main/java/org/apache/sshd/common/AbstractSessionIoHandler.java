@@ -18,9 +18,9 @@
  */
 package org.apache.sshd.common;
 
-import org.apache.mina.common.ByteBuffer;
-import org.apache.mina.common.IoHandlerAdapter;
-import org.apache.mina.common.IoSession;
+import org.apache.mina.core.service.IoHandlerAdapter;
+import org.apache.mina.core.session.IoSession;
+import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.sshd.common.session.AbstractSession;
 
 /**
@@ -56,7 +56,7 @@ public abstract class AbstractSessionIoHandler extends IoHandlerAdapter {
 
     @Override
     public void messageReceived(IoSession ioSession, Object message) throws Exception {
-        AbstractSession.getSession(ioSession).messageReceived((ByteBuffer) message);
+        AbstractSession.getSession(ioSession).messageReceived((IoBuffer) message);
     }
 
 }
