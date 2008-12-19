@@ -21,9 +21,11 @@ package org.apache.sshd;
 import java.util.Arrays;
 import java.io.OutputStream;
 import java.io.InputStream;
+import java.net.ServerSocket;
 
 import org.junit.After;
 import org.junit.Test;
+import org.junit.Ignore;
 import com.jcraft.jsch.*;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.common.cipher.AES128CBC;
@@ -47,6 +49,7 @@ import static org.junit.Assert.assertEquals;
 public class CipherTest {
 
     private SshServer sshd;
+    private int port;
 
     @Test
     public void testAES128CBC() throws Exception {
@@ -55,12 +58,14 @@ public class CipherTest {
     }
 
     @Test
+    @Ignore("AES192CBC is not always available by default")
     public void testAES192CBC() throws Exception {
         setUp(new AES192CBC.Factory());
         runTest();
     }
 
     @Test
+    @Ignore("AES192CBC is not always available by default")
     public void testAES256CBC() throws Exception {
         setUp(new AES256CBC.Factory());
         runTest();
@@ -80,8 +85,12 @@ public class CipherTest {
 
 
     protected void setUp(NamedFactory<org.apache.sshd.common.Cipher> cipher) throws Exception {
+        ServerSocket s = new ServerSocket(0);
+        port = s.getLocalPort();
+        s.close();
+
         sshd = SshServer.setUpDefaultServer();
-        sshd.setPort(8000);
+        sshd.setPort(port);
         sshd.setKeyPairProvider(new FileKeyPairProvider(new String[] { "src/test/resources/hostkey.pem" }));
         sshd.setCipherFactories(Arrays.<NamedFactory<org.apache.sshd.common.Cipher>>asList(cipher));
         sshd.setShellFactory(new EchoShellFactory());
@@ -107,7 +116,7 @@ public class CipherTest {
                 System.out.println("Log(jsch," + i + "): " + s);
             }
         });
-        com.jcraft.jsch.Session s = sch.getSession("smx", "localhost", 8000);
+        com.jcraft.jsch.Session s = sch.getSession("smx", "localhost", port);
         s.setUserInfo(new UserInfo() {
             public String getPassphrase() {
                 return null;
