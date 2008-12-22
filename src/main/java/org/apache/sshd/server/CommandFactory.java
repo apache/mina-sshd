@@ -22,16 +22,45 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.IOException;
 
+import org.apache.sshd.server.session.ServerSession;
+
 /**
- * TODO Add javadoc
+ * A factory of commands.
+ * Commands are executed on the server side when an "exec" channel is
+ * requested by the SSH client.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @version $Rev$, $Date$
  */
 public interface CommandFactory {
 
+    /**
+     * Create a command with the given name.
+     * If the command is not known, a dummy command should be returned to allow
+     * the display output to be sent back to the client.
+     *
+     * @param command
+     * @return a non null command
+     */
     Command createCommand(String command);
 
+    /**
+     * Interface that can be implemented by a command to be able to access the
+     * server session in which this command will be used.
+     */
+    public interface SessionAware {
+
+        /**
+         * Set the server session in which this command will be executed.
+         *
+         * @param session
+         */
+        void setSession(ServerSession session);
+    }
+
+    /**
+     * A command that can be executed on the server side
+     */
     public interface Command {
 
         /**
@@ -68,7 +97,7 @@ public interface CommandFactory {
 
 
     /**
-     * Callback used by the shell to notify the SSH server is has exited
+     * Callback used by a command to notify the SSH server is has exited
      */
     public interface ExitCallback {
 

@@ -398,6 +398,11 @@ public class ChannelSession extends AbstractServerChannel {
         }
 
         CommandFactory.Command command = ((ServerSession) session).getServerFactoryManager().getCommandFactory().createCommand(commandLine);
+        // If the command wants to be aware of the session, let's do that
+        if (command instanceof CommandFactory.SessionAware) {
+            ((CommandFactory.SessionAware) command).setSession((ServerSession) session);
+        }
+        // Set streams and exit callback
         out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.Message.SSH_MSG_CHANNEL_DATA);
         err = new ChannelOutputStream(this, remoteWindow, log, SshConstants.Message.SSH_MSG_CHANNEL_EXTENDED_DATA);
         // Wrap in logging filters
@@ -418,6 +423,7 @@ public class ChannelSession extends AbstractServerChannel {
                 }
             }
         });
+        // Launch command
         command.start();
 
         if (wantReply) {
