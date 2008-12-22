@@ -39,7 +39,7 @@ public class EchoShellFactory implements ShellFactory {
         return new EchoShell();
     }
 
-    protected static class EchoShell implements DirectShell, Runnable {
+    protected static class EchoShell implements Shell, Runnable {
         private InputStream in;
         private OutputStream out;
         private OutputStream err;

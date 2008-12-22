@@ -25,7 +25,6 @@ import java.util.Map;
 
 /**
  *
- * TODO: remove InvertedShell and create a wrapper instead to keep the api cleaner
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -43,78 +42,12 @@ public interface ShellFactory {
 
     /**
      * Represents a shell that can be used in an interactive mode to send command.
-     * Shell implementations must implement one of the two sub-interfaces {@link InvertedShell}
-     * or {@link DirectShell} which have different ways to configure the input and output streams.
+     * This shell have direct streams, meaning those streams will be provided by the ssh server
+     * for the shell to use directy. This interface is suitable for implementing shells in java,
+     * rather than using an external process.  For wrapping such processes or using inverted streams,
+     * see {@link org.apache.sshd.server.shell.InvertedShellWrapper}.
      */
     public interface Shell {
-
-        /**
-         * Destroy the shell.
-         * This method can be called by the SSH server to destroy the shell because
-         * the client has disconnected somehow.
-         */
-        void destroy();
-
-    }
-
-    /**
-     * This shell have inverted streams, such as the one obtained when launching a
-     * new {@link Process} from java.
-     */
-    public interface InvertedShell extends Shell {
-
-        /**
-         * Starts the shell and will make the streams available for
-         * the ssh server to retrieve and use.
-         *
-         * @param env
-         * @throws Exception
-         */
-        void start(Map<String,String> env) throws IOException;
-
-        /**
-         * Returns the output stream used to feed the shell.
-         * This method is called after the shell has been started.
-         *
-         * @return
-         */
-        OutputStream getInputStream();
-
-        /**
-         * Return an InputStream representing the output stream of the shell.
-         * @return
-         */
-        InputStream getOutputStream();
-
-        /**
-         * Return an InputStream representing the error stream of the shell.
-         * @return
-         */
-        InputStream getErrorStream();
-
-        /**
-         * Check if the underlying shell is still alive
-         * @return
-         */
-        boolean isAlive();
-
-        /**
-         * Retrieve the exit value of the shell.
-         * This method must only be called when the shell is not alive anymore.
-         *
-         * @return the exit value of the shell
-         */
-        int exitValue();
-
-    }
-
-    /**
-     * This shell have direct streams, meaning those streams will be provided by the ssh server
-     * for the shell to use directy.
-     * This interface is suitable for implementing shells in java, rather than using an external
-     * process.
-     */
-    public interface DirectShell extends Shell {
 
         /**
          * Set the input stream that can be used by the shell to read input.
@@ -147,6 +80,13 @@ public interface ShellFactory {
          * @throws Exception
          */
         void start(Map<String,String> env) throws IOException;
+
+        /**
+         * Destroy the shell.
+         * This method can be called by the SSH server to destroy the shell because
+         * the client has disconnected somehow.
+         */
+        void destroy();
 
     }
 

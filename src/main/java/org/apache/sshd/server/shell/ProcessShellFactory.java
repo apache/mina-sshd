@@ -28,7 +28,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * TODO Add javadoc
+ * A {@link ShellFactory} that will create a new process and bridge
+ * the streams.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @version $Rev$, $Date$
@@ -55,7 +56,7 @@ public class ProcessShellFactory implements ShellFactory {
     }
 
     public Shell createShell() {
-        return new ProcessShell(command);
+        return new InvertedShellWrapper(new ProcessShell(command));
     }
 
     public static class ProcessShell implements InvertedShell {

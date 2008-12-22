@@ -126,11 +126,8 @@ public class ChannelSession extends AbstractServerChannel {
     protected InputStream shellOut;
     protected InputStream shellErr;
     protected Map<String,String> env;
-    protected ExecutorService executor;
-    protected boolean usePipedChannelStreams;
 
     public ChannelSession() {
-        executor = Executors.newSingleThreadExecutor();
     }
 
     public CloseFuture close(boolean immediately) {
@@ -141,7 +138,6 @@ public class ChannelSession extends AbstractServerChannel {
                     shell = null;
                 }
                 IoUtils.closeQuietly(in, out, err, shellIn, shellOut, shellErr);
-                executor.shutdown();
             }
         });
     }
@@ -158,26 +154,8 @@ public class ChannelSession extends AbstractServerChannel {
     }
 
     protected void doWriteData(byte[] data, int off, int len) throws IOException {
-        if (usePipedChannelStreams) {
-            shellIn.write(data, off, len);
-            shellIn.flush();
-        } else {
-            final byte[] buf = new byte[len];
-            System.arraycopy(data, off, buf, 0, len);
-            executor.execute(new Runnable() {
-                public void run() {
-                    try {
-                        if (shellIn != null) {
-                            shellIn.write(buf);
-                            shellIn.flush();
-                        }
-                    } catch (IOException e) {
-                        close(false);
-                    }
-                }
-            });
-            localWindow.consumeAndCheck(len);
-        }
+        shellIn.write(data, off, len);
+        shellIn.flush();
     }
 
     protected void doWriteExtendedData(byte[] data, int off, int len) throws IOException {
@@ -336,38 +314,21 @@ public class ChannelSession extends AbstractServerChannel {
             out = new LfToCrLfFilterOutputStream(out);
             err = new LfToCrLfFilterOutputStream(err);
         }
-        if (shell instanceof ShellFactory.InvertedShell) {
-            ((ShellFactory.InvertedShell) shell).start(env);
-            shellIn = ((ShellFactory.InvertedShell) shell).getInputStream();
-            shellOut = ((ShellFactory.InvertedShell) shell).getOutputStream();
-            shellErr = ((ShellFactory.InvertedShell) shell).getErrorStream();
-            new Thread() {
-                @Override
-                public void run() {
-                    pumpStreams();
+        in = new ChannelPipedInputStream(localWindow);
+        shellIn = new ChannelPipedOutputStream((ChannelPipedInputStream) in);
+        shell.setInputStream(in);
+        shell.setOutputStream(out);
+        shell.setErrorStream(err);
+        shell.setExitCallback(new ShellFactory.ExitCallback() {
+            public void onExit(int exitValue) {
+                try {
+                    closeShell(exitValue);
+                } catch (IOException e) {
+                    log.info("Error closing shell", e);
                 }
-            }.start();
-            // TODO: set this thread as daemon?
-        } else if (shell instanceof ShellFactory.DirectShell) {
-            in = new ChannelPipedInputStream(localWindow);
-            shellIn = new ChannelPipedOutputStream((ChannelPipedInputStream) in);
-            usePipedChannelStreams = true;
-            ((ShellFactory.DirectShell) shell).setInputStream(in);
-            ((ShellFactory.DirectShell) shell).setOutputStream(out);
-            ((ShellFactory.DirectShell) shell).setErrorStream(err);
-            ((ShellFactory.DirectShell) shell).setExitCallback(new ShellFactory.ExitCallback() {
-                public void onExit(int exitValue) {
-                    try {
-                        closeShell(exitValue);
-                    } catch (IOException e) {
-                        log.info("Error closing shell", e);
-                    }
-                }
-            });
-            ((ShellFactory.DirectShell) shell).start(env);
-        } else {
-            throw new IllegalStateException("Unknown shell type");
-        }
+            }
+        });
+        shell.start(env);
         shellIn = new LoggingFilterOutputStream(shellIn, "IN: ", log);
 
         if (wantReply) {
@@ -410,7 +371,6 @@ public class ChannelSession extends AbstractServerChannel {
         err = new LoggingFilterOutputStream(err, "ERR:", log);
         in = new ChannelPipedInputStream(localWindow);
         shellIn = new ChannelPipedOutputStream((ChannelPipedInputStream) in);
-        usePipedChannelStreams = true;
         command.setInputStream(in);
         command.setOutputStream(out);
         command.setErrorStream(err);
@@ -451,46 +411,6 @@ public class ChannelSession extends AbstractServerChannel {
             env = new HashMap<String,String>();
         }
         env.put(name, value);
-    }
-
-    protected void pumpStreams() {
-        try {
-            // Use a single thread to correctly sequence the output and error streams.
-            // If any bytes are available from the output stream, send them first, then
-            // check the error stream, or wait until more data is available.
-            ShellFactory.InvertedShell is = (ShellFactory.InvertedShell) shell;
-            byte[] buffer = new byte[512];
-            for (;;) {
-                if (!is.isAlive()) {
-                    closeShell(is.exitValue());
-                    return;
-                }
-                if (pumpStream(shellOut, out, buffer)) {
-                    continue;
-                }
-                if (pumpStream(shellErr, err, buffer)) {
-                    continue;
-                }
-                // Sleep a bit.  This is not very good, as it consumes CPU, but the
-                // input streams are not selectable for nio, and any other blocking
-                // method would consume at least two threads
-                Thread.sleep(1);
-            }
-        } catch (Exception e) {
-            session.close(false);
-        }
-    }
-
-    private boolean pumpStream(InputStream in, OutputStream out, byte[] buffer) throws IOException {
-        if (in.available() > 0) {
-            int len = in.read(buffer);
-            if (len > 0) {
-                out.write(buffer, 0, len);
-                out.flush();
-                return true;
-            }
-        }
-        return false;
     }
 
     protected void closeShell(int exitValue) throws IOException {
