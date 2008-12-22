@@ -30,6 +30,9 @@ import java.util.concurrent.ExecutorService;
 
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.future.CloseFuture;
+import org.apache.sshd.common.future.SshFutureListener;
+import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.channel.ChannelPipedOutputStream;
 import org.apache.sshd.common.channel.ChannelPipedInputStream;
@@ -130,13 +133,17 @@ public class ChannelSession extends AbstractServerChannel {
         executor = Executors.newSingleThreadExecutor();
     }
 
-    public void close() throws IOException {
-        super.close();
-        if (shell != null) {
-            shell.destroy();
-        }
-        IoUtils.closeQuietly(in, out, err, shellIn, shellOut, shellErr);
-        executor.shutdown();
+    public CloseFuture close(boolean immediately) {
+        return super.close(immediately).addListener(new SshFutureListener() {
+            public void operationComplete(SshFuture sshFuture) {
+                if (shell != null) {
+                    shell.destroy();
+                    shell = null;
+                }
+                IoUtils.closeQuietly(in, out, err, shellIn, shellOut, shellErr);
+                executor.shutdown();
+            }
+        });
     }
 
     public void handleRequest(Buffer buffer) throws IOException {
@@ -165,11 +172,7 @@ public class ChannelSession extends AbstractServerChannel {
                             shellIn.flush();
                         }
                     } catch (IOException e) {
-                        try {
-                            internalClose();
-                        } catch (IOException e2) {
-                            // Ignore
-                        }
+                        close(false);
                     }
                 }
             });
@@ -468,10 +471,7 @@ public class ChannelSession extends AbstractServerChannel {
                 Thread.sleep(1);
             }
         } catch (Exception e) {
-            if (!closed && !closing) {
-                // TODO: send a disconnect if there is a problem?
-                e.printStackTrace();
-            }
+            session.close(false);
         }
     }
 
@@ -491,7 +491,7 @@ public class ChannelSession extends AbstractServerChannel {
         sendEof();
         sendExitStatus(exitValue);
         // TODO: We should wait for all streams to be consumed before closing the channel
-        internalClose();
+        close(false);
     }
 
 }

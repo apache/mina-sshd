@@ -26,9 +26,15 @@ import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.IoUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.future.CloseFuture;
+import org.apache.sshd.common.future.SshFutureListener;
+import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.channel.AbstractChannel;
 import org.apache.sshd.ClientChannel;
+import org.apache.sshd.ClientSession;
 import org.apache.sshd.client.session.ClientSessionImpl;
+import org.apache.sshd.client.future.OpenFuture;
+import org.apache.sshd.client.future.DefaultOpenFuture;
 
 /**
  * TODO Add javadoc
@@ -47,6 +53,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     protected String exitSignal;
     protected int openFailureReason;
     protected String openFailureMsg;
+    protected OpenFuture openFuture;
 
     protected AbstractClientChannel(String type) {
         this.type = type;
@@ -83,18 +90,40 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     }
 
     @Override
-    public void close() throws IOException {
-        super.close();
+    public CloseFuture close(final boolean immediately) {
+        synchronized (lock) {
+            if (opened) {
+                super.close(immediately);
+            } else if (openFuture != null) {
+                if (immediately) {
+                    openFuture.setException(new SshException("Channel closed"));
+                    super.close(immediately);
+                } else {
+                    openFuture.addListener(new SshFutureListener<OpenFuture>() {
+                        public void operationComplete(OpenFuture future) {
+                            close(immediately);
+                        }
+                    });
+                }
+            } else {
+                closeFuture.setClosed();
+            }
+        }
+        return closeFuture;
+    }
+
+    @Override
+    protected void doClose() {
+        super.doClose();
         IoUtils.closeQuietly(in, out, err);
     }
-    
 
     public int waitFor(int mask, long timeout) {
         long t = 0;
         synchronized (lock) {
             for (;;) {
                 int cond = 0;
-                if (closed) {
+                if (closeFuture.isClosed()) {
                     cond |= CLOSED | EOF;
                 }
                 if (eof) {
@@ -136,7 +165,11 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         }
     }
 
-    protected void internalOpen() throws Exception {
+    protected OpenFuture internalOpen() throws Exception {
+        if (closeFuture.isClosed()) {
+            throw new SshException("Session has been closed");
+        }
+        openFuture = new DefaultOpenFuture(lock);
         log.info("Send SSH_MSG_CHANNEL_OPEN on channel {}", id);
         Buffer buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN);
         buffer.putString(type);
@@ -144,26 +177,27 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         buffer.putInt(localWindow.getSize());
         buffer.putInt(localWindow.getPacketSize());
         session.writePacket(buffer);
-        synchronized (lock) {
-            while (!opened && !closed) {
-                log.trace("Waiting for channel to be opened: opened={}, closed={}", Boolean.valueOf(opened), Boolean.valueOf(closed));
-                lock.wait();
-            }
-        }
-        log.info("Channel opened {}", id);
-        if (closed) {
-            throw new SshException("Unable to open channel: reason=" + openFailureReason + ", msg=" + openFailureMsg);
-        }
+        return openFuture;
     }
 
     public void internalOpenSuccess(int recipient, int rwsize, int rmpsize) {
         synchronized (lock) {
             this.recipient = recipient;
             this.remoteWindow.init(rwsize, rmpsize);
-            this.opened = true;
-            lock.notifyAll();
+            try {
+                doOpenShell();
+                this.opened = true;
+                this.openFuture.setOpened();
+            } catch (Exception e) {
+                this.openFuture.setException(e);
+                this.closeFuture.setClosed();
+            } finally {
+                lock.notifyAll();
+            }
         }
     }
+
+    protected abstract void doOpenShell() throws Exception;
 
     public void internalOpenFailure(Buffer buffer) {
         int reason = buffer.getInt();
@@ -171,7 +205,8 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         synchronized (lock) {
             this.openFailureReason = reason;
             this.openFailureMsg = msg;
-            this.closed = true;
+            this.openFuture.setException(new SshException(msg));
+            this.closeFuture.setClosed();
             lock.notifyAll();
         }
     }

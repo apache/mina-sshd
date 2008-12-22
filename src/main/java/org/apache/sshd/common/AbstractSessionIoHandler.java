@@ -41,7 +41,7 @@ public abstract class AbstractSessionIoHandler extends IoHandlerAdapter {
 
     @Override
     public void sessionClosed(IoSession ioSession) throws Exception {
-        AbstractSession.getSession(ioSession).close();
+        AbstractSession.getSession(ioSession).close(true);
     }
 
     @Override

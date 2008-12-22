@@ -16,38 +16,33 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common;
-
-import java.io.Closeable;
-import java.io.IOException;
-
-import org.apache.sshd.common.util.Buffer;
-import org.apache.sshd.common.future.CloseFuture;
+package org.apache.sshd.common.future;
 
 /**
- * TODO Add javadoc
+ * A default implementation of {@link CloseFuture}.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @version $Rev$, $Date$
  */
-public interface Channel {
+public class DefaultCloseFuture extends DefaultSshFuture<CloseFuture> implements CloseFuture {
 
-    int getId();
+    /**
+     * Create a new instance
+     */
+    public DefaultCloseFuture(Object lock) {
+        super(lock);
+    }
 
-    void handleClose() throws IOException;
+    public boolean isClosed() {
+        if (isDone()) {
+            return (Boolean) getValue();
+        } else {
+            return false;
+        }
+    }
 
-    void handleWindowAdjust(Buffer buffer) throws IOException;
-
-    void handleRequest(Buffer buffer) throws IOException;
-
-    void handleData(Buffer buffer) throws IOException;
-
-    void handleExtendedData(Buffer buffer) throws IOException;
-
-    void handleEof() throws IOException;
-
-    void handleFailure() throws IOException;
-
-    CloseFuture close(boolean immediately);
+    public void setClosed() {
+        setValue(Boolean.TRUE);
+    }
 
 }

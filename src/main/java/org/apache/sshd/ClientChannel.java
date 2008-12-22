@@ -22,6 +22,9 @@ import java.io.Closeable;
 import java.io.OutputStream;
 import java.io.InputStream;
 
+import org.apache.sshd.common.future.CloseFuture;
+import org.apache.sshd.client.future.OpenFuture;
+
 /**
  * A client channel used to communicate with
  * the SSH server.  Client cannels can be shells,
@@ -30,7 +33,9 @@ import java.io.InputStream;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @version $Rev$, $Date$
  */
-public interface ClientChannel extends Closeable {
+public interface ClientChannel {
+
+    String CHANNEL_SHELL = "shell";
 
     int TIMEOUT =     0x0001;
     int CLOSED =      0x0002;
@@ -46,8 +51,10 @@ public interface ClientChannel extends Closeable {
 
     void setErr(OutputStream err);
 
-    void open() throws Exception;
+    OpenFuture open() throws Exception;
 
     int waitFor(int mask, long timeout);
+
+    CloseFuture close(boolean immediately);
 
 }

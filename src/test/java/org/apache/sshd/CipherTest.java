@@ -102,7 +102,6 @@ public class CipherTest {
     public void tearDown() throws Exception {
         if (sshd != null) {
             sshd.stop();
-            Thread.sleep(50);
         }
     }
 

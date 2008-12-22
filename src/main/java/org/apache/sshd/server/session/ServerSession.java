@@ -35,6 +35,7 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.mina.transport.socket.SocketSessionConfig;
 import org.apache.mina.core.session.IoSession;
@@ -82,9 +83,9 @@ public class ServerSession extends AbstractSession {
     }
 
     @Override
-    public void close() {
-        super.close();
+    public CloseFuture close(boolean immediately) {
         unscheduleAuthTimer();
+        return super.close(immediately);
     }
 
     public String getNegociated(int index) {
@@ -111,7 +112,7 @@ public class ServerSession extends AbstractSession {
                 int code = buffer.getInt();
                 String msg = buffer.getString();
                 log.info("Received SSH_MSG_DISCONNECT (reason={}, msg={})", code, msg);
-                close();
+                close(false);
                 break;
             }
             case SSH_MSG_UNIMPLEMENTED: {
@@ -246,10 +247,9 @@ public class ServerSession extends AbstractSession {
     }
 
     private void processAuthTimer() throws IOException {
-        if (!closed && !authed) {
+        if (!authed) {
             disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
                        "User authentication has timed out");
-            close();
         }
     }
 
@@ -354,6 +354,16 @@ public class ServerSession extends AbstractSession {
         int rmpsize = buffer.getInt();
 
         log.info("Received SSH_MSG_CHANNEL_OPEN {}", type);
+
+        if (closing) {
+            buffer = createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_FAILURE);
+            buffer.putInt(id);
+            buffer.putInt(SshConstants.SSH_OPEN_CONNECT_FAILED);
+            buffer.putString("SSH server is shutting down: " + type);
+            buffer.putString("");
+            writePacket(buffer);
+            return;
+        }
 
         ServerChannel channel = null;
         for (NamedFactory<ServerChannel> factory : getServerFactoryManager().getChannelFactories()) {

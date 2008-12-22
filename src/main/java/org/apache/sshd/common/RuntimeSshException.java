@@ -19,51 +19,30 @@
 package org.apache.sshd.common;
 
 /**
- * Wrapper for a cryptographic cipher, used either for encryption
- * or decryption.
+ * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @version $Rev$, $Date$
  */
-public interface Cipher  {
+public class RuntimeSshException extends RuntimeException {
 
-    enum Mode {
-        Encrypt, Decrypt
+    public RuntimeSshException() {
+        this(null, null);
     }
 
-    /**
-     * Retrieves the size of the initialization vector
-     *
-     * @return
-     */
-    int getIVSize();
+    public RuntimeSshException(String message) {
+        this(message, null);
+    }
 
-    /**
-     * Retrieves the block size for this cipher
-     *
-     * @return
-     */
-    int getBlockSize();
+    public RuntimeSshException(Throwable cause) {
+        this(null, cause);
+    }
 
-    /**
-     * Initialize the cipher for encryption or decryption with
-     * the given private key and initialization vector
-     *
-     * @param mode
-     * @param key
-     * @param iv
-     * @throws Exception
-     */
-    void init(Mode mode, byte[] key, byte[] iv) throws Exception;
-
-    /**
-     * Performs in-place encryption or decryption on the given data.
-     * 
-     * @param input
-     * @param inputOffset
-     * @param inputLen
-     * @throws Exception
-     */
-    void update(byte[] input, int inputOffset, int inputLen) throws Exception;
+    public RuntimeSshException(String message, Throwable cause) {
+        super(message);
+        if (cause != null) {
+            initCause(cause);
+        }
+    }
 
 }

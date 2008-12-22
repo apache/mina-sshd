@@ -19,10 +19,10 @@
 package org.apache.sshd.common.session;
 
 import java.io.IOException;
-import java.io.Closeable;
-import java.io.InterruptedIOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.BufferUtils;
@@ -38,9 +38,13 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.Digest;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.channel.AbstractChannel;
+import org.apache.sshd.common.future.CloseFuture;
+import org.apache.sshd.common.future.DefaultCloseFuture;
+import org.apache.sshd.common.future.SshFutureListener;
+import org.apache.sshd.common.future.SshFuture;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.buffer.IoBuffer;
-import org.apache.mina.core.future.CloseFuture;
 import org.apache.mina.core.future.WriteFuture;
 import org.apache.mina.core.future.IoFutureListener;
 import org.apache.mina.core.future.IoFuture;
@@ -61,7 +65,7 @@ import org.slf4j.LoggerFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @version $Rev$, $Date$
  */
-public abstract class AbstractSession implements Closeable {
+public abstract class AbstractSession {
 
     /**
      * Name of the property where this session is stored in the attributes of the
@@ -79,10 +83,12 @@ public abstract class AbstractSession implements Closeable {
     protected final Random random;
     /** Lock object for this session state */
     protected final Object lock = new Object();
-    /** Boolean indicating if this session has been closed or not */
-    protected boolean closed;
+    /**
+     * A future that will be set 'closed' when the connection is closed.
+     */
+    protected final CloseFuture closeFuture = new DefaultCloseFuture(lock);
     /** The session is being closed */
-    protected boolean closing;
+    protected volatile boolean closing;
     /** Boolean indicating if this session has been authenticated or not */
     protected boolean authed;
     /** Map of channels keyed by the identifier */
@@ -248,7 +254,7 @@ public abstract class AbstractSession implements Closeable {
         } catch (Throwable t2) {
             // Ignore
         }
-        close();
+        close(false);
     }
 
     /**
@@ -256,34 +262,44 @@ public abstract class AbstractSession implements Closeable {
      * This method will close all channels, then close the underlying MINA session.
      * The call will not block until the mina session is actually closed.
      */
-    public void close() {
-        if (!closed) {
-            synchronized (lock) {
-                if (!closed && !closing) {
-                    try {
-                        closing = true;
-                        log.info("Closing session");
-                        Channel[] channelToClose = channels.values().toArray(new Channel[0]);
-                        for (Channel channel : channelToClose) {
-                            log.debug("Closing channel {}", channel.getId());
-                            IoUtils.closeQuietly(channel);
-                        }
-                        log.debug("Closing IoSession");
-                        CloseFuture future = ioSession.close(true);
-                        future.addListener(new IoFutureListener() {
-                            public void operationComplete(IoFuture future) {
-                                synchronized (lock) {
-                                    log.debug("IoSession closed");
-                                    closed = true;
-                                    lock.notifyAll();
-                                }
-                            }
-                        });
-                    } catch (Throwable t) {
-                        log.warn("Error closing session", t);
-                    }
+    public CloseFuture close(final boolean immediately) {
+        class IoSessionCloser implements IoFutureListener {
+            public void operationComplete(IoFuture future) {
+                synchronized (lock) {
+                    log.debug("IoSession closed");
+                    closeFuture.setClosed();
+                    lock.notifyAll();
                 }
             }
+        };
+        synchronized (lock) {
+            if (!closing) {
+                try {
+                    closing = true;
+                    log.info("Closing session");
+                    Channel[] channelToClose = channels.values().toArray(new Channel[0]);
+                    if (channelToClose.length > 0) {
+                        final AtomicInteger latch = new AtomicInteger(channelToClose.length);
+                        for (Channel channel : channelToClose) {
+                            log.debug("Closing channel {}", channel.getId());
+                            channel.close(immediately).addListener(new SshFutureListener() {
+                                public void operationComplete(SshFuture sshFuture) {
+                                    if (latch.decrementAndGet() == 0) {
+                                        log.debug("Closing IoSession");
+                                        ioSession.close(true).addListener(new IoSessionCloser());
+                                    }
+                                }
+                            });
+                        }
+                    } else {
+                        log.debug("Closing IoSession");
+                        ioSession.close(immediately).addListener(new IoSessionCloser());
+                    }
+                } catch (Throwable t) {
+                    log.warn("Error closing session", t);
+                }
+            }
+            return closeFuture;
         }
     }
 
@@ -793,7 +809,7 @@ public abstract class AbstractSession implements Closeable {
         WriteFuture f = writePacket(buffer);
         f.addListener(new IoFutureListener() {
             public void operationComplete(IoFuture future) {
-                close();
+                close(false);
             }
         });
     }
@@ -895,7 +911,15 @@ public abstract class AbstractSession implements Closeable {
      */
     protected void channelClose(Buffer buffer) throws Exception {
         Channel channel = getChannel(buffer);
-        channel.close();
+        channel.handleClose();
+        channelForget(channel);
+    }
+
+    /**
+     *
+     * @param channel
+     */
+    public void channelForget(Channel channel) {
         channels.remove(channel.getId());
     }
 

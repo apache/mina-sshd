@@ -16,38 +16,44 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common;
+package org.apache.sshd.client.future;
 
-import java.io.Closeable;
-import java.io.IOException;
-
-import org.apache.sshd.common.util.Buffer;
-import org.apache.sshd.common.future.CloseFuture;
+import org.apache.sshd.common.future.DefaultSshFuture;
 
 /**
- * TODO Add javadoc
+ * A default implementation of {@link OpenFuture}.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @version $Rev$, $Date$
  */
-public interface Channel {
+public class DefaultOpenFuture extends DefaultSshFuture<OpenFuture> implements OpenFuture {
 
-    int getId();
+    public DefaultOpenFuture(Object lock) {
+        super(lock);
+    }
 
-    void handleClose() throws IOException;
+    public Throwable getException() {
+        Object v = getValue();
+        if (v instanceof Throwable) {
+            return (Throwable) v;
+        } else {
+            return null;
+        }
+    }
 
-    void handleWindowAdjust(Buffer buffer) throws IOException;
+    public boolean isOpened() {
+        return getValue() instanceof Boolean;
+    }
 
-    void handleRequest(Buffer buffer) throws IOException;
+    public void setOpened() {
+        setValue(Boolean.TRUE);
+    }
 
-    void handleData(Buffer buffer) throws IOException;
-
-    void handleExtendedData(Buffer buffer) throws IOException;
-
-    void handleEof() throws IOException;
-
-    void handleFailure() throws IOException;
-
-    CloseFuture close(boolean immediately);
+    public void setException(Throwable exception) {
+        if (exception == null) {
+            throw new NullPointerException("exception");
+        }
+        setValue(exception);
+    }
 
 }

@@ -33,6 +33,8 @@ import java.util.concurrent.TimeUnit;
 import org.apache.sshd.client.session.ClientSessionImpl;
 import org.apache.sshd.client.kex.DHG1;
 import org.apache.sshd.client.kex.DHG14;
+import org.apache.sshd.client.future.ConnectFuture;
+import org.apache.sshd.client.future.DefaultConnectFuture;
 import org.apache.sshd.common.AbstractFactoryManager;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.AbstractSessionIoHandler;
@@ -63,7 +65,8 @@ import org.apache.mina.transport.socket.nio.NioSocketConnector;
 import org.apache.mina.transport.socket.SocketConnector;
 import org.apache.mina.core.service.IoConnector;
 import org.apache.mina.core.session.IoSession;
-import org.apache.mina.core.future.ConnectFuture;
+import org.apache.mina.core.future.IoFutureListener;
+import org.apache.mina.core.future.IoFuture;
 
 /**
  * Entry point for the client side of the SSH protocol.
@@ -133,8 +136,7 @@ public class SshClient extends AbstractFactoryManager {
         connector = null;
     }
 
-    public ClientSession connect(String host, int port) throws Exception {
-        // TODO: throw an exception is the client is stopped
+    public ConnectFuture connect(String host, int port) throws Exception {
         assert host != null;
         assert port >= 0;
         if (connector == null) {
@@ -144,18 +146,25 @@ public class SshClient extends AbstractFactoryManager {
         return connect(address);
     }
 
-    public ClientSession connect(SocketAddress address) throws Exception {
+    public ConnectFuture connect(SocketAddress address) throws Exception {
         assert address != null;
         if (connector == null) {
             throw new IllegalStateException("SshClient not started. Please call start() method before connecting to a server");
         }
-        ConnectFuture future = connector.connect(address);
-        future.await();
-        IoSession ioSession = future.getSession();
-        ClientSessionImpl session = (ClientSessionImpl) AbstractSession.getSession(ioSession);
-        session.waitFor(ClientSession.CLOSED | ClientSession.WAIT_AUTH, 0);
-        // TODO: check if session is closed and throw an exception
-        return session;
+        final ConnectFuture connectFuture = new DefaultConnectFuture(null);
+        connector.connect(address).addListener(new IoFutureListener<org.apache.mina.core.future.ConnectFuture>() {
+            public void operationComplete(org.apache.mina.core.future.ConnectFuture future) {
+                if (future.isCanceled()) {
+                    connectFuture.cancel();
+                } else if (future.getException() != null) {
+                    connectFuture.setException(future.getException());
+                } else {
+                    ClientSessionImpl session = (ClientSessionImpl) AbstractSession.getSession(future.getSession());
+                    connectFuture.setSession(session);
+                }
+            }
+        });
+        return connectFuture;
     }
 
     /**
@@ -262,7 +271,7 @@ public class SshClient extends AbstractFactoryManager {
         SshClient client = SshClient.setUpDefaultClient();
         client.start();
         try {
-            ClientSession session = client.connect(host, port);
+            ClientSession session = client.connect(host, port).await().getSession();
 
             int ret = ClientSession.WAIT_AUTH;
             while ((ret & ClientSession.WAIT_AUTH) != 0) {
@@ -276,13 +285,13 @@ public class SshClient extends AbstractFactoryManager {
                 System.err.println("error");
                 System.exit(-1);
             }
-            ClientChannel channel = session.createChannel("shell");
+            ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
             channel.setIn(new NoCloseInputStream(System.in));
             channel.setOut(new NoCloseOutputStream(System.out));
             channel.setErr(new NoCloseOutputStream(System.err));
-            channel.open();
+            channel.open().await();
             channel.waitFor(ClientChannel.CLOSED, 0);
-            session.close();
+            session.close(false);
         } finally {
             client.stop();
         }

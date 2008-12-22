@@ -26,13 +26,16 @@ import org.apache.sshd.client.auth.UserAuthPassword;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.AbstractClientChannel;
 import org.apache.sshd.client.UserAuth;
-import org.apache.sshd.ClientChannel;
+import org.apache.sshd.client.future.AuthFuture;
+import org.apache.sshd.client.future.DefaultAuthFuture;
 import org.apache.sshd.ClientSession;
+import org.apache.sshd.ClientChannel;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.mina.core.session.IoSession;
 
@@ -52,6 +55,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
 
     private State state = State.ReceiveKexInit;
     private UserAuth userAuth;
+    private AuthFuture authFuture;
 
     public ClientSessionImpl(SshClient client, IoSession session) throws Exception {
         super(client, session);
@@ -60,34 +64,47 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         sendKexInit();
     }
 
-    public void authPassword(String username, String password) throws IOException {
-        if (closed) {
-            throw new IllegalStateException("Session is closed");
+    public AuthFuture authPassword(String username, String password) throws IOException {
+        synchronized (lock) {
+            if (closeFuture.isClosed()) {
+                throw new IllegalStateException("Session is closed");
+            }
+            if (authed) {
+                throw new IllegalStateException("User authentication has already been performed");
+            }
+            if (userAuth != null) {
+                throw new IllegalStateException("A user authentication request is already pending");
+            }
+            waitFor(CLOSED | WAIT_AUTH, 0);
+            if (closeFuture.isClosed()) {
+                throw new IllegalStateException("Session is closed");
+            }
+            authFuture = new DefaultAuthFuture(lock);
+            userAuth = new UserAuthPassword(this, username, password);
+            setState(ClientSessionImpl.State.UserAuth);
+            return authFuture;
         }
-        if (authed) {
-            throw new IllegalStateException("User authentication has already been performed");
-        }
-        if (userAuth != null) {
-            throw new IllegalStateException("A user authentication request is already pending");
-        }
-        waitFor(CLOSED | WAIT_AUTH, 0);
-        userAuth = new UserAuthPassword(this, username, password);
-        setState(ClientSessionImpl.State.UserAuth);
     }
 
-    public void authPublicKey(String username, PublicKey key) throws IOException {
-        if (closed) {
-            throw new IllegalStateException("Session is closed");
+    public AuthFuture authPublicKey(String username, PublicKey key) throws IOException {
+        synchronized (lock) {
+            if (closeFuture.isClosed()) {
+                throw new IllegalStateException("Session is closed");
+            }
+            if (authed) {
+                throw new IllegalStateException("User authentication has already been performed");
+            }
+            if (userAuth != null) {
+                throw new IllegalStateException("A user authentication request is already pending");
+            }
+            waitFor(CLOSED | WAIT_AUTH, 0);
+            if (closeFuture.isClosed()) {
+                throw new IllegalStateException("Session is closed");
+            }
+            //authFuture = new DefaultAuthFuture<ClientSession>(this, lock);
+            // TODO: implement public key authentication method
+            throw new UnsupportedOperationException("Not supported yet");
         }
-        if (authed) {
-            throw new IllegalStateException("User authentication has already been performed");
-        }
-        if (userAuth != null) {
-            throw new IllegalStateException("A user authentication request is already pending");
-        }
-        waitFor(CLOSED | WAIT_AUTH, 0);
-        // TODO: implement public key authentication method
-        throw new UnsupportedOperationException("Not supported yet");
     }
 
     public ClientChannel createChannel(String type) throws Exception {
@@ -104,6 +121,16 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         return channel;
     }
 
+    @Override
+    public CloseFuture close(boolean immediately) {
+        synchronized (lock) {
+            if (authFuture != null && !authFuture.isDone()) {
+                authFuture.setException(new SshException("Session is closed"));
+            }
+            return super.close(immediately);
+        }
+    }
+
     protected void handleMessage(Buffer buffer) throws Exception {
         SshConstants.Message cmd = buffer.getCommand();
         log.debug("Received packet {}", cmd);
@@ -112,7 +139,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
                 int code = buffer.getInt();
                 String msg = buffer.getString();
                 log.info("Received SSH_MSG_DISCONNECT (reason={}, msg={})", code, msg);
-                close();
+                close(false);
                 break;
             }
             case SSH_MSG_UNIMPLEMENTED: {
@@ -179,10 +206,12 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
                         buffer.rpos(buffer.rpos() - 1);
                         switch (userAuth.next(buffer)) {
                              case Success:
+                                 authFuture.setAuthed(true);
                                  authed = true;
                                  setState(State.Running);
                                  break;
                              case Failure:
+                                 authFuture.setAuthed(false);
                                  userAuth = null;
                                  setState(State.WaitForAuth);
                                  break;
@@ -231,7 +260,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         synchronized (lock) {
             for (;;) {
                 int cond = 0;
-                if (closed) {
+                if (closeFuture.isClosed()) {
                     cond |= CLOSED;
                 }
                 if (authed) {

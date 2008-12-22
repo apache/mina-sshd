@@ -16,54 +16,26 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common;
+package org.apache.sshd.common.future;
+
+import java.util.EventListener;
 
 /**
- * Wrapper for a cryptographic cipher, used either for encryption
- * or decryption.
+ * Something interested in being notified when the completion
+ * of an asynchronous SSH operation : {@link SshFuture}.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @version $Rev$, $Date$
  */
-public interface Cipher  {
-
-    enum Mode {
-        Encrypt, Decrypt
-    }
+public interface SshFutureListener<T extends SshFuture> extends EventListener {
 
     /**
-     * Retrieves the size of the initialization vector
+     * Invoked when the operation associated with the {@link SshFuture}
+     * has been completed even if you add the listener after the completion.
      *
-     * @return
+     * @param future  The source {@link SshFuture} which called this
+     *                callback.
      */
-    int getIVSize();
-
-    /**
-     * Retrieves the block size for this cipher
-     *
-     * @return
-     */
-    int getBlockSize();
-
-    /**
-     * Initialize the cipher for encryption or decryption with
-     * the given private key and initialization vector
-     *
-     * @param mode
-     * @param key
-     * @param iv
-     * @throws Exception
-     */
-    void init(Mode mode, byte[] key, byte[] iv) throws Exception;
-
-    /**
-     * Performs in-place encryption or decryption on the given data.
-     * 
-     * @param input
-     * @param inputOffset
-     * @param inputLen
-     * @throws Exception
-     */
-    void update(byte[] input, int inputOffset, int inputLen) throws Exception;
+    void operationComplete(T future);
 
 }

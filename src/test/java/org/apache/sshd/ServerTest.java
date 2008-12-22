@@ -72,7 +72,7 @@ public class ServerTest {
 
         SshClient client = SshClient.setUpDefaultClient();
         client.start();
-        ClientSession s = client.connect("localhost", port);
+        ClientSession s = client.connect("localhost", port).await().getSession();
         int nbTrials = 0;
         int res = 0;
         while ((res & ClientSession.CLOSED) == 0) {
@@ -89,8 +89,8 @@ public class ServerTest {
 
         SshClient client = SshClient.setUpDefaultClient();
         client.start();
-        ClientSession s = client.connect("localhost", port);
-        int res = s.waitFor(ClientSession.CLOSED, 1500);
+        ClientSession s = client.connect("localhost", port).await().getSession();
+        int res = s.waitFor(ClientSession.CLOSED, 5000);
         Assert.assertTrue((res & ClientSession.CLOSED) != 0);
     }
 

@@ -16,54 +16,26 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common;
+package org.apache.sshd.common.future;
 
 /**
- * Wrapper for a cryptographic cipher, used either for encryption
- * or decryption.
+ * An {@link SshFuture} for asynchronous close requests.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @version $Rev$, $Date$
  */
-public interface Cipher  {
-
-    enum Mode {
-        Encrypt, Decrypt
-    }
+public interface CloseFuture extends SshFuture<CloseFuture> {
 
     /**
-     * Retrieves the size of the initialization vector
-     *
-     * @return
+     * Returns <tt>true</tt> if the close request is finished and the target is closed.
      */
-    int getIVSize();
+    boolean isClosed();
 
     /**
-     * Retrieves the block size for this cipher
-     *
-     * @return
+     * Marks this future as closed and notifies all threads waiting for this
+     * future.  This method is invoked by SSHD internally.  Please do not call
+     * this method directly.
      */
-    int getBlockSize();
-
-    /**
-     * Initialize the cipher for encryption or decryption with
-     * the given private key and initialization vector
-     *
-     * @param mode
-     * @param key
-     * @param iv
-     * @throws Exception
-     */
-    void init(Mode mode, byte[] key, byte[] iv) throws Exception;
-
-    /**
-     * Performs in-place encryption or decryption on the given data.
-     * 
-     * @param input
-     * @param inputOffset
-     * @param inputLen
-     * @throws Exception
-     */
-    void update(byte[] input, int inputOffset, int inputLen) throws Exception;
+    void setClosed();
 
 }

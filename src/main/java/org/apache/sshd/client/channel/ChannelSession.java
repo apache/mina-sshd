@@ -22,6 +22,11 @@ import java.io.IOException;
 
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.future.CloseFuture;
+import org.apache.sshd.common.future.SshFutureListener;
+import org.apache.sshd.common.future.SshFuture;
+import org.apache.sshd.ClientChannel;
+import org.apache.sshd.client.future.OpenFuture;
 
 /**
  * TODO Add javadoc
@@ -37,11 +42,15 @@ public class ChannelSession extends AbstractClientChannel {
         super("session");
     }
 
-    public void open() throws Exception {
+    public OpenFuture open() throws Exception {
         if (in == null || out == null || err == null) {
             throw new IllegalStateException("in, out and err streams should be set before openeing channel");
         }
-        internalOpen();
+        return internalOpen();
+    }
+
+    @Override
+    protected void doOpenShell() throws Exception {
         streamPumper = new Thread("ClientInputStreamPump") {
             @Override
             public void run() {
@@ -55,14 +64,18 @@ public class ChannelSession extends AbstractClientChannel {
         streamPumper.start();
     }
 
-    public void close() throws IOException {
-        super.close();
-        streamPumper.interrupt();
+    @Override
+    protected void doClose() {
+        super.doClose();
+        if (streamPumper != null) {
+            streamPumper.interrupt();
+            streamPumper = null;
+        }
     }
 
     protected void pumpInputStream() {
         try {
-            while (!closed) {
+            while (!closeFuture.isClosed()) {
                 Buffer buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_DATA);
                 buffer.putInt(recipient);
                 int wpos1 = buffer.wpos(); // keep buffer position to write data length later
@@ -80,11 +93,7 @@ public class ChannelSession extends AbstractClientChannel {
                 }
             }
         } catch (Exception e) {
-            try {
-                internalClose();
-            } catch (Exception e2) {
-                // Ignore
-            }
+            close(false);
         }
     }
 }

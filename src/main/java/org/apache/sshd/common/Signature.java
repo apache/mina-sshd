@@ -30,12 +30,41 @@ import java.security.PublicKey;
  */
 public interface Signature {
 
+    /**
+     * Initialize this signature with the given public key and private key.
+     * If the private key is null, only signature verification can be performed.
+     *
+     * @param pubkey
+     * @param prvkey
+     * @throws Exception
+     */
     void init(PublicKey pubkey, PrivateKey prvkey) throws Exception;
 
+    /**
+     * Update the computed signature with the given data
+     *
+     * @param H
+     * @param off
+     * @param len
+     * @throws Exception
+     */
     void update(byte[] H, int off, int len) throws Exception;
 
+    /**
+     * Verify against the given signature
+     *
+     * @param sig
+     * @return
+     * @throws Exception
+     */
     boolean verify(byte[] sig) throws Exception;
 
+    /**
+     * Compute the signature
+     *
+     * @return
+     * @throws Exception
+     */
     byte[] sign() throws Exception;
 
 }

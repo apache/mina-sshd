@@ -216,6 +216,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
      */
     public void stop() {
         acceptor.dispose();
+        acceptor = null;
     }
 
     public static SshServer setUpDefaultServer() {

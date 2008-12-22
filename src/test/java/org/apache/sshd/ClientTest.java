@@ -21,14 +21,19 @@ package org.apache.sshd;
 import java.io.PipedOutputStream;
 import java.io.PipedInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.ByteArrayInputStream;
 import java.net.ServerSocket;
 
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.common.util.BufferUtils;
+import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.ClientChannel;
 import org.apache.sshd.ClientSession;
 import org.apache.sshd.SshClient;
 import org.apache.sshd.SshServer;
+import org.apache.sshd.client.future.AuthFuture;
+import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.TeePipedOutputStream;
@@ -75,9 +80,11 @@ public class ClientTest {
     public void testClient() throws Exception {
         SshClient client = SshClient.setUpDefaultClient();
         client.start();
-        ClientSession session = client.connect("localhost", port);
-        session.authPassword("smx", "smx");
-        ClientChannel channel = session.createChannel("shell");
+        ClientSession session = client.connect("localhost", port).await().getSession();
+        session.authPassword("smx", "smx").await().isSuccess();
+        ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
+
+        
         ByteArrayOutputStream sent = new ByteArrayOutputStream();
         PipedOutputStream pipedIn = new TeePipedOutputStream(sent);
         channel.setIn(new PipedInputStream(pipedIn));
@@ -102,7 +109,7 @@ public class ClientTest {
 
         channel.waitFor(ClientChannel.CLOSED, 0);
 
-        channel.close();
+        channel.close(false);
         client.stop();
 
         assertArrayEquals(sent.toByteArray(), out.toByteArray());
@@ -117,9 +124,9 @@ public class ClientTest {
 //        sshd.getProperties().put(SshServer.WINDOW_SIZE, Integer.toString(0x20000));
 //        sshd.getProperties().put(SshServer.MAX_PACKET_SIZE, Integer.toString(0x1000));
         client.start();
-        ClientSession session = client.connect("localhost", port);
+        ClientSession session = client.connect("localhost", port).await().getSession();
         session.authPassword("smx", "smx");
-        ClientChannel channel = session.createChannel("shell");
+        ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
         ByteArrayOutputStream sent = new ByteArrayOutputStream();
         PipedOutputStream pipedIn = new TeePipedOutputStream(sent);
         channel.setIn(new PipedInputStream(pipedIn));
@@ -127,7 +134,7 @@ public class ClientTest {
         ByteArrayOutputStream err = new ByteArrayOutputStream();
         channel.setOut(out);
         channel.setErr(err);
-        channel.open();
+        channel.open().await();
 
         long t0 = System.currentTimeMillis();
 
@@ -152,11 +159,79 @@ public class ClientTest {
 
         channel.waitFor(ClientChannel.CLOSED, 0);
 
-        channel.close();
+        channel.close(false);
         client.stop();
 
         assertTrue(BufferUtils.equals(sent.toByteArray(), out.toByteArray()));
         //assertArrayEquals(sent.toByteArray(), out.toByteArray());
+    }
+
+    @Test(expected = SshException.class)
+    public void testOpenChannelOnClosedSession() throws Exception {
+        SshClient client = SshClient.setUpDefaultClient();
+        client.start();
+        ClientSession session = client.connect("localhost", port).await().getSession();
+        session.authPassword("smx", "smx").await().isSuccess();
+        ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
+        session.close(false);
+
+        ByteArrayOutputStream sent = new ByteArrayOutputStream();
+        PipedOutputStream pipedIn = new TeePipedOutputStream(sent);
+        channel.setIn(new PipedInputStream(pipedIn));
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ByteArrayOutputStream err = new ByteArrayOutputStream();
+        channel.setOut(out);
+        channel.setErr(err);
+        channel.open();
+    }
+
+    @Test
+    public void testCloseBeforeAuthSucceed() throws Exception {
+        SshClient client = SshClient.setUpDefaultClient();
+        client.start();
+        ClientSession session = client.connect("localhost", port).await().getSession();
+        AuthFuture authFuture = session.authPassword("smx", "smx");
+        CloseFuture closeFuture = session.close(false);
+        authFuture.await();
+        closeFuture.await();
+        assertNotNull(authFuture.getException());
+
+    }
+
+    @Test
+    public void testCloseCleanBeforeChannelOpened() throws Exception {
+        SshClient client = SshClient.setUpDefaultClient();
+        client.start();
+        ClientSession session = client.connect("localhost", port).await().getSession();
+        session.authPassword("smx", "smx").await();
+        ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
+        channel.setIn(new ByteArrayInputStream(new byte[0]));
+        channel.setOut(new ByteArrayOutputStream());
+        channel.setErr(new ByteArrayOutputStream());
+        OpenFuture openFuture = channel.open();
+        CloseFuture closeFuture = session.close(false);
+        openFuture.await();
+        closeFuture.await();
+        assertNotNull(openFuture.isOpened());
+        assertNotNull(closeFuture.isClosed());
+    }
+
+    @Test
+    public void testCloseImmediateBeforeChannelOpened() throws Exception {
+        SshClient client = SshClient.setUpDefaultClient();
+        client.start();
+        ClientSession session = client.connect("localhost", port).await().getSession();
+        session.authPassword("smx", "smx").await();
+        ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
+        channel.setIn(new ByteArrayInputStream(new byte[0]));
+        channel.setOut(new ByteArrayOutputStream());
+        channel.setErr(new ByteArrayOutputStream());
+        OpenFuture openFuture = channel.open();
+        CloseFuture closeFuture = session.close(true);
+        openFuture.await();
+        closeFuture.await();
+        assertNotNull(openFuture.getException());
+        assertNotNull(closeFuture.isClosed());
     }
 
     public static void main(String[] args) throws Exception {

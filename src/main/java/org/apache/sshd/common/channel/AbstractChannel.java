@@ -26,6 +26,8 @@ import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.future.CloseFuture;
+import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.BufferUtils;
 
@@ -48,7 +50,7 @@ public abstract class AbstractChannel implements Channel {
     protected int id;
     protected int recipient;
     protected boolean eof;
-    protected boolean closed;
+    protected final CloseFuture closeFuture = new DefaultCloseFuture(lock);
     protected boolean closing;
 
     public int getId() {
@@ -67,25 +69,40 @@ public abstract class AbstractChannel implements Channel {
         return session;
     }
 
-    public void close() throws IOException {
+    public CloseFuture close(boolean immediately) {
+        try {
+            synchronized (lock) {
+                if (immediately) {
+                    log.info("Closing channel {} immediately", id);
+                    closeFuture.setClosed();
+                    session.channelForget(this);
+                } else {
+                    if (!closing) {
+                        closing = true;
+                        log.info("Send SSH_MSG_CHANNEL_CLOSE on channel {}", id);
+                        Buffer buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_CLOSE);
+                        buffer.putInt(recipient);
+                        session.writePacket(buffer);
+                    }
+                }
+            }
+        } catch (IOException e) {
+            session.exceptionCaught(e);
+            closeFuture.setClosed();
+        }
+        return closeFuture;
+    }
+
+    public void handleClose() throws IOException {
         log.info("Received SSH_MSG_CHANNEL_CLOSE on channel {}", id);
         synchronized (lock) {
-            internalClose();
-            closed = true;
+            doClose();
+            close(false).setClosed();
             lock.notifyAll();
         }
     }
 
-    protected void internalClose() throws IOException {
-        synchronized (lock) {
-            if (!closing && !closed) {
-                closing = true;
-                log.info("Send SSH_MSG_CHANNEL_CLOSE on channel {}", id);
-                Buffer buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_CLOSE);
-                buffer.putInt(recipient);
-                session.writePacket(buffer);
-            }
-        }
+    protected void doClose() {
     }
 
     public void handleData(Buffer buffer) throws IOException {

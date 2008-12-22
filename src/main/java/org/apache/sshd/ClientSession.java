@@ -22,6 +22,9 @@ import java.security.PublicKey;
 import java.io.Closeable;
 import java.io.IOException;
 
+import org.apache.sshd.common.future.CloseFuture;
+import org.apache.sshd.client.future.AuthFuture;
+
 /**
  * An authenticated session to a given SSH server
  *
@@ -39,24 +42,26 @@ import java.io.IOException;
  * events such as the session being established, authenticated or closed.
  *
  * When a given session is no longer used, it must be closed using the
- * {@link #close()} method.
+ * {@link #close(boolean)} method.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @version $Rev$, $Date$
  */
-public interface ClientSession extends Closeable {
+public interface ClientSession {
 
     int TIMEOUT =     0x0001;
     int CLOSED =      0x0002;
     int WAIT_AUTH =   0x0004;
     int AUTHED =      0x0008;
 
-    void authPassword(String username, String password) throws IOException;
+    AuthFuture authPassword(String username, String password) throws IOException;
 
-    void authPublicKey(String username, PublicKey key) throws IOException;
+    AuthFuture authPublicKey(String username, PublicKey key) throws IOException;
 
     ClientChannel createChannel(String type) throws Exception;
 
     int waitFor(int mask, long timeout);
+
+    CloseFuture close(boolean immediately);
 
 }
