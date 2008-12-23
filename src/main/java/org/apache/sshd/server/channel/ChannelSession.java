@@ -25,8 +25,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ExecutorService;
 
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
@@ -98,7 +96,7 @@ public class ChannelSession extends AbstractServerChannel {
             }
         }
         public static PtyMode fromInt(int b) {
-            return commands.get(b);
+            return commands.get(0x00FF & (b + 256));
         }
     }
 
@@ -195,6 +193,12 @@ public class ChannelSession extends AbstractServerChannel {
             } else {
                 return false;
             }
+        }
+        if ("auth-agent-req@openssh.com".equals(type)) {
+            return handleAgentForwarding(buffer);
+        }
+        if ("x11-req".equals(type)) {
+            return handleX11Forwarding(buffer);
         }
         return false;
     }
@@ -398,6 +402,28 @@ public class ChannelSession extends AbstractServerChannel {
     protected boolean handleSubsystem(Buffer buffer) throws IOException {
         boolean wantReply = buffer.getBoolean();
         // TODO: start subsystem
+        if (wantReply) {
+            buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS);
+            buffer.putInt(id);
+            session.writePacket(buffer);
+        }
+        return true;
+    }
+
+    protected boolean handleAgentForwarding(Buffer buffer) throws IOException {
+        boolean wantReply = buffer.getBoolean();
+        // TODO: start agent forwarding
+        if (wantReply) {
+            buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS);
+            buffer.putInt(id);
+            session.writePacket(buffer);
+        }
+        return true;
+    }
+
+    protected boolean handleX11Forwarding(Buffer buffer) throws IOException {
+        boolean wantReply = buffer.getBoolean();
+        // TODO: start x11 forwarding
         if (wantReply) {
             buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS);
             buffer.putInt(id);
