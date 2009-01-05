@@ -429,7 +429,7 @@ public abstract class AbstractSession {
                     // Read packet length
                     decoderLength = decoderBuffer.getInt();
                     // Check packet length validity
-                    if (decoderLength < 5 || decoderLength > 32768 - 4) {
+                    if (decoderLength < 5 || decoderLength > (256 * 1024)) {
                         log.info("Error decoding packet (invalid length) {}", decoderBuffer.printHex());
                         throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
                                                "Invalid packet length: " + decoderLength);
