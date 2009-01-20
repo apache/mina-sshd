@@ -398,10 +398,17 @@ public class ServerSession extends AbstractSession {
 
     private void globalRequest(Buffer buffer) throws Exception {
         String req = buffer.getString();
-        log.info("Received SSH_MSG_GLOBAL_REQUEST {}" ,req);
-        log.error("Unknown global request: {}", req);
-        buffer = createBuffer(SshConstants.Message.SSH_MSG_REQUEST_FAILURE);
-        writePacket(buffer);
+        boolean wantReply = buffer.getBoolean();
+        if (req.equals("keepalive@openssh.com")) {
+          // Relatively standard KeepAlive directive, just wants failure
+        } else {
+          log.info("Received SSH_MSG_GLOBAL_REQUEST {}" ,req);
+          log.error("Unknown global request: {}", req);
+        }
+        if (wantReply){
+          buffer = createBuffer(SshConstants.Message.SSH_MSG_REQUEST_FAILURE);
+          writePacket(buffer);
+        }
     }
 
 
