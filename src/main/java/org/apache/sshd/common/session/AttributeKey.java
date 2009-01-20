@@ -16,22 +16,15 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.util;
-
-import java.security.PublicKey;
-
-import org.apache.sshd.server.PublickeyAuthenticator;
-import org.apache.sshd.server.session.ServerSession;
+package org.apache.sshd.common.session;
 
 /**
- * TODO Add javadoc
+ * Type safe key for storage within the user attributes of {@link AbstractSession}.
+ *
+ * @param T type of value stored in the attribute.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @version $Rev$, $Date$
  */
-public class BogusPublickeyAuthenticator implements PublickeyAuthenticator {
-
-    public boolean hasKey(String username, PublicKey key, ServerSession session) {
-        return true;
-    }
+public class AttributeKey<T> {
 }

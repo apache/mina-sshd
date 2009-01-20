@@ -18,6 +18,8 @@
  */
 package org.apache.sshd.server;
 
+import org.apache.sshd.server.session.ServerSession;
+
 import java.security.PublicKey;
 
 /**
@@ -28,6 +30,6 @@ import java.security.PublicKey;
  */
 public interface PublickeyAuthenticator {
 
-    boolean hasKey(String username, PublicKey key);
+    boolean hasKey(String username, PublicKey key, ServerSession session);
 
 }

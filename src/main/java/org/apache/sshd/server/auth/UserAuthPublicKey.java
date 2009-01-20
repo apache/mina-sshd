@@ -70,7 +70,7 @@ public class UserAuthPublicKey implements UserAuth {
         }
 
         if (!hasSig) {
-            if (authenticator.hasKey(username, key)) {
+            if (authenticator.hasKey(username, key, session)) {
                 Buffer buf = session.createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_PK_OK);
                 buf.putString(alg);
                 buf.putRawBytes(buffer.array(), oldPos, 4 + len);
@@ -80,7 +80,7 @@ public class UserAuthPublicKey implements UserAuth {
                 throw new Exception("Unsupported key for user");
             }
         } else {
-            if (!authenticator.hasKey(username, key)) {
+            if (!authenticator.hasKey(username, key, session)) {
                 throw new Exception("Unsupported key for user");
             }
             Buffer buf = new Buffer();

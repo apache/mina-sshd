@@ -129,6 +129,7 @@ public abstract class AbstractSession {
     protected int decoderLength;
     protected final Object encodeLock = new Object();
     protected final Object decodeLock = new Object();
+    protected final Map<AttributeKey<?>, Object> attributes = new ConcurrentHashMap<AttributeKey<?>, Object>();
 
     /**
      * Create a new session.
@@ -982,4 +983,26 @@ public abstract class AbstractSession {
         return defaultValue;
     }
 
+    /**
+     * Returns the value of the user-defined attribute of this session.
+     *
+     * @param key the key of the attribute; must not be null.
+     * @return <tt>null</tt> if there is no attribute with the specified key
+     */
+    @SuppressWarnings("unchecked")
+    public <T> T getAttribute(AttributeKey<T> key) {
+        return (T)attributes.get(key);
+    }
+
+    /**
+     * Sets a user-defined attribute.
+     *
+     * @param key   the key of the attribute; must not be null.
+     * @param value the value of the attribute; must not be null.
+     * @return The old value of the attribute.  <tt>null</tt> if it is new.
+     */
+    @SuppressWarnings("unchecked")
+    public <T, E extends T> T setAttribute(AttributeKey<T> key, E value) {
+        return (T)attributes.put(key, value);
+    }
 }
