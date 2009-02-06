@@ -66,6 +66,7 @@ public class ServerSession extends AbstractSession {
     private int maxAuthRequests = 20;
     private int nbAuthRequests;
     private int authTimeout = 10 * 60 * 1000; // 10 minutes in milliseconds
+    private boolean allowMoreSessions = true;
 
     private List<NamedFactory<UserAuth>> userAuthFactories;
 
@@ -364,6 +365,15 @@ public class ServerSession extends AbstractSession {
             writePacket(buffer);
             return;
         }
+        if (!allowMoreSessions) {
+            buffer = createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_FAILURE);
+            buffer.putInt(id);
+            buffer.putInt(SshConstants.SSH_OPEN_CONNECT_FAILED);
+            buffer.putString("additional sessions disabled");
+            buffer.putString("");
+            writePacket(buffer);
+            return;
+        }
 
         ServerChannel channel = null;
         for (NamedFactory<ServerChannel> factory : getServerFactoryManager().getChannelFactories()) {
@@ -401,13 +411,15 @@ public class ServerSession extends AbstractSession {
         boolean wantReply = buffer.getBoolean();
         if (req.equals("keepalive@openssh.com")) {
           // Relatively standard KeepAlive directive, just wants failure
+        } else if (req.equals("no-more-sessions@openssh.com")) {
+            allowMoreSessions = false;
         } else {
-          log.info("Received SSH_MSG_GLOBAL_REQUEST {}" ,req);
-          log.error("Unknown global request: {}", req);
+            log.info("Received SSH_MSG_GLOBAL_REQUEST {}" ,req);
+            log.error("Unknown global request: {}", req);
         }
         if (wantReply){
-          buffer = createBuffer(SshConstants.Message.SSH_MSG_REQUEST_FAILURE);
-          writePacket(buffer);
+            buffer = createBuffer(SshConstants.Message.SSH_MSG_REQUEST_FAILURE);
+            writePacket(buffer);
         }
     }
 
