@@ -34,6 +34,9 @@ import org.apache.sshd.common.cipher.AES256CBC;
 import org.apache.sshd.common.cipher.BlowfishCBC;
 import org.apache.sshd.common.cipher.TripleDESCBC;
 import org.apache.sshd.common.*;
+import org.apache.sshd.common.Cipher;
+import org.apache.sshd.common.Random;
+import org.apache.sshd.common.random.BouncyCastleRandom;
 import org.apache.sshd.SshServer;
 import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
@@ -81,6 +84,32 @@ public class CipherTest {
     public void testTripleDESCBC() throws Exception {
         setUp(new TripleDESCBC.Factory());
         runTest();
+    }
+
+    @Test
+    public void loadTest() throws Exception {
+        Random random = new BouncyCastleRandom();
+        loadTest(new AES128CBC.Factory(), random);
+        loadTest(new BlowfishCBC.Factory(), random);
+        loadTest(new TripleDESCBC.Factory(), random);
+    }
+
+    protected void loadTest(NamedFactory<Cipher> factory, Random random) throws Exception {
+        Cipher cipher = factory.create();
+        byte[] key = new byte[cipher.getBlockSize()];
+        byte[] iv = new byte[cipher.getIVSize()];
+        random.fill(key, 0, key.length);
+        random.fill(iv, 0, iv.length);
+        cipher.init(Cipher.Mode.Encrypt, key, iv);
+
+        byte[] input = new byte[cipher.getBlockSize()];
+        random.fill(input, 0, input.length);
+        long t0 = System.currentTimeMillis();
+        for (int i = 0; i < 100000; i++) {
+            cipher.update(input, 0, input.length);
+        }
+        long t1 = System.currentTimeMillis();
+        System.err.println(factory.getName() + ": " + (t1 - t0) + " ms");
     }
 
 

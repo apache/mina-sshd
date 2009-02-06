@@ -56,6 +56,7 @@ import org.apache.sshd.common.mac.HMACSHA1;
 import org.apache.sshd.common.mac.HMACSHA196;
 import org.apache.sshd.common.random.BouncyCastleRandom;
 import org.apache.sshd.common.random.JceRandom;
+import org.apache.sshd.common.random.SingletonRandomFactory;
 import org.apache.sshd.common.signature.SignatureDSA;
 import org.apache.sshd.common.signature.SignatureRSA;
 import org.apache.sshd.common.util.SecurityUtils;
@@ -179,11 +180,11 @@ public class SshClient extends AbstractFactoryManager {
             client.setKeyExchangeFactories(Arrays.<NamedFactory<KeyExchange>>asList(
                     new DHG14.Factory(),
                     new DHG1.Factory()));
-            client.setRandomFactory(new BouncyCastleRandom.Factory());
+            client.setRandomFactory(new SingletonRandomFactory(new BouncyCastleRandom.Factory()));
         } else {
             client.setKeyExchangeFactories(Arrays.<NamedFactory<KeyExchange>>asList(
                     new DHG1.Factory()));
-            client.setRandomFactory(new JceRandom.Factory());
+            client.setRandomFactory(new SingletonRandomFactory(new JceRandom.Factory()));
         }
         client.setCipherFactories(Arrays.<NamedFactory<Cipher>>asList(
                 new AES128CBC.Factory(),

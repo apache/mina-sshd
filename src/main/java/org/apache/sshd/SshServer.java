@@ -45,6 +45,7 @@ import org.apache.sshd.common.mac.HMACSHA1;
 import org.apache.sshd.common.mac.HMACSHA196;
 import org.apache.sshd.common.random.BouncyCastleRandom;
 import org.apache.sshd.common.random.JceRandom;
+import org.apache.sshd.common.random.SingletonRandomFactory;
 import org.apache.sshd.common.signature.SignatureDSA;
 import org.apache.sshd.common.signature.SignatureRSA;
 import org.apache.sshd.common.util.SecurityUtils;
@@ -226,11 +227,11 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
             sshd.setKeyExchangeFactories(Arrays.<NamedFactory<KeyExchange>>asList(
                     new DHG14.Factory(),
                     new DHG1.Factory()));
-            sshd.setRandomFactory(new BouncyCastleRandom.Factory());
+            sshd.setRandomFactory(new SingletonRandomFactory(new BouncyCastleRandom.Factory()));
         } else {
             sshd.setKeyExchangeFactories(Arrays.<NamedFactory<KeyExchange>>asList(
                     new DHG1.Factory()));
-            sshd.setRandomFactory(new JceRandom.Factory());
+            sshd.setRandomFactory(new SingletonRandomFactory(new JceRandom.Factory()));
         }
         sshd.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(
                 new UserAuthPassword.Factory(),
