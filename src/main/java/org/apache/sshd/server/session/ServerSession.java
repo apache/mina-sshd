@@ -394,7 +394,7 @@ public class ServerSession extends AbstractSession {
 
         int channelId;
         synchronized (channels) {
-            channelId = ++nextChannelId;
+            channelId = nextChannelId++;
         }
         channels.put(channelId, channel);
         channel.init(this, channelId, id, rwsize, rmpsize);
