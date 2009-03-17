@@ -56,6 +56,7 @@ import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.ShellFactory;
 import org.apache.sshd.server.UserAuth;
+import org.apache.sshd.server.SessionFactory;
 import org.apache.sshd.server.CommandFactory;
 import org.apache.sshd.server.auth.UserAuthPassword;
 import org.apache.sshd.server.auth.UserAuthPublicKey;
@@ -98,6 +99,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     private List<NamedFactory<UserAuth>> userAuthFactories;
     private List<NamedFactory<ServerChannel>> channelFactories;
     private ShellFactory shellFactory;
+    private SessionFactory sessionFactory;
     private CommandFactory commandFactory;
     private PasswordAuthenticator passwordAuthenticator;
     private PublickeyAuthenticator publickeyAuthenticator;
@@ -140,6 +142,14 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
 
     public void setShellFactory(ShellFactory shellFactory) {
         this.shellFactory = shellFactory;
+    }
+
+    public SessionFactory getSessionFactory() {
+        return sessionFactory;
+    }
+
+    public void setSessionFactory(SessionFactory sessionFactory) {
+        this.sessionFactory = sessionFactory;
     }
 
     public CommandFactory getCommandFactory() {
@@ -204,11 +214,14 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     public void start() throws IOException {
         checkConfig();
         acceptor = new NioSocketAcceptor();
-        acceptor.setHandler(new AbstractSessionIoHandler() {
-            protected AbstractSession createSession(IoSession ioSession) throws Exception {
-                return new ServerSession(SshServer.this, ioSession);
-            }
-        });
+
+        SessionFactory handler = sessionFactory;
+        if (handler == null) {
+            handler = new SessionFactory();
+        }
+        handler.setServer(this);
+        acceptor.setHandler((AbstractSessionIoHandler)handler);
+
         acceptor.bind(new InetSocketAddress(port));
     }
 
