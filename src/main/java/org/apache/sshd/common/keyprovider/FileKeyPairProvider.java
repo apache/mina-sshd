@@ -82,9 +82,13 @@ public class FileKeyPairProvider extends AbstractKeyPairProvider {
         for (int i = 0; i < files.length; i++) {
             try {
                 PEMReader r = new PEMReader(new InputStreamReader(new FileInputStream(files[i])), passwordFinder);
-                Object o = r.readObject();
-                if (o instanceof KeyPair) {
-                    keys.add((KeyPair) o);
+                try {
+                    Object o = r.readObject();
+                    if (o instanceof KeyPair) {
+                        keys.add((KeyPair) o);
+                    }
+                } finally {
+                    r.close();
                 }
             } catch (Exception e) {
                 LOG.info("Unable to read key {}: {}", files[i], e);
