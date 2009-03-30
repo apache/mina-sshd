@@ -18,11 +18,11 @@
  */
 package org.apache.sshd.server.keyprovider;
 
-import java.security.KeyPair;
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.ObjectOutputStream;
 import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
+import java.security.KeyPair;
 
 /**
  * TODO Add javadoc

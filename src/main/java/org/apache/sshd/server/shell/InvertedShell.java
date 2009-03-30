@@ -18,10 +18,10 @@
  */
 package org.apache.sshd.server.shell;
 
-import java.util.Map;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.Map;
 
 /**
  * This shell have inverted streams, such as the one obtained when launching a

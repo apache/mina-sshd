@@ -18,26 +18,26 @@
  */
 package org.apache.sshd.client.session;
 
-import java.security.PublicKey;
 import java.io.IOException;
+import java.security.PublicKey;
 
+import org.apache.mina.core.session.IoSession;
+import org.apache.sshd.ClientChannel;
+import org.apache.sshd.ClientSession;
 import org.apache.sshd.SshClient;
-import org.apache.sshd.client.auth.UserAuthPassword;
-import org.apache.sshd.client.channel.ChannelShell;
-import org.apache.sshd.client.channel.AbstractClientChannel;
 import org.apache.sshd.client.UserAuth;
+import org.apache.sshd.client.auth.UserAuthPassword;
+import org.apache.sshd.client.channel.AbstractClientChannel;
+import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.DefaultAuthFuture;
-import org.apache.sshd.ClientSession;
-import org.apache.sshd.ClientChannel;
-import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.CloseFuture;
+import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.Buffer;
-import org.apache.mina.core.session.IoSession;
 
 /**
  * TODO Add javadoc

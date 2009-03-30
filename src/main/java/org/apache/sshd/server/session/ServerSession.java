@@ -18,27 +18,26 @@
  */
 package org.apache.sshd.server.session;
 
+import java.io.IOException;
 import java.security.KeyPair;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.io.IOException;
 
+import org.apache.mina.core.session.IoSession;
 import org.apache.sshd.SshServer;
-import org.apache.sshd.server.UserAuth;
-import org.apache.sshd.server.ServerFactoryManager;
-import org.apache.sshd.server.ServerChannel;
-import org.apache.sshd.common.session.AbstractSession;
+import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.KeyExchange;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.future.CloseFuture;
+import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.Buffer;
-import org.apache.mina.transport.socket.SocketSessionConfig;
-import org.apache.mina.core.session.IoSession;
+import org.apache.sshd.server.ServerChannel;
+import org.apache.sshd.server.ServerFactoryManager;
+import org.apache.sshd.server.UserAuth;
 
 /**
  *

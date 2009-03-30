@@ -18,9 +18,9 @@
  */
 package org.apache.sshd.server;
 
-import org.apache.sshd.server.session.ServerSession;
-
 import java.security.PublicKey;
+
+import org.apache.sshd.server.session.ServerSession;
 
 /**
  * TODO Add javadoc

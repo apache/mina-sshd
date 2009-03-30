@@ -18,14 +18,8 @@
  */
 package org.apache.sshd.client.channel;
 
-import java.io.IOException;
-
 import org.apache.sshd.common.SshConstants;
-import org.apache.sshd.common.future.SshFutureListener;
-import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.util.Buffer;
-import org.apache.sshd.ClientChannel;
-import org.apache.sshd.client.future.OpenFuture;
 
 /**
  * TODO Add javadoc

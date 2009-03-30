@@ -19,8 +19,8 @@
 package org.apache.sshd.common.util;
 
 import java.io.FilterOutputStream;
-import java.io.OutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 
 /**
  * TODO Add javadoc

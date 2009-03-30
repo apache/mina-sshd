@@ -20,13 +20,13 @@ package org.apache.sshd.common.compression;
 
 import java.io.IOException;
 
-import org.apache.sshd.common.Compression;
-import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.SshConstants;
-import org.apache.sshd.common.util.Buffer;
 import com.jcraft.jzlib.JZlib;
 import com.jcraft.jzlib.ZStream;
+import org.apache.sshd.common.Compression;
+import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.util.Buffer;
 
 /**
  * TODO Add javadoc

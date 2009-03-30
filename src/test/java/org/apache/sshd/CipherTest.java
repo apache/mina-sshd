@@ -18,30 +18,30 @@
  */
 package org.apache.sshd;
 
-import java.util.Arrays;
-import java.io.OutputStream;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.ServerSocket;
+import java.util.Arrays;
 
-import org.junit.After;
-import org.junit.Test;
-import org.junit.Ignore;
-import com.jcraft.jsch.*;
-import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.Logger;
+import com.jcraft.jsch.UserInfo;
+import org.apache.sshd.common.Cipher;
+import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.Random;
 import org.apache.sshd.common.cipher.AES128CBC;
 import org.apache.sshd.common.cipher.AES192CBC;
 import org.apache.sshd.common.cipher.AES256CBC;
 import org.apache.sshd.common.cipher.BlowfishCBC;
 import org.apache.sshd.common.cipher.TripleDESCBC;
-import org.apache.sshd.common.*;
-import org.apache.sshd.common.Cipher;
-import org.apache.sshd.common.Random;
+import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.common.random.BouncyCastleRandom;
-import org.apache.sshd.SshServer;
-import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
-
+import org.apache.sshd.util.EchoShellFactory;
+import org.junit.After;
 import static org.junit.Assert.assertEquals;
+import org.junit.Ignore;
+import org.junit.Test;
 
 /**
  * TODO Add javadoc

@@ -46,7 +46,9 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 package org.apache.sshd.util;
-import com.jcraft.jzlib.*;
+
+import com.jcraft.jzlib.JZlib;
+import com.jcraft.jzlib.ZStream;
 
 /**
  * TODO Add javadoc

@@ -18,22 +18,23 @@
  */
 package org.apache.sshd;
 
-import java.util.Arrays;
-import java.io.OutputStream;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.Arrays;
 
-import org.junit.After;
-import org.junit.Test;
-import static org.junit.Assert.assertEquals;
-import com.jcraft.jsch.*;
-import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.Logger;
+import com.jcraft.jsch.UserInfo;
+import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.compression.CompressionDelayedZlib;
 import org.apache.sshd.common.compression.CompressionNone;
 import org.apache.sshd.common.compression.CompressionZlib;
-import org.apache.sshd.common.*;
-import org.apache.sshd.SshServer;
-import org.apache.sshd.util.EchoShellFactory;
+import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
+import org.apache.sshd.util.EchoShellFactory;
+import org.junit.After;
+import static org.junit.Assert.assertEquals;
+import org.junit.Test;
 
 /**
  * TODO Add javadoc

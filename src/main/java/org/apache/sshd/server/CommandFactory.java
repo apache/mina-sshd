@@ -18,9 +18,9 @@
  */
 package org.apache.sshd.server;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.IOException;
 
 import org.apache.sshd.server.session.ServerSession;
 

@@ -18,14 +18,13 @@
  */
 package org.apache.sshd;
 
+import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.Buffer;
-import org.apache.sshd.SshServer;
-import org.apache.mina.core.buffer.IoBuffer;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.*;
 
 /**
  * TODO Add javadoc

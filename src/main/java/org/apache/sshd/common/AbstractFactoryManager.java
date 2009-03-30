@@ -18,11 +18,11 @@
  */
 package org.apache.sshd.common;
 
-import java.util.List;
-import java.util.Properties;
-import java.util.Map;
-import java.util.HashMap;
 import java.io.InputStream;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 
 /**
  * TODO Add javadoc

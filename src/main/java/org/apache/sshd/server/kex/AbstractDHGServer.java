@@ -20,7 +20,6 @@ package org.apache.sshd.server.kex;
 
 import java.security.KeyPair;
 
-import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.Digest;
 import org.apache.sshd.common.KeyExchange;
 import org.apache.sshd.common.NamedFactory;
@@ -29,6 +28,7 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.digest.SHA1;
 import org.apache.sshd.common.kex.DH;
+import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.BufferUtils;
 import org.apache.sshd.server.session.ServerSession;

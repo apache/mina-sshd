@@ -20,22 +20,19 @@ package org.apache.sshd;
 
 import java.net.ServerSocket;
 
-import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
-import org.apache.sshd.common.session.AbstractSession;
-import org.apache.sshd.common.SshConstants;
-import org.apache.sshd.util.EchoShellFactory;
-import org.apache.sshd.util.BogusPasswordAuthenticator;
-import org.apache.sshd.server.command.ScpCommandFactory;
-import org.apache.sshd.ClientSession;
-import org.apache.sshd.SshClient;
-import org.apache.sshd.SshServer;
+import org.apache.mina.core.session.IoSession;
 import org.apache.sshd.client.SessionFactory;
 import org.apache.sshd.client.session.ClientSessionImpl;
-import org.apache.mina.core.session.IoSession;
+import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
+import org.apache.sshd.common.session.AbstractSession;
+import org.apache.sshd.server.command.ScpCommandFactory;
+import org.apache.sshd.util.BogusPasswordAuthenticator;
+import org.apache.sshd.util.EchoShellFactory;
+import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.Assert;
-import org.junit.After;
 
 /**
  * TODO Add javadoc

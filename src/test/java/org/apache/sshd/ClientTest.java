@@ -18,30 +18,27 @@
  */
 package org.apache.sshd;
 
-import java.io.PipedOutputStream;
-import java.io.PipedInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
 import java.net.ServerSocket;
 
-import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
-import org.apache.sshd.common.util.BufferUtils;
-import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.future.CloseFuture;
-import org.apache.sshd.ClientChannel;
-import org.apache.sshd.ClientSession;
-import org.apache.sshd.SshClient;
-import org.apache.sshd.SshServer;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.OpenFuture;
-import org.apache.sshd.util.EchoShellFactory;
+import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.future.CloseFuture;
+import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
+import org.apache.sshd.common.util.BufferUtils;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
+import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.TeePipedOutputStream;
 import org.junit.After;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.*;
 
 /**
  * TODO Add javadoc

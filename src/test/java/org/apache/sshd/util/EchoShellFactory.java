@@ -18,11 +18,11 @@
  */
 package org.apache.sshd.util;
 
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.util.Map;
 
 import org.apache.sshd.server.ShellFactory;

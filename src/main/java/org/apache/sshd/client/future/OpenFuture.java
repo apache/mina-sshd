@@ -19,7 +19,6 @@
 package org.apache.sshd.client.future;
 
 import org.apache.sshd.common.future.SshFuture;
-import org.apache.sshd.common.future.SshFutureListener;
 
 /**
  * An {@link SshFuture} for asynchronous channel opening requests.

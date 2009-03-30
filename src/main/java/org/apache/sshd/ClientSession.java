@@ -18,12 +18,11 @@
  */
 package org.apache.sshd;
 
-import java.security.PublicKey;
-import java.io.Closeable;
 import java.io.IOException;
+import java.security.PublicKey;
 
-import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.client.future.AuthFuture;
+import org.apache.sshd.common.future.CloseFuture;
 
 /**
  * An authenticated session to a given SSH server

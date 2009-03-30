@@ -18,9 +18,9 @@
  */
 package org.apache.sshd.common;
 
+import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IoSession;
-import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.sshd.common.session.AbstractSession;
 
 /**

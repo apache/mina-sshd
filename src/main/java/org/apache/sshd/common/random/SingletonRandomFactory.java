@@ -18,8 +18,8 @@
  */
 package org.apache.sshd.common.random;
 
-import org.apache.sshd.common.Random;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.Random;
 
 /**
  * A random factory wrapper that uses a single random instance.

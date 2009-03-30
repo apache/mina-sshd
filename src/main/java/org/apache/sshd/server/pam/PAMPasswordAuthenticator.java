@@ -18,9 +18,9 @@
  */
 package org.apache.sshd.server.pam;
 
-import org.apache.sshd.server.PasswordAuthenticator;
 import net.sf.jpam.Pam;
 import net.sf.jpam.PamReturnValue;
+import org.apache.sshd.server.PasswordAuthenticator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

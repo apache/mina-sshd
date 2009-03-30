@@ -18,9 +18,9 @@
  */
 package org.apache.sshd.server.shell;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.IOException;
 import java.util.Map;
 
 import org.apache.sshd.server.ShellFactory;

@@ -18,9 +18,9 @@
  */
 package org.apache.sshd.client.future;
 
-import org.apache.sshd.common.future.DefaultSshFuture;
-import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.ClientSession;
+import org.apache.sshd.common.RuntimeSshException;
+import org.apache.sshd.common.future.DefaultSshFuture;
 
 /**
  * A default implementation of {@link ConnectFuture}.

@@ -20,9 +20,9 @@ package org.apache.sshd.server;
 
 import java.io.IOException;
 
-import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.channel.Window;
+import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.server.session.ServerSession;
 
 /**

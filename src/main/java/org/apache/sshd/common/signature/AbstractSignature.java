@@ -18,8 +18,8 @@
  */
 package org.apache.sshd.common.signature;
 
-import java.security.PublicKey;
 import java.security.PrivateKey;
+import java.security.PublicKey;
 
 import org.apache.sshd.common.Signature;
 import org.apache.sshd.common.util.SecurityUtils;

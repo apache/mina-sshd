@@ -23,9 +23,9 @@ import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.mina.core.service.IoAcceptor;
+import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 import org.apache.sshd.common.AbstractFactoryManager;
-import org.apache.sshd.common.session.AbstractSession;
-import org.apache.sshd.common.AbstractSessionIoHandler;
 import org.apache.sshd.common.Cipher;
 import org.apache.sshd.common.Compression;
 import org.apache.sshd.common.KeyExchange;
@@ -49,24 +49,20 @@ import org.apache.sshd.common.random.SingletonRandomFactory;
 import org.apache.sshd.common.signature.SignatureDSA;
 import org.apache.sshd.common.signature.SignatureRSA;
 import org.apache.sshd.common.util.SecurityUtils;
-import org.apache.sshd.server.ServerChannel;
+import org.apache.sshd.server.CommandFactory;
 import org.apache.sshd.server.PasswordAuthenticator;
 import org.apache.sshd.server.PublickeyAuthenticator;
+import org.apache.sshd.server.ServerChannel;
 import org.apache.sshd.server.ServerFactoryManager;
-import org.apache.sshd.server.session.ServerSession;
+import org.apache.sshd.server.SessionFactory;
 import org.apache.sshd.server.ShellFactory;
 import org.apache.sshd.server.UserAuth;
-import org.apache.sshd.server.SessionFactory;
-import org.apache.sshd.server.CommandFactory;
 import org.apache.sshd.server.auth.UserAuthPassword;
 import org.apache.sshd.server.auth.UserAuthPublicKey;
 import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.kex.DHG1;
 import org.apache.sshd.server.kex.DHG14;
 import org.apache.sshd.server.shell.ProcessShellFactory;
-import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
-import org.apache.mina.core.session.IoSession;
-import org.apache.mina.core.service.IoAcceptor;
 
 /**
  * The SshServer class is the main entry point for the server side of the SSH protocol.

@@ -18,10 +18,10 @@
  */
 package org.apache.sshd;
 
-import org.junit.Test;
-import org.apache.sshd.common.random.JceRandom;
-import org.apache.sshd.common.random.BouncyCastleRandom;
 import org.apache.sshd.common.Random;
+import org.apache.sshd.common.random.BouncyCastleRandom;
+import org.apache.sshd.common.random.JceRandom;
+import org.junit.Test;
 
 /**
  * TODO Add javadoc

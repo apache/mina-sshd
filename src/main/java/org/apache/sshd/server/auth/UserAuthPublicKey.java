@@ -27,8 +27,8 @@ import org.apache.sshd.common.Signature;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.server.PublickeyAuthenticator;
-import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.UserAuth;
+import org.apache.sshd.server.session.ServerSession;
 
 /**
  * TODO Add javadoc

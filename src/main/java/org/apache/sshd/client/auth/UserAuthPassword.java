@@ -20,10 +20,10 @@ package org.apache.sshd.client.auth;
 
 import java.io.IOException;
 
+import org.apache.sshd.client.UserAuth;
+import org.apache.sshd.client.session.ClientSessionImpl;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.util.Buffer;
-import org.apache.sshd.client.session.ClientSessionImpl;
-import org.apache.sshd.client.UserAuth;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

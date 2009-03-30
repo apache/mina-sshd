@@ -18,12 +18,11 @@
  */
 package org.apache.sshd;
 
-import java.io.Closeable;
-import java.io.OutputStream;
 import java.io.InputStream;
+import java.io.OutputStream;
 
-import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.client.future.OpenFuture;
+import org.apache.sshd.common.future.CloseFuture;
 
 /**
  * A client channel used to communicate with

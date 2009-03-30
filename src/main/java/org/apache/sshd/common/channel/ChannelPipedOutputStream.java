@@ -18,8 +18,8 @@
  */
 package org.apache.sshd.common.channel;
 
-import java.io.OutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 
 /**
  * TODO Add javadoc

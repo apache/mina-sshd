@@ -18,8 +18,8 @@
  */
 package org.apache.sshd.common.future;
 
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.mina.util.ExceptionMonitor;

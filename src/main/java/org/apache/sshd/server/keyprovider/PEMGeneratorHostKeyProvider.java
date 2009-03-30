@@ -18,10 +18,10 @@
  */
 package org.apache.sshd.server.keyprovider;
 
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.security.KeyPair;
 
 import org.bouncycastle.openssl.PEMReader;

@@ -25,20 +25,17 @@ import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
 
-import org.apache.sshd.client.session.ClientSessionImpl;
-import org.apache.sshd.client.kex.DHG1;
-import org.apache.sshd.client.kex.DHG14;
+import org.apache.mina.core.future.IoFutureListener;
+import org.apache.mina.core.service.IoConnector;
+import org.apache.mina.transport.socket.nio.NioSocketConnector;
+import org.apache.sshd.client.SessionFactory;
 import org.apache.sshd.client.future.ConnectFuture;
 import org.apache.sshd.client.future.DefaultConnectFuture;
-import org.apache.sshd.client.SessionFactory;
+import org.apache.sshd.client.kex.DHG1;
+import org.apache.sshd.client.kex.DHG14;
+import org.apache.sshd.client.session.ClientSessionImpl;
 import org.apache.sshd.common.AbstractFactoryManager;
-import org.apache.sshd.common.session.AbstractSession;
-import org.apache.sshd.common.AbstractSessionIoHandler;
 import org.apache.sshd.common.Cipher;
 import org.apache.sshd.common.Compression;
 import org.apache.sshd.common.KeyExchange;
@@ -58,17 +55,12 @@ import org.apache.sshd.common.mac.HMACSHA196;
 import org.apache.sshd.common.random.BouncyCastleRandom;
 import org.apache.sshd.common.random.JceRandom;
 import org.apache.sshd.common.random.SingletonRandomFactory;
+import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.signature.SignatureDSA;
 import org.apache.sshd.common.signature.SignatureRSA;
-import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.NoCloseInputStream;
 import org.apache.sshd.common.util.NoCloseOutputStream;
-import org.apache.mina.transport.socket.nio.NioSocketConnector;
-import org.apache.mina.transport.socket.SocketConnector;
-import org.apache.mina.core.service.IoConnector;
-import org.apache.mina.core.session.IoSession;
-import org.apache.mina.core.future.IoFutureListener;
-import org.apache.mina.core.future.IoFuture;
+import org.apache.sshd.common.util.SecurityUtils;
 
 /**
  * Entry point for the client side of the SSH protocol.

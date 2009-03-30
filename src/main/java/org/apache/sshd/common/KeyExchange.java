@@ -18,8 +18,8 @@
  */
 package org.apache.sshd.common;
 
-import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.session.AbstractSession;
+import org.apache.sshd.common.util.Buffer;
 
 /**
  * Key exchange algorithm.

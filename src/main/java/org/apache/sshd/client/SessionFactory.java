@@ -19,7 +19,6 @@
 package org.apache.sshd.client;
 
 import org.apache.mina.core.session.IoSession;
-import org.apache.sshd.SshServer;
 import org.apache.sshd.SshClient;
 import org.apache.sshd.client.session.ClientSessionImpl;
 import org.apache.sshd.common.AbstractSessionIoHandler;

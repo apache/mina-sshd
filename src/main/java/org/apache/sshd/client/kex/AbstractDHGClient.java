@@ -22,7 +22,6 @@ import java.security.PublicKey;
 import java.security.interfaces.RSAPublicKey;
 
 import org.apache.sshd.client.session.ClientSessionImpl;
-import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.Digest;
 import org.apache.sshd.common.KeyExchange;
 import org.apache.sshd.common.KeyPairProvider;
@@ -32,6 +31,7 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.digest.SHA1;
 import org.apache.sshd.common.kex.DH;
+import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.Buffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

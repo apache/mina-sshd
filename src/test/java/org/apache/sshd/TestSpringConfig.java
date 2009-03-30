@@ -20,14 +20,14 @@ package org.apache.sshd;
 
 import java.io.OutputStream;
 
-import org.junit.Test;
-import org.junit.Before;
-import org.junit.After;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
 import com.jcraft.jsch.Channel;
-import com.jcraft.jsch.Logger;
 import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.Logger;
 import com.jcraft.jsch.UserInfo;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 /**
  * TODO Add javadoc

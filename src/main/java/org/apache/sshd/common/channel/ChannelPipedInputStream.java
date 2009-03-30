@@ -18,8 +18,8 @@
  */
 package org.apache.sshd.common.channel;
 
-import java.io.InputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InterruptedIOException;
 
 import org.apache.sshd.common.util.Buffer;
