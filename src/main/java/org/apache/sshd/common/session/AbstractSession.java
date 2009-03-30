@@ -849,7 +849,7 @@ public abstract class AbstractSession {
                     break;
                 }
             }
-            if (guess[i] == null) {
+            if (guess[i] == null && i != SshConstants.PROPOSAL_LANG_CTOS && i != SshConstants.PROPOSAL_LANG_STOC) {
                 throw new IllegalStateException("Unable to negociate");
             }
         }
