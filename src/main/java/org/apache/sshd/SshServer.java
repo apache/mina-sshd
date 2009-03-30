@@ -220,7 +220,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
             handler = new SessionFactory();
         }
         handler.setServer(this);
-        acceptor.setHandler((AbstractSessionIoHandler)handler);
+        acceptor.setHandler(handler);
 
         acceptor.bind(new InetSocketAddress(port));
     }
