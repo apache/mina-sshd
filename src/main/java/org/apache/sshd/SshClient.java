@@ -35,6 +35,7 @@ import org.apache.sshd.client.kex.DHG1;
 import org.apache.sshd.client.kex.DHG14;
 import org.apache.sshd.client.future.ConnectFuture;
 import org.apache.sshd.client.future.DefaultConnectFuture;
+import org.apache.sshd.client.SessionFactory;
 import org.apache.sshd.common.AbstractFactoryManager;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.AbstractSessionIoHandler;
@@ -119,17 +120,28 @@ import org.apache.mina.core.future.IoFuture;
 public class SshClient extends AbstractFactoryManager {
 
     private IoConnector connector;
+    private SessionFactory sessionFactory;
 
     public SshClient() {
     }
 
+    public SessionFactory getSessionFactory() {
+        return sessionFactory;
+    }
+
+    public void setSessionFactory(SessionFactory sessionFactory) {
+        this.sessionFactory = sessionFactory;
+    }
+
     public void start() {
         connector = new NioSocketConnector();
-        connector.setHandler(new AbstractSessionIoHandler() {
-            protected AbstractSession createSession(IoSession ioSession) throws Exception {
-                return new ClientSessionImpl(SshClient.this, ioSession);
-            }
-        });
+
+        SessionFactory handler = sessionFactory;
+        if (handler == null) {
+            handler = new SessionFactory();
+        }
+        handler.setClient(this);
+        connector.setHandler(handler);
     }
 
     public void stop() {
