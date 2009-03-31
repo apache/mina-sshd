@@ -24,8 +24,9 @@ import java.io.OutputStream;
 import java.util.Map;
 
 /**
+ * This factory is used by SSH server when the client connected requests the creation
+ * of a shell.
  *
- * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @version $Rev$, $Date$
@@ -34,9 +35,11 @@ public interface ShellFactory {
 
     /**
      * Create a shell.
+     * This method is not supposed to throw any exception.
+     * Exceptions should be thrown when calling {@link Shell#start(java.util.Map)}
+     * method on the shell to start it.
      *
-     * @return
-     * @throws Exception
+     * @return the newly create shell
      */
     Shell createShell();
 

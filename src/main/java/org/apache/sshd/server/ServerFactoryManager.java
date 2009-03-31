@@ -24,22 +24,62 @@ import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 
 /**
- * TODO Add javadoc
+ * The <code>ServerFactoryManager</code> enable the retrieval of additional
+ * configuration needed specifically for the server side.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @version $Rev$, $Date$
  */
 public interface ServerFactoryManager extends FactoryManager {
 
-    PublickeyAuthenticator getPublickeyAuthenticator();
-
+    /**
+     * Retrieve the list of named factories for <code>UserAuth<code> objects.
+     *
+     * @return a list of named <code>UserAuth</code> factories, never <code>null</code>
+     */
     List<NamedFactory<UserAuth>> getUserAuthFactories();
 
+    /**
+     * Retrieve the <code>PublickeyAuthenticator</code> to be used by SSH server.
+     * If no authenticator has been configured (i.e. this method returns
+     * <code>null</code>), then client authentication requests based on keys will be
+     * rejected.
+     *
+     * @return the <code>PublickeyAuthenticato</code> or <code>null</code>
+     */
+    PublickeyAuthenticator getPublickeyAuthenticator();
+
+    /**
+     * Retrieve the <code>PasswordAuthenticator</code> to be used by the SSH server.
+     * If no authenticator has been configured (i.e. this method returns
+     * <code>null</code>), then client authentication requests based on passwords
+     * will be rejected.
+     *
+     * @return the <code>PasswordAuthenticator</code> or <code>null</code>
+     */
+    PasswordAuthenticator getPasswordAuthenticator();
+
+    /**
+     * Retrieve the list of named factories for <code>ServerChannel</code> objects.
+     *
+     * @return a list of named <code>ServerChannel</code> factories, never <code>null</code>
+     */
     List<NamedFactory<ServerChannel>> getChannelFactories();
 
+    /**
+     * Retrieve the <code>ShellFactory</code> object to be used to create shells.
+     *
+     * @return a valid <code>ShellFactory</code> object or <code>null</code> if shells
+     *         are not supported on this server
+     */
     ShellFactory getShellFactory();
 
+    /**
+     * Retrieve the <code>CommandFactory</code> to be used to process commands requests.
+     *
+     * @return a valid <code>CommandFactory</code> object or <code>null</code> if commands
+     *         are not supported on this server
+     */
     CommandFactory getCommandFactory();
 
-    PasswordAuthenticator getPasswordAuthenticator();
 }

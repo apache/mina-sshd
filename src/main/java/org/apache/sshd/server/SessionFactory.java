@@ -25,7 +25,10 @@ import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
- * A factory of sessions.
+ * A factory of server sessions.
+ * This class can be used as a way to customize the creation of server sessions.
+ *
+ * @see SshServer#setSessionFactory(SessionFactory) 
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */

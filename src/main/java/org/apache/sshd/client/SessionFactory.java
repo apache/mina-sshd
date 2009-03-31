@@ -25,7 +25,10 @@ import org.apache.sshd.common.AbstractSessionIoHandler;
 import org.apache.sshd.common.session.AbstractSession;
 
 /**
- * A factory of sessions.
+ * A factory of client sessions.
+ * This class can be used as a way to customize the creation of client sessions.
+ *
+ * @see SshClient#setSessionFactory(SessionFactory)
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */

@@ -21,7 +21,11 @@ package org.apache.sshd.server.command;
 import org.apache.sshd.server.CommandFactory;
 
 /**
- * TODO Add javadoc
+ * This <code>CommandFactory</code> can be used as a standalone command factory
+ * or can be used to augment another <code>CommandFactory</code> and provides
+ * <code>SCP</code> support.
+ *
+ * @see ScpCommand
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @version $Rev$, $Date$

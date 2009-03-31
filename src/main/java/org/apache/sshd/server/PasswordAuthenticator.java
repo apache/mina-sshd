@@ -19,7 +19,8 @@
 package org.apache.sshd.server;
 
 /**
- * TODO Add javadoc
+ * The <code>PasswordAuthenticator</code> is used to authenticate
+ * users based on a password.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @version $Rev$, $Date$

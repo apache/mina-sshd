@@ -19,7 +19,7 @@
 package org.apache.sshd.common;
 
 /**
- * TODO Add javadoc
+ * Interface used to compute digests, based on algorithms such as MD5 or SHA1.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @version $Rev$, $Date$

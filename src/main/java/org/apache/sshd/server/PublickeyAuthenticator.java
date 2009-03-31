@@ -23,7 +23,8 @@ import java.security.PublicKey;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
- * TODO Add javadoc
+ * The <code>PublickeyAuthenticator</code> is used on the server side
+ * to authenticate user public keys.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @version $Rev$, $Date$

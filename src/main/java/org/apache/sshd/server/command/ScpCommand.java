@@ -29,7 +29,9 @@ import java.io.OutputStream;
 import org.apache.sshd.server.CommandFactory;
 
 /**
- * TODO Add javadoc
+ * This commands provide SCP support on both server and client side.
+ * Permissions and preservation of access / modification times on files
+ * are not supported.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @version $Rev$, $Date$

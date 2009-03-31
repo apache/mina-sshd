@@ -197,7 +197,7 @@ public class SshClient extends AbstractFactoryManager {
                 new AES192CBC.Factory(),
                 new AES256CBC.Factory()));
         // Compression is not enabled by default
-        // sshd.setCompressionFactories(Arrays.<NamedFactory<Compression>>asList(
+        // client.setCompressionFactories(Arrays.<NamedFactory<Compression>>asList(
         //         new CompressionNone.Factory(),
         //         new CompressionZlib.Factory(),
         //         new CompressionDelayedZlib.Factory()));

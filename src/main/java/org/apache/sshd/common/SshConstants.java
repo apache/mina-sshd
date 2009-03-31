@@ -19,13 +19,16 @@
 package org.apache.sshd.common;
 
 /**
- * TODO Add javadoc
+ * This interface defines constants for the SSH protocol.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @version $Rev$, $Date$
  */
 public interface SshConstants {
 
+    /**
+     * SSH message identifiers
+     */
     public enum Message {
 
         SSH_MSG_DISCONNECT(1),
@@ -93,6 +96,10 @@ public interface SshConstants {
         }
     }
 
+    //
+    // Values for the algorithms negociation 
+    //
+
     static final int PROPOSAL_KEX_ALGS = 0;
     static final int PROPOSAL_SERVER_HOST_KEY_ALGS = 1;
     static final int PROPOSAL_ENC_ALGS_CTOS = 2;
@@ -105,6 +112,10 @@ public interface SshConstants {
     static final int PROPOSAL_LANG_STOC = 9;
     static final int PROPOSAL_MAX = 10;
 
+
+    //
+    // Disconnect error codes
+    //
     static final int SSH2_DISCONNECT_HOST_NOT_ALLOWED_TO_CONNECT =     1;
     static final int SSH2_DISCONNECT_PROTOCOL_ERROR =                  2;
     static final int SSH2_DISCONNECT_KEY_EXCHANGE_FAILED =             3;
@@ -121,6 +132,10 @@ public interface SshConstants {
     static final int SSH2_DISCONNECT_AUTH_CANCELLED_BY_USER =         13;
     static final int SSH2_DISCONNECT_NO_MORE_AUTH_METHODS_AVAILABLE = 14;
     static final int SSH2_DISCONNECT_ILLEGAL_USER_NAME =              15;
+
+    //
+    // Open error codes
+    //
 
     static final int SSH_OPEN_ADMINISTRATIVELY_PROHIBITED=     1;
     static final int SSH_OPEN_CONNECT_FAILED=                  2;
