@@ -34,6 +34,7 @@ import org.apache.sshd.common.cipher.AES192CBC;
 import org.apache.sshd.common.cipher.AES256CBC;
 import org.apache.sshd.common.cipher.BlowfishCBC;
 import org.apache.sshd.common.cipher.TripleDESCBC;
+import org.apache.sshd.common.cipher.CipherNone;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.common.random.BouncyCastleRandom;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
@@ -44,7 +45,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 /**
- * TODO Add javadoc
+ * Test Cipher algorithms.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @version $Rev$, $Date$
@@ -68,7 +69,7 @@ public class CipherTest {
     }
 
     @Test
-    @Ignore("AES192CBC is not always available by default")
+    @Ignore("AES256CBC is not always available by default")
     public void testAES256CBC() throws Exception {
         setUp(new AES256CBC.Factory());
         runTest();
@@ -136,6 +137,8 @@ public class CipherTest {
 
     protected void runTest() throws Exception {
         JSch sch = new JSch();
+        JSch.setConfig("cipher.s2c", "aes128-cbc,3des-cbc,blowfish-cbc,aes192-cbc,aes256-cbc,none");
+        JSch.setConfig("cipher.c2s", "aes128-cbc,3des-cbc,blowfish-cbc,aes192-cbc,aes256-cbc,none");
         sch.setLogger(new Logger() {
             public boolean isEnabled(int i) {
                 return true;
