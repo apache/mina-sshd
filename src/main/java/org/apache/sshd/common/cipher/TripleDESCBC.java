@@ -22,13 +22,16 @@ import org.apache.sshd.common.Cipher;
 import org.apache.sshd.common.NamedFactory;
 
 /**
- * TODO Add javadoc
+ * TripleDESCBC Cipher
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @version $Rev$, $Date$
  */
 public class TripleDESCBC extends BaseCipher {
 
+    /**
+     * Named factory for TripleDESCBC Cipher
+     */
     public static class Factory implements NamedFactory<Cipher> {
         public String getName() {
             return "3des-cbc";

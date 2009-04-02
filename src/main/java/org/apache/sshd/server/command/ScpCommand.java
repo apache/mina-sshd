@@ -25,8 +25,11 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Arrays;
 
 import org.apache.sshd.server.CommandFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This commands provide SCP support on both server and client side.
@@ -37,6 +40,8 @@ import org.apache.sshd.server.CommandFactory;
  * @version $Rev$, $Date$
  */
 public class ScpCommand implements CommandFactory.Command, Runnable {
+
+    private static final Logger log = LoggerFactory.getLogger(ScpCommand.class);
 
     private boolean optR;
     private boolean optT;
@@ -51,6 +56,9 @@ public class ScpCommand implements CommandFactory.Command, Runnable {
     private IOException error;
 
     public ScpCommand(String[] args) {
+        if (log.isDebugEnabled()) {
+            log.debug("Executing command {}", Arrays.asList(args));
+        }
         root = new File(".");
         for (int i = 1; i < args.length; i++) {
             if (args[i].charAt(0) == '-') {
@@ -143,13 +151,16 @@ public class ScpCommand implements CommandFactory.Command, Runnable {
             } catch (IOException e2) {
                 // Ignore
             }
-            e.printStackTrace();
+            log.info("Error in scp command", e);
         } finally {
             callback.onExit(0);
         }
     }
 
     private void writeDir(String header, File path) throws IOException {
+        if (log.isDebugEnabled()) {
+            log.debug("Writing dir {}", path);
+        }
         if (!header.startsWith("D")) {
             throw new IOException("Expected a D message but got '" + header + "'");
         }
@@ -192,6 +203,9 @@ public class ScpCommand implements CommandFactory.Command, Runnable {
     }
 
     private void writeFile(String header, File path) throws IOException {
+        if (log.isDebugEnabled()) {
+            log.debug("Writing file {}", path);
+        }
         if (!header.startsWith("C")) {
             throw new IOException("Expected a C message but got '" + header + "'");
         }
@@ -245,6 +259,9 @@ public class ScpCommand implements CommandFactory.Command, Runnable {
     }
 
     private void readFile(File path) throws IOException {
+        if (log.isDebugEnabled()) {
+            log.debug("Reading file {}", path);
+        }
         StringBuffer buf = new StringBuffer();
         buf.append("C");
         buf.append("0644"); // what about perms
@@ -272,6 +289,9 @@ public class ScpCommand implements CommandFactory.Command, Runnable {
     }
 
     private void readDir(File path) throws IOException {
+        if (log.isDebugEnabled()) {
+            log.debug("Reading directory {}", path);
+        }
         StringBuffer buf = new StringBuffer();
         buf.append("D");
         buf.append("0755"); // what about perms

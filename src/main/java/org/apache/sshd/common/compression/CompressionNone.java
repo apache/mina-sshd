@@ -22,13 +22,19 @@ import org.apache.sshd.common.Compression;
 import org.apache.sshd.common.NamedFactory;
 
 /**
- * TODO Add javadoc
+ * No-op <code>Compression</code>.
+ * This is actually an abstract class, because no compression will be
+ * identified by a <code>null</code> <code>Compression</code> object.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @version $Rev$, $Date$
  */
 public abstract class CompressionNone implements Compression {
 
+    /**
+     * Named factory for the no-op <code>Compression</code>.
+     * This factory will simply return <code>null</code>. 
+     */
     public static class Factory implements NamedFactory<Compression> {
         public String getName() {
             return "none";

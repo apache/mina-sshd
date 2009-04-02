@@ -22,13 +22,16 @@ import org.apache.sshd.common.Digest;
 import org.apache.sshd.common.NamedFactory;
 
 /**
- * TODO Add javadoc
+ * SHA1 Digest.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @version $Rev$, $Date$
  */
 public class SHA1 extends BaseDigest {
 
+    /**
+     * Named factory for SHA1 digest
+     */
     public static class Factory implements NamedFactory<Digest> {
 
         public String getName() {
@@ -40,6 +43,9 @@ public class SHA1 extends BaseDigest {
         }
     }
 
+    /**
+     * Create a new instance of a SHA1 digest
+     */
     public SHA1() {
         super("SHA-1", 20);
     }

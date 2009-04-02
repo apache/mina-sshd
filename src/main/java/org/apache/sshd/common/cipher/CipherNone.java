@@ -22,13 +22,19 @@ import org.apache.sshd.common.Cipher;
 import org.apache.sshd.common.NamedFactory;
 
 /**
- * TODO Add javadoc
+ * Represents a no-op cipher.
+ * This cipher can not really be used during authentication and should only
+ * be used after, so that authentication remains secured, but not the remaining
+ * of the exchanges.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @version $Rev$, $Date$
  */
 public class CipherNone implements Cipher {
 
+    /**
+     * Named factory for the no-op Cipher
+     */
     public static class Factory implements NamedFactory<Cipher> {
         public String getName() {
             return "none";

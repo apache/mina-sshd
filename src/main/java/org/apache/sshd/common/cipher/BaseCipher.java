@@ -25,7 +25,7 @@ import org.apache.sshd.common.Cipher;
 import org.apache.sshd.common.util.SecurityUtils;
 
 /**
- * TODO Add javadoc
+ * Base class for all Cipher implementations delegating to the JCE provider.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @version $Rev$, $Date$

@@ -49,7 +49,7 @@ public interface NamedFactory<T> {
     public static class Utils {
 
         /**
-         * Create an instance of the spcecified name by looking up the needed factory
+         * Create an instance of the specified name by looking up the needed factory
          * in the list.
          * 
          * @param factories list of available factories

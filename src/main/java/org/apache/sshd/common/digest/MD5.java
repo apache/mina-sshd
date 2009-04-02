@@ -22,13 +22,16 @@ import org.apache.sshd.common.Digest;
 import org.apache.sshd.common.NamedFactory;
 
 /**
- * TODO Add javadoc
+ * MD5 Digest.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @version $Rev$, $Date$
  */
 public class MD5 extends BaseDigest {
 
+    /**
+     * Named factory for MD5 digest
+     */
     public static class Factory implements NamedFactory<Digest> {
 
         public String getName() {
@@ -40,6 +43,9 @@ public class MD5 extends BaseDigest {
         }
     }
 
+    /**
+     * Create a new instance of a MD5 digest
+     */
     public MD5() {
         super("MD5", 16);
     }

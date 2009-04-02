@@ -26,13 +26,19 @@ import org.bouncycastle.crypto.prng.RandomGenerator;
 import org.bouncycastle.crypto.prng.VMPCRandomGenerator;
 
 /**
- * TODO Add javadoc
+ * BouncyCastle <code>Random</code>.
+ * This pseudo random number generator uses the a very fast PRNG from BouncyCastle.
+ * The JRE random will be used when creating a new generator to add some random
+ * data to the seed.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @version $Rev$, $Date$
  */
 public class BouncyCastleRandom implements Random {
 
+    /**
+     * Named factory for the BouncyCastle <code>Random</code>
+     */
     public static class Factory implements NamedFactory<Random> {
 
         public String getName() {

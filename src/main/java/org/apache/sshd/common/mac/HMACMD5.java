@@ -22,13 +22,16 @@ import org.apache.sshd.common.Mac;
 import org.apache.sshd.common.NamedFactory;
 
 /**
- * TODO Add javadoc
+ * HMAC-MD5 <code>Mac</code>.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @version $Rev$, $Date$
  */
 public class HMACMD5 extends BaseMac {
 
+    /**
+     * Named factory for the HMACMD5 <code>Mac</code>
+     */
     public static class Factory implements NamedFactory<Mac> {
 
         public String getName() {

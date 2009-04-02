@@ -37,7 +37,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * TODO Add javadoc
+ * Base class for DHG key exchange algorithms.
+ * Implementations will only have to configure the required data on the
+ * {@link DH} class in the {@link #initDH(org.apache.sshd.common.kex.DH)} method.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @version $Rev$, $Date$
@@ -91,7 +93,7 @@ public abstract class AbstractDHGClient implements KeyExchange {
         log.info("Received SSH_MSG_KEXDH_REPLY");
         
         byte[] K_S = buffer.getBytes();
-        byte[] f = buffer.getMPIntAsBytes();
+        f = buffer.getMPIntAsBytes();
         byte[] sig = buffer.getBytes();
         dh.setF(f);
         K = dh.getK();

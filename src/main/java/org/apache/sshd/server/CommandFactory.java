@@ -40,7 +40,7 @@ public interface CommandFactory {
      * the display output to be sent back to the client.
      *
      * @param command
-     * @return a non null command
+     * @return a non null <code>Command</code>
      */
     Command createCommand(String command);
 

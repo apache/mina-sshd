@@ -344,7 +344,7 @@ public final class Buffer {
         }
     }
 
-    private static final int getNextPowerOf2(int i) {
+    private static int getNextPowerOf2(int i) {
         int j = 1;
         while (j < i) {
             j <<= 1;

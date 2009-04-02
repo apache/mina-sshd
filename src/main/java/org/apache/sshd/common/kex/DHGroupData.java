@@ -19,12 +19,12 @@
 package org.apache.sshd.common.kex;
 
 /**
- * TODO Add javadoc
+ * Simple class holding the data for DH group key exchanges.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @version $Rev$, $Date$
  */
-public class DHGroupData {
+public final class DHGroupData {
 
     public static final byte[] G = { 2 };
 

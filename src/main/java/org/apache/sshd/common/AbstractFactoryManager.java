@@ -24,6 +24,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+
 /**
  * TODO Add javadoc
  *
@@ -31,6 +34,8 @@ import java.util.Properties;
  * @version $Rev$, $Date$
  */
 public abstract class AbstractFactoryManager implements FactoryManager {
+
+    private final Logger log = LoggerFactory.getLogger(getClass());
 
     private Map<String,String> properties = new HashMap<String,String>();
     private List<NamedFactory<KeyExchange>> keyExchangeFactories;
@@ -117,7 +122,7 @@ public abstract class AbstractFactoryManager implements FactoryManager {
     protected void loadVersion() {
         this.version = "SSHD-UNKNOWN";
         try {
-            InputStream input = getClass().getResourceAsStream("sshd-version.properties");
+            InputStream input = getClass().getClassLoader().getResourceAsStream("org/apache/sshd/sshd-version.properties");
             try {
                 Properties props = new Properties();
                 props.load(input);
@@ -126,7 +131,7 @@ public abstract class AbstractFactoryManager implements FactoryManager {
                 input.close();
             }
         } catch (Exception e) {
-            // Ignore
+            log.warn("Unable to load version from resources. Missing org/apache/sshd/sshd-version.properties ?", e);
         }
     }
 }

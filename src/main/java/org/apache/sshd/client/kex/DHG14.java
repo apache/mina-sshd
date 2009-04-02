@@ -33,6 +33,9 @@ import org.apache.sshd.common.kex.DHGroupData;
  */
 public class DHG14 extends AbstractDHGClient {
 
+    /**
+     * Named factory for DHG14 key exchange
+     */
     public static class Factory implements NamedFactory<KeyExchange> {
 
         public String getName() {

@@ -24,7 +24,7 @@ import org.apache.sshd.common.Digest;
 import org.apache.sshd.common.util.SecurityUtils;
 
 /**
- * TODO Add javadoc
+ * Base class for Digest algorithms based on the JCE provider.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @version $Rev$, $Date$
@@ -35,6 +35,14 @@ public class BaseDigest implements Digest {
     private int bsize;
     private MessageDigest md;
 
+    /**
+     * Create a new digest using the given algorithm and block size.
+     * The initialization and creation of the underlying {@link MessageDigest}
+     * object will be done in the {@link #init()} method.
+     *
+     * @param algorithm the JCE algorithm to use for this digest
+     * @param bsize the block size of this digest
+     */
     public BaseDigest(String algorithm, int bsize) {
         this.algorithm = algorithm;
         this.bsize = bsize;

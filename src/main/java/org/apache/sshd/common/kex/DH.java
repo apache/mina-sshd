@@ -31,7 +31,7 @@ import javax.crypto.spec.DHPublicKeySpec;
 import org.apache.sshd.common.util.SecurityUtils;
 
 /**
- * TODO Add javadoc
+ * Diffie-Hellman key generator.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @version $Rev$, $Date$

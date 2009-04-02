@@ -23,13 +23,16 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.Signature;
 
 /**
- * TODO Add javadoc
+ * RSA <code>Signature</code>
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @version $Rev$, $Date$
  */
 public class SignatureRSA extends AbstractSignature {
 
+    /**
+     * A named factory for RSA <code>Signature</code>
+     */
     public static class Factory implements NamedFactory<Signature> {
 
         public String getName() {

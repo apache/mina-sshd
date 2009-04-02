@@ -123,7 +123,7 @@ public class ServerSession extends AbstractSession {
             case SSH_MSG_DEBUG: {
                 boolean display = buffer.getBoolean();
                 String msg = buffer.getString();
-                log.info("Received SSH_MSG_DEBUG '{}'", msg);
+                log.info("Received SSH_MSG_DEBUG (display={}) '{}'", display, msg);
                 break;
             }
             case SSH_MSG_IGNORE:

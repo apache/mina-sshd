@@ -24,7 +24,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * TODO Add javadoc
+ * A Window for a given channel.
+ * Windows are used to not overflow the client or server when sending datas.
+ * Both clients and servers have a local and remote window and won't send
+ * anymore data until the window has been expanded.  When the local window
+ * is 
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @version $Rev$, $Date$
@@ -65,6 +69,7 @@ public class Window {
         this.maxSize = size;
         this.packetSize = packetSize;
     }
+
     public void expand(int window) {
         synchronized (lock) {
             size += window;

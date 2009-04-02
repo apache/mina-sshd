@@ -22,13 +22,16 @@ import org.apache.sshd.common.Cipher;
 import org.apache.sshd.common.NamedFactory;
 
 /**
- * TODO Add javadoc
+ * AES256CBC Cipher
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @version $Rev$, $Date$
  */
 public class AES256CBC extends BaseCipher {
 
+    /**
+     * Named factory for AES256CBC Cipher
+     */
     public static class Factory implements NamedFactory<Cipher> {
         public String getName() {
             return "aes256-cbc";

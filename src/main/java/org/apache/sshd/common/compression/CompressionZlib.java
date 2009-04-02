@@ -29,13 +29,16 @@ import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.util.Buffer;
 
 /**
- * TODO Add javadoc
+ * ZLib based Compression.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @version $Rev$, $Date$
  */
 public class CompressionZlib implements Compression {
 
+    /**
+     * Named factory for the ZLib Compression.
+     */
     public static class Factory implements NamedFactory<Compression> {
         public String getName() {
             return "zlib";
@@ -50,6 +53,12 @@ public class CompressionZlib implements Compression {
 
     private ZStream stream;
     private byte[] tmpbuf = new byte[BUF_SIZE];
+
+    /**
+     * Create a new instance of a ZLib base compression
+     */
+    public CompressionZlib() {
+    }
 
     public boolean isDelayed() {
         return false;
