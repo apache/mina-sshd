@@ -112,16 +112,19 @@ public class ScpTest {
         File root = new File("target/scp");
         File target = new File("target/scp/out.txt");
         root.mkdirs();
+        assertTrue(root.exists());
 
         target.delete();
         assertFalse(target.exists());
         sendFile("target/scp/out.txt", "out.txt", data);
+        Thread.sleep(100);
         assertTrue(target.exists());
         assertEquals(data.length(), target.length());
 
         target.delete();
         assertFalse(target.exists());
         sendFile("target/scp", "out.txt", data);
+        Thread.sleep(100);
         assertTrue(target.exists());
         assertEquals(data.length(), target.length());
 
@@ -131,13 +134,13 @@ public class ScpTest {
 
         assertEquals(data, readFile("target/scp/out.txt"));
 
-
-        readDir("target/scp");
+        assertEquals(data, readDir("target/scp"));
 
         target.delete();
         root.delete();
 
         sendDir("target", "scp", "out.txt", data);
+        Thread.sleep(100);
         assertTrue(target.exists());
         assertEquals(data.length(), target.length());
     }
