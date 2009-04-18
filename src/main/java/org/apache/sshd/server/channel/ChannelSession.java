@@ -146,7 +146,7 @@ public class ChannelSession extends AbstractServerChannel {
         log.info("Received channel request: {}", type);
         if (!handleRequest(type, buffer)) {
             buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_FAILURE);
-            buffer.putInt(id);
+            buffer.putInt(recipient);
             session.writePacket(buffer);
         }
     }
@@ -227,7 +227,7 @@ public class ChannelSession extends AbstractServerChannel {
         log.debug("env for channel {}: {} = {}", new Object[] { id, name, value });
         if (wantReply) {
             buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS);
-            buffer.putInt(id);
+            buffer.putInt(recipient);
             session.writePacket(buffer);
         }
         return true;
@@ -266,7 +266,7 @@ public class ChannelSession extends AbstractServerChannel {
         // TODO: handle pty request correctly
         if (wantReply) {
             buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS);
-            buffer.putInt(id);
+            buffer.putInt(recipient);
             session.writePacket(buffer);
         }
         return true;
@@ -282,7 +282,7 @@ public class ChannelSession extends AbstractServerChannel {
         // TODO: handle window-change request correctly
         if (wantReply) {
             buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS);
-            buffer.putInt(id);
+            buffer.putInt(recipient);
             session.writePacket(buffer);
         }
         return true;
@@ -295,7 +295,7 @@ public class ChannelSession extends AbstractServerChannel {
         // TODO: handle signal request correctly
         if (wantReply) {
             buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS);
-            buffer.putInt(id);
+            buffer.putInt(recipient);
             session.writePacket(buffer);
         }
         return true;
@@ -335,7 +335,7 @@ public class ChannelSession extends AbstractServerChannel {
 
         if (wantReply) {
             buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS);
-            buffer.putInt(id);
+            buffer.putInt(recipient);
             session.writePacket(buffer);
         }
 
@@ -392,7 +392,7 @@ public class ChannelSession extends AbstractServerChannel {
 
         if (wantReply) {
             buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS);
-            buffer.putInt(id);
+            buffer.putInt(recipient);
             session.writePacket(buffer);
         }
 
@@ -407,7 +407,7 @@ public class ChannelSession extends AbstractServerChannel {
         // TODO: start subsystem
         if (wantReply) {
             buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS);
-            buffer.putInt(id);
+            buffer.putInt(recipient);
             session.writePacket(buffer);
         }
         return true;
@@ -418,7 +418,7 @@ public class ChannelSession extends AbstractServerChannel {
         // TODO: start agent forwarding
         if (wantReply) {
             buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS);
-            buffer.putInt(id);
+            buffer.putInt(recipient);
             session.writePacket(buffer);
         }
         return true;
@@ -429,7 +429,7 @@ public class ChannelSession extends AbstractServerChannel {
         // TODO: start x11 forwarding
         if (wantReply) {
             buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS);
-            buffer.putInt(id);
+            buffer.putInt(recipient);
             session.writePacket(buffer);
         }
         return true;
