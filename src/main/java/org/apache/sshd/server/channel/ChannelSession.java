@@ -332,14 +332,16 @@ public class ChannelSession extends AbstractServerChannel {
                 }
             }
         });
-        shell.start(env);
-        shellIn = new LoggingFilterOutputStream(shellIn, "IN: ", log);
 
         if (wantReply) {
             buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS);
             buffer.putInt(id);
             session.writePacket(buffer);
         }
+
+        shell.start(env);
+        shellIn = new LoggingFilterOutputStream(shellIn, "IN: ", log);
+
         return true;
     }
 
@@ -387,8 +389,6 @@ public class ChannelSession extends AbstractServerChannel {
                 }
             }
         });
-        // Launch command
-        command.start();
 
         if (wantReply) {
             buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS);
@@ -396,6 +396,9 @@ public class ChannelSession extends AbstractServerChannel {
             session.writePacket(buffer);
         }
 
+        // Launch command
+        command.start();
+        
         return true;
     }
 
