@@ -23,78 +23,17 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.apache</groupId>
-        <artifactId>apache</artifactId>
-        <version>4</version>
+        <groupId>org.apache.sshd</groupId>
+        <artifactId>sshd</artifactId>
+        <version>1.0-SNAPSHOT</version>
     </parent>
 
     <groupId>org.apache.sshd</groupId>
-    <artifactId>sshd</artifactId>
+    <artifactId>sshd-core</artifactId>
     <version>1.0-SNAPSHOT</version>
-    <name>Apache Mina SSHD</name>
-    <packaging>pom</packaging>
+    <name>Apache Mina SSHD :: Core</name>
+    <packaging>bundle</packaging>
     <inceptionYear>2008</inceptionYear>
-
-    <licenses>
-      <license>
-        <name>Apache 2.0 License</name>
-        <url>http://www.apache.org/licenses/LICENSE-2.0</url>
-        <distribution>repo</distribution>
-      </license>
-    </licenses>
-
-    <mailingLists>
-      <mailingList>
-        <name>Users mailing list</name>
-        <subscribe>users-subscribe@mina.apache.org</subscribe>
-        <unsubscribe>users-unsubscribe@mina.apache.org</unsubscribe>
-        <post>users@mina.apache.org</post>
-        <archive>http://mail-archives.apache.org/mod_mbox/mina-users/</archive>
-      </mailingList>
-      <mailingList>
-        <name>MINA Development mailing list</name>
-        <subscribe>dev-subscribe@mina.apache.org</subscribe>
-        <unsubscribe>dev-unsubscribe@mina.apache.org</unsubscribe>
-        <post>dev@mina.apache.org</post>
-        <archive>http://mail-archives.apache.org/mod_mbox/mina-dev/</archive>
-        <otherArchives>
-          <otherArchive>http://www.nabble.com/Apache-MINA-f16868.html</otherArchive>
-        </otherArchives>
-      </mailingList>
-      <mailingList>
-        <name>MINA Commit mailing list</name>
-        <subscribe>commits-subscribe@mina.apache.org</subscribe>
-        <unsubscribe>commits-unsubscribe@mina.apache.org</unsubscribe>
-        <archive>http://mail-archives.apache.org/mod_mbox/mina-commits/</archive>
-      </mailingList>
-    </mailingLists>
-
-    <repositories>
-        <repository>
-            <id>servicemix</id>
-            <name>Apache ServiceMix Repository</name>
-            <url>http://svn.apache.org/repos/asf/servicemix/m2-repo</url>
-        </repository>
-        <repository>
-            <id>sshd</id>
-            <name>SSHD Repository</name>
-            <url>http://sshd.googlecode.com/svn/m2-repo</url>
-        </repository>
-    </repositories>
-
-    <developers>
-      <developer>
-        <id>gnodet</id>
-        <name>Guillaume Nodet</name>
-        <email>gnodet@apache.org</email>
-      </developer>
-    </developers>
-
-    <scm>
-        <connection>scm:svn:http://svn.apache.org/repos/asf/mina/sshd/trunk</connection>
-        <developerConnection>scm:svn:https://svn.apache.org/repos/asf/mina/sshd/trunk</developerConnection>
-        <url>http://svn.apache.org/repos/asf/mina/sshd/trunk</url>
-    </scm>
 
     <dependencies>
         <dependency>
@@ -153,17 +92,42 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/filtered-resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>2.0.2</version>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <version>1.4.3</version>
+                <extensions>true</extensions>
                 <configuration>
-                    <source>1.5</source>
-                    <target>1.5</target>
+                    <instructions>
+                        <Bundle-SymbolicName>${artifactId}</Bundle-SymbolicName>
+                        <Import-Package>
+                            com.jcraft.jzlib*;resolution:=optional,
+                            net.sf.jpam*;resolution:=optional,
+                            org.bouncycastle*;resolution:=optional,
+                            *
+                        </Import-Package>
+                        <Export-Package>
+                            org.apache.sshd*;version=${version}
+                        </Export-Package>
+                    </instructions>
+                    <unpackBundle>true</unpackBundle>
                 </configuration>
             </plugin>
-        </plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <redirectTestOutputToFile>true</redirectTestOutputToFile>
+                </configuration>
+            </plugin>
+            </plugins>
     </build>
 
     <distributionManagement>
@@ -174,9 +138,4 @@
       </repository>
     </distributionManagement>
 
-    <modules>
-      <module>sshd-core</module>
-      <module>sshd-pam</module>
-    </modules>
-    
 </project>
