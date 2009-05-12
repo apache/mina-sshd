@@ -25,7 +25,6 @@ import org.apache.sshd.common.NamedFactory;
  * BlowfishCBC Cipher
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @version $Rev$, $Date$
  */
 public class BlowfishCBC extends BaseCipher {
 

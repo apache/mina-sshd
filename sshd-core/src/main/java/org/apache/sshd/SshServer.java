@@ -86,7 +86,6 @@ import org.apache.sshd.server.shell.ProcessShellFactory;
  *
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @version $Rev$, $Date$
  */
 public class SshServer extends AbstractFactoryManager implements ServerFactoryManager {
 

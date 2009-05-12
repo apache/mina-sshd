@@ -29,7 +29,6 @@ import static org.junit.Assert.*;
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @version $Rev: 728050 $, $Date: 2008-12-19 16:50:58 +0100 (Fri, 19 Dec 2008) $
  */
 public class PEMGeneratorHostKeyProviderTest {
 

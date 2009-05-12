@@ -22,7 +22,6 @@ package org.apache.sshd.common;
  * Exception used in the SSH client or server.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @version $Rev$, $Date$
  */
 public class RuntimeSshException extends RuntimeException {
 

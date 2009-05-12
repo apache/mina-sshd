@@ -32,7 +32,6 @@ import org.slf4j.LoggerFactory;
  * the streams.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @version $Rev$, $Date$
  */
 public class ProcessShellFactory implements ShellFactory {
 

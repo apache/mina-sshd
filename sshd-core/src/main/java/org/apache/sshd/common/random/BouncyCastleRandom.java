@@ -32,7 +32,6 @@ import org.bouncycastle.crypto.prng.VMPCRandomGenerator;
  * data to the seed.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @version $Rev$, $Date$
  */
 public class BouncyCastleRandom implements Random {
 

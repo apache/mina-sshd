@@ -25,7 +25,6 @@ import org.apache.sshd.common.NamedFactory;
  * HMAC-MD5-96 <code>Mac</code>
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @version $Rev$, $Date$
  */
 public class HMACMD596 extends BaseMac {
 

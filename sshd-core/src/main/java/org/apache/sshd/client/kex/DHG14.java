@@ -29,7 +29,6 @@ import org.apache.sshd.common.kex.DHGroupData;
  * It requires BouncyCastle to be used.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @version $Rev$, $Date$
  */
 public class DHG14 extends AbstractDHGClient {
 

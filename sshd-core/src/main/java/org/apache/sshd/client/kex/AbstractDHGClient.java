@@ -42,7 +42,6 @@ import org.slf4j.LoggerFactory;
  * {@link DH} class in the {@link #initDH(org.apache.sshd.common.kex.DH)} method.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @version $Rev$, $Date$
  */
 public abstract class AbstractDHGClient implements KeyExchange {
 

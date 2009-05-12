@@ -28,7 +28,6 @@ import org.apache.mina.util.ExceptionMonitor;
  * A default implementation of {@link SshFuture}.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @version $Rev$, $Date$
  */
 public class DefaultSshFuture<T extends SshFuture> implements SshFuture<T> {
 

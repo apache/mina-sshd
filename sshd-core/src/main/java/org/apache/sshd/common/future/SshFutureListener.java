@@ -25,7 +25,6 @@ import java.util.EventListener;
  * of an asynchronous SSH operation : {@link SshFuture}.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @version $Rev$, $Date$
  */
 public interface SshFutureListener<T extends SshFuture> extends EventListener {
 

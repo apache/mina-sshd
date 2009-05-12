@@ -30,7 +30,6 @@ import org.apache.sshd.common.future.CloseFuture;
  * simple commands or subsystems
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @version $Rev$, $Date$
  */
 public interface ClientChannel {
 

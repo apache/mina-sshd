@@ -30,7 +30,6 @@ import org.apache.sshd.common.KeyPairProvider;
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @version $Rev$, $Date$
  */
 public abstract class AbstractKeyPairProvider implements KeyPairProvider {
 

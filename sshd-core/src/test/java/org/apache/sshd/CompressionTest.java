@@ -40,7 +40,6 @@ import org.junit.Test;
  * Test compression algorithms.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @version $Rev$, $Date$
  */
 public class CompressionTest {
 

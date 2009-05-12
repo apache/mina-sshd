@@ -25,7 +25,6 @@ import org.apache.sshd.common.future.SshFuture;
  * An {@link SshFuture} for asynchronous connections requests.
  * 
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @version $Rev$, $Date$
  */
 public interface ConnectFuture extends SshFuture<ConnectFuture> {
 

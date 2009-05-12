@@ -26,7 +26,6 @@ import java.util.concurrent.TimeUnit;
  * Can be listened for completion using a {@link SshFutureListener}.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @version $Rev$, $Date$
  */
 public interface SshFuture<T extends SshFuture> {
 

@@ -27,7 +27,6 @@ import org.apache.sshd.common.util.SecurityUtils;
  * Base class for <code>Mac</code> implementations based on the JCE provider.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @version $Rev$, $Date$
  */
 public class BaseMac implements Mac {
 

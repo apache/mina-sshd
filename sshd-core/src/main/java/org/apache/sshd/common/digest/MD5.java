@@ -25,7 +25,6 @@ import org.apache.sshd.common.NamedFactory;
  * MD5 Digest.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @version $Rev$, $Date$
  */
 public class MD5 extends BaseDigest {
 

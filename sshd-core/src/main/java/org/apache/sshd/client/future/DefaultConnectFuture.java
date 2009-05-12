@@ -26,7 +26,6 @@ import org.apache.sshd.common.future.DefaultSshFuture;
  * A default implementation of {@link ConnectFuture}.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @version $Rev$, $Date$
  */
 public class DefaultConnectFuture extends DefaultSshFuture<ConnectFuture> implements ConnectFuture {
 

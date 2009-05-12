@@ -107,7 +107,6 @@ import org.apache.sshd.common.util.SecurityUtils;
  * </pre>
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @version $Rev$, $Date$
  */
 public class SshClient extends AbstractFactoryManager {
 

@@ -26,7 +26,6 @@ import org.apache.sshd.common.Signature;
  * DSA <code>Signature</code>
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @version $Rev$, $Date$
  */
 public class SignatureDSA extends AbstractSignature {
 

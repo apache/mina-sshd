@@ -30,7 +30,6 @@ import org.apache.sshd.server.session.ServerSession;
  * requested by the SSH client.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @version $Rev$, $Date$
  */
 public interface CommandFactory {
 

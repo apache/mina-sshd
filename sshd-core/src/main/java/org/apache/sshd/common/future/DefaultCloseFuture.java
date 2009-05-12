@@ -22,7 +22,6 @@ package org.apache.sshd.common.future;
  * A default implementation of {@link CloseFuture}.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @version $Rev$, $Date$
  */
 public class DefaultCloseFuture extends DefaultSshFuture<CloseFuture> implements CloseFuture {
 

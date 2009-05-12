@@ -33,7 +33,6 @@ import org.apache.sshd.server.ShellFactory;
  * to pump the streams and also to check if the shell is alive. 
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @version $Rev$, $Date$
  */
 public class InvertedShellWrapper implements ShellFactory.Shell {
 

@@ -24,7 +24,6 @@ package org.apache.sshd.common.session;
  * @param T type of value stored in the attribute.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @version $Rev$, $Date$
  */
 public class AttributeKey<T> {
 }

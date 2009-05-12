@@ -25,7 +25,6 @@ import org.apache.sshd.common.NamedFactory;
  * AES128CBC cipher
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @version $Rev$, $Date$
  */
 public class AES128CBC extends BaseCipher {
 

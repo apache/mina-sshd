@@ -25,7 +25,6 @@ import java.security.KeyPair;
  * the host key, or on the client side to provide the user key.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @version $Rev$, $Date$
  */
 public interface KeyPairProvider {
 

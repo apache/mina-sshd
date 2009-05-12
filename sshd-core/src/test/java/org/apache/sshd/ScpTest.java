@@ -44,7 +44,6 @@ import static org.junit.Assert.*;
  * Test for SCP support.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @version $Rev: 760111 $, $Date: 2009-03-30 21:16:19 +0200 (Mon, 30 Mar 2009) $
  */
 public class ScpTest {
 

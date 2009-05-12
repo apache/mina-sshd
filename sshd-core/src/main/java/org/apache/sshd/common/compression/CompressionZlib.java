@@ -32,7 +32,6 @@ import org.apache.sshd.common.util.Buffer;
  * ZLib based Compression.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @version $Rev$, $Date$
  */
 public class CompressionZlib implements Compression {
 

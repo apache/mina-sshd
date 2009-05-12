@@ -37,7 +37,6 @@ import org.apache.sshd.common.SshConstants;
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @version $Rev$, $Date$
  */
 public final class Buffer {
 

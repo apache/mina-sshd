@@ -37,7 +37,6 @@ import org.slf4j.LoggerFactory;
  * are not supported.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @version $Rev$, $Date$
  */
 public class ScpCommand implements CommandFactory.Command, Runnable {
 

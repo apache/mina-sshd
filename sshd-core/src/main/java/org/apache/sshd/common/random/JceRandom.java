@@ -27,7 +27,6 @@ import org.apache.sshd.common.Random;
  * A <code>Random</code> implementation using the built-in {@link SecureRandom} PRNG. 
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @version $Rev$, $Date$
  */
 public class JceRandom implements Random {
 

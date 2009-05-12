@@ -22,7 +22,6 @@ package org.apache.sshd.common.kex;
  * Simple class holding the data for DH group key exchanges.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @version $Rev$, $Date$
  */
 public final class DHGroupData {
 

@@ -28,7 +28,6 @@ import org.slf4j.Logger;
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @version $Rev$, $Date$
  */
 public class LoggingFilterOutputStream extends FilterOutputStream {
 

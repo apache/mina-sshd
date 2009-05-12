@@ -26,7 +26,6 @@ import java.security.PublicKey;
  * Usually wraps a javax.crypto.Signature object
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @version $Rev$, $Date$
  */
 public interface Signature {
 

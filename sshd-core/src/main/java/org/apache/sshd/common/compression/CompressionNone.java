@@ -27,7 +27,6 @@ import org.apache.sshd.common.NamedFactory;
  * identified by a <code>null</code> <code>Compression</code> object.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @version $Rev$, $Date$
  */
 public abstract class CompressionNone implements Compression {
 
