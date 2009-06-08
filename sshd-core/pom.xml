@@ -93,20 +93,19 @@
             <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
-                <version>1.4.3</version>
                 <extensions>true</extensions>
                 <configuration>
                     <instructions>
                         <Bundle-SymbolicName>${artifactId}</Bundle-SymbolicName>
                         <Import-Package>
                             com.jcraft.jzlib*;resolution:=optional,
-                            net.sf.jpam*;resolution:=optional,
                             org.bouncycastle*;resolution:=optional,
                             *
                         </Import-Package>
                         <Export-Package>
                             org.apache.sshd*;version=${version}
                         </Export-Package>
+                        <_versionpolicy>[$(version;==;$(@)),$(version;+;$(@)))</_versionpolicy>
                     </instructions>
                     <unpackBundle>true</unpackBundle>
                 </configuration>
