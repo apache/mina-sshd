@@ -119,7 +119,7 @@ public class ServerTest {
 
     public static void main(String[] args) throws Exception {
         SshServer sshd = SshServer.setUpDefaultServer();
-        sshd.setPort(8000);
+        sshd.setPort(8001);
         sshd.setKeyPairProvider(new FileKeyPairProvider(new String[] { "src/test/resources/hostkey.pem" }));
         sshd.setShellFactory(new EchoShellFactory());
         sshd.setCommandFactory(new ScpCommandFactory());

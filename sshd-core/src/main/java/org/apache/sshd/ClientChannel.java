@@ -33,6 +33,7 @@ import org.apache.sshd.common.future.CloseFuture;
  */
 public interface ClientChannel {
 
+    String CHANNEL_EXEC = "exec";
     String CHANNEL_SHELL = "shell";
 
     int TIMEOUT =     0x0001;

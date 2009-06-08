@@ -20,6 +20,10 @@ package org.apache.sshd;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.ArrayList;
@@ -248,27 +252,27 @@ public class SshClient extends AbstractFactoryManager {
         boolean error = false;
 
         for (int i = 0; i < args.length; i++) {
-            if ("-p".equals(args[i])) {
+            if (command == null && "-p".equals(args[i])) {
                 if (i + 1 >= args.length) {
                     System.err.println("option requires an argument: " + args[i]);
                     error = true;
                     break;
                 }
                 port = Integer.parseInt(args[++i]);
-            } else if ("-l".equals(args[i])) {
+            } else if (command == null && "-l".equals(args[i])) {
                 if (i + 1 >= args.length) {
                     System.err.println("option requires an argument: " + args[i]);
                     error = true;
                     break;
                 }
                 login = args[++i];
-            } else if ("-v".equals(args[i])) {
+            } else if (command == null && "-v".equals(args[i])) {
                 logLevel = 1;
-            } else if ("-vv".equals(args[i])) {
+            } else if (command == null && "-vv".equals(args[i])) {
                 logLevel = 2;
-            } else if ("-vvv".equals(args[i])) {
+            } else if (command == null && "-vvv".equals(args[i])) {
                 logLevel = 3;
-            } else if (args[i].startsWith("-")) {
+            } else if (command == null && args[i].startsWith("-")) {
                 System.err.println("illegal option: " + args[i]);
                 error = true;
                 break;
@@ -311,8 +315,21 @@ public class SshClient extends AbstractFactoryManager {
                 System.err.println("error");
                 System.exit(-1);
             }
-            ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
-            channel.setIn(new NoCloseInputStream(System.in));
+            ClientChannel channel;
+            if (command == null) {
+                channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
+                channel.setIn(new NoCloseInputStream(System.in));
+            } else {
+                channel = session.createChannel(ClientChannel.CHANNEL_EXEC);
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                Writer w = new OutputStreamWriter(baos);
+                for (String cmd : command) {
+                    w.append(cmd).append(" ");
+                }
+                w.append("\n");
+                w.close();
+                channel.setIn(new ByteArrayInputStream(baos.toByteArray()));
+            }
             channel.setOut(new NoCloseOutputStream(System.out));
             channel.setErr(new NoCloseOutputStream(System.err));
             channel.open().await();

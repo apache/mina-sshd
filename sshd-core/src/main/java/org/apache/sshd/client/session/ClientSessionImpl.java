@@ -29,6 +29,7 @@ import org.apache.sshd.client.UserAuth;
 import org.apache.sshd.client.auth.UserAuthPassword;
 import org.apache.sshd.client.channel.AbstractClientChannel;
 import org.apache.sshd.client.channel.ChannelShell;
+import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.DefaultAuthFuture;
 import org.apache.sshd.common.KeyPairProvider;
@@ -109,8 +110,10 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
     public ClientChannel createChannel(String type) throws Exception {
         // TODO: use NamedFactory to create channel
         AbstractClientChannel channel;
-        if ("shell".equals(type)) {
+        if (ClientChannel.CHANNEL_SHELL.equals(type)) {
             channel = new ChannelShell();
+        } else if (ClientChannel.CHANNEL_EXEC.equals(type)) {
+            channel = new ChannelExec();
         } else {
             throw new IllegalArgumentException("Unsupported channel type " + type);
         }
