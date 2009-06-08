@@ -20,7 +20,10 @@ package org.apache.sshd;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.security.InvalidKeyException;
 import java.util.Arrays;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.mina.core.service.IoAcceptor;
@@ -244,12 +247,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         sshd.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(
                 new UserAuthPassword.Factory(),
                 new UserAuthPublicKey.Factory()));
-        sshd.setCipherFactories(Arrays.<NamedFactory<Cipher>>asList(
-                new AES128CBC.Factory(),
-                new TripleDESCBC.Factory(),
-                new BlowfishCBC.Factory(),
-                new AES192CBC.Factory(),
-                new AES256CBC.Factory()));
+        setUpDefaultCiphers(sshd);
         // Compression is not enabled by default
         // sshd.setCompressionFactories(Arrays.<NamedFactory<Compression>>asList(
         //         new CompressionNone.Factory(),
@@ -268,6 +266,30 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
                 new SignatureDSA.Factory(),
                 new SignatureRSA.Factory()));
         return sshd;
+    }
+
+    private static void setUpDefaultCiphers(SshServer sshd) {
+        List<NamedFactory<Cipher>> avail = new LinkedList<NamedFactory<Cipher>>();
+        avail.add(new AES128CBC.Factory());
+        avail.add(new TripleDESCBC.Factory());
+        avail.add(new BlowfishCBC.Factory());
+        avail.add(new AES192CBC.Factory());
+        avail.add(new AES256CBC.Factory());
+
+        for (Iterator<NamedFactory<Cipher>> i = avail.iterator(); i.hasNext();) {
+            final NamedFactory<Cipher> f = i.next();
+            try {
+                final Cipher c = f.create();
+                final byte[] key = new byte[c.getBlockSize()];
+                final byte[] iv = new byte[c.getIVSize()];
+                c.init(Cipher.Mode.Encrypt, key, iv);
+            } catch (InvalidKeyException e) {
+                i.remove();
+            } catch (Exception e) {
+                i.remove();
+            }
+        }
+        sshd.setCipherFactories(avail);
     }
 
     /*=================================

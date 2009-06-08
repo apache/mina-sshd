@@ -25,6 +25,9 @@ import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.LinkedList;
+import java.util.Iterator;
+import java.security.InvalidKeyException;
 
 import org.apache.mina.core.future.IoFutureListener;
 import org.apache.mina.core.service.IoConnector;
@@ -189,12 +192,7 @@ public class SshClient extends AbstractFactoryManager {
                     new DHG1.Factory()));
             client.setRandomFactory(new SingletonRandomFactory(new JceRandom.Factory()));
         }
-        client.setCipherFactories(Arrays.<NamedFactory<Cipher>>asList(
-                new AES128CBC.Factory(),
-                new TripleDESCBC.Factory(),
-                new BlowfishCBC.Factory(),
-                new AES192CBC.Factory(),
-                new AES256CBC.Factory()));
+        setUpDefaultCiphers(client);
         // Compression is not enabled by default
         // client.setCompressionFactories(Arrays.<NamedFactory<Compression>>asList(
         //         new CompressionNone.Factory(),
@@ -211,6 +209,30 @@ public class SshClient extends AbstractFactoryManager {
                 new SignatureDSA.Factory(),
                 new SignatureRSA.Factory()));
         return client;
+    }
+
+    private static void setUpDefaultCiphers(SshClient client) {
+        List<NamedFactory<Cipher>> avail = new LinkedList<NamedFactory<Cipher>>();
+        avail.add(new AES128CBC.Factory());
+        avail.add(new TripleDESCBC.Factory());
+        avail.add(new BlowfishCBC.Factory());
+        avail.add(new AES192CBC.Factory());
+        avail.add(new AES256CBC.Factory());
+
+        for (Iterator<NamedFactory<Cipher>> i = avail.iterator(); i.hasNext();) {
+            final NamedFactory<Cipher> f = i.next();
+            try {
+                final Cipher c = f.create();
+                final byte[] key = new byte[c.getBlockSize()];
+                final byte[] iv = new byte[c.getIVSize()];
+                c.init(Cipher.Mode.Encrypt, key, iv);
+            } catch (InvalidKeyException e) {
+                i.remove();
+            } catch (Exception e) {
+                i.remove();
+            }
+        }
+        client.setCipherFactories(avail);
     }
 
     /*=================================
