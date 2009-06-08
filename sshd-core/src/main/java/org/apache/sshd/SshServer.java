@@ -175,7 +175,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     }
 
     protected void checkConfig() {
-        if (getPort() <= 0) {
+        if (getPort() < 0) {
             throw new IllegalArgumentException("Bad port number: " + port);
         }
         if (getKeyExchangeFactories() == null) {
@@ -221,6 +221,9 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         acceptor.setHandler(handler);
 
         acceptor.bind(new InetSocketAddress(port));
+        if (port == 0) {
+            port = ((InetSocketAddress) acceptor.getLocalAddress()).getPort();
+        }
     }
 
     /**
