@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<supplementalDataModels>
+    <supplement>
+        <project>
+            <groupId>bouncycastle</groupId>
+            <artifactId>bcprov-jdk15</artifactId>
+            <name>Bouncy Castle Crypto APIs for Java</name>
+            <organization>
+                <name>The Legion of the Bouncy Castle</name>
+                <url>http://www.bouncycastle.org</url>
+            </organization>
+            <licenses>
+                <license>
+                    <name>Bouncy Castle License</name>
+                    <url>http://www.bouncycastle.org/licence.html</url>
+                </license>
+            </licenses>
+        </project>
+    </supplement>
+    <supplement>
+        <project>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <name>SLF4J API Module</name>
+            <organization>
+                <name>QOS.ch</name>
+                <url>http://www.qos.ch</url>
+            </organization>
+            <licenses>
+                <license>
+                    <name>MIT style</name>
+                    <url>http://www.slf4j.org/license.html</url>
+                </license>
+            </licenses>
+        </project>
+    </supplement>
+    <supplement>
+        <project>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+            <name>SLF4J JDK14 Binding</name>
+            <organization>
+                <name>QOS.ch</name>
+                <url>http://www.qos.ch</url>
+            </organization>
+            <licenses>
+                <license>
+                    <name>MIT style</name>
+                    <url>http://www.slf4j.org/license.html</url>
+                </license>
+            </licenses>
+        </project>
+    </supplement>
+    <supplement>
+        <project>
+            <groupId>net.sf.jpam</groupId>
+            <artifactId>jpam</artifactId>
+            <name>Java-PAM bridge</name>
+            <organization>
+                <name>JPAM project</name>
+                <url>http://jpam.sourceforge.net/</url>
+            </organization>
+            <licenses>
+                <license>
+                    <name>Bouncy Castle License</name>
+                    <url>http://www.bouncycastle.org/licence.html</url>
+                </license>
+            </licenses>
+        </project>
+    </supplement>
+</supplementalDataModels>

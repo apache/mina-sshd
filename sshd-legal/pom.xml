@@ -24,16 +24,14 @@
 
     <parent>
         <groupId>org.apache.sshd</groupId>
-        <artifactId>sshd-parent</artifactId>
+        <artifactId>sshd</artifactId>
         <version>1.0-SNAPSHOT</version>
     </parent>
 
     <groupId>org.apache.sshd</groupId>
-    <artifactId>sshd-core</artifactId>
+    <artifactId>sshd-legal</artifactId>
     <version>1.0-SNAPSHOT</version>
-    <name>Apache Mina SSHD :: Core</name>
-    <packaging>bundle</packaging>
-    <inceptionYear>2008</inceptionYear>
+    <name>Apache Mina SSHD :: Legal</name>
 
     <dependencies>
         <dependency>
@@ -82,42 +80,8 @@
         </dependency>
     </dependencies>
 
-    <build>
-        <resources>
-            <resource>
-                <directory>src/main/filtered-resources</directory>
-                <filtering>true</filtering>
-            </resource>
-        </resources>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-bundle-plugin</artifactId>
-                <extensions>true</extensions>
-                <configuration>
-                    <instructions>
-                        <Bundle-SymbolicName>${artifactId}</Bundle-SymbolicName>
-                        <Import-Package>
-                            com.jcraft.jzlib*;resolution:=optional,
-                            org.bouncycastle*;resolution:=optional,
-                            *
-                        </Import-Package>
-                        <Export-Package>
-                            org.apache.sshd*;version=${version}
-                        </Export-Package>
-                        <_versionpolicy>[$(version;==;$(@)),$(version;+;$(@)))</_versionpolicy>
-                    </instructions>
-                    <unpackBundle>true</unpackBundle>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <configuration>
-                    <redirectTestOutputToFile>true</redirectTestOutputToFile>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
+    <properties>
+        <maven.test.skip>true</maven.test.skip>
+    </properties>
 
 </project>
