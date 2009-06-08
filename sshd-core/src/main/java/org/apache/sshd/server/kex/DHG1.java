@@ -43,8 +43,8 @@ public class DHG1 extends AbstractDHGServer {
     }
 
     protected void initDH(DH dh) {
-        dh.setG(DHGroupData.G);
-        dh.setP(DHGroupData.P_1);
+        dh.setG(DHGroupData.getG());
+        dh.setP(DHGroupData.getP1());
     }
 
 }

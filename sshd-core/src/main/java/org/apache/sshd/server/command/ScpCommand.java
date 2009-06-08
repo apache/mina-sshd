@@ -224,20 +224,22 @@ public class ScpCommand implements CommandFactory.Command, Runnable {
             throw new IOException("Can not write to " + path);
         }
         OutputStream os = new FileOutputStream(file);
+        try {
+            ack();
 
-        ack();
-
-        byte[] buffer = new byte[8192];
-        while (length > 0) {
-            int len = Math.min(length, buffer.length);
-            len = in.read(buffer, 0, len);
-            if (len <= 0) {
-                throw new IOException("End of stream reached");
+            byte[] buffer = new byte[8192];
+            while (length > 0) {
+                int len = Math.min(length, buffer.length);
+                len = in.read(buffer, 0, len);
+                if (len <= 0) {
+                    throw new IOException("End of stream reached");
+                }
+                os.write(buffer, 0, len);
+                length -= len;
             }
-            os.write(buffer, 0, len);
-            length -= len;
+        } finally {
+            os.close();
         }
-        os.close();
 
         ack();
         readAck();
@@ -274,15 +276,18 @@ public class ScpCommand implements CommandFactory.Command, Runnable {
         readAck();
 
         InputStream is = new FileInputStream(path);
-        byte[] buffer = new byte[8192];
-        for (;;) {
-            int len = is.read(buffer, 0, buffer.length);
-            if (len == -1) {
-                break;
+        try {
+            byte[] buffer = new byte[8192];
+            for (;;) {
+                int len = is.read(buffer, 0, buffer.length);
+                if (len == -1) {
+                    break;
+                }
+                out.write(buffer, 0, len);
             }
-            out.write(buffer, 0, len);
+        } finally {
+            is.close();
         }
-        is.close();
         ack();
         readAck();
     }

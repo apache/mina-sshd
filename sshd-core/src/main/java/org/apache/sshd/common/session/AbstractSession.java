@@ -383,7 +383,7 @@ public abstract class AbstractSession {
             random.fill(buffer.array(), buffer.wpos() - pad, pad);
             // Compute mac
             if (outMac != null) {
-                int macSize = outMac != null ? outMac.getBlockSize() : 0;
+                int macSize = outMac.getBlockSize();
                 int l = buffer.wpos();
                 buffer.wpos(l + macSize);
                 outMac.update(seqo);

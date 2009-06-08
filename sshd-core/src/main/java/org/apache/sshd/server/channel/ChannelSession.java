@@ -221,7 +221,7 @@ public class ChannelSession extends AbstractServerChannel {
     protected OutputStream shellIn;
     protected InputStream shellOut;
     protected InputStream shellErr;
-    protected StandardEnvironment env;
+    protected StandardEnvironment env = new StandardEnvironment();
 
     public ChannelSession() {
     }
@@ -443,7 +443,7 @@ public class ChannelSession extends AbstractServerChannel {
             session.writePacket(buffer);
         }
 
-        shell.start(env);
+        shell.start(getEnvironment());
         shellIn = new LoggingFilterOutputStream(shellIn, "IN: ", log);
 
         return true;
@@ -539,14 +539,11 @@ public class ChannelSession extends AbstractServerChannel {
         return true;
     }
 
-    protected synchronized void addEnvVariable(String name, String value) {
+    protected void addEnvVariable(String name, String value) {
         getEnvironment().set(name, value);
     }
 
-    protected synchronized StandardEnvironment getEnvironment() {
-        if (env == null) {
-            env = new StandardEnvironment();
-        }
+    protected StandardEnvironment getEnvironment() {
         return env;
     }
     

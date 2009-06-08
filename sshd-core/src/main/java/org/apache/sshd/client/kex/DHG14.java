@@ -48,8 +48,8 @@ public class DHG14 extends AbstractDHGClient {
     }
 
     protected void initDH(DH dh) {
-        dh.setG(DHGroupData.G);
-        dh.setP(DHGroupData.P_14);
+        dh.setG(DHGroupData.getG());
+        dh.setP(DHGroupData.getP14());
     }
 
 }
