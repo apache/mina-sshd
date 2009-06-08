@@ -25,6 +25,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
@@ -41,6 +43,9 @@ import org.apache.sshd.common.util.LoggingFilterOutputStream;
 import org.apache.sshd.server.CommandFactory;
 import org.apache.sshd.server.ServerChannel;
 import org.apache.sshd.server.ShellFactory;
+import org.apache.sshd.server.Signals;
+import org.apache.sshd.server.ShellFactory.Environment;
+import org.apache.sshd.server.ShellFactory.SignalListener;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
@@ -59,6 +64,100 @@ public class ChannelSession extends AbstractServerChannel {
         public ServerChannel create() {
             return new ChannelSession();
         }
+    }
+
+    protected static class StandardEnvironment implements Environment {
+
+        private final Map<Integer, List<SignalListener>> qualifiedListeners;
+        private final List<SignalListener> listeners;
+        private final Map<String,String> env;
+
+        public StandardEnvironment() {
+            qualifiedListeners = new ConcurrentHashMap<Integer, List<SignalListener>>(3);
+            listeners = createSignalListenerList();
+            env = new ConcurrentHashMap<String, String>();
+        }
+
+        protected CopyOnWriteArrayList<SignalListener> createSignalListenerList() {
+            return new CopyOnWriteArrayList<SignalListener>();
+        }
+
+        public void addSignalListener(int signal, SignalListener listener) {
+            if (listener == null) {
+                throw new IllegalArgumentException("listener may not be null");
+            }
+            getSignalListenersList(signal, true).add(listener);
+        }
+
+        public void addSignalListener(SignalListener listener) {
+            if (listener == null) {
+                throw new IllegalArgumentException("listener may not be null");
+            }
+            getSignalListenersList().add(listener);
+        }
+
+        public Map<String, String> getEnv() {
+            return env;
+        }
+
+        public void removeSignalListener(int signal, SignalListener listener) {
+            if (listener == null) {
+                throw new IllegalArgumentException("listener may not be null");
+            }
+            final List<SignalListener> ls = getSignalListenersList(signal, false);
+            if (ls != null) {
+                ls.remove(listener);
+            }
+        }
+
+        public void removeSignalListener(SignalListener listener) {
+            if (listener == null) {
+                throw new IllegalArgumentException("listener may not be null");
+            }
+            getSignalListenersList().remove(listener);
+        }
+
+        public void signal(int signal) {
+            final List<SignalListener> qls = getSignalListenersList(signal, false);
+            final List<SignalListener> ls = getSignalListenersList();
+            if (qls != null) {
+                for(SignalListener l : qls) {
+                    l.signal(signal);
+                }
+            }
+            for(SignalListener l : ls) {
+                l.signal(signal);
+            }
+        }
+
+        /**
+         * adds a variable to the environment. This method is called <code>set</code> 
+         * according to the name of the appropriate posix command <code>set</code>
+         * @param key environment variable name
+         * @param value environment variable value
+         */
+        public void set(String key, String value) {
+            // TODO: listening for property changes would be nice too.
+            getEnv().put(key, value);
+        }
+        
+        protected List<SignalListener> getSignalListenersList(int signal, boolean create) {
+            List<SignalListener> ls = qualifiedListeners.get(signal);
+            if (ls == null && create) {
+                synchronized (qualifiedListeners) {
+                    ls = createSignalListenerList();
+                    qualifiedListeners.put(signal, ls);
+                }
+            }
+            
+            // may be null in case create=false
+            return ls;
+        }
+        
+        protected List<SignalListener> getSignalListenersList() {
+            return listeners;
+        }
+        
     }
 
     protected static enum PtyMode {
@@ -122,7 +221,7 @@ public class ChannelSession extends AbstractServerChannel {
     protected OutputStream shellIn;
     protected InputStream shellOut;
     protected InputStream shellErr;
-    protected Map<String,String> env;
+    protected StandardEnvironment env;
 
     public ChannelSession() {
     }
@@ -279,6 +378,12 @@ public class ChannelSession extends AbstractServerChannel {
         int tHeight = buffer.getInt();
         log.debug("window-change for channel {}: ({} - {}), ({}, {})", new Object[] { id, tColumns, tRows, tWidth, tHeight });
         // TODO: handle window-change request correctly
+        
+        final StandardEnvironment e = getEnvironment();
+        e.set("COLUMNS", Integer.toString(tColumns));
+        e.set("LINES", Integer.toString(tRows));
+        e.signal(Signals.SIGWINCH);
+        
         if (wantReply) {
             buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS);
             buffer.putInt(recipient);
@@ -435,12 +540,16 @@ public class ChannelSession extends AbstractServerChannel {
     }
 
     protected synchronized void addEnvVariable(String name, String value) {
-        if (env == null) {
-            env = new HashMap<String,String>();
-        }
-        env.put(name, value);
+        getEnvironment().set(name, value);
     }
 
+    protected synchronized StandardEnvironment getEnvironment() {
+        if (env == null) {
+            env = new StandardEnvironment();
+        }
+        return env;
+    }
+    
     protected void closeShell(int exitValue) throws IOException {
         sendEof();
         sendExitStatus(exitValue);

@@ -61,7 +61,7 @@ public class EchoShellFactory implements ShellFactory {
             this.callback = callback;
         }
 
-        public void start(Map<String, String> env) throws IOException {
+        public void start(Environment env) throws IOException {
             thread = new Thread(this, "EchoShell");
             thread.start();
         }

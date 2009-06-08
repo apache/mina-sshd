@@ -35,7 +35,7 @@ public interface ShellFactory {
     /**
      * Create a shell.
      * This method is not supposed to throw any exception.
-     * Exceptions should be thrown when calling {@link Shell#start(java.util.Map)}
+     * Exceptions should be thrown when calling {@link Shell#start(Environment)}
      * method on the shell to start it.
      *
      * @return the newly create shell
@@ -71,6 +71,7 @@ public interface ShellFactory {
 
         /**
          * Set the callback that the shell has to call when it is closed.
+         * @param callback
          */
         void setExitCallback(ExitCallback callback);
 
@@ -79,9 +80,9 @@ public interface ShellFactory {
          * All streams must have been set before calling this method.
          *
          * @param env
-         * @throws Exception
+         * @throws IOException
          */
-        void start(Map<String,String> env) throws IOException;
+        void start(Environment env) throws IOException;
 
         /**
          * Destroy the shell.
@@ -90,6 +91,62 @@ public interface ShellFactory {
          */
         void destroy();
 
+    }
+
+    /**
+     * Interface providing access to the environment map and allowing the registration
+     * of listeners for certain signals.
+     *
+     * TODO: should we use enums for signals to allow using EnumSet or varags for
+     *       interesting signals ? 
+     *
+     * @see Signals
+     */
+    public interface Environment {
+
+        /**
+         * Retrieve the environment map
+         * @return the environment map
+         */
+    	Map<String,String> getEnv();
+
+        /**
+         * Add a qualified listener for the specific signal
+         * @param signal the signal the listener is interested in
+         * @param listener the listener to register
+         */
+    	void addSignalListener(int signal, SignalListener listener);
+
+        /**
+         * Remove a previously registered listener for the specific signal
+         * @param signal the signal the listener was interested in
+         * @param listener the listener to unregister
+         */
+    	void removeSignalListener(int signal, SignalListener listener);
+
+        /**
+         * Add a global listener
+         * @param listener the listener to register
+         */
+    	void addSignalListener(SignalListener listener);
+
+        /**
+         * Remove a previously registered listener
+         * @param listener
+         */
+    	void removeSignalListener(SignalListener listener);
+    }
+
+    /**
+     * Define a listener to receive signals
+     */
+    public interface SignalListener {
+
+        /**
+         *
+         * @param signal
+         */
+    	void signal(int signal);
     }
 
     /**

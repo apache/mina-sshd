@@ -24,6 +24,7 @@ import java.io.OutputStream;
 import java.util.Map;
 
 import org.apache.sshd.server.ShellFactory;
+import org.apache.sshd.server.ShellFactory.Environment;
 
 /**
  * A shell implementation that wraps an instance of {@link InvertedShell}
@@ -66,8 +67,9 @@ public class InvertedShellWrapper implements ShellFactory.Shell {
         this.callback = callback;
     }
 
-    public void start(Map<String, String> env) throws IOException {
-        shell.start(env);
+    public void start(Environment env) throws IOException {
+        // TODO propagate the Environment itself and support signal sending.
+        shell.start(env.getEnv());
         shellIn = shell.getInputStream();
         shellOut = shell.getOutputStream();
         shellErr = shell.getErrorStream();
