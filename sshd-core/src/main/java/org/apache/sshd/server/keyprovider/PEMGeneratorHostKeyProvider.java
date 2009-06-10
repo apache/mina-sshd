@@ -34,6 +34,21 @@ import org.bouncycastle.openssl.PEMWriter;
  */
 public class PEMGeneratorHostKeyProvider extends AbstractGeneratorHostKeyProvider {
 
+    public PEMGeneratorHostKeyProvider() {
+    }
+
+    public PEMGeneratorHostKeyProvider(String path) {
+        super(path);
+    }
+
+    public PEMGeneratorHostKeyProvider(String path, String algorithm) {
+        super(path, algorithm);
+    }
+
+    public PEMGeneratorHostKeyProvider(String path, String algorithm, int keySize) {
+        super(path, algorithm, keySize);
+    }
+
     protected KeyPair doReadKeyPair(InputStream is) throws Exception {
         PEMReader r = new PEMReader(new InputStreamReader(is));
         return (KeyPair) r.readObject();

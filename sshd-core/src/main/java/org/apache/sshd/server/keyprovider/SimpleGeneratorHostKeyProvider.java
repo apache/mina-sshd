@@ -31,6 +31,21 @@ import java.security.KeyPair;
  */
 public class SimpleGeneratorHostKeyProvider extends AbstractGeneratorHostKeyProvider {
 
+    public SimpleGeneratorHostKeyProvider() {
+    }
+
+    public SimpleGeneratorHostKeyProvider(String path) {
+        super(path);
+    }
+
+    public SimpleGeneratorHostKeyProvider(String path, String algorithm) {
+        super(path, algorithm);
+    }
+
+    public SimpleGeneratorHostKeyProvider(String path, String algorithm, int keySize) {
+        super(path, algorithm, keySize);
+    }
+
     protected KeyPair doReadKeyPair(InputStream is) throws Exception {
         ObjectInputStream r = new ObjectInputStream(is);
         return (KeyPair) r.readObject();

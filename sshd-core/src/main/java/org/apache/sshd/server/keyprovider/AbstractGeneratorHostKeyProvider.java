@@ -48,6 +48,24 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
     private int keySize;
     private KeyPair keyPair;
 
+    protected AbstractGeneratorHostKeyProvider() {
+    }
+
+    protected AbstractGeneratorHostKeyProvider(String path) {
+        this.path = path;
+    }
+
+    protected AbstractGeneratorHostKeyProvider(String path, String algorithm) {
+        this.path = path;
+        this.algorithm = algorithm;
+    }
+
+    protected AbstractGeneratorHostKeyProvider(String path, String algorithm, int keySize) {
+        this.path = path;
+        this.algorithm = algorithm;
+        this.keySize = keySize;
+    }
+
     public String getPath() {
         return path;
     }
