@@ -48,6 +48,7 @@
                 </dependencies>
                 <executions>
                     <execution>
+                        <phase>package</phase>
                         <goals>
                             <goal>process</goal>
                         </goals>
