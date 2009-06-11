@@ -5,12 +5,12 @@
     <parent>
         <groupId>org.apache.sshd</groupId>
         <artifactId>sshd</artifactId>
-        <version>0.1.0</version>
+        <version>1.0-SNAPSHOT</version>
     </parent>
 
     <groupId>org.apache.sshd</groupId>
     <artifactId>sshd-parent</artifactId>
-    <version>0.1.0</version>
+    <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>Apache Mina SSHD :: Parent</name>
 
