@@ -19,6 +19,7 @@
 package org.apache.sshd.util;
 
 import org.apache.sshd.server.PasswordAuthenticator;
+import org.apache.sshd.server.session.ServerSession;
 
 /**
  * TODO Add javadoc
@@ -27,7 +28,7 @@ import org.apache.sshd.server.PasswordAuthenticator;
  */
 public class BogusPasswordAuthenticator implements PasswordAuthenticator {
 
-    public Object authenticate(String username, String password) {
+    public Object authenticate(String username, String password, ServerSession session) {
         return (username != null && username.equals(password)) ? username : null;
     }
 }

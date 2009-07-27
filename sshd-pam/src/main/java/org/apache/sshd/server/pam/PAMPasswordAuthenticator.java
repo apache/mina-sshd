@@ -21,6 +21,7 @@ package org.apache.sshd.server.pam;
 import net.sf.jpam.Pam;
 import net.sf.jpam.PamReturnValue;
 import org.apache.sshd.server.PasswordAuthenticator;
+import org.apache.sshd.server.session.ServerSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,7 +46,7 @@ public class PAMPasswordAuthenticator implements PasswordAuthenticator {
         this.service = service;
     }
 
-    public Object authenticate(String username, String password) {
+    public Object authenticate(String username, String password, ServerSession session) {
         LOG.info("Authenticating user {} using PAM", username);
         PamReturnValue val = new Pam(service).authenticate(username, password);
         LOG.info("Result: {}", val);

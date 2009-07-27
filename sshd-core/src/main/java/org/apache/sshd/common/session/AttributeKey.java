@@ -20,6 +20,19 @@ package org.apache.sshd.common.session;
 
 /**
  * Type safe key for storage within the user attributes of {@link AbstractSession}.
+ * Typically it is used as a static variable that is shared between the producer
+ * and the consumer. To further restrict access the setting or getting it from
+ * the ServerSession you can add static get and set methods, e.g:
+ * 
+ * private static final AttributeKey<MyValue> MY_KEY = new AttributeKey<MyValue>();
+ *
+ * public static MyValue getMyValue(ServerSession s) {
+ *   return s.getAttribute(MY_KEY);
+ * }
+ *
+ * private void setMyValye(ServerSession s, MyValue value) {
+ *   s.setAttribute(MY_KEY, value);
+ * }
  *
  * @param T type of value stored in the attribute.
  *

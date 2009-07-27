@@ -29,6 +29,7 @@ import javax.security.auth.callback.UnsupportedCallbackException;
 import javax.security.auth.login.LoginContext;
 
 import org.apache.sshd.server.PasswordAuthenticator;
+import org.apache.sshd.server.session.ServerSession;
 
 /**
  * TODO Add javadoc
@@ -47,6 +48,10 @@ public class JaasPasswordAuthenticator implements PasswordAuthenticator {
         this.domain = domain;
     }
 
+    public Object authenticate(final String username, final String password, final ServerSession session) {
+    	return authenticate(username, password);
+    }
+    
     public Object authenticate(final String username, final String password) {
         try {
             Subject subject = new Subject();

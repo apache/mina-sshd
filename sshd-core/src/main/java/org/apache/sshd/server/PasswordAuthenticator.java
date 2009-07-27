@@ -18,6 +18,8 @@
  */
 package org.apache.sshd.server;
 
+import org.apache.sshd.server.session.ServerSession;
+
 /**
  * The <code>PasswordAuthenticator</code> is used to authenticate
  * users based on a password.
@@ -34,6 +36,6 @@ public interface PasswordAuthenticator {
      * @param password the password
      * @return a non null identity object or <code>null</code if authentication fail
      */
-    Object authenticate(String username, String password);
+    Object authenticate(String username, String password, ServerSession session);
 
 }

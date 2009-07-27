@@ -421,6 +421,10 @@ public class ChannelSession extends AbstractServerChannel {
         }
         addEnvVariable("USER", ((ServerSession) session).getUsername());
         shell = ((ServerSession) session).getServerFactoryManager().getShellFactory().createShell();
+        // If the shell wants to be aware of the session, let's do that
+        if (shell instanceof ShellFactory.SessionAware) {
+            ((ShellFactory.SessionAware) shell).setSession((ServerSession) session);
+        }
         out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.Message.SSH_MSG_CHANNEL_DATA);
         err = new ChannelOutputStream(this, remoteWindow, log, SshConstants.Message.SSH_MSG_CHANNEL_EXTENDED_DATA);
         // Wrap in logging filters

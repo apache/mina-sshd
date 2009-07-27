@@ -52,7 +52,7 @@ public class UserAuthPassword implements UserAuth {
     private Object checkPassword(ServerSession session, String username, String password) throws Exception {
         PasswordAuthenticator auth = session.getServerFactoryManager().getPasswordAuthenticator();
         if (auth != null) {
-            Object identity = auth.authenticate(username, password);
+            Object identity = auth.authenticate(username, password, session);
             if (identity != null) {
                 return identity;
             } else {

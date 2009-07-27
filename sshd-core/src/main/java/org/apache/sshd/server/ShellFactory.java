@@ -23,6 +23,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Map;
 
+import org.apache.sshd.server.session.ServerSession;
+
 /**
  * This factory is used by SSH server when the client connected requests the creation
  * of a shell.
@@ -161,6 +163,20 @@ public interface ShellFactory {
          */
         void onExit(int exitValue);
 
+    }
+    
+    /**
+     * Interface that can be implemented by a shell to be able to access the
+     * server session in which this shell will be used.
+     */
+    public interface SessionAware {
+
+        /**
+         * Set the server session in which this shell will be executed.
+         *
+         * @param session
+         */
+        void setSession(ServerSession session);
     }
 
 }

@@ -65,6 +65,7 @@ import org.apache.sshd.server.auth.UserAuthPublicKey;
 import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.kex.DHG1;
 import org.apache.sshd.server.kex.DHG14;
+import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.shell.ProcessShellFactory;
 
 /**
@@ -343,7 +344,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         sshd.setShellFactory(new ProcessShellFactory(new String[] { "/bin/sh", "-i", "-l" }));
         //sshd.setPasswordAuthenticator(new PAMPasswordAuthenticator());
         sshd.setPasswordAuthenticator(new PasswordAuthenticator() {
-            public Object authenticate(String username, String password) {
+            public Object authenticate(String username, String password, ServerSession session) {
                 return (username != null && username.equals(password)) ? username : null;
             }
         });
