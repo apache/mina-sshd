@@ -89,6 +89,9 @@ public class ChannelOutputStream extends OutputStream {
             remoteWindow.waitAndConsume(bufferLength);
             log.debug("Send {} on channel {}", cmd, channel.getId());
             channel.getSession().writePacket(buffer);
+        } catch (WindowClosedException e) {
+          closed = true;
+          throw e;
         } catch (SshException e) {
             throw e;
         } catch (Exception e) {

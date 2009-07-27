@@ -20,6 +20,7 @@ package org.apache.sshd.common.channel;
 
 import java.io.IOException;
 
+import org.apache.sshd.common.SshException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,6 +45,7 @@ public class Window {
     private int maxSize;
     private int packetSize;
     private boolean waiting;
+    private boolean closed;
 
     public Window(AbstractChannel channel, Object lock, boolean client, boolean local) {
         this.channel = channel;
@@ -114,9 +116,9 @@ public class Window {
         }
     }
 
-    public void waitAndConsume(int len) throws InterruptedException {
+    public void waitAndConsume(int len) throws InterruptedException, WindowClosedException {
         synchronized (lock) {
-            while (size < len) {
+            while (size < len && !closed) {
                 log.debug("Waiting for {} bytes on {}", len, name);
                 waiting = true;
                 lock.wait();
@@ -125,6 +127,9 @@ public class Window {
                 log.debug("Space available for {}", name);
                 waiting = false;
             }
+            if (closed) {
+                throw new WindowClosedException();
+            }
             size -= len;
             if (log.isTraceEnabled()) {
                 log.trace("Consume " + name + " by " + len + " down to " + size);
@@ -132,4 +137,12 @@ public class Window {
         }
     }
 
+    public void notifyClosed() {
+        synchronized (lock) {
+            closed = true;
+            if (waiting) {
+                lock.notifyAll();
+            }
+        }
+    }
 }

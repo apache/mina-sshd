@@ -233,6 +233,7 @@ public class ChannelSession extends AbstractServerChannel {
                     shell.destroy();
                     shell = null;
                 }
+                remoteWindow.notifyClosed();
                 IoUtils.closeQuietly(in, out, err, shellIn, shellOut, shellErr);
             }
         });
