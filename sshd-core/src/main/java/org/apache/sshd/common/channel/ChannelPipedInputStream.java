@@ -35,6 +35,12 @@ public class ChannelPipedInputStream extends InputStream {
     private final Buffer buffer = new Buffer();
     private final byte[] b = new byte[1];
     private boolean closed;
+    /**
+     * {@link ChannelPipedOutputStream} is already closed and so we will not receive additional data.
+     * This is different from the {@link #closed}, which indicates that the reader of this {@link InputStream}
+     * will not be reading data any more.
+     */
+    private boolean writerClosed;
 
     public ChannelPipedInputStream(Window localWindow) {
         this.localWindow = localWindow;
@@ -61,6 +67,9 @@ public class ChannelPipedInputStream extends InputStream {
                 if (buffer.available() > 0) {
                     break;
                 }
+                if (writerClosed) {
+                    return -1; // no more data to read
+                }
                 try {
                     buffer.wait();
                 } catch (InterruptedException e) {
@@ -80,6 +89,13 @@ public class ChannelPipedInputStream extends InputStream {
         return len;
     }
 
+    protected void eof() {
+        synchronized (buffer) {
+            writerClosed = true;
+            buffer.notifyAll();
+        }
+    }
+
     @Override
     public void close() throws IOException {
         synchronized (buffer) {
@@ -90,7 +106,7 @@ public class ChannelPipedInputStream extends InputStream {
 
     public void receive(byte[] bytes, int off, int len) throws IOException {
         synchronized (buffer) {
-            if (closed) {
+            if (writerClosed || closed) {
                 throw new IOException("Pipe closed");
             }
             buffer.putRawBytes(bytes, off, len);

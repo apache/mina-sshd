@@ -30,6 +30,7 @@ public class ChannelPipedOutputStream extends OutputStream {
 
     private final ChannelPipedInputStream sink;
     private final byte[] b = new byte[1];
+    private boolean closed;
 
     public ChannelPipedOutputStream(ChannelPipedInputStream sink) {
         this.sink = sink;
@@ -49,6 +50,7 @@ public class ChannelPipedOutputStream extends OutputStream {
 
     @Override
     public void close() throws IOException {
-        sink.close();
+        sink.eof();
+        closed = true;
     }
 }
