@@ -361,6 +361,8 @@ public class ChannelSession extends AbstractServerChannel {
             log.debug("pty for channel {}: term={}, size=({} - {}), pixels=({}, {}), modes=[{}]", new Object[] { id, term, tColumns, tRows, tWidth, tHeight, strModes.toString() });
         }
         addEnvVariable("TERM", term);
+        addEnvVariable("COLUMNS", Integer.toString(tColumns));
+        addEnvVariable("LINES", Integer.toString(tRows));
         // TODO: handle pty request correctly
         if (wantReply) {
             buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS);
