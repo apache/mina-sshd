@@ -26,7 +26,6 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import org.apache.mina.core.session.IoSession;
-import org.apache.sshd.SshServer;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.KeyExchange;
 import org.apache.sshd.common.NamedFactory;
@@ -72,7 +71,7 @@ public class ServerSession extends AbstractSession {
         ReceiveKexInit, Kex, ReceiveNewKeys, WaitingUserAuth, UserAuth, Running, Unknown
     }
 
-    public ServerSession(SshServer server, IoSession ioSession) throws Exception {
+    public ServerSession(FactoryManager server, IoSession ioSession) throws Exception {
         super(server, ioSession);
         maxAuthRequests = getIntProperty(FactoryManager.MAX_AUTH_REQUESTS, maxAuthRequests);
         authTimeout = getIntProperty(FactoryManager.AUTH_TIMEOUT, authTimeout);

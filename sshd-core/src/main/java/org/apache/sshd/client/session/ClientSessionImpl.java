@@ -24,7 +24,6 @@ import java.security.PublicKey;
 import org.apache.mina.core.session.IoSession;
 import org.apache.sshd.ClientChannel;
 import org.apache.sshd.ClientSession;
-import org.apache.sshd.SshClient;
 import org.apache.sshd.client.UserAuth;
 import org.apache.sshd.client.auth.UserAuthPassword;
 import org.apache.sshd.client.channel.AbstractClientChannel;
@@ -32,6 +31,7 @@ import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.DefaultAuthFuture;
+import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
@@ -57,7 +57,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
     private UserAuth userAuth;
     private AuthFuture authFuture;
 
-    public ClientSessionImpl(SshClient client, IoSession session) throws Exception {
+    public ClientSessionImpl(FactoryManager client, IoSession session) throws Exception {
         super(client, session);
         log.info("Session created...");
         sendClientIdentification();
