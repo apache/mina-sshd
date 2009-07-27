@@ -94,6 +94,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
 
     private IoAcceptor acceptor;
     private int port;
+    private boolean reuseAddress = true;
     private List<NamedFactory<UserAuth>> userAuthFactories;
     private List<NamedFactory<ServerChannel>> channelFactories;
     private ShellFactory shellFactory;
@@ -116,6 +117,14 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
      */
     public void setPort(int port) {
         this.port = port;
+    }
+
+    public boolean getReuseAddress() {
+        return reuseAddress;
+    }
+
+    public void setReuseAddress(boolean reuseAddress) {
+        this.reuseAddress = reuseAddress;
     }
 
     public List<NamedFactory<UserAuth>> getUserAuthFactories() {
@@ -212,6 +221,8 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     public void start() throws IOException {
         checkConfig();
         acceptor = new NioSocketAcceptor();
+
+        ((NioSocketAcceptor) acceptor).setReuseAddress(reuseAddress);
 
         SessionFactory handler = sessionFactory;
         if (handler == null) {
