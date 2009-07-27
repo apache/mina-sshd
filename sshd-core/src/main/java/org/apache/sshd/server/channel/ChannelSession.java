@@ -238,6 +238,12 @@ public class ChannelSession extends AbstractServerChannel {
         });
     }
 
+    @Override
+    public void handleEof() throws IOException {
+        super.handleEof();
+        shellIn.close();
+    }
+
     public void handleRequest(Buffer buffer) throws IOException {
         log.info("Received SSH_MSG_CHANNEL_REQUEST on channel {}", id);
         String type = buffer.getString();
