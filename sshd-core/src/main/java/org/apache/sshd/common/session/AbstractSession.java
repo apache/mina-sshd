@@ -357,7 +357,7 @@ public abstract class AbstractSession {
             int len = buffer.available();
             int off = buffer.rpos() - 5;
             // Debug log the packet
-            if (log.isDebugEnabled()) {
+            if (log.isTraceEnabled()) {
                 log.trace("Sending packet #{}: {}", seqo, buffer.printHex());
             }
             // Compress the packet if needed
