@@ -117,8 +117,8 @@ public abstract class AbstractSession {
     protected byte[] inMacResult;
     protected Compression outCompression;
     protected Compression inCompression;
-    protected int seqi;
-    protected int seqo;
+    protected long seqi;
+    protected long seqo;
     protected Buffer decoderBuffer = new Buffer();
     protected Buffer uncompressBuffer;
     protected int decoderState;
@@ -386,7 +386,7 @@ public abstract class AbstractSession {
                 int macSize = outMac.getBlockSize();
                 int l = buffer.wpos();
                 buffer.wpos(l + macSize);
-                outMac.update(seqo);
+                outMac.updateUInt(seqo);
                 outMac.update(buffer.array(), off, l);
                 outMac.doFinal(buffer.array(), l);
             }
@@ -395,7 +395,7 @@ public abstract class AbstractSession {
                 outCipher.update(buffer.array(), off, len + 4);
             }
             // Increment packet id
-            seqo++;
+            seqo = (seqo + 1) & 0xffffffffL;
             // Make buffer ready to be read
             buffer.rpos(off);
         } catch (SshException e) {
@@ -452,7 +452,7 @@ public abstract class AbstractSession {
                     // Check the mac of the packet
                     if (inMac != null) {
                         // Update mac with packet id
-                        inMac.update(seqi);
+                        inMac.updateUInt(seqi);
                         // Update mac with packet data
                         inMac.update(data, 0, decoderLength + 4);
                         // Compute mac result
@@ -464,7 +464,7 @@ public abstract class AbstractSession {
                         }
                     }
                     // Increment incoming packet sequence number
-                    seqi++;
+                    seqi = (seqi + 1) & 0xffffffffL;
                     // Get padding
                     byte pad = decoderBuffer.getByte();
                     Buffer buf;

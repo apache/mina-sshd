@@ -59,7 +59,7 @@ public class BaseMac implements Mac {
         mac.init(skey);
     }
 
-    public void update(int i) {
+    public void updateUInt(long i) {
         tmp[0] = (byte) (i >>> 24);
         tmp[1] = (byte) (i >>> 16);
         tmp[2] = (byte) (i >>> 8);

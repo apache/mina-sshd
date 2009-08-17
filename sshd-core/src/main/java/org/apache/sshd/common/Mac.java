@@ -32,7 +32,7 @@ public interface Mac {
 
     void update(byte[] foo, int start, int len);
 
-    void update(int foo);
+    void updateUInt(long foo);
 
     void doFinal(byte[] buf, int offset) throws Exception;
 }

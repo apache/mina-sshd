@@ -136,12 +136,17 @@ public final class Buffer {
     }
 
     public int getInt() {
+        return (int) getUInt();
+    }
+    
+    public long getUInt()
+    {
         ensureAvailable(4);
-        int i = ((data[rpos++] << 24) & 0xff000000)|
-                ((data[rpos++] << 16) & 0x00ff0000)|
-                ((data[rpos++] <<  8) & 0x0000ff00)|
-                ((data[rpos++]      ) & 0x000000ff);
-        return i;
+        long l = ((data[rpos++] << 24) & 0xff000000L)|
+                 ((data[rpos++] << 16) & 0x00ff0000L)|
+                 ((data[rpos++] <<  8) & 0x0000ff00L)|
+                 ((data[rpos++]      ) & 0x000000ffL);
+        return l;        
     }
 
     public boolean getBoolean() {
@@ -250,7 +255,7 @@ public final class Buffer {
         wpos += r;
     }
 
-    public void putInt(int i) {
+    public void putInt(long i) {
         ensureCapacity(4);
         data[wpos++] = (byte) (i >> 24);
         data[wpos++] = (byte) (i >> 16);
