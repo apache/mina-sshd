@@ -86,9 +86,9 @@ public class ScpCommand implements CommandFactory.Command, Runnable {
             } else if (i == args.length - 1) {
                 root = new File(args[args.length - 1]);
             }
-            if (!optF && !optT) {
-                error = new IOException("Either -f or -t option should be set");
-            }
+        }
+        if (!optF && !optT) {
+            error = new IOException("Either -f or -t option should be set");
         }
     }
 

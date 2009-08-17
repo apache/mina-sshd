@@ -169,7 +169,7 @@ public class ScpTest {
 
     protected String readDir(String path) throws Exception {
         ChannelExec c = (ChannelExec) session.openChannel("exec");
-        c.setCommand("scp -f -r " + path);
+        c.setCommand("scp -r -f " + path);
         c.connect();
         OutputStream os = c.getOutputStream();
         InputStream is = c.getInputStream();
