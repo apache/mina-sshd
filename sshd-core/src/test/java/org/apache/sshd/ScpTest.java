@@ -116,16 +116,12 @@ public class ScpTest {
         target.delete();
         assertFalse(target.exists());
         sendFile("target/scp/out.txt", "out.txt", data);
-        Thread.sleep(100);
-        assertTrue(target.exists());
-        assertEquals(data.length(), target.length());
+        assertFileLength(target, data.length(), 5000);
 
         target.delete();
         assertFalse(target.exists());
         sendFile("target/scp", "out.txt", data);
-        Thread.sleep(100);
-        assertTrue(target.exists());
-        assertEquals(data.length(), target.length());
+        assertFileLength(target, data.length(), 5000);
 
         sendFileError("target", "scp", "0123456789\n");
 
@@ -139,9 +135,26 @@ public class ScpTest {
         root.delete();
 
         sendDir("target", "scp", "out.txt", data);
-        Thread.sleep(100);
-        assertTrue(target.exists());
-        assertEquals(data.length(), target.length());
+        assertFileLength(target, data.length(), 5000);
+    }
+
+    protected void assertFileLength(File file, long length, long timeout) throws Exception{
+        boolean ok = false;
+        while (timeout > 0) {
+            if (file.exists() && file.length() == length) {
+                if (!ok) {
+                    ok = true;
+                } else {
+                    return;
+                }
+            } else {
+                ok = false;
+            }
+            Thread.sleep(100);
+            timeout -= 100;
+        }
+        assertTrue(file.exists());
+        assertEquals(length, file.length());
     }
 
     protected String readFile(String path) throws Exception {
