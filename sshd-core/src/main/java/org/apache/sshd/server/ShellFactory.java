@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Map;
+import java.util.EnumSet;
 
 import org.apache.sshd.server.session.ServerSession;
 
@@ -102,9 +103,30 @@ public interface ShellFactory {
      * TODO: should we use enums for signals to allow using EnumSet or varags for
      *       interesting signals ? 
      *
-     * @see Signals
+     * @see Signal
      */
     public interface Environment {
+        /**
+         * Key for the user environment variable
+         */
+        public static final String ENV_USER = "USER";
+        /**
+         * Key for the lines environment variable. Specifies the number of
+         * lines visible on the client side. {@link Environment#ENV_LINES} and
+         * {@link Environment#ENV_COLUMNS} make up the console screen size. 
+         */
+        public static final String ENV_LINES = "LINES";
+        /**
+         * Key for the columns environment variable. Specifies the number of
+         * columns visible on the client side. {@link Environment#ENV_LINES} and
+         * {@link Environment#ENV_COLUMNS} make up the console screen size.
+         */
+        public static final String ENV_COLUMNS = "COLUMNS";
+        /**
+         * Key for the term environment variable. Describes the terminal or 
+         * terminal emulation which is in use.
+         */
+        public static final String ENV_TERM = "TERM";
 
         /**
          * Retrieve the environment map
@@ -117,24 +139,24 @@ public interface ShellFactory {
          * @param signal the signal the listener is interested in
          * @param listener the listener to register
          */
-    	void addSignalListener(int signal, SignalListener listener);
+    	void addSignalListener(Signal signal, SignalListener listener);
 
         /**
-         * Remove a previously registered listener for the specific signal
-         * @param signal the signal the listener was interested in
-         * @param listener the listener to unregister
+         * Add a qualified listener for the specific set of signal
+         * @param signals the signals the listener is interested in
+         * @param listener the listener to register
          */
-    	void removeSignalListener(int signal, SignalListener listener);
+    	void addSignalListener(EnumSet<Signal> signals, SignalListener listener);
 
         /**
-         * Add a global listener
+         * Add a global listener for all signals
          * @param listener the listener to register
          */
     	void addSignalListener(SignalListener listener);
 
         /**
-         * Remove a previously registered listener
-         * @param listener
+         * Remove a previously registered listener for all the signals it was registered
+         * @param listener the listener to remove
          */
     	void removeSignalListener(SignalListener listener);
     }
@@ -148,7 +170,7 @@ public interface ShellFactory {
          *
          * @param signal
          */
-    	void signal(int signal);
+    	void signal(Signal signal);
     }
 
     /**

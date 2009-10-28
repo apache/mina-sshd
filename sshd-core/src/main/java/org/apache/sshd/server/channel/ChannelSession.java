@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,7 +44,7 @@ import org.apache.sshd.common.util.LfToCrLfFilterOutputStream;
 import org.apache.sshd.common.util.LoggingFilterOutputStream;
 import org.apache.sshd.server.CommandFactory;
 import org.apache.sshd.server.ShellFactory;
-import org.apache.sshd.server.Signals;
+import org.apache.sshd.server.Signal;
 import org.apache.sshd.server.ShellFactory.Environment;
 import org.apache.sshd.server.ShellFactory.SignalListener;
 import org.apache.sshd.server.session.ServerSession;
@@ -68,65 +69,53 @@ public class ChannelSession extends AbstractServerChannel {
 
     protected static class StandardEnvironment implements Environment {
 
-        private final Map<Integer, List<SignalListener>> qualifiedListeners;
-        private final List<SignalListener> listeners;
+        private final Map<Signal, List<SignalListener>> listeners;
         private final Map<String,String> env;
 
         public StandardEnvironment() {
-            qualifiedListeners = new ConcurrentHashMap<Integer, List<SignalListener>>(3);
-            listeners = createSignalListenerList();
+            listeners = new ConcurrentHashMap<Signal, List<SignalListener>>(3);
             env = new ConcurrentHashMap<String, String>();
         }
 
-        protected CopyOnWriteArrayList<SignalListener> createSignalListenerList() {
-            return new CopyOnWriteArrayList<SignalListener>();
-        }
-
-        public void addSignalListener(int signal, SignalListener listener) {
-            if (listener == null) {
-                throw new IllegalArgumentException("listener may not be null");
-            }
-            getSignalListenersList(signal, true).add(listener);
+        public void addSignalListener(Signal signal, SignalListener listener) {
+            addSignalListener(EnumSet.of(signal), listener);
         }
 
         public void addSignalListener(SignalListener listener) {
+            addSignalListener(EnumSet.allOf(Signal.class), listener);
+        }
+
+        public void addSignalListener(EnumSet<Signal> signals, SignalListener listener) {
             if (listener == null) {
                 throw new IllegalArgumentException("listener may not be null");
             }
-            getSignalListenersList().add(listener);
+            for (Signal s : signals) {
+                getSignalListenersList(s, true).add(listener);
+            }
         }
 
         public Map<String, String> getEnv() {
             return env;
         }
 
-        public void removeSignalListener(int signal, SignalListener listener) {
-            if (listener == null) {
-                throw new IllegalArgumentException("listener may not be null");
-            }
-            final List<SignalListener> ls = getSignalListenersList(signal, false);
-            if (ls != null) {
-                ls.remove(listener);
-            }
-        }
-
         public void removeSignalListener(SignalListener listener) {
             if (listener == null) {
                 throw new IllegalArgumentException("listener may not be null");
             }
-            getSignalListenersList().remove(listener);
-        }
-
-        public void signal(int signal) {
-            final List<SignalListener> qls = getSignalListenersList(signal, false);
-            final List<SignalListener> ls = getSignalListenersList();
-            if (qls != null) {
-                for(SignalListener l : qls) {
-                    l.signal(signal);
+            for (Signal s : EnumSet.allOf(Signal.class)) {
+                final List<SignalListener> ls = getSignalListenersList(s, false);
+                if (ls != null) {
+                    ls.remove(listener);
                 }
             }
-            for(SignalListener l : ls) {
-                l.signal(signal);
+        }
+
+        public void signal(Signal signal) {
+            final List<SignalListener> ls = getSignalListenersList(signal, false);
+            if (ls != null) {
+                for (SignalListener l : ls) {
+                    l.signal(signal);
+                }
             }
         }
 
@@ -141,21 +130,19 @@ public class ChannelSession extends AbstractServerChannel {
             getEnv().put(key, value);
         }
         
-        protected List<SignalListener> getSignalListenersList(int signal, boolean create) {
-            List<SignalListener> ls = qualifiedListeners.get(signal);
+        protected List<SignalListener> getSignalListenersList(Signal signal, boolean create) {
+            List<SignalListener> ls = listeners.get(signal);
             if (ls == null && create) {
-                synchronized (qualifiedListeners) {
-                    ls = createSignalListenerList();
-                    qualifiedListeners.put(signal, ls);
+                synchronized (listeners) {
+                    ls = listeners.get(signal);
+                    if (ls == null) {
+                        ls = new CopyOnWriteArrayList<SignalListener>();
+                        listeners.put(signal, ls);
+                    }
                 }
             }
-            
             // may be null in case create=false
             return ls;
-        }
-        
-        protected List<SignalListener> getSignalListenersList() {
-            return listeners;
         }
         
     }
@@ -367,9 +354,9 @@ public class ChannelSession extends AbstractServerChannel {
             }
             log.debug("pty for channel {}: term={}, size=({} - {}), pixels=({}, {}), modes=[{}]", new Object[] { id, term, tColumns, tRows, tWidth, tHeight, strModes.toString() });
         }
-        addEnvVariable("TERM", term);
-        addEnvVariable("COLUMNS", Integer.toString(tColumns));
-        addEnvVariable("LINES", Integer.toString(tRows));
+        addEnvVariable(Environment.ENV_TERM, term);
+        addEnvVariable(Environment.ENV_COLUMNS, Integer.toString(tColumns));
+        addEnvVariable(Environment.ENV_LINES, Integer.toString(tRows));
         // TODO: handle pty request correctly
         if (wantReply) {
             buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS);
@@ -386,12 +373,11 @@ public class ChannelSession extends AbstractServerChannel {
         int tWidth = buffer.getInt();
         int tHeight = buffer.getInt();
         log.debug("window-change for channel {}: ({} - {}), ({}, {})", new Object[] { id, tColumns, tRows, tWidth, tHeight });
-        // TODO: handle window-change request correctly
         
         final StandardEnvironment e = getEnvironment();
-        e.set("COLUMNS", Integer.toString(tColumns));
-        e.set("LINES", Integer.toString(tRows));
-        e.signal(Signals.SIGWINCH);
+        e.set(Environment.ENV_COLUMNS, Integer.toString(tColumns));
+        e.set(Environment.ENV_LINES, Integer.toString(tRows));
+        e.signal(Signal.WINCH);
         
         if (wantReply) {
             buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS);
@@ -405,7 +391,15 @@ public class ChannelSession extends AbstractServerChannel {
         boolean wantReply = buffer.getBoolean();
         String name = buffer.getString();
         log.debug("Signal received on channel {}: {}", id, name);
-        // TODO: handle signal request correctly
+        
+        final Signal signal = Signal.get(name);
+        if (signal != null) {
+            getEnvironment().signal(signal);
+        } else {
+            log.warn("Unknown signal received: " + name);
+        }
+        
+        
         if (wantReply) {
             buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS);
             buffer.putInt(recipient);
@@ -420,7 +414,7 @@ public class ChannelSession extends AbstractServerChannel {
         if (((ServerSession) session).getServerFactoryManager().getShellFactory() == null) {
             return false;
         }
-        addEnvVariable("USER", ((ServerSession) session).getUsername());
+        addEnvVariable(Environment.ENV_USER, ((ServerSession) session).getUsername());
         shell = ((ServerSession) session).getServerFactoryManager().getShellFactory().createShell();
         // If the shell wants to be aware of the session, let's do that
         if (shell instanceof ShellFactory.SessionAware) {
