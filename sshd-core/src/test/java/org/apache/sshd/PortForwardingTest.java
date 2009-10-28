@@ -197,7 +197,7 @@ public class PortForwardingTest {
         assertEquals("Hello", res);
         s.close();
 
-        session.delPortForwardingR(forwardedPort);
+        session.delPortForwardingL(forwardedPort);
 
 //        session.setPortForwardingL(8010, "www.amazon.com", 80);
 //        Thread.sleep(1000000);

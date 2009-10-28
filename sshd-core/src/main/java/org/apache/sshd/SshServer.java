@@ -21,12 +21,15 @@ package org.apache.sshd;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.security.InvalidKeyException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 import org.apache.mina.core.service.IoAcceptor;
+import org.apache.mina.core.session.IoSession;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 import org.apache.sshd.common.AbstractFactoryManager;
 import org.apache.sshd.common.Channel;
@@ -42,6 +45,8 @@ import org.apache.sshd.common.cipher.AES256CBC;
 import org.apache.sshd.common.cipher.BlowfishCBC;
 import org.apache.sshd.common.cipher.TripleDESCBC;
 import org.apache.sshd.common.compression.CompressionNone;
+import org.apache.sshd.common.future.CloseFuture;
+import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.common.mac.HMACMD5;
 import org.apache.sshd.common.mac.HMACMD596;
@@ -50,6 +55,7 @@ import org.apache.sshd.common.mac.HMACSHA196;
 import org.apache.sshd.common.random.BouncyCastleRandom;
 import org.apache.sshd.common.random.JceRandom;
 import org.apache.sshd.common.random.SingletonRandomFactory;
+import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.signature.SignatureDSA;
 import org.apache.sshd.common.signature.SignatureRSA;
 import org.apache.sshd.common.util.SecurityUtils;
@@ -233,7 +239,26 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     /**
      * Stop the SSH server.  This method will block until all resources are actually disposed.
      */
-    public void stop() {
+    public void stop() throws InterruptedException {
+        acceptor.setCloseOnDeactivation(false);
+        acceptor.unbind();
+        List<AbstractSession> sessions = new ArrayList<AbstractSession>();
+        for (IoSession ioSession : acceptor.getManagedSessions().values()) {
+            AbstractSession session = AbstractSession.getSession(ioSession, true);
+            if (session != null) {
+                sessions.add(session);
+            }
+        }
+        final CountDownLatch latch = new CountDownLatch(sessions.size());
+        SshFutureListener<CloseFuture> listener = new SshFutureListener<CloseFuture>() {
+            public void operationComplete(CloseFuture future) {
+                latch.countDown();
+            }
+        };
+        for (AbstractSession session : sessions) {
+            session.close(false).addListener(listener);
+        }
+        latch.await();
         acceptor.dispose();
         acceptor = null;
     }

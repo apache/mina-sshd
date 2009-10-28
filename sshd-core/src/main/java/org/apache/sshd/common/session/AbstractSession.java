@@ -262,7 +262,7 @@ public abstract class AbstractSession implements Session {
         } catch (Throwable t2) {
             // Ignore
         }
-        close(false);
+        close(true);
     }
 
     /**
