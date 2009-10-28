@@ -26,8 +26,9 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.NamedFactory;
@@ -69,29 +70,35 @@ public class ChannelSession extends AbstractServerChannel {
 
     protected static class StandardEnvironment implements Environment {
 
-        private final Map<Signal, List<SignalListener>> listeners;
+        private final Map<Signal, Set<SignalListener>> listeners;
         private final Map<String,String> env;
 
         public StandardEnvironment() {
-            listeners = new ConcurrentHashMap<Signal, List<SignalListener>>(3);
+            listeners = new ConcurrentHashMap<Signal, Set<SignalListener>>(3);
             env = new ConcurrentHashMap<String, String>();
         }
 
-        public void addSignalListener(Signal signal, SignalListener listener) {
-            addSignalListener(EnumSet.of(signal), listener);
-        }
-
-        public void addSignalListener(SignalListener listener) {
-            addSignalListener(EnumSet.allOf(Signal.class), listener);
-        }
-
-        public void addSignalListener(EnumSet<Signal> signals, SignalListener listener) {
+        public void addSignalListener(SignalListener listener, Signal... signals) {
+            if (signals == null) {
+                throw new IllegalArgumentException("signals may not be null");
+            }
             if (listener == null) {
                 throw new IllegalArgumentException("listener may not be null");
             }
             for (Signal s : signals) {
-                getSignalListenersList(s, true).add(listener);
+                getSignalListeners(s, true).add(listener);
             }
+        }
+
+        public void addSignalListener(SignalListener listener) {
+            addSignalListener(listener, EnumSet.allOf(Signal.class));
+        }
+
+        public void addSignalListener(SignalListener listener, EnumSet<Signal> signals) {
+            if (signals == null) {
+                throw new IllegalArgumentException("signals may not be null");
+            }
+            addSignalListener(listener, signals.toArray(new Signal[signals.size()]));
         }
 
         public Map<String, String> getEnv() {
@@ -103,7 +110,7 @@ public class ChannelSession extends AbstractServerChannel {
                 throw new IllegalArgumentException("listener may not be null");
             }
             for (Signal s : EnumSet.allOf(Signal.class)) {
-                final List<SignalListener> ls = getSignalListenersList(s, false);
+                final Set<SignalListener> ls = getSignalListeners(s, false);
                 if (ls != null) {
                     ls.remove(listener);
                 }
@@ -111,7 +118,7 @@ public class ChannelSession extends AbstractServerChannel {
         }
 
         public void signal(Signal signal) {
-            final List<SignalListener> ls = getSignalListenersList(signal, false);
+            final Set<SignalListener> ls = getSignalListeners(signal, false);
             if (ls != null) {
                 for (SignalListener l : ls) {
                     l.signal(signal);
@@ -130,13 +137,13 @@ public class ChannelSession extends AbstractServerChannel {
             getEnv().put(key, value);
         }
         
-        protected List<SignalListener> getSignalListenersList(Signal signal, boolean create) {
-            List<SignalListener> ls = listeners.get(signal);
+        protected Set<SignalListener> getSignalListeners(Signal signal, boolean create) {
+            Set<SignalListener> ls = listeners.get(signal);
             if (ls == null && create) {
                 synchronized (listeners) {
                     ls = listeners.get(signal);
                     if (ls == null) {
-                        ls = new CopyOnWriteArrayList<SignalListener>();
+                        ls = new CopyOnWriteArraySet<SignalListener>();
                         listeners.put(signal, ls);
                     }
                 }
@@ -144,7 +151,7 @@ public class ChannelSession extends AbstractServerChannel {
             // may be null in case create=false
             return ls;
         }
-        
+
     }
 
     protected static enum PtyMode {

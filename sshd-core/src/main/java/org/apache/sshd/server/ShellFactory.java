@@ -100,9 +100,6 @@ public interface ShellFactory {
      * Interface providing access to the environment map and allowing the registration
      * of listeners for certain signals.
      *
-     * TODO: should we use enums for signals to allow using EnumSet or varags for
-     *       interesting signals ? 
-     *
      * @see Signal
      */
     public interface Environment {
@@ -136,17 +133,17 @@ public interface ShellFactory {
 
         /**
          * Add a qualified listener for the specific signal
-         * @param signal the signal the listener is interested in
          * @param listener the listener to register
+         * @param signal the signal the listener is interested in
          */
-    	void addSignalListener(Signal signal, SignalListener listener);
+    	void addSignalListener(SignalListener listener, Signal... signal);
 
         /**
          * Add a qualified listener for the specific set of signal
-         * @param signals the signals the listener is interested in
          * @param listener the listener to register
+         * @param signals the signals the listener is interested in
          */
-    	void addSignalListener(EnumSet<Signal> signals, SignalListener listener);
+    	void addSignalListener(SignalListener listener, EnumSet<Signal> signals);
 
         /**
          * Add a global listener for all signals
