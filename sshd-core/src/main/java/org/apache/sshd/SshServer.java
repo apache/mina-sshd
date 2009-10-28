@@ -29,6 +29,7 @@ import java.util.List;
 import org.apache.mina.core.service.IoAcceptor;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 import org.apache.sshd.common.AbstractFactoryManager;
+import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.Cipher;
 import org.apache.sshd.common.Compression;
 import org.apache.sshd.common.KeyExchange;
@@ -55,13 +56,13 @@ import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.server.CommandFactory;
 import org.apache.sshd.server.PasswordAuthenticator;
 import org.apache.sshd.server.PublickeyAuthenticator;
-import org.apache.sshd.server.ServerChannel;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.SessionFactory;
 import org.apache.sshd.server.ShellFactory;
 import org.apache.sshd.server.UserAuth;
 import org.apache.sshd.server.auth.UserAuthPassword;
 import org.apache.sshd.server.auth.UserAuthPublicKey;
+import org.apache.sshd.server.channel.ChannelDirectTcpip;
 import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.kex.DHG1;
 import org.apache.sshd.server.kex.DHG14;
@@ -97,7 +98,6 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     private int port;
     private boolean reuseAddress = true;
     private List<NamedFactory<UserAuth>> userAuthFactories;
-    private List<NamedFactory<ServerChannel>> channelFactories;
     private ShellFactory shellFactory;
     private SessionFactory sessionFactory;
     private CommandFactory commandFactory;
@@ -134,14 +134,6 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
 
     public void setUserAuthFactories(List<NamedFactory<UserAuth>> userAuthFactories) {
         this.userAuthFactories = userAuthFactories;
-    }
-
-    public List<NamedFactory<ServerChannel>> getChannelFactories() {
-        return channelFactories;
-    }
-
-    public void setChannelFactories(List<NamedFactory<ServerChannel>> channelFactories) {
-        this.channelFactories = channelFactories;
     }
 
     public ShellFactory getShellFactory() {
@@ -275,8 +267,9 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
                 new HMACSHA1.Factory(),
                 new HMACMD596.Factory(),
                 new HMACSHA196.Factory()));
-        sshd.setChannelFactories(Arrays.<NamedFactory<ServerChannel>>asList(
-                new ChannelSession.Factory()));
+        sshd.setChannelFactories(Arrays.<NamedFactory<Channel>>asList(
+                new ChannelSession.Factory(),
+                new ChannelDirectTcpip.Factory()));
         sshd.setSignatureFactories(Arrays.<NamedFactory<Signature>>asList(
                 new SignatureDSA.Factory(),
                 new SignatureRSA.Factory()));

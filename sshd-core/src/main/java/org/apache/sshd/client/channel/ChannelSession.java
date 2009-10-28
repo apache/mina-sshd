@@ -43,7 +43,7 @@ public class ChannelSession extends AbstractClientChannel {
     }
 
     @Override
-    protected void doOpenShell() throws Exception {
+    protected void doOpen() throws Exception {
         streamPumper = new Thread("ClientInputStreamPump") {
             @Override
             public void run() {

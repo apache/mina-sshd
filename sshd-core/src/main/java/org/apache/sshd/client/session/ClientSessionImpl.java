@@ -47,8 +47,6 @@ import org.apache.sshd.common.util.Buffer;
  */
 public class ClientSessionImpl extends AbstractSession implements ClientSession {
 
-    public static final String SESSION = ClientSessionImpl.class.getName();
-
     public enum State {
         ReceiveKexInit, Kex, ReceiveNewKeys, AuthRequestSent, WaitForAuth, UserAuth, Running, Unknown
     }
@@ -117,9 +115,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         } else {
             throw new IllegalArgumentException("Unsupported channel type " + type);
         }
-        int id = ++nextChannelId;
-        channel.init(this, id);
-        channels.put(id, channel);
+        registerChannel(channel);
         return channel;
     }
 
@@ -343,22 +339,5 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         buffer.putString("ssh-userauth");
         writePacket(buffer);
     }
-
-    private void channelOpenConfirmation(Buffer buffer) throws IOException {
-        AbstractClientChannel channel = (AbstractClientChannel) getChannel(buffer);
-        log.info("Received SSH_MSG_CHANNEL_OPEN_CONFIRMATION on channel {}", channel.getId());
-        int recipient = buffer.getInt();
-        int rwsize = buffer.getInt();
-        int rmpsize = buffer.getInt();
-        channel.internalOpenSuccess(recipient, rwsize, rmpsize);
-    }
-
-    private void channelOpenFailure(Buffer buffer) throws IOException {
-        AbstractClientChannel channel = (AbstractClientChannel) getChannel(buffer);
-        log.info("Received SSH_MSG_CHANNEL_OPEN_FAILURE on channel {}", channel.getId());
-        channels.remove(channel.getId());
-        channel.internalOpenFailure(buffer);
-    }
-
 
 }

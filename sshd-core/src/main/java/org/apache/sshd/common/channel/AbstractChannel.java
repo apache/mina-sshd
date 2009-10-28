@@ -22,10 +22,10 @@ import java.io.IOException;
 
 import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.Session;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultCloseFuture;
-import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.BufferUtils;
 import org.slf4j.Logger;
@@ -45,7 +45,7 @@ public abstract class AbstractChannel implements Channel {
     protected final Object lock = new Object();
     protected final Window localWindow = new Window(this, null, getClass().getName().contains(".client."), true);
     protected final Window remoteWindow = new Window(this, null, getClass().getName().contains(".client."), false);
-    protected AbstractSession session;
+    protected Session session;
     protected int id;
     protected int recipient;
     protected boolean eof;
@@ -64,8 +64,18 @@ public abstract class AbstractChannel implements Channel {
         return localWindow;
     }
 
-    public AbstractSession getSession() {
+    public Session getSession() {
         return session;
+    }
+
+    public void handleRequest(Buffer buffer) throws IOException {
+        throw new IllegalStateException();
+    }
+
+    public void init(Session session, int id) {
+        this.session = session;
+        this.id = id;
+        configureWindow();
     }
 
     public CloseFuture close(boolean immediately) {
@@ -74,7 +84,7 @@ public abstract class AbstractChannel implements Channel {
                 if (immediately) {
                     log.info("Closing channel {} immediately", id);
                     closeFuture.setClosed();
-                    session.channelForget(this);
+                    session.unregisterChannel(this);
                 } else {
                     if (!closing) {
                         closing = true;

@@ -26,6 +26,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import org.apache.mina.core.session.IoSession;
+import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.KeyExchange;
 import org.apache.sshd.common.NamedFactory;
@@ -34,7 +35,6 @@ import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.Buffer;
-import org.apache.sshd.server.ServerChannel;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.UserAuth;
 
@@ -64,6 +64,7 @@ public class ServerSession extends AbstractSession {
     private int nbAuthRequests;
     private int authTimeout = 10 * 60 * 1000; // 10 minutes in milliseconds
     private boolean allowMoreSessions = true;
+    private final TcpipForwardSupport tcpipForward;
 
     private List<NamedFactory<UserAuth>> userAuthFactories;
 
@@ -75,6 +76,7 @@ public class ServerSession extends AbstractSession {
         super(server, ioSession);
         maxAuthRequests = getIntProperty(FactoryManager.MAX_AUTH_REQUESTS, maxAuthRequests);
         authTimeout = getIntProperty(FactoryManager.AUTH_TIMEOUT, authTimeout);
+        tcpipForward = new TcpipForwardSupport(this);
         log.info("Session created...");
         sendServerIdentification();
         sendKexInit();
@@ -83,6 +85,7 @@ public class ServerSession extends AbstractSession {
     @Override
     public CloseFuture close(boolean immediately) {
         unscheduleAuthTimer();
+        tcpipForward.close();
         return super.close(immediately);
     }
 
@@ -187,6 +190,12 @@ public class ServerSession extends AbstractSession {
                                 break;
                             case SSH_MSG_CHANNEL_OPEN:
                                 channelOpen(buffer);
+                                break;
+                            case SSH_MSG_CHANNEL_OPEN_CONFIRMATION:
+                                channelOpenConfirmation(buffer);
+                                break;
+                            case SSH_MSG_CHANNEL_OPEN_FAILURE:
+                                channelOpenFailure(buffer);
                                 break;
                             case SSH_MSG_CHANNEL_REQUEST:
                                 channelRequest(buffer);
@@ -354,53 +363,51 @@ public class ServerSession extends AbstractSession {
         log.info("Received SSH_MSG_CHANNEL_OPEN {}", type);
 
         if (closing) {
-            buffer = createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_FAILURE);
-            buffer.putInt(id);
-            buffer.putInt(SshConstants.SSH_OPEN_CONNECT_FAILED);
-            buffer.putString("SSH server is shutting down: " + type);
-            buffer.putString("");
-            writePacket(buffer);
+            Buffer buf = createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_FAILURE);
+            buf.putInt(id);
+            buf.putInt(SshConstants.SSH_OPEN_CONNECT_FAILED);
+            buf.putString("SSH server is shutting down: " + type);
+            buf.putString("");
+            writePacket(buf);
             return;
         }
         if (!allowMoreSessions) {
-            buffer = createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_FAILURE);
-            buffer.putInt(id);
-            buffer.putInt(SshConstants.SSH_OPEN_CONNECT_FAILED);
-            buffer.putString("additional sessions disabled");
-            buffer.putString("");
-            writePacket(buffer);
+            Buffer buf = createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_FAILURE);
+            buf.putInt(id);
+            buf.putInt(SshConstants.SSH_OPEN_CONNECT_FAILED);
+            buf.putString("additional sessions disabled");
+            buf.putString("");
+            writePacket(buf);
             return;
         }
 
-        ServerChannel channel = null;
-        for (NamedFactory<ServerChannel> factory : getServerFactoryManager().getChannelFactories()) {
+        Channel channel = null;
+        for (NamedFactory<Channel> factory : getServerFactoryManager().getChannelFactories()) {
             if (factory.getName().equals(type)) {
                 channel = factory.create();
                 break;
             }
         }
         if (channel == null) {
-            buffer = createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_FAILURE);
-            buffer.putInt(id);
-            buffer.putInt(SshConstants.SSH_OPEN_UNKNOWN_CHANNEL_TYPE);
-            buffer.putString("Unsupported channel type: " + type);
-            buffer.putString("");
-            writePacket(buffer);
+            Buffer buf = createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_FAILURE);
+            buf.putInt(id);
+            buf.putInt(SshConstants.SSH_OPEN_UNKNOWN_CHANNEL_TYPE);
+            buf.putString("Unsupported channel type: " + type);
+            buf.putString("");
+            writePacket(buf);
             return;
         }
 
-        int channelId;
-        synchronized (channels) {
-            channelId = nextChannelId++;
-        }
+        int channelId = getNextChannelId();
         channels.put(channelId, channel);
-        channel.init(this, channelId, id, rwsize, rmpsize);
-        buffer = createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_CONFIRMATION);
-        buffer.putInt(id);
-        buffer.putInt(channelId);
-        buffer.putInt(channel.getLocalWindow().getSize());
-        buffer.putInt(channel.getLocalWindow().getPacketSize());
-        writePacket(buffer);
+        channel.init(this, channelId);
+        channel.handleOpenSuccess(id, rwsize, rmpsize, buffer);
+        Buffer buf = createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_CONFIRMATION);
+        buf.putInt(id);
+        buf.putInt(channelId);
+        buf.putInt(channel.getLocalWindow().getSize());
+        buf.putInt(channel.getLocalWindow().getPacketSize());
+        writePacket(buf);
     }
 
     private void globalRequest(Buffer buffer) throws Exception {
@@ -410,6 +417,12 @@ public class ServerSession extends AbstractSession {
           // Relatively standard KeepAlive directive, just wants failure
         } else if (req.equals("no-more-sessions@openssh.com")) {
             allowMoreSessions = false;
+        } else if (req.equals("tcpip-forward")) {
+            tcpipForward.request(buffer, wantReply);
+            return;
+        } else if (req.equals("cancel-tcpip-forward")) {
+            tcpipForward.cancel(buffer, wantReply);
+            return;
         } else {
             log.info("Received SSH_MSG_GLOBAL_REQUEST {}" ,req);
             log.error("Unknown global request: {}", req);

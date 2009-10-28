@@ -59,13 +59,6 @@ public interface ServerFactoryManager extends FactoryManager {
     PasswordAuthenticator getPasswordAuthenticator();
 
     /**
-     * Retrieve the list of named factories for <code>ServerChannel</code> objects.
-     *
-     * @return a list of named <code>ServerChannel</code> factories, never <code>null</code>
-     */
-    List<NamedFactory<ServerChannel>> getChannelFactories();
-
-    /**
      * Retrieve the <code>ShellFactory</code> object to be used to create shells.
      *
      * @return a valid <code>ShellFactory</code> object or <code>null</code> if shells

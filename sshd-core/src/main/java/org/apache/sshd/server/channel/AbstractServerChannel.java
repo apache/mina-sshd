@@ -23,24 +23,28 @@ import java.io.IOException;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.AbstractChannel;
 import org.apache.sshd.common.util.Buffer;
-import org.apache.sshd.server.ServerChannel;
-import org.apache.sshd.server.session.ServerSession;
 
 /**
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractServerChannel extends AbstractChannel implements ServerChannel {
+public abstract class AbstractServerChannel extends AbstractChannel {
 
     protected boolean exitStatusSent;
 
-    public void init(ServerSession session, int id, int recipient, int rwsize, int rmpsize) {
-        this.session = session;
-        this.id = id;
+    public void handleOpenSuccess(int recipient, int rwsize, int rmpsize, Buffer buffer) throws IOException {
         this.recipient = recipient;
         this.remoteWindow.init(rwsize, rmpsize);
         configureWindow();
+        doInit(buffer);
+    }
+
+    public void handleOpenFailure(Buffer buffer) {
+        throw new IllegalStateException();
+    }
+
+    protected void doInit(Buffer buffer) throws IOException {
     }
 
     protected void sendExitStatus(int v) throws IOException {

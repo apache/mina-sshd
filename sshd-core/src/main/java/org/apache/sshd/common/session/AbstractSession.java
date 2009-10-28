@@ -28,6 +28,7 @@ import org.apache.mina.core.future.IoFuture;
 import org.apache.mina.core.future.IoFutureListener;
 import org.apache.mina.core.future.WriteFuture;
 import org.apache.mina.core.session.IoSession;
+import org.apache.sshd.client.channel.AbstractClientChannel;
 import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.Cipher;
 import org.apache.sshd.common.Compression;
@@ -37,6 +38,7 @@ import org.apache.sshd.common.KeyExchange;
 import org.apache.sshd.common.Mac;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.Random;
+import org.apache.sshd.common.Session;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.CloseFuture;
@@ -61,14 +63,14 @@ import org.slf4j.LoggerFactory;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractSession {
+public abstract class AbstractSession implements Session {
 
     /**
      * Name of the property where this session is stored in the attributes of the
      * underlying MINA session. See {@link #getSession(IoSession, boolean)}
      * and {@link #attachSession(IoSession, AbstractSession)}.
      */
-    public static final String SESSION = "com.google.code.sshd.session";
+    public static final String SESSION = "org.apache.sshd.session";
     /** Our logger */
     protected final Logger log = LoggerFactory.getLogger(getClass());
     /** The factory manager used to retrieve factories of Ciphers, Macs and other objects */
@@ -178,6 +180,15 @@ public abstract class AbstractSession {
      */
     public static final void attachSession(IoSession ioSession, AbstractSession session) {
         ioSession.setAttribute(SESSION, session);
+    }
+
+    /**
+     * Retrieve the mina session
+     *  
+     * @return the mina session
+     */
+    public IoSession getIoSession() {
+        return ioSession;
     }
 
     /**
@@ -846,10 +857,40 @@ public abstract class AbstractSession {
                 }
             }
             if (guess[i] == null && i != SshConstants.PROPOSAL_LANG_CTOS && i != SshConstants.PROPOSAL_LANG_STOC) {
-                throw new IllegalStateException("Unable to negociate");
+                throw new IllegalStateException("Unable to negociate key exchange for item " + i);
             }
         }
         negociated = guess;
+    }
+
+
+    protected int getNextChannelId() {
+        synchronized (channels) {
+            return nextChannelId++;
+        }
+    }
+
+    public int registerChannel(Channel channel) throws Exception {
+        int channelId = getNextChannelId();
+        channel.init(this, channelId);
+        channels.put(channelId, channel);
+        return channelId;
+    }
+
+    protected void channelOpenConfirmation(Buffer buffer) throws IOException {
+        Channel channel = getChannel(buffer);
+        log.info("Received SSH_MSG_CHANNEL_OPEN_CONFIRMATION on channel {}", channel.getId());
+        int recipient = buffer.getInt();
+        int rwsize = buffer.getInt();
+        int rmpsize = buffer.getInt();
+        channel.handleOpenSuccess(recipient, rwsize, rmpsize, buffer);
+    }
+
+    protected void channelOpenFailure(Buffer buffer) throws IOException {
+        AbstractClientChannel channel = (AbstractClientChannel) getChannel(buffer);
+        log.info("Received SSH_MSG_CHANNEL_OPEN_FAILURE on channel {}", channel.getId());
+        channels.remove(channel.getId());
+        channel.handleOpenFailure(buffer);
     }
 
     /**
@@ -909,14 +950,15 @@ public abstract class AbstractSession {
     protected void channelClose(Buffer buffer) throws Exception {
         Channel channel = getChannel(buffer);
         channel.handleClose();
-        channelForget(channel);
+        unregisterChannel(channel);
     }
 
     /**
+     * Remove this channel from the list of managed channels
      *
-     * @param channel
+     * @param channel the channel
      */
-    public void channelForget(Channel channel) {
+    public void unregisterChannel(Channel channel) {
         channels.remove(channel.getId());
     }
 
@@ -1001,4 +1043,5 @@ public abstract class AbstractSession {
     public <T, E extends T> T setAttribute(AttributeKey<T> key, E value) {
         return (T)attributes.put(key, value);
     }
+
 }

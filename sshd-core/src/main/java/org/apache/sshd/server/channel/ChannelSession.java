@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.ChannelOutputStream;
@@ -41,7 +42,6 @@ import org.apache.sshd.common.util.IoUtils;
 import org.apache.sshd.common.util.LfToCrLfFilterOutputStream;
 import org.apache.sshd.common.util.LoggingFilterOutputStream;
 import org.apache.sshd.server.CommandFactory;
-import org.apache.sshd.server.ServerChannel;
 import org.apache.sshd.server.ShellFactory;
 import org.apache.sshd.server.Signals;
 import org.apache.sshd.server.ShellFactory.Environment;
@@ -55,13 +55,13 @@ import org.apache.sshd.server.session.ServerSession;
  */
 public class ChannelSession extends AbstractServerChannel {
 
-    public static class Factory implements NamedFactory<ServerChannel> {
+    public static class Factory implements NamedFactory<Channel> {
 
         public String getName() {
             return "session";
         }
 
-        public ServerChannel create() {
+        public Channel create() {
             return new ChannelSession();
         }
     }

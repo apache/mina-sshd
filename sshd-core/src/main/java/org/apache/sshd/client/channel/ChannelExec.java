@@ -20,7 +20,6 @@ package org.apache.sshd.client.channel;
 
 import java.io.ByteArrayOutputStream;
 
-import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.util.Buffer;
 
@@ -31,8 +30,8 @@ import org.apache.sshd.common.util.Buffer;
  */
 public class ChannelExec extends ChannelSession {
 
-    protected void doOpenShell() throws Exception {
-        super.doOpenShell();
+    protected void doOpen() throws Exception {
+        super.doOpen();
 
         Buffer buffer;
 

@@ -25,12 +25,12 @@ import java.io.OutputStream;
 import org.apache.sshd.ClientChannel;
 import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
-import org.apache.sshd.client.session.ClientSessionImpl;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.AbstractChannel;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
+import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.IoUtils;
 
@@ -78,12 +78,6 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
 
     public void setErr(OutputStream err) {
         this.err = err;
-    }
-
-    public void init(ClientSessionImpl session, int id) {
-        this.session = session;
-        configureWindow();
-        this.id = id;
     }
 
     @Override
@@ -177,12 +171,12 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         return openFuture;
     }
 
-    public void internalOpenSuccess(int recipient, int rwsize, int rmpsize) {
+    public void handleOpenSuccess(int recipient, int rwsize, int rmpsize, Buffer buffer) {
         synchronized (lock) {
             this.recipient = recipient;
             this.remoteWindow.init(rwsize, rmpsize);
             try {
-                doOpenShell();
+                doOpen();
                 this.opened = true;
                 this.openFuture.setOpened();
             } catch (Exception e) {
@@ -194,9 +188,9 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         }
     }
 
-    protected abstract void doOpenShell() throws Exception;
+    protected abstract void doOpen() throws Exception;
 
-    public void internalOpenFailure(Buffer buffer) {
+    public void handleOpenFailure(Buffer buffer) {
         int reason = buffer.getInt();
         String msg = buffer.getString();
         synchronized (lock) {

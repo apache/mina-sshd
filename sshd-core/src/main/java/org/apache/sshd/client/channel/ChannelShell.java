@@ -28,8 +28,8 @@ import org.apache.sshd.common.util.Buffer;
  */
 public class ChannelShell extends ChannelSession {
 
-    protected void doOpenShell() throws Exception {
-        super.doOpenShell();
+    protected void doOpen() throws Exception {
+        super.doOpen();
 
         Buffer buffer;
 

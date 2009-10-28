@@ -20,6 +20,7 @@ package org.apache.sshd.common;
 
 import java.io.IOException;
 
+import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.util.Buffer;
 
@@ -31,6 +32,10 @@ import org.apache.sshd.common.util.Buffer;
 public interface Channel {
 
     int getId();
+
+    Window getLocalWindow();
+
+    Session getSession();
 
     void handleClose() throws IOException;
 
@@ -47,5 +52,11 @@ public interface Channel {
     void handleFailure() throws IOException;
 
     CloseFuture close(boolean immediately);
+
+    void init(Session session, int id) throws IOException;
+
+    void handleOpenSuccess(int recipient, int rwsize, int rmpsize, Buffer buffer) throws IOException;
+
+    void handleOpenFailure(Buffer buffer) throws IOException;
 
 }

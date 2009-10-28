@@ -45,6 +45,7 @@ public abstract class AbstractFactoryManager implements FactoryManager {
     private NamedFactory<Random> randomFactory;
     private KeyPairProvider keyPairProvider;
     private String version;
+    private List<NamedFactory<Channel>> channelFactories;
 
     protected AbstractFactoryManager() {
         loadVersion();
@@ -132,5 +133,13 @@ public abstract class AbstractFactoryManager implements FactoryManager {
         } catch (Exception e) {
             log.warn("Unable to load version from resources. Missing org/apache/sshd/sshd-version.properties ?", e);
         }
+    }
+
+    public List<NamedFactory<Channel>> getChannelFactories() {
+        return channelFactories;
+    }
+
+    public void setChannelFactories(List<NamedFactory<Channel>> channelFactories) {
+        this.channelFactories = channelFactories;
     }
 }
