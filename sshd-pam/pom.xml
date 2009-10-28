@@ -69,7 +69,7 @@
                             *
                         </Import-Package>
                         <Export-Package>
-                            org.apache.sshd*;version=${version}
+                            org.apache.sshd*;version=${version};-noimport:=true
                         </Export-Package>
                     </instructions>
                     <unpackBundle>true</unpackBundle>

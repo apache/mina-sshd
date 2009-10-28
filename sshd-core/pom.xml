@@ -105,7 +105,7 @@
                             *
                         </Import-Package>
                         <Export-Package>
-                            org.apache.sshd*;version=${version}
+                            org.apache.sshd*;version=${version};-noimport:=true
                         </Export-Package>
                         <_versionpolicy>[$(version;==;$(@)),$(version;+;$(@)))</_versionpolicy>
                     </instructions>
