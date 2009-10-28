@@ -41,6 +41,8 @@ import org.slf4j.LoggerFactory;
 public class ScpCommand implements CommandFactory.Command, Runnable {
 
     private static final Logger log = LoggerFactory.getLogger(ScpCommand.class);
+    private static final int OK = 0;
+    private static final int ERROR = 2;
 
     private boolean optR;
     private boolean optT;
@@ -116,6 +118,9 @@ public class ScpCommand implements CommandFactory.Command, Runnable {
     }
 
     public void run() {
+        int exitValue = OK;
+        String exitMessage = null;
+        
         try {
             if (optT && !optR) {
                 ack();
@@ -143,8 +148,10 @@ public class ScpCommand implements CommandFactory.Command, Runnable {
             }
         } catch (IOException e) {
             try {
-                out.write(2);
-                out.write(e.getMessage().getBytes());
+                exitValue = ERROR;
+                exitMessage = e.getMessage();
+                out.write(exitValue);
+                out.write(exitMessage.getBytes());
                 out.write('\n');
                 out.flush();
             } catch (IOException e2) {
@@ -152,7 +159,9 @@ public class ScpCommand implements CommandFactory.Command, Runnable {
             }
             log.info("Error in scp command", e);
         } finally {
-            callback.onExit(0);
+            if (callback != null) {
+                callback.onExit(exitValue, exitMessage);
+            }
         }
     }
 

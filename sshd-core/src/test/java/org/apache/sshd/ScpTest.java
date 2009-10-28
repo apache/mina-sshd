@@ -109,32 +109,32 @@ public class ScpTest {
         String data = "0123456789\n";
 
         File root = new File("target/scp");
-        File target = new File("target/scp/out.txt");
+        File target = new File("target/scp/o ut.txt");
         root.mkdirs();
         assertTrue(root.exists());
 
         target.delete();
         assertFalse(target.exists());
-        sendFile("target/scp/out.txt", "out.txt", data);
+        sendFile("target/scp/o ut.txt", "out.txt", data);
         assertFileLength(target, data.length(), 5000);
 
         target.delete();
         assertFalse(target.exists());
-        sendFile("target/scp", "out.txt", data);
+        sendFile("target/scp", "o ut.txt", data);
         assertFileLength(target, data.length(), 5000);
 
         sendFileError("target", "scp", "0123456789\n");
 
         readFileError("target/scp");
 
-        assertEquals(data, readFile("target/scp/out.txt"));
+        assertEquals(data, readFile("target/scp/o ut.txt"));
 
         assertEquals(data, readDir("target/scp"));
 
         target.delete();
         root.delete();
 
-        sendDir("target", "scp", "out.txt", data);
+        sendDir("target", "scp", "o ut.txt", data);
         assertFileLength(target, data.length(), 5000);
     }
 
@@ -164,7 +164,7 @@ public class ScpTest {
         OutputStream os = c.getOutputStream();
         InputStream is = c.getInputStream();
         String header = readLine(is);
-        assertEquals("C0644 11 out.txt", header);
+        assertEquals("C0644 11 o ut.txt", header);
         int length = Integer.parseInt(header.substring(6, header.indexOf(' ', 6)));
         os.write(0);
         os.flush();
@@ -191,7 +191,7 @@ public class ScpTest {
         os.write(0);
         os.flush();
         header = readLine(is);
-        assertEquals("C0644 11 out.txt", header);
+        assertEquals("C0644 11 o ut.txt", header);
         int length = Integer.parseInt(header.substring(6, header.indexOf(' ', 6)));
         os.write(0);
         os.flush();

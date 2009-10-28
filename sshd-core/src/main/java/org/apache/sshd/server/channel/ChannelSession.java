@@ -474,6 +474,7 @@ public class ChannelSession extends AbstractServerChannel {
     }
 
     protected boolean handleExec(Buffer buffer) throws IOException {
+        CommandFactory.Command command;
         boolean wantReply = buffer.getBoolean();
         String commandLine = buffer.getString();
 
@@ -481,7 +482,12 @@ public class ChannelSession extends AbstractServerChannel {
             return false;
         }
 
-        CommandFactory.Command command = ((ServerSession) session).getServerFactoryManager().getCommandFactory().createCommand(commandLine);
+        try {
+            command = ((ServerSession) session).getServerFactoryManager().getCommandFactory().createCommand(commandLine);
+        } catch (IllegalArgumentException iae) {
+            // TODO: Shouldn't we log errors on the server side?
+            return false;
+        }
         // If the command wants to be aware of the session, let's do that
         if (command instanceof CommandFactory.SessionAware) {
             ((CommandFactory.SessionAware) command).setSession((ServerSession) session);
@@ -504,6 +510,9 @@ public class ChannelSession extends AbstractServerChannel {
                 } catch (IOException e) {
                     log.info("Error closing shell", e);
                 }
+            }
+            public void onExit(int exitValue, String exitMessage) {
+                onExit(exitValue);
             }
         });
 

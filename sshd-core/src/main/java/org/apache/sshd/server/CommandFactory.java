@@ -101,12 +101,19 @@ public interface CommandFactory {
     public interface ExitCallback {
 
         /**
-         * Informs the SSH server that the shell has exited
+         * Informs the SSH client/server that the shell has exited
          *
          * @param exitValue the exit value
          */
         void onExit(int exitValue);
 
+        /**
+         * Informs the SSH client/server that the shell has exited
+         *
+         * @param exitValue the exit value
+         * @param exitMessage exit value description
+         */
+        void onExit(int exitValue, String exitMessage);
     }
 
 }
