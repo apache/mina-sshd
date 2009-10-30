@@ -21,10 +21,7 @@ package org.apache.sshd.server.channel;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.ArrayList;
 import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -32,6 +29,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.PtyMode;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.channel.ChannelPipedInputStream;
@@ -71,11 +69,13 @@ public class ChannelSession extends AbstractServerChannel {
     protected static class StandardEnvironment implements Environment {
 
         private final Map<Signal, Set<SignalListener>> listeners;
-        private final Map<String,String> env;
+        private final Map<String, String> env;
+        private final Map<PtyMode, Integer> ptyModes;
 
         public StandardEnvironment() {
             listeners = new ConcurrentHashMap<Signal, Set<SignalListener>>(3);
             env = new ConcurrentHashMap<String, String>();
+            ptyModes = new ConcurrentHashMap<PtyMode, Integer>();
         }
 
         public void addSignalListener(SignalListener listener, Signal... signals) {
@@ -103,6 +103,10 @@ public class ChannelSession extends AbstractServerChannel {
 
         public Map<String, String> getEnv() {
             return env;
+        }
+
+        public Map<PtyMode, Integer> getPtyModes() {
+            return ptyModes;
         }
 
         public void removeSignalListener(SignalListener listener) {
@@ -136,7 +140,7 @@ public class ChannelSession extends AbstractServerChannel {
             // TODO: listening for property changes would be nice too.
             getEnv().put(key, value);
         }
-        
+
         protected Set<SignalListener> getSignalListeners(Signal signal, boolean create) {
             Set<SignalListener> ls = listeners.get(signal);
             if (ls == null && create) {
@@ -154,60 +158,7 @@ public class ChannelSession extends AbstractServerChannel {
 
     }
 
-    protected static enum PtyMode {
-        // Chars
-        VINTR(1), VQUIT(2), VERASE(3), VKILL(4), VEOF(5), VEOL(6), VEOL2(7), VSTART(8), VSTOP(9),
-        VSUSP(10), VDSUSP(11), VREPRINT(12), VWERASE(13), VLNEXT(14), VFLUSH(15), VSWTCH(16), VSTATUS(17), VDISCARD(18),
-        // I flags
-        IGNPAR(30), PARMRK(31), INPCK(32), ISTRIP(33), INCLR(34), IGNCR(35), ICRNL(36), IUCLC(37), IXON(38), IXANY(39),
-        IXOFF(40), IMAXBEL(41),
-        // L flags
-        ISIG(50), ICANON(51), XCASE(52), ECHO(53), ECHOE(54), ECHOK(55), ECHONL(56), NOFLSH(57), TOSTOP(58), IEXTEN(59),
-        ECHOCTL(60), ECHOKE(61), PENDIN(62),
-        // O flags
-        OPOST(70), OLCUC(71), ONLCR(72), OCRNL(73), ONOCR(74), ONLRET(75),
-        // C flags
-        CS7(90), CS8(91), PARENB(92), PARODD(93),
-        // Speeed
-        TTY_OP_ISPEED(128), TTY_OP_OSPEED(129);
-
-        private int v;
-        private PtyMode(int v) {
-            this.v = v;
-        }
-
-        public int toInt() {
-            return v;
-        }
-
-        static Map<Integer,PtyMode> commands;
-        static {
-            commands = new HashMap<Integer, PtyMode>();
-            for (PtyMode c : PtyMode.values()) {
-                commands.put(c.toInt(), c);
-            }
-        }
-        public static PtyMode fromInt(int b) {
-            return commands.get(0x00FF & (b + 256));
-        }
-    }
-
-    protected static class PtyModeValue {
-        public final PtyMode mode;
-        public final int value;
-
-        public PtyModeValue(PtyMode mode, int value) {
-            this.mode = mode;
-            this.value = value;
-        }
-
-        public String toString() {
-            return mode + "(" + mode.toInt() + ") =" + value;
-        }
-    }
-
     protected String type;
-    protected PtyModeValue[] ptyModes;
     protected InputStream in;
     protected OutputStream out;
     protected OutputStream err;
@@ -340,31 +291,20 @@ public class ChannelSession extends AbstractServerChannel {
         int tWidth = buffer.getInt();
         int tHeight = buffer.getInt();
         byte[] modes = buffer.getBytes();
-        List<PtyModeValue> modeList = new ArrayList<PtyModeValue>();
         for (int i = 0; i < modes.length && modes[i] != 0;) {
             PtyMode mode = PtyMode.fromInt(modes[i++]);
             int val  = ((modes[i++] << 24) & 0xff000000) |
                        ((modes[i++] << 16) & 0x00ff0000) |
                        ((modes[i++] <<  8) & 0x0000ff00) |
                        ((modes[i++]      ) & 0x000000ff);
-            PtyModeValue m = new PtyModeValue(mode, val);
-            modeList.add(m);
+            getEnvironment().getPtyModes().put(mode, val);
         }
-        ptyModes = modeList.toArray(new PtyModeValue[0]);
         if (log.isDebugEnabled()) {
-            StringBuffer strModes = new StringBuffer();
-            for (PtyModeValue m : ptyModes) {
-                if (strModes.length() > 0) {
-                    strModes.append(", ");
-                }
-                strModes.append(m);
-            }
-            log.debug("pty for channel {}: term={}, size=({} - {}), pixels=({}, {}), modes=[{}]", new Object[] { id, term, tColumns, tRows, tWidth, tHeight, strModes.toString() });
+            log.debug("pty for channel {}: term={}, size=({} - {}), pixels=({}, {}), modes=[{}]", new Object[] { id, term, tColumns, tRows, tWidth, tHeight, getEnvironment().getPtyModes() });
         }
         addEnvVariable(Environment.ENV_TERM, term);
         addEnvVariable(Environment.ENV_COLUMNS, Integer.toString(tColumns));
         addEnvVariable(Environment.ENV_LINES, Integer.toString(tRows));
-        // TODO: handle pty request correctly
         if (wantReply) {
             buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS);
             buffer.putInt(recipient);
@@ -464,14 +404,8 @@ public class ChannelSession extends AbstractServerChannel {
     }
 
     protected int getPtyModeValue(PtyMode mode) {
-        if (ptyModes != null) {
-            for (PtyModeValue m : ptyModes) {
-                if (m.mode == mode) {
-                    return m.value;
-                }
-            }
-        }
-        return 0;
+        Integer v = getEnvironment().getPtyModes().get(mode);
+        return v != null ? v : 0;
     }
 
     protected boolean handleExec(Buffer buffer) throws IOException {

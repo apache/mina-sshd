@@ -22,6 +22,9 @@ import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.util.Buffer;
 
+import java.io.IOException;
+import java.io.InputStream;
+
 /**
  * TODO Add javadoc
  *
@@ -75,7 +78,7 @@ public class ChannelSession extends AbstractClientChannel {
                 buffer.putInt(0);
                 int wpos2 = buffer.wpos(); // keep buffer position for data write
                 buffer.wpos(wpos2 + remoteWindow.getPacketSize()); // Make room
-                int len = in.read(buffer.array(), wpos2, remoteWindow.getPacketSize()); // read data into buffer
+                int len = securedRead(in, buffer.array(), wpos2, remoteWindow.getPacketSize()); // read data into buffer
                 if (len > 0) {
                     buffer.wpos(wpos1);
                     buffer.putInt(len);
@@ -86,7 +89,32 @@ public class ChannelSession extends AbstractClientChannel {
                 }
             }
         } catch (Exception e) {
+            log.info("Caught exception", e);
             close(false);
         }
     }
+
+    //
+    // On some platforms, a call to System.in.read(new byte[65536], 0,32768) always throws an IOException.
+    // So we need to protect against that and chunk the call into smaller calls.
+    // This problem was found on Windows, JDK 1.6.0_03-b05.
+    //
+    protected int securedRead(InputStream in, byte[] buf, int off, int len) throws IOException {
+        int n = 0;
+        for (;;) {
+            int nread = in.read(buf, off + n, Math.min(1024, len - n));
+            if (nread <= 0) {
+                return (n == 0) ? nread : n;
+            }
+            n += nread;
+            if (n >= len) {
+                return n;
+            }
+            // if not closed but no bytes available, return
+            if (in != null && in.available() <= 0) {
+                return n;
+            }
+        }
+    }
+
 }

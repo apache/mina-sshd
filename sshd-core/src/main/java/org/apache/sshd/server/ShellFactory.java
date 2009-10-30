@@ -24,6 +24,7 @@ import java.io.OutputStream;
 import java.util.Map;
 import java.util.EnumSet;
 
+import org.apache.sshd.common.PtyMode;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
@@ -129,7 +130,13 @@ public interface ShellFactory {
          * Retrieve the environment map
          * @return the environment map
          */
-    	Map<String,String> getEnv();
+    	Map<String, String> getEnv();
+
+        /**
+         * Retrieve the pty modes
+         * @return the map of pty modes
+         */
+        Map<PtyMode, Integer> getPtyModes();
 
         /**
          * Add a qualified listener for the specific signal

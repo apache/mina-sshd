@@ -191,7 +191,7 @@ public class ClientTest {
         authFuture.await();
         closeFuture.await();
         assertNotNull(authFuture.getException());
-
+        assertTrue(closeFuture.isClosed());
     }
 
     @Test
@@ -209,7 +209,7 @@ public class ClientTest {
         openFuture.await();
         closeFuture.await();
         assertNotNull(openFuture.isOpened());
-        assertNotNull(closeFuture.isClosed());
+        assertTrue(closeFuture.isClosed());
     }
 
     @Test
@@ -227,7 +227,7 @@ public class ClientTest {
         openFuture.await();
         closeFuture.await();
         assertNotNull(openFuture.getException());
-        assertNotNull(closeFuture.isClosed());
+        assertTrue(closeFuture.isClosed());
     }
 
     public static void main(String[] args) throws Exception {
