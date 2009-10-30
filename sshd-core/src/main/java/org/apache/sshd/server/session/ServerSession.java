@@ -26,6 +26,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import org.apache.mina.core.session.IoSession;
+import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.KeyExchange;
@@ -33,6 +34,7 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.CloseFuture;
+import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.server.ServerFactoryManager;
@@ -356,9 +358,9 @@ public class ServerSession extends AbstractSession {
 
     private void channelOpen(Buffer buffer) throws Exception {
         String type = buffer.getString();
-        int id = buffer.getInt();
-        int rwsize = buffer.getInt();
-        int rmpsize = buffer.getInt();
+        final int id = buffer.getInt();
+        final int rwsize = buffer.getInt();
+        final int rmpsize = buffer.getInt();
 
         log.info("Received SSH_MSG_CHANNEL_OPEN {}", type);
 
@@ -381,13 +383,7 @@ public class ServerSession extends AbstractSession {
             return;
         }
 
-        Channel channel = null;
-        for (NamedFactory<Channel> factory : getServerFactoryManager().getChannelFactories()) {
-            if (factory.getName().equals(type)) {
-                channel = factory.create();
-                break;
-            }
-        }
+        final Channel channel = NamedFactory.Utils.create(getServerFactoryManager().getChannelFactories(), type);
         if (channel == null) {
             Buffer buf = createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_FAILURE);
             buf.putInt(id);
@@ -398,16 +394,32 @@ public class ServerSession extends AbstractSession {
             return;
         }
 
-        int channelId = getNextChannelId();
+        final int channelId = getNextChannelId();
         channels.put(channelId, channel);
         channel.init(this, channelId);
-        channel.handleOpenSuccess(id, rwsize, rmpsize, buffer);
-        Buffer buf = createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_CONFIRMATION);
-        buf.putInt(id);
-        buf.putInt(channelId);
-        buf.putInt(channel.getLocalWindow().getSize());
-        buf.putInt(channel.getLocalWindow().getPacketSize());
-        writePacket(buf);
+        channel.open(id, rwsize, rmpsize, buffer).addListener(new SshFutureListener<OpenFuture>() {
+            public void operationComplete(OpenFuture future) {
+                try {
+                    if (future.isOpened()) {
+                        Buffer buf = createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_CONFIRMATION);
+                        buf.putInt(id);
+                        buf.putInt(channelId);
+                        buf.putInt(channel.getLocalWindow().getSize());
+                        buf.putInt(channel.getLocalWindow().getPacketSize());
+                        writePacket(buf);
+                    } else if (future.getException() != null) {
+                        Buffer buf = createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_FAILURE);
+                        buf.putInt(id);
+                        buf.putInt(0);
+                        buf.putString("Error opening channel: " + future.getException().getMessage());
+                        buf.putString("");
+                        writePacket(buf);
+                    }
+                } catch (IOException e) {
+                    exceptionCaught(e);
+                }
+            }
+        });
     }
 
     private void globalRequest(Buffer buffer) throws Exception {

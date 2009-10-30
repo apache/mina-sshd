@@ -25,11 +25,14 @@ import java.net.InetSocketAddress;
 
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.future.ConnectFuture;
+import org.apache.mina.core.future.IoFutureListener;
 import org.apache.mina.core.service.IoConnector;
 import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.transport.socket.nio.NioSocketConnector;
+import org.apache.sshd.client.future.DefaultOpenFuture;
+import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
@@ -64,7 +67,8 @@ public class ChannelDirectTcpip extends AbstractServerChannel {
     public ChannelDirectTcpip() {
     }
 
-    protected void doInit(Buffer buffer) throws IOException {
+    protected OpenFuture doInit(Buffer buffer) {
+        final OpenFuture f = new DefaultOpenFuture(this);
         String hostToConnect = buffer.getString();
         int portToConnect = buffer.getInt();
         String originatorIpAddress = buffer.getString();
@@ -86,11 +90,18 @@ public class ChannelDirectTcpip extends AbstractServerChannel {
         };
         connector.setHandler(handler);
         ConnectFuture future = connector.connect(new InetSocketAddress(hostToConnect, portToConnect));
-        try {
-            ioSession = future.await().getSession();
-        } catch (InterruptedException e) {
-            throw (IOException) new InterruptedIOException().initCause(e);
-        }
+        future.addListener(new IoFutureListener<ConnectFuture>() {
+            public void operationComplete(ConnectFuture future) {
+                if (future.isConnected()) {
+                    ioSession = future.getSession();
+                    f.setOpened();
+                } else if (future.getException() != null) {
+                    close(false);
+                    f.setException(future.getException());
+                }
+            }
+        });
+        return f;
     }
 
     public CloseFuture close(boolean immediately) {

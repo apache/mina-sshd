@@ -20,6 +20,7 @@ package org.apache.sshd.common;
 
 import java.io.IOException;
 
+import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.util.Buffer;
@@ -55,8 +56,21 @@ public interface Channel {
 
     void init(Session session, int id) throws IOException;
 
+    /**
+     * For a server channel, this method will actually open the channel
+     */
+    OpenFuture open(int recipient, int rwsize, int rmpsize, Buffer buffer);
+
+    /**
+     * For a client channel, this method will be called internally by the session when the confirmation
+     * has been received.
+     */
     void handleOpenSuccess(int recipient, int rwsize, int rmpsize, Buffer buffer) throws IOException;
 
+    /**
+     * For a client channel, this method will be called internally by the session when
+     * the server has rejected this channel opening.
+     */
     void handleOpenFailure(Buffer buffer) throws IOException;
 
 }

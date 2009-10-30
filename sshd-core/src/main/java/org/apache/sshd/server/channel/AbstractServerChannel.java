@@ -20,6 +20,8 @@ package org.apache.sshd.server.channel;
 
 import java.io.IOException;
 
+import org.apache.sshd.client.future.DefaultOpenFuture;
+import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.AbstractChannel;
 import org.apache.sshd.common.util.Buffer;
@@ -33,18 +35,25 @@ public abstract class AbstractServerChannel extends AbstractChannel {
 
     protected boolean exitStatusSent;
 
-    public void handleOpenSuccess(int recipient, int rwsize, int rmpsize, Buffer buffer) throws IOException {
+    public OpenFuture open(int recipient, int rwsize, int rmpsize, Buffer buffer) {
         this.recipient = recipient;
         this.remoteWindow.init(rwsize, rmpsize);
         configureWindow();
-        doInit(buffer);
+        return doInit(buffer);
+    }
+
+    public void handleOpenSuccess(int recipient, int rwsize, int rmpsize, Buffer buffer) throws IOException {
+        throw new IllegalStateException();
     }
 
     public void handleOpenFailure(Buffer buffer) {
         throw new IllegalStateException();
     }
 
-    protected void doInit(Buffer buffer) throws IOException {
+    protected OpenFuture doInit(Buffer buffer) {
+        OpenFuture f = new DefaultOpenFuture(this);
+        f.setOpened();
+        return f;
     }
 
     protected void sendExitStatus(int v) throws IOException {

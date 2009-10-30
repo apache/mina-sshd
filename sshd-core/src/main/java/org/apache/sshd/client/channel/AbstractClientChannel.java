@@ -171,6 +171,10 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         return openFuture;
     }
 
+    public OpenFuture open(int recipient, int rwsize, int rmpsize, Buffer buffer) {
+        throw new IllegalStateException();
+    }
+
     public void handleOpenSuccess(int recipient, int rwsize, int rmpsize, Buffer buffer) {
         synchronized (lock) {
             this.recipient = recipient;

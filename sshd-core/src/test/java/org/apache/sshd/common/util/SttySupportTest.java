@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.util;
+package org.apache.sshd.common.util;
 
 import org.apache.sshd.common.PtyMode;
 import org.apache.sshd.common.util.SttySupport;
