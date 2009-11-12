@@ -54,7 +54,9 @@ public class Window {
     }
 
     public int getSize() {
-        return size;
+        synchronized (lock) {
+            return size;
+        }
     }
 
     public int getMaxSize() {
@@ -134,6 +136,24 @@ public class Window {
             if (log.isTraceEnabled()) {
                 log.trace("Consume " + name + " by " + len + " down to " + size);
             }
+        }
+    }
+
+    public int waitForSpace() throws InterruptedException, WindowClosedException {
+        synchronized (lock) {
+            while (size == 0 && !closed) {
+                log.debug("Waiting for some space on {}", name);
+                waiting = true;
+                lock.wait();
+            }
+            if (waiting) {
+                log.debug("Space available for {}", name);
+                waiting = false;
+            }
+            if (closed) {
+                throw new WindowClosedException();
+            }
+            return size;
         }
     }
 

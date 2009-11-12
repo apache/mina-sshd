@@ -77,18 +77,24 @@ public class ChannelOutputStream extends OutputStream {
         if (closed) {
             throw new SshException("Already closed");
         }
-        int pos = buffer.wpos();
-        if (bufferLength <= 0) {
-            // No data to send
-            return;
-        }
-        buffer.wpos(cmd == SshConstants.Message.SSH_MSG_CHANNEL_EXTENDED_DATA ? 14 : 10);
-        buffer.putInt(bufferLength);
-        buffer.wpos(pos);
         try {
-            remoteWindow.waitAndConsume(bufferLength);
-            log.debug("Send {} on channel {}", cmd, channel.getId());
-            channel.getSession().writePacket(buffer);
+            while (bufferLength > 0) {
+                Buffer buf = buffer;
+                int total = bufferLength;
+                int length = Math.min(remoteWindow.waitForSpace(), total);
+                int pos = buf.wpos();
+                buf.wpos(cmd == SshConstants.Message.SSH_MSG_CHANNEL_EXTENDED_DATA ? 14 : 10);
+                buf.putInt(length);
+                buf.wpos(pos);
+                newBuffer();
+                if (total > length) {
+                    buffer.putBytes(buf.array(), pos - (total - length), total - length);
+                    bufferLength = total - length;
+                }
+                remoteWindow.waitAndConsume(length);
+                log.debug("Send {} on channel {}", cmd, channel.getId());
+                channel.getSession().writePacket(buf);
+            }
         } catch (WindowClosedException e) {
           closed = true;
           throw e;
