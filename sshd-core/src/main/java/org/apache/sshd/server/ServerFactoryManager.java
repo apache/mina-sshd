@@ -74,4 +74,13 @@ public interface ServerFactoryManager extends FactoryManager {
      */
     CommandFactory getCommandFactory();
 
+    /**
+     * Retrieve the list of named factories for <code>CommandFactory.Command</code> to
+     * be used to create subsystems.
+     *
+     * @return a list of named <code>CommandFactory.Command</code> factories
+     *         or <code>null</code> if subsystems are not supported on this server
+     */
+    List<NamedFactory<CommandFactory.Command>> getSubsystemFactories();
+
 }

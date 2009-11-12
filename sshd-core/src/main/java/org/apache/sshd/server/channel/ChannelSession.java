@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -389,6 +390,9 @@ public class ChannelSession extends AbstractServerChannel {
                     log.info("Error closing shell", e);
                 }
             }
+            public void onExit(int exitValue, String exitMessage) {
+                onExit(exitValue);
+            }
         });
 
         if (wantReply) {
@@ -465,12 +469,54 @@ public class ChannelSession extends AbstractServerChannel {
 
     protected boolean handleSubsystem(Buffer buffer) throws IOException {
         boolean wantReply = buffer.getBoolean();
-        // TODO: start subsystem
+        String subsystem = buffer.getString();
+
+        List<NamedFactory<CommandFactory.Command>> factories = ((ServerSession) session).getServerFactoryManager().getSubsystemFactories();
+        if (factories == null) {
+            return false;
+        }
+        CommandFactory.Command command = NamedFactory.Utils.create(factories, subsystem);
+        if (command == null) {
+            return false;
+        }
+        
+        // If the command wants to be aware of the session, let's do that
+        if (command instanceof CommandFactory.SessionAware) {
+            ((CommandFactory.SessionAware) command).setSession((ServerSession) session);
+        }
+        // Set streams and exit callback
+        out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.Message.SSH_MSG_CHANNEL_DATA);
+        err = new ChannelOutputStream(this, remoteWindow, log, SshConstants.Message.SSH_MSG_CHANNEL_EXTENDED_DATA);
+        // Wrap in logging filters
+        out = new LoggingFilterOutputStream(out, "OUT:", log);
+        err = new LoggingFilterOutputStream(err, "ERR:", log);
+        in = new ChannelPipedInputStream(localWindow);
+        shellIn = new ChannelPipedOutputStream((ChannelPipedInputStream) in);
+        command.setInputStream(in);
+        command.setOutputStream(out);
+        command.setErrorStream(err);
+        command.setExitCallback(new CommandFactory.ExitCallback() {
+            public void onExit(int exitValue) {
+                try {
+                    closeShell(exitValue);
+                } catch (IOException e) {
+                    log.info("Error closing shell", e);
+                }
+            }
+            public void onExit(int exitValue, String exitMessage) {
+                onExit(exitValue);
+            }
+        });
+
         if (wantReply) {
             buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS);
             buffer.putInt(recipient);
             session.writePacket(buffer);
         }
+
+        // Launch command
+        command.start();
+
         return true;
     }
 

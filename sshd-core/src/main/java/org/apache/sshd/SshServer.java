@@ -107,6 +107,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     private ShellFactory shellFactory;
     private SessionFactory sessionFactory;
     private CommandFactory commandFactory;
+    private List<NamedFactory<CommandFactory.Command>> subsystemFactories;
     private PasswordAuthenticator passwordAuthenticator;
     private PublickeyAuthenticator publickeyAuthenticator;
 
@@ -164,6 +165,14 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
 
     public void setCommandFactory(CommandFactory commandFactory) {
         this.commandFactory = commandFactory;
+    }
+
+    public List<NamedFactory<CommandFactory.Command>> getSubsystemFactories() {
+        return subsystemFactories;
+    }
+
+    public void setSubsystemFactories(List<NamedFactory<CommandFactory.Command>> subsystemFactories) {
+        this.subsystemFactories = subsystemFactories;
     }
 
     public PasswordAuthenticator getPasswordAuthenticator() {
