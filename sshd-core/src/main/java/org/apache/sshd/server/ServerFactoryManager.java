@@ -20,6 +20,7 @@ package org.apache.sshd.server;
 
 import java.util.List;
 
+import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 
@@ -64,7 +65,7 @@ public interface ServerFactoryManager extends FactoryManager {
      * @return a valid <code>ShellFactory</code> object or <code>null</code> if shells
      *         are not supported on this server
      */
-    ShellFactory getShellFactory();
+    Factory<Command> getShellFactory();
 
     /**
      * Retrieve the <code>CommandFactory</code> to be used to process commands requests.
@@ -81,6 +82,6 @@ public interface ServerFactoryManager extends FactoryManager {
      * @return a list of named <code>CommandFactory.Command</code> factories
      *         or <code>null</code> if subsystems are not supported on this server
      */
-    List<NamedFactory<CommandFactory.Command>> getSubsystemFactories();
+    List<NamedFactory<Command>> getSubsystemFactories();
 
 }

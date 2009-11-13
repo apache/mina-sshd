@@ -21,10 +21,10 @@ package org.apache.sshd.server.shell;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Map;
 
-import org.apache.sshd.server.ShellFactory;
-import org.apache.sshd.server.ShellFactory.Environment;
+import org.apache.sshd.server.Command;
+import org.apache.sshd.server.Environment;
+import org.apache.sshd.server.ExitCallback;
 
 /**
  * A shell implementation that wraps an instance of {@link InvertedShell}
@@ -35,7 +35,7 @@ import org.apache.sshd.server.ShellFactory.Environment;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class InvertedShellWrapper implements ShellFactory.Shell {
+public class InvertedShellWrapper implements Command {
 
     private final InvertedShell shell;
     private InputStream in;
@@ -44,7 +44,7 @@ public class InvertedShellWrapper implements ShellFactory.Shell {
     private OutputStream shellIn;
     private InputStream shellOut;
     private InputStream shellErr;
-    private ShellFactory.ExitCallback callback;
+    private ExitCallback callback;
     private Thread thread;
 
     public InvertedShellWrapper(InvertedShell shell) {
@@ -63,7 +63,7 @@ public class InvertedShellWrapper implements ShellFactory.Shell {
         this.err = err;
     }
 
-    public void setExitCallback(ShellFactory.ExitCallback callback) {
+    public void setExitCallback(ExitCallback callback) {
         this.callback = callback;
     }
 

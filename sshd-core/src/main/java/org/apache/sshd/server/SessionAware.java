@@ -18,29 +18,18 @@
  */
 package org.apache.sshd.server;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-
 import org.apache.sshd.server.session.ServerSession;
 
 /**
- * A factory of commands.
- * Commands are executed on the server side when an "exec" channel is
- * requested by the SSH client.
- *
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * Interface that can be implemented by a command to be able to access the
+ * server session in which this command will be used.
  */
-public interface CommandFactory {
+public interface SessionAware {
 
     /**
-     * Create a command with the given name.
-     * If the command is not known, a dummy command should be returned to allow
-     * the display output to be sent back to the client.
+     * Set the server session in which this shell will be executed.
      *
-     * @param command
-     * @return a non null <code>Command</code>
+     * @param session
      */
-    Command createCommand(String command);
-
+    void setSession(ServerSession session);
 }

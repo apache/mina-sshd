@@ -31,14 +31,7 @@ import java.util.concurrent.CountDownLatch;
 import org.apache.mina.core.service.IoAcceptor;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
-import org.apache.sshd.common.AbstractFactoryManager;
-import org.apache.sshd.common.Channel;
-import org.apache.sshd.common.Cipher;
-import org.apache.sshd.common.Compression;
-import org.apache.sshd.common.KeyExchange;
-import org.apache.sshd.common.Mac;
-import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.Signature;
+import org.apache.sshd.common.*;
 import org.apache.sshd.common.cipher.AES128CBC;
 import org.apache.sshd.common.cipher.AES192CBC;
 import org.apache.sshd.common.cipher.AES256CBC;
@@ -59,13 +52,7 @@ import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.signature.SignatureDSA;
 import org.apache.sshd.common.signature.SignatureRSA;
 import org.apache.sshd.common.util.SecurityUtils;
-import org.apache.sshd.server.CommandFactory;
-import org.apache.sshd.server.PasswordAuthenticator;
-import org.apache.sshd.server.PublickeyAuthenticator;
-import org.apache.sshd.server.ServerFactoryManager;
-import org.apache.sshd.server.SessionFactory;
-import org.apache.sshd.server.ShellFactory;
-import org.apache.sshd.server.UserAuth;
+import org.apache.sshd.server.*;
 import org.apache.sshd.server.auth.UserAuthPassword;
 import org.apache.sshd.server.auth.UserAuthPublicKey;
 import org.apache.sshd.server.channel.ChannelDirectTcpip;
@@ -73,6 +60,7 @@ import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.kex.DHG1;
 import org.apache.sshd.server.kex.DHG14;
 import org.apache.sshd.server.session.ServerSession;
+import org.apache.sshd.server.session.SessionFactory;
 import org.apache.sshd.server.shell.ProcessShellFactory;
 
 /**
@@ -83,7 +71,7 @@ import org.apache.sshd.server.shell.ProcessShellFactory;
  * or programmatically. Basic setup is usually done using the {@link #setUpDefaultServer()}
  * method, which will known ciphers, macs, channels, etc...
  * Besides this basic setup, a few things have to be manually configured such as the
- * port number, {@link ShellFactory}, the {@link org.apache.sshd.common.KeyPairProvider}
+ * port number, {@link Factory}, the {@link org.apache.sshd.common.KeyPairProvider}
  * and the {@link PasswordAuthenticator}.
  *
  * Some properties can also be configured using the {@link #setProperties(java.util.Map)}
@@ -104,10 +92,10 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     private int port;
     private boolean reuseAddress = true;
     private List<NamedFactory<UserAuth>> userAuthFactories;
-    private ShellFactory shellFactory;
+    private Factory<Command> shellFactory;
     private SessionFactory sessionFactory;
     private CommandFactory commandFactory;
-    private List<NamedFactory<CommandFactory.Command>> subsystemFactories;
+    private List<NamedFactory<Command>> subsystemFactories;
     private PasswordAuthenticator passwordAuthenticator;
     private PublickeyAuthenticator publickeyAuthenticator;
 
@@ -143,11 +131,11 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         this.userAuthFactories = userAuthFactories;
     }
 
-    public ShellFactory getShellFactory() {
+    public Factory<Command> getShellFactory() {
         return shellFactory;
     }
 
-    public void setShellFactory(ShellFactory shellFactory) {
+    public void setShellFactory(Factory<Command> shellFactory) {
         this.shellFactory = shellFactory;
     }
 
@@ -167,11 +155,11 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         this.commandFactory = commandFactory;
     }
 
-    public List<NamedFactory<CommandFactory.Command>> getSubsystemFactories() {
+    public List<NamedFactory<Command>> getSubsystemFactories() {
         return subsystemFactories;
     }
 
-    public void setSubsystemFactories(List<NamedFactory<CommandFactory.Command>> subsystemFactories) {
+    public void setSubsystemFactories(List<NamedFactory<Command>> subsystemFactories) {
         this.subsystemFactories = subsystemFactories;
     }
 

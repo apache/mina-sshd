@@ -28,19 +28,13 @@ import java.util.List;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface NamedFactory<T> {
+public interface NamedFactory<T> extends Factory<T> {
 
     /**
      * Name of this factory
      * @return
      */
     String getName();
-
-    /**
-     * Create a new instance
-     * @return
-     */
-    T create();
 
     /**
      * Utility class to help using NamedFactories

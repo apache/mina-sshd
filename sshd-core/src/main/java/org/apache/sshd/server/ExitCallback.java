@@ -18,29 +18,23 @@
  */
 package org.apache.sshd.server;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-
-import org.apache.sshd.server.session.ServerSession;
-
 /**
- * A factory of commands.
- * Commands are executed on the server side when an "exec" channel is
- * requested by the SSH client.
- *
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * Callback used by the shell to notify the SSH server is has exited
  */
-public interface CommandFactory {
+public interface ExitCallback {
 
     /**
-     * Create a command with the given name.
-     * If the command is not known, a dummy command should be returned to allow
-     * the display output to be sent back to the client.
+     * Informs the SSH server that the shell has exited
      *
-     * @param command
-     * @return a non null <code>Command</code>
+     * @param exitValue the exit value
      */
-    Command createCommand(String command);
+    void onExit(int exitValue);
 
+    /**
+     * Informs the SSH client/server that the shell has exited
+     *
+     * @param exitValue the exit value
+     * @param exitMessage exit value description
+     */
+    void onExit(int exitValue, String exitMessage);
 }

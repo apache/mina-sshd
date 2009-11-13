@@ -16,31 +16,21 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.server;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-
-import org.apache.sshd.server.session.ServerSession;
+package org.apache.sshd.common;
 
 /**
- * A factory of commands.
- * Commands are executed on the server side when an "exec" channel is
- * requested by the SSH client.
+ * Fatory is a simple interface that is used to create other objects.
+ *
+ * @param <T> type of objets this factory will create
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface CommandFactory {
+public interface Factory<T> {
 
     /**
-     * Create a command with the given name.
-     * If the command is not known, a dummy command should be returned to allow
-     * the display output to be sent back to the client.
-     *
-     * @param command
-     * @return a non null <code>Command</code>
+     * Create a new instance
+     * @return
      */
-    Command createCommand(String command);
+    T create();
 
 }

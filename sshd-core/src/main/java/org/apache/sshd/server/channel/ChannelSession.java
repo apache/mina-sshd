@@ -42,11 +42,8 @@ import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.IoUtils;
 import org.apache.sshd.common.util.LfToCrLfFilterOutputStream;
 import org.apache.sshd.common.util.LoggingFilterOutputStream;
-import org.apache.sshd.server.CommandFactory;
-import org.apache.sshd.server.ShellFactory;
-import org.apache.sshd.server.Signal;
-import org.apache.sshd.server.ShellFactory.Environment;
-import org.apache.sshd.server.ShellFactory.SignalListener;
+import org.apache.sshd.server.*;
+import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
@@ -132,7 +129,7 @@ public class ChannelSession extends AbstractServerChannel {
         }
 
         /**
-         * adds a variable to the environment. This method is called <code>set</code> 
+         * adds a variable to the environment. This method is called <code>set</code>
          * according to the name of the appropriate posix command <code>set</code>
          * @param key environment variable name
          * @param value environment variable value
@@ -163,10 +160,8 @@ public class ChannelSession extends AbstractServerChannel {
     protected InputStream in;
     protected OutputStream out;
     protected OutputStream err;
-    protected ShellFactory.Shell shell;
+    protected Command command;
     protected OutputStream shellIn;
-    protected InputStream shellOut;
-    protected InputStream shellErr;
     protected StandardEnvironment env = new StandardEnvironment();
 
     public ChannelSession() {
@@ -175,12 +170,12 @@ public class ChannelSession extends AbstractServerChannel {
     public CloseFuture close(boolean immediately) {
         return super.close(immediately).addListener(new SshFutureListener() {
             public void operationComplete(SshFuture sshFuture) {
-                if (shell != null) {
-                    shell.destroy();
-                    shell = null;
+                if (command != null) {
+                    command.destroy();
+                    command = null;
                 }
                 remoteWindow.notifyClosed();
-                IoUtils.closeQuietly(in, out, err, shellIn, shellOut, shellErr);
+                IoUtils.closeQuietly(in, out, err, shellIn);
             }
         });
     }
@@ -321,12 +316,12 @@ public class ChannelSession extends AbstractServerChannel {
         int tWidth = buffer.getInt();
         int tHeight = buffer.getInt();
         log.debug("window-change for channel {}: ({} - {}), ({}, {})", new Object[] { id, tColumns, tRows, tWidth, tHeight });
-        
+
         final StandardEnvironment e = getEnvironment();
         e.set(Environment.ENV_COLUMNS, Integer.toString(tColumns));
         e.set(Environment.ENV_LINES, Integer.toString(tRows));
         e.signal(Signal.WINCH);
-        
+
         if (wantReply) {
             buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS);
             buffer.putInt(recipient);
@@ -339,15 +334,15 @@ public class ChannelSession extends AbstractServerChannel {
         boolean wantReply = buffer.getBoolean();
         String name = buffer.getString();
         log.debug("Signal received on channel {}: {}", id, name);
-        
+
         final Signal signal = Signal.get(name);
         if (signal != null) {
             getEnvironment().signal(signal);
         } else {
             log.warn("Unknown signal received: " + name);
         }
-        
-        
+
+
         if (wantReply) {
             buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS);
             buffer.putInt(recipient);
@@ -358,15 +353,71 @@ public class ChannelSession extends AbstractServerChannel {
 
     protected boolean handleShell(Buffer buffer) throws IOException {
         boolean wantReply = buffer.getBoolean();
-
         if (((ServerSession) session).getServerFactoryManager().getShellFactory() == null) {
             return false;
         }
+        command = ((ServerSession) session).getServerFactoryManager().getShellFactory().create();
+        prepareCommand();
+        if (wantReply) {
+            buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS);
+            buffer.putInt(recipient);
+            session.writePacket(buffer);
+        }
+        command.start(getEnvironment());
+        return true;
+    }
+
+    protected boolean handleExec(Buffer buffer) throws IOException {
+        boolean wantReply = buffer.getBoolean();
+        String commandLine = buffer.getString();
+        if (((ServerSession) session).getServerFactoryManager().getCommandFactory() == null) {
+            return false;
+        }
+        try {
+            command = ((ServerSession) session).getServerFactoryManager().getCommandFactory().createCommand(commandLine);
+        } catch (IllegalArgumentException iae) {
+            // TODO: Shouldn't we log errors on the server side?
+            return false;
+        }
+        prepareCommand();
+        if (wantReply) {
+            buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS);
+            buffer.putInt(recipient);
+            session.writePacket(buffer);
+        }
+        // Launch command
+        command.start(getEnvironment());
+        return true;
+    }
+
+    protected boolean handleSubsystem(Buffer buffer) throws IOException {
+        boolean wantReply = buffer.getBoolean();
+        String subsystem = buffer.getString();
+        List<NamedFactory<Command>> factories = ((ServerSession) session).getServerFactoryManager().getSubsystemFactories();
+        if (factories == null) {
+            return false;
+        }
+        command = NamedFactory.Utils.create(factories, subsystem);
+        if (command == null) {
+            return false;
+        }
+        prepareCommand();
+        if (wantReply) {
+            buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS);
+            buffer.putInt(recipient);
+            session.writePacket(buffer);
+        }
+        // Launch command
+        command.start(getEnvironment());
+        return true;
+    }
+
+    protected void prepareCommand() {
+        // Add the user
         addEnvVariable(Environment.ENV_USER, ((ServerSession) session).getUsername());
-        shell = ((ServerSession) session).getServerFactoryManager().getShellFactory().createShell();
         // If the shell wants to be aware of the session, let's do that
-        if (shell instanceof ShellFactory.SessionAware) {
-            ((ShellFactory.SessionAware) shell).setSession((ServerSession) session);
+        if (command instanceof SessionAware) {
+            ((SessionAware) command).setSession((ServerSession) session);
         }
         out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.Message.SSH_MSG_CHANNEL_DATA);
         err = new ChannelOutputStream(this, remoteWindow, log, SshConstants.Message.SSH_MSG_CHANNEL_EXTENDED_DATA);
@@ -379,10 +430,11 @@ public class ChannelSession extends AbstractServerChannel {
         }
         in = new ChannelPipedInputStream(localWindow);
         shellIn = new ChannelPipedOutputStream((ChannelPipedInputStream) in);
-        shell.setInputStream(in);
-        shell.setOutputStream(out);
-        shell.setErrorStream(err);
-        shell.setExitCallback(new ShellFactory.ExitCallback() {
+        shellIn = new LoggingFilterOutputStream(shellIn, "IN: ", log);
+        command.setInputStream(in);
+        command.setOutputStream(out);
+        command.setErrorStream(err);
+        command.setExitCallback(new ExitCallback() {
             public void onExit(int exitValue) {
                 try {
                     closeShell(exitValue);
@@ -394,130 +446,11 @@ public class ChannelSession extends AbstractServerChannel {
                 onExit(exitValue);
             }
         });
-
-        if (wantReply) {
-            buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS);
-            buffer.putInt(recipient);
-            session.writePacket(buffer);
-        }
-
-        shell.start(getEnvironment());
-        shellIn = new LoggingFilterOutputStream(shellIn, "IN: ", log);
-
-        return true;
     }
 
     protected int getPtyModeValue(PtyMode mode) {
         Integer v = getEnvironment().getPtyModes().get(mode);
         return v != null ? v : 0;
-    }
-
-    protected boolean handleExec(Buffer buffer) throws IOException {
-        CommandFactory.Command command;
-        boolean wantReply = buffer.getBoolean();
-        String commandLine = buffer.getString();
-
-        if (((ServerSession) session).getServerFactoryManager().getCommandFactory() == null) {
-            return false;
-        }
-
-        try {
-            command = ((ServerSession) session).getServerFactoryManager().getCommandFactory().createCommand(commandLine);
-        } catch (IllegalArgumentException iae) {
-            // TODO: Shouldn't we log errors on the server side?
-            return false;
-        }
-        // If the command wants to be aware of the session, let's do that
-        if (command instanceof CommandFactory.SessionAware) {
-            ((CommandFactory.SessionAware) command).setSession((ServerSession) session);
-        }
-        // Set streams and exit callback
-        out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.Message.SSH_MSG_CHANNEL_DATA);
-        err = new ChannelOutputStream(this, remoteWindow, log, SshConstants.Message.SSH_MSG_CHANNEL_EXTENDED_DATA);
-        // Wrap in logging filters
-        out = new LoggingFilterOutputStream(out, "OUT:", log);
-        err = new LoggingFilterOutputStream(err, "ERR:", log);
-        in = new ChannelPipedInputStream(localWindow);
-        shellIn = new ChannelPipedOutputStream((ChannelPipedInputStream) in);
-        command.setInputStream(in);
-        command.setOutputStream(out);
-        command.setErrorStream(err);
-        command.setExitCallback(new CommandFactory.ExitCallback() {
-            public void onExit(int exitValue) {
-                try {
-                    closeShell(exitValue);
-                } catch (IOException e) {
-                    log.info("Error closing shell", e);
-                }
-            }
-            public void onExit(int exitValue, String exitMessage) {
-                onExit(exitValue);
-            }
-        });
-
-        if (wantReply) {
-            buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS);
-            buffer.putInt(recipient);
-            session.writePacket(buffer);
-        }
-
-        // Launch command
-        command.start();
-        
-        return true;
-    }
-
-    protected boolean handleSubsystem(Buffer buffer) throws IOException {
-        boolean wantReply = buffer.getBoolean();
-        String subsystem = buffer.getString();
-
-        List<NamedFactory<CommandFactory.Command>> factories = ((ServerSession) session).getServerFactoryManager().getSubsystemFactories();
-        if (factories == null) {
-            return false;
-        }
-        CommandFactory.Command command = NamedFactory.Utils.create(factories, subsystem);
-        if (command == null) {
-            return false;
-        }
-        
-        // If the command wants to be aware of the session, let's do that
-        if (command instanceof CommandFactory.SessionAware) {
-            ((CommandFactory.SessionAware) command).setSession((ServerSession) session);
-        }
-        // Set streams and exit callback
-        out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.Message.SSH_MSG_CHANNEL_DATA);
-        err = new ChannelOutputStream(this, remoteWindow, log, SshConstants.Message.SSH_MSG_CHANNEL_EXTENDED_DATA);
-        // Wrap in logging filters
-        out = new LoggingFilterOutputStream(out, "OUT:", log);
-        err = new LoggingFilterOutputStream(err, "ERR:", log);
-        in = new ChannelPipedInputStream(localWindow);
-        shellIn = new ChannelPipedOutputStream((ChannelPipedInputStream) in);
-        command.setInputStream(in);
-        command.setOutputStream(out);
-        command.setErrorStream(err);
-        command.setExitCallback(new CommandFactory.ExitCallback() {
-            public void onExit(int exitValue) {
-                try {
-                    closeShell(exitValue);
-                } catch (IOException e) {
-                    log.info("Error closing shell", e);
-                }
-            }
-            public void onExit(int exitValue, String exitMessage) {
-                onExit(exitValue);
-            }
-        });
-
-        if (wantReply) {
-            buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS);
-            buffer.putInt(recipient);
-            session.writePacket(buffer);
-        }
-
-        // Launch command
-        command.start();
-
-        return true;
     }
 
     protected boolean handleAgentForwarding(Buffer buffer) throws IOException {
@@ -549,7 +482,7 @@ public class ChannelSession extends AbstractServerChannel {
     protected StandardEnvironment getEnvironment() {
         return env;
     }
-    
+
     protected void closeShell(int exitValue) throws IOException {
         sendEof();
         sendExitStatus(exitValue);

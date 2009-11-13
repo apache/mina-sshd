@@ -23,7 +23,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Map;
 
-import org.apache.sshd.server.ShellFactory;
+import org.apache.sshd.common.Factory;
+import org.apache.sshd.server.Command;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +34,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ProcessShellFactory implements ShellFactory {
+public class ProcessShellFactory implements Factory<Command> {
 
     private static final Logger LOG = LoggerFactory.getLogger(ProcessShellFactory.class);
 
@@ -54,7 +55,7 @@ public class ProcessShellFactory implements ShellFactory {
         this.command = command;
     }
 
-    public Shell createShell() {
+    public Command create() {
         return new InvertedShellWrapper(new ProcessShell(command));
     }
 

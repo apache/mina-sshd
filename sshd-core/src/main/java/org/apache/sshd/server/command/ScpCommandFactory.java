@@ -21,6 +21,7 @@ package org.apache.sshd.server.command;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.sshd.server.Command;
 import org.apache.sshd.server.CommandFactory;
 
 /**

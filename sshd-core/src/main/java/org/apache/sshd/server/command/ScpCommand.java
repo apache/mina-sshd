@@ -27,7 +27,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
 
+import org.apache.sshd.server.Command;
 import org.apache.sshd.server.CommandFactory;
+import org.apache.sshd.server.Environment;
+import org.apache.sshd.server.ExitCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +41,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ScpCommand implements CommandFactory.Command, Runnable {
+public class ScpCommand implements Command, Runnable {
 
     private static final Logger log = LoggerFactory.getLogger(ScpCommand.class);
     private static final int OK = 0;
@@ -53,7 +56,7 @@ public class ScpCommand implements CommandFactory.Command, Runnable {
     private InputStream in;
     private OutputStream out;
     private OutputStream err;
-    private CommandFactory.ExitCallback callback;
+    private ExitCallback callback;
     private IOException error;
 
     public ScpCommand(String[] args) {
@@ -106,15 +109,18 @@ public class ScpCommand implements CommandFactory.Command, Runnable {
         this.err = err;
     }
 
-    public void setExitCallback(CommandFactory.ExitCallback callback) {
+    public void setExitCallback(ExitCallback callback) {
         this.callback = callback;
     }
 
-    public void start() throws IOException {
+    public void start(Environment env) throws IOException {
         if (error != null) {
             throw error;
         }
         new Thread(this).start();
+    }
+
+    public void destroy() {
     }
 
     public void run() {

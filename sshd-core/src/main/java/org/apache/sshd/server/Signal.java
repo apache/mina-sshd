@@ -24,7 +24,7 @@ import java.util.Map;
 /**
  * System signals definition that the shell can receive.
  *
- * @see ShellFactory.Environment
+ * @see Environment
  */
 public enum Signal {
 

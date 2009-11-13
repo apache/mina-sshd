@@ -22,16 +22,19 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import org.apache.sshd.server.Command;
 import org.apache.sshd.server.CommandFactory;
+import org.apache.sshd.server.Environment;
+import org.apache.sshd.server.ExitCallback;
 
 /**
  * Implementation of an unknown command that can be returned by <code>CommandFactory</code>
- * when the command is not knownas it is supposed to always
+ * when the command is not known, as it is supposed to always
  * return a valid <code>Command</code> object.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class UnknownCommand implements CommandFactory.Command {
+public class UnknownCommand implements Command {
 
     public UnknownCommand(String command) {
     }
@@ -48,12 +51,16 @@ public class UnknownCommand implements CommandFactory.Command {
         //To change body of implemented methods use File | Settings | File Templates.
     }
 
-    public void setExitCallback(CommandFactory.ExitCallback callback) {
+    public void setExitCallback(ExitCallback callback) {
         //To change body of implemented methods use File | Settings | File Templates.
     }
 
-    public void start() throws IOException {
+    public void start(Environment env) throws IOException {
         //To change body of implemented methods use File | Settings | File Templates.
         // TODO: send back an error ?
+    }
+
+    public void destroy() {
+        //To change body of implemented methods use File | Settings | File Templates.
     }
 }

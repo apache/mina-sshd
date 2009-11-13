@@ -125,7 +125,7 @@ public interface FactoryManager {
      *
      * @return the <code>Random</code> factory, never <code>null</code>
      */
-    NamedFactory<Random> getRandomFactory();
+    Factory<Random> getRandomFactory();
 
     /**
      * Retrieve the list of named factories for <code>Channel</code> objects.

@@ -42,7 +42,7 @@ public abstract class AbstractFactoryManager implements FactoryManager {
     private List<NamedFactory<Compression>> compressionFactories;
     private List<NamedFactory<Mac>> macFactories;
     private List<NamedFactory<Signature>> signatureFactories;
-    private NamedFactory<Random> randomFactory;
+    private Factory<Random> randomFactory;
     private KeyPairProvider keyPairProvider;
     private String version;
     private List<NamedFactory<Channel>> channelFactories;
@@ -91,11 +91,11 @@ public abstract class AbstractFactoryManager implements FactoryManager {
         this.signatureFactories = signatureFactories;
     }
 
-    public NamedFactory<Random> getRandomFactory() {
+    public Factory<Random> getRandomFactory() {
         return randomFactory;
     }
 
-    public void setRandomFactory(NamedFactory<Random> randomFactory) {
+    public void setRandomFactory(Factory<Random> randomFactory) {
         this.randomFactory = randomFactory;
     }
 

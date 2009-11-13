@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.server;
+package org.apache.sshd.server.session;
 
 import org.apache.mina.core.session.IoSession;
 import org.apache.sshd.SshServer;

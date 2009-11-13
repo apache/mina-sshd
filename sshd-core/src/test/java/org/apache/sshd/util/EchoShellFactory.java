@@ -23,22 +23,24 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.util.Map;
 
-import org.apache.sshd.server.ShellFactory;
+import org.apache.sshd.common.Factory;
+import org.apache.sshd.server.Command;
+import org.apache.sshd.server.Environment;
+import org.apache.sshd.server.ExitCallback;
 
 /**
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class EchoShellFactory implements ShellFactory {
+public class EchoShellFactory implements Factory<Command> {
 
-    public Shell createShell() {
+    public Command create() {
         return new EchoShell();
     }
 
-    protected static class EchoShell implements Shell, Runnable {
+    protected static class EchoShell implements Command, Runnable {
         private InputStream in;
         private OutputStream out;
         private OutputStream err;

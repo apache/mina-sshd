@@ -18,8 +18,6 @@
  */
 package org.apache.sshd.common;
 
-import org.apache.sshd.server.ShellFactory;
-
 import java.util.HashMap;
 import java.util.Map;
 
