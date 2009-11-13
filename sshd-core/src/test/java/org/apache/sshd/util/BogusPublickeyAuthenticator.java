@@ -30,7 +30,7 @@ import org.apache.sshd.server.session.ServerSession;
  */
 public class BogusPublickeyAuthenticator implements PublickeyAuthenticator {
 
-    public boolean hasKey(String username, PublicKey key, ServerSession session) {
-        return true;
+    public Object hasKey(String username, PublicKey key, ServerSession session) {
+        return username;
     }
 }

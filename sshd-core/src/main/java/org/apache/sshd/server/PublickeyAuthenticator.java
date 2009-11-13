@@ -30,6 +30,14 @@ import org.apache.sshd.server.session.ServerSession;
  */
 public interface PublickeyAuthenticator {
 
-    boolean hasKey(String username, PublicKey key, ServerSession session);
+    /**
+     * Check the validity of a public key.
+     *
+     * @param username the username
+     * @param key the key
+     * @param session the server session
+     * @return a non null identity object or <code>null</code if authentication fail
+     */
+    Object hasKey(String username, PublicKey key, ServerSession session);
 
 }

@@ -68,20 +68,17 @@ public class UserAuthPublicKey implements UserAuth {
             throw new Exception("No PublickeyAuthenticator configured");
         }
 
+        Object ident = authenticator.hasKey(username, key, session);
+        if (ident == null) {
+            throw new Exception("Unsupported key for user");
+        }
         if (!hasSig) {
-            if (authenticator.hasKey(username, key, session)) {
-                Buffer buf = session.createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_PK_OK);
-                buf.putString(alg);
-                buf.putRawBytes(buffer.array(), oldPos, 4 + len);
-                session.writePacket(buf);
-                return null;
-            } else {
-                throw new Exception("Unsupported key for user");
-            }
+            Buffer buf = session.createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_PK_OK);
+            buf.putString(alg);
+            buf.putRawBytes(buffer.array(), oldPos, 4 + len);
+            session.writePacket(buf);
+            return null;
         } else {
-            if (!authenticator.hasKey(username, key, session)) {
-                throw new Exception("Unsupported key for user");
-            }
             Buffer buf = new Buffer();
             buf.putString(session.getKex().getH());
             buf.putCommand(SshConstants.Message.SSH_MSG_USERAUTH_REQUEST);
@@ -94,11 +91,10 @@ public class UserAuthPublicKey implements UserAuth {
             buffer.wpos(oldPos + 4 + len);
             buf.putBuffer(buffer);
             verif.update(buf.array(), buf.rpos(), buf.available());
-            if (verif.verify(sig)) {
-                return username;
-            } else {
+            if (!verif.verify(sig)) {
                 throw new Exception("Key verification failed");
             }
+            return ident;
         }
     }
 }
