@@ -225,7 +225,7 @@ public class ScpCommand implements Command, Runnable {
         }
 
         String perms = header.substring(1, 5);
-        int length = Integer.parseInt(header.substring(6, header.indexOf(' ', 6)));
+        long length = Long.parseLong(header.substring(6, header.indexOf(' ', 6)));
         String name = header.substring(header.indexOf(' ', 6) + 1);
 
         File file;
@@ -244,7 +244,7 @@ public class ScpCommand implements Command, Runnable {
 
             byte[] buffer = new byte[8192];
             while (length > 0) {
-                int len = Math.min(length, buffer.length);
+                int len = (int) Math.min(length, buffer.length);
                 len = in.read(buffer, 0, len);
                 if (len <= 0) {
                     throw new IOException("End of stream reached");
