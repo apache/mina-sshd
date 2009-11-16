@@ -186,35 +186,73 @@ public class PortForwardingTest {
     @Test
     @Ignore
     public void testForwardingOnLoad() throws Exception {
+//        final String path = "/history/recent/troubles/";
+//        final String host = "www.bbc.co.uk";
+//        final String path = "";
+//        final String host = "www.bahn.de";
+        final String path = "";
+        final String host = "localhost";
+        final int nbThread = 2;
+        final int nbDownloads = 2;
+        final int nbLoops = 2;
+
+        final int port = getFreePort(); 
+        StringBuilder resp = new StringBuilder();
+        resp.append("<html><body>\n");
+        for (int i = 0; i < 1000; i++) {
+            resp.append("0123456789\n");
+        }
+        resp.append("</body></html>\n");
+        final StringBuilder sb = new StringBuilder();
+        sb.append("HTTP/1.1 200 OK").append('\n');
+        sb.append("Content-Type: text/HTML").append('\n');
+        sb.append("Content-Length: ").append(resp.length()).append('\n');
+        sb.append('\n');
+        sb.append(resp);
+        NioSocketAcceptor acceptor = new NioSocketAcceptor();
+        acceptor.setHandler(new IoHandlerAdapter() {
+            @Override
+            public void messageReceived(IoSession session, Object message) throws Exception {
+                session.write(IoBuffer.wrap(sb.toString().getBytes()));
+            }
+        });
+        acceptor.setReuseAddress(true);
+        acceptor.bind(new InetSocketAddress(port));
+
+
         Session session = createSession();
 
         final int forwardedPort1 = getFreePort();
         final int forwardedPort2 = getFreePort();
-        session.setPortForwardingL(forwardedPort1, "www.microsoft.com", 80);
+        System.err.println("URL: http://localhost:" + forwardedPort2);
+
+        session.setPortForwardingL(forwardedPort1, host, port);
         session.setPortForwardingR(forwardedPort2, "localhost", forwardedPort1);
 
 
-        final int nbThread = 20;
-        final int nbDownloads = 20;
-        final CountDownLatch latch = new CountDownLatch(nbThread * nbDownloads);
+        final CountDownLatch latch = new CountDownLatch(nbThread * nbDownloads * nbLoops);
 
         final Thread[] threads = new Thread[nbThread];
         final List<Throwable> errors = new CopyOnWriteArrayList<Throwable>();
-        final HttpClient client = new HttpClient(new MultiThreadedHttpConnectionManager());
-        client.getHttpConnectionManager().getParams().setDefaultMaxConnectionsPerHost(100);
-        client.getHttpConnectionManager().getParams().setMaxTotalConnections(1000);
         for (int i = 0; i < threads.length; i++) {
             threads[i] = new Thread() {
                 public void run() {
-                    for (int i = 0; i < nbDownloads; i++) {
-                        try {
-                            checkHtmlPage(client, new URL("http://localhost:" + forwardedPort2));
-                        } catch (Throwable e) {
-                            errors.add(e);
-                        } finally {
-                            latch.countDown();
-                            System.err.println("Remaining: " + latch.getCount());
+                    for (int j = 0; j < nbLoops; j++)  {
+                        final MultiThreadedHttpConnectionManager mgr = new MultiThreadedHttpConnectionManager();
+                        final HttpClient client = new HttpClient(mgr);
+                        client.getHttpConnectionManager().getParams().setDefaultMaxConnectionsPerHost(100);
+                        client.getHttpConnectionManager().getParams().setMaxTotalConnections(1000);
+                        for (int i = 0; i < nbDownloads; i++) {
+                            try {
+                                checkHtmlPage(client, new URL("http://localhost:" + forwardedPort2 + path));
+                            } catch (Throwable e) {
+                                errors.add(e);
+                            } finally {
+                                latch.countDown();
+                                System.err.println("Remaining: " + latch.getCount());
+                            }
                         }
+                        mgr.shutdown();
                     }
                 }
             };
