@@ -35,8 +35,8 @@ public interface PasswordAuthenticator {
      * @param username the username
      * @param password the password
      * @param session the server session
-     * @return a non null identity object or <code>null</code if authentication fail
+     * @return a boolean indicating if authentication succeeded or not
      */
-    Object authenticate(String username, String password, ServerSession session);
+    boolean authenticate(String username, String password, ServerSession session);
 
 }

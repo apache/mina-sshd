@@ -36,8 +36,8 @@ public interface PublickeyAuthenticator {
      * @param username the username
      * @param key the key
      * @param session the server session
-     * @return a non null identity object or <code>null</code if authentication fail
+     * @return a boolean indicating if authentication succeeded or not
      */
-    Object hasKey(String username, PublicKey key, ServerSession session);
+    boolean authenticate(String username, PublicKey key, ServerSession session);
 
 }

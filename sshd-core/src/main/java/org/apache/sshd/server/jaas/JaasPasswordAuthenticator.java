@@ -48,11 +48,11 @@ public class JaasPasswordAuthenticator implements PasswordAuthenticator {
         this.domain = domain;
     }
 
-    public Object authenticate(final String username, final String password, final ServerSession session) {
+    public boolean authenticate(final String username, final String password, final ServerSession session) {
     	return authenticate(username, password);
     }
     
-    public Object authenticate(final String username, final String password) {
+    public boolean authenticate(final String username, final String password) {
         try {
             Subject subject = new Subject();
             LoginContext loginContext = new LoginContext(domain, subject, new CallbackHandler() {
@@ -70,9 +70,9 @@ public class JaasPasswordAuthenticator implements PasswordAuthenticator {
             });
             loginContext.login();
             loginContext.logout();
-            return subject;
+            return true;
         } catch (Exception e) {
-            return null;
+            return false;
         }
     }
 

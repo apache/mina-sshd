@@ -46,7 +46,7 @@ public class UserAuthPublicKey implements UserAuth {
         }
     }
 
-    public Object auth(ServerSession session, String username, Buffer buffer) throws Exception {
+    public boolean auth(ServerSession session, String username, Buffer buffer) throws Exception {
         boolean hasSig = buffer.getBoolean();
         String alg = buffer.getString();
 
@@ -68,8 +68,7 @@ public class UserAuthPublicKey implements UserAuth {
             throw new Exception("No PublickeyAuthenticator configured");
         }
 
-        Object ident = authenticator.hasKey(username, key, session);
-        if (ident == null) {
+        if (!authenticator.authenticate(username, key, session)) {
             throw new Exception("Unsupported key for user");
         }
         if (!hasSig) {
@@ -77,7 +76,7 @@ public class UserAuthPublicKey implements UserAuth {
             buf.putString(alg);
             buf.putRawBytes(buffer.array(), oldPos, 4 + len);
             session.writePacket(buf);
-            return null;
+            return false;
         } else {
             Buffer buf = new Buffer();
             buf.putString(session.getKex().getH());
@@ -94,7 +93,7 @@ public class UserAuthPublicKey implements UserAuth {
             if (!verif.verify(sig)) {
                 throw new Exception("Key verification failed");
             }
-            return ident;
+            return true;
         }
     }
 }

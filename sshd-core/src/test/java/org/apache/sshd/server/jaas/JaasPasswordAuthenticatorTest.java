@@ -73,8 +73,8 @@ public class JaasPasswordAuthenticatorTest {
         assertNull(auth.getDomain());
         auth.setDomain("domain");
         assertEquals("domain", auth.getDomain());
-        assertNotNull(auth.authenticate("sshd", "sshd"));
-        assertNull(auth.authenticate("sshd", "dummy"));
+        assertTrue(auth.authenticate("sshd", "sshd"));
+        assertFalse(auth.authenticate("sshd", "dummy"));
     }
 
 

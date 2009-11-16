@@ -46,13 +46,13 @@ public class PAMPasswordAuthenticator implements PasswordAuthenticator {
         this.service = service;
     }
 
-    public Object authenticate(String username, String password, ServerSession session) {
+    public boolean authenticate(String username, String password, ServerSession session) {
         LOG.info("Authenticating user {} using PAM", username);
         PamReturnValue val = new Pam(service).authenticate(username, password);
         LOG.info("Result: {}", val);
         if (PamReturnValue.PAM_SUCCESS.equals(val)) {
-            return username;
+            return true;
         }
-        return null;
+        return false;
     }
 }

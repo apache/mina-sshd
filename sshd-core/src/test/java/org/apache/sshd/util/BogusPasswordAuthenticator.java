@@ -28,7 +28,7 @@ import org.apache.sshd.server.session.ServerSession;
  */
 public class BogusPasswordAuthenticator implements PasswordAuthenticator {
 
-    public Object authenticate(String username, String password, ServerSession session) {
-        return (username != null && username.equals(password)) ? username : null;
+    public boolean authenticate(String username, String password, ServerSession session) {
+        return username != null && username.equals(password);
     }
 }

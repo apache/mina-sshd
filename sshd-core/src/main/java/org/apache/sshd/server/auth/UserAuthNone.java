@@ -39,8 +39,8 @@ public class UserAuthNone implements UserAuth {
         }
     }
 
-    public Object auth(ServerSession session, String username, Buffer buffer) {
-        return username;
+    public boolean auth(ServerSession session, String username, Buffer buffer) {
+        return true;
     }
 
 }

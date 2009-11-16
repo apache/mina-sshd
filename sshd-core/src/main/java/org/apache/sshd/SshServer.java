@@ -359,8 +359,8 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         sshd.setShellFactory(new ProcessShellFactory(new String[] { "/bin/sh", "-i", "-l" }));
         //sshd.setPasswordAuthenticator(new PAMPasswordAuthenticator());
         sshd.setPasswordAuthenticator(new PasswordAuthenticator() {
-            public Object authenticate(String username, String password, ServerSession session) {
-                return (username != null && username.equals(password)) ? username : null;
+            public boolean authenticate(String username, String password, ServerSession session) {
+                return username != null && username.equals(password);
             }
         });
         sshd.start();
