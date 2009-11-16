@@ -83,21 +83,23 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     @Override
     public CloseFuture close(final boolean immediately) {
         synchronized (lock) {
-            if (opened) {
-                super.close(immediately);
-            } else if (openFuture != null) {
-                if (immediately) {
-                    openFuture.setException(new SshException("Channel closed"));
+            if (!closeFuture.isDone()) {
+                if (opened) {
                     super.close(immediately);
+                } else if (openFuture != null) {
+                    if (immediately) {
+                        openFuture.setException(new SshException("Channel closed"));
+                        super.close(immediately);
+                    } else {
+                        openFuture.addListener(new SshFutureListener<OpenFuture>() {
+                            public void operationComplete(OpenFuture future) {
+                                close(immediately);
+                            }
+                        });
+                    }
                 } else {
-                    openFuture.addListener(new SshFutureListener<OpenFuture>() {
-                        public void operationComplete(OpenFuture future) {
-                            close(immediately);
-                        }
-                    });
+                    closeFuture.setClosed();
                 }
-            } else {
-                closeFuture.setClosed();
             }
         }
         return closeFuture;
