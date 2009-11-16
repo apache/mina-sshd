@@ -43,21 +43,21 @@ import org.slf4j.LoggerFactory;
  */
 public class ScpCommand implements Command, Runnable {
 
-    private static final Logger log = LoggerFactory.getLogger(ScpCommand.class);
-    private static final int OK = 0;
-    private static final int ERROR = 2;
+    protected static final Logger log = LoggerFactory.getLogger(ScpCommand.class);
+    protected static final int OK = 0;
+    protected static final int ERROR = 2;
 
-    private boolean optR;
-    private boolean optT;
-    private boolean optF;
-    private boolean optV;
-    private boolean optP;
-    private File root;
-    private InputStream in;
-    private OutputStream out;
-    private OutputStream err;
-    private ExitCallback callback;
-    private IOException error;
+    protected boolean optR;
+    protected boolean optT;
+    protected boolean optF;
+    protected boolean optV;
+    protected boolean optP;
+    protected File root;
+    protected InputStream in;
+    protected OutputStream out;
+    protected OutputStream err;
+    protected ExitCallback callback;
+    protected IOException error;
 
     public ScpCommand(String[] args) {
         if (log.isDebugEnabled()) {
@@ -171,7 +171,7 @@ public class ScpCommand implements Command, Runnable {
         }
     }
 
-    private void writeDir(String header, File path) throws IOException {
+    protected void writeDir(String header, File path) throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("Writing dir {}", path);
         }
@@ -216,7 +216,7 @@ public class ScpCommand implements Command, Runnable {
 
     }
 
-    private void writeFile(String header, File path) throws IOException {
+    protected void writeFile(String header, File path) throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("Writing file {}", path);
         }
@@ -260,7 +260,7 @@ public class ScpCommand implements Command, Runnable {
         readAck();
     }
 
-    private String readLine() throws IOException {
+    protected String readLine() throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         for (;;) {
             int c = in.read();
@@ -274,7 +274,7 @@ public class ScpCommand implements Command, Runnable {
         }
     }
 
-    private void readFile(File path) throws IOException {
+    protected void readFile(File path) throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("Reading file {}", path);
         }
@@ -307,7 +307,7 @@ public class ScpCommand implements Command, Runnable {
         readAck();
     }
 
-    private void readDir(File path) throws IOException {
+    protected void readDir(File path) throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("Reading directory {}", path);
         }
@@ -336,12 +336,12 @@ public class ScpCommand implements Command, Runnable {
         readAck();
     }
 
-    private void ack() throws IOException {
+    protected void ack() throws IOException {
         out.write(0);
         out.flush();
     }
 
-    private void readAck() throws IOException {
+    protected void readAck() throws IOException {
         int c = in.read();
         switch (c) {
             case 0:

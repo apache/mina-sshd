@@ -30,6 +30,9 @@ import java.util.concurrent.CountDownLatch;
 
 import org.apache.mina.core.service.IoAcceptor;
 import org.apache.mina.core.session.IoSession;
+import org.apache.mina.core.session.IoSessionConfig;
+import org.apache.mina.transport.socket.DefaultSocketSessionConfig;
+import org.apache.mina.transport.socket.SocketSessionConfig;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 import org.apache.sshd.common.*;
 import org.apache.sshd.common.cipher.AES128CBC;
@@ -88,16 +91,18 @@ import org.apache.sshd.server.shell.ProcessShellFactory;
  */
 public class SshServer extends AbstractFactoryManager implements ServerFactoryManager {
 
-    private IoAcceptor acceptor;
-    private int port;
-    private boolean reuseAddress = true;
-    private List<NamedFactory<UserAuth>> userAuthFactories;
-    private Factory<Command> shellFactory;
-    private SessionFactory sessionFactory;
-    private CommandFactory commandFactory;
-    private List<NamedFactory<Command>> subsystemFactories;
-    private PasswordAuthenticator passwordAuthenticator;
-    private PublickeyAuthenticator publickeyAuthenticator;
+    protected IoAcceptor acceptor;
+    protected int port;
+    protected int backlog = 50;
+    protected boolean reuseAddress = true;
+    protected IoSessionConfig sessionConfig;
+    protected List<NamedFactory<UserAuth>> userAuthFactories;
+    protected Factory<Command> shellFactory;
+    protected SessionFactory sessionFactory;
+    protected CommandFactory commandFactory;
+    protected List<NamedFactory<Command>> subsystemFactories;
+    protected PasswordAuthenticator passwordAuthenticator;
+    protected PublickeyAuthenticator publickeyAuthenticator;
 
     public SshServer() {
     }
@@ -121,6 +126,22 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
 
     public void setReuseAddress(boolean reuseAddress) {
         this.reuseAddress = reuseAddress;
+    }
+
+    public int getBacklog() {
+        return backlog;
+    }
+
+    public void setBacklog(int backlog) {
+        this.backlog = backlog;
+    }
+
+    public IoSessionConfig getSessionConfig() {
+        return sessionConfig;
+    }
+
+    public void setSessionConfig(IoSessionConfig sessionConfig) {
+        this.sessionConfig = sessionConfig;
     }
 
     public List<NamedFactory<UserAuth>> getUserAuthFactories() {
@@ -216,13 +237,12 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
      */
     public void start() throws IOException {
         checkConfig();
-        acceptor = new NioSocketAcceptor();
-
-        ((NioSocketAcceptor) acceptor).setReuseAddress(reuseAddress);
+        acceptor = createAcceptor();
+        configure(acceptor);
 
         SessionFactory handler = sessionFactory;
         if (handler == null) {
-            handler = new SessionFactory();
+            handler = createSessionFactory();
         }
         handler.setServer(this);
         acceptor.setHandler(handler);
@@ -258,6 +278,24 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         latch.await();
         acceptor.dispose();
         acceptor = null;
+    }
+
+    protected IoAcceptor createAcceptor() {
+        return new NioSocketAcceptor();
+    }
+
+    protected void configure(IoAcceptor acceptor) {
+        if (acceptor instanceof NioSocketAcceptor) {
+            ((NioSocketAcceptor) acceptor).setReuseAddress(reuseAddress);
+            ((NioSocketAcceptor) acceptor).setBacklog(backlog);
+        }
+        if (sessionConfig != null) {
+            acceptor.getSessionConfig().setAll(sessionConfig);
+        }
+    }
+
+    protected SessionFactory createSessionFactory() {
+        return new SessionFactory();
     }
 
     public static SshServer setUpDefaultServer() {

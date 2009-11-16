@@ -36,16 +36,16 @@ public abstract class AbstractFactoryManager implements FactoryManager {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    private Map<String,String> properties = new HashMap<String,String>();
-    private List<NamedFactory<KeyExchange>> keyExchangeFactories;
-    private List<NamedFactory<Cipher>> cipherFactories;
-    private List<NamedFactory<Compression>> compressionFactories;
-    private List<NamedFactory<Mac>> macFactories;
-    private List<NamedFactory<Signature>> signatureFactories;
-    private Factory<Random> randomFactory;
-    private KeyPairProvider keyPairProvider;
-    private String version;
-    private List<NamedFactory<Channel>> channelFactories;
+    protected Map<String,String> properties = new HashMap<String,String>();
+    protected List<NamedFactory<KeyExchange>> keyExchangeFactories;
+    protected List<NamedFactory<Cipher>> cipherFactories;
+    protected List<NamedFactory<Compression>> compressionFactories;
+    protected List<NamedFactory<Mac>> macFactories;
+    protected List<NamedFactory<Signature>> signatureFactories;
+    protected Factory<Random> randomFactory;
+    protected KeyPairProvider keyPairProvider;
+    protected String version;
+    protected List<NamedFactory<Channel>> channelFactories;
 
     protected AbstractFactoryManager() {
         loadVersion();

@@ -117,8 +117,8 @@ import org.apache.sshd.common.util.SecurityUtils;
  */
 public class SshClient extends AbstractFactoryManager {
 
-    private IoConnector connector;
-    private SessionFactory sessionFactory;
+    protected IoConnector connector;
+    protected SessionFactory sessionFactory;
 
     public SshClient() {
     }
