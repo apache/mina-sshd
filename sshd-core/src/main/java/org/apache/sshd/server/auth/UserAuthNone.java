@@ -39,7 +39,7 @@ public class UserAuthNone implements UserAuth {
         }
     }
 
-    public boolean auth(ServerSession session, String username, Buffer buffer) {
+    public Boolean auth(ServerSession session, String username, Buffer buffer) {
         return true;
     }
 

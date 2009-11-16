@@ -46,7 +46,7 @@ public class UserAuthPublicKey implements UserAuth {
         }
     }
 
-    public boolean auth(ServerSession session, String username, Buffer buffer) throws Exception {
+    public Boolean auth(ServerSession session, String username, Buffer buffer) throws Exception {
         boolean hasSig = buffer.getBoolean();
         String alg = buffer.getString();
 
@@ -69,14 +69,14 @@ public class UserAuthPublicKey implements UserAuth {
         }
 
         if (!authenticator.authenticate(username, key, session)) {
-            throw new Exception("Unsupported key for user");
+            return false;
         }
         if (!hasSig) {
             Buffer buf = session.createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_PK_OK);
             buf.putString(alg);
             buf.putRawBytes(buffer.array(), oldPos, 4 + len);
             session.writePacket(buf);
-            return false;
+            return null;
         } else {
             Buffer buf = new Buffer();
             buf.putString(session.getKex().getH());

@@ -40,7 +40,7 @@ public class UserAuthPassword implements UserAuth {
         }
     }
 
-    public boolean auth(ServerSession session, String username, Buffer buffer) throws Exception {
+    public Boolean auth(ServerSession session, String username, Buffer buffer) throws Exception {
         boolean newPassword = buffer.getBoolean();
         if (newPassword) {
             throw new IllegalStateException("Password changes are not supported");
@@ -52,11 +52,7 @@ public class UserAuthPassword implements UserAuth {
     private boolean checkPassword(ServerSession session, String username, String password) throws Exception {
         PasswordAuthenticator auth = session.getServerFactoryManager().getPasswordAuthenticator();
         if (auth != null) {
-            if (auth.authenticate(username, password, session)) {
-                return true;
-            } else {
-                throw new Exception("Authentication failed: bad username or password supplied");
-            }
+            return auth.authenticate(username, password, session);
         }
         throw new Exception("No PasswordAuthenticator configured");
     }

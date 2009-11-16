@@ -315,31 +315,32 @@ public class ServerSession extends AbstractSession {
             String method = buffer.getString();
 
             log.info("Authenticating user '{}' with method '{}'", username, method);
-            Object identity = null;
+            Boolean authed = null;
             NamedFactory<UserAuth> factory = NamedFactory.Utils.get(userAuthFactories, method);
             if (factory != null) {
                 UserAuth auth = factory.create();
                 try {
-                    identity = auth.auth(this, username, buffer);
-                    if (identity == null) {
+                    authed = auth.auth(this, username, buffer);
+                    if (authed == null) {
                         // authentication is still ongoing
                         log.info("Authentication not finished");
                         return;
                     } else {
-                        log.info("Authentication succeeded");
+                        log.info(authed ? "Authentication succeeded" : "Authentication failed");
                     }
                 } catch (Exception e) {
                     // Continue
+                    authed = false;
                     log.info("Authentication failed: {}", e.getMessage());
                 }
             } else {
                 log.info("Unsupported authentication method '{}'", method);
             }
-            if (identity != null) {
+            if (authed != null && authed) {
                 buffer = createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_SUCCESS);
                 writePacket(buffer);
                 state = State.Running;
-                authed = true;
+                this.authed = true;
                 this.username = username;
                 unscheduleAuthTimer();
             } else {
