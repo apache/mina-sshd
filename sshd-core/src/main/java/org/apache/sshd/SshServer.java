@@ -103,6 +103,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     protected List<NamedFactory<Command>> subsystemFactories;
     protected PasswordAuthenticator passwordAuthenticator;
     protected PublickeyAuthenticator publickeyAuthenticator;
+    protected TcpIpForwardFilter tcpIpForwardFilter;
 
     public SshServer() {
     }
@@ -198,6 +199,14 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
 
     public void setPublickeyAuthenticator(PublickeyAuthenticator publickeyAuthenticator) {
         this.publickeyAuthenticator = publickeyAuthenticator;
+    }
+
+    public TcpIpForwardFilter getTcpIpForwardFilter() {
+        return tcpIpForwardFilter;
+    }
+
+    public void setTcpIpForwardFilter(TcpIpForwardFilter tcpIpForwardFilter) {
+        this.tcpIpForwardFilter = tcpIpForwardFilter;
     }
 
     protected void checkConfig() {
@@ -399,6 +408,15 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         sshd.setPasswordAuthenticator(new PasswordAuthenticator() {
             public boolean authenticate(String username, String password, ServerSession session) {
                 return username != null && username.equals(password);
+            }
+        });
+        sshd.setTcpIpForwardFilter(new TcpIpForwardFilter() {
+            public boolean canListen(InetSocketAddress address, ServerSession session) {
+                return true;
+            }
+
+            public boolean canConnect(InetSocketAddress address, ServerSession session) {
+                return true;
             }
         });
         sshd.start();

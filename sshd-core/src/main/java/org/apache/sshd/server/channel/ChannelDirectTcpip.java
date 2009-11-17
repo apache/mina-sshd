@@ -21,6 +21,7 @@ package org.apache.sshd.server.channel;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.OutputStream;
+import java.net.ConnectException;
 import java.net.InetSocketAddress;
 
 import org.apache.mina.core.buffer.IoBuffer;
@@ -41,6 +42,8 @@ import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.server.TcpIpForwardFilter;
+import org.apache.sshd.server.session.ServerSession;
 
 /**
  * TODO Add javadoc
@@ -71,6 +74,16 @@ public class ChannelDirectTcpip extends AbstractServerChannel {
         final OpenFuture f = new DefaultOpenFuture(this);
         String hostToConnect = buffer.getString();
         int portToConnect = buffer.getInt();
+        InetSocketAddress address = new InetSocketAddress(hostToConnect, portToConnect);
+
+        final ServerSession serverSession = (ServerSession)getSession();
+        final TcpIpForwardFilter filter = serverSession.getServerFactoryManager().getTcpIpForwardFilter();
+        if (filter == null || !filter.canConnect(address, serverSession)) {
+            super.close(true);
+            f.setException(new OpenChannelException(SshConstants.SSH_OPEN_ADMINISTRATIVELY_PROHIBITED, "connect denied"));
+            return f;
+        }
+
         String originatorIpAddress = buffer.getString();
         int originatorPort = buffer.getInt();
         log.info("Receiving request for direct tcpip: hostToConnect={}, portToConnect={}, originatorIpAddress={}, originatorPort={}",
@@ -87,27 +100,61 @@ public class ChannelDirectTcpip extends AbstractServerChannel {
                 out.write(b, 0, r);
                 out.flush();
             }
+
+            @Override
+            public void sessionClosed(IoSession session) throws Exception {
+                sendEof();
+            }
         };
         connector.setHandler(handler);
-        ConnectFuture future = connector.connect(new InetSocketAddress(hostToConnect, portToConnect));
+        ConnectFuture future = connector.connect(address);
         future.addListener(new IoFutureListener<ConnectFuture>() {
             public void operationComplete(ConnectFuture future) {
                 if (future.isConnected()) {
                     ioSession = future.getSession();
                     f.setOpened();
                 } else if (future.getException() != null) {
-                    close(false);
-                    f.setException(future.getException());
+                    closeImmediately0();
+                    if (future.getException() instanceof ConnectException) {
+                        f.setException(new OpenChannelException(
+                            SshConstants.SSH_OPEN_CONNECT_FAILED,
+                            future.getException().getMessage(),
+                            future.getException()));
+                    } else {
+                        f.setException(future.getException());
+                    }
                 }
             }
         });
         return f;
     }
 
+    private void closeImmediately0() {
+        // We need to close the channel immediately to remove it from the
+        // server session's channel table and *not* send a packet to the
+        // client.  A notification was already sent by our caller, or will
+        // be sent after we return.
+        //
+        super.close(true);
+
+        // We also need to dispose of the connector, but unfortunately we
+        // are being invoked by the connector thread or the connector's
+        // own processor thread.  Disposing of the connector within either
+        // causes deadlock.  Instead create a new thread to dispose of the
+        // connector in the background.
+        //
+        new Thread("ChannelDirectTcpip-ConnectorCleanup") {
+            @Override
+            public void run() {
+                connector.dispose();
+            }
+        }.start();
+    }
+
     public CloseFuture close(boolean immediately) {
         return super.close(immediately).addListener(new SshFutureListener() {
             public void operationComplete(SshFuture sshFuture) {
-                connector.dispose();
+                closeImmediately0();
             }
         });
     }

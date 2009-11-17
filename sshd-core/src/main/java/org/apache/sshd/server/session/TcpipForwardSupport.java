@@ -34,21 +34,21 @@ import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 import org.apache.sshd.client.channel.AbstractClientChannel;
 import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
-import org.apache.sshd.common.Session;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.server.TcpIpForwardFilter;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class TcpipForwardSupport extends IoHandlerAdapter {
 
-    private final Session session;
+    private final ServerSession session;
     private IoAcceptor acceptor;
 
-    public TcpipForwardSupport(Session session) {
+    public TcpipForwardSupport(ServerSession session) {
         this.session = session;
     }
 
@@ -65,15 +65,38 @@ public class TcpipForwardSupport extends IoHandlerAdapter {
     public synchronized void close() {
         if (acceptor != null) {
             acceptor.dispose();
+            acceptor = null;
         }
     }
 
     synchronized void request(Buffer buffer, boolean wantReply) throws IOException {
-        initialize();
         String address = buffer.getString();
         int port = buffer.getInt();
+        InetSocketAddress addr = new InetSocketAddress(address, port);
+
+        final TcpIpForwardFilter filter = session.getServerFactoryManager().getTcpIpForwardFilter();
+        if (filter == null || !filter.canListen(addr, session)) {
+            if (wantReply) {
+                buffer = session.createBuffer(SshConstants.Message.SSH_MSG_REQUEST_FAILURE);
+                session.writePacket(buffer);
+            }
+            return;
+        }
+
+        initialize();
         Set<SocketAddress> a1 = acceptor.getLocalAddresses();
-        acceptor.bind(new InetSocketAddress(address, port));
+        try {
+            acceptor.bind(addr);
+        } catch (IOException bindErr) {
+            if (acceptor.getLocalAddresses().isEmpty()) {
+                close();
+            }
+            if (wantReply) {
+                buffer = session.createBuffer(SshConstants.Message.SSH_MSG_REQUEST_FAILURE);
+                session.writePacket(buffer);
+            }
+            return;
+        }
         Set<SocketAddress> a2 = acceptor.getLocalAddresses();
         a2.removeAll(a1);
         if (a2.size() == 1) {
@@ -92,7 +115,9 @@ public class TcpipForwardSupport extends IoHandlerAdapter {
     synchronized void cancel(Buffer buffer, boolean wantReply) throws IOException {
         String address = buffer.getString();
         int port = buffer.getInt();
-        acceptor.unbind(new InetSocketAddress(address, port));
+        if (acceptor != null) {
+            acceptor.unbind(new InetSocketAddress(address, port));
+        }
         if (wantReply) {
             buffer = session.createBuffer(SshConstants.Message.SSH_MSG_REQUEST_SUCCESS);
             session.writePacket(buffer);
@@ -185,6 +210,11 @@ public class TcpipForwardSupport extends IoHandlerAdapter {
             serverSession.write(buf);
         }
 
+        @Override
+        public void handleEof() throws IOException {
+            super.handleEof();
+            serverSession.close(false);
+        }
     }
 
 

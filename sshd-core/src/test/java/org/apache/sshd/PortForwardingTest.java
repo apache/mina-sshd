@@ -37,6 +37,7 @@ import org.apache.mina.core.session.IoSession;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
+import org.apache.sshd.util.BogusTcpIpForwardFilter;
 import org.apache.sshd.util.EchoShellFactory;
 import org.junit.After;
 import org.junit.Before;
@@ -75,6 +76,7 @@ public class PortForwardingTest {
         sshd.setKeyPairProvider(new FileKeyPairProvider(new String[] { "src/test/resources/hostkey.pem" }));
         sshd.setShellFactory(new EchoShellFactory());
         sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
+        sshd.setTcpIpForwardFilter(new BogusTcpIpForwardFilter());
         sshd.start();
 
         NioSocketAcceptor acceptor = new NioSocketAcceptor();

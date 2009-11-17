@@ -39,6 +39,7 @@ import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.UserAuth;
+import org.apache.sshd.server.channel.OpenChannelException;;
 
 /**
  *
@@ -411,8 +412,13 @@ public class ServerSession extends AbstractSession {
                     } else if (future.getException() != null) {
                         Buffer buf = createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_FAILURE);
                         buf.putInt(id);
-                        buf.putInt(0);
-                        buf.putString("Error opening channel: " + future.getException().getMessage());
+                        if (future.getException() instanceof OpenChannelException) {
+                            buf.putInt(((OpenChannelException)future.getException()).getReasonCode());
+                            buf.putString(future.getException().getMessage());
+                        } else {
+                            buf.putInt(0);
+                            buf.putString("Error opening channel: " + future.getException().getMessage());
+                        }
                         buf.putString("");
                         writePacket(buf);
                     }
