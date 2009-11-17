@@ -72,10 +72,16 @@ public class TcpipForwardSupport extends IoHandlerAdapter {
     synchronized void request(Buffer buffer, boolean wantReply) throws IOException {
         String address = buffer.getString();
         int port = buffer.getInt();
-        InetSocketAddress addr = new InetSocketAddress(address, port);
+        InetSocketAddress addr;
+
+        try {
+            addr = new InetSocketAddress(address, port);
+        } catch (RuntimeException e) {
+            addr = null;
+        }
 
         final TcpIpForwardFilter filter = session.getServerFactoryManager().getTcpIpForwardFilter();
-        if (filter == null || !filter.canListen(addr, session)) {
+        if (addr == null || filter == null || !filter.canListen(addr, session)) {
             if (wantReply) {
                 buffer = session.createBuffer(SshConstants.Message.SSH_MSG_REQUEST_FAILURE);
                 session.writePacket(buffer);

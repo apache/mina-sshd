@@ -74,11 +74,17 @@ public class ChannelDirectTcpip extends AbstractServerChannel {
         final OpenFuture f = new DefaultOpenFuture(this);
         String hostToConnect = buffer.getString();
         int portToConnect = buffer.getInt();
-        InetSocketAddress address = new InetSocketAddress(hostToConnect, portToConnect);
+        InetSocketAddress address;
+
+        try {
+            address = new InetSocketAddress(hostToConnect, portToConnect);
+        } catch (RuntimeException e) {
+            address = null;
+        }
 
         final ServerSession serverSession = (ServerSession)getSession();
         final TcpIpForwardFilter filter = serverSession.getServerFactoryManager().getTcpIpForwardFilter();
-        if (filter == null || !filter.canConnect(address, serverSession)) {
+        if (address == null || filter == null || !filter.canConnect(address, serverSession)) {
             super.close(true);
             f.setException(new OpenChannelException(SshConstants.SSH_OPEN_ADMINISTRATIVELY_PROHIBITED, "connect denied"));
             return f;
