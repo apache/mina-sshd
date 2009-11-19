@@ -39,7 +39,7 @@ import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.UserAuth;
-import org.apache.sshd.server.channel.OpenChannelException;;
+import org.apache.sshd.server.channel.OpenChannelException;
 
 /**
  *
