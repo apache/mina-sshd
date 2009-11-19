@@ -19,6 +19,7 @@
 package org.apache.sshd;
 
 import java.net.ServerSocket;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.mina.core.session.IoSession;
 import org.apache.sshd.client.SessionFactory;
@@ -42,6 +43,7 @@ import org.junit.Test;
 public class ServerTest {
 
     private SshServer sshd;
+    private SshClient client;
     private int port;
 
     @Before
@@ -60,7 +62,12 @@ public class ServerTest {
 
     @After
     public void tearDown() throws Exception {
-        sshd.stop();
+        if (sshd != null) {
+            sshd.stop(true);
+        }
+        if (client != null) {
+            client.stop();
+        }
     }
 
     /**
@@ -71,7 +78,7 @@ public class ServerTest {
     public void testFailAuthentication() throws Exception {
         sshd.getProperties().put(SshServer.MAX_AUTH_REQUESTS, "10");
 
-        SshClient client = SshClient.setUpDefaultClient();
+        client = SshClient.setUpDefaultClient();
         client.start();
         ClientSession s = client.connect("localhost", port).await().getSession();
         int nbTrials = 0;
@@ -79,7 +86,10 @@ public class ServerTest {
         while ((res & ClientSession.CLOSED) == 0) {
             nbTrials ++;
             s.authPassword("smx", "buggy");
-            res = s.waitFor(ClientSession.CLOSED | ClientSession.WAIT_AUTH, 0);
+            res = s.waitFor(ClientSession.CLOSED | ClientSession.WAIT_AUTH, 5000);
+            if (res == ClientSession.TIMEOUT) {
+                throw new TimeoutException();
+            }
         }
         Assert.assertTrue(nbTrials > 10);
     }
@@ -88,7 +98,7 @@ public class ServerTest {
     public void testAuthenticationTimeout() throws Exception {
         sshd.getProperties().put(SshServer.AUTH_TIMEOUT, "1000");
 
-        SshClient client = SshClient.setUpDefaultClient();
+        client = SshClient.setUpDefaultClient();
         client.start();
         ClientSession s = client.connect("localhost", port).await().getSession();
         int res = s.waitFor(ClientSession.CLOSED, 5000);
@@ -97,7 +107,7 @@ public class ServerTest {
 
     @Test
     public void testLanguage() throws Exception {
-        SshClient client = SshClient.setUpDefaultClient();
+        client = SshClient.setUpDefaultClient();
         client.setSessionFactory(new SessionFactory() {
             @Override
             protected AbstractSession createSession(IoSession ioSession) throws Exception {
@@ -127,4 +137,5 @@ public class ServerTest {
         sshd.start();
         Thread.sleep(100000);
     }
+
 }
