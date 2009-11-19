@@ -40,10 +40,13 @@ import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.IoUtils;
-import org.apache.sshd.common.util.LfToCrLfFilterOutputStream;
 import org.apache.sshd.common.util.LoggingFilterOutputStream;
-import org.apache.sshd.server.*;
+import org.apache.sshd.server.Command;
 import org.apache.sshd.server.Environment;
+import org.apache.sshd.server.ExitCallback;
+import org.apache.sshd.server.SessionAware;
+import org.apache.sshd.server.Signal;
+import org.apache.sshd.server.SignalListener;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
@@ -424,10 +427,6 @@ public class ChannelSession extends AbstractServerChannel {
         // Wrap in logging filters
         out = new LoggingFilterOutputStream(out, "OUT:", log);
         err = new LoggingFilterOutputStream(err, "ERR:", log);
-        if (getPtyModeValue(PtyMode.ONLCR) != 0) {
-            out = new LfToCrLfFilterOutputStream(out);
-            err = new LfToCrLfFilterOutputStream(err);
-        }
         in = new ChannelPipedInputStream(localWindow);
         shellIn = new ChannelPipedOutputStream((ChannelPipedInputStream) in);
         shellIn = new LoggingFilterOutputStream(shellIn, "IN: ", log);
