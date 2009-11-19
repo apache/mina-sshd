@@ -233,6 +233,7 @@ public class ScpTest {
         assertEquals(0, is.read());
         os.write(0);
         os.flush();
+        Thread.sleep(100);
         c.disconnect();
     }
 

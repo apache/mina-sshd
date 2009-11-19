@@ -46,6 +46,13 @@ public class ChannelPipedInputStream extends InputStream {
         this.localWindow = localWindow;
     }
 
+    @Override
+    public int available() throws IOException {
+        synchronized (buffer) {
+            return buffer.available();
+        }
+    }
+
     public int read() throws IOException {
         synchronized (b) {
             int l = read(b, 0, 1);

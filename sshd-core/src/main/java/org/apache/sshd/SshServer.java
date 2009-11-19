@@ -23,6 +23,7 @@ import java.net.InetSocketAddress;
 import java.security.InvalidKeyException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -31,10 +32,16 @@ import java.util.concurrent.CountDownLatch;
 import org.apache.mina.core.service.IoAcceptor;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.session.IoSessionConfig;
-import org.apache.mina.transport.socket.DefaultSocketSessionConfig;
-import org.apache.mina.transport.socket.SocketSessionConfig;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
-import org.apache.sshd.common.*;
+import org.apache.sshd.common.AbstractFactoryManager;
+import org.apache.sshd.common.Channel;
+import org.apache.sshd.common.Cipher;
+import org.apache.sshd.common.Compression;
+import org.apache.sshd.common.Factory;
+import org.apache.sshd.common.KeyExchange;
+import org.apache.sshd.common.Mac;
+import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.Signature;
 import org.apache.sshd.common.cipher.AES128CBC;
 import org.apache.sshd.common.cipher.AES192CBC;
 import org.apache.sshd.common.cipher.AES256CBC;
@@ -43,7 +50,6 @@ import org.apache.sshd.common.cipher.TripleDESCBC;
 import org.apache.sshd.common.compression.CompressionNone;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
-import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.common.mac.HMACMD5;
 import org.apache.sshd.common.mac.HMACMD596;
 import org.apache.sshd.common.mac.HMACSHA1;
@@ -55,13 +61,21 @@ import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.signature.SignatureDSA;
 import org.apache.sshd.common.signature.SignatureRSA;
 import org.apache.sshd.common.util.SecurityUtils;
-import org.apache.sshd.server.*;
+import org.apache.sshd.server.Command;
+import org.apache.sshd.server.CommandFactory;
+import org.apache.sshd.server.PasswordAuthenticator;
+import org.apache.sshd.server.PublickeyAuthenticator;
+import org.apache.sshd.server.ServerFactoryManager;
+import org.apache.sshd.server.TcpIpForwardFilter;
+import org.apache.sshd.server.UserAuth;
 import org.apache.sshd.server.auth.UserAuthPassword;
 import org.apache.sshd.server.auth.UserAuthPublicKey;
 import org.apache.sshd.server.channel.ChannelDirectTcpip;
 import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.kex.DHG1;
 import org.apache.sshd.server.kex.DHG14;
+import org.apache.sshd.server.keyprovider.PEMGeneratorHostKeyProvider;
+import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.session.SessionFactory;
 import org.apache.sshd.server.shell.ProcessShellFactory;
@@ -266,6 +280,10 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
      * Stop the SSH server.  This method will block until all resources are actually disposed.
      */
     public void stop() throws InterruptedException {
+        stop(false);
+    }
+
+    public void stop(boolean immediately) throws InterruptedException {
         acceptor.setCloseOnDeactivation(false);
         acceptor.unbind();
         List<AbstractSession> sessions = new ArrayList<AbstractSession>();
@@ -282,9 +300,11 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
             }
         };
         for (AbstractSession session : sessions) {
-            session.close(false).addListener(listener);
+            session.close(immediately).addListener(listener);
         }
-        latch.await();
+        if (!immediately) {
+            latch.await();
+        }
         acceptor.dispose();
         acceptor = null;
     }
@@ -399,12 +419,22 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
             System.exit(-1);
         }
 
+        System.err.println("Starting SSHD on port " + port);
+
         SshServer sshd = SshServer.setUpDefaultServer();
         sshd.setPort(port);
-        sshd.setKeyPairProvider(new FileKeyPairProvider(new String[] { "/etc/ssh_host_rsa_key", "/etc/ssh_host_dsa_key" }));
-        //sshd.setShellFactory(new ProcessShellFactory(new String[] { "/usr/bin/login", "-f", "-h", "localhost", "$USER", "/bin/sh", "-i" }));
-        sshd.setShellFactory(new ProcessShellFactory(new String[] { "/bin/sh", "-i", "-l" }));
-        //sshd.setPasswordAuthenticator(new PAMPasswordAuthenticator());
+        if (SecurityUtils.isBouncyCastleRegistered()) {
+            sshd.setKeyPairProvider(new PEMGeneratorHostKeyProvider("key.pem"));
+        } else {
+            sshd.setKeyPairProvider(new SimpleGeneratorHostKeyProvider("key.ser"));
+        }
+        if (System.getProperty("os.name").toLowerCase().indexOf("windows") < 0) {
+            sshd.setShellFactory(new ProcessShellFactory(new String[] { "/bin/sh", "-i", "-l" },
+                                 EnumSet.of(ProcessShellFactory.TtyOptions.ONlCr)));
+        } else {
+            sshd.setShellFactory(new ProcessShellFactory(new String[] { "cmd.exe "},
+                                 EnumSet.of(ProcessShellFactory.TtyOptions.Echo, ProcessShellFactory.TtyOptions.ICrNl, ProcessShellFactory.TtyOptions.ONlCr)));
+        }
         sshd.setPasswordAuthenticator(new PasswordAuthenticator() {
             public boolean authenticate(String username, String password, ServerSession session) {
                 return username != null && username.equals(password);

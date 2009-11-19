@@ -105,6 +105,11 @@
                 <version>1.4.3</version>
             </dependency>
             <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-simple</artifactId>
+                <version>1.4.3</version>
+            </dependency>
+            <dependency>
                 <groupId>com.jcraft</groupId>
                 <artifactId>jsch</artifactId>
                 <version>0.1.40</version>
@@ -157,14 +162,6 @@
                         <autoVersionSubmodules>true</autoVersionSubmodules>
                     </configuration>
                 </plugin>
-                <plugin>
-                    <inherited>true</inherited>
-                    <artifactId>maven-deploy-plugin</artifactId>
-                    <configuration>
-                        <altDeploymentRepository>${altDeploymentRepository}</altDeploymentRepository>
-                        <updateReleaseInfo>true</updateReleaseInfo>
-                    </configuration>
-                </plugin>
             </plugins>
         </pluginManagement>
 
@@ -180,23 +177,6 @@
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <version>2.2-beta-4</version>
-                <inherited>false</inherited>
-                <executions>
-                    <execution>
-                        <id>assembly</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                        <configuration>
-                            <descriptorRefs>
-                                <descriptorRef>project</descriptorRef>
-                            </descriptorRefs>
-                            <tarLongFileMode>gnu</tarLongFileMode>
-                        </configuration>
-                        <inherited>false</inherited>
-                    </execution>
-                </executions>
             </plugin>
             <plugin>
                 <artifactId>maven-remote-resources-plugin</artifactId>
@@ -239,6 +219,7 @@
     <modules>
         <module>sshd-core</module>
         <module>sshd-pam</module>
+        <module>assembly</module>
     </modules>
 
 </project>
