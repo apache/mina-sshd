@@ -106,6 +106,8 @@ public class LoadTest {
 
     protected void runClient(String msg) throws Exception {
         SshClient client = SshClient.setUpDefaultClient();
+        client.getProperties().put(SshClient.MAX_PACKET_SIZE, Integer.toString(1024 * 16));
+        client.getProperties().put(SshClient.WINDOW_SIZE, Integer.toString(1024 * 8));
         client.setKeyExchangeFactories(Arrays.<NamedFactory<KeyExchange>>asList(
                 new DHG1.Factory()));
         client.setCipherFactories(Arrays.<NamedFactory<Cipher>>asList(
