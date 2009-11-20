@@ -105,6 +105,7 @@ public abstract class AbstractChannel implements Channel {
     public void handleClose() throws IOException {
         log.info("Received SSH_MSG_CHANNEL_CLOSE on channel {}", id);
         synchronized (lock) {
+            closing = true;
             doClose();
             close(false).setClosed();
             lock.notifyAll();
