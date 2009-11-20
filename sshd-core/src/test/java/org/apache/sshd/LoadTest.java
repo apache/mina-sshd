@@ -22,7 +22,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.net.ServerSocket;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
 import org.apache.sshd.client.kex.DHG1;
@@ -65,17 +67,30 @@ public class LoadTest {
 
     @Test
     public void testLoad() throws Exception {
-        final int nbThreads = 4;
-        final int nbSessionsPerThread = 4;
-        final CountDownLatch latch = new CountDownLatch(nbThreads);
+        test("this is my command", 4, 4);
+    }
 
+    @Test
+    public void testBigResponse() throws Exception {
+        final StringBuilder response = new StringBuilder(1000000);
+        for (int i = 0; i < 100000; i++) {
+            response.append("0123456789");
+        }
+        test(response.toString(), 1, 1);
+    }
+
+    protected void test(final String msg, final int nbThreads, final int nbSessionsPerThread) throws Exception {
+        final List<Throwable> errors = new ArrayList<Throwable>();
+        final CountDownLatch latch = new CountDownLatch(nbThreads);
         for (int i = 0; i < nbThreads; i++) {
             Runnable r = new Runnable() {
                 public void run() {
                     try {
-                        testClient(nbSessionsPerThread);
+                        for (int i = 0; i < nbSessionsPerThread; i++) {
+                            runClient(msg);
+                        }
                     } catch (Throwable t) {
-                        t.printStackTrace();
+                        errors.add(t);
                     } finally {
                         latch.countDown();
                     }
@@ -83,18 +98,16 @@ public class LoadTest {
             };
             new Thread(r).start();
         }
-
         latch.await();
-    }
-
-    protected void testClient(int nbSessionsPerThread) throws Exception {
-        for (int i = 0; i < nbSessionsPerThread; i++) {
-            runClient();
+        if (errors.size() > 0) {
+            throw new Exception("Errors", errors.get(0));
         }
     }
 
-    protected void runClient() throws Exception {
+    protected void runClient(String msg) throws Exception {
         SshClient client = SshClient.setUpDefaultClient();
+        client.getProperties().put(SshClient.MAX_PACKET_SIZE, Integer.toString(1024 * 16));
+        client.getProperties().put(SshClient.WINDOW_SIZE, Integer.toString(1024 * 8));
         client.setKeyExchangeFactories(Arrays.<NamedFactory<KeyExchange>>asList(
                 new DHG1.Factory()));
         client.setCipherFactories(Arrays.<NamedFactory<Cipher>>asList(
@@ -113,10 +126,8 @@ public class LoadTest {
         channel.setErr(err);
         channel.open();
 
-        pipedIn.write("this is my command\n".getBytes());
-        pipedIn.flush();
-
-        pipedIn.write("exit\n".getBytes());
+        msg += "\nexit\n";
+        pipedIn.write(msg.getBytes());
         pipedIn.flush();
 
         channel.waitFor(ClientChannel.CLOSED, 0);
@@ -124,6 +135,6 @@ public class LoadTest {
         channel.close(false);
         client.stop();
 
-        assertArrayEquals(sent.toByteArray(), out.toByteArray());
+        assertArrayEquals(msg.getBytes(), out.toByteArray());
     }
 }

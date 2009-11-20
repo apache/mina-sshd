@@ -106,9 +106,8 @@ public class Window {
     }
 
     public void check(int maxFree) throws IOException {
-        int threshold = Math.min(packetSize * 8, maxSize / 4);
         synchronized (lock) {
-            if ((maxFree - size) > packetSize && (maxFree - size > threshold || size < threshold)) {
+            if ((size < maxFree) && (maxFree - size > packetSize * 3 || size < maxFree / 2)) {
                 if (log.isDebugEnabled()) {
                     log.debug("Increase " + name + " by " + (maxFree - size) + " up to " + maxFree);
                 }

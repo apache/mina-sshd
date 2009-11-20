@@ -89,8 +89,10 @@ public class ChannelSession extends AbstractClientChannel {
                 }
             }
         } catch (Exception e) {
-            log.info("Caught exception", e);
-            close(false);
+            if (!closing) {
+                log.info("Caught exception", e);
+                close(false);
+            }
         }
     }
 
