@@ -59,17 +59,8 @@ public class ChannelOutputStream extends OutputStream {
         if (closed) {
             throw new SshException("Already closed");
         }
-        while (l > 0) {
-            int _l = Math.min(l, remoteWindow.getPacketSize() - bufferLength);
-            if (_l <= 0) {
-                flush();
-                continue;
-            }
-            buffer.putRawBytes(buf, s, _l);
-            bufferLength += _l;
-            s += _l;
-            l -= _l;
-        }
+        buffer.putRawBytes(buf, s, l);
+        bufferLength += l;
     }
 
     @Override
@@ -81,14 +72,14 @@ public class ChannelOutputStream extends OutputStream {
             while (bufferLength > 0) {
                 Buffer buf = buffer;
                 int total = bufferLength;
-                int length = Math.min(remoteWindow.waitForSpace(), total);
+                int length = Math.min(Math.min(remoteWindow.waitForSpace(), total), remoteWindow.getPacketSize());
                 int pos = buf.wpos();
                 buf.wpos(cmd == SshConstants.Message.SSH_MSG_CHANNEL_EXTENDED_DATA ? 14 : 10);
                 buf.putInt(length);
-                buf.wpos(pos);
+                buf.wpos(buf.wpos() + length);
                 newBuffer();
                 if (total > length) {
-                    buffer.putBytes(buf.array(), pos - (total - length), total - length);
+                    buffer.putRawBytes(buf.array(), pos - (total - length), total - length);
                     bufferLength = total - length;
                 }
                 remoteWindow.waitAndConsume(length);
