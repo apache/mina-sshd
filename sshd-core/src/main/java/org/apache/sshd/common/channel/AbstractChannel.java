@@ -26,6 +26,8 @@ import org.apache.sshd.common.Session;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultCloseFuture;
+import org.apache.sshd.common.future.SshFuture;
+import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.BufferUtils;
 import org.slf4j.Logger;
@@ -105,9 +107,8 @@ public abstract class AbstractChannel implements Channel {
     public void handleClose() throws IOException {
         log.info("Received SSH_MSG_CHANNEL_CLOSE on channel {}", id);
         synchronized (lock) {
-            closing = true;
-            doClose();
             close(false).setClosed();
+            doClose();
             lock.notifyAll();
         }
     }
