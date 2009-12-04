@@ -19,6 +19,7 @@
 package org.apache.sshd.client.session;
 
 import java.io.IOException;
+import java.security.KeyPair;
 import java.security.PublicKey;
 
 import org.apache.mina.core.session.IoSession;
@@ -26,19 +27,17 @@ import org.apache.sshd.ClientChannel;
 import org.apache.sshd.ClientSession;
 import org.apache.sshd.client.UserAuth;
 import org.apache.sshd.client.auth.UserAuthPassword;
+import org.apache.sshd.client.auth.UserAuthPublicKey;
 import org.apache.sshd.client.channel.AbstractClientChannel;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.DefaultAuthFuture;
-import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.KeyPairProvider;
-import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.SshConstants;
-import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.*;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.Buffer;
+import org.bouncycastle.asn1.x9.X9ECParameters;
 
 /**
  * TODO Add javadoc
@@ -60,6 +59,10 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         log.info("Session created...");
         sendClientIdentification();
         sendKexInit();
+    }
+
+    public KeyExchange getKex() {
+        return kex;
     }
 
     public AuthFuture authPassword(String username, String password) throws IOException {
@@ -84,7 +87,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         }
     }
 
-    public AuthFuture authPublicKey(String username, PublicKey key) throws IOException {
+    public AuthFuture authPublicKey(String username, KeyPair key) throws IOException {
         synchronized (lock) {
             if (closeFuture.isClosed()) {
                 throw new IllegalStateException("Session is closed");
@@ -99,9 +102,10 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
             if (closeFuture.isClosed()) {
                 throw new IllegalStateException("Session is closed");
             }
-            //authFuture = new DefaultAuthFuture<ClientSession>(this, lock);
-            // TODO: implement public key authentication method
-            throw new UnsupportedOperationException("Not supported yet");
+            authFuture = new DefaultAuthFuture(lock);
+            userAuth = new UserAuthPublicKey(this, username, key);
+            setState(ClientSessionImpl.State.UserAuth);
+            return authFuture;
         }
     }
 
@@ -130,6 +134,12 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
     }
 
     protected void handleMessage(Buffer buffer) throws Exception {
+        synchronized (lock) {
+            doHandleMessage(buffer);
+        }
+    }
+
+    protected void doHandleMessage(Buffer buffer) throws Exception {
         SshConstants.Message cmd = buffer.getCommand();
         log.debug("Received packet {}", cmd);
         switch (cmd) {

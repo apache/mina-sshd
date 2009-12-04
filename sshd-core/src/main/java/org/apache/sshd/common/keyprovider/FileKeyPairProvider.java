@@ -73,7 +73,7 @@ public class FileKeyPairProvider extends AbstractKeyPairProvider {
         this.passwordFinder = passwordFinder;
     }
 
-    protected KeyPair[] loadKeys() {
+    public KeyPair[] loadKeys() {
         if (!SecurityUtils.isBouncyCastleRegistered()) {
             throw new IllegalStateException("BouncyCastle must be registered as a JCE provider");
         }

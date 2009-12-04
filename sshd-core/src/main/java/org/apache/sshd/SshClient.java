@@ -18,14 +18,10 @@
  */
 package org.apache.sshd;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
+import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.security.KeyPair;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -55,6 +51,7 @@ import org.apache.sshd.common.cipher.AES256CBC;
 import org.apache.sshd.common.cipher.BlowfishCBC;
 import org.apache.sshd.common.cipher.TripleDESCBC;
 import org.apache.sshd.common.compression.CompressionNone;
+import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.common.mac.HMACMD5;
 import org.apache.sshd.common.mac.HMACMD596;
 import org.apache.sshd.common.mac.HMACSHA1;
@@ -68,6 +65,8 @@ import org.apache.sshd.common.signature.SignatureRSA;
 import org.apache.sshd.common.util.NoCloseInputStream;
 import org.apache.sshd.common.util.NoCloseOutputStream;
 import org.apache.sshd.common.util.SecurityUtils;
+import org.bouncycastle.openssl.PEMReader;
+import org.bouncycastle.openssl.PasswordFinder;
 
 /**
  * Entry point for the client side of the SSH protocol.
@@ -304,12 +303,46 @@ public class SshClient extends AbstractFactoryManager {
             ClientSession session = client.connect(host, port).await().getSession();
 
             int ret = ClientSession.WAIT_AUTH;
+
+            List<String> files = new ArrayList<String>();
+            File f = new File(System.getProperty("user.home"), ".ssh/id_dsa");
+            if (f.exists() && f.isFile() && f.canRead()) {
+                files.add(f.getAbsolutePath());
+            }
+            f = new File(System.getProperty("user.home"), ".ssh/id_rsa");
+            if (f.exists() && f.isFile() && f.canRead()) {
+                files.add(f.getAbsolutePath());
+            }
+            KeyPair[] keys = null;
+            try {
+                if (files.size() > 0) {
+                    keys = new FileKeyPairProvider(files.toArray(new String[0]), new PasswordFinder() {
+                        public char[] getPassword() {
+                            try {
+                                System.out.println("Enter password for private key: ");
+                                BufferedReader r = new BufferedReader(new InputStreamReader(System.in));
+                                String password = r.readLine();
+                                return password.toCharArray();
+                            } catch (IOException e) {
+                                return null;
+                            }
+                        }
+                    }).loadKeys();
+                }
+            } catch (Exception e) {
+            }
+            int nbKey = 0;
             while ((ret & ClientSession.WAIT_AUTH) != 0) {
-                System.out.print("Password:");
-                BufferedReader r = new BufferedReader(new InputStreamReader(System.in));
-                String password = r.readLine();
-                session.authPassword(login, password);
-                ret = session.waitFor(ClientSession.WAIT_AUTH | ClientSession.CLOSED | ClientSession.AUTHED, 0);
+                if (keys != null && nbKey < keys.length) {
+                    session.authPublicKey(login, keys[nbKey++]);
+                    ret = session.waitFor(ClientSession.WAIT_AUTH | ClientSession.CLOSED | ClientSession.AUTHED, 0);
+                } else {
+                    System.out.print("Password:");
+                    BufferedReader r = new BufferedReader(new InputStreamReader(System.in));
+                    String password = r.readLine();
+                    session.authPassword(login, password);
+                    ret = session.waitFor(ClientSession.WAIT_AUTH | ClientSession.CLOSED | ClientSession.AUTHED, 0);
+                }
             }
             if ((ret & ClientSession.CLOSED) != 0) {
                 System.err.println("error");

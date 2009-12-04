@@ -18,9 +18,11 @@
  */
 package org.apache.sshd;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.security.InvalidKeyException;
+import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
@@ -420,7 +422,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         }
 
         System.err.println("Starting SSHD on port " + port);
-
+                                                    
         SshServer sshd = SshServer.setUpDefaultServer();
         sshd.setPort(port);
         if (SecurityUtils.isBouncyCastleRegistered()) {
@@ -438,6 +440,12 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         sshd.setPasswordAuthenticator(new PasswordAuthenticator() {
             public boolean authenticate(String username, String password, ServerSession session) {
                 return username != null && username.equals(password);
+            }
+        });
+        sshd.setPublickeyAuthenticator(new PublickeyAuthenticator() {
+            public boolean authenticate(String username, PublicKey key, ServerSession session) {
+                //File f = new File("/Users/" + username + "/.ssh/authorized_keys");
+                return true;
             }
         });
         sshd.setTcpIpForwardFilter(new TcpIpForwardFilter() {

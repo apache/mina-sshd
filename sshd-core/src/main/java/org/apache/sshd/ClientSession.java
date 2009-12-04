@@ -19,6 +19,7 @@
 package org.apache.sshd;
 
 import java.io.IOException;
+import java.security.KeyPair;
 import java.security.PublicKey;
 
 import org.apache.sshd.client.future.AuthFuture;
@@ -30,7 +31,7 @@ import org.apache.sshd.common.future.CloseFuture;
  * A client session is established using the {@link SshClient}.
  * Once the session has been created, the user has to authenticate
  * using either {@link #authPassword(String, String)} or
- * {@link #authPublicKey(String, java.security.PublicKey)}.
+ * {@link #authPublicKey(String, java.security.KeyPair)}.
  *
  * From this session, channels can be created using the
  * {@link #createChannel(String)} method.  Multiple channels can
@@ -54,7 +55,7 @@ public interface ClientSession {
 
     AuthFuture authPassword(String username, String password) throws IOException;
 
-    AuthFuture authPublicKey(String username, PublicKey key) throws IOException;
+    AuthFuture authPublicKey(String username, KeyPair key) throws IOException;
 
     ClientChannel createChannel(String type) throws Exception;
 

@@ -23,14 +23,17 @@ import java.io.ByteArrayOutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.net.ServerSocket;
+import java.security.KeyPair;
 
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.OpenFuture;
+import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.common.util.BufferUtils;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
+import org.apache.sshd.util.BogusPublickeyAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.TeePipedOutputStream;
 import org.junit.After;
@@ -61,6 +64,7 @@ public class ClientTest {
         sshd.setKeyPairProvider(new FileKeyPairProvider(new String[] { "src/test/resources/hostkey.pem" }));
         sshd.setShellFactory(new EchoShellFactory());
         sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
+        sshd.setPublickeyAuthenticator(new BogusPublickeyAuthenticator());
         sshd.start();
     }
 
@@ -228,6 +232,17 @@ public class ClientTest {
         closeFuture.await();
         assertNotNull(openFuture.getException());
         assertTrue(closeFuture.isClosed());
+    }
+
+    @Test
+    public void testPublicKeyAuth() throws Exception {
+        SshClient client = SshClient.setUpDefaultClient();
+        client.start();
+        ClientSession session = client.connect("localhost", port).await().getSession();
+
+        KeyPair pair = new FileKeyPairProvider(new String[] { "src/test/resources/hostkey.pem" }).loadKey(KeyPairProvider.SSH_RSA);
+
+        assertTrue(session.authPublicKey("smx", pair).await().isSuccess());
     }
 
     public static void main(String[] args) throws Exception {
