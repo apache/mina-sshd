@@ -38,6 +38,7 @@
             <lineEnding>unix</lineEnding>
             <excludes>
                 <exclude>bin/sshd.sh</exclude>
+                <exclude>bin/ssh.sh</exclude>
             </excludes>
         </fileSet>
     </fileSets>
@@ -45,6 +46,12 @@
     <files>
         <file>
             <source>src/main/distribution/bin/sshd.sh</source>
+            <outputDirectory>/bin/</outputDirectory>
+            <fileMode>0755</fileMode>
+            <lineEnding>unix</lineEnding>
+        </file>
+        <file>
+            <source>src/main/distribution/bin/ssh.sh</source>
             <outputDirectory>/bin/</outputDirectory>
             <fileMode>0755</fileMode>
             <lineEnding>unix</lineEnding>
