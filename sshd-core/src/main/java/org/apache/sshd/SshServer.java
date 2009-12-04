@@ -108,6 +108,7 @@ import org.apache.sshd.server.shell.ProcessShellFactory;
 public class SshServer extends AbstractFactoryManager implements ServerFactoryManager {
 
     protected IoAcceptor acceptor;
+    protected String host;
     protected int port;
     protected int backlog = 50;
     protected boolean reuseAddress = true;
@@ -122,6 +123,14 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     protected TcpIpForwardFilter tcpIpForwardFilter;
 
     public SshServer() {
+    }
+
+    public String getHost() {
+        return host;
+    }
+
+    public void setHost(String host) {
+        this.host = host;
     }
 
     public int getPort() {
@@ -272,7 +281,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         handler.setServer(this);
         acceptor.setHandler(handler);
 
-        acceptor.bind(new InetSocketAddress(port));
+        acceptor.bind(host != null ? new InetSocketAddress(host, port) : new InetSocketAddress(port));
         if (port == 0) {
             port = ((InetSocketAddress) acceptor.getLocalAddress()).getPort();
         }
