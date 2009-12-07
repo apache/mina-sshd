@@ -304,6 +304,8 @@ public class SshClient extends AbstractFactoryManager {
 
             int ret = ClientSession.WAIT_AUTH;
 
+            KeyPair[] keys = null;
+			/*
             List<String> files = new ArrayList<String>();
             File f = new File(System.getProperty("user.home"), ".ssh/id_dsa");
             if (f.exists() && f.isFile() && f.canRead()) {
@@ -313,7 +315,6 @@ public class SshClient extends AbstractFactoryManager {
             if (f.exists() && f.isFile() && f.canRead()) {
                 files.add(f.getAbsolutePath());
             }
-            KeyPair[] keys = null;
             try {
                 if (files.size() > 0) {
                     keys = new FileKeyPairProvider(files.toArray(new String[0]), new PasswordFinder() {
@@ -331,6 +332,7 @@ public class SshClient extends AbstractFactoryManager {
                 }
             } catch (Exception e) {
             }
+			*/
             int nbKey = 0;
             while ((ret & ClientSession.WAIT_AUTH) != 0) {
                 if (keys != null && nbKey < keys.length) {
