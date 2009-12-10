@@ -92,7 +92,7 @@ public abstract class AbstractDHGServer implements KeyExchange {
         sig.init(kp.getPublic(), kp.getPrivate());
 
         buffer = new Buffer();
-        buffer.putPublicKey(kp.getPublic());
+        buffer.putRawPublicKey(kp.getPublic());
         K_S = buffer.getCompactData();
 
         buffer.clear();

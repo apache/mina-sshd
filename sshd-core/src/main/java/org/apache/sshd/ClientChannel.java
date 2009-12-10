@@ -26,7 +26,7 @@ import org.apache.sshd.common.future.CloseFuture;
 
 /**
  * A client channel used to communicate with
- * the SSH server.  Client cannels can be shells,
+ * the SSH server.  Client channels can be shells,
  * simple commands or subsystems
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>

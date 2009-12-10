@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 
+import org.apache.sshd.SshAgent;
 import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.PtyMode;
@@ -454,7 +455,10 @@ public class ChannelSession extends AbstractServerChannel {
 
     protected boolean handleAgentForwarding(Buffer buffer) throws IOException {
         boolean wantReply = buffer.getBoolean();
-        // TODO: start agent forwarding
+
+        int authSocket = ((ServerSession) session).initAgentForward();
+        addEnvVariable(SshAgent.SSH_AUTHSOCKET_ENV_NAME, Integer.toString(authSocket));
+
         if (wantReply) {
             buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS);
             buffer.putInt(recipient);

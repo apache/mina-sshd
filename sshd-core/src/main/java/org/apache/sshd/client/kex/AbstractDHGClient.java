@@ -98,7 +98,7 @@ public abstract class AbstractDHGClient implements KeyExchange {
         K = dh.getK();
 
         buffer = new Buffer(K_S);
-        PublicKey key = buffer.getPublicKey();
+        PublicKey key = buffer.getRawPublicKey();
         String keyAlg = (key instanceof RSAPublicKey) ? KeyPairProvider.SSH_RSA : KeyPairProvider.SSH_DSS;
 
         buffer = new Buffer();

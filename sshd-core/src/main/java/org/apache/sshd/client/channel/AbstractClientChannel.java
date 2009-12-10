@@ -99,6 +99,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
                     }
                 } else {
                     closeFuture.setClosed();
+                    lock.notifyAll();
                 }
             }
         }

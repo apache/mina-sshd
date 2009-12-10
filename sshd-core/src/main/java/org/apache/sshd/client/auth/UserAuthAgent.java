@@ -18,33 +18,49 @@
  */
 package org.apache.sshd.client.auth;
 
+import org.apache.sshd.SshAgent;
+import org.apache.sshd.agent.AgentClient;
+import org.apache.sshd.agent.AgentServer;
 import org.apache.sshd.client.UserAuth;
 import org.apache.sshd.client.session.ClientSessionImpl;
 import org.apache.sshd.common.KeyPairProvider;
-import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.Signature;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.util.Buffer;
-import org.apache.sshd.common.util.BufferUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.security.KeyPair;
 import java.security.PublicKey;
-import java.security.interfaces.DSAPublicKey;
 import java.security.interfaces.RSAPublicKey;
+import java.util.Iterator;
 
 /**
- * TODO Add javadoc
- *
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * Authentication delegating to an SSH agent
  */
-public class UserAuthPublicKey implements UserAuth {
+public class UserAuthAgent implements UserAuth {
 
     protected final Logger log = LoggerFactory.getLogger(getClass());
 
-    public UserAuthPublicKey(ClientSessionImpl session, String username, KeyPair key) throws IOException {
+    private final ClientSessionImpl session;
+    private final String username;
+    private final SshAgent agent;
+    private Iterator<SshAgent.Pair<PublicKey, String>> keys;
+
+    public UserAuthAgent(ClientSessionImpl session, String username) throws IOException {
+        this.session = session;
+        this.username = username;
+        String authSocket = session.getFactoryManager().getProperties().get(org.apache.sshd.SshAgent.SSH_AUTHSOCKET_ENV_NAME);
+        SshAgent agent = new AgentClient(authSocket);
+        this.agent = agent;
+        keys = agent.getIdentities().iterator();
+        sendNextKey();
+    }
+
+    protected void sendNextKey() throws IOException {
+        sendNextKey(keys.next().getFirst());
+    }
+
+    protected void sendNextKey(PublicKey key) throws IOException {
         try {
             log.info("Send SSH_MSG_USERAUTH_REQUEST for publickey");
             Buffer buffer = session.createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_REQUEST);
@@ -53,12 +69,10 @@ public class UserAuthPublicKey implements UserAuth {
             buffer.putString("ssh-connection");
             buffer.putString("publickey");
             buffer.putByte((byte) 1);
-            buffer.putString((key.getPublic() instanceof RSAPublicKey) ? KeyPairProvider.SSH_RSA : KeyPairProvider.SSH_DSS);
+            buffer.putString((key instanceof RSAPublicKey) ? KeyPairProvider.SSH_RSA : KeyPairProvider.SSH_DSS);
             int pos2 = buffer.wpos();
-            buffer.putPublicKey(key.getPublic());
+            buffer.putPublicKey(key);
 
-            Signature verif = NamedFactory.Utils.create(session.getFactoryManager().getSignatureFactories(), (key.getPublic() instanceof RSAPublicKey) ? KeyPairProvider.SSH_RSA : KeyPairProvider.SSH_DSS);
-            verif.init(key.getPublic(), key.getPrivate());
 
             Buffer bs = new Buffer();
             bs.putString(session.getKex().getH());
@@ -67,14 +81,13 @@ public class UserAuthPublicKey implements UserAuth {
             bs.putString("ssh-connection");
             bs.putString("publickey");
             bs.putByte((byte) 1);
-            bs.putString((key.getPublic() instanceof RSAPublicKey) ? KeyPairProvider.SSH_RSA : KeyPairProvider.SSH_DSS);
-            bs.putPublicKey(key.getPublic());
-            verif.update(bs.array(), bs.rpos(), bs.available());
+            bs.putString((key instanceof RSAPublicKey) ? KeyPairProvider.SSH_RSA : KeyPairProvider.SSH_DSS);
+            bs.putPublicKey(key);
 
-            bs = new Buffer();
-            bs.putString((key.getPublic() instanceof RSAPublicKey) ? KeyPairProvider.SSH_RSA : KeyPairProvider.SSH_DSS);
-            bs.putBytes(verif.sign());
-            buffer.putBytes(bs.array(), bs.rpos(), bs.available());
+            Buffer bs2 = new Buffer();
+            bs2.putString((key instanceof RSAPublicKey) ? KeyPairProvider.SSH_RSA : KeyPairProvider.SSH_DSS);
+            bs2.putBytes(agent.sign(key, bs.getCompactData()));
+            buffer.putBytes(bs2.array(), bs2.rpos(), bs2.available());
 
             session.writePacket(buffer);
         } catch (IOException e) {
@@ -90,11 +103,14 @@ public class UserAuthPublicKey implements UserAuth {
         if (cmd == SshConstants.Message.SSH_MSG_USERAUTH_SUCCESS) {
             return Result.Success;
         } if (cmd == SshConstants.Message.SSH_MSG_USERAUTH_FAILURE) {
+            if (keys.hasNext()) {
+                sendNextKey(keys.next().getFirst());
+                return Result.Continued;
+            }
             return Result.Failure;
         } else {
             // TODO: check packets
             return Result.Continued;
         }
     }
-
 }

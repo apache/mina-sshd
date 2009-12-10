@@ -54,7 +54,7 @@ public class UserAuthPublicKey implements UserAuth {
         int oldPos = buffer.rpos();
         int len = buffer.getInt();
         buffer.wpos(buffer.rpos() + len);
-        PublicKey key = buffer.getPublicKey();
+        PublicKey key = buffer.getRawPublicKey();
         String keyAlg = (key instanceof RSAPublicKey) ? KeyPairProvider.SSH_RSA : KeyPairProvider.SSH_DSS;
 
         Signature verif = NamedFactory.Utils.create(session.getFactoryManager().getSignatureFactories(), keyAlg);

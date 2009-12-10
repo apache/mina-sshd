@@ -68,6 +68,7 @@ public class ServerSession extends AbstractSession {
     private int authTimeout = 10 * 60 * 1000; // 10 minutes in milliseconds
     private boolean allowMoreSessions = true;
     private final TcpipForwardSupport tcpipForward;
+    private final AgentForwardSupport agentForward;
 
     private List<NamedFactory<UserAuth>> userAuthFactories;
 
@@ -80,6 +81,7 @@ public class ServerSession extends AbstractSession {
         maxAuthRequests = getIntProperty(FactoryManager.MAX_AUTH_REQUESTS, maxAuthRequests);
         authTimeout = getIntProperty(FactoryManager.AUTH_TIMEOUT, authTimeout);
         tcpipForward = new TcpipForwardSupport(this);
+        agentForward = new AgentForwardSupport(this);
         log.info("Session created...");
         sendServerIdentification();
         sendKexInit();
@@ -89,6 +91,7 @@ public class ServerSession extends AbstractSession {
     public CloseFuture close(boolean immediately) {
         unscheduleAuthTimer();
         tcpipForward.close();
+        agentForward.close();
         return super.close(immediately);
     }
 
@@ -450,6 +453,10 @@ public class ServerSession extends AbstractSession {
             buffer = createBuffer(SshConstants.Message.SSH_MSG_REQUEST_FAILURE);
             writePacket(buffer);
         }
+    }
+
+    public int initAgentForward() throws IOException {
+        return agentForward.initialize();
     }
 
 

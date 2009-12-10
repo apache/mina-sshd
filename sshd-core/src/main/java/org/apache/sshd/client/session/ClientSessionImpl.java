@@ -20,12 +20,12 @@ package org.apache.sshd.client.session;
 
 import java.io.IOException;
 import java.security.KeyPair;
-import java.security.PublicKey;
 
 import org.apache.mina.core.session.IoSession;
 import org.apache.sshd.ClientChannel;
 import org.apache.sshd.ClientSession;
 import org.apache.sshd.client.UserAuth;
+import org.apache.sshd.client.auth.UserAuthAgent;
 import org.apache.sshd.client.auth.UserAuthPassword;
 import org.apache.sshd.client.auth.UserAuthPublicKey;
 import org.apache.sshd.client.channel.AbstractClientChannel;
@@ -33,11 +33,13 @@ import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.DefaultAuthFuture;
+import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.*;
 import org.apache.sshd.common.future.CloseFuture;
+import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.Buffer;
-import org.bouncycastle.asn1.x9.X9ECParameters;
+import org.apache.sshd.server.channel.OpenChannelException;
 
 /**
  * TODO Add javadoc
@@ -63,6 +65,28 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
 
     public KeyExchange getKex() {
         return kex;
+    }
+
+    public AuthFuture authAgent(String username) throws IOException {
+        synchronized (lock) {
+            if (closeFuture.isClosed()) {
+                throw new IllegalStateException("Session is closed");
+            }
+            if (authed) {
+                throw new IllegalStateException("User authentication has already been performed");
+            }
+            if (userAuth != null) {
+                throw new IllegalStateException("A user authentication request is already pending");
+            }
+            waitFor(CLOSED | WAIT_AUTH, 0);
+            if (closeFuture.isClosed()) {
+                throw new IllegalStateException("Session is closed");
+            }
+            authFuture = new DefaultAuthFuture(lock);
+            userAuth = new UserAuthAgent(this, username);
+            setState(ClientSessionImpl.State.UserAuth);
+            return authFuture;
+        }
     }
 
     public AuthFuture authPassword(String username, String password) throws IOException {
@@ -229,6 +253,9 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
                         break;
                     case Running:
                         switch (cmd) {
+                            case SSH_MSG_CHANNEL_OPEN:
+                                channelOpen(buffer);
+                                break;
                             case SSH_MSG_CHANNEL_OPEN_CONFIRMATION:
                                 channelOpenConfirmation(buffer);
                                 break;
@@ -256,9 +283,12 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
                             case SSH_MSG_CHANNEL_CLOSE:
                                 channelClose(buffer);
                                 break;
-                            // TODO: handle other requests
+                            default:
+                                throw new IllegalStateException("Unsupported command: " + cmd);
                         }
                         break;
+                    default:
+                        throw new IllegalStateException("Unsupported state: " + state);
                 }
         }
     }
@@ -348,6 +378,68 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         Buffer buffer = createBuffer(SshConstants.Message.SSH_MSG_SERVICE_REQUEST);
         buffer.putString("ssh-userauth");
         writePacket(buffer);
+    }
+
+    private void channelOpen(Buffer buffer) throws Exception {
+        String type = buffer.getString();
+        final int id = buffer.getInt();
+        final int rwsize = buffer.getInt();
+        final int rmpsize = buffer.getInt();
+
+        log.info("Received SSH_MSG_CHANNEL_OPEN {}", type);
+
+        if (closing) {
+            Buffer buf = createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_FAILURE);
+            buf.putInt(id);
+            buf.putInt(SshConstants.SSH_OPEN_CONNECT_FAILED);
+            buf.putString("SSH server is shutting down: " + type);
+            buf.putString("");
+            writePacket(buf);
+            return;
+        }
+
+        final Channel channel = NamedFactory.Utils.create(getFactoryManager().getChannelFactories(), type);
+        if (channel == null) {
+            Buffer buf = createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_FAILURE);
+            buf.putInt(id);
+            buf.putInt(SshConstants.SSH_OPEN_UNKNOWN_CHANNEL_TYPE);
+            buf.putString("Unsupported channel type: " + type);
+            buf.putString("");
+            writePacket(buf);
+            return;
+        }
+
+        final int channelId = getNextChannelId();
+        channels.put(channelId, channel);
+        channel.init(this, channelId);
+        channel.open(id, rwsize, rmpsize, buffer).addListener(new SshFutureListener<OpenFuture>() {
+            public void operationComplete(OpenFuture future) {
+                try {
+                    if (future.isOpened()) {
+                        Buffer buf = createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_CONFIRMATION);
+                        buf.putInt(id);
+                        buf.putInt(channelId);
+                        buf.putInt(channel.getLocalWindow().getSize());
+                        buf.putInt(channel.getLocalWindow().getPacketSize());
+                        writePacket(buf);
+                    } else if (future.getException() != null) {
+                        Buffer buf = createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_FAILURE);
+                        buf.putInt(id);
+                        if (future.getException() instanceof OpenChannelException) {
+                            buf.putInt(((OpenChannelException)future.getException()).getReasonCode());
+                            buf.putString(future.getException().getMessage());
+                        } else {
+                            buf.putInt(0);
+                            buf.putString("Error opening channel: " + future.getException().getMessage());
+                        }
+                        buf.putString("");
+                        writePacket(buf);
+                    }
+                } catch (IOException e) {
+                    exceptionCaught(e);
+                }
+            }
+        });
     }
 
 }

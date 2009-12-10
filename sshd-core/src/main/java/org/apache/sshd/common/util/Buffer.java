@@ -19,19 +19,14 @@
 package org.apache.sshd.common.util;
 
 import java.math.BigInteger;
-import java.security.KeyFactory;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.security.PublicKey;
-import java.security.interfaces.DSAPublicKey;
-import java.security.interfaces.RSAPublicKey;
-import java.security.spec.DSAPublicKeySpec;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.RSAPublicKeySpec;
+import java.security.*;
+import java.security.interfaces.*;
+import java.security.spec.*;
 
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.SshException;
 
 /**
  * TODO Add javadoc
@@ -55,13 +50,21 @@ public final class Buffer {
     }
 
     public Buffer(byte[] data) {
-        this(data, true);
+        this(data, 0, data.length, true);
     }
 
     public Buffer(byte[] data, boolean read) {
+        this(data, 0, data.length, read);
+    }
+
+    public Buffer(byte[] data, int off, int len) {
+        this(data, off, len, true);
+    }
+
+    public Buffer(byte[] data, int off, int len, boolean read) {
         this.data = data;
-        this.rpos = 0;
-        this.wpos = read ? data.length : 0;
+        this.rpos = off;
+        this.wpos = read ? len : 0;
     }
 
     @Override
@@ -196,25 +199,83 @@ public final class Buffer {
         rpos += len;
     }
 
-    public PublicKey getPublicKey() throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchProviderException {
-        PublicKey key;
-        String keyAlg = getString();
-        if (KeyPairProvider.SSH_RSA.equals(keyAlg)) {
-            BigInteger e = getMPInt();
-            BigInteger n = getMPInt();
-            KeyFactory keyFactory = SecurityUtils.getKeyFactory("RSA");
-            key = keyFactory.generatePublic(new RSAPublicKeySpec(n, e));
-        } else if (KeyPairProvider.SSH_DSS.equals(keyAlg)) {
-            BigInteger p = getMPInt();
-            BigInteger q = getMPInt();
-            BigInteger g = getMPInt();
-            BigInteger y = getMPInt();
-            KeyFactory keyFactory = SecurityUtils.getKeyFactory("DSA");
-            key = keyFactory.generatePublic(new DSAPublicKeySpec(y, p, q, g));
-        } else {
-            throw new IllegalStateException("Unsupported algorithm: " + keyAlg);
+    public PublicKey getPublicKey() throws SshException {
+        int ow = wpos;
+        int len = getInt();
+        wpos = rpos + len;
+        try {
+            return getRawPublicKey();
+        } finally {
+            wpos = ow;
         }
-        return key;
+    }
+
+    public PublicKey getRawPublicKey() throws SshException {
+        try {
+            PublicKey key;
+            String keyAlg = getString();
+            if (KeyPairProvider.SSH_RSA.equals(keyAlg)) {
+                BigInteger e = getMPInt();
+                BigInteger n = getMPInt();
+                KeyFactory keyFactory = SecurityUtils.getKeyFactory("RSA");
+                key = keyFactory.generatePublic(new RSAPublicKeySpec(n, e));
+            } else if (KeyPairProvider.SSH_DSS.equals(keyAlg)) {
+                BigInteger p = getMPInt();
+                BigInteger q = getMPInt();
+                BigInteger g = getMPInt();
+                BigInteger y = getMPInt();
+                KeyFactory keyFactory = SecurityUtils.getKeyFactory("DSA");
+                key = keyFactory.generatePublic(new DSAPublicKeySpec(y, p, q, g));
+            } else {
+                throw new IllegalStateException("Unsupported algorithm: " + keyAlg);
+            }
+            return key;
+        } catch (InvalidKeySpecException e) {
+            throw new SshException(e);
+        } catch (NoSuchAlgorithmException e) {
+            throw new SshException(e);
+        } catch (NoSuchProviderException e) {
+            throw new SshException(e);
+        }
+    }
+
+    public KeyPair getKeyPair() throws SshException {
+        try {
+            PublicKey pub;
+            PrivateKey prv;
+            String keyAlg = getString();
+            if (KeyPairProvider.SSH_RSA.equals(keyAlg)) {
+                BigInteger e = getMPInt();
+                BigInteger n = getMPInt();
+                BigInteger d = getMPInt();
+                BigInteger qInv = getMPInt();
+                BigInteger q = getMPInt();
+                BigInteger p = getMPInt();
+                BigInteger dP = d.remainder(p.subtract(BigInteger.valueOf(1)));
+                BigInteger dQ = d.remainder(q.subtract(BigInteger.valueOf(1)));
+                KeyFactory keyFactory = SecurityUtils.getKeyFactory("RSA");
+                pub = keyFactory.generatePublic(new RSAPublicKeySpec(n, e));
+                prv = keyFactory.generatePrivate(new RSAPrivateCrtKeySpec(n, e, d, p, q, dP, dQ, qInv));
+            } else if (KeyPairProvider.SSH_DSS.equals(keyAlg)) {
+                BigInteger p = getMPInt();
+                BigInteger q = getMPInt();
+                BigInteger g = getMPInt();
+                BigInteger y = getMPInt();
+                BigInteger x = getMPInt();
+                KeyFactory keyFactory = SecurityUtils.getKeyFactory("DSA");
+                pub = keyFactory.generatePublic(new DSAPublicKeySpec(y, p, q, g));
+                prv = keyFactory.generatePrivate(new DSAPrivateKeySpec(x, p, q, g));
+            } else {
+                throw new IllegalStateException("Unsupported algorithm: " + keyAlg);
+            }
+            return new KeyPair(pub, prv);
+        } catch (InvalidKeySpecException e) {
+            throw new SshException(e);
+        } catch (NoSuchAlgorithmException e) {
+            throw new SshException(e);
+        } catch (NoSuchProviderException e) {
+            throw new SshException(e);
+        }
     }
 
     public SshConstants.Message getCommand() {
@@ -314,6 +375,17 @@ public final class Buffer {
     }
 
     public void putPublicKey(PublicKey key) {
+        int ow = wpos;
+        putInt(0);
+        int ow1 = wpos;
+        putRawPublicKey(key);
+        int ow2 = wpos;
+        wpos = ow;
+        putInt(ow2 - ow1);
+        wpos = ow2;
+    }
+
+    public void putRawPublicKey(PublicKey key) {
         if (key instanceof RSAPublicKey) {
             putString(KeyPairProvider.SSH_RSA);
             putMPInt(((RSAPublicKey) key).getPublicExponent());
@@ -326,6 +398,27 @@ public final class Buffer {
             putMPInt(((DSAPublicKey) key).getY());
         } else {
             throw new IllegalStateException("Unsupported algorithm: " + key.getAlgorithm());
+        }
+    }
+
+    public void putKeyPair(KeyPair key) {
+        if (key.getPrivate() instanceof RSAPrivateCrtKey) {
+            putString(KeyPairProvider.SSH_RSA);
+            putMPInt(((RSAPublicKey) key.getPublic()).getPublicExponent());
+            putMPInt(((RSAPublicKey) key.getPublic()).getModulus());
+            putMPInt(((RSAPrivateCrtKey) key.getPrivate()).getPrivateExponent());
+            putMPInt(((RSAPrivateCrtKey) key.getPrivate()).getCrtCoefficient());
+            putMPInt(((RSAPrivateCrtKey) key.getPrivate()).getPrimeQ());
+            putMPInt(((RSAPrivateCrtKey) key.getPrivate()).getPrimeP());
+        } else if (key.getPublic() instanceof DSAPublicKey) {
+            putString(KeyPairProvider.SSH_DSS);
+            putMPInt(((DSAPublicKey) key.getPublic()).getParams().getP());
+            putMPInt(((DSAPublicKey) key.getPublic()).getParams().getQ());
+            putMPInt(((DSAPublicKey) key.getPublic()).getParams().getG());
+            putMPInt(((DSAPublicKey) key.getPublic()).getY());
+            putMPInt(((DSAPrivateKey) key.getPrivate()).getX());
+        } else {
+            throw new IllegalStateException("Unsupported algorithm: " + key.getPublic().getAlgorithm());
         }
     }
 

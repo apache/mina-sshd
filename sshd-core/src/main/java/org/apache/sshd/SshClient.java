@@ -32,19 +32,17 @@ import java.security.InvalidKeyException;
 import org.apache.mina.core.future.IoFutureListener;
 import org.apache.mina.core.service.IoConnector;
 import org.apache.mina.transport.socket.nio.NioSocketConnector;
+import org.apache.sshd.agent.AgentClient;
+import org.apache.sshd.agent.AgentServer;
 import org.apache.sshd.client.SessionFactory;
+import org.apache.sshd.client.channel.ChannelAgentForwarding;
+import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.future.ConnectFuture;
 import org.apache.sshd.client.future.DefaultConnectFuture;
 import org.apache.sshd.client.kex.DHG1;
 import org.apache.sshd.client.kex.DHG14;
 import org.apache.sshd.client.session.ClientSessionImpl;
-import org.apache.sshd.common.AbstractFactoryManager;
-import org.apache.sshd.common.Cipher;
-import org.apache.sshd.common.Compression;
-import org.apache.sshd.common.KeyExchange;
-import org.apache.sshd.common.Mac;
-import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.Signature;
+import org.apache.sshd.common.*;
 import org.apache.sshd.common.cipher.AES128CBC;
 import org.apache.sshd.common.cipher.AES192CBC;
 import org.apache.sshd.common.cipher.AES256CBC;
@@ -65,7 +63,6 @@ import org.apache.sshd.common.signature.SignatureRSA;
 import org.apache.sshd.common.util.NoCloseInputStream;
 import org.apache.sshd.common.util.NoCloseOutputStream;
 import org.apache.sshd.common.util.SecurityUtils;
-import org.bouncycastle.openssl.PEMReader;
 import org.bouncycastle.openssl.PasswordFinder;
 
 /**
@@ -211,6 +208,8 @@ public class SshClient extends AbstractFactoryManager {
         client.setSignatureFactories(Arrays.<NamedFactory<Signature>>asList(
                 new SignatureDSA.Factory(),
                 new SignatureRSA.Factory()));
+        client.setChannelFactories(Arrays.<NamedFactory<Channel>>asList(
+                new ChannelAgentForwarding.Factory()));
         return client;
     }
 
@@ -246,6 +245,7 @@ public class SshClient extends AbstractFactoryManager {
         int port = 22;
         String host = null;
         String login = System.getProperty("user.name");
+        boolean agentForward = false;
         List<String> command = null;
         int logLevel = 0;
         boolean error = false;
@@ -271,6 +271,10 @@ public class SshClient extends AbstractFactoryManager {
                 logLevel = 2;
             } else if (command == null && "-vvv".equals(args[i])) {
                 logLevel = 3;
+            } else if ("-A".equals(args[i])) {
+                agentForward = true;
+            } else if ("-a".equals(args[i])) {
+                agentForward = false;
             } else if (command == null && args[i].startsWith("-")) {
                 System.err.println("illegal option: " + args[i]);
                 error = true;
@@ -291,7 +295,7 @@ public class SshClient extends AbstractFactoryManager {
             error = true;
         }
         if (error) {
-            System.err.println("usage: ssh [-v[v][v]] [-l login] [-p port] hostname [command]");
+            System.err.println("usage: ssh [-A|-a] [-v[v][v]] [-l login] [-p port] hostname [command]");
             System.exit(-1);
         }
 
@@ -299,13 +303,18 @@ public class SshClient extends AbstractFactoryManager {
 
         SshClient client = SshClient.setUpDefaultClient();
         client.start();
+
         try {
             ClientSession session = client.connect(host, port).await().getSession();
 
             int ret = ClientSession.WAIT_AUTH;
 
             KeyPair[] keys = null;
-			/*
+            /*
+            AgentServer server = new AgentServer();
+            String authSock = server.start();
+            client.getProperties().put(org.apache.sshd.SshAgent.SSH_AUTHSOCKET_ENV_NAME, authSock);
+
             List<String> files = new ArrayList<String>();
             File f = new File(System.getProperty("user.home"), ".ssh/id_dsa");
             if (f.exists() && f.isFile() && f.canRead()) {
@@ -332,11 +341,15 @@ public class SshClient extends AbstractFactoryManager {
                 }
             } catch (Exception e) {
             }
-			*/
-            int nbKey = 0;
+            SshAgent agent = new AgentClient(authSock);
+            for (KeyPair key : keys) {
+                agent.addIdentity(key, "");
+            }
+            agent.close();
+            */
             while ((ret & ClientSession.WAIT_AUTH) != 0) {
-                if (keys != null && nbKey < keys.length) {
-                    session.authPublicKey(login, keys[nbKey++]);
+                if (keys != null) {
+                    session.authAgent(login);
                     ret = session.waitFor(ClientSession.WAIT_AUTH | ClientSession.CLOSED | ClientSession.AUTHED, 0);
                 } else {
                     System.out.print("Password:");
@@ -353,6 +366,7 @@ public class SshClient extends AbstractFactoryManager {
             ClientChannel channel;
             if (command == null) {
                 channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
+                ((ChannelShell) channel).setAgentForwarding(agentForward);
                 channel.setIn(new NoCloseInputStream(System.in));
             } else {
                 channel = session.createChannel(ClientChannel.CHANNEL_EXEC);

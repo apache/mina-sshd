@@ -53,6 +53,8 @@ public interface ClientSession {
     int WAIT_AUTH =   0x0004;
     int AUTHED =      0x0008;
 
+    AuthFuture authAgent(String username) throws IOException;
+
     AuthFuture authPassword(String username, String password) throws IOException;
 
     AuthFuture authPublicKey(String username, KeyPair key) throws IOException;

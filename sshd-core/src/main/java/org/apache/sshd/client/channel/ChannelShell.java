@@ -33,6 +33,7 @@ import org.apache.sshd.common.util.SttySupport;
  */
 public class ChannelShell extends ChannelSession {
 
+    private boolean agentForwarding;
     private String ptyType;
     private int ptyColumns;
     private int ptyLines;
@@ -73,6 +74,14 @@ public class ChannelShell extends ChannelSession {
         } catch (Throwable t) {
             // Ignore exceptions
         }
+    }
+
+    public boolean isAgentForwarding() {
+        return agentForwarding;
+    }
+
+    public void setAgentForwarding(boolean agentForwarding) {
+        this.agentForwarding = agentForwarding;
     }
 
     public String getPtyType() {
@@ -127,6 +136,15 @@ public class ChannelShell extends ChannelSession {
         super.doOpen();
 
         Buffer buffer;
+
+        if (agentForwarding) {
+            log.info("Send agent forwarding request");
+            buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_REQUEST);
+            buffer.putInt(recipient);
+            buffer.putString("auth-agent-req@openssh.com");
+            buffer.putBoolean(false);
+            session.writePacket(buffer);
+        }
 
         log.info("Send SSH_MSG_CHANNEL_REQUEST pty-req");
         buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_REQUEST);
