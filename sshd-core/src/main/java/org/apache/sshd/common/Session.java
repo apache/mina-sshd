@@ -68,9 +68,10 @@ public interface Session {
      * (5 bytes) for the packet header.
      *
      * @param cmd the SSH command
+     * @param estimatedSize estimated number of bytes the buffer will hold, 0 if unknown.
      * @return a new buffer ready for write
      */
-    Buffer createBuffer(SshConstants.Message cmd);
+    Buffer createBuffer(SshConstants.Message cmd, int estimatedSize);
 
     /**
      * Encode and send the given buffer.

@@ -72,7 +72,7 @@ public class ChannelSession extends AbstractClientChannel {
     protected void pumpInputStream() {
         try {
             while (!closeFuture.isClosed()) {
-                Buffer buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_DATA);
+                Buffer buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_DATA, 0);
                 buffer.putInt(recipient);
                 int wpos1 = buffer.wpos(); // keep buffer position to write data length later
                 buffer.putInt(0);

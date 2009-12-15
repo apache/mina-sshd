@@ -72,7 +72,7 @@ public class UserAuthPublicKey implements UserAuth {
             return false;
         }
         if (!hasSig) {
-            Buffer buf = session.createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_PK_OK);
+            Buffer buf = session.createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_PK_OK, 0);
             buf.putString(alg);
             buf.putRawBytes(buffer.array(), oldPos, 4 + len);
             session.writePacket(buf);

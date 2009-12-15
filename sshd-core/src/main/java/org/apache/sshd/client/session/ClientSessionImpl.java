@@ -375,7 +375,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
 
     private void sendAuthRequest() throws Exception {
         log.info("Send SSH_MSG_SERVICE_REQUEST for ssh-userauth");
-        Buffer buffer = createBuffer(SshConstants.Message.SSH_MSG_SERVICE_REQUEST);
+        Buffer buffer = createBuffer(SshConstants.Message.SSH_MSG_SERVICE_REQUEST, 0);
         buffer.putString("ssh-userauth");
         writePacket(buffer);
     }
@@ -389,7 +389,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         log.info("Received SSH_MSG_CHANNEL_OPEN {}", type);
 
         if (closing) {
-            Buffer buf = createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_FAILURE);
+            Buffer buf = createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_FAILURE, 0);
             buf.putInt(id);
             buf.putInt(SshConstants.SSH_OPEN_CONNECT_FAILED);
             buf.putString("SSH server is shutting down: " + type);
@@ -400,7 +400,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
 
         final Channel channel = NamedFactory.Utils.create(getFactoryManager().getChannelFactories(), type);
         if (channel == null) {
-            Buffer buf = createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_FAILURE);
+            Buffer buf = createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_FAILURE, 0);
             buf.putInt(id);
             buf.putInt(SshConstants.SSH_OPEN_UNKNOWN_CHANNEL_TYPE);
             buf.putString("Unsupported channel type: " + type);
@@ -416,14 +416,14 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
             public void operationComplete(OpenFuture future) {
                 try {
                     if (future.isOpened()) {
-                        Buffer buf = createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_CONFIRMATION);
+                        Buffer buf = createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_CONFIRMATION, 0);
                         buf.putInt(id);
                         buf.putInt(channelId);
                         buf.putInt(channel.getLocalWindow().getSize());
                         buf.putInt(channel.getLocalWindow().getPacketSize());
                         writePacket(buf);
                     } else if (future.getException() != null) {
-                        Buffer buf = createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_FAILURE);
+                        Buffer buf = createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_FAILURE, 0);
                         buf.putInt(id);
                         if (future.getException() instanceof OpenChannelException) {
                             buf.putInt(((OpenChannelException)future.getException()).getReasonCode());

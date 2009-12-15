@@ -165,7 +165,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         }
         openFuture = new DefaultOpenFuture(lock);
         log.info("Send SSH_MSG_CHANNEL_OPEN on channel {}", id);
-        Buffer buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN);
+        Buffer buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN, 0);
         buffer.putString(type);
         buffer.putInt(id);
         buffer.putInt(localWindow.getSize());

@@ -92,7 +92,7 @@ public abstract class AbstractChannel implements Channel {
                     if (!closing) {
                         closing = true;
                         log.info("Send SSH_MSG_CHANNEL_CLOSE on channel {}", id);
-                        Buffer buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_CLOSE);
+                        Buffer buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_CLOSE, 0);
                         buffer.putInt(recipient);
                         session.writePacket(buffer);
                     }
@@ -134,7 +134,7 @@ public abstract class AbstractChannel implements Channel {
         // Only accept extended data for stderr
         if (ex != 1) {
             log.info("Send SSH_MSG_CHANNEL_FAILURE on channel {}", id);
-            buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_FAILURE);
+            buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_FAILURE, 0);
             buffer.putInt(recipient);
             session.writePacket(buffer);
             return;
@@ -175,7 +175,7 @@ public abstract class AbstractChannel implements Channel {
 
     protected void sendEof() throws IOException {
         log.info("Send SSH_MSG_CHANNEL_EOF on channel {}", id);
-        Buffer buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_EOF);
+        Buffer buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_EOF, 0);
         buffer.putInt(recipient);
         session.writePacket(buffer);
     }
@@ -188,7 +188,7 @@ public abstract class AbstractChannel implements Channel {
 
     protected void sendWindowAdjust(int len) throws IOException {
         log.info("Send SSH_MSG_CHANNEL_WINDOW_ADJUST on channel {}", id);
-        Buffer buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_WINDOW_ADJUST);
+        Buffer buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_WINDOW_ADJUST, 0);
         buffer.putInt(recipient);
         buffer.putInt(len);
         session.writePacket(buffer);

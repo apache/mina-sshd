@@ -41,6 +41,7 @@ public class ChannelOutputStream extends OutputStream {
     private Buffer buffer;
     private boolean closed;
     private int bufferLength;
+    private int lastSize;
 
     public ChannelOutputStream(AbstractChannel channel, Window remoteWindow, Logger log, SshConstants.Message cmd) {
         this.channel = channel;
@@ -77,6 +78,7 @@ public class ChannelOutputStream extends OutputStream {
                 buf.wpos(cmd == SshConstants.Message.SSH_MSG_CHANNEL_EXTENDED_DATA ? 14 : 10);
                 buf.putInt(length);
                 buf.wpos(buf.wpos() + length);
+                lastSize = Math.max(length, total - length);
                 newBuffer();
                 if (total > length) {
                     buffer.putRawBytes(buf.array(), pos - (total - length), total - length);
@@ -104,7 +106,7 @@ public class ChannelOutputStream extends OutputStream {
     }
 
     private void newBuffer() {
-        buffer = channel.getSession().createBuffer(cmd);
+        buffer = channel.getSession().createBuffer(cmd, lastSize <= 0 ? 0 : 12 + lastSize);
         buffer.putInt(channel.getRecipient());
         if (cmd == SshConstants.Message.SSH_MSG_CHANNEL_EXTENDED_DATA) {
             buffer.putInt(1);

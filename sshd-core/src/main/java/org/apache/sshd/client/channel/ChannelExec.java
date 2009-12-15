@@ -78,7 +78,7 @@ public class ChannelExec extends ChannelSession {
         }
 
         log.info("Send SSH_MSG_CHANNEL_REQUEST exec");
-        buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_REQUEST);
+        buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_REQUEST, 0);
         buffer.putInt(recipient);
         buffer.putString("exec");
         buffer.putBoolean(false);

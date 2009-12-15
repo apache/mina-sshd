@@ -83,7 +83,7 @@ public class TcpipForwardSupport extends IoHandlerAdapter {
         final TcpIpForwardFilter filter = session.getServerFactoryManager().getTcpIpForwardFilter();
         if (addr == null || filter == null || !filter.canListen(addr, session)) {
             if (wantReply) {
-                buffer = session.createBuffer(SshConstants.Message.SSH_MSG_REQUEST_FAILURE);
+                buffer = session.createBuffer(SshConstants.Message.SSH_MSG_REQUEST_FAILURE, 0);
                 session.writePacket(buffer);
             }
             return;
@@ -98,7 +98,7 @@ public class TcpipForwardSupport extends IoHandlerAdapter {
                 close();
             }
             if (wantReply) {
-                buffer = session.createBuffer(SshConstants.Message.SSH_MSG_REQUEST_FAILURE);
+                buffer = session.createBuffer(SshConstants.Message.SSH_MSG_REQUEST_FAILURE, 0);
                 session.writePacket(buffer);
             }
             return;
@@ -112,7 +112,7 @@ public class TcpipForwardSupport extends IoHandlerAdapter {
             }
         }
         if (wantReply){
-            buffer = session.createBuffer(SshConstants.Message.SSH_MSG_REQUEST_SUCCESS);
+            buffer = session.createBuffer(SshConstants.Message.SSH_MSG_REQUEST_SUCCESS, 0);
             buffer.putInt(port);
             session.writePacket(buffer);
         }
@@ -125,7 +125,7 @@ public class TcpipForwardSupport extends IoHandlerAdapter {
             acceptor.unbind(new InetSocketAddress(address, port));
         }
         if (wantReply) {
-            buffer = session.createBuffer(SshConstants.Message.SSH_MSG_REQUEST_SUCCESS);
+            buffer = session.createBuffer(SshConstants.Message.SSH_MSG_REQUEST_SUCCESS, 0);
             session.writePacket(buffer);
         }
     }
@@ -184,7 +184,7 @@ public class TcpipForwardSupport extends IoHandlerAdapter {
             }
             openFuture = new DefaultOpenFuture(lock);
             log.info("Send SSH_MSG_CHANNEL_OPEN on channel {}", id);
-            Buffer buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN);
+            Buffer buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN, 0);
             buffer.putString(type);
             buffer.putInt(id);
             buffer.putInt(localWindow.getSize());

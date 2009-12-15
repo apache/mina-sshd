@@ -63,7 +63,7 @@ public class UserAuthAgent implements UserAuth {
     protected void sendNextKey(PublicKey key) throws IOException {
         try {
             log.info("Send SSH_MSG_USERAUTH_REQUEST for publickey");
-            Buffer buffer = session.createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_REQUEST);
+            Buffer buffer = session.createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_REQUEST, 0);
             int pos1 = buffer.wpos() - 1;
             buffer.putString(username);
             buffer.putString("ssh-connection");

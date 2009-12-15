@@ -336,10 +336,31 @@ public abstract class AbstractSession implements Session {
      * (5 bytes) for the packet header.
      *
      * @param cmd the SSH command
+     * @param len estimated number of bytes the buffer will hold, 0 if unknown.
      * @return a new buffer ready for write
      */
-    public Buffer createBuffer(SshConstants.Message cmd) {
-        Buffer buffer = new Buffer();
+    public Buffer createBuffer(SshConstants.Message cmd, int len) {
+        Buffer buffer;
+        if (len <= 0) {
+            buffer = new Buffer();
+        } else {
+            // Since the caller claims to know how many bytes they will need
+            // increase their request to account for our headers/footers if
+            // they actually send exactly this amount.
+            //
+            int bsize = outCipherSize;
+            int oldLen = len;
+            len += 5;
+            int pad = (-len) & (bsize - 1);
+            if (pad < bsize) {
+                pad += bsize;
+            }
+            len = len + pad - 4;
+            if (outMac != null) {
+                len += outMac.getBlockSize();
+            }
+            buffer = new Buffer(new byte[Math.max(len, Buffer.DEFAULT_SIZE)], false);
+        }
         buffer.rpos(5);
         buffer.wpos(5);
         buffer.putByte(cmd.toByte());
@@ -615,7 +636,7 @@ public abstract class AbstractSession implements Session {
      * @throws IOException if an error occured sending the packet
      */
     protected byte[] sendKexInit(String[] proposal) throws IOException {
-        Buffer buffer = createBuffer(SshConstants.Message.SSH_MSG_KEXINIT);
+        Buffer buffer = createBuffer(SshConstants.Message.SSH_MSG_KEXINIT, 0);
         int p = buffer.wpos();
         buffer.wpos(p + 16);
         random.fill(buffer.array(), p, 16);
@@ -663,7 +684,7 @@ public abstract class AbstractSession implements Session {
      */
     protected void sendNewKeys() throws IOException {
         log.info("Send SSH_MSG_NEWKEYS");
-        Buffer buffer = createBuffer(SshConstants.Message.SSH_MSG_NEWKEYS);
+        Buffer buffer = createBuffer(SshConstants.Message.SSH_MSG_NEWKEYS, 0);
         writePacket(buffer);
     }
 
@@ -810,7 +831,7 @@ public abstract class AbstractSession implements Session {
      * @throws IOException if an error occured sending the packet
      */
     public void disconnect(int reason, String msg) throws IOException {
-        Buffer buffer = createBuffer(SshConstants.Message.SSH_MSG_DISCONNECT);
+        Buffer buffer = createBuffer(SshConstants.Message.SSH_MSG_DISCONNECT, 0);
         buffer.putInt(reason);
         buffer.putString(msg);
         buffer.putString("");
@@ -830,7 +851,7 @@ public abstract class AbstractSession implements Session {
      * @throws IOException if an error occured sending the packet
      */
     protected void notImplemented() throws IOException {
-        Buffer buffer = createBuffer(SshConstants.Message.SSH_MSG_UNIMPLEMENTED);
+        Buffer buffer = createBuffer(SshConstants.Message.SSH_MSG_UNIMPLEMENTED, 0);
         buffer.putInt(seqi - 1);
         writePacket(buffer);
     }

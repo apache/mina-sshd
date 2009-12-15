@@ -38,7 +38,7 @@ public class UserAuthPassword implements UserAuth {
 
     public UserAuthPassword(ClientSessionImpl session, String username, String password) throws IOException {
         log.info("Send SSH_MSG_USERAUTH_REQUEST for password");
-        Buffer buffer = session.createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_REQUEST);
+        Buffer buffer = session.createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_REQUEST, 0);
         buffer.putString(username);
         buffer.putString("ssh-connection");
         buffer.putString("password");

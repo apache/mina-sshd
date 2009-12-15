@@ -75,7 +75,7 @@ public abstract class AbstractDHGClient implements KeyExchange {
         e = dh.getE();
 
         log.info("Send SSH_MSG_KEXDH_INIT");
-        Buffer buffer = s.createBuffer(SshConstants.Message.SSH_MSG_KEXDH_INIT);
+        Buffer buffer = s.createBuffer(SshConstants.Message.SSH_MSG_KEXDH_INIT, 0);
         buffer.putMPInt(e);
         session.writePacket(buffer);
     }

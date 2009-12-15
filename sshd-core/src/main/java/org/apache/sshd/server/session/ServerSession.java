@@ -304,7 +304,7 @@ public class ServerSession extends AbstractSession {
     private void userAuth(Buffer buffer) throws Exception {
         if (state == State.WaitingUserAuth) {
             log.info("Accepting user authentication request");
-            buffer = createBuffer(SshConstants.Message.SSH_MSG_SERVICE_ACCEPT);
+            buffer = createBuffer(SshConstants.Message.SSH_MSG_SERVICE_ACCEPT, 0);
             buffer.putString("ssh-userauth");
             writePacket(buffer);
             userAuthFactories = new ArrayList<NamedFactory<UserAuth>>(getServerFactoryManager().getUserAuthFactories());
@@ -341,14 +341,14 @@ public class ServerSession extends AbstractSession {
                 log.info("Unsupported authentication method '{}'", method);
             }
             if (authed != null && authed) {
-                buffer = createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_SUCCESS);
+                buffer = createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_SUCCESS, 0);
                 writePacket(buffer);
                 state = State.Running;
                 this.authed = true;
                 this.username = username;
                 unscheduleAuthTimer();
             } else {
-                buffer = createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_FAILURE);
+                buffer = createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_FAILURE, 0);
                 NamedFactory.Utils.remove(userAuthFactories, "none"); // 'none' MUST NOT be listed
                 buffer.putString(NamedFactory.Utils.getNames(userAuthFactories));
                 buffer.putByte((byte) 0);
@@ -370,7 +370,7 @@ public class ServerSession extends AbstractSession {
         log.info("Received SSH_MSG_CHANNEL_OPEN {}", type);
 
         if (closing) {
-            Buffer buf = createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_FAILURE);
+            Buffer buf = createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_FAILURE, 0);
             buf.putInt(id);
             buf.putInt(SshConstants.SSH_OPEN_CONNECT_FAILED);
             buf.putString("SSH server is shutting down: " + type);
@@ -379,7 +379,7 @@ public class ServerSession extends AbstractSession {
             return;
         }
         if (!allowMoreSessions) {
-            Buffer buf = createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_FAILURE);
+            Buffer buf = createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_FAILURE, 0);
             buf.putInt(id);
             buf.putInt(SshConstants.SSH_OPEN_CONNECT_FAILED);
             buf.putString("additional sessions disabled");
@@ -390,7 +390,7 @@ public class ServerSession extends AbstractSession {
 
         final Channel channel = NamedFactory.Utils.create(getServerFactoryManager().getChannelFactories(), type);
         if (channel == null) {
-            Buffer buf = createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_FAILURE);
+            Buffer buf = createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_FAILURE, 0);
             buf.putInt(id);
             buf.putInt(SshConstants.SSH_OPEN_UNKNOWN_CHANNEL_TYPE);
             buf.putString("Unsupported channel type: " + type);
@@ -406,14 +406,14 @@ public class ServerSession extends AbstractSession {
             public void operationComplete(OpenFuture future) {
                 try {
                     if (future.isOpened()) {
-                        Buffer buf = createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_CONFIRMATION);
+                        Buffer buf = createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_CONFIRMATION, 0);
                         buf.putInt(id);
                         buf.putInt(channelId);
                         buf.putInt(channel.getLocalWindow().getSize());
                         buf.putInt(channel.getLocalWindow().getPacketSize());
                         writePacket(buf);
                     } else if (future.getException() != null) {
-                        Buffer buf = createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_FAILURE);
+                        Buffer buf = createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_FAILURE, 0);
                         buf.putInt(id);
                         if (future.getException() instanceof OpenChannelException) {
                             buf.putInt(((OpenChannelException)future.getException()).getReasonCode());
@@ -450,7 +450,7 @@ public class ServerSession extends AbstractSession {
             log.error("Unknown global request: {}", req);
         }
         if (wantReply){
-            buffer = createBuffer(SshConstants.Message.SSH_MSG_REQUEST_FAILURE);
+            buffer = createBuffer(SshConstants.Message.SSH_MSG_REQUEST_FAILURE, 0);
             writePacket(buffer);
         }
     }
