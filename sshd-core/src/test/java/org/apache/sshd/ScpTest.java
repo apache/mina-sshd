@@ -159,10 +159,10 @@ public class ScpTest {
 
     protected String readFile(String path) throws Exception {
         ChannelExec c = (ChannelExec) session.openChannel("exec");
-        c.setCommand("scp -f " + path);
-        c.connect();
         OutputStream os = c.getOutputStream();
         InputStream is = c.getInputStream();
+        c.setCommand("scp -f " + path);
+        c.connect();
         String header = readLine(is);
         assertEquals("C0644 11 out.txt", header);
         int length = Integer.parseInt(header.substring(6, header.indexOf(' ', 6)));
@@ -182,10 +182,10 @@ public class ScpTest {
 
     protected String readDir(String path) throws Exception {
         ChannelExec c = (ChannelExec) session.openChannel("exec");
-        c.setCommand("scp -r -f " + path);
-        c.connect();
         OutputStream os = c.getOutputStream();
         InputStream is = c.getInputStream();
+        c.setCommand("scp -r -f " + path);
+        c.connect();
         String header = readLine(is);
         assertTrue(header.startsWith("D0755 0 "));
         os.write(0);
@@ -210,10 +210,10 @@ public class ScpTest {
 
     protected String readFileError(String path) throws Exception {
         ChannelExec c = (ChannelExec) session.openChannel("exec");
-        c.setCommand("scp -f " + path);
-        c.connect();
         OutputStream os = c.getOutputStream();
         InputStream is = c.getInputStream();
+        c.setCommand("scp -f " + path);
+        c.connect();
         assertEquals(2, is.read());
         c.disconnect();
         return null;
@@ -222,9 +222,10 @@ public class ScpTest {
     protected void sendFile(String path, String name, String data) throws Exception {
         ChannelExec c = (ChannelExec) session.openChannel("exec");
         c.setCommand("scp -t " + path);
-        c.connect();
         OutputStream os = c.getOutputStream();
         InputStream is = c.getInputStream();
+        c.connect();
+        assertEquals(0, is.read());
         os.write(("C7777 "+ data.length() + " " + name + "\n").getBytes());
         os.flush();
         assertEquals(0, is.read());
@@ -239,14 +240,12 @@ public class ScpTest {
 
     protected void sendFileError(String path, String name, String data) throws Exception {
         ChannelExec c = (ChannelExec) session.openChannel("exec");
-        c.setCommand("scp -t " + path);
-        c.connect();
         OutputStream os = c.getOutputStream();
         InputStream is = c.getInputStream();
-        os.write(("C7777 "+ data.length() + " " + name + "\n").getBytes());
-        os.flush();
+        c.setCommand("scp -t " + path);
+        c.connect();
         assertEquals(0, is.read());
-        os.write(data.getBytes());
+        os.write(("C7777 "+ data.length() + " " + name + "\n").getBytes());
         os.flush();
         assertEquals(2, is.read());
         c.disconnect();
@@ -254,11 +253,11 @@ public class ScpTest {
 
     protected void sendDir(String path, String dirName, String fileName, String data) throws Exception {
         ChannelExec c = (ChannelExec) session.openChannel("exec");
-        c.setCommand("scp -t -r " + path);
-        c.connect();
         OutputStream os = c.getOutputStream();
         InputStream is = c.getInputStream();
-
+        c.setCommand("scp -t -r " + path);
+        c.connect();
+        assertEquals(0, is.read());
         os.write(("D0755 0 " + dirName + "\n").getBytes());
         os.flush();
         assertEquals(0, is.read());
@@ -271,6 +270,7 @@ public class ScpTest {
         os.write(0);
         os.flush();
         os.write("E\n".getBytes());
+        os.flush();
         assertEquals(0, is.read());
     }
 
