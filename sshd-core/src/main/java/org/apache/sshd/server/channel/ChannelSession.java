@@ -425,12 +425,14 @@ public class ChannelSession extends AbstractServerChannel {
         }
         out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.Message.SSH_MSG_CHANNEL_DATA);
         err = new ChannelOutputStream(this, remoteWindow, log, SshConstants.Message.SSH_MSG_CHANNEL_EXTENDED_DATA);
-        // Wrap in logging filters
-        out = new LoggingFilterOutputStream(out, "OUT:", log);
-        err = new LoggingFilterOutputStream(err, "ERR:", log);
         in = new ChannelPipedInputStream(localWindow);
         shellIn = new ChannelPipedOutputStream((ChannelPipedInputStream) in);
-        shellIn = new LoggingFilterOutputStream(shellIn, "IN: ", log);
+        if (log != null && log.isTraceEnabled()) {
+            // Wrap in logging filters
+            out = new LoggingFilterOutputStream(out, "OUT:", log);
+            err = new LoggingFilterOutputStream(err, "ERR:", log);
+            shellIn = new LoggingFilterOutputStream(shellIn, "IN: ", log);
+        }
         command.setInputStream(in);
         command.setOutputStream(out);
         command.setErrorStream(err);
