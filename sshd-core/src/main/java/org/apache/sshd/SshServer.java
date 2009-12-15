@@ -68,7 +68,7 @@ import org.apache.sshd.server.CommandFactory;
 import org.apache.sshd.server.PasswordAuthenticator;
 import org.apache.sshd.server.PublickeyAuthenticator;
 import org.apache.sshd.server.ServerFactoryManager;
-import org.apache.sshd.server.TcpIpForwardFilter;
+import org.apache.sshd.server.ForwardingFilter;
 import org.apache.sshd.server.UserAuth;
 import org.apache.sshd.server.auth.UserAuthPassword;
 import org.apache.sshd.server.auth.UserAuthPublicKey;
@@ -120,7 +120,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     protected List<NamedFactory<Command>> subsystemFactories;
     protected PasswordAuthenticator passwordAuthenticator;
     protected PublickeyAuthenticator publickeyAuthenticator;
-    protected TcpIpForwardFilter tcpIpForwardFilter;
+    protected ForwardingFilter forwardingFilter;
 
     public SshServer() {
     }
@@ -226,12 +226,12 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         this.publickeyAuthenticator = publickeyAuthenticator;
     }
 
-    public TcpIpForwardFilter getTcpIpForwardFilter() {
-        return tcpIpForwardFilter;
+    public ForwardingFilter getForwardingFilter() {
+        return forwardingFilter;
     }
 
-    public void setTcpIpForwardFilter(TcpIpForwardFilter tcpIpForwardFilter) {
-        this.tcpIpForwardFilter = tcpIpForwardFilter;
+    public void setForwardingFilter(ForwardingFilter forwardingFilter) {
+        this.forwardingFilter = forwardingFilter;
     }
 
     protected void checkConfig() {
@@ -457,7 +457,15 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
                 return true;
             }
         });
-        sshd.setTcpIpForwardFilter(new TcpIpForwardFilter() {
+        sshd.setForwardingFilter(new ForwardingFilter() {
+            public boolean canForwardAgent(ServerSession session) {
+                return true;
+            }
+
+            public boolean canForwardX11(ServerSession session) {
+                return true;
+            }
+
             public boolean canListen(InetSocketAddress address, ServerSession session) {
                 return true;
             }

@@ -42,7 +42,7 @@ import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.util.Buffer;
-import org.apache.sshd.server.TcpIpForwardFilter;
+import org.apache.sshd.server.ForwardingFilter;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
@@ -83,7 +83,7 @@ public class ChannelDirectTcpip extends AbstractServerChannel {
         }
 
         final ServerSession serverSession = (ServerSession)getSession();
-        final TcpIpForwardFilter filter = serverSession.getServerFactoryManager().getTcpIpForwardFilter();
+        final ForwardingFilter filter = serverSession.getServerFactoryManager().getForwardingFilter();
         if (address == null || filter == null || !filter.canConnect(address, serverSession)) {
             super.close(true);
             f.setException(new OpenChannelException(SshConstants.SSH_OPEN_ADMINISTRATIVELY_PROHIBITED, "connect denied"));

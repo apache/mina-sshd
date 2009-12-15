@@ -18,16 +18,41 @@
  */
 package org.apache.sshd.server;
 
+import org.apache.sshd.SshAgent;
 import org.apache.sshd.server.session.ServerSession;
 
 import java.net.InetSocketAddress;
 
 /**
- * Determines if a TCP/IP forwarding will be permitted.
+ * Determines if a forwarding request will be permitted.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface TcpIpForwardFilter {
+public interface ForwardingFilter {
+    /**
+     * Determine if the session may arrange for agent forwarding.
+     * <p>
+     * This server process will open a new listen socket locally and export
+     * the address in the {@link SshAgent#SSH_AUTHSOCKET_ENV_NAME} environment
+     * variable.
+     *
+     * @param session session requesting permission to forward the agent.
+     * @return true if the agent forwarding is permitted, false if denied.
+     */
+    boolean canForwardAgent(ServerSession session);
+
+    /**
+     * Determine if the session may arrange for X11 forwarding.
+     * <p>
+     * This server process will open a new listen socket locally and export
+     * the address in the environment so X11 clients can be tunneled to the
+     * user's X11 display server.
+     *
+     * @param session session requesting permission to forward X11 connections.
+     * @return true if the X11 forwarding is permitted, false if denied.
+     */
+    boolean canForwardX11(ServerSession session);
+
     /**
      * Determine if the session may listen for inbound connections.
      * <p>

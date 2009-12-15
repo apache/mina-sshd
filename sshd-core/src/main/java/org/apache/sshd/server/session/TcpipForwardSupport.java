@@ -38,7 +38,7 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.util.Buffer;
-import org.apache.sshd.server.TcpIpForwardFilter;
+import org.apache.sshd.server.ForwardingFilter;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -80,7 +80,7 @@ public class TcpipForwardSupport extends IoHandlerAdapter {
             addr = null;
         }
 
-        final TcpIpForwardFilter filter = session.getServerFactoryManager().getTcpIpForwardFilter();
+        final ForwardingFilter filter = session.getServerFactoryManager().getForwardingFilter();
         if (addr == null || filter == null || !filter.canListen(addr, session)) {
             if (wantReply) {
                 buffer = session.createBuffer(SshConstants.Message.SSH_MSG_REQUEST_FAILURE, 0);

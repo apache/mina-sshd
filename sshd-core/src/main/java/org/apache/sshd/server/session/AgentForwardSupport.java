@@ -32,7 +32,7 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.util.Buffer;
-import org.apache.sshd.server.TcpIpForwardFilter;
+import org.apache.sshd.server.ForwardingFilter;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;

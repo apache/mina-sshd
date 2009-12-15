@@ -45,6 +45,7 @@ import org.apache.sshd.common.util.LoggingFilterOutputStream;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
+import org.apache.sshd.server.ForwardingFilter;
 import org.apache.sshd.server.SessionAware;
 import org.apache.sshd.server.Signal;
 import org.apache.sshd.server.SignalListener;
@@ -458,7 +459,18 @@ public class ChannelSession extends AbstractServerChannel {
     protected boolean handleAgentForwarding(Buffer buffer) throws IOException {
         boolean wantReply = buffer.getBoolean();
 
-        int authSocket = ((ServerSession) session).initAgentForward();
+        final ServerSession server = (ServerSession) session;
+        final ForwardingFilter filter = server.getServerFactoryManager().getForwardingFilter();
+        if (filter == null || !filter.canForwardAgent(server)) {
+            if (wantReply) {
+                buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_FAILURE, 0);
+                buffer.putInt(recipient);
+                session.writePacket(buffer);
+            }
+            return true;
+        }
+
+        int authSocket = server.initAgentForward();
         addEnvVariable(SshAgent.SSH_AUTHSOCKET_ENV_NAME, Integer.toString(authSocket));
 
         if (wantReply) {
@@ -471,6 +483,18 @@ public class ChannelSession extends AbstractServerChannel {
 
     protected boolean handleX11Forwarding(Buffer buffer) throws IOException {
         boolean wantReply = buffer.getBoolean();
+
+        final ServerSession server = (ServerSession) session;
+        final ForwardingFilter filter = server.getServerFactoryManager().getForwardingFilter();
+        if (filter == null || !filter.canForwardX11(server)) {
+            if (wantReply) {
+                buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_FAILURE, 0);
+                buffer.putInt(recipient);
+                session.writePacket(buffer);
+            }
+            return true;
+        }
+
         // TODO: start x11 forwarding
         if (wantReply) {
             buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS, 0);

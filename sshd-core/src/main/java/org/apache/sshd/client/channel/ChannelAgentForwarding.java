@@ -42,7 +42,7 @@ import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.BufferUtils;
-import org.apache.sshd.server.TcpIpForwardFilter;
+import org.apache.sshd.server.ForwardingFilter;
 import org.apache.sshd.server.channel.AbstractServerChannel;
 import org.apache.sshd.server.channel.OpenChannelException;
 import org.apache.sshd.server.session.ServerSession;

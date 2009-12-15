@@ -60,13 +60,13 @@ public interface ServerFactoryManager extends FactoryManager {
     PasswordAuthenticator getPasswordAuthenticator();
 
     /**
-     * Retrieve the <code>TcpIpForwardFilter</code> to be used by the SSH server.
+     * Retrieve the <code>ForwardingFilter</code> to be used by the SSH server.
      * If no filter has been configured (i.e. this method returns
      * <code>null</code>), then all forwarding requests will be rejected.
      *
-     * @return the <code>TcpIpForwardFilter</code> or <code>null</code>
+     * @return the <code>ForwardingFilter</code> or <code>null</code>
      */
-    TcpIpForwardFilter getTcpIpForwardFilter();
+    ForwardingFilter getForwardingFilter();
 
     /**
      * Retrieve the <code>ShellFactory</code> object to be used to create shells.

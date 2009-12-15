@@ -18,7 +18,7 @@
  */
 package org.apache.sshd.util;
 
-import org.apache.sshd.server.TcpIpForwardFilter;
+import org.apache.sshd.server.ForwardingFilter;
 import org.apache.sshd.server.session.ServerSession;
 
 import java.net.InetSocketAddress;
@@ -28,7 +28,15 @@ import java.net.InetSocketAddress;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class BogusTcpIpForwardFilter implements TcpIpForwardFilter {
+public class BogusForwardingFilter implements ForwardingFilter {
+    public boolean canForwardAgent(ServerSession session) {
+        return true;
+    }
+
+    public boolean canForwardX11(ServerSession session) {
+        return true;
+    }
+
     public boolean canConnect(InetSocketAddress address, ServerSession session) {
         return true;
     }
