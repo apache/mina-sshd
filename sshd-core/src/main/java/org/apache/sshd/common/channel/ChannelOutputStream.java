@@ -60,8 +60,24 @@ public class ChannelOutputStream extends OutputStream {
         if (closed) {
             throw new SshException("Already closed");
         }
-        buffer.putRawBytes(buf, s, l);
-        bufferLength += l;
+        while (l > 0) {
+            // The maximum amount we should admit without flushing again
+            // is enough to make up one full packet within our allowed
+            // window size.  We give ourselves a credit equal to the last
+            // packet we sent to allow the producer to race ahead and fill
+            // out the next packet before we block and wait for space to
+            // become available again.
+            //
+            int _l = Math.min(l, Math.min(remoteWindow.getSize() + lastSize, remoteWindow.getPacketSize()) - bufferLength);
+            if (_l <= 0) {
+                flush();
+                continue;
+            }
+            buffer.putRawBytes(buf, s, _l);
+            bufferLength += _l;
+            s += _l;
+            l -= _l;
+        }
     }
 
     @Override
