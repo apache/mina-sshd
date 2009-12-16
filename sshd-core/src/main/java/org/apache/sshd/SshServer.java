@@ -21,6 +21,7 @@ package org.apache.sshd;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.security.InvalidKeyException;
 import java.security.PublicKey;
 import java.util.ArrayList;
@@ -30,6 +31,9 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 import org.apache.mina.core.service.IoAcceptor;
 import org.apache.mina.core.session.IoSession;
@@ -106,6 +110,8 @@ import org.apache.sshd.server.shell.ProcessShellFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class SshServer extends AbstractFactoryManager implements ServerFactoryManager {
+
+    private final Logger log = LoggerFactory.getLogger(getClass());
 
     protected IoAcceptor acceptor;
     protected String host;
@@ -326,8 +332,26 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
 
     protected void configure(IoAcceptor acceptor) {
         if (acceptor instanceof NioSocketAcceptor) {
-            ((NioSocketAcceptor) acceptor).setReuseAddress(reuseAddress);
-            ((NioSocketAcceptor) acceptor).setBacklog(backlog);
+            final NioSocketAcceptor nio = (NioSocketAcceptor) acceptor;
+            nio.setReuseAddress(reuseAddress);
+            nio.setBacklog(backlog);
+
+            // MINA itself forces our socket receive buffer to 1024 bytes
+            // by default, despite what the operating system defaults to.
+            // This limits us to about 3 MB/s incoming data transfer.  By
+            // forcing back to the operating system default we can get a
+            // decent transfer rate again.
+            //
+            final Socket s = new Socket();
+            try {
+              try {
+                  nio.getSessionConfig().setReceiveBufferSize(s.getReceiveBufferSize());
+              } finally {
+                  s.close();
+              }
+            } catch (IOException e) {
+                log.warn("cannot adjust SO_RCVBUF back to system default", e);
+            }
         }
         if (sessionConfig != null) {
             acceptor.getSessionConfig().setAll(sessionConfig);
