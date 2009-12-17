@@ -21,7 +21,6 @@ package org.apache.sshd;
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.security.KeyPair;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -32,10 +31,8 @@ import java.security.InvalidKeyException;
 import org.apache.mina.core.future.IoFutureListener;
 import org.apache.mina.core.service.IoConnector;
 import org.apache.mina.transport.socket.nio.NioSocketConnector;
-import org.apache.sshd.agent.AgentClient;
-import org.apache.sshd.agent.AgentServer;
+import org.apache.sshd.agent.ChannelAgentForwarding;
 import org.apache.sshd.client.SessionFactory;
-import org.apache.sshd.client.channel.ChannelAgentForwarding;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.future.ConnectFuture;
 import org.apache.sshd.client.future.DefaultConnectFuture;
@@ -49,7 +46,6 @@ import org.apache.sshd.common.cipher.AES256CBC;
 import org.apache.sshd.common.cipher.BlowfishCBC;
 import org.apache.sshd.common.cipher.TripleDESCBC;
 import org.apache.sshd.common.compression.CompressionNone;
-import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.common.mac.HMACMD5;
 import org.apache.sshd.common.mac.HMACMD596;
 import org.apache.sshd.common.mac.HMACSHA1;
@@ -63,7 +59,6 @@ import org.apache.sshd.common.signature.SignatureRSA;
 import org.apache.sshd.common.util.NoCloseInputStream;
 import org.apache.sshd.common.util.NoCloseOutputStream;
 import org.apache.sshd.common.util.SecurityUtils;
-import org.bouncycastle.openssl.PasswordFinder;
 
 /**
  * Entry point for the client side of the SSH protocol.
@@ -305,50 +300,58 @@ public class SshClient extends AbstractFactoryManager {
         client.start();
 
         try {
-            ClientSession session = client.connect(host, port).await().getSession();
+            boolean hasKeys = false;
 
+            /*
+            String authSock = System.getenv(SshAgent.SSH_AUTHSOCKET_ENV_NAME);
+            if (authSock == null) {
+                KeyPair[] keys = null;
+                AgentServer server = new AgentServer();
+                authSock = server.start();
+                List<String> files = new ArrayList<String>();
+                File f = new File(System.getProperty("user.home"), ".ssh/id_dsa");
+                if (f.exists() && f.isFile() && f.canRead()) {
+                    files.add(f.getAbsolutePath());
+                }
+                f = new File(System.getProperty("user.home"), ".ssh/id_rsa");
+                if (f.exists() && f.isFile() && f.canRead()) {
+                    files.add(f.getAbsolutePath());
+                }
+                try {
+                    if (files.size() > 0) {
+                        keys = new FileKeyPairProvider(files.toArray(new String[0]), new PasswordFinder() {
+                            public char[] getPassword() {
+                                try {
+                                    System.out.println("Enter password for private key: ");
+                                    BufferedReader r = new BufferedReader(new InputStreamReader(System.in));
+                                    String password = r.readLine();
+                                    return password.toCharArray();
+                                } catch (IOException e) {
+                                    return null;
+                                }
+                            }
+                        }).loadKeys();
+                    }
+                } catch (Exception e) {
+                }
+                SshAgent agent = new AgentClient(authSock);
+                for (KeyPair key : keys) {
+                    agent.addIdentity(key, "");
+                }
+                agent.close();
+            }
+            if (authSock != null) {
+                SshAgent agent = new AgentClient(authSock);
+                hasKeys = agent.getIdentities().size() > 0;
+            }
+            client.getProperties().put(SshAgent.SSH_AUTHSOCKET_ENV_NAME, authSock);
+            */
+
+            ClientSession session = client.connect(host, port).await().getSession();
             int ret = ClientSession.WAIT_AUTH;
 
-            KeyPair[] keys = null;
-            /*
-            AgentServer server = new AgentServer();
-            String authSock = server.start();
-            client.getProperties().put(org.apache.sshd.SshAgent.SSH_AUTHSOCKET_ENV_NAME, authSock);
-
-            List<String> files = new ArrayList<String>();
-            File f = new File(System.getProperty("user.home"), ".ssh/id_dsa");
-            if (f.exists() && f.isFile() && f.canRead()) {
-                files.add(f.getAbsolutePath());
-            }
-            f = new File(System.getProperty("user.home"), ".ssh/id_rsa");
-            if (f.exists() && f.isFile() && f.canRead()) {
-                files.add(f.getAbsolutePath());
-            }
-            try {
-                if (files.size() > 0) {
-                    keys = new FileKeyPairProvider(files.toArray(new String[0]), new PasswordFinder() {
-                        public char[] getPassword() {
-                            try {
-                                System.out.println("Enter password for private key: ");
-                                BufferedReader r = new BufferedReader(new InputStreamReader(System.in));
-                                String password = r.readLine();
-                                return password.toCharArray();
-                            } catch (IOException e) {
-                                return null;
-                            }
-                        }
-                    }).loadKeys();
-                }
-            } catch (Exception e) {
-            }
-            SshAgent agent = new AgentClient(authSock);
-            for (KeyPair key : keys) {
-                agent.addIdentity(key, "");
-            }
-            agent.close();
-            */
             while ((ret & ClientSession.WAIT_AUTH) != 0) {
-                if (keys != null) {
+                if (hasKeys) {
                     session.authAgent(login);
                     ret = session.waitFor(ClientSession.WAIT_AUTH | ClientSession.CLOSED | ClientSession.AUTHED, 0);
                 } else {

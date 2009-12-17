@@ -90,6 +90,11 @@
                 <version>2.0.0-RC1</version>
             </dependency>
             <dependency>
+                <groupId>tomcat</groupId>
+                <artifactId>tomcat-apr</artifactId>
+                <version>5.5.23</version>
+            </dependency>
+            <dependency>
                 <groupId>com.jcraft</groupId>
                 <artifactId>jzlib</artifactId>
                 <version>1.0.7</version>

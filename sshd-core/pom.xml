@@ -44,6 +44,11 @@
             <artifactId>mina-core</artifactId>
         </dependency>
         <dependency>
+            <groupId>tomcat</groupId>
+            <artifactId>tomcat-apr</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
             <groupId>com.jcraft</groupId>
             <artifactId>jzlib</artifactId>
             <optional>true</optional>
@@ -107,6 +112,7 @@
                         <Import-Package>
                             com.jcraft.jzlib*;resolution:=optional,
                             org.bouncycastle*;resolution:=optional,
+                            org.apache.tomcat.jni*;resolution:=optional,
                             *
                         </Import-Package>
                         <Export-Package>

@@ -18,7 +18,6 @@
  */
 package org.apache.sshd.agent;
 
-import org.apache.sshd.SshAgent;
 import org.apache.sshd.common.Signature;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.signature.SignatureDSA;

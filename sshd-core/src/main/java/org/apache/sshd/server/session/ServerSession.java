@@ -26,6 +26,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import org.apache.mina.core.session.IoSession;
+import org.apache.sshd.agent.AgentForwardSupport;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.FactoryManager;
@@ -455,7 +456,7 @@ public class ServerSession extends AbstractSession {
         }
     }
 
-    public int initAgentForward() throws IOException {
+    public String initAgentForward() throws IOException {
         return agentForward.initialize();
     }
 

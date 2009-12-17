@@ -20,6 +20,7 @@ package org.apache.sshd;
 
 import org.apache.sshd.agent.AgentClient;
 import org.apache.sshd.agent.AgentServer;
+import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.junit.Test;
 

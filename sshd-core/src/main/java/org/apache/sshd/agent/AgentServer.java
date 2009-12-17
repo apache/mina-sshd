@@ -18,18 +18,14 @@
  */
 package org.apache.sshd.agent;
 
-import org.apache.mina.core.buffer.IoBuffer;
-import org.apache.mina.core.service.IoAcceptor;
-import org.apache.mina.core.service.IoHandlerAdapter;
-import org.apache.mina.core.session.IoSession;
-import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
-import org.apache.sshd.SshAgent;
 import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.util.Buffer;
+import org.apache.tomcat.jni.Local;
+import org.apache.tomcat.jni.Pool;
+import org.apache.tomcat.jni.Socket;
+import org.apache.tomcat.jni.Status;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.security.interfaces.RSAPublicKey;
@@ -51,32 +47,44 @@ public class AgentServer implements SshAgent {
     static final byte SSH2_AGENT_FAILURE = 30;
 
     private final SshAgent engine = new AgentLocal();
-    private IoAcceptor acceptor;
-    private SocketAddress address;
-
+    private String authSocket;
+    private long pool;
+    private long handle;
+    private Thread thread;
 
     public String start() throws Exception {
-        acceptor = new NioSocketAcceptor();
-        acceptor.setHandler(new IoHandlerAdapter() {
-            @Override
-            public void sessionCreated(IoSession session) throws Exception {
-                SshAgentSession s = new SshAgentSession(session, engine);
-                session.setAttribute(SshAgentSession.class, s);
+        authSocket = AprLibrary.createLocalSocketAddress();
+        pool = Pool.create(AprLibrary.getInstance().getRootPool());
+        handle = Local.create(authSocket, pool);
+        int result = Local.bind(handle, 0);
+        if (result != Status.APR_SUCCESS) {
+            throwException(result);
+        }
+        AprLibrary.secureLocalSocket(authSocket, handle);
+        result = Local.listen(handle, 0);
+        if (result != Status.APR_SUCCESS) {
+            throwException(result);
+        }
+        thread = new Thread() {
+            public void run() {
+                try {
+                    while (true) {
+                        long clientSock = Local.accept(handle);
+                        Socket.timeoutSet(clientSock, 10000000);
+                        new SshAgentSession(clientSock, engine).start();
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
-            @Override
-            public void messageReceived(IoSession session, Object message) throws Exception {
-                SshAgentSession s = (SshAgentSession) session.getAttribute(SshAgentSession.class);
-                s.messageReceived(message);
-            }
-        });
-        acceptor.bind(new InetSocketAddress("localhost", 0));
-        address = acceptor.getLocalAddress();
-        return Integer.toString(((InetSocketAddress) address).getPort());
+        };
+        thread.start();
+        return authSocket;
     }
 
     public void close() {
         engine.close();
-        acceptor.dispose();
+        Socket.close(handle);
     }
 
     public List<Pair<PublicKey, String>> getIdentities() throws IOException {
@@ -99,20 +107,38 @@ public class AgentServer implements SshAgent {
         engine.removeAllIdentities();
     }
 
-    protected static class SshAgentSession {
+    protected static class SshAgentSession extends Thread {
 
-        private final IoSession session;
+        private final long socket;
         private final SshAgent engine;
         private final Buffer buffer = new Buffer();
 
-        public SshAgentSession(IoSession session, SshAgent engine) {
-            this.session = session;
+        public SshAgentSession(long socket, SshAgent engine) {
+            this.socket = socket;
             this.engine = engine;
         }
 
-        public synchronized void messageReceived(Object message) throws Exception {
-            IoBuffer ioBuffer = (IoBuffer) message;
-            buffer.putBuffer(ioBuffer);
+        public void run() {
+            try {
+                byte[] buf = new byte[1024];
+                while (true) {
+                    int result = Socket.recv(socket, buf, 0, buf.length);
+                    if (result == Status.APR_EOF) {
+                        break;    
+                    } else if (result < Status.APR_SUCCESS) {
+                        throwException(result);
+                    }
+                    messageReceived(new Buffer(buf, 0, result));
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                Socket.close(socket);
+            }
+        }
+
+        public synchronized void messageReceived(Buffer message) throws Exception {
+            buffer.putBuffer(message);
             if (buffer.available() < 4) {
                 return;
             }
@@ -196,12 +222,23 @@ public class AgentServer implements SshAgent {
             buf.wpos(rpos - 4);
             buf.putInt(len);
             buf.wpos(wpos);
-            IoBuffer b = IoBuffer.allocate(buf.available());
-            b.put(buf.array(), buf.rpos(), buf.available());
-            b.flip();
-            session.write(b);
+            int result = Socket.send(socket, buf.array(), buf.rpos(), buf.available());
+            if (result < Status.APR_SUCCESS) {
+                throwException(result);
+            }
         }
 
+    }
+
+    /**
+     * transform an APR error number in a more fancy exception
+     * @param code APR error code
+     * @throws java.io.IOException the produced exception for the given APR error number
+     */
+    private static void throwException(int code) throws IOException {
+        throw new IOException(
+                org.apache.tomcat.jni.Error.strerror(-code) +
+                " (code: " + code + ")");
     }
 
 }

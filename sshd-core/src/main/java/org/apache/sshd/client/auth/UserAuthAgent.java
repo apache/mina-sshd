@@ -18,9 +18,8 @@
  */
 package org.apache.sshd.client.auth;
 
-import org.apache.sshd.SshAgent;
+import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.AgentClient;
-import org.apache.sshd.agent.AgentServer;
 import org.apache.sshd.client.UserAuth;
 import org.apache.sshd.client.session.ClientSessionImpl;
 import org.apache.sshd.common.KeyPairProvider;
@@ -49,7 +48,7 @@ public class UserAuthAgent implements UserAuth {
     public UserAuthAgent(ClientSessionImpl session, String username) throws IOException {
         this.session = session;
         this.username = username;
-        String authSocket = session.getFactoryManager().getProperties().get(org.apache.sshd.SshAgent.SSH_AUTHSOCKET_ENV_NAME);
+        String authSocket = session.getFactoryManager().getProperties().get(SshAgent.SSH_AUTHSOCKET_ENV_NAME);
         SshAgent agent = new AgentClient(authSocket);
         this.agent = agent;
         keys = agent.getIdentities().iterator();

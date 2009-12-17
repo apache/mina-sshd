@@ -18,7 +18,7 @@
  */
 package org.apache.sshd.server;
 
-import org.apache.sshd.SshAgent;
+import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.server.session.ServerSession;
 
 import java.net.InetSocketAddress;

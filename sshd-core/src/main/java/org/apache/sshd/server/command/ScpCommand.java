@@ -47,6 +47,7 @@ public class ScpCommand implements Command, Runnable {
     protected static final int OK = 0;
     protected static final int ERROR = 2;
 
+    protected String name;
     protected boolean optR;
     protected boolean optT;
     protected boolean optF;
@@ -60,8 +61,9 @@ public class ScpCommand implements Command, Runnable {
     protected IOException error;
 
     public ScpCommand(String[] args) {
+        name = Arrays.asList(args).toString();
         if (log.isDebugEnabled()) {
-            log.debug("Executing command {}", Arrays.asList(args));
+            log.debug("Executing command {}", name);
         }
         root = new File(".");
         for (int i = 1; i < args.length; i++) {
@@ -117,7 +119,7 @@ public class ScpCommand implements Command, Runnable {
         if (error != null) {
             throw error;
         }
-        new Thread(this).start();
+        new Thread(this, "ScpCommand: " + name).start();
     }
 
     public void destroy() {
@@ -237,6 +239,11 @@ public class ScpCommand implements Command, Runnable {
             file = path;
         } else {
             throw new IOException("Can not write to " + path);
+        }
+        if (file.exists() && file.isDirectory()) {
+            throw new IOException("File is a directory: " + file);
+        } else if (file.exists() && !file.canWrite()) {
+            throw new IOException("Can not write to file: " + file);
         }
         OutputStream os = new FileOutputStream(file);
         try {

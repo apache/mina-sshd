@@ -28,7 +28,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 
-import org.apache.sshd.SshAgent;
+import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.PtyMode;
@@ -378,6 +378,9 @@ public class ChannelSession extends AbstractServerChannel {
         if (((ServerSession) session).getServerFactoryManager().getCommandFactory() == null) {
             return false;
         }
+        if (log.isInfoEnabled()) {
+            log.info("Executing command: {}", commandLine);
+        }
         try {
             command = ((ServerSession) session).getServerFactoryManager().getCommandFactory().createCommand(commandLine);
         } catch (IllegalArgumentException iae) {
@@ -470,8 +473,8 @@ public class ChannelSession extends AbstractServerChannel {
             return true;
         }
 
-        int authSocket = server.initAgentForward();
-        addEnvVariable(SshAgent.SSH_AUTHSOCKET_ENV_NAME, Integer.toString(authSocket));
+        String authSocket = ((ServerSession) session).initAgentForward();
+        addEnvVariable(SshAgent.SSH_AUTHSOCKET_ENV_NAME, authSocket);
 
         if (wantReply) {
             buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS, 0);
