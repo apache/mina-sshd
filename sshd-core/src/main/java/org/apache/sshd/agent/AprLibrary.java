@@ -19,6 +19,7 @@
  */
 package org.apache.sshd.agent;
 
+import org.apache.sshd.common.util.OsUtils;
 import org.apache.tomcat.jni.Library;
 import org.apache.tomcat.jni.Pool;
 
@@ -106,8 +107,7 @@ class AprLibrary {
 
     static String createLocalSocketAddress() throws IOException {
         String name;
-        String os = System.getProperty("os.name").toLowerCase();
-        if (os.indexOf("windows") < 0) {
+        if (OsUtils.isUNIX()) {
             File socket = File.createTempFile("mina", "apr");
             socket.delete();
             name = socket.getAbsolutePath();
@@ -120,8 +120,7 @@ class AprLibrary {
     }
 
     static void secureLocalSocket(String authSocket, long handle) throws IOException {
-        String os = System.getProperty("os.name").toLowerCase();
-        if (os.indexOf("windows") < 0) {
+        if (OsUtils.isUNIX()) {
             File file = new File(authSocket);
             if (!file.setReadable(false, false) || !file.setReadable(true, true)
                     || !file.setExecutable(false, false) || !file.setExecutable(true, true)) {

@@ -24,6 +24,7 @@ import java.util.Map;
 import org.apache.sshd.common.PtyMode;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.SttySupport;
 
 /**
@@ -63,8 +64,7 @@ public class ChannelShell extends ChannelSession {
 
     public void setupSensibleDefaultPty() {
         try {
-            String os = System.getProperty("os.name").toLowerCase();
-            if (os.indexOf("windows") < 0) {
+            if (OsUtils.isUNIX()) {
                 ptyModes = SttySupport.getUnixPtyModes();
                 ptyColumns = SttySupport.getTerminalWidth();
                 ptyLines = SttySupport.getTerminalHeight();

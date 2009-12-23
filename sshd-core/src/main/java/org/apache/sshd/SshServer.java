@@ -66,6 +66,7 @@ import org.apache.sshd.common.random.SingletonRandomFactory;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.signature.SignatureDSA;
 import org.apache.sshd.common.signature.SignatureRSA;
+import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.CommandFactory;
@@ -463,7 +464,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         } else {
             sshd.setKeyPairProvider(new SimpleGeneratorHostKeyProvider("key.ser"));
         }
-        if (System.getProperty("os.name").toLowerCase().indexOf("windows") < 0) {
+        if (OsUtils.isUNIX()) {
             sshd.setShellFactory(new ProcessShellFactory(new String[] { "/bin/sh", "-i", "-l" },
                                  EnumSet.of(ProcessShellFactory.TtyOptions.ONlCr)));
         } else {
