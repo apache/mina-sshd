@@ -121,9 +121,9 @@ class AprLibrary {
 
     static void secureLocalSocket(String authSocket, long handle) throws IOException {
         if (OsUtils.isUNIX()) {
-            File file = new File(authSocket);
-            if (!file.setReadable(false, false) || !file.setReadable(true, true)
-                    || !file.setExecutable(false, false) || !file.setExecutable(true, true)) {
+            int perms = org.apache.tomcat.jni.File.APR_FPROT_UREAD
+                      | org.apache.tomcat.jni.File.APR_FPROT_UWRITE;
+            if (org.apache.tomcat.jni.File.permsSet(authSocket, perms) != org.apache.tomcat.jni.Status.APR_SUCCESS) {
                 throw new IOException("Unable to secure local socket");
             }
 
