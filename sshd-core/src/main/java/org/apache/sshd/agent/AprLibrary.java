@@ -106,9 +106,22 @@ class AprLibrary {
     }
 
     static String createLocalSocketAddress() throws IOException {
+        initialize();
+
         String name;
         if (OsUtils.isUNIX()) {
-            File socket = File.createTempFile("mina", "apr");
+            // Since there is a race condition between bind and when
+            // we can mark the socket readable only by its owner, make
+            // the socket in a temporary directory that is visible only
+            // to the owner.
+            //
+            File dir = File.createTempFile("mina", "apr");
+            if (!dir.delete() || !dir.mkdir()) {
+                throw new IOException("Cannot create secure temp directory");
+            }
+            chmodOwner(dir.getAbsolutePath(), true);
+
+            File socket = File.createTempFile("mina","apr", dir);
             socket.delete();
             name = socket.getAbsolutePath();
         } else {
@@ -121,14 +134,21 @@ class AprLibrary {
 
     static void secureLocalSocket(String authSocket, long handle) throws IOException {
         if (OsUtils.isUNIX()) {
-            int perms = org.apache.tomcat.jni.File.APR_FPROT_UREAD
-                      | org.apache.tomcat.jni.File.APR_FPROT_UWRITE;
-            if (org.apache.tomcat.jni.File.permsSet(authSocket, perms) != org.apache.tomcat.jni.Status.APR_SUCCESS) {
-                throw new IOException("Unable to secure local socket");
-            }
+            chmodOwner(authSocket, false);
 
         } else {
             // should be ok on windows
+        }
+    }
+
+    private static void chmodOwner(String authSocket, boolean execute) throws IOException {
+        int perms = org.apache.tomcat.jni.File.APR_FPROT_UREAD
+                  | org.apache.tomcat.jni.File.APR_FPROT_UWRITE;
+        if (execute) {
+            perms |= org.apache.tomcat.jni.File.APR_FPROT_UEXECUTE;
+        }
+        if (org.apache.tomcat.jni.File.permsSet(authSocket, perms) != org.apache.tomcat.jni.Status.APR_SUCCESS) {
+            throw new IOException("Unable to secure local socket");
         }
     }
 }
