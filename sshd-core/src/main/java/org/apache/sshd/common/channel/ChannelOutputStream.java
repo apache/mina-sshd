@@ -19,6 +19,7 @@
 package org.apache.sshd.common.channel;
 
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.io.OutputStream;
 
 import org.apache.sshd.common.SshConstants;
@@ -70,7 +71,18 @@ public class ChannelOutputStream extends OutputStream {
             //
             int _l = Math.min(l, Math.min(remoteWindow.getSize() + lastSize, remoteWindow.getPacketSize()) - bufferLength);
             if (_l <= 0) {
-                flush();
+                if (bufferLength > 0) {
+                    flush();
+                } else {
+                    try {
+                        remoteWindow.waitForSpace();
+                    } catch (WindowClosedException e) {
+                        closed = true;
+                        throw e;
+                    } catch (InterruptedException e) {
+                        throw (IOException)new InterruptedIOException().initCause(e);
+                    }
+                }
                 continue;
             }
             buffer.putRawBytes(buf, s, _l);
