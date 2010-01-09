@@ -111,8 +111,6 @@ public class ChannelOutputStream extends OutputStream {
             throw e;
         } catch (Exception e) {
             throw new SshException(e);
-        } finally {
-            newBuffer();
         }
     }
 
