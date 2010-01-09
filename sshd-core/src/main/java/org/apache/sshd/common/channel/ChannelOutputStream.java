@@ -48,7 +48,7 @@ public class ChannelOutputStream extends OutputStream {
         this.remoteWindow = remoteWindow;
         this.log = log;
         this.cmd = cmd;
-        newBuffer();
+        newBuffer(0);
     }
 
     public synchronized void write(int w) throws IOException {
@@ -94,12 +94,15 @@ public class ChannelOutputStream extends OutputStream {
                 buf.wpos(cmd == SshConstants.Message.SSH_MSG_CHANNEL_EXTENDED_DATA ? 14 : 10);
                 buf.putInt(length);
                 buf.wpos(buf.wpos() + length);
-                lastSize = Math.max(length, total - length);
-                newBuffer();
-                if (total > length) {
-                    buffer.putRawBytes(buf.array(), pos - (total - length), total - length);
-                    bufferLength = total - length;
+                if (total == length) {
+                    newBuffer(length);
+                } else {
+                    int leftover = total - length;
+                    newBuffer(Math.max(leftover, length));
+                    buffer.putRawBytes(buf.array(), pos - leftover, leftover);
+                    bufferLength = leftover;
                 }
+                lastSize = length;
                 remoteWindow.waitAndConsume(length);
                 log.debug("Send {} on channel {}", cmd, channel.getId());
                 channel.getSession().writePacket(buf);
@@ -119,8 +122,8 @@ public class ChannelOutputStream extends OutputStream {
         closed = true;
     }
 
-    private void newBuffer() {
-        buffer = channel.getSession().createBuffer(cmd, lastSize <= 0 ? 0 : 12 + lastSize);
+    private void newBuffer(int size) {
+        buffer = channel.getSession().createBuffer(cmd, size <= 0 ? 0 : 12 + size);
         buffer.putInt(channel.getRecipient());
         if (cmd == SshConstants.Message.SSH_MSG_CHANNEL_EXTENDED_DATA) {
             buffer.putInt(1);
