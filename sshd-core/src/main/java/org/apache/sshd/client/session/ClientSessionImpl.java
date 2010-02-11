@@ -31,6 +31,7 @@ import org.apache.sshd.client.auth.UserAuthPublicKey;
 import org.apache.sshd.client.channel.AbstractClientChannel;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.ChannelExec;
+import org.apache.sshd.client.channel.ChannelSubsystem;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.DefaultAuthFuture;
 import org.apache.sshd.client.future.OpenFuture;
@@ -134,15 +135,35 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
     }
 
     public ClientChannel createChannel(String type) throws Exception {
-        // TODO: use NamedFactory to create channel
-        AbstractClientChannel channel;
+        return createChannel(type, null);
+    }
+
+    public ClientChannel createChannel(String type, String subType) throws Exception {
         if (ClientChannel.CHANNEL_SHELL.equals(type)) {
-            channel = new ChannelShell();
+            return createShellChannel();
         } else if (ClientChannel.CHANNEL_EXEC.equals(type)) {
-            channel = new ChannelExec();
+            return createExecChannel(subType);
+        } else if (ClientChannel.CHANNEL_SUBSYSTEM.equals(type)) {
+            return createSubsystemChannel(subType);
         } else {
             throw new IllegalArgumentException("Unsupported channel type " + type);
         }
+    }
+
+    public ChannelShell createShellChannel() throws Exception {
+        ChannelShell channel = new ChannelShell();
+        registerChannel(channel);
+        return channel;
+    }
+
+    public ChannelExec createExecChannel(String command) throws Exception {
+        ChannelExec channel = new ChannelExec(command);
+        registerChannel(channel);
+        return channel;
+    }
+
+    public ChannelSubsystem createSubsystemChannel(String subsystem) throws Exception {
+        ChannelSubsystem channel = new ChannelSubsystem(subsystem);
         registerChannel(channel);
         return channel;
     }

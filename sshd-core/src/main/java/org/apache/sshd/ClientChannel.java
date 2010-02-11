@@ -35,6 +35,7 @@ public interface ClientChannel {
 
     String CHANNEL_EXEC = "exec";
     String CHANNEL_SHELL = "shell";
+    String CHANNEL_SUBSYSTEM = "subsystem";
 
     int TIMEOUT =     0x0001;
     int CLOSED =      0x0002;

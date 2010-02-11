@@ -22,19 +22,19 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.util.Buffer;
 
 /**
- * TODO Add javadoc
+ * Client channel to run a subsystem
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ChannelExec extends ChannelSession {
+public class ChannelSubsystem extends ChannelSession {
 
-    private final String command;
+    private final String subsystem;
 
-    public ChannelExec(String command) {
-        if (command == null) {
-            throw new IllegalArgumentException("command must not be null");
+    public ChannelSubsystem(String subsystem) {
+        if (subsystem == null) {
+            throw new IllegalArgumentException("subsystem must not be null");
         }
-        this.command = command;
+        this.subsystem = subsystem;
     }
 
     protected void doOpen() throws Exception {
@@ -42,9 +42,9 @@ public class ChannelExec extends ChannelSession {
         log.info("Send SSH_MSG_CHANNEL_REQUEST exec");
         Buffer buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_REQUEST, 0);
         buffer.putInt(recipient);
-        buffer.putString("exec");
+        buffer.putString("subsystem");
         buffer.putBoolean(false);
-        buffer.putString(command);
+        buffer.putString(subsystem);
         session.writePacket(buffer);
 
     }

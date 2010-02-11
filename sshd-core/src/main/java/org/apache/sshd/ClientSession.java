@@ -22,6 +22,9 @@ import java.io.IOException;
 import java.security.KeyPair;
 import java.security.PublicKey;
 
+import org.apache.sshd.client.channel.ChannelExec;
+import org.apache.sshd.client.channel.ChannelSession;
+import org.apache.sshd.client.channel.ChannelSubsystem;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.common.future.CloseFuture;
 
@@ -60,6 +63,14 @@ public interface ClientSession {
     AuthFuture authPublicKey(String username, KeyPair key) throws IOException;
 
     ClientChannel createChannel(String type) throws Exception;
+
+    ClientChannel createChannel(String type, String subType) throws Exception;
+
+    ChannelSession createShellChannel() throws Exception;
+
+    ChannelExec createExecChannel(String command) throws Exception;
+
+    ChannelSubsystem createSubsystemChannel(String subsystem) throws Exception;
 
     int waitFor(int mask, long timeout);
 
