@@ -18,24 +18,35 @@
  */
 package org.apache.sshd;
 
-import org.apache.sshd.agent.AgentClient;
-import org.apache.sshd.agent.AgentServer;
-import org.apache.sshd.agent.SshAgent;
-import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
-import org.junit.Test;
-
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.List;
 
-import static junit.framework.Assert.*;
+import org.junit.*;
+import org.hamcrest.*;
+
+import org.apache.sshd.agent.AgentClient;
+import org.apache.sshd.agent.AgentServer;
+import org.apache.sshd.agent.SshAgent;
+import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
+
+import static org.hamcrest.CoreMatchers.*;
+import static org.junit.Assert.*;
+import static org.junit.Assume.*;
 
 public class AgentTest {
 
     @Test
     public void testAgent() throws Exception {
         AgentServer agent = new AgentServer();
-        String authSocket = agent.start();
+        String authSocket;
+        try {
+            authSocket = agent.start();
+        } catch (UnsatisfiedLinkError e) {
+            // the native library is not available, so these tests should be skipped
+            authSocket = null;
+        }
+        assumeThat(authSocket, notNullValue());
 
         SshAgent client = new AgentClient(authSocket);
         List<SshAgent.Pair<PublicKey, String>> keys = client.getIdentities();
