@@ -50,6 +50,7 @@ import org.apache.sshd.server.SessionAware;
 import org.apache.sshd.server.Signal;
 import org.apache.sshd.server.SignalListener;
 import org.apache.sshd.server.session.ServerSession;
+import org.apache.sshd.server.x11.X11ForwardSupport;
 
 /**
  * TODO Add javadoc
@@ -498,7 +499,19 @@ public class ChannelSession extends AbstractServerChannel {
             return true;
         }
 
-        // TODO: start x11 forwarding
+        String display = ((ServerSession) session).createX11Display(buffer.getBoolean(), buffer.getString(),
+                                                                    buffer.getString(), buffer.getInt());
+        if (display == null) {
+            if (wantReply) {
+                buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_FAILURE, 0);
+                buffer.putInt(recipient);
+                session.writePacket(buffer);
+            }
+            return true;
+        }
+
+        addEnvVariable(X11ForwardSupport.ENV_DISPLAY, display);
+
         if (wantReply) {
             buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS, 0);
             buffer.putInt(recipient);

@@ -41,6 +41,7 @@ import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.UserAuth;
 import org.apache.sshd.server.channel.OpenChannelException;
+import org.apache.sshd.server.x11.X11ForwardSupport;
 
 /**
  *
@@ -68,6 +69,7 @@ public class ServerSession extends AbstractSession {
     private boolean allowMoreSessions = true;
     private final TcpipForwardSupport tcpipForward;
     private final AgentForwardSupport agentForward;
+    private final X11ForwardSupport x11Forward;
 
     private List<NamedFactory<UserAuth>> userAuthFactories;
 
@@ -81,6 +83,7 @@ public class ServerSession extends AbstractSession {
         authTimeout = getIntProperty(FactoryManager.AUTH_TIMEOUT, authTimeout);
         tcpipForward = new TcpipForwardSupport(this);
         agentForward = new AgentForwardSupport(this);
+        x11Forward = new X11ForwardSupport (this);
         log.info("Session created...");
         sendServerIdentification();
         sendKexInit();
@@ -91,6 +94,7 @@ public class ServerSession extends AbstractSession {
         unscheduleAuthTimer();
         tcpipForward.close();
         agentForward.close();
+        x11Forward.close ();
         return super.close(immediately);
     }
 
@@ -458,5 +462,8 @@ public class ServerSession extends AbstractSession {
         return agentForward.initialize();
     }
 
+    public String createX11Display(boolean singleConnection, String authenticationProtocol, String authenticationCookie, int screen) throws IOException {
+        return x11Forward.createDisplay(singleConnection, authenticationProtocol, authenticationCookie, screen);
+    }
 
 }
