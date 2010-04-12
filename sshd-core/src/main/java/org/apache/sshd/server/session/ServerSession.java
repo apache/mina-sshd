@@ -83,7 +83,7 @@ public class ServerSession extends AbstractSession {
         authTimeout = getIntProperty(FactoryManager.AUTH_TIMEOUT, authTimeout);
         tcpipForward = new TcpipForwardSupport(this);
         agentForward = new AgentForwardSupport(this);
-        x11Forward = new X11ForwardSupport (this);
+        x11Forward = new X11ForwardSupport(this);
         log.info("Session created...");
         sendServerIdentification();
         sendKexInit();
@@ -94,7 +94,7 @@ public class ServerSession extends AbstractSession {
         unscheduleAuthTimer();
         tcpipForward.close();
         agentForward.close();
-        x11Forward.close ();
+        x11Forward.close();
         return super.close(immediately);
     }
 
@@ -435,7 +435,7 @@ public class ServerSession extends AbstractSession {
                         Buffer buf = createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_FAILURE, 0);
                         buf.putInt(id);
                         if (future.getException() instanceof OpenChannelException) {
-                            buf.putInt(((OpenChannelException)future.getException()).getReasonCode());
+                            buf.putInt(((OpenChannelException) future.getException()).getReasonCode());
                             buf.putString(future.getException().getMessage());
                         } else {
                             buf.putInt(0);
@@ -455,7 +455,7 @@ public class ServerSession extends AbstractSession {
         String req = buffer.getString();
         boolean wantReply = buffer.getBoolean();
         if (req.equals("keepalive@openssh.com")) {
-          // Relatively standard KeepAlive directive, just wants failure
+            // Relatively standard KeepAlive directive, just wants failure
         } else if (req.equals("no-more-sessions@openssh.com")) {
             allowMoreSessions = false;
         } else if (req.equals("tcpip-forward")) {
@@ -465,10 +465,10 @@ public class ServerSession extends AbstractSession {
             tcpipForward.cancel(buffer, wantReply);
             return;
         } else {
-            log.info("Received SSH_MSG_GLOBAL_REQUEST {}" ,req);
+            log.info("Received SSH_MSG_GLOBAL_REQUEST {}", req);
             log.error("Unknown global request: {}", req);
         }
-        if (wantReply){
+        if (wantReply) {
             buffer = createBuffer(SshConstants.Message.SSH_MSG_REQUEST_FAILURE, 0);
             writePacket(buffer);
         }
