@@ -227,6 +227,22 @@ public class ServerSession extends AbstractSession {
                             case SSH_MSG_GLOBAL_REQUEST:
                                 globalRequest(buffer);
                                 break;
+                            case SSH_MSG_KEXINIT:
+                                receiveKexInit(buffer);
+                                sendKexInit();
+                                negociate();
+                                kex = NamedFactory.Utils.create(factoryManager.getKeyExchangeFactories(), negociated[SshConstants.PROPOSAL_KEX_ALGS]);
+                                kex.init(this, serverVersion.getBytes(), clientVersion.getBytes(), I_S, I_C);
+                                break;
+                            case SSH_MSG_KEXDH_INIT:
+                                buffer.rpos(buffer.rpos() - 1);
+                                if (kex.next(buffer)) {
+                                    sendNewKeys();
+                                }
+                                break;
+                            case SSH_MSG_NEWKEYS:
+                                receiveNewKeys(true);
+                                break;
                             default:
                                 throw new IllegalStateException("Unsupported command: " + cmd);
                         }
