@@ -59,7 +59,7 @@ public class ChannelPipedInputStream extends InputStream {
             if (l == -1) {
                 return -1;
             }
-            return b[0];
+            return ((int) b[0] & 0xff);
         }
     }
 
