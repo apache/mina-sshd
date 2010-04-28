@@ -56,11 +56,8 @@ public class PEMGeneratorHostKeyProvider extends AbstractGeneratorHostKeyProvide
 
     protected void doWriteKeyPair(KeyPair kp, OutputStream os) throws Exception {
         PEMWriter w = new PEMWriter(new OutputStreamWriter(os));
-        try {
-            w.writeObject(kp);
-        } finally {
-            w.close();
-        }
+        w.writeObject(kp);
+        w.flush();
     }
 
 }
