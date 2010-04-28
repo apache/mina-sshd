@@ -249,7 +249,18 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
             throw new IllegalArgumentException("KeyExchangeFactories not set");
         }
         if (getUserAuthFactories() == null) {
-            throw new IllegalArgumentException("UserAuthFactories not set");
+            List<NamedFactory<UserAuth>> factories = new ArrayList<NamedFactory<UserAuth>>();
+            if (getPasswordAuthenticator() != null) {
+                factories.add(new UserAuthPassword.Factory());
+            }
+            if (getPublickeyAuthenticator() != null) {
+                factories.add(new UserAuthPublicKey.Factory());
+            }
+            if (factories.size() > 0) {
+                setUserAuthFactories(factories);
+            } else {
+                throw new IllegalArgumentException("UserAuthFactories not set");
+            }
         }
         if (getCipherFactories() == null) {
             throw new IllegalArgumentException("CipherFactories not set");
@@ -376,9 +387,6 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
                     new DHG1.Factory()));
             sshd.setRandomFactory(new SingletonRandomFactory(new JceRandom.Factory()));
         }
-        sshd.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(
-                new UserAuthPassword.Factory(),
-                new UserAuthPublicKey.Factory()));
         setUpDefaultCiphers(sshd);
         // Compression is not enabled by default
         // sshd.setCompressionFactories(Arrays.<NamedFactory<Compression>>asList(
