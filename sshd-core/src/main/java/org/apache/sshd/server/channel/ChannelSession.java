@@ -252,6 +252,11 @@ public class ChannelSession extends AbstractServerChannel {
         if ("x11-req".equals(type)) {
             return handleX11Forwarding(buffer);
         }
+        if (type != null && type.endsWith("@putty.projects.tartarus.org")) {
+            // Ignore but accept, more doc at
+            // http://tartarus.org/~simon/putty-snapshots/htmldoc/AppendixF.html
+            return true;
+        }
         return false;
     }
 
