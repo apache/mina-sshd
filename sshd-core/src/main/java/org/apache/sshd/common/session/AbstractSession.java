@@ -660,6 +660,7 @@ public abstract class AbstractSession implements Session {
      */
     protected byte[] receiveKexInit(Buffer buffer, String[] proposal) {
         // Recreate the packet payload which will be needed at a later time
+        int size = 22;
         byte[] d = buffer.array();
         byte[] data = new byte[buffer.available() + 1];
         data[0] = SshConstants.Message.SSH_MSG_KEXINIT.toByte();
@@ -668,13 +669,17 @@ public abstract class AbstractSession implements Session {
         buffer.rpos(buffer.rpos() + 16);
         // Read proposal
         for (int i = 0; i < proposal.length; i++) {
+            size += 4;
             proposal[i] = buffer.getString();
+            size += proposal[i].length();
         }
         // Skip 5 bytes
         buffer.getByte();
         buffer.getInt();
         // Return data
-        return data;
+        byte[] dataShrinked = new byte[size];
+        System.arraycopy(data, 0, dataShrinked, 0, size);
+        return dataShrinked;
     }
 
     /**
