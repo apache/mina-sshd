@@ -19,6 +19,7 @@
 package org.apache.sshd.server.command;
 
 import java.io.ByteArrayOutputStream;
+import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -27,6 +28,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
 
+import org.apache.sshd.common.util.DirectoryScanner;
+import org.apache.sshd.common.util.SelectorUtils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.CommandFactory;
 import org.apache.sshd.server.Environment;
@@ -45,6 +48,7 @@ public class ScpCommand implements Command, Runnable {
 
     protected static final Logger log = LoggerFactory.getLogger(ScpCommand.class);
     protected static final int OK = 0;
+    protected static final int WARNING = 1;
     protected static final int ERROR = 2;
 
     protected String name;
@@ -52,8 +56,9 @@ public class ScpCommand implements Command, Runnable {
     protected boolean optT;
     protected boolean optF;
     protected boolean optV;
+    protected boolean optD;
     protected boolean optP;
-    protected File root;
+    protected String root;
     protected InputStream in;
     protected OutputStream out;
     protected OutputStream err;
@@ -65,7 +70,7 @@ public class ScpCommand implements Command, Runnable {
         if (log.isDebugEnabled()) {
             log.debug("Executing command {}", name);
         }
-        root = new File(".");
+        root = ".";
         for (int i = 1; i < args.length; i++) {
             if (args[i].charAt(0) == '-') {
                 for (int j = 1; j < args[i].length(); j++) {
@@ -85,13 +90,16 @@ public class ScpCommand implements Command, Runnable {
                         case 'v':
                             optV = true;
                             break;
+                        case 'd':
+                            optD = true;
+                            break;
 //                          default:
 //                            error = new IOException("Unsupported option: " + args[i].charAt(j));
 //                            return;
                     }
                 }
             } else if (i == args.length - 1) {
-                root = new File(args[args.length - 1]);
+                root = args[args.length - 1];
             }
         }
         if (!optF && !optT) {
@@ -130,26 +138,87 @@ public class ScpCommand implements Command, Runnable {
         String exitMessage = null;
         
         try {
-            if (optT && !optR) {
+            if (optT)
+            {
                 ack();
-                writeFile(readLine(), root);
-            } else if (optT && optR) {
-                ack();
-                writeDir(readLine(), root);
-            } else if (optF) {
-                if (!root.exists()) {
-                    throw new IOException(root + ": no such file or directory");
+                for (; ;)
+                {
+                    String line;
+                    boolean isDir = false;
+                    int c = readAck(true);
+                    switch (c)
+                    {
+                        case -1:
+                            return;
+                        case 'D':
+                            isDir = true;
+                        case 'C':
+                        case 'E':
+                            line = ((char) c) + readLine();
+                            break;
+                        default:
+                            //a real ack that has been acted upon already
+                            continue;
+                    }
+
+                    if (optR && isDir)
+                    {
+                        writeDir(line, new File(root));
+                    }
+                    else
+                    {
+                        writeFile(line, new File(root));
+                    }
                 }
-                if (root.isFile()) {
-                    readFile(root);
-                } else if (root.isDirectory()) {
-                    if (!optR) {
-                        throw new IOException(root + " not a regular file");
-                    } else {
-                        readDir(root);
+            } else if (optF) {
+                String pattern = root;
+                int idx = pattern.indexOf('*');
+                if (idx >= 0) {
+                    String basedir = "";
+                    int lastSep = pattern.substring(0, idx).lastIndexOf('/');
+                    if (lastSep >= 0) {
+                        basedir = pattern.substring(0, lastSep);
+                        pattern = pattern.substring(lastSep + 1);
+                    }
+                    String[] included = new DirectoryScanner(basedir, pattern).scan();
+                    for (String path : included) {
+                        File file = new File(basedir, path);
+                        if (file.isFile()) {
+                            readFile(file);
+                        } else if (file.isDirectory()) {
+                            if (!optR) {
+                                out.write(WARNING);
+                                out.write((path + " not a regular file\n").getBytes());
+                            } else {
+                                readDir(file);
+                            }
+                        } else {
+                            out.write(WARNING);
+                            out.write((path + " unknown file type\n").getBytes());
+                        }
                     }
                 } else {
-                    throw new IOException(root + ": unknown file type");
+                    String basedir = "";
+                    int lastSep = pattern.lastIndexOf('/');
+                    if (lastSep >= 0) {
+                        basedir = pattern.substring(0, lastSep);
+                        pattern = pattern.substring(lastSep + 1);
+                    }
+                    File file = new File(basedir, pattern);
+                    if (!file.exists()) {
+                        throw new IOException(file + ": no such file or directory");
+                    }
+                    if (file.isFile()) {
+                        readFile(file);
+                    } else if (file.isDirectory()) {
+                        if (!optR) {
+                            throw new IOException(file + " not a regular file");
+                        } else {
+                            readDir(file);
+                        }
+                    } else {
+                        throw new IOException(file + ": unknown file type");
+                    }
                 }
             } else {
                 throw new IOException("Unsupported mode");
@@ -264,7 +333,7 @@ public class ScpCommand implements Command, Runnable {
         }
 
         ack();
-        readAck();
+        readAck(false);
     }
 
     protected String readLine() throws IOException {
@@ -295,7 +364,7 @@ public class ScpCommand implements Command, Runnable {
         buf.append("\n");
         out.write(buf.toString().getBytes());
         out.flush();
-        readAck();
+        readAck(false);
 
         InputStream is = new FileInputStream(path);
         try {
@@ -311,7 +380,7 @@ public class ScpCommand implements Command, Runnable {
             is.close();
         }
         ack();
-        readAck();
+        readAck(false);
     }
 
     protected void readDir(File path) throws IOException {
@@ -328,7 +397,7 @@ public class ScpCommand implements Command, Runnable {
         buf.append("\n");
         out.write(buf.toString().getBytes());
         out.flush();
-        readAck();
+        readAck(false);
 
         for (File child : path.listFiles()) {
             if (child.isFile()) {
@@ -340,7 +409,7 @@ public class ScpCommand implements Command, Runnable {
 
         out.write("E\n".getBytes());
         out.flush();
-        readAck();
+        readAck(false);
     }
 
     protected void ack() throws IOException {
@@ -348,17 +417,25 @@ public class ScpCommand implements Command, Runnable {
         out.flush();
     }
 
-    protected void readAck() throws IOException {
+    protected int readAck(boolean canEof) throws IOException {
         int c = in.read();
         switch (c) {
-            case 0:
+            case -1:
+                if (!canEof) {
+                    throw new EOFException();
+                }
                 break;
-            case 1:
-                System.out.println("Received warning: " + readLine());
+            case OK:
                 break;
-            case 2:
+            case WARNING:
+                log.warn("Received warning: " + readLine());
+                break;
+            case ERROR:
                 throw new IOException("Received nack: " + readLine());
+            default:
+                break;
         }
+        return c;
     }
 
 }

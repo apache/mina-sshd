@@ -27,6 +27,7 @@ import java.io.ByteArrayOutputStream;
 
 import org.junit.Before;
 import org.junit.After;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.util.EchoShellFactory;
@@ -102,6 +103,13 @@ public class ScpTest {
     public void tearDown() throws Exception {
         session.disconnect();
         sshd.stop();
+    }
+
+    @Test
+    @Ignore
+    public void testExternal() throws Exception {
+        System.out.println("Scp available on port " + port);
+        Thread.sleep(5 * 60000);
     }
 
     @Test
