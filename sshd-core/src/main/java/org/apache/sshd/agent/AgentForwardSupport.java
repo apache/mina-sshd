@@ -28,6 +28,8 @@ import org.apache.tomcat.jni.Local;
 import org.apache.tomcat.jni.Pool;
 import org.apache.tomcat.jni.Socket;
 import org.apache.tomcat.jni.Status;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
@@ -35,6 +37,8 @@ import java.io.IOException;
  * The server side fake agent, acting as an agent, but actually forwarding the requests to the auth channel on the client side.
  */
 public class AgentForwardSupport {
+
+    private static final Logger log = LoggerFactory.getLogger(AgentForwardSupport.class);
 
     private final ServerSession session;
     private String authSocket;
@@ -81,7 +85,9 @@ public class AgentForwardSupport {
                                     throw new Exception(t);
                                 }
                             } catch (Exception e) {
-                                e.printStackTrace();
+                                if (!closed) {
+                                    log.info("Exchange caught in authentication forwarding", e);
+                                }
                             }
                         }
                     }
