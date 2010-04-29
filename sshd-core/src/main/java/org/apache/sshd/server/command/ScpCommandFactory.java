@@ -50,7 +50,7 @@ public class ScpCommandFactory implements CommandFactory {
      * the configured {@link CommandFactory} instance; if one exist.
      *
      * @param command command to parse 
-     * @return configured {@link CommandFactory.Command} instance
+     * @return configured {@link Command} instance
      * @throws IllegalArgumentException
      */
     public Command createCommand(String command) {
