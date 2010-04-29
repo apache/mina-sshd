@@ -1,0 +1,881 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+package org.apache.sshd.server.sftp;
+
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.RandomAccessFile;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
+import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.server.Command;
+import org.apache.sshd.server.Environment;
+import org.apache.sshd.server.ExitCallback;
+import org.apache.sshd.server.SessionAware;
+import org.apache.sshd.server.session.ServerSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * SFTP subsystem
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ */
+public class SftpSubsystem implements Command, Runnable, SessionAware {
+	
+	protected final Logger log = LoggerFactory.getLogger(getClass());
+    
+	public static class Factory implements NamedFactory<Command> {
+        public Command create() {
+            return new SftpSubsystem();
+        }
+        public String getName() {
+            return "sftp";
+        }
+    }
+
+	public static final int HIGHEST_SFTP_IMPL = 3; // Working implementation up to v3, v4 and v5 are work in progress
+
+	
+    public static final int SSH_FXP_INIT             =   1;
+    public static final int SSH_FXP_VERSION          =   2;
+    public static final int SSH_FXP_OPEN             =   3;
+    public static final int SSH_FXP_CLOSE            =   4;
+    public static final int SSH_FXP_READ             =   5;
+    public static final int SSH_FXP_WRITE            =   6;
+    public static final int SSH_FXP_LSTAT            =   7;
+    public static final int SSH_FXP_FSTAT            =   8;
+    public static final int SSH_FXP_SETSTAT          =   9;
+    public static final int SSH_FXP_FSETSTAT         =  10;
+    public static final int SSH_FXP_OPENDIR          =  11;
+    public static final int SSH_FXP_READDIR          =  12;
+    public static final int SSH_FXP_REMOVE           =  13;
+    public static final int SSH_FXP_MKDIR            =  14;
+    public static final int SSH_FXP_RMDIR            =  15;
+    public static final int SSH_FXP_REALPATH         =  16;
+    public static final int SSH_FXP_STAT             =  17;
+    public static final int SSH_FXP_RENAME           =  18;
+    public static final int SSH_FXP_READLINK         =  19;
+    public static final int SSH_FXP_LINK             =  21;
+    public static final int SSH_FXP_BLOCK            =  22;
+    public static final int SSH_FXP_UNBLOCK          =  23;
+
+    public static final int SSH_FXP_STATUS           = 101;
+    public static final int SSH_FXP_HANDLE           = 102;
+    public static final int SSH_FXP_DATA             = 103;
+    public static final int SSH_FXP_NAME             = 104;
+    public static final int SSH_FXP_ATTRS            = 105;
+
+    public static final int SSH_FXP_EXTENDED         = 200;
+    public static final int SSH_FXP_EXTENDED_REPLY   = 201;
+
+    public static final int SSH_FX_OK                           = 0;
+    public static final int SSH_FX_EOF                          = 1;
+    public static final int SSH_FX_NO_SUCH_FILE                 = 2;
+    public static final int SSH_FX_PERMISSION_DENIED            = 3;
+    public static final int SSH_FX_FAILURE                      = 4;
+    public static final int SSH_FX_BAD_MESSAGE                  = 5;
+    public static final int SSH_FX_NO_CONNECTION                = 6;
+    public static final int SSH_FX_CONNECTION_LOST              = 7;
+    public static final int SSH_FX_OP_UNSUPPORTED               = 8;
+    public static final int SSH_FX_INVALID_HANDLE               = 9;
+    public static final int SSH_FX_NO_SUCH_PATH                 = 10;
+    public static final int SSH_FX_FILE_ALREADY_EXISTS          = 11;
+    public static final int SSH_FX_WRITE_PROTECT                = 12;
+    public static final int SSH_FX_NO_MEDIA                     = 13;
+    public static final int SSH_FX_NO_SPACE_ON_FILESYSTEM       = 14;
+    public static final int SSH_FX_QUOTA_EXCEEDED               = 15;
+    public static final int SSH_FX_UNKNOWN_PRINCIPAL            = 16;
+    public static final int SSH_FX_LOCK_CONFLICT                = 17;
+    public static final int SSH_FX_DIR_NOT_EMPTY                = 18;
+    public static final int SSH_FX_NOT_A_DIRECTORY              = 19;
+    public static final int SSH_FX_INVALID_FILENAME             = 20;
+    public static final int SSH_FX_LINK_LOOP                    = 21;
+    public static final int SSH_FX_CANNOT_DELETE                = 22;
+    public static final int SSH_FX_INVALID_PARAMETER            = 23;
+    public static final int SSH_FX_FILE_IS_A_DIRECTORY          = 24;
+    public static final int SSH_FX_BYTE_RANGE_LOCK_CONFLICT     = 25;
+    public static final int SSH_FX_BYTE_RANGE_LOCK_REFUSED      = 26;
+    public static final int SSH_FX_DELETE_PENDING               = 27;
+    public static final int SSH_FX_FILE_CORRUPT                 = 28;
+    public static final int SSH_FX_OWNER_INVALID                = 29;
+    public static final int SSH_FX_GROUP_INVALID                = 30;
+    public static final int SSH_FX_NO_MATCHING_BYTE_RANGE_LOCK  = 31;
+
+    public static final int SSH_FILEXFER_ATTR_SIZE              = 0x00000001;
+    public static final int SSH_FILEXFER_ATTR_PERMISSIONS       = 0x00000004;
+    public static final int SSH_FILEXFER_ATTR_ACCESSTIME        = 0x00000008;
+    public static final int SSH_FILEXFER_ATTR_CREATETIME        = 0x00000010;
+    public static final int SSH_FILEXFER_ATTR_MODIFYTIME        = 0x00000020;
+    public static final int SSH_FILEXFER_ATTR_ACL               = 0x00000040;
+    public static final int SSH_FILEXFER_ATTR_OWNERGROUP        = 0x00000080;
+    public static final int SSH_FILEXFER_ATTR_SUBSECOND_TIMES   = 0x00000100;
+    public static final int SSH_FILEXFER_ATTR_BITS              = 0x00000200;
+    public static final int SSH_FILEXFER_ATTR_ALLOCATION_SIZE   = 0x00000400;
+    public static final int SSH_FILEXFER_ATTR_TEXT_HINT         = 0x00000800;
+    public static final int SSH_FILEXFER_ATTR_MIME_TYPE         = 0x00001000;
+    public static final int SSH_FILEXFER_ATTR_LINK_COUNT        = 0x00002000;
+    public static final int SSH_FILEXFER_ATTR_UNTRANSLATED_NAME = 0x00004000;
+    public static final int SSH_FILEXFER_ATTR_CTIME             = 0x00008000;
+    public static final int SSH_FILEXFER_ATTR_EXTENDED          = 0x80000000;
+
+    public static final int SSH_FILEXFER_TYPE_REGULAR         = 1;
+    public static final int SSH_FILEXFER_TYPE_DIRECTORY       = 2;
+    public static final int SSH_FILEXFER_TYPE_SYMLINK         = 3;
+    public static final int SSH_FILEXFER_TYPE_SPECIAL         = 4;
+    public static final int SSH_FILEXFER_TYPE_UNKNOWN         = 5;
+    public static final int SSH_FILEXFER_TYPE_SOCKET          = 6;
+    public static final int SSH_FILEXFER_TYPE_CHAR_DEVICE     = 7;
+    public static final int SSH_FILEXFER_TYPE_BLOCK_DEVICE    = 8;
+    public static final int SSH_FILEXFER_TYPE_FIFO            = 9;
+
+
+    public static final int SSH_FXF_ACCESS_DISPOSITION      = 0x00000007;
+    public static final int SSH_FXF_CREATE_NEW              = 0x00000000;
+    public static final int SSH_FXF_CREATE_TRUNCATE         = 0x00000001;
+    public static final int SSH_FXF_OPEN_EXISTING           = 0x00000002;
+    public static final int SSH_FXF_OPEN_OR_CREATE          = 0x00000003;
+    public static final int SSH_FXF_TRUNCATE_EXISTING       = 0x00000004;
+    public static final int SSH_FXF_APPEND_DATA             = 0x00000008;
+    public static final int SSH_FXF_APPEND_DATA_ATOMIC      = 0x00000010;
+    public static final int SSH_FXF_TEXT_MODE               = 0x00000020;
+    public static final int SSH_FXF_BLOCK_READ              = 0x00000040;
+    public static final int SSH_FXF_BLOCK_WRITE             = 0x00000080;
+    public static final int SSH_FXF_BLOCK_DELETE            = 0x00000100;
+    public static final int SSH_FXF_BLOCK_ADVISORY          = 0x00000200;
+    public static final int SSH_FXF_NOFOLLOW                = 0x00000400;
+    public static final int SSH_FXF_DELETE_ON_CLOSE         = 0x00000800;
+    public static final int SSH_FXF_ACCESS_AUDIT_ALARM_INFO = 0x00001000;
+    public static final int SSH_FXF_ACCESS_BACKUP           = 0x00002000;
+    public static final int SSH_FXF_BACKUP_STREAM           = 0x00004000;
+    public static final int SSH_FXF_OVERRIDE_OWNER          = 0x00008000;
+
+    public static final int SSH_FXF_READ           = 0x00000001;
+    public static final int SSH_FXF_WRITE          = 0x00000002;
+    public static final int SSH_FXF_APPEND         = 0x00000004;
+    public static final int SSH_FXF_CREAT          = 0x00000008;
+    public static final int SSH_FXF_TRUNC          = 0x00000010;
+    public static final int SSH_FXF_EXCL           = 0x00000020;
+    public static final int SSH_FXF_TEXT           = 0x00000040;
+
+    public static final int ACE4_READ_DATA            = 0x00000001;
+    public static final int ACE4_LIST_DIRECTORY       = 0x00000001;
+    public static final int ACE4_WRITE_DATA           = 0x00000002;
+    public static final int ACE4_ADD_FILE             = 0x00000002;
+    public static final int ACE4_APPEND_DATA          = 0x00000004;
+    public static final int ACE4_ADD_SUBDIRECTORY     = 0x00000004;
+    public static final int ACE4_READ_NAMED_ATTRS     = 0x00000008;
+    public static final int ACE4_WRITE_NAMED_ATTRS    = 0x00000010;
+    public static final int ACE4_EXECUTE              = 0x00000020;
+    public static final int ACE4_DELETE_CHILD         = 0x00000040;
+    public static final int ACE4_READ_ATTRIBUTES      = 0x00000080;
+    public static final int ACE4_WRITE_ATTRIBUTES     = 0x00000100;
+    public static final int ACE4_DELETE               = 0x00010000;
+    public static final int ACE4_READ_ACL             = 0x00020000;
+    public static final int ACE4_WRITE_ACL            = 0x00040000;
+    public static final int ACE4_WRITE_OWNER          = 0x00080000;
+	
+    public static final int S_IRUSR = 0000400;
+    public static final int S_IWUSR = 0000200;
+    public static final int S_IXUSR = 0000100;
+    public static final int S_IRGRP = 0000040;
+    public static final int S_IWGRP = 0000020;
+    public static final int S_IXGRP = 0000010;
+    public static final int S_IROTH = 0000004;
+    public static final int S_IWOTH = 0000002;
+    public static final int S_IXOTH = 0000001;
+    public static final int S_ISUID = 0004000;
+    public static final int S_ISGID = 0002000;
+    public static final int S_ISVTX = 0001000;
+
+
+    private ExitCallback callback;
+    private InputStream in;
+    private OutputStream out;
+    private OutputStream err;
+    private Environment env;
+    private ServerSession session;
+    private boolean closed = false;
+
+
+    private int version;
+    private Map<String, Handle> handles = new HashMap<String, Handle>();
+
+
+    protected static abstract class Handle {
+        File file;
+
+        public Handle(File file) {
+            this.file = file;
+        }
+
+        public File getFile() {
+            return file;
+        }
+
+        public void close() throws IOException {
+        }
+
+    }
+
+    protected static class DirectoryHandle extends Handle {
+        boolean done;
+
+        public DirectoryHandle(File file) {
+            super(file);
+        }
+        public boolean isDone() {
+            return done;
+        }
+
+        public void setDone(boolean done) {
+            this.done = done;
+        }
+    }
+
+    protected static class FileHandle extends Handle {
+        RandomAccessFile raf;
+        int flags;
+
+        public FileHandle(File file, RandomAccessFile raf, int flags) {
+            super(file);
+            this.raf = raf;
+            this.flags = flags;
+        }
+
+        public RandomAccessFile getRaf() {
+            return raf;
+        }
+
+        public int getFlags() {
+            return flags;
+        }
+
+        @Override
+        public void close() throws IOException {
+            raf.close();
+        }
+    }
+
+	public void setSession(ServerSession session) {
+		this.session = session;
+	}
+
+    public void setExitCallback(ExitCallback callback) {
+        this.callback = callback;
+    }
+
+    public void setInputStream(InputStream in) {
+        this.in = in;
+    }
+
+    public void setOutputStream(OutputStream out) {
+        this.out = out;
+    }
+
+    public void setErrorStream(OutputStream err) {
+        this.err = err;
+    }
+
+    public void start(Environment env) throws IOException {
+        this.env = env;
+        new Thread(this).start();
+    }
+
+    public void run() {
+		DataInputStream dis = null;
+        try {
+            dis = new DataInputStream(in);
+            while (true) {
+                int  length = dis.readInt();
+                if (length < 5) {
+                    throw new IllegalArgumentException();
+                }
+                Buffer buffer = new Buffer(length + 4);
+                buffer.putInt(length);
+                int nb = length;
+                while (nb > 0) {
+                    int l = dis.read(buffer.array(), buffer.wpos(), nb);
+                    if (l < 0) {
+                        throw new IllegalArgumentException();
+                    }
+                    buffer.wpos(buffer.wpos() + l);
+                    nb -= l;
+                }
+                process(buffer);
+            }
+        } catch (Throwable t) {
+            if (!closed) {
+                log.error("Exception caught in SFTP subsystem", t);
+            }
+        } finally {
+		    if (dis != null) {
+        		try {
+        			dis.close();
+        		} catch (IOException ioe) {
+        			log.error("Could not close DataInputStream", ioe);
+        		}
+        	}
+        	dis = null;
+
+            callback.onExit(0);
+        }
+    }
+
+    protected void process(Buffer buffer) throws IOException {
+        int length = buffer.getInt();
+        int type   = buffer.getByte();
+        int id     = buffer.getInt();
+        switch (type) {
+            case SSH_FXP_INIT: {
+                if (length != 5) {
+                    throw new IllegalArgumentException();
+                }
+                version = id;
+                if (version >= HIGHEST_SFTP_IMPL) {
+	                buffer.clear();
+	                buffer.putByte((byte) SSH_FXP_VERSION);
+	                buffer.putInt(HIGHEST_SFTP_IMPL);
+	                send(buffer);
+	                version = HIGHEST_SFTP_IMPL;
+                } else {
+                	// We only support version 3 (Version 1 and 2 are not common)
+                	sendStatus(id, SSH_FX_OP_UNSUPPORTED, "Babelway SFTP server only support SFTP up to version " + HIGHEST_SFTP_IMPL);
+                }
+
+                break;
+            }
+            case SSH_FXP_OPEN: {
+                if (version <= 4) {
+                    String path   = buffer.getString();
+                    int    pflags = buffer.getInt();
+                    // attrs
+                    try {
+                        File file = new File(path);
+                        RandomAccessFile raf;
+                        if (file.exists()) {
+                            if (((pflags & SSH_FXF_CREAT) != 0) && ((pflags & SSH_FXF_EXCL) != 0)) {
+                                sendStatus(id, SSH_FX_FILE_ALREADY_EXISTS, path);
+                                return;
+                            }
+                        } else {
+                            if (((pflags & SSH_FXF_CREAT) != 0)) {
+                                if (!file.createNewFile()) {
+                                    sendStatus(id, SSH_FX_FAILURE, "Can not create " + path);
+                                }
+                            }
+                        }
+                        String acc = ((pflags & (SSH_FXF_READ | SSH_FXF_WRITE)) != 0 ? "r" : "") +
+                                        ((pflags & SSH_FXF_WRITE) != 0 ? "w" : "");
+                        raf = new RandomAccessFile(file, acc);
+                        if ((pflags & SSH_FXF_TRUNC) != 0) {
+                            raf.setLength(0);
+                        }
+                        String handle = UUID.randomUUID().toString();
+                        handles.put(handle, new FileHandle(file, raf, pflags)); // handle flags conversion
+                        sendHandle(id, handle);
+                    } catch (IOException e) {
+                        sendStatus(id, SSH_FX_FAILURE, e.getMessage());
+                    }
+                } else {
+                    String path  = buffer.getString();
+                    int    acc   = buffer.getInt();
+                    int    flags = buffer.getInt();
+                    // attrs
+                    try {
+                        File file = new File(path);
+                        RandomAccessFile raf;
+                        switch (flags & SSH_FXF_ACCESS_DISPOSITION) {
+                            case SSH_FXF_CREATE_NEW: {
+                                if (file.exists()) {
+                                    sendStatus(id, SSH_FX_FILE_ALREADY_EXISTS, path);
+                                    return;
+                                } else if (!file.createNewFile()) {
+                                    sendStatus(id, SSH_FX_FAILURE, "Can not create " + path);
+                                }
+                                raf = new RandomAccessFile(file, "rw"); // TODO: handle access
+                                break;
+                            }
+                            case SSH_FXF_CREATE_TRUNCATE: {
+                                if (file.exists()) {
+                                    sendStatus(id, SSH_FX_FILE_ALREADY_EXISTS, path);
+                                    return;
+                                } else if (!file.createNewFile()) {
+                                    sendStatus(id, SSH_FX_FAILURE, "Can not create " + path);
+                                }
+                                raf = new RandomAccessFile(file, "rw"); // TODO: handle access
+                                raf.setLength(0);
+                                break;
+                            }
+                            case SSH_FXF_OPEN_EXISTING: {
+                                if (!file.exists()) {
+                                    if (!file.getParentFile().exists()) {
+                                        sendStatus(id, SSH_FX_NO_SUCH_PATH, path);
+                                    } else {
+                                        sendStatus(id, SSH_FX_NO_SUCH_FILE, path);
+                                    }
+                                    return;
+                                }
+                                raf = new RandomAccessFile(file, "rw"); // TODO: handle access
+                                break;
+                            }
+                            case SSH_FXF_OPEN_OR_CREATE: {
+                                raf = new RandomAccessFile(file, "rw"); // TODO: handle access
+                                break;
+                            }
+                            case SSH_FXF_TRUNCATE_EXISTING: {
+                                if (!file.exists()) {
+                                    if (!file.getParentFile().exists()) {
+                                        sendStatus(id, SSH_FX_NO_SUCH_PATH, path);
+                                    } else {
+                                        sendStatus(id, SSH_FX_NO_SUCH_FILE, path);
+                                    }
+                                    return;
+                                }
+                                raf = new RandomAccessFile(file, "rw"); // TODO: handle access
+                                raf.setLength(0);
+                                break;
+                            }
+                            default:
+                                throw new IllegalArgumentException("Unsupported open mode: " + flags);
+                        }
+                        String handle = UUID.randomUUID().toString();
+                        handles.put(handle, new FileHandle(file, raf, flags));
+                        sendHandle(id, handle);
+                    } catch (IOException e) {
+                        sendStatus(id, SSH_FX_FAILURE, e.getMessage());
+                    }
+                }
+                break;
+            }
+            case SSH_FXP_CLOSE: {
+                String handle = buffer.getString();
+                try {
+                    Handle h = handles.get(handle);
+                    if (h == null) {
+                        sendStatus(id, SSH_FX_INVALID_HANDLE, handle, "");
+                    } else {
+                        handles.remove(handle);
+                        h.close();
+                        sendStatus(id, SSH_FX_OK, "", "");
+                    }
+                } catch (IOException e) {
+                    sendStatus(id, SSH_FX_FAILURE, e.getMessage());
+                }
+                break;
+            }
+            case SSH_FXP_READ: {
+                String handle = buffer.getString();
+                long   offset = buffer.getLong();
+                int    len    = buffer.getInt();
+                try {
+                    Handle p = handles.get(handle);
+                    if (!(p instanceof FileHandle)) {
+                        sendStatus(id, SSH_FX_INVALID_HANDLE, handle);
+                    } else {
+                        RandomAccessFile raf = ((FileHandle) p).getRaf();
+                        raf.seek(offset);
+                        byte[] b = new byte[Math.max(len, 1024 * 32)];
+                        len = raf.read(b);
+                        if (len >= 0) {
+                            Buffer buf = new Buffer(len + 5);
+                            buf.putByte((byte) SSH_FXP_DATA);
+                            buf.putInt(id);
+                            buf.putBytes(b, 0, len);
+                            buf.putBoolean(len == 0);
+                            send(buf);
+                        } else {
+                            sendStatus(id, SSH_FX_EOF, "");
+                        }
+                    }
+                } catch (IOException e) {
+                    sendStatus(id, SSH_FX_FAILURE, e.getMessage());
+                }
+                break;
+            }
+            case SSH_FXP_WRITE: {
+                String handle = buffer.getString();
+                long   offset = buffer.getLong();
+                byte[] data   = buffer.getBytes();
+                try {
+                    Handle p = handles.get(handle);
+                    if (!(p instanceof FileHandle)) {
+                        sendStatus(id, SSH_FX_INVALID_HANDLE, handle);
+                    } else {
+                        RandomAccessFile raf = ((FileHandle) p).getRaf();
+                        raf.seek(offset); // TODO: handle append flags
+                        raf.write(data);
+                        sendStatus(id, SSH_FX_OK, "");
+                    }
+                } catch (IOException e) {
+                    sendStatus(id, SSH_FX_FAILURE, e.getMessage());
+                }
+                break;
+            }
+            case SSH_FXP_LSTAT:
+            case SSH_FXP_STAT: {
+                String path = buffer.getString();
+                try {
+                    File p = new File(path);
+                    sendAttrs(id, p);
+                } catch (FileNotFoundException e) {
+                    sendStatus(id, SSH_FX_NO_SUCH_FILE, e.getMessage());
+                } catch (IOException e) {
+                    sendStatus(id, SSH_FX_FAILURE, e.getMessage());
+                }
+                break;
+            }
+            case SSH_FXP_FSTAT: {
+                String handle = buffer.getString();
+                try {
+                    Handle p = handles.get(handle);
+                    if (p == null) {
+                        sendStatus(id, SSH_FX_INVALID_HANDLE, handle);
+                    } else {
+                        sendAttrs(id, p.getFile());
+                    }
+                } catch (FileNotFoundException e) {
+                    sendStatus(id, SSH_FX_NO_SUCH_FILE, e.getMessage());
+                } catch (IOException e) {
+                    sendStatus(id, SSH_FX_FAILURE, e.getMessage());
+                }
+                break;
+            }
+            case SSH_FXP_OPENDIR: {
+                String path = buffer.getString();
+                try {
+                    File p = new File(path);
+                    if (!p.exists()) {
+                        sendStatus(id, SSH_FX_NO_SUCH_FILE, path);
+                    } else if (!p.isDirectory()) {
+                        sendStatus(id, SSH_FX_NOT_A_DIRECTORY, path);
+                    } else  if (!p.canRead()) {
+                        sendStatus(id, SSH_FX_PERMISSION_DENIED, path);
+                    } else {
+                        String handle = UUID.randomUUID().toString();
+                        handles.put(handle, new DirectoryHandle(p));
+                        sendHandle(id, handle);
+                    }
+                } catch (IOException e) {
+                    sendStatus(id, SSH_FX_FAILURE, e.getMessage());
+                }
+                break;
+            }
+            case SSH_FXP_READDIR: {
+                String handle = buffer.getString();
+                try {
+                    Handle p = handles.get(handle);
+                    if (!(p instanceof DirectoryHandle)) {
+                        sendStatus(id, SSH_FX_INVALID_HANDLE, handle);
+                    } else if (((DirectoryHandle) p).isDone()) {
+                        sendStatus(id, SSH_FX_EOF, "", "");
+                    } else if (!p.getFile().exists()) {
+                        sendStatus(id, SSH_FX_NO_SUCH_FILE, p.getFile().getPath());
+                    } else if (!p.getFile().isDirectory()) {
+                        sendStatus(id, SSH_FX_NOT_A_DIRECTORY, p.getFile().getPath());
+                    } else if (!p.getFile().canRead()) {
+                        sendStatus(id, SSH_FX_PERMISSION_DENIED, p.getFile().getPath());
+                    } else {
+                        sendName(id, p.getFile().listFiles());
+                        ((DirectoryHandle) p).setDone(true);
+                    }
+                } catch (IOException e) {
+                    sendStatus(id, SSH_FX_FAILURE, e.getMessage());
+                }
+                break;
+            }
+            case SSH_FXP_REMOVE: {
+                String path = buffer.getString();
+                try {
+                    File p = new File(path);
+                    if (!p.exists()) {
+                        sendStatus(id, SSH_FX_NO_SUCH_FILE, p.getPath());
+                    } else if (p.isDirectory()) {
+                        sendStatus(id, SSH_FX_FILE_IS_A_DIRECTORY, p.getPath());
+                    } else if (!p.delete()) {
+						sendStatus(id, SSH_FX_FAILURE, "Failed to delete file");
+                    } else {
+						sendStatus(id, SSH_FX_OK, "");
+					}
+                } catch (IOException e) {
+                    sendStatus(id, SSH_FX_FAILURE, e.getMessage());
+                }
+                break;
+            }
+            case SSH_FXP_MKDIR: {
+                String path = buffer.getString();
+                // attrs
+                try {
+                    File p = new File(path);
+                    if (p.exists()) {
+                        if (p.isDirectory()) {
+                            sendStatus(id, SSH_FX_FILE_ALREADY_EXISTS, p.getPath());
+                        } else {
+                            sendStatus(id, SSH_FX_NOT_A_DIRECTORY, p.getPath());
+                        }
+                    } else if (!p.mkdir()) {
+                        throw new IOException("Error creating dir " + path);
+                    }
+                } catch (IOException e) {
+                    sendStatus(id, SSH_FX_FAILURE, e.getMessage());
+                }
+                break;
+            }
+            case SSH_FXP_RMDIR: {
+                String path = buffer.getString();
+                // attrs
+                try {
+                    File p = new File(path);
+                    if (p.isDirectory()) {
+                        if (p.exists()) {
+                            if (p.listFiles().length == 0) {
+                                if (p.delete()) {
+                                    sendStatus(id, SSH_FX_OK, "");
+                                } else {
+                                    sendStatus(id, SSH_FX_FAILURE, "Unable to delete directory " + path);
+                                }
+                            } else {
+                                sendStatus(id, SSH_FX_DIR_NOT_EMPTY, path);
+                            }
+                        } else {
+                            sendStatus(id, SSH_FX_NO_SUCH_PATH, path);
+                        }
+                    } else {
+                        sendStatus(id, SSH_FX_NOT_A_DIRECTORY, p.getPath());
+                    }
+                } catch (IOException e) {
+                    sendStatus(id, SSH_FX_FAILURE, e.getMessage());
+                }
+                break;
+            }
+            case SSH_FXP_REALPATH: {
+                String path = buffer.getString();
+                if (path.trim().length() == 0) {
+                    path = ".";
+                }
+                // TODO: handle optional args
+                try {
+                    log.info("path="+path);
+                    File p = new File(path);
+                    sendName(id, p);
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                    sendStatus(id, SSH_FX_NO_SUCH_FILE, e.getMessage());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    sendStatus(id, SSH_FX_FAILURE, e.getMessage());
+                }
+                break;
+            }
+			
+			case SSH_FXP_SETSTAT:
+            case SSH_FXP_FSETSTAT: {
+            	// This is required for WinSCP / Cyberduck to upload properly
+            	// Blindly reply "OK"
+				// TODO implement it
+                sendStatus(id, SSH_FX_OK, "");
+            	break;
+            }   
+			
+            default:
+                log.error("Received: {}", type);
+                sendStatus(id, SSH_FX_OP_UNSUPPORTED, "Command " + type + " is unsupported or not implemented");
+                throw new IllegalStateException();
+        }
+    }
+
+    protected void sendHandle(int id, String handle) throws IOException {
+        Buffer buffer = new Buffer();
+        buffer.putByte((byte) SSH_FXP_HANDLE);
+        buffer.putInt(id);
+        buffer.putString(handle);
+        send(buffer);
+    }
+
+    protected void sendAttrs(int id, File file) throws IOException {
+        Buffer buffer = new Buffer();
+        buffer.putByte((byte) SSH_FXP_ATTRS);
+        buffer.putInt(id);
+        writeAttrs(buffer, file);
+        send(buffer);
+    }
+	
+    protected void sendAttrs(int id, File file, int flags) throws IOException {
+        Buffer buffer = new Buffer();
+        buffer.putByte((byte) SSH_FXP_ATTRS);
+        buffer.putInt(id);
+        writeAttrs(buffer, file, flags);
+        send(buffer);
+    }
+
+
+    protected void sendName(int id, File... files) throws IOException {
+        Buffer buffer = new Buffer();
+        buffer.putByte((byte) SSH_FXP_NAME);
+        buffer.putInt(id);
+        buffer.putInt(files.length);
+        for (File f : files) {
+			buffer.putString(f.getName());
+            if (version <= 3) {
+                buffer.putString(getLongName(f)); // Format specified in the specs
+            } else {
+				buffer.putString(f.getName()); // Supposed to be UTF-8
+			}
+            writeAttrs(buffer, f);
+        }
+        send(buffer);
+    }    
+    private String getLongName(File f) {
+    	String username = session.getUsername();
+    	if (username.length() > 8) {
+    		username = username.substring(0, 8);
+    	} else {
+    		for (int i=username.length(); i < 8; i++) {
+    			username = username + " ";
+    		}
+    	}
+    	
+    	long length = f.length();
+    	String lengthString = String.format("%1$#8s", length);
+    	
+    	StringBuilder sb = new StringBuilder();
+    	sb.append((f.isDirectory() ? "d" : "-")); 
+    	sb.append((f.canRead() ? "r" : "-")); 
+    	sb.append((f.canWrite() ? "w" : "-")); 
+    	sb.append((f.canExecute() ? "x" : "-")); 
+    	sb.append((f.canRead() ? "r" : "-")); 
+    	sb.append((f.canWrite() ? "w" : "-")); 
+    	sb.append((f.canExecute() ? "x" : "-")); 
+    	sb.append((f.canRead() ? "r" : "-")); 
+    	sb.append((f.canWrite() ? "w" : "-")); 
+    	sb.append((f.canExecute() ? "x" : "-"));
+    	sb.append(" ");
+    	sb.append("  1");
+    	sb.append(" ");
+    	sb.append(username);
+    	sb.append(" ");
+    	sb.append(username);
+    	sb.append(" ");
+    	sb.append(lengthString);
+    	sb.append(" ");
+    	sb.append("Jan 01 00:00 ");
+    	sb.append(f.getName());
+    	
+    	return sb.toString();
+    }
+    
+    protected void writeAttrs(Buffer buffer, File file) throws IOException {
+    	writeAttrs(buffer, file, 0);
+    }
+
+
+    protected void writeAttrs(Buffer buffer, File file, int flags) throws IOException {
+        if (!file.exists()) {
+            throw new FileNotFoundException(file.getPath());
+        }
+        if (version >= 4) {
+			long size = file.length();
+        	String username = session.getUsername();
+        	long lastModif = file.lastModified();
+            int p = 0;
+            if (file.canRead()) {
+                p |= S_IRUSR;
+            }
+            if (file.canWrite()) {
+                p |= S_IWUSR;
+            }
+            if (file.canExecute()) {
+                p |= S_IXUSR;
+            }
+            if (file.isFile()) {
+                buffer.putInt(SSH_FILEXFER_ATTR_PERMISSIONS);
+                buffer.putByte((byte) SSH_FILEXFER_TYPE_REGULAR);
+                buffer.putInt(p);
+            } else if (file.isDirectory()) {
+                buffer.putInt(SSH_FILEXFER_ATTR_PERMISSIONS);
+                buffer.putByte((byte) SSH_FILEXFER_TYPE_DIRECTORY);
+                buffer.putInt(p);
+            } else {
+                buffer.putInt(0);
+                buffer.putByte((byte) SSH_FILEXFER_TYPE_UNKNOWN);
+            }
+        } else {
+            int p = 0;
+            if (file.isFile()) {
+                p |= 0100000;
+            }
+            if (file.isDirectory()) {
+                p |= 0040000;
+            }
+            if (file.canRead()) {
+                p |= 0000400;
+            }
+            if (file.canWrite()) {
+                p |= 0000200;
+            }
+            if (file.canExecute()) {
+                p |= 0000100;
+            }
+            if (file.isFile()) {
+                buffer.putInt(SSH_FILEXFER_ATTR_PERMISSIONS);
+                buffer.putInt(p);
+            } else if (file.isDirectory()) {
+                buffer.putInt(SSH_FILEXFER_ATTR_PERMISSIONS);
+                buffer.putInt(p);
+            } else {
+                buffer.putInt(0);
+            }
+        }
+    }
+
+    protected void sendStatus(int id, int substatus, String msg) throws IOException {
+        sendStatus(id, substatus, msg, "");
+    }
+
+    protected void sendStatus(int id, int substatus, String msg, String lang) throws IOException {
+        Buffer buffer = new Buffer();
+        buffer.putByte((byte) SSH_FXP_STATUS);
+        buffer.putInt(id);
+        buffer.putInt(substatus);
+        buffer.putString(msg);
+        buffer.putString(lang);
+        send(buffer);
+    }
+
+    protected void send(Buffer buffer) throws IOException {
+        DataOutputStream dos = new DataOutputStream(out);
+        dos.writeInt(buffer.available());
+        dos.write(buffer.array(), buffer.rpos(), buffer.available());
+        dos.flush();
+    }
+
+    public void destroy() {
+        closed = true;
+    }
+
+
+}

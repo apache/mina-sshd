@@ -141,7 +141,7 @@ public final class Buffer {
     public int getInt() {
         return (int) getUInt();
     }
-    
+
     public long getUInt()
     {
         ensureAvailable(4);
@@ -150,6 +150,20 @@ public final class Buffer {
                  ((data[rpos++] <<  8) & 0x0000ff00L)|
                  ((data[rpos++]      ) & 0x000000ffL);
         return l;        
+    }
+
+    public long getLong()
+    {
+        ensureAvailable(8);
+        long l = ((data[rpos++] << 56) & 0xff00000000000000L)|
+                 ((data[rpos++] << 48) & 0x00ff000000000000L)|
+                 ((data[rpos++] << 40) & 0x0000ff0000000000L)|
+                 ((data[rpos++] << 32) & 0x000000ff00000000L)|
+                 ((data[rpos++] << 24) & 0x00000000ff000000L)|
+                 ((data[rpos++] << 16) & 0x0000000000ff0000L)|
+                 ((data[rpos++] <<  8) & 0x000000000000ff00L)|
+                 ((data[rpos++]      ) & 0x00000000000000ffL);
+        return l;
     }
 
     public boolean getBoolean() {
