@@ -46,159 +46,160 @@ import org.slf4j.LoggerFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class SftpSubsystem implements Command, Runnable, SessionAware {
-	
-	protected final Logger log = LoggerFactory.getLogger(getClass());
-    
-	public static class Factory implements NamedFactory<Command> {
+
+    protected final Logger log = LoggerFactory.getLogger(getClass());
+
+    public static class Factory implements NamedFactory<Command> {
         public Command create() {
             return new SftpSubsystem();
         }
+
         public String getName() {
             return "sftp";
         }
     }
 
-	public static final int HIGHEST_SFTP_IMPL = 3; // Working implementation up to v3, v4 and v5 are work in progress
+    public static final int HIGHEST_SFTP_IMPL = 3; // Working implementation up to v3, v4 and v5 are work in progress
 
-	
-    public static final int SSH_FXP_INIT             =   1;
-    public static final int SSH_FXP_VERSION          =   2;
-    public static final int SSH_FXP_OPEN             =   3;
-    public static final int SSH_FXP_CLOSE            =   4;
-    public static final int SSH_FXP_READ             =   5;
-    public static final int SSH_FXP_WRITE            =   6;
-    public static final int SSH_FXP_LSTAT            =   7;
-    public static final int SSH_FXP_FSTAT            =   8;
-    public static final int SSH_FXP_SETSTAT          =   9;
-    public static final int SSH_FXP_FSETSTAT         =  10;
-    public static final int SSH_FXP_OPENDIR          =  11;
-    public static final int SSH_FXP_READDIR          =  12;
-    public static final int SSH_FXP_REMOVE           =  13;
-    public static final int SSH_FXP_MKDIR            =  14;
-    public static final int SSH_FXP_RMDIR            =  15;
-    public static final int SSH_FXP_REALPATH         =  16;
-    public static final int SSH_FXP_STAT             =  17;
-    public static final int SSH_FXP_RENAME           =  18;
-    public static final int SSH_FXP_READLINK         =  19;
-    public static final int SSH_FXP_LINK             =  21;
-    public static final int SSH_FXP_BLOCK            =  22;
-    public static final int SSH_FXP_UNBLOCK          =  23;
 
-    public static final int SSH_FXP_STATUS           = 101;
-    public static final int SSH_FXP_HANDLE           = 102;
-    public static final int SSH_FXP_DATA             = 103;
-    public static final int SSH_FXP_NAME             = 104;
-    public static final int SSH_FXP_ATTRS            = 105;
+    public static final int SSH_FXP_INIT = 1;
+    public static final int SSH_FXP_VERSION = 2;
+    public static final int SSH_FXP_OPEN = 3;
+    public static final int SSH_FXP_CLOSE = 4;
+    public static final int SSH_FXP_READ = 5;
+    public static final int SSH_FXP_WRITE = 6;
+    public static final int SSH_FXP_LSTAT = 7;
+    public static final int SSH_FXP_FSTAT = 8;
+    public static final int SSH_FXP_SETSTAT = 9;
+    public static final int SSH_FXP_FSETSTAT = 10;
+    public static final int SSH_FXP_OPENDIR = 11;
+    public static final int SSH_FXP_READDIR = 12;
+    public static final int SSH_FXP_REMOVE = 13;
+    public static final int SSH_FXP_MKDIR = 14;
+    public static final int SSH_FXP_RMDIR = 15;
+    public static final int SSH_FXP_REALPATH = 16;
+    public static final int SSH_FXP_STAT = 17;
+    public static final int SSH_FXP_RENAME = 18;
+    public static final int SSH_FXP_READLINK = 19;
+    public static final int SSH_FXP_LINK = 21;
+    public static final int SSH_FXP_BLOCK = 22;
+    public static final int SSH_FXP_UNBLOCK = 23;
 
-    public static final int SSH_FXP_EXTENDED         = 200;
-    public static final int SSH_FXP_EXTENDED_REPLY   = 201;
+    public static final int SSH_FXP_STATUS = 101;
+    public static final int SSH_FXP_HANDLE = 102;
+    public static final int SSH_FXP_DATA = 103;
+    public static final int SSH_FXP_NAME = 104;
+    public static final int SSH_FXP_ATTRS = 105;
 
-    public static final int SSH_FX_OK                           = 0;
-    public static final int SSH_FX_EOF                          = 1;
-    public static final int SSH_FX_NO_SUCH_FILE                 = 2;
-    public static final int SSH_FX_PERMISSION_DENIED            = 3;
-    public static final int SSH_FX_FAILURE                      = 4;
-    public static final int SSH_FX_BAD_MESSAGE                  = 5;
-    public static final int SSH_FX_NO_CONNECTION                = 6;
-    public static final int SSH_FX_CONNECTION_LOST              = 7;
-    public static final int SSH_FX_OP_UNSUPPORTED               = 8;
-    public static final int SSH_FX_INVALID_HANDLE               = 9;
-    public static final int SSH_FX_NO_SUCH_PATH                 = 10;
-    public static final int SSH_FX_FILE_ALREADY_EXISTS          = 11;
-    public static final int SSH_FX_WRITE_PROTECT                = 12;
-    public static final int SSH_FX_NO_MEDIA                     = 13;
-    public static final int SSH_FX_NO_SPACE_ON_FILESYSTEM       = 14;
-    public static final int SSH_FX_QUOTA_EXCEEDED               = 15;
-    public static final int SSH_FX_UNKNOWN_PRINCIPAL            = 16;
-    public static final int SSH_FX_LOCK_CONFLICT                = 17;
-    public static final int SSH_FX_DIR_NOT_EMPTY                = 18;
-    public static final int SSH_FX_NOT_A_DIRECTORY              = 19;
-    public static final int SSH_FX_INVALID_FILENAME             = 20;
-    public static final int SSH_FX_LINK_LOOP                    = 21;
-    public static final int SSH_FX_CANNOT_DELETE                = 22;
-    public static final int SSH_FX_INVALID_PARAMETER            = 23;
-    public static final int SSH_FX_FILE_IS_A_DIRECTORY          = 24;
-    public static final int SSH_FX_BYTE_RANGE_LOCK_CONFLICT     = 25;
-    public static final int SSH_FX_BYTE_RANGE_LOCK_REFUSED      = 26;
-    public static final int SSH_FX_DELETE_PENDING               = 27;
-    public static final int SSH_FX_FILE_CORRUPT                 = 28;
-    public static final int SSH_FX_OWNER_INVALID                = 29;
-    public static final int SSH_FX_GROUP_INVALID                = 30;
-    public static final int SSH_FX_NO_MATCHING_BYTE_RANGE_LOCK  = 31;
+    public static final int SSH_FXP_EXTENDED = 200;
+    public static final int SSH_FXP_EXTENDED_REPLY = 201;
 
-    public static final int SSH_FILEXFER_ATTR_SIZE              = 0x00000001;
-    public static final int SSH_FILEXFER_ATTR_PERMISSIONS       = 0x00000004;
-    public static final int SSH_FILEXFER_ATTR_ACCESSTIME        = 0x00000008;
-    public static final int SSH_FILEXFER_ATTR_CREATETIME        = 0x00000010;
-    public static final int SSH_FILEXFER_ATTR_MODIFYTIME        = 0x00000020;
-    public static final int SSH_FILEXFER_ATTR_ACL               = 0x00000040;
-    public static final int SSH_FILEXFER_ATTR_OWNERGROUP        = 0x00000080;
-    public static final int SSH_FILEXFER_ATTR_SUBSECOND_TIMES   = 0x00000100;
-    public static final int SSH_FILEXFER_ATTR_BITS              = 0x00000200;
-    public static final int SSH_FILEXFER_ATTR_ALLOCATION_SIZE   = 0x00000400;
-    public static final int SSH_FILEXFER_ATTR_TEXT_HINT         = 0x00000800;
-    public static final int SSH_FILEXFER_ATTR_MIME_TYPE         = 0x00001000;
-    public static final int SSH_FILEXFER_ATTR_LINK_COUNT        = 0x00002000;
+    public static final int SSH_FX_OK = 0;
+    public static final int SSH_FX_EOF = 1;
+    public static final int SSH_FX_NO_SUCH_FILE = 2;
+    public static final int SSH_FX_PERMISSION_DENIED = 3;
+    public static final int SSH_FX_FAILURE = 4;
+    public static final int SSH_FX_BAD_MESSAGE = 5;
+    public static final int SSH_FX_NO_CONNECTION = 6;
+    public static final int SSH_FX_CONNECTION_LOST = 7;
+    public static final int SSH_FX_OP_UNSUPPORTED = 8;
+    public static final int SSH_FX_INVALID_HANDLE = 9;
+    public static final int SSH_FX_NO_SUCH_PATH = 10;
+    public static final int SSH_FX_FILE_ALREADY_EXISTS = 11;
+    public static final int SSH_FX_WRITE_PROTECT = 12;
+    public static final int SSH_FX_NO_MEDIA = 13;
+    public static final int SSH_FX_NO_SPACE_ON_FILESYSTEM = 14;
+    public static final int SSH_FX_QUOTA_EXCEEDED = 15;
+    public static final int SSH_FX_UNKNOWN_PRINCIPAL = 16;
+    public static final int SSH_FX_LOCK_CONFLICT = 17;
+    public static final int SSH_FX_DIR_NOT_EMPTY = 18;
+    public static final int SSH_FX_NOT_A_DIRECTORY = 19;
+    public static final int SSH_FX_INVALID_FILENAME = 20;
+    public static final int SSH_FX_LINK_LOOP = 21;
+    public static final int SSH_FX_CANNOT_DELETE = 22;
+    public static final int SSH_FX_INVALID_PARAMETER = 23;
+    public static final int SSH_FX_FILE_IS_A_DIRECTORY = 24;
+    public static final int SSH_FX_BYTE_RANGE_LOCK_CONFLICT = 25;
+    public static final int SSH_FX_BYTE_RANGE_LOCK_REFUSED = 26;
+    public static final int SSH_FX_DELETE_PENDING = 27;
+    public static final int SSH_FX_FILE_CORRUPT = 28;
+    public static final int SSH_FX_OWNER_INVALID = 29;
+    public static final int SSH_FX_GROUP_INVALID = 30;
+    public static final int SSH_FX_NO_MATCHING_BYTE_RANGE_LOCK = 31;
+
+    public static final int SSH_FILEXFER_ATTR_SIZE = 0x00000001;
+    public static final int SSH_FILEXFER_ATTR_PERMISSIONS = 0x00000004;
+    public static final int SSH_FILEXFER_ATTR_ACCESSTIME = 0x00000008;
+    public static final int SSH_FILEXFER_ATTR_CREATETIME = 0x00000010;
+    public static final int SSH_FILEXFER_ATTR_MODIFYTIME = 0x00000020;
+    public static final int SSH_FILEXFER_ATTR_ACL = 0x00000040;
+    public static final int SSH_FILEXFER_ATTR_OWNERGROUP = 0x00000080;
+    public static final int SSH_FILEXFER_ATTR_SUBSECOND_TIMES = 0x00000100;
+    public static final int SSH_FILEXFER_ATTR_BITS = 0x00000200;
+    public static final int SSH_FILEXFER_ATTR_ALLOCATION_SIZE = 0x00000400;
+    public static final int SSH_FILEXFER_ATTR_TEXT_HINT = 0x00000800;
+    public static final int SSH_FILEXFER_ATTR_MIME_TYPE = 0x00001000;
+    public static final int SSH_FILEXFER_ATTR_LINK_COUNT = 0x00002000;
     public static final int SSH_FILEXFER_ATTR_UNTRANSLATED_NAME = 0x00004000;
-    public static final int SSH_FILEXFER_ATTR_CTIME             = 0x00008000;
-    public static final int SSH_FILEXFER_ATTR_EXTENDED          = 0x80000000;
+    public static final int SSH_FILEXFER_ATTR_CTIME = 0x00008000;
+    public static final int SSH_FILEXFER_ATTR_EXTENDED = 0x80000000;
 
-    public static final int SSH_FILEXFER_TYPE_REGULAR         = 1;
-    public static final int SSH_FILEXFER_TYPE_DIRECTORY       = 2;
-    public static final int SSH_FILEXFER_TYPE_SYMLINK         = 3;
-    public static final int SSH_FILEXFER_TYPE_SPECIAL         = 4;
-    public static final int SSH_FILEXFER_TYPE_UNKNOWN         = 5;
-    public static final int SSH_FILEXFER_TYPE_SOCKET          = 6;
-    public static final int SSH_FILEXFER_TYPE_CHAR_DEVICE     = 7;
-    public static final int SSH_FILEXFER_TYPE_BLOCK_DEVICE    = 8;
-    public static final int SSH_FILEXFER_TYPE_FIFO            = 9;
+    public static final int SSH_FILEXFER_TYPE_REGULAR = 1;
+    public static final int SSH_FILEXFER_TYPE_DIRECTORY = 2;
+    public static final int SSH_FILEXFER_TYPE_SYMLINK = 3;
+    public static final int SSH_FILEXFER_TYPE_SPECIAL = 4;
+    public static final int SSH_FILEXFER_TYPE_UNKNOWN = 5;
+    public static final int SSH_FILEXFER_TYPE_SOCKET = 6;
+    public static final int SSH_FILEXFER_TYPE_CHAR_DEVICE = 7;
+    public static final int SSH_FILEXFER_TYPE_BLOCK_DEVICE = 8;
+    public static final int SSH_FILEXFER_TYPE_FIFO = 9;
 
 
-    public static final int SSH_FXF_ACCESS_DISPOSITION      = 0x00000007;
-    public static final int SSH_FXF_CREATE_NEW              = 0x00000000;
-    public static final int SSH_FXF_CREATE_TRUNCATE         = 0x00000001;
-    public static final int SSH_FXF_OPEN_EXISTING           = 0x00000002;
-    public static final int SSH_FXF_OPEN_OR_CREATE          = 0x00000003;
-    public static final int SSH_FXF_TRUNCATE_EXISTING       = 0x00000004;
-    public static final int SSH_FXF_APPEND_DATA             = 0x00000008;
-    public static final int SSH_FXF_APPEND_DATA_ATOMIC      = 0x00000010;
-    public static final int SSH_FXF_TEXT_MODE               = 0x00000020;
-    public static final int SSH_FXF_BLOCK_READ              = 0x00000040;
-    public static final int SSH_FXF_BLOCK_WRITE             = 0x00000080;
-    public static final int SSH_FXF_BLOCK_DELETE            = 0x00000100;
-    public static final int SSH_FXF_BLOCK_ADVISORY          = 0x00000200;
-    public static final int SSH_FXF_NOFOLLOW                = 0x00000400;
-    public static final int SSH_FXF_DELETE_ON_CLOSE         = 0x00000800;
+    public static final int SSH_FXF_ACCESS_DISPOSITION = 0x00000007;
+    public static final int SSH_FXF_CREATE_NEW = 0x00000000;
+    public static final int SSH_FXF_CREATE_TRUNCATE = 0x00000001;
+    public static final int SSH_FXF_OPEN_EXISTING = 0x00000002;
+    public static final int SSH_FXF_OPEN_OR_CREATE = 0x00000003;
+    public static final int SSH_FXF_TRUNCATE_EXISTING = 0x00000004;
+    public static final int SSH_FXF_APPEND_DATA = 0x00000008;
+    public static final int SSH_FXF_APPEND_DATA_ATOMIC = 0x00000010;
+    public static final int SSH_FXF_TEXT_MODE = 0x00000020;
+    public static final int SSH_FXF_BLOCK_READ = 0x00000040;
+    public static final int SSH_FXF_BLOCK_WRITE = 0x00000080;
+    public static final int SSH_FXF_BLOCK_DELETE = 0x00000100;
+    public static final int SSH_FXF_BLOCK_ADVISORY = 0x00000200;
+    public static final int SSH_FXF_NOFOLLOW = 0x00000400;
+    public static final int SSH_FXF_DELETE_ON_CLOSE = 0x00000800;
     public static final int SSH_FXF_ACCESS_AUDIT_ALARM_INFO = 0x00001000;
-    public static final int SSH_FXF_ACCESS_BACKUP           = 0x00002000;
-    public static final int SSH_FXF_BACKUP_STREAM           = 0x00004000;
-    public static final int SSH_FXF_OVERRIDE_OWNER          = 0x00008000;
+    public static final int SSH_FXF_ACCESS_BACKUP = 0x00002000;
+    public static final int SSH_FXF_BACKUP_STREAM = 0x00004000;
+    public static final int SSH_FXF_OVERRIDE_OWNER = 0x00008000;
 
-    public static final int SSH_FXF_READ           = 0x00000001;
-    public static final int SSH_FXF_WRITE          = 0x00000002;
-    public static final int SSH_FXF_APPEND         = 0x00000004;
-    public static final int SSH_FXF_CREAT          = 0x00000008;
-    public static final int SSH_FXF_TRUNC          = 0x00000010;
-    public static final int SSH_FXF_EXCL           = 0x00000020;
-    public static final int SSH_FXF_TEXT           = 0x00000040;
+    public static final int SSH_FXF_READ = 0x00000001;
+    public static final int SSH_FXF_WRITE = 0x00000002;
+    public static final int SSH_FXF_APPEND = 0x00000004;
+    public static final int SSH_FXF_CREAT = 0x00000008;
+    public static final int SSH_FXF_TRUNC = 0x00000010;
+    public static final int SSH_FXF_EXCL = 0x00000020;
+    public static final int SSH_FXF_TEXT = 0x00000040;
 
-    public static final int ACE4_READ_DATA            = 0x00000001;
-    public static final int ACE4_LIST_DIRECTORY       = 0x00000001;
-    public static final int ACE4_WRITE_DATA           = 0x00000002;
-    public static final int ACE4_ADD_FILE             = 0x00000002;
-    public static final int ACE4_APPEND_DATA          = 0x00000004;
-    public static final int ACE4_ADD_SUBDIRECTORY     = 0x00000004;
-    public static final int ACE4_READ_NAMED_ATTRS     = 0x00000008;
-    public static final int ACE4_WRITE_NAMED_ATTRS    = 0x00000010;
-    public static final int ACE4_EXECUTE              = 0x00000020;
-    public static final int ACE4_DELETE_CHILD         = 0x00000040;
-    public static final int ACE4_READ_ATTRIBUTES      = 0x00000080;
-    public static final int ACE4_WRITE_ATTRIBUTES     = 0x00000100;
-    public static final int ACE4_DELETE               = 0x00010000;
-    public static final int ACE4_READ_ACL             = 0x00020000;
-    public static final int ACE4_WRITE_ACL            = 0x00040000;
-    public static final int ACE4_WRITE_OWNER          = 0x00080000;
-	
+    public static final int ACE4_READ_DATA = 0x00000001;
+    public static final int ACE4_LIST_DIRECTORY = 0x00000001;
+    public static final int ACE4_WRITE_DATA = 0x00000002;
+    public static final int ACE4_ADD_FILE = 0x00000002;
+    public static final int ACE4_APPEND_DATA = 0x00000004;
+    public static final int ACE4_ADD_SUBDIRECTORY = 0x00000004;
+    public static final int ACE4_READ_NAMED_ATTRS = 0x00000008;
+    public static final int ACE4_WRITE_NAMED_ATTRS = 0x00000010;
+    public static final int ACE4_EXECUTE = 0x00000020;
+    public static final int ACE4_DELETE_CHILD = 0x00000040;
+    public static final int ACE4_READ_ATTRIBUTES = 0x00000080;
+    public static final int ACE4_WRITE_ATTRIBUTES = 0x00000100;
+    public static final int ACE4_DELETE = 0x00010000;
+    public static final int ACE4_READ_ACL = 0x00020000;
+    public static final int ACE4_WRITE_ACL = 0x00040000;
+    public static final int ACE4_WRITE_OWNER = 0x00080000;
+
     public static final int S_IRUSR = 0000400;
     public static final int S_IWUSR = 0000200;
     public static final int S_IXUSR = 0000100;
@@ -248,6 +249,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
         public DirectoryHandle(File file) {
             super(file);
         }
+
         public boolean isDone() {
             return done;
         }
@@ -281,9 +283,9 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
         }
     }
 
-	public void setSession(ServerSession session) {
-		this.session = session;
-	}
+    public void setSession(ServerSession session) {
+        this.session = session;
+    }
 
     public void setExitCallback(ExitCallback callback) {
         this.callback = callback;
@@ -307,11 +309,11 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
     }
 
     public void run() {
-		DataInputStream dis = null;
+        DataInputStream dis = null;
         try {
             dis = new DataInputStream(in);
             while (true) {
-                int  length = dis.readInt();
+                int length = dis.readInt();
                 if (length < 5) {
                     throw new IllegalArgumentException();
                 }
@@ -333,14 +335,14 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
                 log.error("Exception caught in SFTP subsystem", t);
             }
         } finally {
-		    if (dis != null) {
-        		try {
-        			dis.close();
-        		} catch (IOException ioe) {
-        			log.error("Could not close DataInputStream", ioe);
-        		}
-        	}
-        	dis = null;
+            if (dis != null) {
+                try {
+                    dis.close();
+                } catch (IOException ioe) {
+                    log.error("Could not close DataInputStream", ioe);
+                }
+            }
+            dis = null;
 
             callback.onExit(0);
         }
@@ -348,8 +350,8 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
 
     protected void process(Buffer buffer) throws IOException {
         int length = buffer.getInt();
-        int type   = buffer.getByte();
-        int id     = buffer.getInt();
+        int type = buffer.getByte();
+        int id = buffer.getInt();
         switch (type) {
             case SSH_FXP_INIT: {
                 if (length != 5) {
@@ -357,22 +359,22 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
                 }
                 version = id;
                 if (version >= HIGHEST_SFTP_IMPL) {
-	                buffer.clear();
-	                buffer.putByte((byte) SSH_FXP_VERSION);
-	                buffer.putInt(HIGHEST_SFTP_IMPL);
-	                send(buffer);
-	                version = HIGHEST_SFTP_IMPL;
+                    buffer.clear();
+                    buffer.putByte((byte) SSH_FXP_VERSION);
+                    buffer.putInt(HIGHEST_SFTP_IMPL);
+                    send(buffer);
+                    version = HIGHEST_SFTP_IMPL;
                 } else {
-                	// We only support version 3 (Version 1 and 2 are not common)
-                	sendStatus(id, SSH_FX_OP_UNSUPPORTED, "Babelway SFTP server only support SFTP up to version " + HIGHEST_SFTP_IMPL);
+                    // We only support version 3 (Version 1 and 2 are not common)
+                    sendStatus(id, SSH_FX_OP_UNSUPPORTED, "Babelway SFTP server only support SFTP up to version " + HIGHEST_SFTP_IMPL);
                 }
 
                 break;
             }
             case SSH_FXP_OPEN: {
                 if (version <= 4) {
-                    String path   = buffer.getString();
-                    int    pflags = buffer.getInt();
+                    String path = buffer.getString();
+                    int pflags = buffer.getInt();
                     // attrs
                     try {
                         File file = new File(path);
@@ -390,7 +392,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
                             }
                         }
                         String acc = ((pflags & (SSH_FXF_READ | SSH_FXF_WRITE)) != 0 ? "r" : "") +
-                                        ((pflags & SSH_FXF_WRITE) != 0 ? "w" : "");
+                                ((pflags & SSH_FXF_WRITE) != 0 ? "w" : "");
                         raf = new RandomAccessFile(file, acc);
                         if ((pflags & SSH_FXF_TRUNC) != 0) {
                             raf.setLength(0);
@@ -402,9 +404,9 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
                         sendStatus(id, SSH_FX_FAILURE, e.getMessage());
                     }
                 } else {
-                    String path  = buffer.getString();
-                    int    acc   = buffer.getInt();
-                    int    flags = buffer.getInt();
+                    String path = buffer.getString();
+                    int acc = buffer.getInt();
+                    int flags = buffer.getInt();
                     // attrs
                     try {
                         File file = new File(path);
@@ -490,8 +492,8 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
             }
             case SSH_FXP_READ: {
                 String handle = buffer.getString();
-                long   offset = buffer.getLong();
-                int    len    = buffer.getInt();
+                long offset = buffer.getLong();
+                int len = buffer.getInt();
                 try {
                     Handle p = handles.get(handle);
                     if (!(p instanceof FileHandle)) {
@@ -519,8 +521,8 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
             }
             case SSH_FXP_WRITE: {
                 String handle = buffer.getString();
-                long   offset = buffer.getLong();
-                byte[] data   = buffer.getBytes();
+                long offset = buffer.getLong();
+                byte[] data = buffer.getBytes();
                 try {
                     Handle p = handles.get(handle);
                     if (!(p instanceof FileHandle)) {
@@ -573,7 +575,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
                         sendStatus(id, SSH_FX_NO_SUCH_FILE, path);
                     } else if (!p.isDirectory()) {
                         sendStatus(id, SSH_FX_NOT_A_DIRECTORY, path);
-                    } else  if (!p.canRead()) {
+                    } else if (!p.canRead()) {
                         sendStatus(id, SSH_FX_PERMISSION_DENIED, path);
                     } else {
                         String handle = UUID.randomUUID().toString();
@@ -617,10 +619,10 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
                     } else if (p.isDirectory()) {
                         sendStatus(id, SSH_FX_FILE_IS_A_DIRECTORY, p.getPath());
                     } else if (!p.delete()) {
-						sendStatus(id, SSH_FX_FAILURE, "Failed to delete file");
+                        sendStatus(id, SSH_FX_FAILURE, "Failed to delete file");
                     } else {
-						sendStatus(id, SSH_FX_OK, "");
-					}
+                        sendStatus(id, SSH_FX_OK, "");
+                    }
                 } catch (IOException e) {
                     sendStatus(id, SSH_FX_FAILURE, e.getMessage());
                 }
@@ -679,7 +681,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
                 }
                 // TODO: handle optional args
                 try {
-                    log.info("path="+path);
+                    log.info("path=" + path);
                     File p = new File(path);
                     sendName(id, p);
                 } catch (FileNotFoundException e) {
@@ -691,16 +693,16 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
                 }
                 break;
             }
-			
-			case SSH_FXP_SETSTAT:
+
+            case SSH_FXP_SETSTAT:
             case SSH_FXP_FSETSTAT: {
-            	// This is required for WinSCP / Cyberduck to upload properly
-            	// Blindly reply "OK"
-				// TODO implement it
+                // This is required for WinSCP / Cyberduck to upload properly
+                // Blindly reply "OK"
+                // TODO implement it
                 sendStatus(id, SSH_FX_OK, "");
-            	break;
-            }   
-			
+                break;
+            }
+
             default:
                 log.error("Received: {}", type);
                 sendStatus(id, SSH_FX_OP_UNSUPPORTED, "Command " + type + " is unsupported or not implemented");
@@ -723,7 +725,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
         writeAttrs(buffer, file);
         send(buffer);
     }
-	
+
     protected void sendAttrs(int id, File file, int flags) throws IOException {
         Buffer buffer = new Buffer();
         buffer.putByte((byte) SSH_FXP_ATTRS);
@@ -739,57 +741,58 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
         buffer.putInt(id);
         buffer.putInt(files.length);
         for (File f : files) {
-			buffer.putString(f.getName());
+            buffer.putString(f.getName());
             if (version <= 3) {
                 buffer.putString(getLongName(f)); // Format specified in the specs
             } else {
-				buffer.putString(f.getName()); // Supposed to be UTF-8
-			}
+                buffer.putString(f.getName()); // Supposed to be UTF-8
+            }
             writeAttrs(buffer, f);
         }
         send(buffer);
-    }    
-    private String getLongName(File f) {
-    	String username = session.getUsername();
-    	if (username.length() > 8) {
-    		username = username.substring(0, 8);
-    	} else {
-    		for (int i=username.length(); i < 8; i++) {
-    			username = username + " ";
-    		}
-    	}
-    	
-    	long length = f.length();
-    	String lengthString = String.format("%1$#8s", length);
-    	
-    	StringBuilder sb = new StringBuilder();
-    	sb.append((f.isDirectory() ? "d" : "-")); 
-    	sb.append((f.canRead() ? "r" : "-")); 
-    	sb.append((f.canWrite() ? "w" : "-")); 
-    	sb.append((f.canExecute() ? "x" : "-")); 
-    	sb.append((f.canRead() ? "r" : "-")); 
-    	sb.append((f.canWrite() ? "w" : "-")); 
-    	sb.append((f.canExecute() ? "x" : "-")); 
-    	sb.append((f.canRead() ? "r" : "-")); 
-    	sb.append((f.canWrite() ? "w" : "-")); 
-    	sb.append((f.canExecute() ? "x" : "-"));
-    	sb.append(" ");
-    	sb.append("  1");
-    	sb.append(" ");
-    	sb.append(username);
-    	sb.append(" ");
-    	sb.append(username);
-    	sb.append(" ");
-    	sb.append(lengthString);
-    	sb.append(" ");
-    	sb.append("Jan 01 00:00 ");
-    	sb.append(f.getName());
-    	
-    	return sb.toString();
     }
-    
+
+    private String getLongName(File f) {
+        String username = session.getUsername();
+        if (username.length() > 8) {
+            username = username.substring(0, 8);
+        } else {
+            for (int i = username.length(); i < 8; i++) {
+                username = username + " ";
+            }
+        }
+
+        long length = f.length();
+        String lengthString = String.format("%1$#8s", length);
+
+        StringBuilder sb = new StringBuilder();
+        sb.append((f.isDirectory() ? "d" : "-"));
+        sb.append((f.canRead() ? "r" : "-"));
+        sb.append((f.canWrite() ? "w" : "-"));
+        sb.append((/*f.canExecute() ? "x" :*/ "-"));
+        sb.append((f.canRead() ? "r" : "-"));
+        sb.append((f.canWrite() ? "w" : "-"));
+        sb.append((/*f.canExecute() ? "x" :*/ "-"));
+        sb.append((f.canRead() ? "r" : "-"));
+        sb.append((f.canWrite() ? "w" : "-"));
+        sb.append((/*f.canExecute() ? "x" :*/ "-"));
+        sb.append(" ");
+        sb.append("  1");
+        sb.append(" ");
+        sb.append(username);
+        sb.append(" ");
+        sb.append(username);
+        sb.append(" ");
+        sb.append(lengthString);
+        sb.append(" ");
+        sb.append("Jan 01 00:00 ");
+        sb.append(f.getName());
+
+        return sb.toString();
+    }
+
     protected void writeAttrs(Buffer buffer, File file) throws IOException {
-    	writeAttrs(buffer, file, 0);
+        writeAttrs(buffer, file, 0);
     }
 
 
@@ -798,9 +801,9 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
             throw new FileNotFoundException(file.getPath());
         }
         if (version >= 4) {
-			long size = file.length();
-        	String username = session.getUsername();
-        	long lastModif = file.lastModified();
+            long size = file.length();
+            String username = session.getUsername();
+            long lastModif = file.lastModified();
             int p = 0;
             if (file.canRead()) {
                 p |= S_IRUSR;
