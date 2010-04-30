@@ -811,9 +811,11 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
             if (file.canWrite()) {
                 p |= S_IWUSR;
             }
+            /*
             if (file.canExecute()) {
                 p |= S_IXUSR;
             }
+            */
             if (file.isFile()) {
                 buffer.putInt(SSH_FILEXFER_ATTR_PERMISSIONS);
                 buffer.putByte((byte) SSH_FILEXFER_TYPE_REGULAR);
@@ -840,9 +842,11 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
             if (file.canWrite()) {
                 p |= 0000200;
             }
+            /*
             if (file.canExecute()) {
                 p |= 0000100;
             }
+            */
             if (file.isFile()) {
                 buffer.putInt(SSH_FILEXFER_ATTR_PERMISSIONS);
                 buffer.putInt(p);
