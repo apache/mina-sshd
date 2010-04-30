@@ -366,7 +366,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
                     version = HIGHEST_SFTP_IMPL;
                 } else {
                     // We only support version 3 (Version 1 and 2 are not common)
-                    sendStatus(id, SSH_FX_OP_UNSUPPORTED, "Babelway SFTP server only support SFTP up to version " + HIGHEST_SFTP_IMPL);
+                    sendStatus(id, SSH_FX_OP_UNSUPPORTED, "SFTP server only support SFTP up to version " + HIGHEST_SFTP_IMPL);
                 }
 
                 break;
