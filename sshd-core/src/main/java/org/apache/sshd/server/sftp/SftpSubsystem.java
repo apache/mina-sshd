@@ -769,13 +769,13 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
         sb.append((f.isDirectory() ? "d" : "-"));
         sb.append((f.canRead() ? "r" : "-"));
         sb.append((f.canWrite() ? "w" : "-"));
-        sb.append((f.canExecute() ? "x" : "-"));
+        sb.append(/*(f.canExecute() ? "x" :*/ "-"));
         sb.append((f.canRead() ? "r" : "-"));
         sb.append((f.canWrite() ? "w" : "-"));
-        sb.append((f.canExecute() ? "x" : "-"));
+        sb.append(/*(f.canExecute() ? "x" :*/ "-"));
         sb.append((f.canRead() ? "r" : "-"));
         sb.append((f.canWrite() ? "w" : "-"));
-        sb.append((f.canExecute() ? "x" : "-"));
+        sb.append(/*(f.canExecute() ? "x" :*/ "-"));
         sb.append(" ");
         sb.append("  1");
         sb.append(" ");
