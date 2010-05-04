@@ -366,7 +366,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
                     version = HIGHEST_SFTP_IMPL;
                 } else {
                     // We only support version 3 (Version 1 and 2 are not common)
-                    sendStatus(id, SSH_FX_OP_UNSUPPORTED, "Babelway SFTP server only support SFTP up to version " + HIGHEST_SFTP_IMPL);
+                    sendStatus(id, SSH_FX_OP_UNSUPPORTED, "SFTP server only support SFTP up to version " + HIGHEST_SFTP_IMPL);
                 }
 
                 break;
@@ -811,9 +811,11 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
             if (file.canWrite()) {
                 p |= S_IWUSR;
             }
+            /*
             if (file.canExecute()) {
                 p |= S_IXUSR;
             }
+            */
             if (file.isFile()) {
                 buffer.putInt(SSH_FILEXFER_ATTR_PERMISSIONS);
                 buffer.putByte((byte) SSH_FILEXFER_TYPE_REGULAR);
@@ -840,9 +842,11 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
             if (file.canWrite()) {
                 p |= 0000200;
             }
+            /*
             if (file.canExecute()) {
                 p |= 0000100;
             }
+            */
             if (file.isFile()) {
                 buffer.putInt(SSH_FILEXFER_ATTR_PERMISSIONS);
                 buffer.putInt(p);
