@@ -108,7 +108,7 @@ public class SftpTest {
     }
 
     @Test
-//    @Ignore
+    @Ignore
     public void testExternal() throws Exception {
         System.out.println("SFTP subsystem available on port " + port);
         Thread.sleep(5 * 60000);

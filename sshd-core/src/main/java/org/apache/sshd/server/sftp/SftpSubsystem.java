@@ -26,8 +26,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -743,7 +743,9 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
         buffer.putInt(id);
         buffer.putInt(1);
         String name = file.getPath();
-        name = name.replace('\\', '/');
+        if (File.separatorChar != '/') {
+            name = name.replace(File.separatorChar, '/');
+        }
         if (!name.startsWith("/")) {
             name = "/" + name;
         }
@@ -803,7 +805,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
         sb.append(" ");
         sb.append(lengthString);
         sb.append(" ");
-        sb.append(new SimpleDateFormat("MMM dd hh:mm").format(f.lastModified()));
+        sb.append(getUnixDate(f.lastModified()));
         sb.append(" ");
         sb.append(f.getName());
 
@@ -903,5 +905,60 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
         closed = true;
     }
 
+
+    private final static String[] MONTHS = { "Jan", "Feb", "Mar", "Apr", "May",
+            "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
+
+    /**
+     * Get unix style date string.
+     */
+    private final static String getUnixDate(long millis) {
+        if (millis < 0) {
+            return "------------";
+        }
+
+        StringBuffer sb = new StringBuffer(16);
+        Calendar cal = new GregorianCalendar();
+        cal.setTimeInMillis(millis);
+
+        // month
+        sb.append(MONTHS[cal.get(Calendar.MONTH)]);
+        sb.append(' ');
+
+        // day
+        int day = cal.get(Calendar.DATE);
+        if (day < 10) {
+            sb.append(' ');
+        }
+        sb.append(day);
+        sb.append(' ');
+
+        long sixMonth = 15811200000L; // 183L * 24L * 60L * 60L * 1000L;
+        long nowTime = System.currentTimeMillis();
+        if (Math.abs(nowTime - millis) > sixMonth) {
+
+            // year
+            int year = cal.get(Calendar.YEAR);
+            sb.append(' ');
+            sb.append(year);
+        } else {
+
+            // hour
+            int hh = cal.get(Calendar.HOUR_OF_DAY);
+            if (hh < 10) {
+                sb.append('0');
+            }
+            sb.append(hh);
+            sb.append(':');
+
+            // minute
+            int mm = cal.get(Calendar.MINUTE);
+            if (mm < 10) {
+                sb.append('0');
+            }
+            sb.append(mm);
+        }
+        return sb.toString();
+    }
 
 }
