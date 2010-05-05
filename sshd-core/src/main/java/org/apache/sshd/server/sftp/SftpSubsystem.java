@@ -682,8 +682,8 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
                 // TODO: handle optional args
                 try {
                     log.info("path=" + path);
-                    File p = new File(path);
-                    sendName(id, p);
+                    File p = new File(path).getCanonicalFile();
+                    sendAbsoluteName(id, p);
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
                     sendStatus(id, SSH_FX_NO_SUCH_FILE, e.getMessage());
@@ -734,6 +734,17 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
         send(buffer);
     }
 
+
+    protected void sendAbsoluteName(int id, File file) throws IOException {
+        Buffer buffer = new Buffer();
+        buffer.putByte((byte) SSH_FXP_NAME);
+        buffer.putInt(id);
+        buffer.putInt(1);
+        buffer.putString(file.getPath());
+        buffer.putString(file.getPath());
+        writeAttrs(buffer, file);
+        send(buffer);
+    }
 
     protected void sendName(int id, File... files) throws IOException {
         Buffer buffer = new Buffer();
