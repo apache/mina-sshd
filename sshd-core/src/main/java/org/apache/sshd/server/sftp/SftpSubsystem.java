@@ -26,6 +26,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -740,8 +742,13 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
         buffer.putByte((byte) SSH_FXP_NAME);
         buffer.putInt(id);
         buffer.putInt(1);
-        buffer.putString(file.getPath());
-        buffer.putString(file.getPath());
+        String name = file.getPath();
+        name = name.replace('\\', '/');
+        if (!name.startsWith("/")) {
+            name = "/" + name;
+        }
+        buffer.putString(name);
+        buffer.putString(name);
         writeAttrs(buffer, file);
         send(buffer);
     }
@@ -796,7 +803,8 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
         sb.append(" ");
         sb.append(lengthString);
         sb.append(" ");
-        sb.append("Jan 01 00:00 ");
+        sb.append(new SimpleDateFormat("MMM dd hh:mm").format(f.lastModified()));
+        sb.append(" ");
         sb.append(f.getName());
 
         return sb.toString();
