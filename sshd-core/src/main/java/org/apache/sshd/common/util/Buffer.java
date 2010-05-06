@@ -330,8 +330,28 @@ public final class Buffer {
         wpos += r;
     }
 
+    /**
+     * Writes 32 bits
+     * @param i
+     */
     public void putInt(long i) {
         ensureCapacity(4);
+        data[wpos++] = (byte) (i >> 24);
+        data[wpos++] = (byte) (i >> 16);
+        data[wpos++] = (byte) (i >>  8);
+        data[wpos++] = (byte) (i      );
+    }
+
+    /**
+     * Writes 64 bits
+     * @param i
+     */
+    public void putLong(long i) {
+        ensureCapacity(8);
+        data[wpos++] = (byte) (i >> 56);
+        data[wpos++] = (byte) (i >> 48);
+        data[wpos++] = (byte) (i >> 40);
+        data[wpos++] = (byte) (i >> 32);
         data[wpos++] = (byte) (i >> 24);
         data[wpos++] = (byte) (i >> 16);
         data[wpos++] = (byte) (i >>  8);

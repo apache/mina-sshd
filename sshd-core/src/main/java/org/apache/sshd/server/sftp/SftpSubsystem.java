@@ -34,6 +34,7 @@ import java.util.UUID;
 
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.SelectorUtils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
@@ -52,8 +53,19 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
     protected final Logger log = LoggerFactory.getLogger(getClass());
 
     public static class Factory implements NamedFactory<Command> {
+
+        private File root;
+
+        public Factory() {
+            this(new File("."));
+        }
+
+        public Factory(File root) {
+            this.root = root;
+        }
+
         public Command create() {
-            return new SftpSubsystem();
+            return new SftpSubsystem(this.root);
         }
 
         public String getName() {
@@ -131,6 +143,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
 
     public static final int SSH_FILEXFER_ATTR_SIZE = 0x00000001;
     public static final int SSH_FILEXFER_ATTR_PERMISSIONS = 0x00000004;
+    public static final int SSH_FILEXFER_ATTR_ACMODTIME = 0x00000008; //v3 naming convention
     public static final int SSH_FILEXFER_ATTR_ACCESSTIME = 0x00000008;
     public static final int SSH_FILEXFER_ATTR_CREATETIME = 0x00000010;
     public static final int SSH_FILEXFER_ATTR_MODIFYTIME = 0x00000020;
@@ -224,6 +237,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
     private ServerSession session;
     private boolean closed = false;
 
+    private File root;
 
     private int version;
     private Map<String, Handle> handles = new HashMap<String, Handle>();
@@ -283,6 +297,10 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
         public void close() throws IOException {
             raf.close();
         }
+    }
+
+    public SftpSubsystem(File root) {
+        this.root = root.getAbsoluteFile();
     }
 
     public void setSession(ServerSession session) {
@@ -379,7 +397,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
                     int pflags = buffer.getInt();
                     // attrs
                     try {
-                        File file = new File(path);
+                        File file = resolveFile(path);
                         RandomAccessFile raf;
                         if (file.exists()) {
                             if (((pflags & SSH_FXF_CREAT) != 0) && ((pflags & SSH_FXF_EXCL) != 0)) {
@@ -411,7 +429,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
                     int flags = buffer.getInt();
                     // attrs
                     try {
-                        File file = new File(path);
+                        File file = resolveFile(path);
                         RandomAccessFile raf;
                         switch (flags & SSH_FXF_ACCESS_DISPOSITION) {
                             case SSH_FXF_CREATE_NEW: {
@@ -544,7 +562,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
             case SSH_FXP_STAT: {
                 String path = buffer.getString();
                 try {
-                    File p = new File(path);
+                    File p = resolveFile(path);
                     sendAttrs(id, p);
                 } catch (FileNotFoundException e) {
                     sendStatus(id, SSH_FX_NO_SUCH_FILE, e.getMessage());
@@ -572,7 +590,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
             case SSH_FXP_OPENDIR: {
                 String path = buffer.getString();
                 try {
-                    File p = new File(path);
+                    File p = resolveFile(path);
                     if (!p.exists()) {
                         sendStatus(id, SSH_FX_NO_SUCH_FILE, path);
                     } else if (!p.isDirectory()) {
@@ -615,7 +633,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
             case SSH_FXP_REMOVE: {
                 String path = buffer.getString();
                 try {
-                    File p = new File(path);
+                    File p = resolveFile(path);
                     if (!p.exists()) {
                         sendStatus(id, SSH_FX_NO_SUCH_FILE, p.getPath());
                     } else if (p.isDirectory()) {
@@ -634,7 +652,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
                 String path = buffer.getString();
                 // attrs
                 try {
-                    File p = new File(path);
+                    File p = resolveFile(path);
                     if (p.exists()) {
                         if (p.isDirectory()) {
                             sendStatus(id, SSH_FX_FILE_ALREADY_EXISTS, p.getPath());
@@ -643,6 +661,8 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
                         }
                     } else if (!p.mkdir()) {
                         throw new IOException("Error creating dir " + path);
+                    } else {
+                        sendStatus(id, SSH_FX_OK, "");
                     }
                 } catch (IOException e) {
                     sendStatus(id, SSH_FX_FAILURE, e.getMessage());
@@ -653,7 +673,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
                 String path = buffer.getString();
                 // attrs
                 try {
-                    File p = new File(path);
+                    File p = resolveFile(path);
                     if (p.isDirectory()) {
                         if (p.exists()) {
                             if (p.listFiles().length == 0) {
@@ -684,8 +704,8 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
                 // TODO: handle optional args
                 try {
                     log.info("path=" + path);
-                    File p = new File(path).getCanonicalFile();
-                    sendAbsoluteName(id, p);
+                    File p = resolveFile(path);
+                    sendPath(id, path, p);
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
                     sendStatus(id, SSH_FX_NO_SUCH_FILE, e.getMessage());
@@ -695,7 +715,26 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
                 }
                 break;
             }
-
+            case SSH_FXP_RENAME: {
+                String oldPath = buffer.getString();
+                String newPath = buffer.getString();
+                try {
+                    File o = resolveFile(oldPath);
+                    File n = resolveFile(newPath);
+                    if (!o.exists()) {
+                        sendStatus(id, SSH_FX_NO_SUCH_FILE, o.getPath());
+                    } else if (n.exists()) {
+                        sendStatus(id, SSH_FX_FILE_ALREADY_EXISTS, n.getPath());
+                    } else if (!o.renameTo(n)) {
+                        sendStatus(id, SSH_FX_FAILURE, "Failed to rename file");
+                    } else {
+                        sendStatus(id, SSH_FX_OK, "");
+                    }
+                } catch (IOException e) {
+                    sendStatus(id, SSH_FX_FAILURE, e.getMessage());
+                }
+                break;
+            }
             case SSH_FXP_SETSTAT:
             case SSH_FXP_FSETSTAT: {
                 // This is required for WinSCP / Cyberduck to upload properly
@@ -737,21 +776,27 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
     }
 
 
-    protected void sendAbsoluteName(int id, File file) throws IOException {
+    protected void sendPath(int id, String path, File f) throws IOException {
         Buffer buffer = new Buffer();
         buffer.putByte((byte) SSH_FXP_NAME);
         buffer.putInt(id);
         buffer.putInt(1);
-        String name = file.getPath();
-        if (File.separatorChar != '/') {
-            name = name.replace(File.separatorChar, '/');
+        //normalize the given path, use *nix style separator
+        String normalizedPath = SelectorUtils.normalizePath(path, "/");
+        if (normalizedPath.length() == 0) {
+            normalizedPath = "/";
         }
-        if (!name.startsWith("/")) {
-            name = "/" + name;
+        buffer.putString(normalizedPath);
+        f = new File(normalizedPath);
+        if (f.getName().length() == 0) {
+            f = new File(f, ".");
         }
-        buffer.putString(name);
-        buffer.putString(name);
-        writeAttrs(buffer, file);
+        if (version <= 3) {
+            buffer.putString(getLongName(f)); // Format specified in the specs
+        } else {
+            buffer.putString(f.getName()); // Supposed to be UTF-8
+        }
+        writeAttrs(buffer, f);
         send(buffer);
     }
 
@@ -869,11 +914,16 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
             }
             */
             if (file.isFile()) {
-                buffer.putInt(SSH_FILEXFER_ATTR_PERMISSIONS);
+                buffer.putInt(SSH_FILEXFER_ATTR_SIZE| SSH_FILEXFER_ATTR_PERMISSIONS | SSH_FILEXFER_ATTR_ACMODTIME);
+                buffer.putLong(file.length()); 
                 buffer.putInt(p);
+                buffer.putInt(file.lastModified()/1000);
+                buffer.putInt(file.lastModified()/1000);
             } else if (file.isDirectory()) {
-                buffer.putInt(SSH_FILEXFER_ATTR_PERMISSIONS);
+                buffer.putInt(SSH_FILEXFER_ATTR_PERMISSIONS | SSH_FILEXFER_ATTR_ACMODTIME);
                 buffer.putInt(p);
+                buffer.putInt(file.lastModified()/1000);
+                buffer.putInt(file.lastModified()/1000);
             } else {
                 buffer.putInt(0);
             }
@@ -905,6 +955,9 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
         closed = true;
     }
 
+    private File resolveFile(String path) {
+    	return new File(this.root, path);
+    }
 
     private final static String[] MONTHS = { "Jan", "Feb", "Mar", "Apr", "May",
             "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
