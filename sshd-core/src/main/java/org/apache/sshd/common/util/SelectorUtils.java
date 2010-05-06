@@ -548,7 +548,7 @@ public final class SelectorUtils {
                 tokens.remove(i);
             } else if (t.equals("..")) {
                 tokens.remove(i);
-                if (i > 1) {
+                if (i >= 1) {
                     tokens.remove(--i);
                 }
             }

@@ -789,7 +789,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
         buffer.putString(normalizedPath);
         f = new File(normalizedPath);
         if (f.getName().length() == 0) {
-            f = new File(f, ".");
+            f = resolveFile(".");
         }
         if (version <= 3) {
             buffer.putString(getLongName(f)); // Format specified in the specs
