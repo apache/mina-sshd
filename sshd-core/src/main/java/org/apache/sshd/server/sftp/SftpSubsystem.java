@@ -787,7 +787,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
             normalizedPath = "/";
         }
         buffer.putString(normalizedPath);
-        f = new File(normalizedPath);
+        f = resolveFile(normalizedPath);
         if (f.getName().length() == 0) {
             f = resolveFile(".");
         }
