@@ -73,7 +73,9 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
         }
     }
 
-    public static final int HIGHEST_SFTP_IMPL = 3; // Working implementation up to v3, v4 and v5 are work in progress
+    public static final int LOWER_SFTP_IMPL = 3; // Working implementation from v3
+    public static final int HIGHER_SFTP_IMPL = 3; //  .. up to
+    public static final String ALL_SFTP_IMPL = "3";
 
 
     public static final int SSH_FXP_INIT = 1;
@@ -378,15 +380,14 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
                     throw new IllegalArgumentException();
                 }
                 version = id;
-                if (version >= HIGHEST_SFTP_IMPL) {
+                if (version >= LOWER_SFTP_IMPL && version <= HIGHER_SFTP_IMPL) {
                     buffer.clear();
                     buffer.putByte((byte) SSH_FXP_VERSION);
-                    buffer.putInt(HIGHEST_SFTP_IMPL);
+                    buffer.putInt(version);
                     send(buffer);
-                    version = HIGHEST_SFTP_IMPL;
                 } else {
                     // We only support version 3 (Version 1 and 2 are not common)
-                    sendStatus(id, SSH_FX_OP_UNSUPPORTED, "SFTP server only support SFTP up to version " + HIGHEST_SFTP_IMPL);
+                    sendStatus(id, SSH_FX_OP_UNSUPPORTED, "SFTP server only support versions " + ALL_SFTP_IMPL);
                 }
 
                 break;
@@ -793,10 +794,11 @@ public class SftpSubsystem implements Command, Runnable, SessionAware {
         }
         if (version <= 3) {
             buffer.putString(getLongName(f)); // Format specified in the specs
+            buffer.putInt(0);
         } else {
             buffer.putString(f.getName()); // Supposed to be UTF-8
+            writeAttrs(buffer, f);
         }
-        writeAttrs(buffer, f);
         send(buffer);
     }
 
