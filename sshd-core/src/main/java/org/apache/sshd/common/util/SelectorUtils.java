@@ -19,6 +19,7 @@
 package org.apache.sshd.common.util;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
@@ -525,6 +526,43 @@ public final class SelectorUtils {
             ret.add(st.nextToken());
         }
         return ret;
+    }
+
+    
+    /**
+     * Normalizes the path by removing '.', '..' and double separators (e.g. '//')
+     * @param path
+     * @param separator
+     * @return normalized path
+     * @throws IOException when the path is invalid (e.g. '/first/../..')
+     */
+    public static String normalizePath(String path, String separator) throws IOException {
+        boolean startsWithSeparator = path.startsWith(separator);
+        // tokenize
+        List<String> tokens = tokenizePath(path, separator);
+
+        // clean up
+        for (int i = tokens.size() - 1; i >= 0; i--) {
+            String t = tokens.get(i);
+            if (t.length() == 0 || t.equals(".")) {
+                tokens.remove(i);
+            } else if (t.equals("..")) {
+                tokens.remove(i);
+                if (i >= 1) {
+                    tokens.remove(--i);
+                }
+            }
+        }
+
+        // serialize
+        StringBuffer buffer = new StringBuffer(path.length());
+
+        for (int i = 0; i < tokens.size(); i++) {
+            if (i > 0 || (i == 0 && startsWithSeparator)) buffer.append(separator);
+            buffer.append(tokens.get(i));
+        }
+
+        return buffer.toString();
     }
 
 
