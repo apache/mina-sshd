@@ -58,8 +58,7 @@ public abstract class AbstractDHGClient implements KeyExchange {
     private byte[] f;
     private byte[] K;
     private byte[] H;
-
-    private byte[] serverKey;
+    private PublicKey serverKey;
 
     public void init(AbstractSession s, byte[] V_S, byte[] V_C, byte[] I_S, byte[] I_C) throws Exception {
         if (!(s instanceof ClientSessionImpl)) {
@@ -93,22 +92,22 @@ public abstract class AbstractDHGClient implements KeyExchange {
 
         log.info("Received SSH_MSG_KEXDH_REPLY");
         
-        serverKey = buffer.getBytes();
+        byte[] K_S = buffer.getBytes();
         f = buffer.getMPIntAsBytes();
         byte[] sig = buffer.getBytes();
         dh.setF(f);
         K = dh.getK();
 
-        buffer = new Buffer(serverKey);
-        PublicKey key = buffer.getRawPublicKey();
-        String keyAlg = (key instanceof RSAPublicKey) ? KeyPairProvider.SSH_RSA : KeyPairProvider.SSH_DSS;
+        buffer = new Buffer(K_S);
+        serverKey = buffer.getRawPublicKey();
+        String keyAlg = (serverKey instanceof RSAPublicKey) ? KeyPairProvider.SSH_RSA : KeyPairProvider.SSH_DSS;
 
         buffer = new Buffer();
         buffer.putString(V_C);
         buffer.putString(V_S);
         buffer.putString(I_C);
         buffer.putString(I_S);
-        buffer.putString(serverKey);
+        buffer.putString(K_S);
         buffer.putMPInt(e);
         buffer.putMPInt(f);
         buffer.putMPInt(K);
@@ -116,7 +115,7 @@ public abstract class AbstractDHGClient implements KeyExchange {
         H = sha.digest();
 
         Signature verif = NamedFactory.Utils.create(session.getFactoryManager().getSignatureFactories(), keyAlg);
-        verif.init(key, null);
+        verif.init(serverKey, null);
         verif.update(H, 0, H.length);
         if (!verif.verify(sig)) {
             throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
@@ -137,7 +136,7 @@ public abstract class AbstractDHGClient implements KeyExchange {
         return K;
     }
 
-    public byte[] getServerKey() {
+    public PublicKey getServerKey() {
         return serverKey;
     }
 

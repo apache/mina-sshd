@@ -1,6 +1,7 @@
 package org.apache.sshd.client;
 
 import java.net.SocketAddress;
+import java.security.PublicKey;
 import java.util.Map;
 
 import org.apache.sshd.ClientSession;
@@ -16,7 +17,7 @@ import org.slf4j.LoggerFactory;
 public class DelegatingServerKeyVerifier implements ServerKeyVerifier {
 	protected final Logger log = LoggerFactory.getLogger(getClass());
 
-	public boolean verifyServerKey(ClientSession sshClientSession, SocketAddress remoteAddress, byte[] serverKey) {
+	public boolean verifyServerKey(ClientSession sshClientSession, SocketAddress remoteAddress, PublicKey serverKey) {
 		Map<Object, Object> metadataMap = sshClientSession.getMetadataMap();
 		Object verifier = metadataMap.get(ServerKeyVerifier.class);
 		if (verifier == null) {

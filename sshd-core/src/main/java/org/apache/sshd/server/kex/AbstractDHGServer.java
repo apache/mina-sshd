@@ -19,6 +19,7 @@
 package org.apache.sshd.server.kex;
 
 import java.security.KeyPair;
+import java.security.PublicKey;
 
 import org.apache.sshd.common.Digest;
 import org.apache.sshd.common.KeyExchange;
@@ -145,8 +146,8 @@ public abstract class AbstractDHGServer implements KeyExchange {
         return K;
     }
 
-    public byte[] getServerKey() {
-        throw new UnsupportedOperationException();
+    public PublicKey getServerKey() {
+        return session.getHostKey().getPublic();
     }
 
 }

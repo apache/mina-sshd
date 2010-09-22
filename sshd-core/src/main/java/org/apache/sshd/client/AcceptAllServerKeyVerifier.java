@@ -1,6 +1,7 @@
 package org.apache.sshd.client;
 
 import java.net.SocketAddress;
+import java.security.PublicKey;
 
 import org.apache.sshd.ClientSession;
 import org.apache.sshd.common.util.BufferUtils;
@@ -18,8 +19,8 @@ public class AcceptAllServerKeyVerifier implements ServerKeyVerifier {
 	private AcceptAllServerKeyVerifier() {
 	}
 
-	public boolean verifyServerKey(ClientSession sshClientSession, SocketAddress remoteAddress, byte[] serverKey) {
-		log.trace("Accepting key for " + remoteAddress + " key=" + BufferUtils.printHex(serverKey));
+	public boolean verifyServerKey(ClientSession sshClientSession, SocketAddress remoteAddress, PublicKey serverKey) {
+		log.trace("Accepting key for " + remoteAddress + " key=" + BufferUtils.printHex(serverKey.getEncoded()));
 		return true;
 	}
 }
