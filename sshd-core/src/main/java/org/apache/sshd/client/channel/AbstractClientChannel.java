@@ -243,4 +243,8 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         }
         // TODO: handle other channel requests
     }
+
+    public Integer getExitStatus() {
+        return exitStatus;
+    }
 }

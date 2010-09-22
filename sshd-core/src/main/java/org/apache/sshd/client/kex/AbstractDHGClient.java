@@ -59,6 +59,8 @@ public abstract class AbstractDHGClient implements KeyExchange {
     private byte[] K;
     private byte[] H;
 
+    private byte[] serverKey;
+
     public void init(AbstractSession s, byte[] V_S, byte[] V_C, byte[] I_S, byte[] I_C) throws Exception {
         if (!(s instanceof ClientSessionImpl)) {
             throw new IllegalStateException("Using a client side KeyExchange on a server");
@@ -91,13 +93,13 @@ public abstract class AbstractDHGClient implements KeyExchange {
 
         log.info("Received SSH_MSG_KEXDH_REPLY");
         
-        byte[] K_S = buffer.getBytes();
+        serverKey = buffer.getBytes();
         f = buffer.getMPIntAsBytes();
         byte[] sig = buffer.getBytes();
         dh.setF(f);
         K = dh.getK();
 
-        buffer = new Buffer(K_S);
+        buffer = new Buffer(serverKey);
         PublicKey key = buffer.getRawPublicKey();
         String keyAlg = (key instanceof RSAPublicKey) ? KeyPairProvider.SSH_RSA : KeyPairProvider.SSH_DSS;
 
@@ -106,7 +108,7 @@ public abstract class AbstractDHGClient implements KeyExchange {
         buffer.putString(V_S);
         buffer.putString(I_C);
         buffer.putString(I_S);
-        buffer.putString(K_S);
+        buffer.putString(serverKey);
         buffer.putMPInt(e);
         buffer.putMPInt(f);
         buffer.putMPInt(K);
@@ -133,6 +135,10 @@ public abstract class AbstractDHGClient implements KeyExchange {
 
     public byte[] getK() {
         return K;
+    }
+
+    public byte[] getServerKey() {
+        return serverKey;
     }
 
 }

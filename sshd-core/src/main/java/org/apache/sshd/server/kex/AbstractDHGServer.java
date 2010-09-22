@@ -145,4 +145,8 @@ public abstract class AbstractDHGServer implements KeyExchange {
         return K;
     }
 
+    public byte[] getServerKey() {
+        throw new UnsupportedOperationException();
+    }
+
 }

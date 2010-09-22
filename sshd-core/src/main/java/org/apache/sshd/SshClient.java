@@ -32,6 +32,7 @@ import org.apache.mina.core.future.IoFutureListener;
 import org.apache.mina.core.service.IoConnector;
 import org.apache.mina.transport.socket.nio.NioSocketConnector;
 import org.apache.sshd.agent.ChannelAgentForwarding;
+import org.apache.sshd.client.ServerKeyVerifier;
 import org.apache.sshd.client.SessionFactory;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.future.ConnectFuture;
@@ -110,6 +111,8 @@ public class SshClient extends AbstractFactoryManager {
 
     protected IoConnector connector;
     protected SessionFactory sessionFactory;
+
+    private ServerKeyVerifier serverKeyVerifier;
 
     public SshClient() {
     }
@@ -390,6 +393,14 @@ public class SshClient extends AbstractFactoryManager {
         } finally {
             client.stop();
         }
+    }
+
+    public ServerKeyVerifier getServerKeyVerifier() {
+        return serverKeyVerifier;
+    }
+
+    public void setServerKeyVerifier(ServerKeyVerifier serverKeyVerifier) {
+        this.serverKeyVerifier = serverKeyVerifier;
     }
 
 }

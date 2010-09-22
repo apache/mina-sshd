@@ -57,4 +57,5 @@ public interface ClientChannel {
 
     CloseFuture close(boolean immediately);
 
+    Integer getExitStatus();
 }

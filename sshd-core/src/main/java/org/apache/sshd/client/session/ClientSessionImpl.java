@@ -19,11 +19,16 @@
 package org.apache.sshd.client.session;
 
 import java.io.IOException;
+import java.net.SocketAddress;
 import java.security.KeyPair;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.mina.core.session.IoSession;
 import org.apache.sshd.ClientChannel;
 import org.apache.sshd.ClientSession;
+import org.apache.sshd.SshClient;
+import org.apache.sshd.client.ServerKeyVerifier;
 import org.apache.sshd.client.UserAuth;
 import org.apache.sshd.client.auth.UserAuthAgent;
 import org.apache.sshd.client.auth.UserAuthPassword;
@@ -56,6 +61,11 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
     private State state = State.ReceiveKexInit;
     private UserAuth userAuth;
     private AuthFuture authFuture;
+
+    /**
+     * For clients to store their own metadata
+     */
+    private Map<Object, Object> metadataMap = new HashMap<Object, Object>();
 
     public ClientSessionImpl(FactoryManager client, IoSession session) throws Exception {
         super(client, session);
@@ -390,8 +400,15 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         I_S = receiveKexInit(buffer, serverProposal);
     }
 
-    private void checkHost() throws Exception {
-        // TODO: check host fingerprint
+    private void checkHost() throws SshException {
+        ServerKeyVerifier serverKeyVerifier = ((SshClient) getFactoryManager()).getServerKeyVerifier();
+
+        if (serverKeyVerifier != null) {
+            SocketAddress remoteAddress = ioSession.getRemoteAddress();
+
+            if (!serverKeyVerifier.verifyServerKey(this, remoteAddress, kex.getServerKey()))
+                throw new SshException("Server key did not validate");
+        }
     }
 
     private void sendAuthRequest() throws Exception {
@@ -462,5 +479,9 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
             }
         });
     }
+
+	public Map<Object, Object> getMetadataMap() {
+		return metadataMap;
+	}
 
 }

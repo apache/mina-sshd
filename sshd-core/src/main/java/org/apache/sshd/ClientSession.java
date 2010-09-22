@@ -20,7 +20,7 @@ package org.apache.sshd;
 
 import java.io.IOException;
 import java.security.KeyPair;
-import java.security.PublicKey;
+import java.util.Map;
 
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ChannelSession;
@@ -76,4 +76,5 @@ public interface ClientSession {
 
     CloseFuture close(boolean immediately);
 
+    Map<Object, Object> getMetadataMap();
 }

@@ -70,4 +70,8 @@ public interface KeyExchange {
      */
     byte[] getK();
 
+    /**
+     * Retrieves the server's key
+     */
+    byte[] getServerKey();
 }
