@@ -31,9 +31,12 @@ import org.slf4j.LoggerFactory;
 /**
  * A ServerKeyVerifier that accepts one server key (specified in the constructor)
  *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class RequiredServerKeyVerifier implements ServerKeyVerifier {
+
 	protected final Logger log = LoggerFactory.getLogger(getClass());
+
 	final PublicKey requiredKey;
 
 	public RequiredServerKeyVerifier(PublicKey requiredKey) {

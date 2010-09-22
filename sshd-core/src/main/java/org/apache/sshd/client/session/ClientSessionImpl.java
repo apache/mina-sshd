@@ -28,6 +28,7 @@ import org.apache.mina.core.session.IoSession;
 import org.apache.sshd.ClientChannel;
 import org.apache.sshd.ClientSession;
 import org.apache.sshd.SshClient;
+import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.ServerKeyVerifier;
 import org.apache.sshd.client.UserAuth;
 import org.apache.sshd.client.auth.UserAuthAgent;
@@ -72,6 +73,10 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         log.info("Session created...");
         sendClientIdentification();
         sendKexInit();
+    }
+
+    public ClientFactoryManager getClientFactoryManager() {
+        return (ClientFactoryManager) factoryManager;
     }
 
     public KeyExchange getKex() {
@@ -401,7 +406,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
     }
 
     private void checkHost() throws SshException {
-        ServerKeyVerifier serverKeyVerifier = ((SshClient) getFactoryManager()).getServerKeyVerifier();
+        ServerKeyVerifier serverKeyVerifier = getClientFactoryManager().getServerKeyVerifier();
 
         if (serverKeyVerifier != null) {
             SocketAddress remoteAddress = ioSession.getRemoteAddress();

@@ -32,8 +32,11 @@ import org.slf4j.LoggerFactory;
  * A ServerKeyVerifier that delegates verification to the ServerKeyVerifier found in the ClientSession metadata
  * The ServerKeyVerifier can be specified at the SshClient level, which may have connections to multiple hosts.
  * This technique lets each connection have its own ServerKeyVerifier.
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class DelegatingServerKeyVerifier implements ServerKeyVerifier {
+
 	protected final Logger log = LoggerFactory.getLogger(getClass());
 
 	public boolean verifyServerKey(ClientSession sshClientSession, SocketAddress remoteAddress, PublicKey serverKey) {
