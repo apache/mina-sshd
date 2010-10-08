@@ -61,7 +61,7 @@
                 <extensions>true</extensions>
                 <configuration>
                     <instructions>
-                        <Bundle-SymbolicName>${artifactId}</Bundle-SymbolicName>
+                        <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
                         <Import-Package>
                             com.jcraft.jzlib*;resolution:=optional,
                             net.sf.jpam*;resolution:=optional,

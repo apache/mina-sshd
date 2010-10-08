@@ -108,7 +108,7 @@
                 <artifactId>maven-bundle-plugin</artifactId>
                 <configuration>
                     <instructions>
-                        <Bundle-SymbolicName>${artifactId}</Bundle-SymbolicName>
+                        <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
                         <Import-Package>
                             com.jcraft.jzlib*;resolution:=optional,
                             org.bouncycastle*;resolution:=optional,
@@ -116,7 +116,7 @@
                             *
                         </Import-Package>
                         <Export-Package>
-                            org.apache.sshd*;version=${version};-noimport:=true
+                            org.apache.sshd*;version=${project.version};-noimport:=true
                         </Export-Package>
                         <_versionpolicy>[$(version;==;$(@)),$(version;+;$(@)))</_versionpolicy>
                     </instructions>
