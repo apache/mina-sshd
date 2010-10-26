@@ -122,7 +122,7 @@ public class ServerSession extends AbstractSession {
                 int code = buffer.getInt();
                 String msg = buffer.getString();
                 log.info("Received SSH_MSG_DISCONNECT (reason={}, msg={})", code, msg);
-                close(false);
+                close(true);
                 break;
             }
             case SSH_MSG_UNIMPLEMENTED: {

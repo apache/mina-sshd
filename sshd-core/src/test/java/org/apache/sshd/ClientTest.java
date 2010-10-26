@@ -26,6 +26,7 @@ import java.net.ServerSocket;
 import java.security.KeyPair;
 import java.util.concurrent.CountDownLatch;
 
+import org.apache.mina.core.future.WriteFuture;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.KeyPairProvider;
@@ -34,6 +35,7 @@ import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.common.session.AbstractSession;
+import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.BufferUtils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
@@ -268,7 +270,16 @@ public class ClientTest {
             channel.setErr(err);
             channel.open().await();
 
-            ((AbstractSession) session).disconnect(SshConstants.SSH2_DISCONNECT_BY_APPLICATION, "Cancel");
+//            ((AbstractSession) session).disconnect(SshConstants.SSH2_DISCONNECT_BY_APPLICATION, "Cancel");
+            AbstractSession cs = (AbstractSession) session;
+            Buffer buffer = cs.createBuffer(SshConstants.Message.SSH_MSG_DISCONNECT, 0);
+            buffer.putInt(SshConstants.SSH2_DISCONNECT_BY_APPLICATION);
+            buffer.putString("Cancel");
+            buffer.putString("");
+            WriteFuture f = cs.writePacket(buffer);
+            f.await();
+            cs.getIoSession().suspendRead();
+            cs.getIoSession().suspendWrite();
 
             TestEchoShellFactory.TestEchoShell.latch.await();
         } finally {
