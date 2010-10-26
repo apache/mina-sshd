@@ -24,14 +24,18 @@ import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.net.ServerSocket;
 import java.security.KeyPair;
+import java.util.concurrent.CountDownLatch;
 
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.KeyPairProvider;
+import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
+import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.BufferUtils;
+import org.apache.sshd.server.Command;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.BogusPublickeyAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
@@ -62,7 +66,7 @@ public class ClientTest {
         sshd = SshServer.setUpDefaultServer();
         sshd.setPort(port);
         sshd.setKeyPairProvider(new FileKeyPairProvider(new String[] { "src/test/resources/hostkey.pem" }));
-        sshd.setShellFactory(new EchoShellFactory());
+        sshd.setShellFactory(new TestEchoShellFactory());
         sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
         sshd.setPublickeyAuthenticator(new BogusPublickeyAuthenticator());
         sshd.start();
@@ -243,6 +247,52 @@ public class ClientTest {
         KeyPair pair = new FileKeyPairProvider(new String[] { "src/test/resources/hostkey.pem" }).loadKey(KeyPairProvider.SSH_RSA);
 
         assertTrue(session.authPublicKey("smx", pair).await().isSuccess());
+    }
+
+    @Test
+    public void testClientDisconnect() throws Exception {
+        TestEchoShellFactory.TestEchoShell.latch = new CountDownLatch(1);
+        try
+        {
+            SshClient client = SshClient.setUpDefaultClient();
+            client.start();
+            ClientSession session = client.connect("localhost", port).await().getSession();
+            session.authPassword("smx", "smx");
+            ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
+            ByteArrayOutputStream sent = new ByteArrayOutputStream();
+            PipedOutputStream pipedIn = new TeePipedOutputStream(sent);
+            channel.setIn(new PipedInputStream(pipedIn));
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            ByteArrayOutputStream err = new ByteArrayOutputStream();
+            channel.setOut(out);
+            channel.setErr(err);
+            channel.open().await();
+
+            ((AbstractSession) session).disconnect(SshConstants.SSH2_DISCONNECT_BY_APPLICATION, "Cancel");
+
+            TestEchoShellFactory.TestEchoShell.latch.await();
+        } finally {
+            TestEchoShellFactory.TestEchoShell.latch = null;
+        }
+    }
+
+    public static class TestEchoShellFactory extends EchoShellFactory {
+        @Override
+        public Command create() {
+            return new TestEchoShell();
+        }
+        public static class TestEchoShell extends EchoShell {
+
+            public static CountDownLatch latch = new CountDownLatch(1);
+
+            @Override
+            public void destroy() {
+                if (latch != null) {
+                    latch.countDown();
+                }
+                super.destroy();
+            }
+        }
     }
 
     public static void main(String[] args) throws Exception {
