@@ -18,7 +18,6 @@
  */
 package org.apache.sshd;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -32,6 +31,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
+import org.apache.sshd.server.FileSystemFactory;
+import org.apache.sshd.server.filesystem.NativeFileSystemFactory;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
@@ -124,6 +125,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     protected Factory<Command> shellFactory;
     protected SessionFactory sessionFactory;
     protected CommandFactory commandFactory;
+    protected FileSystemFactory fileSystemFactory;
     protected List<NamedFactory<Command>> subsystemFactories;
     protected PasswordAuthenticator passwordAuthenticator;
     protected PublickeyAuthenticator publickeyAuthenticator;
@@ -209,6 +211,14 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         this.commandFactory = commandFactory;
     }
 
+    public FileSystemFactory getFileSystemFactory() {
+        return fileSystemFactory;
+    }
+
+    public void setFileSystemFactory(FileSystemFactory fileSystemFactory) {
+        this.fileSystemFactory = fileSystemFactory;
+    }
+
     public List<NamedFactory<Command>> getSubsystemFactories() {
         return subsystemFactories;
     }
@@ -279,6 +289,9 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         }
         if (getKeyPairProvider() == null) {
             throw new IllegalArgumentException("HostKeyProvider not set");
+        }
+        if (getFileSystemFactory() == null) {
+            throw new IllegalArgumentException("FileSystemFactory not set");
         }
     }
 
@@ -406,6 +419,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         sshd.setSignatureFactories(Arrays.<NamedFactory<Signature>>asList(
                 new SignatureDSA.Factory(),
                 new SignatureRSA.Factory()));
+        sshd.setFileSystemFactory(new NativeFileSystemFactory());
         return sshd;
     }
 

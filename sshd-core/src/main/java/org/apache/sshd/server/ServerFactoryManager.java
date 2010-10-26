@@ -31,6 +31,10 @@ import org.apache.sshd.common.NamedFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface ServerFactoryManager extends FactoryManager {
+    /**
+     * Key used to retrieve the value of the server identification string if not default.
+     */
+    String SERVER_IDENTIFICATION = "server-identification";
 
     /**
      * Retrieve the list of named factories for <code>UserAuth<code> objects.
@@ -83,6 +87,14 @@ public interface ServerFactoryManager extends FactoryManager {
      *         are not supported on this server
      */
     CommandFactory getCommandFactory();
+
+    /**
+     * Retrieve the <code>FileSystemFactory</code> to be used to traverse the file system.
+     *
+     * @return a valid <code>FileSystemFactory</code> object or <code>null</code> if commands
+     *         are not supported on this server
+     */
+     FileSystemFactory getFileSystemFactory();
 
     /**
      * Retrieve the list of named factories for <code>CommandFactory.Command</code> to

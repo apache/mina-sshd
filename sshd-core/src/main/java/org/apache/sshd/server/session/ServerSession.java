@@ -286,7 +286,11 @@ public class ServerSession extends AbstractSession {
     }
 
     private void sendServerIdentification() {
-        serverVersion = "SSH-2.0-" + getFactoryManager().getVersion();
+        if (getFactoryManager().getProperties() != null && getFactoryManager().getProperties().get(ServerFactoryManager.SERVER_IDENTIFICATION) != null) {
+            serverVersion = "SSH-2.0-" + getFactoryManager().getProperties().get(ServerFactoryManager.SERVER_IDENTIFICATION);
+        } else {
+            serverVersion = "SSH-2.0-" + getFactoryManager().getVersion();
+        }
         sendIdentification(serverVersion);
     }
 

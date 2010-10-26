@@ -42,13 +42,8 @@ import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.IoUtils;
 import org.apache.sshd.common.util.LoggingFilterOutputStream;
-import org.apache.sshd.server.Command;
-import org.apache.sshd.server.Environment;
-import org.apache.sshd.server.ExitCallback;
-import org.apache.sshd.server.ForwardingFilter;
-import org.apache.sshd.server.SessionAware;
-import org.apache.sshd.server.Signal;
-import org.apache.sshd.server.SignalListener;
+import org.apache.sshd.server.*;
+import org.apache.sshd.server.FileSystemFactory;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.x11.X11ForwardSupport;
 
@@ -432,6 +427,11 @@ public class ChannelSession extends AbstractServerChannel {
         // If the shell wants to be aware of the session, let's do that
         if (command instanceof SessionAware) {
             ((SessionAware) command).setSession((ServerSession) session);
+        }
+        // If the shell wants to be aware of the file system, let's do that too
+        if (command instanceof FileSystemAware) {
+            FileSystemFactory factory = ((ServerSession) session).getServerFactoryManager().getFileSystemFactory();
+            ((FileSystemAware) command).setFileSystemView(factory.createFileSystemView(((ServerSession) session).getUsername()));
         }
         out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.Message.SSH_MSG_CHANNEL_DATA);
         err = new ChannelOutputStream(this, remoteWindow, log, SshConstants.Message.SSH_MSG_CHANNEL_EXTENDED_DATA);
