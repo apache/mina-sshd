@@ -369,7 +369,8 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                     throw new IllegalArgumentException();
                 }
                 version = id;
-                if (version >= LOWER_SFTP_IMPL && version <= HIGHER_SFTP_IMPL) {
+                if (version >= LOWER_SFTP_IMPL) {
+                    version = Math.min(version, HIGHER_SFTP_IMPL);
                     buffer.clear();
                     buffer.putByte((byte) SSH_FXP_VERSION);
                     buffer.putInt(version);
