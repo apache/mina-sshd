@@ -32,6 +32,10 @@ import org.apache.sshd.common.NamedFactory;
  */
 public interface ServerFactoryManager extends FactoryManager {
     /**
+     * Key used to retrieve the value of the maximum concurrent open session count per username
+     */
+    String MAX_CONCURRENT_SESSIONS = "max-concurrent-sessions";
+    /**
      * Key used to retrieve the value of the server identification string if not default.
      */
     String SERVER_IDENTIFICATION = "server-identification";

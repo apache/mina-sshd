@@ -364,6 +364,19 @@ public class ServerSession extends AbstractSession {
                 log.info("Unsupported authentication method '{}'", method);
             }
             if (authed != null && authed) {
+
+                if (getFactoryManager().getProperties() != null) {
+                    String maxSessionCountAsString = getFactoryManager().getProperties().get(ServerFactoryManager.MAX_CONCURRENT_SESSIONS);
+                    if (maxSessionCountAsString != null) {
+                        int maxSessionCount = Integer.parseInt(maxSessionCountAsString);
+                        int currentSessionCount = getActiveSessionCountForUser(username);
+                        if (currentSessionCount >= maxSessionCount) {
+                            disconnect(SshConstants.SSH2_DISCONNECT_SERVICE_NOT_AVAILABLE, "Too many concurrent connections");
+                            return;
+                        }
+                    }
+                }
+
                 buffer = createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_SUCCESS, 0);
                 writePacket(buffer);
                 state = State.Running;
@@ -382,6 +395,24 @@ public class ServerSession extends AbstractSession {
 
     public KeyPair getHostKey() {
         return factoryManager.getKeyPairProvider().loadKey(negociated[SshConstants.PROPOSAL_SERVER_HOST_KEY_ALGS]);
+    }
+
+    /**
+     * Retrieve the current number of sessions active for a given username.
+     * @param userName The name of the user
+     * @return The current number of live <code>SshSession</code> objects associated with the user
+     */
+    protected int getActiveSessionCountForUser(String userName) {
+        int totalCount = 0;
+        for (IoSession is : ioSession.getService().getManagedSessions().values()) {
+            ServerSession session = (ServerSession) getSession(is, true);
+            if (session != null) {
+                if (session.getUsername() != null && session.getUsername().equals(userName)) {
+                    totalCount++;
+                }
+            }
+        }
+        return totalCount;
     }
 
     private void channelOpen(Buffer buffer) throws Exception {
