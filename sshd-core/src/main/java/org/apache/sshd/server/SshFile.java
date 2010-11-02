@@ -135,7 +135,7 @@ public interface SshFile {
      * List must be immutable.
      * @return The {@link java.util.List} of {@link SshFile}s
      */
-    List<SshFile> listFiles();
+    List<SshFile> listSshFiles();
 
     /**
      * Create output stream for writing. 

@@ -284,7 +284,7 @@ public class NativeSshFile implements SshFile {
     /**
      * List files. If not a directory or does not exist, null will be returned.
      */
-    public List<SshFile> listFiles() {
+    public List<SshFile> listSshFiles() {
 
         // is a directory
         if (!file.isDirectory()) {

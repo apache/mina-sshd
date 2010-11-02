@@ -632,7 +632,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                     } else if (!p.getFile().isReadable()) {
                         sendStatus(id, SSH_FX_PERMISSION_DENIED, p.getFile().getAbsolutePath());
                     } else {
-                        sendName(id, p.getFile().listFiles());
+                        sendName(id, p.getFile().listSshFiles());
                         ((DirectoryHandle) p).setDone(true);
                     }
                 } catch (IOException e) {
@@ -688,7 +688,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                     SshFile p = resolveFile(path);
                     if (p.isDirectory()) {
                         if (p.doesExist()) {
-                            if (p.listFiles().size() == 0) {
+                            if (p.listSshFiles().size() == 0) {
                                 if (p.delete()) {
                                     sendStatus(id, SSH_FX_OK, "");
                                 } else {
