@@ -199,8 +199,10 @@ public class ChannelSession extends AbstractServerChannel {
     }
 
     protected void doWriteData(byte[] data, int off, int len) throws IOException {
-        shellIn.write(data, off, len);
-        shellIn.flush();
+        if (shellIn != null) {
+            shellIn.write(data, off, len);
+            shellIn.flush();
+        }
     }
 
     protected void doWriteExtendedData(byte[] data, int off, int len) throws IOException {
