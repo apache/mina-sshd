@@ -489,7 +489,7 @@ public class ServerSession extends AbstractSession {
     private void globalRequest(Buffer buffer) throws Exception {
         String req = buffer.getString();
         boolean wantReply = buffer.getBoolean();
-        if (req.equals("keepalive@openssh.com")) {
+        if (req.equals("keepalive@openssh.com") || req.equals("keepalive@lag.net")) {
             // Relatively standard KeepAlive directive, just wants failure
         } else if (req.equals("no-more-sessions@openssh.com")) {
             allowMoreSessions = false;
