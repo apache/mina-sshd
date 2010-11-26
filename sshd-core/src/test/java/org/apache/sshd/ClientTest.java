@@ -90,7 +90,6 @@ public class ClientTest {
         session.authPassword("smx", "smx").await().isSuccess();
         ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
 
-        
         ByteArrayOutputStream sent = new ByteArrayOutputStream();
         PipedOutputStream pipedIn = new TeePipedOutputStream(sent);
         channel.setIn(new PipedInputStream(pipedIn));
@@ -112,6 +111,44 @@ public class ClientTest {
 
         pipedIn.write("exit\n".getBytes());
         pipedIn.flush();
+
+        channel.waitFor(ClientChannel.CLOSED, 0);
+
+        channel.close(false);
+        client.stop();
+
+        assertArrayEquals(sent.toByteArray(), out.toByteArray());
+    }
+
+    @Test
+    public void testClientClosingStream() throws Exception {
+        SshClient client = SshClient.setUpDefaultClient();
+        client.start();
+        ClientSession session = client.connect("localhost", port).await().getSession();
+        session.authPassword("smx", "smx").await().isSuccess();
+        ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
+
+
+        ByteArrayOutputStream sent = new ByteArrayOutputStream();
+        PipedOutputStream pipedIn = new TeePipedOutputStream(sent);
+        channel.setIn(new PipedInputStream(pipedIn));
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ByteArrayOutputStream err = new ByteArrayOutputStream();
+        channel.setOut(out);
+        channel.setErr(err);
+        channel.open();
+
+        pipedIn.write("this is my command\n".getBytes());
+        pipedIn.flush();
+
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < 1000; i++) {
+            sb.append("0123456789");
+        }
+        sb.append("\n");
+        pipedIn.write(sb.toString().getBytes());
+
+        pipedIn.close();
 
         channel.waitFor(ClientChannel.CLOSED, 0);
 

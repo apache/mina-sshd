@@ -86,6 +86,9 @@ public class ChannelSession extends AbstractClientChannel {
                     remoteWindow.waitAndConsume(len);
                     log.debug("Send SSH_MSG_CHANNEL_DATA on channel {}", id);
                     session.writePacket(buffer);
+                } else {
+                    sendEof();
+                    break;
                 }
             }
         } catch (Exception e) {
