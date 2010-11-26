@@ -247,7 +247,9 @@ public class NativeSshFile implements SshFile {
      * Truncate file to length 0.
      */
     public void truncate() throws IOException{
-        new RandomAccessFile(file, "rw").setLength(0);
+        RandomAccessFile tempFile = new RandomAccessFile(file, "rw");
+        tempFile.setLength(0);
+        tempFile.close();
     }
 
     /**
