@@ -75,6 +75,12 @@ public interface SshFile {
     boolean isWritable();
 
     /**
+     * Has exec permission?
+     * @return true if the {@link SshFile} is executable by the user
+     */
+    boolean isExecutable();
+
+    /**
      * Has delete permission?
      * @return true if the {@link SshFile} is removable by the user
      */

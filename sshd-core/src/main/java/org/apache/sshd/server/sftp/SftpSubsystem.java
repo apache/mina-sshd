@@ -846,13 +846,13 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         sb.append((f.isDirectory() ? "d" : "-"));
         sb.append((f.isReadable() ? "r" : "-"));
         sb.append((f.isWritable() ? "w" : "-"));
-        sb.append((/*f.canExecute() ? "x" :*/ "-"));
+        sb.append((f.isExecutable() ? "x" : "-"));
         sb.append((f.isReadable() ? "r" : "-"));
         sb.append((f.isWritable() ? "w" : "-"));
-        sb.append((/*f.canExecute() ? "x" :*/ "-"));
+        sb.append((f.isExecutable() ? "x" : "-"));
         sb.append((f.isReadable() ? "r" : "-"));
         sb.append((f.isWritable() ? "w" : "-"));
-        sb.append((/*f.canExecute() ? "x" :*/ "-"));
+        sb.append((f.isExecutable() ? "x" : "-"));
         sb.append(" ");
         sb.append("  1");
         sb.append(" ");
@@ -889,11 +889,9 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
             if (file.isWritable()) {
                 p |= S_IWUSR;
             }
-            /*
-            if (file.canExecute()) {
+            if (file.isExecutable()) {
                 p |= S_IXUSR;
             }
-            */
             if (file.isFile()) {
                 buffer.putInt(SSH_FILEXFER_ATTR_PERMISSIONS);
                 buffer.putByte((byte) SSH_FILEXFER_TYPE_REGULAR);
@@ -920,11 +918,9 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
             if (file.isWritable()) {
                 p |= 0000200;
             }
-            /*
-            if (file.canExecute()) {
+            if (file.isExecutable()) {
                 p |= 0000100;
             }
-            */
             if (file.isFile()) {
                 buffer.putInt(SSH_FILEXFER_ATTR_SIZE| SSH_FILEXFER_ATTR_PERMISSIONS | SSH_FILEXFER_ATTR_ACMODTIME);
                 buffer.putLong(file.getSize());

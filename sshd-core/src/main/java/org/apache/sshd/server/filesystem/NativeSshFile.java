@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
+import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
@@ -180,6 +181,34 @@ public class NativeSshFile implements SshFile {
 
         LOG.debug("Authorized");
         return true;
+    }
+
+    /**
+     * File.canExecute() method is only available on JDK 1.6
+     */
+    private static final Method CAN_EXECUTE_METHOD;
+    static {
+        Method method = null;
+        try {
+           method = File.class.getMethod("canExecute");
+        } catch (Throwable t) {
+        }
+        CAN_EXECUTE_METHOD = method;
+    }
+
+    /**
+     * Check file exec permission.
+     */
+    public boolean isExecutable() {
+        if (CAN_EXECUTE_METHOD != null) {
+            try {
+                return (Boolean) CAN_EXECUTE_METHOD.invoke(file);
+            } catch (Throwable t) {
+            }
+        }
+        // Default directories to being executable
+        // as on unix systems to allow listing their contents.
+        return file.isDirectory();
     }
 
     /**
