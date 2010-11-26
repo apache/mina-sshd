@@ -423,7 +423,7 @@ public class ChannelSession extends AbstractServerChannel {
         return true;
     }
 
-    protected void prepareCommand() {
+    protected void prepareCommand() throws IOException {
         // Add the user
         addEnvVariable(Environment.ENV_USER, ((ServerSession) session).getUsername());
         // If the shell wants to be aware of the session, let's do that
@@ -433,7 +433,7 @@ public class ChannelSession extends AbstractServerChannel {
         // If the shell wants to be aware of the file system, let's do that too
         if (command instanceof FileSystemAware) {
             FileSystemFactory factory = ((ServerSession) session).getServerFactoryManager().getFileSystemFactory();
-            ((FileSystemAware) command).setFileSystemView(factory.createFileSystemView(((ServerSession) session).getUsername()));
+            ((FileSystemAware) command).setFileSystemView(factory.createFileSystemView(session));
         }
         out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.Message.SSH_MSG_CHANNEL_DATA);
         err = new ChannelOutputStream(this, remoteWindow, log, SshConstants.Message.SSH_MSG_CHANNEL_EXTENDED_DATA);

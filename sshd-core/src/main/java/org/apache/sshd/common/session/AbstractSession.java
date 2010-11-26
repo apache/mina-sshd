@@ -128,6 +128,7 @@ public abstract class AbstractSession implements Session {
     protected final Object encodeLock = new Object();
     protected final Object decodeLock = new Object();
     protected final Map<AttributeKey<?>, Object> attributes = new ConcurrentHashMap<AttributeKey<?>, Object>();
+    protected String username;
 
     /**
      * Create a new session.
@@ -1070,4 +1071,7 @@ public abstract class AbstractSession implements Session {
         return (T)attributes.put(key, value);
     }
 
+    public String getUsername() {
+        return username;
+    }
 }

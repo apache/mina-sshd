@@ -19,6 +19,10 @@
 
 package org.apache.sshd.server;
 
+import org.apache.sshd.common.Session;
+
+import java.io.IOException;
+
 /**
  * Factory for file system implementations - it returns the file system view for user.
  *
@@ -28,9 +32,10 @@ public interface FileSystemFactory {
 
     /**
      * Create user specific file system view.
-     * @param userName The user for which the file system should be created
-     * @return The current {@link FileSystemView} for the provided user
+     * @param session The session created for the user
+     * @return The current {@link FileSystemView} for the provided session
+     * @throws IOException when the filesystem view can not be created
      */
-    FileSystemView createFileSystemView(String userName);
+    FileSystemView createFileSystemView(Session session) throws IOException;
 
 }

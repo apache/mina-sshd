@@ -36,7 +36,10 @@ public class UserAuthPassword implements UserAuth {
 
     protected final Logger log = LoggerFactory.getLogger(getClass());
 
+    private final String username;
+
     public UserAuthPassword(ClientSessionImpl session, String username, String password) throws IOException {
+        this.username = username;
         log.info("Send SSH_MSG_USERAUTH_REQUEST for password");
         Buffer buffer = session.createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_REQUEST, 0);
         buffer.putString(username);
@@ -45,6 +48,10 @@ public class UserAuthPassword implements UserAuth {
         buffer.putByte((byte) 0);
         buffer.putString(password);
         session.writePacket(buffer);
+    }
+
+    public String getUsername() {
+        return username;
     }
 
     public Result next(Buffer buffer) throws IOException {

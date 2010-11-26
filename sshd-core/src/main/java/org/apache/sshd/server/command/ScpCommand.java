@@ -34,6 +34,9 @@ import org.apache.sshd.server.Command;
 import org.apache.sshd.server.CommandFactory;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
+import org.apache.sshd.server.FileSystemAware;
+import org.apache.sshd.server.FileSystemView;
+import org.apache.sshd.server.SshFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +47,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ScpCommand implements Command, Runnable {
+public class ScpCommand implements Command, Runnable, FileSystemAware {
 
     protected static final Logger log = LoggerFactory.getLogger(ScpCommand.class);
     protected static final int OK = 0;
@@ -58,7 +61,8 @@ public class ScpCommand implements Command, Runnable {
     protected boolean optV;
     protected boolean optD;
     protected boolean optP;
-    protected String root;
+    protected FileSystemView root;
+    protected String path;
     protected InputStream in;
     protected OutputStream out;
     protected OutputStream err;
@@ -70,7 +74,7 @@ public class ScpCommand implements Command, Runnable {
         if (log.isDebugEnabled()) {
             log.debug("Executing command {}", name);
         }
-        root = ".";
+        path = ".";
         for (int i = 1; i < args.length; i++) {
             if (args[i].charAt(0) == '-') {
                 for (int j = 1; j < args[i].length(); j++) {
@@ -99,7 +103,7 @@ public class ScpCommand implements Command, Runnable {
                     }
                 }
             } else if (i == args.length - 1) {
-                root = args[args.length - 1];
+                path = args[args.length - 1];
             }
         }
         if (!optF && !optT) {
@@ -163,15 +167,15 @@ public class ScpCommand implements Command, Runnable {
 
                     if (optR && isDir)
                     {
-                        writeDir(line, new File(root));
+                        writeDir(line, root.getFile(path));
                     }
                     else
                     {
-                        writeFile(line, new File(root));
+                        writeFile(line, root.getFile(path));
                     }
                 }
             } else if (optF) {
-                String pattern = root;
+                String pattern = path;
                 int idx = pattern.indexOf('*');
                 if (idx >= 0) {
                     String basedir = "";
@@ -182,7 +186,7 @@ public class ScpCommand implements Command, Runnable {
                     }
                     String[] included = new DirectoryScanner(basedir, pattern).scan();
                     for (String path : included) {
-                        File file = new File(basedir, path);
+                        SshFile file = root.getFile(basedir + "/" + path);
                         if (file.isFile()) {
                             readFile(file);
                         } else if (file.isDirectory()) {
@@ -204,8 +208,8 @@ public class ScpCommand implements Command, Runnable {
                         basedir = pattern.substring(0, lastSep);
                         pattern = pattern.substring(lastSep + 1);
                     }
-                    File file = new File(basedir, pattern);
-                    if (!file.exists()) {
+                    SshFile file = root.getFile(basedir + "/" + pattern);
+                    if (!file.doesExist()) {
                         throw new IOException(file + ": no such file or directory");
                     }
                     if (file.isFile()) {
@@ -242,7 +246,7 @@ public class ScpCommand implements Command, Runnable {
         }
     }
 
-    protected void writeDir(String header, File path) throws IOException {
+    protected void writeDir(String header, SshFile path) throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("Writing dir {}", path);
         }
@@ -257,15 +261,15 @@ public class ScpCommand implements Command, Runnable {
         if (length != 0) {
             throw new IOException("Expected 0 length for directory but got " + length);
         }
-        File file;
-        if (path.exists() && path.isDirectory()) {
-            file = new File(path, name);
-        } else if (!path.exists() && path.getParentFile().exists() && path.getParentFile().isDirectory()) {
+        SshFile file;
+        if (path.doesExist() && path.isDirectory()) {
+            file = root.getFile(path, name);
+        } else if (!path.doesExist() && path.getParentFile().doesExist() && path.getParentFile().isDirectory()) {
             file = path;
         } else {
             throw new IOException("Can not write to " + path);
         }
-        if (!(file.exists() && file.isDirectory()) && !file.mkdir()) {
+        if (!(file.doesExist() && file.isDirectory()) && !file.mkdir()) {
             throw new IOException("Could not create directory " + file);
         }
 
@@ -287,7 +291,7 @@ public class ScpCommand implements Command, Runnable {
 
     }
 
-    protected void writeFile(String header, File path) throws IOException {
+    protected void writeFile(String header, SshFile path) throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("Writing file {}", path);
         }
@@ -299,22 +303,22 @@ public class ScpCommand implements Command, Runnable {
         long length = Long.parseLong(header.substring(6, header.indexOf(' ', 6)));
         String name = header.substring(header.indexOf(' ', 6) + 1);
 
-        File file;
-        if (path.exists() && path.isDirectory()) {
-            file = new File(path, name);
-        } else if (path.exists() && path.isFile()) {
+        SshFile file;
+        if (path.doesExist() && path.isDirectory()) {
+            file = root.getFile(path, name);
+        } else if (path.doesExist() && path.isFile()) {
             file = path;
-        } else if (!path.exists() && path.getParentFile().exists() && path.getParentFile().isDirectory()) {
+        } else if (!path.doesExist() && path.getParentFile().doesExist() && path.getParentFile().isDirectory()) {
             file = path;
         } else {
             throw new IOException("Can not write to " + path);
         }
-        if (file.exists() && file.isDirectory()) {
+        if (file.doesExist() && file.isDirectory()) {
             throw new IOException("File is a directory: " + file);
-        } else if (file.exists() && !file.canWrite()) {
+        } else if (file.doesExist() && !file.isWritable()) {
             throw new IOException("Can not write to file: " + file);
         }
-        OutputStream os = new FileOutputStream(file);
+        OutputStream os = file.createOutputStream(0);
         try {
             ack();
 
@@ -350,7 +354,7 @@ public class ScpCommand implements Command, Runnable {
         }
     }
 
-    protected void readFile(File path) throws IOException {
+    protected void readFile(SshFile path) throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("Reading file {}", path);
         }
@@ -358,7 +362,7 @@ public class ScpCommand implements Command, Runnable {
         buf.append("C");
         buf.append("0644"); // what about perms
         buf.append(" ");
-        buf.append(path.length()); // length
+        buf.append(path.getSize()); // length
         buf.append(" ");
         buf.append(path.getName());
         buf.append("\n");
@@ -366,7 +370,7 @@ public class ScpCommand implements Command, Runnable {
         out.flush();
         readAck(false);
 
-        InputStream is = new FileInputStream(path);
+        InputStream is = path.createInputStream(0);
         try {
             byte[] buffer = new byte[8192];
             for (;;) {
@@ -383,7 +387,7 @@ public class ScpCommand implements Command, Runnable {
         readAck(false);
     }
 
-    protected void readDir(File path) throws IOException {
+    protected void readDir(SshFile path) throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("Reading directory {}", path);
         }
@@ -399,7 +403,7 @@ public class ScpCommand implements Command, Runnable {
         out.flush();
         readAck(false);
 
-        for (File child : path.listFiles()) {
+        for (SshFile child : path.listSshFiles()) {
             if (child.isFile()) {
                 readFile(child);
             } else if (child.isDirectory()) {
@@ -436,6 +440,10 @@ public class ScpCommand implements Command, Runnable {
                 break;
         }
         return c;
+    }
+
+    public void setFileSystemView(FileSystemView view) {
+        this.root = view;
     }
 
 }

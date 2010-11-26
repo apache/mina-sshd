@@ -76,10 +76,17 @@ public class NativeFileSystemView implements FileSystemView {
      * Get file object.
      */
     public SshFile getFile(String file) {
+        return getFile(currDir, file);
+    }
 
+    public SshFile getFile(SshFile baseDir, String file) {
+        return getFile(baseDir.getAbsolutePath(), file);
+    }
+
+    protected SshFile getFile(String dir, String file) {
         // get actual file object
         String physicalName = NativeSshFile.getPhysicalName("/",
-                currDir, file, caseInsensitive);
+                dir, file, caseInsensitive);
         File fileObj = new File(physicalName);
 
         // strip the root directory and return

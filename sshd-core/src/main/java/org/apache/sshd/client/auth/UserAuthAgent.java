@@ -55,6 +55,10 @@ public class UserAuthAgent implements UserAuth {
         sendNextKey();
     }
 
+    public String getUsername() {
+        return username;
+    }
+
     protected void sendNextKey() throws IOException {
         sendNextKey(keys.next().getFirst());
     }

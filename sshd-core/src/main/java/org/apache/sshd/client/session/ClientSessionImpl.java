@@ -275,6 +275,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
                         switch (userAuth.next(buffer)) {
                              case Success:
                                  authFuture.setAuthed(true);
+                                 username = userAuth.getUsername();
                                  authed = true;
                                  setState(State.Running);
                                  break;

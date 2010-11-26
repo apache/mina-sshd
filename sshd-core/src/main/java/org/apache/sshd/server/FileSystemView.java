@@ -33,4 +33,12 @@ public interface FileSystemView {
      */
     SshFile getFile(String file);
 
+    /**
+     * Get file object.
+     * @param baseDir The reference towards which the file should be resolved
+     * @param file The path to the file to get
+     * @return The {@link SshFile} for the provided path
+     */
+    SshFile getFile(SshFile baseDir, String file);
+
 }

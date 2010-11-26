@@ -44,8 +44,11 @@ public class UserAuthPublicKey implements UserAuth {
 
     protected final Logger log = LoggerFactory.getLogger(getClass());
 
+    private final String username;
+
     public UserAuthPublicKey(ClientSessionImpl session, String username, KeyPair key) throws IOException {
         try {
+            this.username = username;
             log.info("Send SSH_MSG_USERAUTH_REQUEST for publickey");
             Buffer buffer = session.createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_REQUEST, 0);
             int pos1 = buffer.wpos() - 1;
@@ -82,6 +85,10 @@ public class UserAuthPublicKey implements UserAuth {
         } catch (Exception e) {
             throw (IOException) new IOException("Error performing public key authentication").initCause(e);
         }
+    }
+
+    public String getUsername() {
+        return username;
     }
 
     public Result next(Buffer buffer) throws IOException {

@@ -62,7 +62,6 @@ public class ServerSession extends AbstractSession {
     private Timer timer;
     private TimerTask authTimerTask;
     private State state = State.ReceiveKexInit;
-    private String username;
     private int maxAuthRequests = 20;
     private int nbAuthRequests;
     private int authTimeout = 10 * 60 * 1000; // 10 minutes in milliseconds
@@ -108,10 +107,6 @@ public class ServerSession extends AbstractSession {
 
     public ServerFactoryManager getServerFactoryManager() {
         return (ServerFactoryManager) factoryManager;
-    }
-
-    public String getUsername() {
-        return username;
     }
 
     protected void handleMessage(Buffer buffer) throws Exception {

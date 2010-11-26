@@ -48,6 +48,14 @@ public interface Session {
     <T, E extends T> T setAttribute(AttributeKey<T> key, E value);
 
     /**
+     * Retrieve the name of the user authenticated on this session
+     * or null if the session has not been authenticated yet.
+     *
+     * @return the user name.
+     */
+    String getUsername();
+
+    /**
      * Retrieve the FactoryManager that has created this session
      *
      * @return the factory manager, can not be <tt>null</tt>.
