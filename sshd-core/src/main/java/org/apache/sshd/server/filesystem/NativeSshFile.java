@@ -273,6 +273,13 @@ public class NativeSshFile implements SshFile {
     }
 
     /**
+     * Create a new file
+     */
+    public boolean create() throws IOException {
+        return file.createNewFile();
+    }
+
+    /**
      * Truncate file to length 0.
      */
     public void truncate() throws IOException{

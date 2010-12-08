@@ -410,6 +410,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                                 if (!file.isWritable()) {
                                     sendStatus(id, SSH_FX_FAILURE, "Can not create " + path);
                                 }
+                                file.create();
                             }
                         }
                         String acc = ((pflags & (SSH_FXF_READ | SSH_FXF_WRITE)) != 0 ? "r" : "") +
@@ -438,6 +439,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                                 } else if (!file.isWritable()) {
                                     sendStatus(id, SSH_FX_FAILURE, "Can not create " + path);
                                 }
+                                file.create();
                                 break;
                             }
                             case SSH_FXF_CREATE_TRUNCATE: {
@@ -462,6 +464,9 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                                 break;
                             }
                             case SSH_FXF_OPEN_OR_CREATE: {
+                                if (!file.doesExist()) {
+                                    file.create();
+                                }
                                 break;
                             }
                             case SSH_FXF_TRUNCATE_EXISTING: {
