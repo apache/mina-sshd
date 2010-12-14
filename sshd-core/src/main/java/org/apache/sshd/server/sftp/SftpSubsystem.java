@@ -521,7 +521,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                         SshFile ssh = ((FileHandle) p).getFile();
                         InputStream is = ssh.createInputStream(offset);
                         try {
-                            byte[] b = new byte[Math.max(len, 1024 * 32)];
+                            byte[] b = new byte[Math.min(len, 1024 * 32)];
                             len = is.read(b);
                             if (len >= 0) {
                                 Buffer buf = new Buffer(len + 5);
