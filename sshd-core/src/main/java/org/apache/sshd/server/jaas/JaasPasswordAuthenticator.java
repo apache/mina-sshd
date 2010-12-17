@@ -30,6 +30,8 @@ import javax.security.auth.login.LoginContext;
 
 import org.apache.sshd.server.PasswordAuthenticator;
 import org.apache.sshd.server.session.ServerSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * TODO Add javadoc
@@ -37,6 +39,8 @@ import org.apache.sshd.server.session.ServerSession;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class JaasPasswordAuthenticator implements PasswordAuthenticator {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(JaasPasswordAuthenticator.class);
 
     private String domain;
 
@@ -72,6 +76,7 @@ public class JaasPasswordAuthenticator implements PasswordAuthenticator {
             loginContext.logout();
             return true;
         } catch (Exception e) {
+            LOGGER.error("Authentication failed with error", e);
             return false;
         }
     }
