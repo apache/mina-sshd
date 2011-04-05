@@ -78,6 +78,8 @@ import org.apache.sshd.server.ForwardingFilter;
 import org.apache.sshd.server.UserAuth;
 import org.apache.sshd.server.auth.UserAuthPassword;
 import org.apache.sshd.server.auth.UserAuthPublicKey;
+import org.apache.sshd.server.auth.gss.GSSAuthenticator;
+import org.apache.sshd.server.auth.gss.UserAuthGSS;
 import org.apache.sshd.server.channel.ChannelDirectTcpip;
 import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.kex.DHG1;
@@ -129,6 +131,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     protected List<NamedFactory<Command>> subsystemFactories;
     protected PasswordAuthenticator passwordAuthenticator;
     protected PublickeyAuthenticator publickeyAuthenticator;
+    protected GSSAuthenticator gssAuthenticator;
     protected ForwardingFilter forwardingFilter;
 
     public SshServer() {
@@ -243,6 +246,14 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         this.publickeyAuthenticator = publickeyAuthenticator;
     }
 
+    public GSSAuthenticator getGSSAuthenticator() {
+      return gssAuthenticator;
+    }
+
+    public void setGSSAuthenticator(GSSAuthenticator gssAuthenticator) {
+      this.gssAuthenticator = gssAuthenticator;
+    }
+
     public ForwardingFilter getForwardingFilter() {
         return forwardingFilter;
     }
@@ -265,6 +276,9 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
             }
             if (getPublickeyAuthenticator() != null) {
                 factories.add(new UserAuthPublicKey.Factory());
+            }
+            if (getGSSAuthenticator() != null) {
+              factories.add(new UserAuthGSS.Factory());
             }
             if (factories.size() > 0) {
                 setUserAuthFactories(factories);

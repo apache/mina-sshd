@@ -23,6 +23,7 @@ import java.util.List;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.server.auth.gss.GSSAuthenticator;
 
 /**
  * The <code>ServerFactoryManager</code> enable the retrieval of additional
@@ -66,6 +67,16 @@ public interface ServerFactoryManager extends FactoryManager {
      * @return the <code>PasswordAuthenticator</code> or <code>null</code>
      */
     PasswordAuthenticator getPasswordAuthenticator();
+
+    /**
+     * Retrieve the <code>GSSAuthenticator</code> to be used by the SSH server.
+     * If no authenticator has been configured (i.e. this method returns
+     * <code>null</code>), then client authentication requests based on gssapi 
+     * will be rejected.
+     *
+     * @return the <code>GSSAuthenticator</code> or <code>null</code>
+     */
+    GSSAuthenticator getGSSAuthenticator();
 
     /**
      * Retrieve the <code>ForwardingFilter</code> to be used by the SSH server.

@@ -60,8 +60,6 @@ public interface SshConstants {
         SSH_MSG_REQUEST_SUCCESS(81),
         SSH_MSG_REQUEST_FAILURE(82),
         
-        SSH_MSG_USERAUTH_GSSAPI_MIC(66),        
-
         SSH_MSG_CHANNEL_OPEN(90),
         SSH_MSG_CHANNEL_OPEN_CONFIRMATION(91),
         SSH_MSG_CHANNEL_OPEN_FAILURE(92),

@@ -38,6 +38,7 @@ import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.server.HandshakingUserAuth;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.UserAuth;
 import org.apache.sshd.server.channel.OpenChannelException;
@@ -69,6 +70,8 @@ public class ServerSession extends AbstractSession {
     private final TcpipForwardSupport tcpipForward;
     private final AgentForwardSupport agentForward;
     private final X11ForwardSupport x11Forward;
+
+    private HandshakingUserAuth currentAuth;
 
     private List<NamedFactory<UserAuth>> userAuthFactories;
 
@@ -103,6 +106,10 @@ public class ServerSession extends AbstractSession {
 
     public KeyExchange getKex() {
         return kex;
+    }
+
+    public byte [] getSessionId() {
+      return sessionId;
     }
 
     public ServerFactoryManager getServerFactoryManager() {
@@ -173,19 +180,19 @@ public class ServerSession extends AbstractSession {
                             String request = buffer.getString();
                             log.info("Received SSH_MSG_SERVICE_REQUEST '{}'", request);
                             if ("ssh-userauth".equals(request)) {
-                                userAuth(buffer);
+                                userAuth(buffer, null);
                             } else {
                                 disconnect(SshConstants.SSH2_DISCONNECT_SERVICE_NOT_AVAILABLE, "Bad service request: " + request);
                             }
                         }
                         break;
                     case UserAuth:
-                        if (cmd != SshConstants.Message.SSH_MSG_USERAUTH_REQUEST) {
+                        if (cmd != SshConstants.Message.SSH_MSG_USERAUTH_REQUEST && (currentAuth == null || !currentAuth.handles(cmd))) {
                             disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "Protocol error: expected packet " + SshConstants.Message.SSH_MSG_USERAUTH_REQUEST + ", got " + cmd);
                             return;
                         }
-                        log.info("Received SSH_MSG_USERAUTH_REQUEST");
-                        userAuth(buffer);
+                        log.info("Received " + cmd);
+                        userAuth(buffer, cmd);
                         break;
                     case Running:
                         switch (cmd) {
@@ -319,7 +326,7 @@ public class ServerSession extends AbstractSession {
         disconnect(SshConstants.SSH2_DISCONNECT_SERVICE_NOT_AVAILABLE, "Unsupported service request: " + request);
     }
 
-    private void userAuth(Buffer buffer) throws Exception {
+    private void userAuth(Buffer buffer, SshConstants.Message cmd) throws Exception {
         if (state == State.WaitingUserAuth) {
             log.info("Accepting user authentication request");
             buffer = createBuffer(SshConstants.Message.SSH_MSG_SERVICE_ACCEPT, 0);
@@ -332,32 +339,71 @@ public class ServerSession extends AbstractSession {
             if (nbAuthRequests++ > maxAuthRequests) {
                 throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "Too may authentication failures");
             }
-            String username = buffer.getString();
-            String svcName = buffer.getString();
-            String method = buffer.getString();
+            
+            Boolean authed   = null;
+            String  username = null;
 
-            log.info("Authenticating user '{}' with method '{}'", username, method);
-            Boolean authed = null;
-            NamedFactory<UserAuth> factory = NamedFactory.Utils.get(userAuthFactories, method);
-            if (factory != null) {
+            if (cmd == SshConstants.Message.SSH_MSG_USERAUTH_REQUEST) {
+              username = buffer.getString();
+              
+              String svcName = buffer.getString();
+              String method = buffer.getString();
+              
+              log.info("Authenticating user '{}' with method '{}'", username, method);
+              NamedFactory<UserAuth> factory = NamedFactory.Utils.get(userAuthFactories, method);
+              if (factory != null) {
                 UserAuth auth = factory.create();
                 try {
-                    authed = auth.auth(this, username, buffer);
-                    if (authed == null) {
-                        // authentication is still ongoing
-                        log.info("Authentication not finished");
-                        return;
-                    } else {
-                        log.info(authed ? "Authentication succeeded" : "Authentication failed");
+                  authed = auth.auth(this, username, buffer);
+                  if (authed == null) {
+                    // authentication is still ongoing
+                    log.info("Authentication not finished");
+                    
+                    if (auth instanceof HandshakingUserAuth) {
+                      currentAuth = (HandshakingUserAuth) auth;
+                      
+                      // GSSAPI needs the user name and service to verify the MIC
+                      
+                      currentAuth.setServiceName(svcName);
                     }
+                    return;
+                  } else {
+                    log.info(authed ? "Authentication succeeded" : "Authentication failed");
+                  }
                 } catch (Exception e) {
-                    // Continue
-                    authed = false;
-                    log.info("Authentication failed: {}", e.getMessage());
+                  // Continue
+                  authed = false;
+                  log.info("Authentication failed: {}", e.getMessage());
                 }
-            } else {
+                
+              } else {
                 log.info("Unsupported authentication method '{}'", method);
+              }
+            } else {
+              try {
+                authed = currentAuth.next(this, cmd, buffer);
+                
+                if (authed == null) {
+                  // authentication is still ongoing
+                  log.info("Authentication still not finished");
+                  return;
+                } else if (authed.booleanValue()) {
+                  username = currentAuth.getUserName();
+                }
+              } catch (Exception e) {
+                // failed
+                authed = false;
+                log.info("Authentication next failed: {}", e.getMessage());
+              }
             }
+
+            // No more handshakes now - clean up if necessary
+            
+            if (currentAuth != null) {
+              currentAuth.destroy();
+              currentAuth = null;
+            }
+
             if (authed != null && authed) {
 
                 if (getFactoryManager().getProperties() != null) {
