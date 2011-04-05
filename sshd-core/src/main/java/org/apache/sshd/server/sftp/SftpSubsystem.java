@@ -409,6 +409,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                             if (((pflags & SSH_FXF_CREAT) != 0)) {
                                 if (!file.isWritable()) {
                                     sendStatus(id, SSH_FX_FAILURE, "Can not create " + path);
+                                    return;
                                 }
                                 file.create();
                             }
