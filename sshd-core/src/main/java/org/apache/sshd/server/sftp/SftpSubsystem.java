@@ -846,7 +846,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         }
 
         long length = f.getSize();
-        String lengthString = String.format("%1$#8s", length);
+        String lengthString = String.format("%1$8s", length);
 
         StringBuilder sb = new StringBuilder();
         sb.append((f.isDirectory() ? "d" : "-"));
