@@ -95,7 +95,11 @@ public class ProcessShellFactory implements Factory<Command> {
             }
             ProcessBuilder builder = new ProcessBuilder(cmds);
             if (env != null) {
-                builder.environment().putAll(env);
+                try {
+                    builder.environment().putAll(env);
+                } catch (Exception e) {
+                    LOG.info("Could not set environment for command", e);
+                }
             }
             LOG.info("Starting shell with command: '{}' and env: {}", builder.command(), builder.environment());
             process = builder.start();
