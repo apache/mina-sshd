@@ -529,7 +529,9 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                                 buf.putByte((byte) SSH_FXP_DATA);
                                 buf.putInt(id);
                                 buf.putBytes(b, 0, len);
-                                buf.putBoolean(len == 0);
+                                if (version >= 6) {
+                                    buf.putBoolean(len == 0);
+                                }
                                 send(buf);
                             } else {
                                 sendStatus(id, SSH_FX_EOF, "");
