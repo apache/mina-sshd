@@ -90,7 +90,6 @@ public class UserAuthGSS implements HandshakingUserAuth {
    * @throws Exception If something went wrong
    */
   
-  @Override
   public Boolean auth(ServerSession sess, String user, Buffer buff) throws Exception {
     GSSAuthenticator auth = getAuthenticator(sess);
     
