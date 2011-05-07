@@ -19,9 +19,21 @@
 package org.apache.sshd.common.util;
 
 import java.math.BigInteger;
-import java.security.*;
-import java.security.interfaces.*;
-import java.security.spec.*;
+import java.security.KeyFactory;
+import java.security.KeyPair;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.interfaces.DSAPrivateKey;
+import java.security.interfaces.DSAPublicKey;
+import java.security.interfaces.RSAPrivateCrtKey;
+import java.security.interfaces.RSAPublicKey;
+import java.security.spec.DSAPrivateKeySpec;
+import java.security.spec.DSAPublicKeySpec;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.RSAPrivateCrtKeySpec;
+import java.security.spec.RSAPublicKeySpec;
 
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.sshd.common.KeyPairProvider;
@@ -155,14 +167,14 @@ public final class Buffer {
     public long getLong()
     {
         ensureAvailable(8);
-        long l = ((data[rpos++] << 56) & 0xff00000000000000L)|
-                 ((data[rpos++] << 48) & 0x00ff000000000000L)|
-                 ((data[rpos++] << 40) & 0x0000ff0000000000L)|
-                 ((data[rpos++] << 32) & 0x000000ff00000000L)|
-                 ((data[rpos++] << 24) & 0x00000000ff000000L)|
-                 ((data[rpos++] << 16) & 0x0000000000ff0000L)|
-                 ((data[rpos++] <<  8) & 0x000000000000ff00L)|
-                 ((data[rpos++]      ) & 0x00000000000000ffL);
+        long l = (((long) data[rpos++] << 56) & 0xff00000000000000L)|
+                 (((long) data[rpos++] << 48) & 0x00ff000000000000L)|
+                 (((long) data[rpos++] << 40) & 0x0000ff0000000000L)|
+                 (((long) data[rpos++] << 32) & 0x000000ff00000000L)|
+                 (((long) data[rpos++] << 24) & 0x00000000ff000000L)|
+                 (((long) data[rpos++] << 16) & 0x0000000000ff0000L)|
+                 (((long) data[rpos++] <<  8) & 0x000000000000ff00L)|
+                 (((long) data[rpos++]      ) & 0x00000000000000ffL);
         return l;
     }
 
