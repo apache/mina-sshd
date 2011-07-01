@@ -120,6 +120,20 @@ public interface Session {
     void unregisterChannel(Channel channel);
 
     /**
+     * Add a session |listener|.
+     *
+     * @param listener the session listener to add
+     */
+    void addListener(SessionListener listener);
+
+    /**
+     * Remove a session |listener|.
+     *
+     * @param listener the session listener to remove
+     */
+    void removeListener(SessionListener listener);
+
+    /**
      * Type safe key for storage within the user attributes of {@link org.apache.sshd.common.session.AbstractSession}.
      * Typically it is used as a static variable that is shared between the producer
      * and the consumer. To further restrict access the setting or getting it from

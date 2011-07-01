@@ -19,6 +19,8 @@
 package org.apache.sshd.common.session;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -39,6 +41,7 @@ import org.apache.sshd.common.Mac;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.Random;
 import org.apache.sshd.common.Session;
+import org.apache.sshd.common.SessionListener;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.CloseFuture;
@@ -93,6 +96,9 @@ public abstract class AbstractSession implements Session {
     protected final Map<Integer, Channel> channels = new ConcurrentHashMap<Integer, Channel>();
     /** Next channel identifier */
     protected int nextChannelId;
+
+    /** Session listener */
+    protected final List<SessionListener> listeners = new ArrayList<SessionListener>();
 
     //
     // Key exchange support
@@ -272,6 +278,7 @@ public abstract class AbstractSession implements Session {
      * The call will not block until the mina session is actually closed.
      */
     public CloseFuture close(final boolean immediately) {
+	    final Session s = this;
         class IoSessionCloser implements IoFutureListener {
             public void operationComplete(IoFuture future) {
                 synchronized (lock) {
@@ -279,14 +286,22 @@ public abstract class AbstractSession implements Session {
                     closeFuture.setClosed();
                     lock.notifyAll();
                 }
+
+                // Fire 'close' event
+                final ArrayList<SessionListener> l =
+                        new ArrayList<SessionListener>(listeners);
+
+                for (SessionListener sl : l) {
+                    sl.sessionClosed(s);
+                }
             }
-        };
+        }
         synchronized (lock) {
             if (!closing) {
                 try {
                     closing = true;
                     log.info("Closing session");
-                    Channel[] channelToClose = channels.values().toArray(new Channel[0]);
+                    Channel[] channelToClose = channels.values().toArray(new Channel[channels.values().size()]);
                     if (channelToClose.length > 0) {
                         final AtomicInteger latch = new AtomicInteger(channelToClose.length);
                         for (Channel channel : channelToClose) {
@@ -1073,5 +1088,27 @@ public abstract class AbstractSession implements Session {
 
     public String getUsername() {
         return username;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void addListener(SessionListener listener) {
+        if (listener == null) {
+            throw new IllegalArgumentException();
+        }
+
+        synchronized (this.listeners) {
+            this.listeners.add(listener);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void removeListener(SessionListener listener) {
+        synchronized (this.listeners) {
+            this.listeners.remove(listener);
+        }
     }
 }
