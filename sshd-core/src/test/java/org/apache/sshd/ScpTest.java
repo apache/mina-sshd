@@ -18,28 +18,33 @@
  */
 package org.apache.sshd;
 
-import java.net.ServerSocket;
-import java.io.OutputStream;
-import java.io.File;
-import java.io.InputStream;
-import java.io.IOException;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.ServerSocket;
+import java.util.Properties;
 
-import org.junit.Before;
-import org.junit.After;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
-import org.apache.sshd.util.EchoShellFactory;
-import org.apache.sshd.util.BogusPasswordAuthenticator;
-import org.apache.sshd.server.command.ScpCommandFactory;
+import ch.ethz.ssh2.Connection;
+import ch.ethz.ssh2.SCPClient;
+import com.jcraft.jsch.ChannelExec;
 import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Logger;
 import com.jcraft.jsch.UserInfo;
-import com.jcraft.jsch.Channel;
-import com.jcraft.jsch.ChannelExec;
+import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
+import org.apache.sshd.server.command.ScpCommandFactory;
+import org.apache.sshd.util.BogusPasswordAuthenticator;
+import org.apache.sshd.util.EchoShellFactory;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Test for SCP support.
@@ -65,7 +70,9 @@ public class ScpTest {
         sshd.setShellFactory(new EchoShellFactory());
         sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
         sshd.start();
+    }
 
+    protected com.jcraft.jsch.Session getJschSession() throws JSchException {
         JSch sch = new JSch();
         sch.setLogger(new Logger() {
             public boolean isEnabled(int i) {
@@ -97,11 +104,14 @@ public class ScpTest {
             }
         });
         session.connect();
+        return session;
     }
 
     @After
     public void tearDown() throws Exception {
-        session.disconnect();
+        if (session != null) {
+            session.disconnect();
+        }
         sshd.stop();
     }
 
@@ -114,6 +124,8 @@ public class ScpTest {
 
     @Test
     public void testScp() throws Exception {
+        session = getJschSession();
+
         String data = "0123456789\n";
 
         File root = new File("target/scp");
@@ -144,6 +156,30 @@ public class ScpTest {
 
         sendDir("target", "scp", "out.txt", data);
         assertFileLength(target, data.length(), 5000);
+    }
+
+    @Test
+    public void testWithGanymede() throws Exception {
+        // begin client config
+        final Connection conn = new Connection("localhost", port);
+        conn.connect(null, 5000, 0);
+        conn.authenticateWithPassword("sshd", "sshd");
+        final SCPClient scp_client = new SCPClient(conn);
+        final Properties props = new Properties();
+        props.setProperty("test", "test-passed");
+        scp_client.put(toBytes(props, ""), "test.properties", "target/scp/gan");
+        scp_client.put(toBytes(props, ""), "test2.properties", "target/scp/gan");
+    }
+
+    private byte[] toBytes(final Properties properties, final String comments) {
+        try {
+            final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            properties.store(baos, comments);
+            baos.close();
+            return baos.toByteArray();
+        } catch (final IOException cause) {
+            throw new RuntimeException("Failed to output properties to byte[]", cause);
+        }
     }
 
     protected void assertFileLength(File file, long length, long timeout) throws Exception{
@@ -269,7 +305,7 @@ public class ScpTest {
         os.write(("D0755 0 " + dirName + "\n").getBytes());
         os.flush();
         assertEquals(0, is.read());
-        os.write(("C7777 "+ data.length() + " " + fileName + "\n").getBytes());
+        os.write(("C7777 " + data.length() + " " + fileName + "\n").getBytes());
         os.flush();
         assertEquals(0, is.read());
         os.write(data.getBytes());

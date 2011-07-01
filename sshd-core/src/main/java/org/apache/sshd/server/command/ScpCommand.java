@@ -20,18 +20,13 @@ package org.apache.sshd.server.command;
 
 import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
 
 import org.apache.sshd.common.util.DirectoryScanner;
-import org.apache.sshd.common.util.SelectorUtils;
 import org.apache.sshd.server.Command;
-import org.apache.sshd.server.CommandFactory;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
 import org.apache.sshd.server.FileSystemAware;
@@ -157,9 +152,11 @@ public class ScpCommand implements Command, Runnable, FileSystemAware {
                         case 'D':
                             isDir = true;
                         case 'C':
-                        case 'E':
                             line = ((char) c) + readLine();
                             break;
+                        case 'E':
+                            readLine();
+                            return;
                         default:
                             //a real ack that has been acted upon already
                             continue;
