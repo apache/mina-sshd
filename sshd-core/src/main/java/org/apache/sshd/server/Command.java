@@ -59,6 +59,13 @@ public interface Command {
     /**
      * Starts the shell.
      * All streams must have been set before calling this method.
+     * The command should implement Runnable, and this method
+     * should spawn a new thread like:
+     * <pre>
+     * {@code
+     * Thread(this).start();
+     * }
+     * </pre>
      *
      * @param env
      * @throws java.io.IOException
