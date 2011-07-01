@@ -763,10 +763,11 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                 break;
             }
 
-            default:
+            default: {
                 log.error("Received: {}", type);
                 sendStatus(id, SSH_FX_OP_UNSUPPORTED, "Command " + type + " is unsupported or not implemented");
-                throw new IllegalStateException();
+                break;
+            }
         }
     }
 
