@@ -22,25 +22,29 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.ServerSocket;
-import java.util.ArrayList;
 import java.util.Arrays;
-
-import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.server.Command;
-import org.apache.sshd.server.sftp.SftpSubsystem;
-import org.junit.*;
 
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.Logger;
 import com.jcraft.jsch.UserInfo;
+import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
+import org.apache.sshd.server.Command;
 import org.apache.sshd.server.command.ScpCommandFactory;
+import org.apache.sshd.server.sftp.SftpSubsystem;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class SftpTest {
 
@@ -137,6 +141,33 @@ public class SftpTest {
             target.delete();
             assertFalse(target.exists());
         }
+        root.delete();
+    }
+
+    @Test
+    public void testReadWriteWithOffset() throws Exception {
+        File root = new File("target/scp");
+        File target = new File("target/scp/out.txt");
+        root.mkdirs();
+        assertTrue(root.exists());
+
+        ChannelSftp c = (ChannelSftp) session.openChannel("sftp");
+        c.connect();
+        c.put(new ByteArrayInputStream("0123456789".getBytes()), target.getPath());
+
+        assertTrue(target.exists());
+        assertEquals("0123456789", readFile("target/scp/out.txt"));
+
+        OutputStream os = c.put(target.getPath(), null, ChannelSftp.APPEND, -5);
+        os.write("a".getBytes());
+        os.close();
+        c.disconnect();
+
+        assertTrue(target.exists());
+        assertEquals("01234a", readFile("target/scp/out.txt"));
+
+        target.delete();
+        assertFalse(target.exists());
         root.delete();
     }
 
