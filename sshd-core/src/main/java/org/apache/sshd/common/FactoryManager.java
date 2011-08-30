@@ -42,20 +42,6 @@ public interface FactoryManager {
     public static final String MAX_PACKET_SIZE = "packet-size";
 
     /**
-     * Key used to retrieve the value in the configuration properties map
-     * of the maximum number of failed authentication requests before the
-     * server closes the connection.
-     */
-    public static final String MAX_AUTH_REQUESTS = "max-auth-requests";
-
-    /**
-     * Key used to retrieve the value of the timeout after which
-     * the server will close the connection if the client has not been
-     * authenticated.
-     */
-    public static final String AUTH_TIMEOUT = "auth-timeout";
-
-    /**
      * A map of properties that can be used to configure the SSH server
      * or client.  This map will never be changed by either the server or
      * client and is not supposed to be changed at runtime (changes are not

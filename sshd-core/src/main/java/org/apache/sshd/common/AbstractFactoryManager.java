@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
@@ -142,4 +143,5 @@ public abstract class AbstractFactoryManager implements FactoryManager {
     public void setChannelFactories(List<NamedFactory<Channel>> channelFactories) {
         this.channelFactories = channelFactories;
     }
+
 }

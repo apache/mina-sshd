@@ -22,8 +22,9 @@ import java.io.IOException;
 import java.security.KeyPair;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.mina.core.session.IoSession;
 import org.apache.sshd.agent.AgentForwardSupport;
@@ -52,20 +53,19 @@ import org.apache.sshd.server.x11.X11ForwardSupport;
  *
  * TODO: better use of SSH_MSG_DISCONNECT and disconnect error codes
  *
- * TODO: use a single Timer for on the server for all sessions
- *
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ServerSession extends AbstractSession {
 
-    private Timer timer;
-    private TimerTask authTimerTask;
+    private Future authTimerFuture;
+    private Future idleTimerFuture;
     private State state = State.ReceiveKexInit;
     private int maxAuthRequests = 20;
     private int nbAuthRequests;
     private int authTimeout = 10 * 60 * 1000; // 10 minutes in milliseconds
+    private int idleTimeout = 10 * 60 * 1000; // 10 minutes in milliseconds
     private boolean allowMoreSessions = true;
     private final TcpipForwardSupport tcpipForward;
     private final AgentForwardSupport agentForward;
@@ -81,8 +81,9 @@ public class ServerSession extends AbstractSession {
 
     public ServerSession(FactoryManager server, IoSession ioSession) throws Exception {
         super(server, ioSession);
-        maxAuthRequests = getIntProperty(FactoryManager.MAX_AUTH_REQUESTS, maxAuthRequests);
-        authTimeout = getIntProperty(FactoryManager.AUTH_TIMEOUT, authTimeout);
+        maxAuthRequests = getIntProperty(ServerFactoryManager.MAX_AUTH_REQUESTS, maxAuthRequests);
+        authTimeout = getIntProperty(ServerFactoryManager.AUTH_TIMEOUT, authTimeout);
+        idleTimeout = getIntProperty(ServerFactoryManager.IDLE_TIMEOUT, idleTimeout);
         tcpipForward = new TcpipForwardSupport(this);
         agentForward = new AgentForwardSupport(this);
         x11Forward = new X11ForwardSupport(this);
@@ -94,6 +95,7 @@ public class ServerSession extends AbstractSession {
     @Override
     public CloseFuture close(boolean immediately) {
         unscheduleAuthTimer();
+        unscheduleIdleTimer();
         tcpipForward.close();
         agentForward.close();
         x11Forward.close();
@@ -114,6 +116,10 @@ public class ServerSession extends AbstractSession {
 
     public ServerFactoryManager getServerFactoryManager() {
         return (ServerFactoryManager) factoryManager;
+    }
+
+    protected ScheduledExecutorService getScheduledExecutorService() {
+        return getServerFactoryManager().getScheduledExecutorService();
     }
 
     protected void handleMessage(Buffer buffer) throws Exception {
@@ -195,59 +201,9 @@ public class ServerSession extends AbstractSession {
                         userAuth(buffer, cmd);
                         break;
                     case Running:
-                        switch (cmd) {
-                            case SSH_MSG_SERVICE_REQUEST:
-                                serviceRequest(buffer);
-                                break;
-                            case SSH_MSG_CHANNEL_OPEN:
-                                channelOpen(buffer);
-                                break;
-                            case SSH_MSG_CHANNEL_OPEN_CONFIRMATION:
-                                channelOpenConfirmation(buffer);
-                                break;
-                            case SSH_MSG_CHANNEL_OPEN_FAILURE:
-                                channelOpenFailure(buffer);
-                                break;
-                            case SSH_MSG_CHANNEL_REQUEST:
-                                channelRequest(buffer);
-                                break;
-                            case SSH_MSG_CHANNEL_DATA:
-                                channelData(buffer);
-                                break;
-                            case SSH_MSG_CHANNEL_EXTENDED_DATA:
-                                channelExtendedData(buffer);
-                                break;
-                            case SSH_MSG_CHANNEL_WINDOW_ADJUST:
-                                channelWindowAdjust(buffer);
-                                break;
-                            case SSH_MSG_CHANNEL_EOF:
-                                channelEof(buffer);
-                                break;
-                            case SSH_MSG_CHANNEL_CLOSE:
-                                channelClose(buffer);
-                                break;
-                            case SSH_MSG_GLOBAL_REQUEST:
-                                globalRequest(buffer);
-                                break;
-                            case SSH_MSG_KEXINIT:
-                                receiveKexInit(buffer);
-                                sendKexInit();
-                                negociate();
-                                kex = NamedFactory.Utils.create(factoryManager.getKeyExchangeFactories(), negociated[SshConstants.PROPOSAL_KEX_ALGS]);
-                                kex.init(this, serverVersion.getBytes(), clientVersion.getBytes(), I_S, I_C);
-                                break;
-                            case SSH_MSG_KEXDH_INIT:
-                                buffer.rpos(buffer.rpos() - 1);
-                                if (kex.next(buffer)) {
-                                    sendNewKeys();
-                                }
-                                break;
-                            case SSH_MSG_NEWKEYS:
-                                receiveNewKeys(true);
-                                break;
-                            default:
-                                throw new IllegalStateException("Unsupported command: " + cmd);
-                        }
+                        unscheduleIdleTimer();
+                        running(cmd, buffer);
+                        scheduleIdleTimer();
                         break;
                     default:
                         throw new IllegalStateException("Unsupported state: " + state);
@@ -255,8 +211,64 @@ public class ServerSession extends AbstractSession {
         }
     }
 
+    private void running(SshConstants.Message cmd, Buffer buffer) throws Exception {
+        switch (cmd) {
+            case SSH_MSG_SERVICE_REQUEST:
+                serviceRequest(buffer);
+                break;
+            case SSH_MSG_CHANNEL_OPEN:
+                channelOpen(buffer);
+                break;
+            case SSH_MSG_CHANNEL_OPEN_CONFIRMATION:
+                channelOpenConfirmation(buffer);
+                break;
+            case SSH_MSG_CHANNEL_OPEN_FAILURE:
+                channelOpenFailure(buffer);
+                break;
+            case SSH_MSG_CHANNEL_REQUEST:
+                channelRequest(buffer);
+                break;
+            case SSH_MSG_CHANNEL_DATA:
+                channelData(buffer);
+                break;
+            case SSH_MSG_CHANNEL_EXTENDED_DATA:
+                channelExtendedData(buffer);
+                break;
+            case SSH_MSG_CHANNEL_WINDOW_ADJUST:
+                channelWindowAdjust(buffer);
+                break;
+            case SSH_MSG_CHANNEL_EOF:
+                channelEof(buffer);
+                break;
+            case SSH_MSG_CHANNEL_CLOSE:
+                channelClose(buffer);
+                break;
+            case SSH_MSG_GLOBAL_REQUEST:
+                globalRequest(buffer);
+                break;
+            case SSH_MSG_KEXINIT:
+                receiveKexInit(buffer);
+                sendKexInit();
+                negociate();
+                kex = NamedFactory.Utils.create(factoryManager.getKeyExchangeFactories(), negociated[SshConstants.PROPOSAL_KEX_ALGS]);
+                kex.init(this, serverVersion.getBytes(), clientVersion.getBytes(), I_S, I_C);
+                break;
+            case SSH_MSG_KEXDH_INIT:
+                buffer.rpos(buffer.rpos() - 1);
+                if (kex.next(buffer)) {
+                    sendNewKeys();
+                }
+                break;
+            case SSH_MSG_NEWKEYS:
+                receiveNewKeys(true);
+                break;
+            default:
+                throw new IllegalStateException("Unsupported command: " + cmd);
+        }
+    }
+
     private void scheduleAuthTimer() {
-        authTimerTask = new TimerTask() {
+        Runnable authTimerTask = new Runnable() {
             public void run() {
                 try {
                     processAuthTimer();
@@ -265,18 +277,33 @@ public class ServerSession extends AbstractSession {
                 }
             }
         };
-        timer = new Timer(true);
-        timer.schedule(authTimerTask, authTimeout);
+        authTimerFuture = getScheduledExecutorService().schedule(authTimerTask, authTimeout, TimeUnit.MILLISECONDS);
     }
 
     private void unscheduleAuthTimer() {
-        if (authTimerTask != null) {
-            authTimerTask.cancel();
-            authTimerTask = null;
+        if (authTimerFuture != null) {
+            authTimerFuture.cancel(false);
+            authTimerFuture = null;
         }
-        if (timer != null) {
-            timer.cancel();
-            timer = null;
+    }
+
+    private void scheduleIdleTimer() {
+        Runnable idleTimerTask = new Runnable() {
+            public void run() {
+                try {
+                    processIdleTimer();
+                } catch (IOException e) {
+                    // Ignore
+                }
+            }
+        };
+        idleTimerFuture = getScheduledExecutorService().schedule(idleTimerTask, idleTimeout, TimeUnit.MILLISECONDS);
+    }
+
+    private void unscheduleIdleTimer() {
+        if (idleTimerFuture != null) {
+            idleTimerFuture.cancel(false);
+            idleTimerFuture = null;
         }
     }
 
@@ -285,6 +312,10 @@ public class ServerSession extends AbstractSession {
             disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
                        "User authentication has timed out");
         }
+    }
+
+    private void processIdleTimer() throws IOException {
+        disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "User idle has timed out after " + idleTimeout + "ms.");
     }
 
     private void sendServerIdentification() {

@@ -30,11 +30,8 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
-
-import org.apache.sshd.server.FileSystemFactory;
-import org.apache.sshd.server.filesystem.NativeFileSystemFactory;
-import org.slf4j.LoggerFactory;
-import org.slf4j.Logger;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.apache.mina.core.service.IoAcceptor;
 import org.apache.mina.core.session.IoSession;
@@ -71,10 +68,11 @@ import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.CommandFactory;
+import org.apache.sshd.server.FileSystemFactory;
+import org.apache.sshd.server.ForwardingFilter;
 import org.apache.sshd.server.PasswordAuthenticator;
 import org.apache.sshd.server.PublickeyAuthenticator;
 import org.apache.sshd.server.ServerFactoryManager;
-import org.apache.sshd.server.ForwardingFilter;
 import org.apache.sshd.server.UserAuth;
 import org.apache.sshd.server.auth.UserAuthPassword;
 import org.apache.sshd.server.auth.UserAuthPublicKey;
@@ -82,6 +80,7 @@ import org.apache.sshd.server.auth.gss.GSSAuthenticator;
 import org.apache.sshd.server.auth.gss.UserAuthGSS;
 import org.apache.sshd.server.channel.ChannelDirectTcpip;
 import org.apache.sshd.server.channel.ChannelSession;
+import org.apache.sshd.server.filesystem.NativeFileSystemFactory;
 import org.apache.sshd.server.kex.DHG1;
 import org.apache.sshd.server.kex.DHG14;
 import org.apache.sshd.server.keyprovider.PEMGeneratorHostKeyProvider;
@@ -89,6 +88,8 @@ import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.session.SessionFactory;
 import org.apache.sshd.server.shell.ProcessShellFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The SshServer class is the main entry point for the server side of the SSH protocol.
@@ -133,6 +134,8 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     protected PublickeyAuthenticator publickeyAuthenticator;
     protected GSSAuthenticator gssAuthenticator;
     protected ForwardingFilter forwardingFilter;
+    protected ScheduledExecutorService executor;
+    protected boolean shutdownExecutor;
 
     public SshServer() {
     }
@@ -262,6 +265,19 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         this.forwardingFilter = forwardingFilter;
     }
 
+    public ScheduledExecutorService getScheduledExecutorService() {
+        return executor;
+    }
+
+    public void setScheduledExecutorService(ScheduledExecutorService executor) {
+        setScheduledExecutorService(executor, false);
+    }
+
+    public void setScheduledExecutorService(ScheduledExecutorService executor, boolean shutdownExecutor) {
+        this.executor = executor;
+        this.shutdownExecutor = shutdownExecutor;
+    }
+
     protected void checkConfig() {
         if (getPort() < 0) {
             throw new IllegalArgumentException("Bad port number: " + port);
@@ -285,6 +301,9 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
             } else {
                 throw new IllegalArgumentException("UserAuthFactories not set");
             }
+        }
+        if (getScheduledExecutorService() == null) {
+            setScheduledExecutorService(Executors.newSingleThreadScheduledExecutor(), true);
         }
         if (getCipherFactories() == null) {
             throw new IllegalArgumentException("CipherFactories not set");
@@ -363,6 +382,10 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         }
         acceptor.dispose();
         acceptor = null;
+        if (shutdownExecutor && executor != null) {
+            executor.shutdown();
+            executor = null;
+        }
     }
 
     protected IoAcceptor createAcceptor() {
