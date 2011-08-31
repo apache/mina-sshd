@@ -23,10 +23,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.ScheduledExecutorService;
 
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * TODO Add javadoc
@@ -142,6 +141,25 @@ public abstract class AbstractFactoryManager implements FactoryManager {
 
     public void setChannelFactories(List<NamedFactory<Channel>> channelFactories) {
         this.channelFactories = channelFactories;
+    }
+
+    public int getNioWorkers() {
+        String nioWorkers = getProperties().get(NIO_WORKERS);
+        if (nioWorkers != null && nioWorkers.length() > 0) {
+            int nb = Integer.parseInt(nioWorkers);
+            if (nb > 0) {
+                return nb;
+            }
+        }
+        return DEFAULT_NIO_WORKERS;
+    }
+
+    public void setNioWorkers(int nioWorkers) {
+        if (nioWorkers > 0) {
+            getProperties().put(NIO_WORKERS, Integer.toString(nioWorkers));
+        } else {
+            getProperties().remove(NIO_WORKERS);
+        }
     }
 
 }

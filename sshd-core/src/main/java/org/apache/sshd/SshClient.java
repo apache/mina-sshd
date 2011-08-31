@@ -18,15 +18,20 @@
  */
 package org.apache.sshd;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.security.InvalidKeyException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
-import java.util.LinkedList;
 import java.util.Iterator;
-import java.security.InvalidKeyException;
+import java.util.LinkedList;
+import java.util.List;
 
 import org.apache.mina.core.future.IoFutureListener;
 import org.apache.mina.core.service.IoConnector;
@@ -41,7 +46,14 @@ import org.apache.sshd.client.future.DefaultConnectFuture;
 import org.apache.sshd.client.kex.DHG1;
 import org.apache.sshd.client.kex.DHG14;
 import org.apache.sshd.client.session.ClientSessionImpl;
-import org.apache.sshd.common.*;
+import org.apache.sshd.common.AbstractFactoryManager;
+import org.apache.sshd.common.Channel;
+import org.apache.sshd.common.Cipher;
+import org.apache.sshd.common.Compression;
+import org.apache.sshd.common.KeyExchange;
+import org.apache.sshd.common.Mac;
+import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.Signature;
 import org.apache.sshd.common.cipher.AES128CBC;
 import org.apache.sshd.common.cipher.AES192CBC;
 import org.apache.sshd.common.cipher.AES256CBC;
@@ -135,14 +147,17 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     }
 
     public void start() {
-        connector = new NioSocketConnector();
+        connector = createAcceptor();
 
-        SessionFactory handler = sessionFactory;
-        if (handler == null) {
-            handler = new SessionFactory();
+        if (sessionFactory == null) {
+            sessionFactory = new SessionFactory();
         }
-        handler.setClient(this);
-        connector.setHandler(handler);
+        sessionFactory.setClient(this);
+        connector.setHandler(sessionFactory);
+    }
+
+    protected NioSocketConnector createAcceptor() {
+        return new NioSocketConnector(getNioWorkers());
     }
 
     public void stop() {

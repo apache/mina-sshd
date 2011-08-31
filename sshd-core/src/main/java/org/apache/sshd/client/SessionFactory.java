@@ -21,8 +21,8 @@ package org.apache.sshd.client;
 import org.apache.mina.core.session.IoSession;
 import org.apache.sshd.SshClient;
 import org.apache.sshd.client.session.ClientSessionImpl;
-import org.apache.sshd.common.AbstractSessionIoHandler;
 import org.apache.sshd.common.session.AbstractSession;
+import org.apache.sshd.common.session.AbstractSessionFactory;
 
 /**
  * A factory of client sessions.
@@ -32,7 +32,7 @@ import org.apache.sshd.common.session.AbstractSession;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SessionFactory extends AbstractSessionIoHandler {
+public class SessionFactory extends AbstractSessionFactory {
 
     protected SshClient client;
 
@@ -40,7 +40,7 @@ public class SessionFactory extends AbstractSessionIoHandler {
         this.client = client;
     }
 
-    protected AbstractSession createSession(IoSession ioSession) throws Exception {
+    protected AbstractSession doCreateSession(IoSession ioSession) throws Exception {
         return new ClientSessionImpl(client, ioSession);
     }
 

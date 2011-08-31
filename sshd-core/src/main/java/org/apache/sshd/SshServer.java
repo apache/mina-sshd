@@ -389,7 +389,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     }
 
     protected IoAcceptor createAcceptor() {
-        return new NioSocketAcceptor();
+        return new NioSocketAcceptor(getNioWorkers());
     }
 
     protected void configure(IoAcceptor acceptor) {

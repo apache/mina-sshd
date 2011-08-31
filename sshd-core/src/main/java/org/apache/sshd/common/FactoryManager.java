@@ -42,6 +42,16 @@ public interface FactoryManager {
     public static final String MAX_PACKET_SIZE = "packet-size";
 
     /**
+     * Number of NIO worker threads to use.
+     */
+    public static final String NIO_WORKERS = "nio-workers";
+
+    /**
+     * Default number of worker threads to use.
+     */
+    public static final int DEFAULT_NIO_WORKERS = Runtime.getRuntime().availableProcessors() + 1;
+
+    /**
      * A map of properties that can be used to configure the SSH server
      * or client.  This map will never be changed by either the server or
      * client and is not supposed to be changed at runtime (changes are not
