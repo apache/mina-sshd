@@ -536,10 +536,12 @@ public class ChannelSession extends AbstractServerChannel {
     }
 
     protected void closeShell(int exitValue) throws IOException {
-        sendEof();
-        sendExitStatus(exitValue);
-        // TODO: We should wait for all streams to be consumed before closing the channel
-        close(false);
+        if (!closing) {
+            sendEof();
+            sendExitStatus(exitValue);
+            // TODO: We should wait for all streams to be consumed before closing the channel
+            close(false);
+        }
     }
 
 }
