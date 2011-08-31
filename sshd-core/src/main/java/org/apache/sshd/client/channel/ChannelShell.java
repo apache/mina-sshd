@@ -35,6 +35,7 @@ import org.apache.sshd.common.util.SttySupport;
 public class ChannelShell extends ChannelSession {
 
     private boolean agentForwarding;
+    private boolean usePty = true;
     private String ptyType;
     private int ptyColumns;
     private int ptyLines;
@@ -82,6 +83,14 @@ public class ChannelShell extends ChannelSession {
 
     public void setAgentForwarding(boolean agentForwarding) {
         this.agentForwarding = agentForwarding;
+    }
+
+    public boolean isUsePty() {
+        return usePty;
+    }
+
+    public void setUsePty(boolean usePty) {
+        this.usePty = usePty;
     }
 
     public String getPtyType() {
@@ -146,24 +155,26 @@ public class ChannelShell extends ChannelSession {
             session.writePacket(buffer);
         }
 
-        log.info("Send SSH_MSG_CHANNEL_REQUEST pty-req");
-        buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_REQUEST, 0);
-        buffer.putInt(recipient);
-        buffer.putString("pty-req");
-        buffer.putBoolean(false);
-        buffer.putString(ptyType);
-        buffer.putInt(ptyColumns);
-        buffer.putInt(ptyLines);
-        buffer.putInt(ptyHeight);
-        buffer.putInt(ptyWidth);
-        Buffer modes = new Buffer();
-        for (PtyMode mode : ptyModes.keySet()) {
-            modes.putByte((byte) mode.toInt());
-            modes.putInt(ptyModes.get(mode));
+        if (usePty) {
+            log.info("Send SSH_MSG_CHANNEL_REQUEST pty-req");
+            buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_REQUEST, 0);
+            buffer.putInt(recipient);
+            buffer.putString("pty-req");
+            buffer.putBoolean(false);
+            buffer.putString(ptyType);
+            buffer.putInt(ptyColumns);
+            buffer.putInt(ptyLines);
+            buffer.putInt(ptyHeight);
+            buffer.putInt(ptyWidth);
+            Buffer modes = new Buffer();
+            for (PtyMode mode : ptyModes.keySet()) {
+                modes.putByte((byte) mode.toInt());
+                modes.putInt(ptyModes.get(mode));
+            }
+            modes.putByte((byte) 0);
+            buffer.putBytes(modes.getCompactData());
+            session.writePacket(buffer);
         }
-        modes.putByte((byte) 0);
-        buffer.putBytes(modes.getCompactData());
-        session.writePacket(buffer);
 
 //        log.info("Send SSH_MSG_CHANNEL_REQUEST env");
 //        buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_REQUEST);
