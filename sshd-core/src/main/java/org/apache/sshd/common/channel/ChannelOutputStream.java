@@ -131,6 +131,7 @@ public class ChannelOutputStream extends OutputStream {
 
     @Override
     public synchronized void close() throws IOException {
+        flush();
         closed = true;
     }
 
