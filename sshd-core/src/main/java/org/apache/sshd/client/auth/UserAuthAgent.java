@@ -18,8 +18,12 @@
  */
 package org.apache.sshd.client.auth;
 
+import java.io.IOException;
+import java.security.PublicKey;
+import java.security.interfaces.RSAPublicKey;
+import java.util.Iterator;
+
 import org.apache.sshd.agent.SshAgent;
-import org.apache.sshd.agent.AgentClient;
 import org.apache.sshd.client.UserAuth;
 import org.apache.sshd.client.session.ClientSessionImpl;
 import org.apache.sshd.common.KeyPairProvider;
@@ -27,11 +31,6 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.util.Buffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.security.PublicKey;
-import java.security.interfaces.RSAPublicKey;
-import java.util.Iterator;
 
 /**
  * Authentication delegating to an SSH agent
@@ -43,15 +42,13 @@ public class UserAuthAgent implements UserAuth {
     private final ClientSessionImpl session;
     private final String username;
     private final SshAgent agent;
-    private Iterator<SshAgent.Pair<PublicKey, String>> keys;
+    private final Iterator<SshAgent.Pair<PublicKey, String>> keys;
 
     public UserAuthAgent(ClientSessionImpl session, String username) throws IOException {
         this.session = session;
         this.username = username;
-        String authSocket = session.getFactoryManager().getProperties().get(SshAgent.SSH_AUTHSOCKET_ENV_NAME);
-        SshAgent agent = new AgentClient(authSocket);
-        this.agent = agent;
-        keys = agent.getIdentities().iterator();
+        this.agent = session.getFactoryManager().getAgentFactory().createClient(session);
+        this.keys = agent.getIdentities().iterator();
         sendNextKey();
     }
 
@@ -104,12 +101,14 @@ public class UserAuthAgent implements UserAuth {
         SshConstants.Message cmd = buffer.getCommand();
         log.info("Received {}", cmd);
         if (cmd == SshConstants.Message.SSH_MSG_USERAUTH_SUCCESS) {
+            agent.close();
             return Result.Success;
         } if (cmd == SshConstants.Message.SSH_MSG_USERAUTH_FAILURE) {
             if (keys.hasNext()) {
                 sendNextKey(keys.next().getFirst());
                 return Result.Continued;
             }
+            agent.close();
             return Result.Failure;
         } else {
             // TODO: check packets

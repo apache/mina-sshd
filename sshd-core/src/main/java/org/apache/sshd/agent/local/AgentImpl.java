@@ -16,12 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.agent;
-
-import org.apache.sshd.common.Signature;
-import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.signature.SignatureDSA;
-import org.apache.sshd.common.signature.SignatureRSA;
+package org.apache.sshd.agent.local;
 
 import java.io.IOException;
 import java.security.KeyPair;
@@ -32,10 +27,16 @@ import java.security.interfaces.RSAPublicKey;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.sshd.agent.SshAgent;
+import org.apache.sshd.common.Signature;
+import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.signature.SignatureDSA;
+import org.apache.sshd.common.signature.SignatureRSA;
+
 /**
  * A local SSH agent implementation
  */
-public class AgentLocal implements SshAgent {
+public class AgentImpl implements SshAgent {
 
     private final List<Pair<KeyPair, String>> keys = new ArrayList<Pair<KeyPair, String>>();
     private boolean closed;

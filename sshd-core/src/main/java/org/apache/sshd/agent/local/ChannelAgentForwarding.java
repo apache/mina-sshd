@@ -16,8 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.agent;
+package org.apache.sshd.agent.local;
 
+import java.io.IOException;
+import java.io.OutputStream;
+
+import org.apache.sshd.agent.SshAgent;
+import org.apache.sshd.agent.common.AbstractAgentClient;
 import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.Channel;
@@ -29,13 +34,6 @@ import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.server.channel.AbstractServerChannel;
-import org.apache.tomcat.jni.Local;
-import org.apache.tomcat.jni.Pool;
-import org.apache.tomcat.jni.Socket;
-import org.apache.tomcat.jni.Status;
-
-import java.io.IOException;
-import java.io.OutputStream;
 
 /**
  * The client side channel that will receive requests forwards by the SSH server.
@@ -58,6 +56,8 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
     private long handle;
     private Thread thread;
     private OutputStream out;
+    private SshAgent agent;
+    private AgentClient client;
 
     public ChannelAgentForwarding() {
     }
@@ -66,30 +66,8 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
         final OpenFuture f = new DefaultOpenFuture(this);
         try {
             out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.Message.SSH_MSG_CHANNEL_DATA);
-            authSocket = session.getFactoryManager().getProperties().get(SshAgent.SSH_AUTHSOCKET_ENV_NAME);
-            pool = Pool.create(AprLibrary.getInstance().getRootPool());
-            handle = Local.create(authSocket, pool);
-            int result = Local.connect(handle, 0);
-            if (result != Status.APR_SUCCESS) {
-                throwException(result);
-            }
-            thread = new Thread() {
-                public void run() {
-                    try {
-                        byte[] buf = new byte[1024];
-                        while (true) {
-                            int len = Socket.recv(handle, buf, 0, buf.length);
-                            if (len > 0) {
-                                out.write(buf, 0, len);
-                                out.flush();
-                            }
-                        }
-                    } catch (IOException e) {
-                        close(true);
-                    }
-                }
-            };
-            thread.start();
+            agent = session.getFactoryManager().getAgentFactory().createClient(session);
+            client = new AgentClient();
             f.setOpened();
 
         } catch (Exception e) {
@@ -108,7 +86,7 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
 
         // We also need to close the socket.
         //
-        Socket.close(handle);
+//        Socket.close(handle);
     }
 
     public CloseFuture close(boolean immediately) {
@@ -126,10 +104,7 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
     }
 
     protected void doWriteData(byte[] data, int off, int len) throws IOException {
-        int result = Socket.send(handle, data, off, len);
-        if (result < Status.APR_SUCCESS) {
-            throwException(result);
-        }
+        client.messageReceived(new Buffer(data, off, len));
     }
 
     protected void doWriteExtendedData(byte[] data, int off, int len) throws IOException {
@@ -145,14 +120,17 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
         session.writePacket(buffer);
     }
 
-    /**
-     * transform an APR error number in a more fancy exception
-     * @param code APR error code
-     * @throws java.io.IOException the produced exception for the given APR error number
-     */
-    private void throwException(int code) throws IOException {
-        throw new IOException(
-                org.apache.tomcat.jni.Error.strerror(-code) +
-                " (code: " + code + ")");
+    protected class AgentClient extends AbstractAgentClient {
+
+        public AgentClient() {
+            super(agent);
+        }
+
+        @Override
+        protected void reply(Buffer buf) throws IOException {
+            out.write(buf.array(), buf.rpos(), buf.available());
+            out.flush();
+        }
     }
+
 }

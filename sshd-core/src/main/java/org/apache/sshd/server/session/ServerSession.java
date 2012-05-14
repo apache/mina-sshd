@@ -27,7 +27,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.mina.core.session.IoSession;
-import org.apache.sshd.agent.AgentForwardSupport;
+import org.apache.sshd.agent.common.AgentForwardSupport;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.FactoryManager;

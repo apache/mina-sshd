@@ -17,14 +17,14 @@
  *  under the License.
  *
  */
-package org.apache.sshd.agent;
+package org.apache.sshd.agent.unix;
+
+import java.io.File;
+import java.io.IOException;
 
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.tomcat.jni.Library;
 import org.apache.tomcat.jni.Pool;
-
-import java.io.File;
-import java.io.IOException;
 
 
 /**

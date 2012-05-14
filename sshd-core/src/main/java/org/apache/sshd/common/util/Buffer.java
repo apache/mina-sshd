@@ -76,7 +76,7 @@ public final class Buffer {
     public Buffer(byte[] data, int off, int len, boolean read) {
         this.data = data;
         this.rpos = off;
-        this.wpos = read ? len : 0;
+        this.wpos = (read ? len : 0) + off;
     }
 
     @Override

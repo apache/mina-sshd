@@ -16,49 +16,43 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.agent;
+package org.apache.sshd.agent.common;
 
 import java.io.IOException;
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.List;
 
-/**
- * SSH key agent server
- */
-public interface SshAgent {
+import org.apache.sshd.agent.SshAgent;
 
-    public static final String SSH_AUTHSOCKET_ENV_NAME = "SSH_AUTH_SOCK";
+public class AgentDelegate implements SshAgent {
 
-    public static class Pair<U,V> {
-        private final U first;
-        private final V second;
+    private final SshAgent agent;
 
-        public Pair(U first, V second) {
-            this.first = first;
-            this.second = second;
-        }
-
-        public U getFirst() {
-            return first;
-        }
-
-        public V getSecond() {
-            return second;
-        }
+    public AgentDelegate(SshAgent agent) {
+        this.agent = agent;
     }
 
-    List<Pair<PublicKey, String>> getIdentities() throws IOException;
+    public void close() {
+    }
 
-    byte[] sign(PublicKey key, byte[] data) throws IOException;
+    public List<Pair<PublicKey, String>> getIdentities() throws IOException {
+        return agent.getIdentities();
+    }
 
-    void addIdentity(KeyPair key, String comment) throws IOException;
+    public byte[] sign(PublicKey key, byte[] data) throws IOException {
+        return agent.sign(key, data);
+    }
 
-    void removeIdentity(PublicKey key) throws IOException;
+    public void addIdentity(KeyPair key, String comment) throws IOException {
+        agent.addIdentity(key, comment);
+    }
 
-    void removeAllIdentities() throws IOException;
+    public void removeIdentity(PublicKey key) throws IOException {
+        agent.removeIdentity(key);
+    }
 
-    void close();
-
-
+    public void removeAllIdentities() throws IOException {
+        agent.removeAllIdentities();
+    }
 }

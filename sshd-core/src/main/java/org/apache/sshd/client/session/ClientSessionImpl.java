@@ -27,21 +27,25 @@ import java.util.Map;
 import org.apache.mina.core.session.IoSession;
 import org.apache.sshd.ClientChannel;
 import org.apache.sshd.ClientSession;
-import org.apache.sshd.SshClient;
 import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.ServerKeyVerifier;
 import org.apache.sshd.client.UserAuth;
 import org.apache.sshd.client.auth.UserAuthAgent;
 import org.apache.sshd.client.auth.UserAuthPassword;
 import org.apache.sshd.client.auth.UserAuthPublicKey;
-import org.apache.sshd.client.channel.AbstractClientChannel;
-import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.ChannelExec;
+import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.ChannelSubsystem;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.DefaultAuthFuture;
 import org.apache.sshd.client.future.OpenFuture;
-import org.apache.sshd.common.*;
+import org.apache.sshd.common.Channel;
+import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.KeyExchange;
+import org.apache.sshd.common.KeyPairProvider;
+import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.session.AbstractSession;
@@ -93,6 +97,9 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
             }
             if (userAuth != null) {
                 throw new IllegalStateException("A user authentication request is already pending");
+            }
+            if (getFactoryManager().getAgentFactory() == null) {
+                throw new IllegalStateException("No ssh agent factory has been configured");
             }
             waitFor(CLOSED | WAIT_AUTH, 0);
             if (closeFuture.isClosed()) {

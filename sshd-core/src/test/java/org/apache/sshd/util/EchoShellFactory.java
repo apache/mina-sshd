@@ -40,12 +40,30 @@ public class EchoShellFactory implements Factory<Command> {
         return new EchoShell();
     }
 
-    protected static class EchoShell implements Command, Runnable {
+    public static class EchoShell implements Command, Runnable {
+
         private InputStream in;
         private OutputStream out;
         private OutputStream err;
         private ExitCallback callback;
+        private Environment environment;
         private Thread thread;
+
+        public InputStream getIn() {
+            return in;
+        }
+
+        public OutputStream getOut() {
+            return out;
+        }
+
+        public OutputStream getErr() {
+            return err;
+        }
+
+        public Environment getEnvironment() {
+            return environment;
+        }
 
         public void setInputStream(InputStream in) {
             this.in = in;
@@ -64,6 +82,7 @@ public class EchoShellFactory implements Factory<Command> {
         }
 
         public void start(Environment env) throws IOException {
+            environment = env;
             thread = new Thread(this, "EchoShell");
             thread.start();
         }

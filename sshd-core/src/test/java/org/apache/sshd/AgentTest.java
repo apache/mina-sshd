@@ -18,21 +18,36 @@
  */
 package org.apache.sshd;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
+import java.net.ServerSocket;
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.List;
 
-import org.junit.*;
-import org.hamcrest.*;
-
-import org.apache.sshd.agent.AgentClient;
-import org.apache.sshd.agent.AgentServer;
 import org.apache.sshd.agent.SshAgent;
+import org.apache.sshd.agent.local.ProxyAgentFactory;
+import org.apache.sshd.agent.local.LocalAgentFactory;
+import org.apache.sshd.agent.unix.AgentClient;
+import org.apache.sshd.agent.unix.AgentServer;
+import org.apache.sshd.client.channel.ChannelShell;
+import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
+import org.apache.sshd.server.Command;
+import org.apache.sshd.server.Environment;
+import org.apache.sshd.util.BogusPasswordAuthenticator;
+import org.apache.sshd.util.BogusPublickeyAuthenticator;
+import org.apache.sshd.util.EchoShellFactory;
+import org.apache.sshd.util.TeePipedOutputStream;
+import org.junit.Test;
 
-import static org.hamcrest.CoreMatchers.*;
-import static org.junit.Assert.*;
-import static org.junit.Assume.*;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeThat;
 
 public class AgentTest {
 
@@ -69,5 +84,106 @@ public class AgentTest {
         client.close();
 
         agent.close();
+    }
+
+    @Test
+    public void testAgentForwarding() throws Exception {
+
+        int port1 = getFreePort();
+        int port2 = getFreePort();
+
+        TestEchoShellFactory shellFactory = new TestEchoShellFactory();
+        ProxyAgentFactory agentFactory = new ProxyAgentFactory();
+        LocalAgentFactory localAgentFactory = new LocalAgentFactory();
+
+        KeyPair pair = new FileKeyPairProvider(new String[] { "src/test/resources/dsaprivkey.pem" }).loadKey(KeyPairProvider.SSH_DSS);
+        localAgentFactory.getAgent().addIdentity(pair, "smx");
+
+        SshServer sshd1 = SshServer.setUpDefaultServer();
+        sshd1.setPort(port1);
+        sshd1.setKeyPairProvider(new FileKeyPairProvider(new String[]{"src/test/resources/hostkey.pem"}));
+        sshd1.setShellFactory(shellFactory);
+        sshd1.setPasswordAuthenticator(new BogusPasswordAuthenticator());
+        sshd1.setPublickeyAuthenticator(new BogusPublickeyAuthenticator());
+        sshd1.setAgentFactory(agentFactory);
+        sshd1.start();
+
+        SshServer sshd2 = SshServer.setUpDefaultServer();
+        sshd2.setPort(port2);
+        sshd2.setKeyPairProvider(new FileKeyPairProvider(new String[]{"src/test/resources/hostkey.pem"}));
+        sshd2.setShellFactory(new TestEchoShellFactory());
+        sshd2.setPasswordAuthenticator(new BogusPasswordAuthenticator());
+        sshd2.setPublickeyAuthenticator(new BogusPublickeyAuthenticator());
+        sshd2.setAgentFactory(new ProxyAgentFactory());
+        sshd2.start();
+
+        SshClient client1 = SshClient.setUpDefaultClient();
+        client1.setAgentFactory(localAgentFactory);
+        client1.start();
+        ClientSession session1 = client1.connect("localhost", port1).await().getSession();
+        assertTrue(session1.authAgent("smx").await().isSuccess());
+        ChannelShell channel1 = session1.createShellChannel();
+        ByteArrayOutputStream sent = new ByteArrayOutputStream();
+        PipedOutputStream pipedIn = new TeePipedOutputStream(sent);
+        channel1.setIn(new PipedInputStream(pipedIn));
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ByteArrayOutputStream err = new ByteArrayOutputStream();
+        channel1.setOut(out);
+        channel1.setErr(err);
+        channel1.setAgentForwarding(true);
+        channel1.open().await();
+
+        synchronized (shellFactory.shell) {
+            shellFactory.shell.wait();
+        }
+
+        SshClient client2 = SshClient.setUpDefaultClient();
+        client2.setAgentFactory(agentFactory);
+        client2.getProperties().putAll(shellFactory.shell.getEnvironment().getEnv());
+        client2.start();
+        ClientSession session2 = client2.connect("localhost", port2).await().getSession();
+        assertTrue(session2.authAgent("smx").await().isSuccess());
+        ChannelShell channel2 = session2.createShellChannel();
+        channel2.setIn(shellFactory.shell.getIn());
+        channel2.setOut(shellFactory.shell.getOut());
+        channel2.setErr(shellFactory.shell.getErr());
+        channel2.setAgentForwarding(true);
+        channel2.open().await();
+
+        pipedIn.write("foo\n".getBytes());
+        pipedIn.flush();
+
+        Thread.sleep(1000);
+
+        System.out.println(out.toString());
+        System.err.println(err.toString());
+
+    }
+
+    public static class TestEchoShellFactory extends EchoShellFactory {
+
+        TestEchoShell shell = new TestEchoShell();
+
+        @Override
+        public Command create() {
+            return shell;
+        }
+
+        public class TestEchoShell extends EchoShell {
+
+            @Override
+            public synchronized void start(Environment env) throws IOException {
+                super.start(env);
+                notifyAll();
+            }
+
+        }
+    }
+
+    private static int getFreePort() throws IOException {
+        ServerSocket s = new ServerSocket(0);
+        int port = s.getLocalPort();
+        s.close();
+        return port;
     }
 }

@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import org.apache.sshd.agent.SshAgentFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,6 +47,7 @@ public abstract class AbstractFactoryManager implements FactoryManager {
     protected KeyPairProvider keyPairProvider;
     protected String version;
     protected List<NamedFactory<Channel>> channelFactories;
+    protected SshAgentFactory agentFactory;
 
     protected AbstractFactoryManager() {
         loadVersion();
@@ -160,6 +162,14 @@ public abstract class AbstractFactoryManager implements FactoryManager {
         } else {
             getProperties().remove(NIO_WORKERS);
         }
+    }
+
+    public SshAgentFactory getAgentFactory() {
+        return agentFactory;
+    }
+
+    public void setAgentFactory(SshAgentFactory agentFactory) {
+        this.agentFactory = agentFactory;
     }
 
 }

@@ -21,6 +21,8 @@ package org.apache.sshd.common;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.sshd.agent.SshAgentFactory;
+
 /**
  * This interface allows retrieving all the <code>NamedFactory</code> used
  * in the SSH protocol.
@@ -129,5 +131,12 @@ public interface FactoryManager {
      * @return a list of named <code>Channel</code> factories, never <code>null</code>
      */
     List<NamedFactory<Channel>> getChannelFactories();
+
+    /**
+     * Retrieve the agent factory for creating <code>SshAgent</code> objects.
+     *
+     * @return the factory
+     */
+    SshAgentFactory getAgentFactory();
 
 }

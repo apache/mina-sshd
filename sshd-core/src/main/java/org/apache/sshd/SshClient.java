@@ -36,7 +36,6 @@ import java.util.List;
 import org.apache.mina.core.future.IoFutureListener;
 import org.apache.mina.core.service.IoConnector;
 import org.apache.mina.transport.socket.nio.NioSocketConnector;
-import org.apache.sshd.agent.ChannelAgentForwarding;
 import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.ServerKeyVerifier;
 import org.apache.sshd.client.SessionFactory;
@@ -147,6 +146,17 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     }
 
     public void start() {
+        // Register the additional agent forwarding channel if needed
+        if (getAgentFactory() != null) {
+            List<NamedFactory<Channel>> factories = getChannelFactories();
+            if (factories == null) {
+                factories = new ArrayList<NamedFactory<Channel>>();
+            } else {
+                factories = new ArrayList<NamedFactory<Channel>>(factories);
+            }
+            factories.add(getAgentFactory().getChannelForwardingFactory());
+            setChannelFactories(factories);
+        }
         connector = createAcceptor();
 
         if (sessionFactory == null) {
@@ -230,8 +240,6 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         client.setSignatureFactories(Arrays.<NamedFactory<Signature>>asList(
                 new SignatureDSA.Factory(),
                 new SignatureRSA.Factory()));
-        client.setChannelFactories(Arrays.<NamedFactory<Channel>>asList(
-                new ChannelAgentForwarding.Factory()));
         return client;
     }
 

@@ -29,6 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.apache.sshd.agent.SshAgent;
+import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.PtyMode;
@@ -472,7 +473,8 @@ public class ChannelSession extends AbstractServerChannel {
 
         final ServerSession server = (ServerSession) session;
         final ForwardingFilter filter = server.getServerFactoryManager().getForwardingFilter();
-        if (filter == null || !filter.canForwardAgent(server)) {
+        final SshAgentFactory factory = server.getServerFactoryManager().getAgentFactory();
+        if (factory == null || (filter != null && !filter.canForwardAgent(server))) {
             if (wantReply) {
                 buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_FAILURE, 0);
                 buffer.putInt(recipient);
