@@ -108,6 +108,22 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
             authFuture = new DefaultAuthFuture(lock);
             userAuth = new UserAuthAgent(this, username);
             setState(ClientSessionImpl.State.UserAuth);
+
+            switch (userAuth.next(null)) {
+                case Success:
+                    authFuture.setAuthed(true);
+                    username = userAuth.getUsername();
+                    authed = true;
+                    setState(State.Running);
+                    break;
+                case Failure:
+                    authFuture.setAuthed(false);
+                    userAuth = null;
+                    setState(State.WaitForAuth);
+                    break;
+                case Continued:
+                    break;
+            }
             return authFuture;
         }
     }
@@ -130,6 +146,22 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
             authFuture = new DefaultAuthFuture(lock);
             userAuth = new UserAuthPassword(this, username, password);
             setState(ClientSessionImpl.State.UserAuth);
+
+            switch (userAuth.next(null)) {
+                case Success:
+                    authFuture.setAuthed(true);
+                    username = userAuth.getUsername();
+                    authed = true;
+                    setState(State.Running);
+                    break;
+                case Failure:
+                    authFuture.setAuthed(false);
+                    userAuth = null;
+                    setState(State.WaitForAuth);
+                    break;
+                case Continued:
+                    break;
+            }
             return authFuture;
         }
     }
@@ -152,6 +184,22 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
             authFuture = new DefaultAuthFuture(lock);
             userAuth = new UserAuthPublicKey(this, username, key);
             setState(ClientSessionImpl.State.UserAuth);
+
+            switch (userAuth.next(null)) {
+                case Success:
+                    authFuture.setAuthed(true);
+                    username = userAuth.getUsername();
+                    authed = true;
+                    setState(State.Running);
+                    break;
+                case Failure:
+                    authFuture.setAuthed(false);
+                    userAuth = null;
+                    setState(State.WaitForAuth);
+                    break;
+                case Continued:
+                    break;
+            }
             return authFuture;
         }
     }

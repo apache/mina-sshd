@@ -36,18 +36,14 @@ public class UserAuthPassword implements UserAuth {
 
     protected final Logger log = LoggerFactory.getLogger(getClass());
 
+    private final ClientSessionImpl session;
     private final String username;
+    private final String password;
 
-    public UserAuthPassword(ClientSessionImpl session, String username, String password) throws IOException {
+    public UserAuthPassword(ClientSessionImpl session, String username, String password) {
+        this.session = session;
         this.username = username;
-        log.info("Send SSH_MSG_USERAUTH_REQUEST for password");
-        Buffer buffer = session.createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_REQUEST, 0);
-        buffer.putString(username);
-        buffer.putString("ssh-connection");
-        buffer.putString("password");
-        buffer.putByte((byte) 0);
-        buffer.putString(password);
-        session.writePacket(buffer);
+        this.password = password;
     }
 
     public String getUsername() {
@@ -55,15 +51,27 @@ public class UserAuthPassword implements UserAuth {
     }
 
     public Result next(Buffer buffer) throws IOException {
-        SshConstants.Message cmd = buffer.getCommand();
-        log.info("Received {}", cmd);
-        if (cmd == SshConstants.Message.SSH_MSG_USERAUTH_SUCCESS) {
-            return Result.Success;
-        } if (cmd == SshConstants.Message.SSH_MSG_USERAUTH_FAILURE) {
-            return Result.Failure;
-        } else {
-            // TODO: check packets
+        if (buffer == null) {
+            log.info("Send SSH_MSG_USERAUTH_REQUEST for password");
+            buffer = session.createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_REQUEST, 0);
+            buffer.putString(username);
+            buffer.putString("ssh-connection");
+            buffer.putString("password");
+            buffer.putByte((byte) 0);
+            buffer.putString(password);
+            session.writePacket(buffer);
             return Result.Continued;
+        } else {
+            SshConstants.Message cmd = buffer.getCommand();
+            log.info("Received {}", cmd);
+            if (cmd == SshConstants.Message.SSH_MSG_USERAUTH_SUCCESS) {
+                return Result.Success;
+            } if (cmd == SshConstants.Message.SSH_MSG_USERAUTH_FAILURE) {
+                return Result.Failure;
+            } else {
+                // TODO: check packets
+                return Result.Continued;
+            }
         }
     }
 

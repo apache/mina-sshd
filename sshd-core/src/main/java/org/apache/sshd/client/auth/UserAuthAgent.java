@@ -49,15 +49,10 @@ public class UserAuthAgent implements UserAuth {
         this.username = username;
         this.agent = session.getFactoryManager().getAgentFactory().createClient(session);
         this.keys = agent.getIdentities().iterator();
-        sendNextKey();
     }
 
     public String getUsername() {
         return username;
-    }
-
-    protected void sendNextKey() throws IOException {
-        sendNextKey(keys.next().getFirst());
     }
 
     protected void sendNextKey(PublicKey key) throws IOException {
@@ -98,21 +93,32 @@ public class UserAuthAgent implements UserAuth {
     }
 
     public Result next(Buffer buffer) throws IOException {
-        SshConstants.Message cmd = buffer.getCommand();
-        log.info("Received {}", cmd);
-        if (cmd == SshConstants.Message.SSH_MSG_USERAUTH_SUCCESS) {
-            agent.close();
-            return Result.Success;
-        } if (cmd == SshConstants.Message.SSH_MSG_USERAUTH_FAILURE) {
+        if (buffer == null) {
             if (keys.hasNext()) {
                 sendNextKey(keys.next().getFirst());
                 return Result.Continued;
+            } else {
+                agent.close();
+                return Result.Failure;
             }
-            agent.close();
-            return Result.Failure;
         } else {
-            // TODO: check packets
-            return Result.Continued;
+            SshConstants.Message cmd = buffer.getCommand();
+            log.info("Received {}", cmd);
+            if (cmd == SshConstants.Message.SSH_MSG_USERAUTH_SUCCESS) {
+                agent.close();
+                return Result.Success;
+            } if (cmd == SshConstants.Message.SSH_MSG_USERAUTH_FAILURE) {
+                if (keys.hasNext()) {
+                    sendNextKey(keys.next().getFirst());
+                    return Result.Continued;
+                } else {
+                    agent.close();
+                    return Result.Failure;
+                }
+            } else {
+                // TODO: check packets
+                return Result.Continued;
+            }
         }
     }
 }
