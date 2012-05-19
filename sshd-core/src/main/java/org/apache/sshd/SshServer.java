@@ -359,13 +359,15 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     }
 
     public void stop(boolean immediately) throws InterruptedException {
-        acceptor.setCloseOnDeactivation(false);
-        acceptor.unbind();
         List<AbstractSession> sessions = new ArrayList<AbstractSession>();
-        for (IoSession ioSession : acceptor.getManagedSessions().values()) {
-            AbstractSession session = AbstractSession.getSession(ioSession, true);
-            if (session != null) {
-                sessions.add(session);
+        if (acceptor != null) {
+            acceptor.setCloseOnDeactivation(false);
+            acceptor.unbind();
+            for (IoSession ioSession : acceptor.getManagedSessions().values()) {
+                AbstractSession session = AbstractSession.getSession(ioSession, true);
+                if (session != null) {
+                    sessions.add(session);
+                }
             }
         }
         final CountDownLatch latch = new CountDownLatch(sessions.size());
@@ -380,7 +382,9 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         if (!immediately) {
             latch.await();
         }
-        acceptor.dispose();
+        if (acceptor != null) {
+            acceptor.dispose();
+        }
         acceptor = null;
         if (shutdownExecutor && executor != null) {
             executor.shutdown();
