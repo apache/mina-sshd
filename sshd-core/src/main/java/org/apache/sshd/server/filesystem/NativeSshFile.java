@@ -19,10 +19,6 @@
 
 package org.apache.sshd.server.filesystem;
 
-import org.apache.sshd.server.SshFile;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -36,6 +32,10 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.StringTokenizer;
+
+import org.apache.sshd.server.SshFile;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <strong>Internal class, do not use directly.</strong>
@@ -284,8 +284,11 @@ public class NativeSshFile implements SshFile {
      */
     public void truncate() throws IOException{
         RandomAccessFile tempFile = new RandomAccessFile(file, "rw");
-        tempFile.setLength(0);
-        tempFile.close();
+        try {
+            tempFile.setLength(0);
+        } finally {
+            tempFile.close();
+        }
     }
 
     /**
@@ -370,19 +373,24 @@ public class NativeSshFile implements SshFile {
             throw new IOException("No write permission : " + file.getName());
         }
 
-        // create output stream
+        // move to the appropriate offset and create output stream
         final RandomAccessFile raf = new RandomAccessFile(file, "rw");
-        raf.setLength(offset);
-        raf.seek(offset);
+        try {
+            raf.setLength(offset);
+            raf.seek(offset);
 
-        // The IBM jre needs to have both the stream and the random access file
-        // objects closed to actually close the file
-        return new FileOutputStream(raf.getFD()) {
-            public void close() throws IOException {
-                super.close();
-                raf.close();
-            }
-        };
+            // The IBM jre needs to have both the stream and the random access file
+            // objects closed to actually close the file
+            return new FileOutputStream(raf.getFD()) {
+                public void close() throws IOException {
+                    super.close();
+                    raf.close();
+                }
+            };
+        } catch (IOException e) {
+            raf.close();
+            throw e;
+        }
     }
 
     /**
@@ -397,16 +405,21 @@ public class NativeSshFile implements SshFile {
 
         // move to the appropriate offset and create input stream
         final RandomAccessFile raf = new RandomAccessFile(file, "r");
-        raf.seek(offset);
+        try {
+            raf.seek(offset);
 
-        // The IBM jre needs to have both the stream and the random access file
-        // objects closed to actually close the file
-        return new FileInputStream(raf.getFD()) {
-            public void close() throws IOException {
-                super.close();
-                raf.close();
-            }
-        };
+            // The IBM jre needs to have both the stream and the random access file
+            // objects closed to actually close the file
+            return new FileInputStream(raf.getFD()) {
+                public void close() throws IOException {
+                    super.close();
+                    raf.close();
+                }
+            };
+        } catch (IOException e) {
+            raf.close();
+            throw e;
+        }
     }
 
     public void handleClose() {
