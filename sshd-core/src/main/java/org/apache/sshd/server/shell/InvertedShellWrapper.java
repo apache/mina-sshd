@@ -28,6 +28,8 @@ import org.apache.mina.util.NamePreservingRunnable;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
+import org.apache.sshd.server.SessionAware;
+import org.apache.sshd.server.session.ServerSession;
 
 /**
  * A shell implementation that wraps an instance of {@link InvertedShell}
@@ -38,7 +40,7 @@ import org.apache.sshd.server.ExitCallback;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class InvertedShellWrapper implements Command {
+public class InvertedShellWrapper implements Command, SessionAware {
 
     /** default buffer size for the IO pumps. */
     public static final int DEFAULT_BUFFER_SIZE = 8192;
@@ -86,6 +88,12 @@ public class InvertedShellWrapper implements Command {
 
     public void setExitCallback(ExitCallback callback) {
         this.callback = callback;
+    }
+
+    public void setSession(ServerSession session) {
+        if (shell instanceof SessionAware) {
+            ((SessionAware) shell).setSession(session);
+        }
     }
 
     public void start(Environment env) throws IOException {
