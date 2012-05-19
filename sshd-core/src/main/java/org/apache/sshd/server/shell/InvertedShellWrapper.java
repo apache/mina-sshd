@@ -120,10 +120,6 @@ public class InvertedShellWrapper implements Command, SessionAware {
             // check the error stream, or wait until more data is available.
             byte[] buffer = new byte[bufferSize];
             for (;;) {
-                if (!shell.isAlive()) {
-                    callback.onExit(shell.exitValue());
-                    return;
-                }
                 if (pumpStream(in, shellIn, buffer)) {
                     continue;
                 }
@@ -132,6 +128,10 @@ public class InvertedShellWrapper implements Command, SessionAware {
                 }
                 if (pumpStream(shellErr, err, buffer)) {
                     continue;
+                }
+                if (!shell.isAlive()) {
+                    callback.onExit(shell.exitValue());
+                    return;
                 }
                 // Sleep a bit.  This is not very good, as it consumes CPU, but the
                 // input streams are not selectable for nio, and any other blocking
