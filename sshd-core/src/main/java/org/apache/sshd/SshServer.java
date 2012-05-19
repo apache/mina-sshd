@@ -68,7 +68,9 @@ import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.CommandFactory;
+import org.apache.sshd.server.session.DefaultForwardingAcceptorFactory;
 import org.apache.sshd.server.FileSystemFactory;
+import org.apache.sshd.server.ForwardingAcceptorFactory;
 import org.apache.sshd.server.ForwardingFilter;
 import org.apache.sshd.server.PasswordAuthenticator;
 import org.apache.sshd.server.PublickeyAuthenticator;
@@ -134,6 +136,8 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     protected PublickeyAuthenticator publickeyAuthenticator;
     protected GSSAuthenticator gssAuthenticator;
     protected ForwardingFilter forwardingFilter;
+    protected ForwardingAcceptorFactory x11ForwardingAcceptorFactory;
+    protected ForwardingAcceptorFactory tcpipForwardingAcceptorFactory;
     protected ScheduledExecutorService executor;
     protected boolean shutdownExecutor;
 
@@ -260,6 +264,22 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     public ForwardingFilter getForwardingFilter() {
         return forwardingFilter;
     }
+    
+    public ForwardingAcceptorFactory getTcpipForwardingAcceptorFactory() {
+        return tcpipForwardingAcceptorFactory;
+    }
+	
+    public void setX11ForwardNioSocketAcceptorFactory(ForwardingAcceptorFactory f) {
+        x11ForwardingAcceptorFactory = f;
+    }
+
+    public ForwardingAcceptorFactory getX11ForwardingAcceptorFactory() {
+        return x11ForwardingAcceptorFactory;
+    }
+	
+    public void setTcpipForwardNioSocketAcceptorFactory(ForwardingAcceptorFactory f) {
+        tcpipForwardingAcceptorFactory = f;
+    }
 
     public void setForwardingFilter(ForwardingFilter forwardingFilter) {
         this.forwardingFilter = forwardingFilter;
@@ -325,6 +345,12 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         }
         if (getFileSystemFactory() == null) {
             throw new IllegalArgumentException("FileSystemFactory not set");
+        }
+        if (getTcpipForwardingAcceptorFactory() == null) {
+            throw new IllegalArgumentException("TcpipForwardingAcceptorFactory not set");
+        }
+        if (getX11ForwardingAcceptorFactory() == null) {
+            throw new IllegalArgumentException("X11ForwardingAcceptorFactory not set");
         }
     }
 
@@ -461,6 +487,11 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
                 new SignatureDSA.Factory(),
                 new SignatureRSA.Factory()));
         sshd.setFileSystemFactory(new NativeFileSystemFactory());
+        
+        ForwardingAcceptorFactory faf = new DefaultForwardingAcceptorFactory();
+        sshd.setTcpipForwardNioSocketAcceptorFactory(faf);
+        sshd.setX11ForwardNioSocketAcceptorFactory(faf);
+        
         return sshd;
     }
 

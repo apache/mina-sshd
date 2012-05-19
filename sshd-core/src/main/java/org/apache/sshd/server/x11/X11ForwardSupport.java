@@ -68,7 +68,7 @@ public class X11ForwardSupport extends IoHandlerAdapter {
 
     public synchronized void initialize() {
         if (this.acceptor == null) {
-            NioSocketAcceptor acceptor = new NioSocketAcceptor();
+            NioSocketAcceptor acceptor = session.getServerFactoryManager().getX11ForwardingAcceptorFactory().createNioSocketAcceptor(session);
             acceptor.setHandler(this);
             acceptor.setReuseAddress(true);
             acceptor.getFilterChain().addLast(
@@ -153,7 +153,9 @@ public class X11ForwardSupport extends IoHandlerAdapter {
     @Override
     public void sessionClosed(IoSession session) throws Exception {
         ChannelForwardedX11 channel = (ChannelForwardedX11) session.getAttribute(ChannelForwardedX11.class);
-        channel.close(false);
+        if ( channel != null ){
+        	channel.close(false);
+        }
     }
 
     @Override

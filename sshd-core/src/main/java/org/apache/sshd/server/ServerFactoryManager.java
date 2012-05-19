@@ -140,7 +140,22 @@ public interface ServerFactoryManager extends FactoryManager {
      *         or <code>null</code> if subsystems are not supported on this server
      */
     List<NamedFactory<Command>> getSubsystemFactories();
-
+    
+    /**
+     * Retrieve the IoAcceptor factory to be used to accept incoming connections
+     * to port forwards.
+     * 
+     * @return A <code>ForwardNioAcceptorFactory</code>
+     */
+    ForwardingAcceptorFactory getTcpipForwardingAcceptorFactory();
+    
+    /**
+     * Retrieve the IoAcceptor factory to be used to accept incoming connections
+     * for X11 Forwards.
+     * 
+     * @return A <code>ForwardNioAcceptorFactory</code>
+     */
+    ForwardingAcceptorFactory getX11ForwardingAcceptorFactory();
 
     /**
      * Retrieve the <code>ScheduledExecutorService</code> to be used.

@@ -54,7 +54,7 @@ public class TcpipForwardSupport extends IoHandlerAdapter {
 
     public synchronized void initialize() {
         if (this.acceptor == null) {
-            NioSocketAcceptor acceptor = new NioSocketAcceptor();
+            NioSocketAcceptor acceptor = session.getServerFactoryManager().getTcpipForwardingAcceptorFactory().createNioSocketAcceptor(session);
             acceptor.setHandler(this);
             acceptor.setReuseAddress(true);
             acceptor.getFilterChain().addLast("executor", new ExecutorFilter(EnumSet.complementOf(EnumSet.of(IoEventType.SESSION_CREATED)).toArray(new IoEventType[0])));
@@ -147,7 +147,9 @@ public class TcpipForwardSupport extends IoHandlerAdapter {
     @Override
     public void sessionClosed(IoSession session) throws Exception {
         ChannelForwardedTcpip channel = (ChannelForwardedTcpip) session.getAttribute(ChannelForwardedTcpip.class);
-        channel.close(false);
+        if ( channel != null ){
+        	channel.close(false);
+        }
     }
 
     @Override
