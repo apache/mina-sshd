@@ -145,13 +145,16 @@ public class InvertedShellWrapper implements Command, SessionAware {
     }
 
     private boolean pumpStream(InputStream in, OutputStream out, byte[] buffer) throws IOException {
-        if (in.available() > 0) {
+        int available = in.available();
+        if (available > 0) {
             int len = in.read(buffer);
             if (len > 0) {
                 out.write(buffer, 0, len);
                 out.flush();
                 return true;
             }
+        } else if (available == -1) {
+            out.close();
         }
         return false;
     }

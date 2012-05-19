@@ -49,7 +49,11 @@ public class ChannelPipedInputStream extends InputStream {
     @Override
     public int available() throws IOException {
         synchronized (buffer) {
-            return buffer.available();
+            int avail = buffer.available();
+            if (avail == 0 && writerClosed) {
+                return -1;
+            }
+            return avail;
         }
     }
 
