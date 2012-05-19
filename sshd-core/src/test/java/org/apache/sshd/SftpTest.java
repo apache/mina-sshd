@@ -147,24 +147,25 @@ public class SftpTest {
     @Test
     public void testReadWriteWithOffset() throws Exception {
         File root = new File("target/scp");
-        File target = new File("target/scp/out.txt");
+        String unixPath = "target/scp/out.txt";
+        File target = new File(unixPath);
         root.mkdirs();
         assertTrue(root.exists());
 
         ChannelSftp c = (ChannelSftp) session.openChannel("sftp");
         c.connect();
-        c.put(new ByteArrayInputStream("0123456789".getBytes()), target.getPath());
+        c.put(new ByteArrayInputStream("0123456789".getBytes()), unixPath);
 
         assertTrue(target.exists());
-        assertEquals("0123456789", readFile("target/scp/out.txt"));
+        assertEquals("0123456789", readFile(unixPath));
 
-        OutputStream os = c.put(target.getPath(), null, ChannelSftp.APPEND, -5);
+        OutputStream os = c.put(unixPath, null, ChannelSftp.APPEND, -5);
         os.write("a".getBytes());
         os.close();
         c.disconnect();
 
         assertTrue(target.exists());
-        assertEquals("01234a", readFile("target/scp/out.txt"));
+        assertEquals("01234a", readFile(unixPath));
 
         target.delete();
         assertFalse(target.exists());

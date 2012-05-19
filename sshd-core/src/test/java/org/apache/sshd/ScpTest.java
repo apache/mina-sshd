@@ -128,28 +128,31 @@ public class ScpTest {
 
         String data = "0123456789\n";
 
-        File root = new File("target/scp");
-        File target = new File("target/scp/out.txt");
+        String unixDir = "target/scp";
+        String fileName = "out.txt";
+        String unixPath = unixDir + File.separator + fileName;
+        File root = new File(unixDir);
+        File target = new File(unixPath);
         root.mkdirs();
         assertTrue(root.exists());
 
         target.delete();
         assertFalse(target.exists());
-        sendFile("target/scp/out.txt", "out.txt", data);
+        sendFile(unixPath, "out.txt", data);
         assertFileLength(target, data.length(), 5000);
 
         target.delete();
         assertFalse(target.exists());
-        sendFile("target/scp", "out.txt", data);
+        sendFile(unixDir, "out.txt", data);
         assertFileLength(target, data.length(), 5000);
 
         sendFileError("target", "scp", "0123456789\n");
 
-        readFileError("target/scp");
+        readFileError(unixDir);
 
-        assertEquals(data, readFile("target/scp/out.txt"));
+        assertEquals(data, readFile(unixPath));
 
-        assertEquals(data, readDir("target/scp"));
+        assertEquals(data, readDir(unixDir));
 
         target.delete();
         root.delete();
@@ -167,8 +170,13 @@ public class ScpTest {
         final SCPClient scp_client = new SCPClient(conn);
         final Properties props = new Properties();
         props.setProperty("test", "test-passed");
+        File f = new File("target/scp/gan");
         scp_client.put(toBytes(props, ""), "test.properties", "target/scp/gan");
+        assertTrue(f.exists());
         scp_client.put(toBytes(props, ""), "test2.properties", "target/scp/gan");
+        assertTrue(f.exists());
+        f.delete();
+        conn.close();
     }
 
     private byte[] toBytes(final Properties properties, final String comments) {
