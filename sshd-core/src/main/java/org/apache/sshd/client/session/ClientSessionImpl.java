@@ -439,7 +439,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
             return false;
         }
         log.info("Server version string: {}", serverVersion);
-        if (!serverVersion.startsWith("SSH-2.0-")) {
+        if (!(serverVersion.startsWith("SSH-2.0-") || serverVersion.startsWith("SSH-1.99-"))) {
             throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_VERSION_NOT_SUPPORTED,
                                    "Unsupported protocol version: " + serverVersion);
         }
