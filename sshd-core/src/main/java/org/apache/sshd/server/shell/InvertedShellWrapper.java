@@ -37,7 +37,11 @@ import org.apache.sshd.server.ExitCallback;
  */
 public class InvertedShellWrapper implements Command {
 
+    /** default buffer size for the IO pumps. */
+    public static final int DEFAULT_BUFFER_SIZE = 8192;
+
     private final InvertedShell shell;
+    private final int bufferSize;
     private InputStream in;
     private OutputStream out;
     private OutputStream err;
@@ -48,7 +52,12 @@ public class InvertedShellWrapper implements Command {
     private Thread thread;
 
     public InvertedShellWrapper(InvertedShell shell) {
+        this(shell, DEFAULT_BUFFER_SIZE);
+    }
+
+    public InvertedShellWrapper(InvertedShell shell, int bufferSize) {
         this.shell = shell;
+        this.bufferSize = bufferSize;
     }
 
     public void setInputStream(InputStream in) {
@@ -91,7 +100,7 @@ public class InvertedShellWrapper implements Command {
             // Use a single thread to correctly sequence the output and error streams.
             // If any bytes are available from the output stream, send them first, then
             // check the error stream, or wait until more data is available.
-            byte[] buffer = new byte[512];
+            byte[] buffer = new byte[bufferSize];
             for (;;) {
                 if (!shell.isAlive()) {
                     callback.onExit(shell.exitValue());
