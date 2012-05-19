@@ -288,6 +288,10 @@ public class ServerSession extends AbstractSession {
     }
 
     private void scheduleIdleTimer() {
+        if (idleTimeout < 1) {
+            // A timeout less than one means there is no timeout.
+            return;
+        }
         Runnable idleTimerTask = new Runnable() {
             public void run() {
                 try {
