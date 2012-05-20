@@ -191,9 +191,9 @@ public class TcpipForwardSupport extends IoHandlerAdapter {
             buffer.putInt(id);
             buffer.putInt(localWindow.getSize());
             buffer.putInt(localWindow.getPacketSize());
-            buffer.putString(local.getHostName());
+            buffer.putString(local.getAddress().getHostAddress());
             buffer.putInt(local.getPort());
-            buffer.putString(remote.getHostName());
+            buffer.putString(remote.getAddress().getHostAddress());
             buffer.putInt(remote.getPort());
             session.writePacket(buffer);
             return openFuture;
