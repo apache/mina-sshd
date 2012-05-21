@@ -29,10 +29,7 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 
 import org.apache.sshd.common.keyprovider.AbstractKeyPairProvider;
-import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.common.util.SecurityUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * TODO Add javadoc
@@ -40,8 +37,6 @@ import org.slf4j.LoggerFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairProvider {
-
-    private static final Logger LOG = LoggerFactory.getLogger(FileKeyPairProvider.class);
 
     private String path;
     private String algorithm = "DSA";
@@ -121,7 +116,7 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
             is = new FileInputStream(f);
             return doReadKeyPair(is);
         } catch (Exception e) {
-            LOG.info("Unable to read key {}: {}", path, e);
+            log.info("Unable to read key {}: {}", path, e);
         } finally {
             close(is);
         }
@@ -134,7 +129,7 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
             os = new FileOutputStream(f);
             doWriteKeyPair(kp, os);
         } catch (Exception e) {
-            LOG.info("Unable to write key {}: {}", path, e);
+            log.info("Unable to write key {}: {}", path, e);
         } finally {
             close(os);
         }
@@ -146,11 +141,11 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
             if (keySize != 0) {
                 generator.initialize(keySize);
             }
-            LOG.info("Generating host key...");
+            log.info("Generating host key...");
             KeyPair kp = generator.generateKeyPair();
             return kp;
         } catch (Exception e) {
-            LOG.error("Unable to generate keypair", e);
+            log.error("Unable to generate keypair", e);
             return null;
         }
     }

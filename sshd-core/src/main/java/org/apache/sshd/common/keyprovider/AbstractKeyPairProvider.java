@@ -25,6 +25,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.sshd.common.KeyPairProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * TODO Add javadoc
@@ -32,6 +34,8 @@ import org.apache.sshd.common.KeyPairProvider;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractKeyPairProvider implements KeyPairProvider {
+
+    protected final Logger log = LoggerFactory.getLogger(getClass());
 
     public KeyPair loadKey(String type) {
         assert type != null;

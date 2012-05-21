@@ -27,8 +27,6 @@ import java.util.List;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.bouncycastle.openssl.PEMReader;
 import org.bouncycastle.openssl.PasswordFinder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * This host key provider loads private keys from the specified files.
@@ -39,8 +37,6 @@ import org.slf4j.LoggerFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class FileKeyPairProvider extends AbstractKeyPairProvider {
-
-    private static final Logger LOG = LoggerFactory.getLogger(FileKeyPairProvider.class);
 
     private String[] files;
     private PasswordFinder passwordFinder;
@@ -90,7 +86,7 @@ public class FileKeyPairProvider extends AbstractKeyPairProvider {
                     r.close();
                 }
             } catch (Exception e) {
-                LOG.info("Unable to read key {}: {}", files[i], e);
+                log.info("Unable to read key {}: {}", files[i], e);
             }
         }
         return keys.toArray(new KeyPair[keys.size()]);
