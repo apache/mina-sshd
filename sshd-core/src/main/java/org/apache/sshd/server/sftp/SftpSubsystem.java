@@ -63,7 +63,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
     public static final int LOWER_SFTP_IMPL = 3; // Working implementation from v3
     public static final int HIGHER_SFTP_IMPL = 3; //  .. up to
     public static final String ALL_SFTP_IMPL = "3";
-
+    public static final int  MAX_PACKET_LENGTH = 1024 * 16;
 
     public static final int SSH_FXP_INIT = 1;
     public static final int SSH_FXP_VERSION = 2;
@@ -249,11 +249,16 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
 
     }
 
-    protected static class DirectoryHandle extends Handle {
+    protected static class DirectoryHandle extends Handle implements Iterator<SshFile> {
         boolean done;
+        // the directory should be read once at "open directory"
+        List<SshFile> fileList = null;
+        int fileIndex;
 
         public DirectoryHandle(SshFile file) {
             super(file);
+            fileList = file.listSshFiles();
+            fileIndex = 0;
         }
 
         public boolean isDone() {
@@ -262,6 +267,25 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
 
         public void setDone(boolean done) {
             this.done = done;
+        }
+
+        public boolean hasNext() {
+            return fileIndex < fileList.size();
+        }
+
+        public SshFile next() {
+            SshFile f = fileList.get(fileIndex);
+            fileIndex++;
+            return f;
+        }
+
+        public void remove() {
+            throw new UnsupportedOperationException();
+        }
+
+        public void clearFileList() {
+            // allow the garbage collector to do the job
+            fileList = null;
         }
     }
 
@@ -665,8 +689,23 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                     } else if (!p.getFile().isReadable()) {
                         sendStatus(id, SSH_FX_PERMISSION_DENIED, p.getFile().getAbsolutePath());
                     } else {
-                        sendName(id, p.getFile().listSshFiles());
-                        ((DirectoryHandle) p).setDone(true);
+                        DirectoryHandle dh = (DirectoryHandle) p;
+                        if (dh.hasNext()) {
+                            // There is at least one file in the directory.
+                            // Send only a few files at a time to not create packets of a too
+                            // large size or have a timeout to occur.
+                            sendName(id, dh);
+                            if (!dh.hasNext()) {
+                                // if no more files to send
+                                dh.setDone(true);
+                                dh.clearFileList();
+                            }
+                        } else {
+                            // empty directory
+                            dh.setDone(true);
+                            dh.clearFileList();
+                            sendStatus(id, SSH_FX_EOF, "", "");
+                        }
                     }
                 } catch (IOException e) {
                     sendStatus(id, SSH_FX_FAILURE, e.getMessage());
@@ -846,12 +885,15 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         send(buffer);
     }
 
-    protected void sendName(int id, Collection<SshFile> files) throws IOException {
+    protected void sendName(int id, Iterator<SshFile> files) throws IOException {
         Buffer buffer = new Buffer();
         buffer.putByte((byte) SSH_FXP_NAME);
         buffer.putInt(id);
-        buffer.putInt(files.size());
-        for (SshFile f : files) {
+        int wpos = buffer.wpos();
+        buffer.putInt(0);
+        int nb = 0;
+        while (files.hasNext() && buffer.wpos() < MAX_PACKET_LENGTH) {
+            SshFile f = files.next();
             buffer.putString(f.getName());
             if (version <= 3) {
                 buffer.putString(getLongName(f)); // Format specified in the specs
@@ -859,7 +901,12 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                 buffer.putString(f.getName()); // Supposed to be UTF-8
             }
             writeAttrs(buffer, f);
+            nb++;
         }
+        int oldpos = buffer.wpos();
+        buffer.wpos(wpos);
+        buffer.putInt(nb);
+        buffer.wpos(oldpos);
         send(buffer);
     }
 

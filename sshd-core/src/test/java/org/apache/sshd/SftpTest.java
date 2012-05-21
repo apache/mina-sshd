@@ -25,6 +25,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.util.Arrays;
+import java.util.Vector;
 
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
@@ -170,6 +171,16 @@ public class SftpTest {
         target.delete();
         assertFalse(target.exists());
         root.delete();
+    }
+
+    @Test
+    public void testReadDir() throws Exception {
+        ChannelSftp c = (ChannelSftp) session.openChannel("sftp");
+        c.connect();
+        Vector res = c.ls("target/classes/org/apache/sshd/");
+        for (Object f : res) {
+            System.out.println(f.toString());
+        }
     }
 
     protected void assertFileLength(File file, long length, long timeout) throws Exception {
