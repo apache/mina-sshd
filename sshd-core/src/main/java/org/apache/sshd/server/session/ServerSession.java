@@ -87,7 +87,7 @@ public class ServerSession extends AbstractSession {
         tcpipForward = new TcpipForwardSupport(this);
         agentForward = new AgentForwardSupport(this);
         x11Forward = new X11ForwardSupport(this);
-        log.info("Session created...");
+        log.info("Session created from {}", ioSession.getRemoteAddress());
         sendServerIdentification();
         sendKexInit();
     }
@@ -129,32 +129,32 @@ public class ServerSession extends AbstractSession {
             case SSH_MSG_DISCONNECT: {
                 int code = buffer.getInt();
                 String msg = buffer.getString();
-                log.info("Received SSH_MSG_DISCONNECT (reason={}, msg={})", code, msg);
+                log.debug("Received SSH_MSG_DISCONNECT (reason={}, msg={})", code, msg);
                 close(true);
                 break;
             }
             case SSH_MSG_UNIMPLEMENTED: {
                 int code = buffer.getInt();
-                log.info("Received SSH_MSG_UNIMPLEMENTED #{}", code);
+                log.debug("Received SSH_MSG_UNIMPLEMENTED #{}", code);
                 break;
             }
             case SSH_MSG_DEBUG: {
                 boolean display = buffer.getBoolean();
                 String msg = buffer.getString();
-                log.info("Received SSH_MSG_DEBUG (display={}) '{}'", display, msg);
+                log.debug("Received SSH_MSG_DEBUG (display={}) '{}'", display, msg);
                 break;
             }
             case SSH_MSG_IGNORE:
-                log.info("Received SSH_MSG_IGNORE");
+                log.debug("Received SSH_MSG_IGNORE");
                 break;
             default:
                 switch (state) {
                     case ReceiveKexInit:
                         if (cmd != SshConstants.Message.SSH_MSG_KEXINIT) {
-                            log.error("Ignoring command " + cmd + " while waiting for " + SshConstants.Message.SSH_MSG_KEXINIT);
+                            log.warn("Ignoring command " + cmd + " while waiting for " + SshConstants.Message.SSH_MSG_KEXINIT);
                             break;
                         }
-                        log.info("Received SSH_MSG_KEXINIT");
+                        log.debug("Received SSH_MSG_KEXINIT");
                         receiveKexInit(buffer);
                         negociate();
                         kex = NamedFactory.Utils.create(factoryManager.getKeyExchangeFactories(), negociated[SshConstants.PROPOSAL_KEX_ALGS]);
@@ -173,18 +173,18 @@ public class ServerSession extends AbstractSession {
                             disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "Protocol error: expected packet " + SshConstants.Message.SSH_MSG_NEWKEYS + ", got " + cmd);
                             return;
                         }
-                        log.info("Received SSH_MSG_NEWKEYS");
+                        log.debug("Received SSH_MSG_NEWKEYS");
                         receiveNewKeys(true);
                         state = State.WaitingUserAuth;
                         scheduleAuthTimer();
                         break;
                     case WaitingUserAuth:
                         if (cmd != SshConstants.Message.SSH_MSG_SERVICE_REQUEST) {
-                            log.info("Expecting a {}, but received {}", SshConstants.Message.SSH_MSG_SERVICE_REQUEST, cmd);
+                            log.debug("Expecting a {}, but received {}", SshConstants.Message.SSH_MSG_SERVICE_REQUEST, cmd);
                             notImplemented();
                         } else {
                             String request = buffer.getString();
-                            log.info("Received SSH_MSG_SERVICE_REQUEST '{}'", request);
+                            log.debug("Received SSH_MSG_SERVICE_REQUEST '{}'", request);
                             if ("ssh-userauth".equals(request)) {
                                 userAuth(buffer, null);
                             } else {
@@ -197,7 +197,7 @@ public class ServerSession extends AbstractSession {
                             disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "Protocol error: expected packet " + SshConstants.Message.SSH_MSG_USERAUTH_REQUEST + ", got " + cmd);
                             return;
                         }
-                        log.info("Received " + cmd);
+                        log.debug("Received " + cmd);
                         userAuth(buffer, cmd);
                         break;
                     case Running:
@@ -341,7 +341,7 @@ public class ServerSession extends AbstractSession {
         if (clientVersion == null) {
             return false;
         }
-        log.info("Client version string: {}", clientVersion);
+        log.debug("Client version string: {}", clientVersion);
         if (!clientVersion.startsWith("SSH-2.0-")) {
             throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_VERSION_NOT_SUPPORTED,
                                    "Unsupported protocol version: " + clientVersion);
@@ -356,19 +356,19 @@ public class ServerSession extends AbstractSession {
 
     private void serviceRequest(Buffer buffer) throws Exception {
         String request = buffer.getString();
-        log.info("Received SSH_MSG_SERVICE_REQUEST '{}'", request);
+        log.debug("Received SSH_MSG_SERVICE_REQUEST '{}'", request);
         // TODO: handle service requests
         disconnect(SshConstants.SSH2_DISCONNECT_SERVICE_NOT_AVAILABLE, "Unsupported service request: " + request);
     }
 
     private void userAuth(Buffer buffer, SshConstants.Message cmd) throws Exception {
         if (state == State.WaitingUserAuth) {
-            log.info("Accepting user authentication request");
+            log.debug("Accepting user authentication request");
             buffer = createBuffer(SshConstants.Message.SSH_MSG_SERVICE_ACCEPT, 0);
             buffer.putString("ssh-userauth");
             writePacket(buffer);
             userAuthFactories = new ArrayList<NamedFactory<UserAuth>>(getServerFactoryManager().getUserAuthFactories());
-            log.info("Authorized authentication methods: {}", NamedFactory.Utils.getNames(userAuthFactories));
+            log.debug("Authorized authentication methods: {}", NamedFactory.Utils.getNames(userAuthFactories));
             state = State.UserAuth;
         } else {
             if (nbAuthRequests++ > maxAuthRequests) {
@@ -384,7 +384,7 @@ public class ServerSession extends AbstractSession {
               String svcName = buffer.getString();
               String method = buffer.getString();
               
-              log.info("Authenticating user '{}' with method '{}'", username, method);
+              log.debug("Authenticating user '{}' with method '{}'", username, method);
               NamedFactory<UserAuth> factory = NamedFactory.Utils.get(userAuthFactories, method);
               if (factory != null) {
                 UserAuth auth = factory.create();
@@ -392,7 +392,7 @@ public class ServerSession extends AbstractSession {
                   authed = auth.auth(this, username, buffer);
                   if (authed == null) {
                     // authentication is still ongoing
-                    log.info("Authentication not finished");
+                    log.debug("Authentication not finished");
                     
                     if (auth instanceof HandshakingUserAuth) {
                       currentAuth = (HandshakingUserAuth) auth;
@@ -403,16 +403,16 @@ public class ServerSession extends AbstractSession {
                     }
                     return;
                   } else {
-                    log.info(authed ? "Authentication succeeded" : "Authentication failed");
+                    log.debug(authed ? "Authentication succeeded" : "Authentication failed");
                   }
                 } catch (Exception e) {
                   // Continue
                   authed = false;
-                  log.info("Authentication failed: {}", e.getMessage());
+                  log.debug("Authentication failed: {}", e.getMessage());
                 }
                 
               } else {
-                log.info("Unsupported authentication method '{}'", method);
+                log.debug("Unsupported authentication method '{}'", method);
               }
             } else {
               try {
@@ -420,7 +420,7 @@ public class ServerSession extends AbstractSession {
                 
                 if (authed == null) {
                   // authentication is still ongoing
-                  log.info("Authentication still not finished");
+                  log.debug("Authentication still not finished");
                   return;
                 } else if (authed.booleanValue()) {
                   username = currentAuth.getUserName();
@@ -428,7 +428,7 @@ public class ServerSession extends AbstractSession {
               } catch (Exception e) {
                 // failed
                 authed = false;
-                log.info("Authentication next failed: {}", e.getMessage());
+                log.debug("Authentication next failed: {}", e.getMessage());
               }
             }
 
@@ -459,6 +459,7 @@ public class ServerSession extends AbstractSession {
                 this.authed = true;
                 this.username = username;
                 unscheduleAuthTimer();
+                log.info("Session {}@{} authenticated", getUsername(), getIoSession().getRemoteAddress());
             } else {
                 buffer = createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_FAILURE, 0);
                 NamedFactory.Utils.remove(userAuthFactories, "none"); // 'none' MUST NOT be listed
@@ -497,7 +498,7 @@ public class ServerSession extends AbstractSession {
         final int rwsize = buffer.getInt();
         final int rmpsize = buffer.getInt();
 
-        log.info("Received SSH_MSG_CHANNEL_OPEN {}", type);
+        log.debug("Received SSH_MSG_CHANNEL_OPEN {}", type);
 
         if (closing) {
             Buffer buf = createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_FAILURE, 0);
@@ -576,7 +577,7 @@ public class ServerSession extends AbstractSession {
             tcpipForward.cancel(buffer, wantReply);
             return;
         } else {
-            log.info("Received SSH_MSG_GLOBAL_REQUEST {}", req);
+            log.debug("Received SSH_MSG_GLOBAL_REQUEST {}", req);
             log.warn("Unknown global request: {}", req);
         }
         if (wantReply) {

@@ -189,9 +189,9 @@ public class ChannelSession extends AbstractServerChannel {
     }
 
     public void handleRequest(Buffer buffer) throws IOException {
-        log.info("Received SSH_MSG_CHANNEL_REQUEST on channel {}", id);
+        log.debug("Received SSH_MSG_CHANNEL_REQUEST on channel {}", id);
         String type = buffer.getString();
-        log.info("Received channel request: {}", type);
+        log.debug("Received channel request: {}", type);
         if (!handleRequest(type, buffer)) {
             buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_FAILURE, 0);
             buffer.putInt(recipient);

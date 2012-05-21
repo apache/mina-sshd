@@ -26,8 +26,6 @@ import org.apache.sshd.common.Session;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultCloseFuture;
-import org.apache.sshd.common.future.SshFuture;
-import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.BufferUtils;
 import org.slf4j.Logger;
@@ -84,14 +82,14 @@ public abstract class AbstractChannel implements Channel {
         try {
             synchronized (lock) {
                 if (immediately) {
-                    log.info("Closing channel {} immediately", id);
+                    log.debug("Closing channel {} immediately", id);
                     closeFuture.setClosed();
                     lock.notifyAll();
                     session.unregisterChannel(this);
                 } else {
                     if (!closing) {
                         closing = true;
-                        log.info("Send SSH_MSG_CHANNEL_CLOSE on channel {}", id);
+                        log.debug("Send SSH_MSG_CHANNEL_CLOSE on channel {}", id);
                         Buffer buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_CLOSE, 0);
                         buffer.putInt(recipient);
                         session.writePacket(buffer);
@@ -106,7 +104,7 @@ public abstract class AbstractChannel implements Channel {
     }
 
     public void handleClose() throws IOException {
-        log.info("Received SSH_MSG_CHANNEL_CLOSE on channel {}", id);
+        log.debug("Received SSH_MSG_CHANNEL_CLOSE on channel {}", id);
         synchronized (lock) {
             close(false).setClosed();
             doClose();
@@ -133,7 +131,7 @@ public abstract class AbstractChannel implements Channel {
         int ex = buffer.getInt();
         // Only accept extended data for stderr
         if (ex != 1) {
-            log.info("Send SSH_MSG_CHANNEL_FAILURE on channel {}", id);
+            log.debug("Send SSH_MSG_CHANNEL_FAILURE on channel {}", id);
             buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_FAILURE, 0);
             buffer.putInt(recipient);
             session.writePacket(buffer);
@@ -151,7 +149,7 @@ public abstract class AbstractChannel implements Channel {
     }
 
     public void handleEof() throws IOException {
-        log.info("Received SSH_MSG_CHANNEL_EOF on channel {}", id);
+        log.debug("Received SSH_MSG_CHANNEL_EOF on channel {}", id);
         synchronized (lock) {
             eof = true;
             lock.notifyAll();
@@ -159,13 +157,13 @@ public abstract class AbstractChannel implements Channel {
     }
 
     public void handleWindowAdjust(Buffer buffer) throws IOException {
-        log.info("Received SSH_MSG_CHANNEL_WINDOW_ADJUST on channel {}", id);
+        log.debug("Received SSH_MSG_CHANNEL_WINDOW_ADJUST on channel {}", id);
         int window = buffer.getInt();
         remoteWindow.expand(window);
     }
 
     public void handleFailure() throws IOException {
-        log.info("Received SSH_MSG_CHANNEL_FAILURE on channel {}", id);
+        log.debug("Received SSH_MSG_CHANNEL_FAILURE on channel {}", id);
         // TODO: do something to report failed requests?
     }
 
@@ -174,7 +172,7 @@ public abstract class AbstractChannel implements Channel {
     protected abstract void doWriteExtendedData(byte[] data, int off, int len) throws IOException;
 
     protected void sendEof() throws IOException {
-        log.info("Send SSH_MSG_CHANNEL_EOF on channel {}", id);
+        log.debug("Send SSH_MSG_CHANNEL_EOF on channel {}", id);
         Buffer buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_EOF, 0);
         buffer.putInt(recipient);
         session.writePacket(buffer);
@@ -187,7 +185,7 @@ public abstract class AbstractChannel implements Channel {
     }
 
     protected void sendWindowAdjust(int len) throws IOException {
-        log.info("Send SSH_MSG_CHANNEL_WINDOW_ADJUST on channel {}", id);
+        log.debug("Send SSH_MSG_CHANNEL_WINDOW_ADJUST on channel {}", id);
         Buffer buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_WINDOW_ADJUST, 0);
         buffer.putInt(recipient);
         buffer.putInt(len);

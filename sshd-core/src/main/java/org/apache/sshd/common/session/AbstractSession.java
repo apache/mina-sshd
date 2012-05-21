@@ -278,7 +278,7 @@ public abstract class AbstractSession implements Session {
      * The call will not block until the mina session is actually closed.
      */
     public CloseFuture close(final boolean immediately) {
-	    final Session s = this;
+	    final AbstractSession s = this;
         class IoSessionCloser implements IoFutureListener {
             public void operationComplete(IoFuture future) {
                 synchronized (lock) {
@@ -287,6 +287,7 @@ public abstract class AbstractSession implements Session {
                     lock.notifyAll();
                 }
 
+                log.info("Session {}@{} closed", s.getUsername(), s.getIoSession().getRemoteAddress());
                 // Fire 'close' event
                 final ArrayList<SessionListener> l =
                         new ArrayList<SessionListener>(listeners);
@@ -300,7 +301,7 @@ public abstract class AbstractSession implements Session {
             if (!closing) {
                 try {
                     closing = true;
-                    log.info("Closing session");
+                    log.debug("Closing session");
                     Channel[] channelToClose = channels.values().toArray(new Channel[channels.values().size()]);
                     if (channelToClose.length > 0) {
                         final AtomicInteger latch = new AtomicInteger(channelToClose.length);
@@ -704,7 +705,7 @@ public abstract class AbstractSession implements Session {
      * @throws IOException if an error occurs sending the message
      */
     protected void sendNewKeys() throws IOException {
-        log.info("Send SSH_MSG_NEWKEYS");
+        log.debug("Send SSH_MSG_NEWKEYS");
         Buffer buffer = createBuffer(SshConstants.Message.SSH_MSG_NEWKEYS, 0);
         writePacket(buffer);
     }
@@ -921,7 +922,7 @@ public abstract class AbstractSession implements Session {
 
     protected void channelOpenConfirmation(Buffer buffer) throws IOException {
         Channel channel = getChannel(buffer);
-        log.info("Received SSH_MSG_CHANNEL_OPEN_CONFIRMATION on channel {}", channel.getId());
+        log.debug("Received SSH_MSG_CHANNEL_OPEN_CONFIRMATION on channel {}", channel.getId());
         int recipient = buffer.getInt();
         int rwsize = buffer.getInt();
         int rmpsize = buffer.getInt();
@@ -930,7 +931,7 @@ public abstract class AbstractSession implements Session {
 
     protected void channelOpenFailure(Buffer buffer) throws IOException {
         AbstractClientChannel channel = (AbstractClientChannel) getChannel(buffer);
-        log.info("Received SSH_MSG_CHANNEL_OPEN_FAILURE on channel {}", channel.getId());
+        log.debug("Received SSH_MSG_CHANNEL_OPEN_FAILURE on channel {}", channel.getId());
         channels.remove(channel.getId());
         channel.handleOpenFailure(buffer);
     }
