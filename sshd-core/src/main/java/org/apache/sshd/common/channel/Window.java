@@ -107,7 +107,7 @@ public class Window {
 
     public void check(int maxFree) throws IOException {
         synchronized (lock) {
-            if ((size < maxFree) && (maxFree - size > packetSize * 3 || size < maxFree / 2)) {
+            if (size < maxFree / 2) {
                 if (log.isDebugEnabled()) {
                     log.debug("Increase " + name + " by " + (maxFree - size) + " up to " + maxFree);
                 }
