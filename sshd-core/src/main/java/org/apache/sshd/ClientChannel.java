@@ -44,6 +44,7 @@ public interface ClientChannel {
     int EOF =         0x0010;
     int EXIT_STATUS = 0x0020;
     int EXIT_SIGNAL = 0x0040;
+    int OPENED =      0x0080;
 
     void setIn(InputStream in);
 

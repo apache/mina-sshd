@@ -30,7 +30,6 @@ import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.AbstractChannel;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
-import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.IoUtils;
 
@@ -117,6 +116,9 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         synchronized (lock) {
             for (;;) {
                 int cond = 0;
+                if (openFuture != null && openFuture.isOpened()) {
+                    cond |= OPENED;
+                }
                 if (closeFuture.isClosed()) {
                     cond |= CLOSED | EOF;
                 }
