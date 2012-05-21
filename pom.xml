@@ -87,7 +87,7 @@
             <dependency>
                 <groupId>org.apache.mina</groupId>
                 <artifactId>mina-core</artifactId>
-                <version>2.0.3</version>
+                <version>2.0.4</version>
             </dependency>
             <dependency>
                 <groupId>tomcat</groupId>
@@ -97,7 +97,7 @@
             <dependency>
                 <groupId>com.jcraft</groupId>
                 <artifactId>jzlib</artifactId>
-                <version>1.0.7</version>
+                <version>1.1.1</version>
             </dependency>
             <dependency>
                 <groupId>bouncycastle</groupId>
@@ -135,11 +135,6 @@
                 <version>4.4</version>
             </dependency>
             <dependency>
-                <groupId>jline</groupId>
-                <artifactId>jline</artifactId>
-                <version>0.9.94</version>
-            </dependency>
-            <dependency>
                 <groupId>net.sf.jpam</groupId>
                 <artifactId>jpam</artifactId>
                 <version>1.1</version>
@@ -148,6 +143,11 @@
                 <groupId>commons-httpclient</groupId>
                 <artifactId>commons-httpclient</artifactId>
                 <version>3.1</version>
+            </dependency>
+            <dependency>
+                <groupId>ch.ethz.ganymed</groupId>
+                <artifactId>ganymed-ssh2</artifactId>
+                <version>build210</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

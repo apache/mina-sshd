@@ -84,11 +84,6 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>jline</groupId>
-            <artifactId>jline</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>commons-httpclient</groupId>
             <artifactId>commons-httpclient</artifactId>
             <scope>test</scope>
@@ -96,7 +91,6 @@
         <dependency>
             <groupId>ch.ethz.ganymed</groupId>
             <artifactId>ganymed-ssh2</artifactId>
-            <version>build210</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
