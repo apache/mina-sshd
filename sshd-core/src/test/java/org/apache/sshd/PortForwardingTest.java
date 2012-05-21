@@ -18,16 +18,24 @@
  */
 package org.apache.sshd;
 
-import java.io.*;
+import java.io.IOException;
 import java.lang.reflect.Field;
-import java.net.*;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.URL;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import com.jcraft.jsch.*;
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.Logger;
+import com.jcraft.jsch.Session;
+import com.jcraft.jsch.UserInfo;
 import org.apache.commons.httpclient.HostConfiguration;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpVersion;
@@ -39,8 +47,8 @@ import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
-import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.BogusForwardingFilter;
+import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
 import org.junit.After;
 import org.junit.Assert;
@@ -196,6 +204,81 @@ public class PortForwardingTest {
             } while (stuck);
         }
 
+        session.delPortForwardingR(forwardedPort);
+    }
+
+    @Test
+    @Ignore
+    public void testRemoteForwardingPayload() throws Exception {
+        final int NUM_ITERATIONS = 100;
+        final String PAYLOAD = "This is significantly longer Test Data. This is significantly "+
+                "longer Test Data. This is significantly longer Test Data. This is significantly "+
+                "longer Test Data. This is significantly longer Test Data. This is significantly "+
+                "longer Test Data. This is significantly longer Test Data. This is significantly "+
+                "longer Test Data. This is significantly longer Test Data. This is significantly "+
+                "longer Test Data. ";
+        Session session = createSession();
+        final ServerSocket ss = new ServerSocket(0);
+        int forwardedPort = ss.getLocalPort();
+        int sinkPort = getFreePort();
+        session.setPortForwardingR(sinkPort, "localhost", forwardedPort);
+        final boolean started[] = new boolean[1];
+        started[0] = false;
+        final AtomicInteger conCount = new AtomicInteger(0);
+
+        new Thread() {
+            public void run() {
+                started[0] = true;
+                try {
+                    for (int i = 0; i < NUM_ITERATIONS; ++i) {
+                        Socket s = ss.accept();
+                        conCount.incrementAndGet();
+                        s.getOutputStream().write(PAYLOAD.getBytes());
+                        s.getOutputStream().flush();
+                        s.close();
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }.start();
+        Thread.sleep(50);
+        Assert.assertTrue("Server not started", started[0]);
+
+        final boolean lenOK[] = new boolean[NUM_ITERATIONS];
+        final boolean dataOK[] = new boolean[NUM_ITERATIONS];
+        for ( int i = 0; i < NUM_ITERATIONS; i++) {
+            final int ii = i;
+            Socket s = null;
+            try {
+                s = new Socket("localhost", sinkPort);
+                byte b1[] = new byte[PAYLOAD.length() / 2];
+                byte b2[] = new byte[PAYLOAD.length()];
+                int read1 = s.getInputStream().read(b1);
+                Thread.sleep(50);
+                int read2 = s.getInputStream().read(b2);
+                lenOK[ii] = PAYLOAD.length() == read1 + read2;
+                dataOK[ii] = PAYLOAD.equals(new String(b1, 0, read1) + new String(b2, 0, read2));
+                if (!lenOK[ii] || !dataOK[ii] ) {
+                    throw new Exception("Bad data");
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                if (s != null) {
+                    s.close();
+                }
+            }
+        }
+        int ok = 0;
+        for (int i = 0; i < NUM_ITERATIONS; i++) {
+            ok += lenOK[i] ? 1 : 0;
+        }
+        Thread.sleep(50);
+        for (int i = 0; i < NUM_ITERATIONS; i++) {
+            Assert.assertTrue(lenOK[i]);
+            Assert.assertTrue(dataOK[i]);
+        }
         session.delPortForwardingR(forwardedPort);
     }
 
