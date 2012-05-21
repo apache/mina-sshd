@@ -224,22 +224,25 @@ public class ChannelSession extends AbstractServerChannel {
             return handleSignal(buffer);
         }
         if ("shell".equals(type)) {
-            if (checkType(type)) {
-                return handleShell(buffer);
+            if (this.type == null && handleShell(buffer)) {
+                this.type = type;
+                return true;
             } else {
                 return false;
             }
         }
         if ("exec".equals(type)) {
-            if (checkType(type)) {
-                return handleExec(buffer);
+            if (this.type == null && handleExec(buffer)) {
+                this.type = type;
+                return true;
             } else {
                 return false;
             }
         }
         if ("subsystem".equals(type)) {
-            if (checkType(type)) {
-                return handleSubsystem(buffer);
+            if (this.type == null && handleSubsystem(buffer)) {
+                this.type = type;
+                return true;
             } else {
                 return false;
             }
@@ -256,22 +259,6 @@ public class ChannelSession extends AbstractServerChannel {
             return true;
         }
         return false;
-    }
-
-    /**
-     * Only one of "shell", "exec" or "subsystem" command
-     * is permitted for a given channel.
-     *
-     * @param type
-     * @return
-     */
-    private boolean checkType(String type) {
-        if (this.type == null) {
-            this.type = type;
-            return true;
-        } else {
-            return false;
-        }
     }
 
     protected boolean handleEnv(Buffer buffer) throws IOException {
