@@ -19,7 +19,6 @@
 package org.apache.sshd.server.channel;
 
 import java.io.IOException;
-import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
@@ -109,7 +108,9 @@ public class ChannelDirectTcpip extends AbstractServerChannel {
 
             @Override
             public void sessionClosed(IoSession session) throws Exception {
-                sendEof();
+                if (!closing) {
+                    sendEof();
+                }
             }
         };
         connector.setHandler(handler);
