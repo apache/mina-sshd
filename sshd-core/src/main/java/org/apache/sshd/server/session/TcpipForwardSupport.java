@@ -31,12 +31,14 @@ import org.apache.mina.core.session.IoEventType;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.filter.executor.ExecutorFilter;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
+import org.apache.sshd.ClientChannel;
 import org.apache.sshd.client.channel.AbstractClientChannel;
 import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.ChannelOutputStream;
+import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.server.ForwardingFilter;
 
@@ -131,23 +133,25 @@ public class TcpipForwardSupport extends IoHandlerAdapter {
     }
 
     @Override
-    public void sessionCreated(IoSession session) throws Exception {
-        ChannelForwardedTcpip channel = new ChannelForwardedTcpip(session);
+    public void sessionCreated(final IoSession session) throws Exception {
+        final ChannelForwardedTcpip channel = new ChannelForwardedTcpip(session);
         session.setAttribute(ChannelForwardedTcpip.class, channel);
         this.session.registerChannel(channel);
-        OpenFuture future = channel.open().await();
-        Throwable t = future.getException();
-        if (t instanceof Exception) {
-            throw (Exception) t;
-        } else if (t != null) {
-            throw new Exception(t);
-        }
+        channel.open().addListener(new SshFutureListener<OpenFuture>() {
+            public void operationComplete(OpenFuture future) {
+                Throwable t = future.getException();
+                if (t != null) {
+                    TcpipForwardSupport.this.session.unregisterChannel(channel);
+                    channel.close(false);
+                }
+            }
+        });
     }
 
     @Override
     public void sessionClosed(IoSession session) throws Exception {
         ChannelForwardedTcpip channel = (ChannelForwardedTcpip) session.getAttribute(ChannelForwardedTcpip.class);
-        if ( channel != null ){
+        if (channel != null) {
         	channel.close(false);
         }
     }
@@ -159,6 +163,7 @@ public class TcpipForwardSupport extends IoHandlerAdapter {
         int r = ioBuffer.remaining();
         byte[] b = new byte[r];
         ioBuffer.get(b, 0, r);
+        channel.waitFor(ClientChannel.OPENED | ClientChannel.CLOSED, Long.MAX_VALUE);
         channel.getOut().write(b, 0, r);
         channel.getOut().flush();
     }
@@ -176,6 +181,11 @@ public class TcpipForwardSupport extends IoHandlerAdapter {
         public ChannelForwardedTcpip(IoSession serverSession) {
             super("forwarded-tcpip");
             this.serverSession = serverSession;
+        }
+
+
+        public OpenFuture getOpenFuture() {
+            return openFuture;
         }
 
         public synchronized OpenFuture open() throws Exception {

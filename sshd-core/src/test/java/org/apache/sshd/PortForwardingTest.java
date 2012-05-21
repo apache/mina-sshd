@@ -19,8 +19,11 @@
 package org.apache.sshd;
 
 import java.io.*;
+import java.lang.reflect.Field;
 import java.net.*;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 
@@ -40,9 +43,11 @@ import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.BogusForwardingFilter;
 import org.apache.sshd.util.EchoShellFactory;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.slf4j.LoggerFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -51,6 +56,8 @@ import static org.junit.Assert.assertTrue;
  * Port forwarding tests
  */
 public class PortForwardingTest {
+
+    private final org.slf4j.Logger log = LoggerFactory.getLogger(getClass());
 
     private SshServer sshd;
     private int sshPort;
@@ -149,6 +156,121 @@ public class PortForwardingTest {
 
 //        session.setPortForwardingL(8010, "www.amazon.com", 80);
 //        Thread.sleep(1000000);
+    }
+
+    @Test(timeout = 20000)
+    public void testRemoteForwardingWithDisconnect() throws Exception {
+        Session session = createSession();
+
+        // 1. Create a Port Forward
+        int forwardedPort = getFreePort();
+        session.setPortForwardingR(forwardedPort, "localhost", echoPort);
+
+        // 2. Establish a connection through it
+        new Socket("localhost", forwardedPort);
+
+        // 3. Simulate the client going away
+        rudelyDisconnectJschSession(session);
+
+        // 4. Make sure the NIOprocessor is not stuck
+        {
+            Thread.sleep(1000);
+            // from here, we need to check all the threads running and find a
+            // "NioProcessor-"
+            // that is stuck on a PortForward.dispose
+            ThreadGroup root = Thread.currentThread().getThreadGroup().getParent();
+            while (root.getParent() != null) {
+                root = root.getParent();
+            }
+            boolean stuck;
+            do {
+                stuck = false;
+                for (Thread t : findThreads(root, "NioProcessor-")) {
+                    stuck = true;
+                }
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+
+                }
+            } while (stuck);
+        }
+
+        session.delPortForwardingR(forwardedPort);
+    }
+
+    /**
+     * Close the socket inside this JSCH session. Use reflection to find it and
+     * just close it.
+     *
+     * @param session
+     *            the Session to violate
+     * @throws Exception
+     */
+    private void rudelyDisconnectJschSession(Session session) throws Exception {
+        Field fSocket = session.getClass().getDeclaredField("socket");
+        fSocket.setAccessible(true);
+        Socket socket = (Socket) fSocket.get(session);
+
+        Assert.assertTrue("socket is not connected", socket.isConnected());
+        Assert.assertFalse("socket should not be closed", socket.isClosed());
+        socket.close();
+        Assert.assertTrue("socket has not closed", socket.isClosed());
+    }
+
+    private Set<Thread> findThreads(ThreadGroup group, String name) {
+        HashSet<Thread> ret = new HashSet<Thread>();
+        int numThreads = group.activeCount();
+        Thread[] threads = new Thread[numThreads * 2];
+        numThreads = group.enumerate(threads, false);
+        // Enumerate each thread in `group'
+        for (int i = 0; i < numThreads; ++i) {
+            // Get thread
+            // log.debug("Thread name: " + threads[i].getName());
+            if (checkThreadForPortForward(threads[i], name)) {
+                ret.add(threads[i]);
+            }
+        }
+        // didn't find the thread to check the
+        int numGroups = group.activeGroupCount();
+        ThreadGroup[] groups = new ThreadGroup[numGroups * 2];
+        numGroups = group.enumerate(groups, false);
+        for (int i = 0; i < numGroups; ++i) {
+            ret.addAll(findThreads(groups[i], name));
+        }
+        return ret;
+    }
+
+    private boolean checkThreadForPortForward(Thread thread, String name) {
+        if (thread == null)
+            return false;
+        // does it contain the name we're looking for?
+        if (thread.getName().contains(name)) {
+            // look at the stack
+            StackTraceElement[] stack = thread.getStackTrace();
+            if (stack.length == 0)
+                return false;
+            else {
+                // does it have
+                // 'org.apache.sshd.server.session.TcpipForwardSupport.close'?
+                for (int i = 0; i < stack.length; ++i) {
+                    String clazzName = stack[i].getClassName();
+                    String methodName = stack[i].getMethodName();
+                    // log.debug("Class: " + clazzName);
+                    // log.debug("Method: " + methodName);
+                    if (clazzName
+                            .equals("org.apache.sshd.server.session.TcpipForwardSupport")
+                            && (methodName.equals("close") || methodName
+                            .equals("sessionCreated"))) {
+                        log.warn(thread.getName() + " stuck at " + clazzName
+                                + "." + methodName + ": "
+                                + stack[i].getLineNumber());
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     protected Session createSession() throws JSchException {
