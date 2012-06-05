@@ -389,12 +389,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         if (acceptor != null) {
             acceptor.setCloseOnDeactivation(false);
             acceptor.unbind();
-            for (IoSession ioSession : acceptor.getManagedSessions().values()) {
-                AbstractSession session = AbstractSession.getSession(ioSession, true);
-                if (session != null) {
-                    sessions.add(session);
-                }
-            }
+            sessions = getActiveSessions();
         }
         final CountDownLatch latch = new CountDownLatch(sessions.size());
         SshFutureListener<CloseFuture> listener = new SshFutureListener<CloseFuture>() {
@@ -416,6 +411,20 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
             executor.shutdown();
             executor = null;
         }
+    }
+
+    /**
+     * Obtain the list of active sessions.
+     */
+    public List<AbstractSession> getActiveSessions() {
+        List<AbstractSession> sessions = new ArrayList<AbstractSession>();
+        for (IoSession ioSession : acceptor.getManagedSessions().values()) {
+            AbstractSession session = AbstractSession.getSession(ioSession, true);
+            if (session != null) {
+                sessions.add(session);
+            }
+        }
+        return sessions;
     }
 
     protected IoAcceptor createAcceptor() {
