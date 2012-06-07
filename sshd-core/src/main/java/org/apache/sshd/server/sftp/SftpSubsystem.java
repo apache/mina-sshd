@@ -911,7 +911,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
     }
 
     private String getLongName(SshFile f) {
-        String username = session.getUsername();
+        String username = f.getOwner();
         if (username.length() > 8) {
             username = username.substring(0, 8);
         } else {

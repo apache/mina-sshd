@@ -121,6 +121,13 @@ public class NativeSshFile implements SshFile {
     }
 
     /**
+     * Get owner name
+     */
+    public String getOwner() {
+        return userName;
+    }
+
+    /**
      * Is it a directory?
      */
     public boolean isDirectory() {

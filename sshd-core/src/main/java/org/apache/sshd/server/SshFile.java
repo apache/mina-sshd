@@ -45,6 +45,12 @@ public interface SshFile {
     String getName();
 
     /**
+     * Get the owner name of the file
+     * @return the name of the owner.
+     */
+    String getOwner();
+
+    /**
      * Is it a directory?
      * @return true if the {@link SshFile} is a directory
      */
