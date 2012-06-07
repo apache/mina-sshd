@@ -154,6 +154,10 @@ public class ScpCommand implements Command, Runnable, FileSystemAware {
                         case 'C':
                             line = ((char) c) + readLine();
                             break;
+                        case 'T':
+                            readLine();
+                            ack();
+                            continue;
                         case 'E':
                             readLine();
                             return;
@@ -279,6 +283,9 @@ public class ScpCommand implements Command, Runnable, FileSystemAware {
             } else if (header.startsWith("D")) {
                 writeDir(header, file);
             } else if (header.equals("E")) {
+                ack();
+                break;
+            } else if (header.equals("T")) {
                 ack();
                 break;
             } else {
