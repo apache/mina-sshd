@@ -26,7 +26,6 @@
             <directory>${basedir}/..</directory>
             <outputDirectory>/</outputDirectory>
             <includes>
-                <include>NOTICE*</include>
                 <include>LICENSE*</include>
             </includes>
             <lineEnding>unix</lineEnding>
