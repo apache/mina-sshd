@@ -21,18 +21,6 @@
         <format>zip</format>
     </formats>
     <fileSets>
-        <!-- Copy license and other files from root -->
-        <fileSet>
-            <directory>${basedir}/..</directory>
-            <outputDirectory>/</outputDirectory>
-            <includes>
-                <include>README*</include>
-                <include>NOTICE*</include>
-                <include>LICENSE*</include>
-            </includes>
-            <lineEnding>unix</lineEnding>
-        </fileSet>
-
         <!-- Binary Files -->
         <fileSet>
             <directory>${basedir}/..</directory>
