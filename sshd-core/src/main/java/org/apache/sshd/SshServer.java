@@ -404,7 +404,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
             latch.await();
         }
         if (acceptor != null) {
-            acceptor.dispose();
+            acceptor.dispose(true);
         }
         acceptor = null;
         if (shutdownExecutor && executor != null) {
