@@ -471,7 +471,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                         } else {
                             if (((pflags & SSH_FXF_CREAT) != 0)) {
                                 if (!file.isWritable()) {
-                                    sendStatus(id, SSH_FX_FAILURE, "Can not create " + path);
+                                    sendStatus(id, SSH_FX_PERMISSION_DENIED, "Can not create " + path);
                                     return;
                                 }
                                 file.create();
@@ -501,7 +501,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                                     sendStatus(id, SSH_FX_FILE_ALREADY_EXISTS, path);
                                     return;
                                 } else if (!file.isWritable()) {
-                                    sendStatus(id, SSH_FX_FAILURE, "Can not create " + path);
+                                    sendStatus(id, SSH_FX_PERMISSION_DENIED, "Can not create " + path);
                                 }
                                 file.create();
                                 break;
@@ -511,7 +511,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                                     sendStatus(id, SSH_FX_FILE_ALREADY_EXISTS, path);
                                     return;
                                 } else if (!file.isWritable()) {
-                                    sendStatus(id, SSH_FX_FAILURE, "Can not create " + path);
+                                    sendStatus(id, SSH_FX_PERMISSION_DENIED, "Can not create " + path);
                                 }
                                 file.truncate();
                                 break;
