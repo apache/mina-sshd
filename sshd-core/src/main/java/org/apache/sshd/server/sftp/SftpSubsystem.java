@@ -231,6 +231,91 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
     private int version;
     private Map<String, Handle> handles = new HashMap<String, Handle>();
 
+    
+    protected static int mapV4ToV3(int code) {
+        switch (code) {
+            case SSH_FX_INVALID_HANDLE:
+                return SSH_FX_FAILURE;
+            case SSH_FX_NO_SUCH_PATH:
+                return SSH_FX_NO_SUCH_FILE;
+            case SSH_FX_FILE_ALREADY_EXISTS:
+                return SSH_FX_FAILURE;
+            case SSH_FX_WRITE_PROTECT:
+                return SSH_FX_PERMISSION_DENIED;
+            case SSH_FX_NO_MEDIA:
+                return SSH_FX_FAILURE;
+            default:
+                return code;
+        }
+    }
+    
+    protected static int mapV5ToV4(int code) {
+        switch (code) {
+            case SSH_FX_NO_SPACE_ON_FILESYSTEM:
+                return SSH_FX_FAILURE;
+            case SSH_FX_QUOTA_EXCEEDED:
+                return SSH_FX_FAILURE;
+            case SSH_FX_UNKNOWN_PRINCIPAL:
+                return SSH_FX_FAILURE;
+            case SSH_FX_LOCK_CONFLICT:
+                return SSH_FX_FAILURE;
+            default:
+                return code;
+        }
+    }
+
+    protected static int mapV6ToV5(int code) {
+        switch (code) {
+            case SSH_FX_DIR_NOT_EMPTY:
+                return SSH_FX_FAILURE;
+            case SSH_FX_NOT_A_DIRECTORY:
+                return SSH_FX_NO_SUCH_FILE;
+            case SSH_FX_INVALID_FILENAME:
+                return SSH_FX_NO_SUCH_FILE;
+            case SSH_FX_LINK_LOOP:
+                return SSH_FX_FAILURE;
+            case SSH_FX_CANNOT_DELETE:
+                return SSH_FX_PERMISSION_DENIED;
+            case SSH_FX_INVALID_PARAMETER:
+                return SSH_FX_FAILURE;
+            case SSH_FX_FILE_IS_A_DIRECTORY:
+                return SSH_FX_NO_SUCH_FILE;
+            case SSH_FX_BYTE_RANGE_LOCK_CONFLICT:
+                return SSH_FX_FAILURE;
+            case SSH_FX_BYTE_RANGE_LOCK_REFUSED:
+                return SSH_FX_FAILURE;
+            case SSH_FX_DELETE_PENDING:
+                return SSH_FX_FAILURE;
+            case SSH_FX_FILE_CORRUPT:
+                return SSH_FX_FAILURE;
+            case SSH_FX_OWNER_INVALID:
+                return SSH_FX_PERMISSION_DENIED;
+            case SSH_FX_GROUP_INVALID:
+                return SSH_FX_PERMISSION_DENIED;
+            case SSH_FX_NO_MATCHING_BYTE_RANGE_LOCK:
+                return SSH_FX_FAILURE;
+            default:
+                return code;
+        }
+    }
+    
+    protected static int mapToVersion(int code, int version) {
+        int mappedCode = code;
+        if (version < 6) {
+            mappedCode = mapV6ToV5(mappedCode);
+        }
+        if (version < 5) {
+            mappedCode = mapV5ToV4(mappedCode);
+        }
+        if (version < 4) {
+            mappedCode = mapV4ToV3(mappedCode);
+        }
+        return mappedCode;
+    }
+    
+    protected int mapToVersion(int code) {
+        return mapToVersion(code, version);
+    }
 
     protected static abstract class Handle {
         SshFile file;
@@ -1020,7 +1105,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
     }
 
     protected void sendStatus(int id, int substatus, String msg) throws IOException {
-        sendStatus(id, substatus, msg, "");
+        sendStatus(id, mapToVersion(substatus), msg, "");
     }
 
     protected void sendStatus(int id, int substatus, String msg, String lang) throws IOException {
