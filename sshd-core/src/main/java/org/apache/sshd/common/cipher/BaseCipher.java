@@ -31,11 +31,11 @@ import org.apache.sshd.common.util.SecurityUtils;
  */
 public class BaseCipher implements Cipher {
 
-    private final int ivsize;
-    private final int bsize;
-    private final String algorithm;
-    private final String transformation;
-    private javax.crypto.Cipher cipher;
+    protected final int ivsize;
+    protected final int bsize;
+    protected final String algorithm;
+    protected final String transformation;
+    protected javax.crypto.Cipher cipher;
 
     public BaseCipher(int ivsize, int bsize, String algorithm, String transformation) {
         this.ivsize = ivsize;

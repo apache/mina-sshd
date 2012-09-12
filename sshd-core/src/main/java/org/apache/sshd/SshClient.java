@@ -54,8 +54,12 @@ import org.apache.sshd.common.Mac;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.Signature;
 import org.apache.sshd.common.cipher.AES128CBC;
+import org.apache.sshd.common.cipher.AES128CTR;
 import org.apache.sshd.common.cipher.AES192CBC;
 import org.apache.sshd.common.cipher.AES256CBC;
+import org.apache.sshd.common.cipher.AES256CTR;
+import org.apache.sshd.common.cipher.ARCFOUR128;
+import org.apache.sshd.common.cipher.ARCFOUR256;
 import org.apache.sshd.common.cipher.BlowfishCBC;
 import org.apache.sshd.common.cipher.TripleDESCBC;
 import org.apache.sshd.common.compression.CompressionNone;
@@ -245,6 +249,10 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
     private static void setUpDefaultCiphers(SshClient client) {
         List<NamedFactory<Cipher>> avail = new LinkedList<NamedFactory<Cipher>>();
+        avail.add(new AES128CTR.Factory());
+        avail.add(new AES256CTR.Factory());
+        avail.add(new ARCFOUR128.Factory());
+        avail.add(new ARCFOUR256.Factory());
         avail.add(new AES128CBC.Factory());
         avail.add(new TripleDESCBC.Factory());
         avail.add(new BlowfishCBC.Factory());
