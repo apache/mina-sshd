@@ -84,6 +84,7 @@
 
                 <exclude>**/cobertura.ser</exclude>
 
+                <exclude>sshd-core/src/docs/*.txt</exclude>
             </excludes>
             <lineEnding>unix</lineEnding>
         </fileSet>
