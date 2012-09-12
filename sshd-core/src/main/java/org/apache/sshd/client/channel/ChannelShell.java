@@ -19,6 +19,7 @@
 package org.apache.sshd.client.channel;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.apache.sshd.common.PtyMode;
@@ -42,6 +43,7 @@ public class ChannelShell extends ChannelSession {
     private int ptyWidth;
     private int ptyHeight;
     private Map<PtyMode, Integer> ptyModes;
+    private Map<String, String> env = new LinkedHashMap<String, String>();
 
     public ChannelShell() {
         ptyType = System.getenv("TERM");
@@ -141,6 +143,10 @@ public class ChannelShell extends ChannelSession {
         this.ptyModes = ptyModes;
     }
 
+    public void setEnv(String key, String value) {
+        env.put(key, value);
+    }
+
     protected void doOpen() throws Exception {
         super.doOpen();
 
@@ -176,11 +182,18 @@ public class ChannelShell extends ChannelSession {
             session.writePacket(buffer);
         }
 
-//        log.info("Send SSH_MSG_CHANNEL_REQUEST env");
-//        buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_REQUEST);
-//        buffer.putInt(recipient);
-//        buffer.putString("env");
-//        session.writePacket(buffer);
+        if (!env.isEmpty()) {
+            log.info("Send SSH_MSG_CHANNEL_REQUEST env");
+            for (Map.Entry<String, String> entry : env.entrySet()) {
+                buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_REQUEST, 0);
+                buffer.putInt(recipient);
+                buffer.putString("env");
+                buffer.putBoolean(false);
+                buffer.putString(entry.getKey());
+                buffer.putString(entry.getValue());
+                session.writePacket(buffer);
+            }
+        }
 
         log.info("Send SSH_MSG_CHANNEL_REQUEST shell");
         buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_REQUEST, 0);
