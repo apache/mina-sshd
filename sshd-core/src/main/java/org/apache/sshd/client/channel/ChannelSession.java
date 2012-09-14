@@ -18,12 +18,12 @@
  */
 package org.apache.sshd.client.channel;
 
+import java.io.IOException;
+import java.io.InputStream;
+
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.util.Buffer;
-
-import java.io.IOException;
-import java.io.InputStream;
 
 /**
  * TODO Add javadoc
@@ -40,7 +40,7 @@ public class ChannelSession extends AbstractClientChannel {
 
     public OpenFuture open() throws Exception {
         if (in == null || out == null || err == null) {
-            throw new IllegalStateException("in, out and err streams should be set before openeing channel");
+            throw new IllegalStateException("in, out and err streams should be set before opening channel");
         }
         return internalOpen();
     }

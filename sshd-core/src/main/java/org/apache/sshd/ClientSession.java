@@ -56,25 +56,60 @@ public interface ClientSession {
     int WAIT_AUTH =   0x0004;
     int AUTHED =      0x0008;
 
+    /**
+     * Authenticate the session with the given username using an ssh agent.
+     */
     AuthFuture authAgent(String username) throws IOException;
 
+    /**
+     * Authenticate the session with the given username and password.
+     */
     AuthFuture authPassword(String username, String password) throws IOException;
 
+    /**
+     * Authenticate the session with the gien username and public key.
+     */
     AuthFuture authPublicKey(String username, KeyPair key) throws IOException;
 
+    /**
+     * Create a channel of the given type.
+     * Same as calling <code>createChannel(type, null)</code>.
+     */
     ClientChannel createChannel(String type) throws Exception;
 
+    /**
+     * Create a channel of the given type and subtype.
+     */
     ClientChannel createChannel(String type, String subType) throws Exception;
 
+    /**
+     * Create a channel to start a shell.
+     */
     ChannelShell createShellChannel() throws Exception;
 
+    /**
+     * Create a channel to execute a command.
+     */
     ChannelExec createExecChannel(String command) throws Exception;
 
+    /**
+     * Create a subsystem channel.
+     */
     ChannelSubsystem createSubsystemChannel(String subsystem) throws Exception;
 
+    /**
+     * Wait for a specific state.
+     */
     int waitFor(int mask, long timeout);
 
+    /**
+     * Close this session.
+     */
     CloseFuture close(boolean immediately);
 
+    /**
+     * Access to the metadata.
+     */
     Map<Object, Object> getMetadataMap();
+
 }
