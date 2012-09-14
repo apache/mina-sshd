@@ -16,10 +16,9 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.server;
+package org.apache.sshd.common;
 
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
-import org.apache.sshd.server.session.ServerSession;
 
 /**
  * A factory for creating NioSocketAcceptor objects for Port & X11 forwarding
@@ -30,9 +29,9 @@ public interface ForwardingAcceptorFactory {
      * Creates the NioSocketAcceptor to be used for forwards for this
      * ServerSession.
      *
-     * @param session the ServerSession the connections are forwarded through
+     * @param session the Session the connections are forwarded through
      * @return the NioSocketAcceptor that will listen for connections
      */
-    public NioSocketAcceptor createNioSocketAcceptor(ServerSession session);
+    public NioSocketAcceptor createNioSocketAcceptor(Session session);
 
 }

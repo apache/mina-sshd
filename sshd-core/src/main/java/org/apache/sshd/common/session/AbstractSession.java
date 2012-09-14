@@ -19,10 +19,12 @@
 package org.apache.sshd.common.session;
 
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.mina.core.buffer.IoBuffer;
@@ -133,6 +135,8 @@ public abstract class AbstractSession implements Session {
     protected int decoderLength;
     protected final Object encodeLock = new Object();
     protected final Object decodeLock = new Object();
+    protected final Object requestLock = new Object();
+    protected final AtomicBoolean requestResult = new AtomicBoolean();
     protected final Map<AttributeKey<?>, Object> attributes = new ConcurrentHashMap<AttributeKey<?>, Object>();
     protected String username;
 
@@ -345,6 +349,29 @@ public abstract class AbstractSession implements Session {
             encode(buffer);
             IoBuffer bb = IoBuffer.wrap(buffer.array(), buffer.rpos(), buffer.available());
             return ioSession.write(bb);
+        }
+    }
+
+    /**
+     * Send a global request and wait for the response.
+     * This must only be used when sending a SSH_MSG_GLOBAL_REQUEST with a result expected,
+     * else it will wait forever.
+     *
+     * @param buffer the buffer containing the global request
+     * @return <code>true</code> if the request was successful, <code>false</code> otherwise.
+     * @throws java.io.IOException if an error occured when encoding sending the packet
+     */
+    public boolean request(Buffer buffer) throws IOException {
+        synchronized (requestLock) {
+            try {
+                synchronized (requestResult) {
+                    writePacket(buffer);
+                    requestResult.wait();
+                    return requestResult.get();
+                }
+            } catch (InterruptedException e) {
+                throw (InterruptedIOException) new InterruptedIOException().initCause(e);
+            }
         }
     }
 
@@ -904,6 +931,20 @@ public abstract class AbstractSession implements Session {
             }
         }
         negociated = guess;
+    }
+
+    protected void requestSuccess(Buffer buffer) throws Exception{
+        synchronized (requestResult) {
+            requestResult.set(true);
+            requestResult.notify();
+        }
+    }
+
+    protected void requestFailure(Buffer buffer) throws Exception{
+        synchronized (requestResult) {
+            requestResult.set(false);
+            requestResult.notify();
+        }
     }
 
 

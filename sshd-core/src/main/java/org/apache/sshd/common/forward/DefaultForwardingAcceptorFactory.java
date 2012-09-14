@@ -16,13 +16,14 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.server.session;
+package org.apache.sshd.common.forward;
 
 import java.io.IOException;
 import java.net.Socket;
 
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
-import org.apache.sshd.server.ForwardingAcceptorFactory;
+import org.apache.sshd.common.ForwardingAcceptorFactory;
+import org.apache.sshd.common.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +35,7 @@ public class DefaultForwardingAcceptorFactory implements ForwardingAcceptorFacto
     /** The log. */
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    public NioSocketAcceptor createNioSocketAcceptor(ServerSession s) {
+    public NioSocketAcceptor createNioSocketAcceptor(Session s) {
         NioSocketAcceptor nio = new NioSocketAcceptor();
         nio.setReuseAddress(true);
 

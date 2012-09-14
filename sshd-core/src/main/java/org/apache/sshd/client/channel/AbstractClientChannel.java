@@ -191,6 +191,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
             } catch (Exception e) {
                 this.openFuture.setException(e);
                 this.closeFuture.setClosed();
+                this.doClose();
             } finally {
                 lock.notifyAll();
             }
@@ -207,6 +208,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
             this.openFailureMsg = msg;
             this.openFuture.setException(new SshException(msg));
             this.closeFuture.setClosed();
+            this.doClose();
             lock.notifyAll();
         }
     }

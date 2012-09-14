@@ -46,6 +46,10 @@ import org.apache.mina.core.service.IoAcceptor;
 import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
+import org.apache.sshd.client.SshdSocketAddress;
+import org.apache.sshd.client.channel.ChannelDirectTcpip;
+import org.apache.sshd.client.future.AuthFuture;
+import org.apache.sshd.client.future.ConnectFuture;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.util.BogusForwardingFilter;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
@@ -128,6 +132,7 @@ public class PortForwardingTest {
 
         int forwardedPort = getFreePort();
         session.setPortForwardingR(forwardedPort, "localhost", echoPort);
+        Thread.sleep(100);
 
         Socket s = new Socket("localhost", forwardedPort);
         s.getOutputStream().write("Hello".getBytes());
@@ -139,9 +144,28 @@ public class PortForwardingTest {
         s.close();
 
         session.delPortForwardingR(forwardedPort);
+    }
 
-//        session.setPortForwardingR(8010, "www.amazon.com", 80);
-//        Thread.sleep(1000000);
+    @Test
+    public void testRemoteForwardingNative() throws Exception {
+        ClientSession session = createNativeSession();
+
+        int forwardedPort = getFreePort();
+        SshdSocketAddress remote = new SshdSocketAddress("", forwardedPort);
+        SshdSocketAddress local = new SshdSocketAddress("localhost", echoPort);
+
+        session.startRemotePortForwarding(remote, local);
+
+        Socket s = new Socket(remote.getHostName(), remote.getPort());
+        s.getOutputStream().write("Hello".getBytes());
+        s.getOutputStream().flush();
+        byte[] buf = new byte[1024];
+        int n = s.getInputStream().read(buf);
+        String res = new String(buf, 0, n);
+        assertEquals("Hello", res);
+        s.close();
+
+        session.stopRemotePortForwarding(remote);
     }
 
     @Test
@@ -161,9 +185,48 @@ public class PortForwardingTest {
         s.close();
 
         session.delPortForwardingL(forwardedPort);
+    }
 
-//        session.setPortForwardingL(8010, "www.amazon.com", 80);
-//        Thread.sleep(1000000);
+    @Test
+    public void testLocalForwardingNative() throws Exception {
+        ClientSession session = createNativeSession();
+
+        int forwardedPort = getFreePort();
+        SshdSocketAddress local = new SshdSocketAddress("", forwardedPort);
+        SshdSocketAddress remote = new SshdSocketAddress("localhost", echoPort);
+
+        session.startLocalPortForwarding(local, remote);
+
+        Socket s = new Socket(local.getHostName(), local.getPort());
+        s.getOutputStream().write("Hello".getBytes());
+        s.getOutputStream().flush();
+        byte[] buf = new byte[1024];
+        int n = s.getInputStream().read(buf);
+        String res = new String(buf, 0, n);
+        assertEquals("Hello", res);
+        s.close();
+
+        session.stopLocalPortForwarding(local);
+    }
+
+    @Test
+    public void testForwardingChannel() throws Exception {
+        ClientSession session = createNativeSession();
+
+        int forwardedPort = getFreePort();
+        SshdSocketAddress local = new SshdSocketAddress("", forwardedPort);
+        SshdSocketAddress remote = new SshdSocketAddress("localhost", echoPort);
+
+        ChannelDirectTcpip channel = session.createDirectTcpipChannel(local, remote);
+        channel.open().await();
+
+        channel.getOut().write("Hello".getBytes());
+        channel.getOut().flush();
+        byte[] buf = new byte[1024];
+        int n = channel.getIn().read(buf);
+        String res = new String(buf, 0, n);
+        assertEquals("Hello", res);
+        channel.close(false);
     }
 
     @Test(timeout = 20000)
@@ -362,6 +425,7 @@ public class PortForwardingTest {
             public boolean isEnabled(int i) {
                 return true;
             }
+
             public void log(int i, String s) {
                 System.out.println("Log(jsch," + i + "): " + s);
             }
@@ -371,22 +435,40 @@ public class PortForwardingTest {
             public String getPassphrase() {
                 return null;
             }
+
             public String getPassword() {
                 return "sshd";
             }
+
             public boolean promptPassword(String message) {
                 return true;
             }
+
             public boolean promptPassphrase(String message) {
                 return false;
             }
+
             public boolean promptYesNo(String message) {
                 return true;
             }
+
             public void showMessage(String message) {
             }
         });
         session.connect();
+        return session;
+    }
+
+    protected ClientSession createNativeSession() throws Exception {
+        SshClient client = SshClient.setUpDefaultClient();
+        client.start();
+        ConnectFuture sessionFuture = client.connect("localhost", sshPort);
+        sessionFuture.await();
+        ClientSession session = sessionFuture.getSession();
+
+        AuthFuture authPassword = session.authPassword("sshd", "sshd");
+        authPassword.await();
+
         return session;
     }
 

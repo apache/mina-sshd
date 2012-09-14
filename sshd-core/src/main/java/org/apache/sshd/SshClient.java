@@ -45,11 +45,13 @@ import org.apache.sshd.client.future.ConnectFuture;
 import org.apache.sshd.client.future.DefaultConnectFuture;
 import org.apache.sshd.client.kex.DHG1;
 import org.apache.sshd.client.kex.DHG14;
+import org.apache.sshd.client.session.ChannelForwardedTcpip;
 import org.apache.sshd.client.session.ClientSessionImpl;
 import org.apache.sshd.common.AbstractFactoryManager;
 import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.Cipher;
 import org.apache.sshd.common.Compression;
+import org.apache.sshd.common.ForwardingAcceptorFactory;
 import org.apache.sshd.common.KeyExchange;
 import org.apache.sshd.common.Mac;
 import org.apache.sshd.common.NamedFactory;
@@ -64,6 +66,7 @@ import org.apache.sshd.common.cipher.ARCFOUR256;
 import org.apache.sshd.common.cipher.BlowfishCBC;
 import org.apache.sshd.common.cipher.TripleDESCBC;
 import org.apache.sshd.common.compression.CompressionNone;
+import org.apache.sshd.common.forward.DefaultForwardingAcceptorFactory;
 import org.apache.sshd.common.mac.HMACMD5;
 import org.apache.sshd.common.mac.HMACMD596;
 import org.apache.sshd.common.mac.HMACSHA1;
@@ -169,6 +172,9 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         if (getRandomFactory() == null) {
             throw new IllegalArgumentException("RandomFactory not set");
         }
+        if (getTcpipForwardingAcceptorFactory() == null) {
+            throw new IllegalArgumentException("TcpipForwardingAcceptorFactory not set");
+        }
         // Register the additional agent forwarding channel if needed
         if (getAgentFactory() != null) {
             List<NamedFactory<Channel>> factories = getChannelFactories();
@@ -271,6 +277,10 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         client.setSignatureFactories(Arrays.<NamedFactory<Signature>>asList(
                 new SignatureDSA.Factory(),
                 new SignatureRSA.Factory()));
+        client.setChannelFactories(Arrays.<NamedFactory<Channel>>asList(
+                new ChannelForwardedTcpip.Factory()));
+        ForwardingAcceptorFactory faf = new DefaultForwardingAcceptorFactory();
+        client.setTcpipForwardNioSocketAcceptorFactory(faf);
         return client;
     }
 

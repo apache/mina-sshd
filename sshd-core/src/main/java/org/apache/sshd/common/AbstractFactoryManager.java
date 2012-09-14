@@ -26,6 +26,7 @@ import java.util.Properties;
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.apache.sshd.agent.SshAgentFactory;
+import org.apache.sshd.common.ForwardingAcceptorFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,6 +52,7 @@ public abstract class AbstractFactoryManager implements FactoryManager {
     protected SshAgentFactory agentFactory;
     protected ScheduledExecutorService executor;
     protected boolean shutdownExecutor;
+    protected ForwardingAcceptorFactory tcpipForwardingAcceptorFactory;
 
     protected AbstractFactoryManager() {
         loadVersion();
@@ -186,5 +188,13 @@ public abstract class AbstractFactoryManager implements FactoryManager {
     public void setScheduledExecutorService(ScheduledExecutorService executor, boolean shutdownExecutor) {
         this.executor = executor;
         this.shutdownExecutor = shutdownExecutor;
+    }
+
+    public ForwardingAcceptorFactory getTcpipForwardingAcceptorFactory() {
+        return tcpipForwardingAcceptorFactory;
+    }
+
+    public void setTcpipForwardNioSocketAcceptorFactory(ForwardingAcceptorFactory f) {
+        tcpipForwardingAcceptorFactory = f;
     }
 }

@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.security.KeyPair;
 import java.util.Map;
 
+import org.apache.sshd.client.SshdSocketAddress;
+import org.apache.sshd.client.channel.ChannelDirectTcpip;
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.ChannelSubsystem;
@@ -96,6 +98,45 @@ public interface ClientSession {
      * Create a subsystem channel.
      */
     ChannelSubsystem createSubsystemChannel(String subsystem) throws Exception;
+
+    /**
+     * Create a direct tcp-ip channel which can be used to stream data to a remote port from the server.
+     */
+    ChannelDirectTcpip createDirectTcpipChannel(SshdSocketAddress local, SshdSocketAddress remote) throws Exception;
+
+    /**
+     * Start forwarding the given local address on the client to the given address on the server.
+     */
+    void startLocalPortForwarding(SshdSocketAddress local, SshdSocketAddress remote) throws Exception;
+
+    /**
+     * Stop forwarding the given local address.
+     */
+    void stopLocalPortForwarding(SshdSocketAddress local) throws Exception;
+
+    /**
+     * Start forwarding tcpip from the given address on the server to the
+     * given address on the client.
+     *
+     * The remote host name is the address to bind to on the server:
+     * <ul>
+     *    <li>"" means that connections are to be accepted on all protocol families
+     *              supported by the SSH implementation</li>
+     *    <li>"0.0.0.0" means to listen on all IPv4 addresses</li>
+     *    <li>"::" means to listen on all IPv6 addresses</li>
+     *    <li>"localhost" means to listen on all protocol families supported by the SSH
+     *              implementation on loopback addresses only, [RFC3330] and RFC3513]</li>
+     *    <li>"127.0.0.1" and "::1" indicate listening on the loopback interfaces for
+     *              IPv4 and IPv6 respectively</li>
+     * </ul>
+     *
+     */
+    void startRemotePortForwarding(SshdSocketAddress remote, SshdSocketAddress local) throws Exception;
+
+    /**
+     * Stop forwarding of the given remote address.
+     */
+    void stopRemotePortForwarding(SshdSocketAddress remote) throws Exception;
 
     /**
      * Wait for a specific state.

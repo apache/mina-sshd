@@ -16,13 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.server.session;
+package org.apache.sshd.client.session;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.util.EnumSet;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.service.IoAcceptor;
@@ -32,6 +32,7 @@ import org.apache.mina.core.session.IoSession;
 import org.apache.mina.filter.executor.ExecutorFilter;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 import org.apache.sshd.ClientChannel;
+import org.apache.sshd.client.SshdSocketAddress;
 import org.apache.sshd.client.channel.AbstractClientChannel;
 import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
@@ -40,23 +41,24 @@ import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.util.Buffer;
-import org.apache.sshd.server.ForwardingFilter;
+
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class TcpipForwardSupport extends IoHandlerAdapter {
 
-    private final ServerSession session;
+    private final ClientSessionImpl session;
     private IoAcceptor acceptor;
+    private Map<Integer, SshdSocketAddress> forwards = new HashMap<Integer, SshdSocketAddress>();
 
-    public TcpipForwardSupport(ServerSession session) {
+    public TcpipForwardSupport(ClientSessionImpl session) {
         this.session = session;
     }
 
     public synchronized void initialize() {
         if (this.acceptor == null) {
-            NioSocketAcceptor acceptor = session.getServerFactoryManager().getTcpipForwardingAcceptorFactory().createNioSocketAcceptor(session);
+            NioSocketAcceptor acceptor = session.getClientFactoryManager().getTcpipForwardingAcceptorFactory().createNioSocketAcceptor(session);
             acceptor.setHandler(this);
             acceptor.setReuseAddress(true);
             acceptor.getFilterChain().addLast("executor", new ExecutorFilter(EnumSet.complementOf(EnumSet.of(IoEventType.SESSION_CREATED)).toArray(new IoEventType[0])));
@@ -71,70 +73,27 @@ public class TcpipForwardSupport extends IoHandlerAdapter {
         }
     }
 
-    synchronized void request(Buffer buffer, boolean wantReply) throws IOException {
-        String address = buffer.getString();
-        int port = buffer.getInt();
-        InetSocketAddress addr;
-
-        try {
-            addr = new InetSocketAddress(address, port);
-        } catch (RuntimeException e) {
-            addr = null;
-        }
-
-        final ForwardingFilter filter = session.getServerFactoryManager().getForwardingFilter();
-        if (addr == null || filter == null || !filter.canListen(addr, session)) {
-            if (wantReply) {
-                buffer = session.createBuffer(SshConstants.Message.SSH_MSG_REQUEST_FAILURE, 0);
-                session.writePacket(buffer);
-            }
-            return;
-        }
-
+    synchronized void request(SshdSocketAddress local, SshdSocketAddress remote) throws IOException {
         initialize();
-        Set<SocketAddress> a1 = acceptor.getLocalAddresses();
-        try {
-            acceptor.bind(addr);
-        } catch (IOException bindErr) {
-            if (acceptor.getLocalAddresses().isEmpty()) {
-                close();
-            }
-            if (wantReply) {
-                buffer = session.createBuffer(SshConstants.Message.SSH_MSG_REQUEST_FAILURE, 0);
-                session.writePacket(buffer);
-            }
-            return;
+        boolean ok = false;
+        if (forwards.get(local.getPort()) != null) {
+            throw new IOException("The local port is already forwarded");
         }
-        Set<SocketAddress> a2 = acceptor.getLocalAddresses();
-        a2.removeAll(a1);
-        if (a2.size() == 1) {
-            SocketAddress a = a2.iterator().next();
-            if (a instanceof InetSocketAddress) {
-                port = ((InetSocketAddress) a).getPort();
-            }
-        }
-        if (wantReply){
-            buffer = session.createBuffer(SshConstants.Message.SSH_MSG_REQUEST_SUCCESS, 0);
-            buffer.putInt(port);
-            session.writePacket(buffer);
-        }
+        acceptor.bind(local.toInetSocketAddress());
+        forwards.put(local.getPort(), remote);
     }
 
-    synchronized void cancel(Buffer buffer, boolean wantReply) throws IOException {
-        String address = buffer.getString();
-        int port = buffer.getInt();
+    synchronized void cancel(SshdSocketAddress local) throws IOException {
+        forwards.remove(local.getPort());
         if (acceptor != null) {
-            acceptor.unbind(new InetSocketAddress(address, port));
-        }
-        if (wantReply) {
-            buffer = session.createBuffer(SshConstants.Message.SSH_MSG_REQUEST_SUCCESS, 0);
-            session.writePacket(buffer);
+            acceptor.unbind(local.toInetSocketAddress());
         }
     }
 
     @Override
     public void sessionCreated(final IoSession session) throws Exception {
-        final ChannelForwardedTcpip channel = new ChannelForwardedTcpip(session);
+        SshdSocketAddress remote = forwards.get(((InetSocketAddress) session.getLocalAddress()).getPort());
+        final ChannelForwardedTcpip channel = new ChannelForwardedTcpip(session, remote);
         session.setAttribute(ChannelForwardedTcpip.class, channel);
         this.session.registerChannel(channel);
         channel.open().addListener(new SshFutureListener<OpenFuture>() {
@@ -163,10 +122,7 @@ public class TcpipForwardSupport extends IoHandlerAdapter {
         int r = ioBuffer.remaining();
         byte[] b = new byte[r];
         ioBuffer.get(b, 0, r);
-        int state = channel.waitFor(ClientChannel.OPENED | ClientChannel.CLOSED, Long.MAX_VALUE);
-        if ((state & ClientChannel.CLOSED) != 0) {
-            throw new IllegalStateException("Channel is already closed");
-        }
+        channel.waitFor(ClientChannel.OPENED | ClientChannel.CLOSED, Long.MAX_VALUE);
         channel.getOut().write(b, 0, r);
         channel.getOut().flush();
     }
@@ -180,10 +136,12 @@ public class TcpipForwardSupport extends IoHandlerAdapter {
     public static class ChannelForwardedTcpip extends AbstractClientChannel {
 
         private final IoSession serverSession;
+        private final SshdSocketAddress remote;
 
-        public ChannelForwardedTcpip(IoSession serverSession) {
-            super("forwarded-tcpip");
+        public ChannelForwardedTcpip(IoSession serverSession, SshdSocketAddress remote) {
+            super("direct-tcpip");
             this.serverSession = serverSession;
+            this.remote = remote;
         }
 
 
@@ -192,8 +150,8 @@ public class TcpipForwardSupport extends IoHandlerAdapter {
         }
 
         public synchronized OpenFuture open() throws Exception {
-            InetSocketAddress remote = (InetSocketAddress) serverSession.getRemoteAddress();
-            InetSocketAddress local = (InetSocketAddress) serverSession.getLocalAddress();
+            InetSocketAddress origin = (InetSocketAddress) serverSession.getRemoteAddress();
+            InetSocketAddress remote = this.remote.toInetSocketAddress();
             if (closeFuture.isClosed()) {
                 throw new SshException("Session has been closed");
             }
@@ -204,10 +162,10 @@ public class TcpipForwardSupport extends IoHandlerAdapter {
             buffer.putInt(id);
             buffer.putInt(localWindow.getSize());
             buffer.putInt(localWindow.getPacketSize());
-            buffer.putString(local.getAddress().getHostAddress());
-            buffer.putInt(local.getPort());
             buffer.putString(remote.getAddress().getHostAddress());
             buffer.putInt(remote.getPort());
+            buffer.putString(origin.getAddress().getHostAddress());
+            buffer.putInt(origin.getPort());
             session.writePacket(buffer);
             return openFuture;
         }

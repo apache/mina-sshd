@@ -72,7 +72,7 @@ import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.CommandFactory;
 import org.apache.sshd.server.FileSystemFactory;
-import org.apache.sshd.server.ForwardingAcceptorFactory;
+import org.apache.sshd.common.ForwardingAcceptorFactory;
 import org.apache.sshd.server.ForwardingFilter;
 import org.apache.sshd.server.PasswordAuthenticator;
 import org.apache.sshd.server.PublickeyAuthenticator;
@@ -89,7 +89,7 @@ import org.apache.sshd.server.kex.DHG1;
 import org.apache.sshd.server.kex.DHG14;
 import org.apache.sshd.server.keyprovider.PEMGeneratorHostKeyProvider;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
-import org.apache.sshd.server.session.DefaultForwardingAcceptorFactory;
+import org.apache.sshd.common.forward.DefaultForwardingAcceptorFactory;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.session.SessionFactory;
 import org.apache.sshd.server.shell.ProcessShellFactory;
@@ -140,7 +140,6 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     protected GSSAuthenticator gssAuthenticator;
     protected ForwardingFilter forwardingFilter;
     protected ForwardingAcceptorFactory x11ForwardingAcceptorFactory;
-    protected ForwardingAcceptorFactory tcpipForwardingAcceptorFactory;
 
     public SshServer() {
     }
@@ -265,21 +264,13 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     public ForwardingFilter getForwardingFilter() {
         return forwardingFilter;
     }
-    
-    public ForwardingAcceptorFactory getTcpipForwardingAcceptorFactory() {
-        return tcpipForwardingAcceptorFactory;
-    }
-	
+
     public void setX11ForwardNioSocketAcceptorFactory(ForwardingAcceptorFactory f) {
         x11ForwardingAcceptorFactory = f;
     }
 
     public ForwardingAcceptorFactory getX11ForwardingAcceptorFactory() {
         return x11ForwardingAcceptorFactory;
-    }
-	
-    public void setTcpipForwardNioSocketAcceptorFactory(ForwardingAcceptorFactory f) {
-        tcpipForwardingAcceptorFactory = f;
     }
 
     public void setForwardingFilter(ForwardingFilter forwardingFilter) {

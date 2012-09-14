@@ -30,10 +30,12 @@ import org.apache.sshd.ClientChannel;
 import org.apache.sshd.ClientSession;
 import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.ServerKeyVerifier;
+import org.apache.sshd.client.SshdSocketAddress;
 import org.apache.sshd.client.UserAuth;
 import org.apache.sshd.client.auth.UserAuthAgent;
 import org.apache.sshd.client.auth.UserAuthPassword;
 import org.apache.sshd.client.auth.UserAuthPublicKey;
+import org.apache.sshd.client.channel.ChannelDirectTcpip;
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.ChannelSubsystem;
@@ -67,6 +69,8 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
     private State state = State.ReceiveKexInit;
     private UserAuth userAuth;
     private AuthFuture authFuture;
+    private final TcpipForwardSupport tcpipForward;
+    private final Map<Integer, SshdSocketAddress> forwards = new HashMap<Integer, SshdSocketAddress>();
 
     /**
      * For clients to store their own metadata
@@ -75,6 +79,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
 
     public ClientSessionImpl(FactoryManager client, IoSession session) throws Exception {
         super(client, session);
+        tcpipForward = new TcpipForwardSupport(this);
         log.info("Session created...");
         sendClientIdentification();
         sendKexInit();
@@ -239,6 +244,54 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         return channel;
     }
 
+    public ChannelDirectTcpip createDirectTcpipChannel(SshdSocketAddress local, SshdSocketAddress remote) throws Exception {
+        ChannelDirectTcpip channel = new ChannelDirectTcpip(local, remote);
+        registerChannel(channel);
+        return channel;
+    }
+
+    public void startLocalPortForwarding(SshdSocketAddress local, SshdSocketAddress remote) throws Exception {
+        tcpipForward.request(local, remote);
+    }
+
+    public void stopLocalPortForwarding(SshdSocketAddress local) throws Exception {
+        tcpipForward.cancel(local);
+    }
+
+    SshdSocketAddress getForwardedPort(int remotePort) {
+        return forwards.get(remotePort);
+    }
+
+    public void startRemotePortForwarding(SshdSocketAddress remote, SshdSocketAddress local) throws Exception {
+        forwards.put(remote.getPort(), local);
+        try {
+            Buffer buffer = createBuffer(SshConstants.Message.SSH_MSG_GLOBAL_REQUEST, 0);
+            buffer.putString("tcpip-forward");
+            buffer.putBoolean(true);
+            String host = remote.getHostName();
+
+            buffer.putString(remote.getHostName());
+            buffer.putInt(remote.getPort());
+            boolean res = request(buffer);
+            if (!res) {
+                throw new SshException("Tcpip forwarding request denied by server");
+            }
+        } catch (Exception e) {
+            forwards.remove(remote);
+            throw e;
+        }
+    }
+
+    public void stopRemotePortForwarding(SshdSocketAddress remote) throws Exception {
+        forwards.remove(remote);
+        Buffer buffer = createBuffer(SshConstants.Message.SSH_MSG_GLOBAL_REQUEST, 0);
+        buffer.putString("cancel-tcpip-forward");
+        buffer.putBoolean(false);
+        buffer.putString(remote.getHostName());
+        buffer.putInt(remote.getPort());
+        writePacket(buffer);
+    }
+
     @Override
     public CloseFuture close(boolean immediately) {
         synchronized (lock) {
@@ -347,6 +400,12 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
                         break;
                     case Running:
                         switch (cmd) {
+                            case SSH_MSG_REQUEST_SUCCESS:
+                                requestSuccess(buffer);
+                                break;
+                            case SSH_MSG_REQUEST_FAILURE:
+                                requestFailure(buffer);
+                                break;
                             case SSH_MSG_CHANNEL_OPEN:
                                 channelOpen(buffer);
                                 break;

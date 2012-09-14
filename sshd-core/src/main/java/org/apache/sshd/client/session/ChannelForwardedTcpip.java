@@ -16,12 +16,11 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.server.channel;
+package org.apache.sshd.client.session;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.ConnectException;
-import java.net.InetSocketAddress;
 
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.future.ConnectFuture;
@@ -31,6 +30,7 @@ import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.transport.socket.nio.NioSocketConnector;
+import org.apache.sshd.client.SshdSocketAddress;
 import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.Channel;
@@ -41,24 +41,24 @@ import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.util.Buffer;
-import org.apache.sshd.server.ForwardingFilter;
-import org.apache.sshd.server.session.ServerSession;
+import org.apache.sshd.server.channel.AbstractServerChannel;
+import org.apache.sshd.server.channel.OpenChannelException;
 
 /**
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ChannelDirectTcpip extends AbstractServerChannel {
+public class ChannelForwardedTcpip extends AbstractServerChannel {
 
     public static class Factory implements NamedFactory<Channel> {
 
         public String getName() {
-            return "direct-tcpip";
+            return "forwarded-tcpip";
         }
 
         public Channel create() {
-            return new ChannelDirectTcpip();
+            return new ChannelForwardedTcpip();
         }
     }
 
@@ -66,9 +66,10 @@ public class ChannelDirectTcpip extends AbstractServerChannel {
     private IoSession ioSession;
     private OutputStream out;
 
-    public ChannelDirectTcpip() {
+    public ChannelForwardedTcpip() {
     }
 
+    @Override
     protected OpenFuture doInit(Buffer buffer) {
         final OpenFuture f = new DefaultOpenFuture(this);
 
@@ -79,16 +80,15 @@ public class ChannelDirectTcpip extends AbstractServerChannel {
         log.info("Receiving request for direct tcpip: hostToConnect={}, portToConnect={}, originatorIpAddress={}, originatorPort={}",
                 new Object[] { hostToConnect, portToConnect, originatorIpAddress, originatorPort });
 
-        InetSocketAddress address;
+        final ClientSessionImpl clientSession = (ClientSessionImpl)getSession();
+        SshdSocketAddress address;
         try {
-            address = new InetSocketAddress(hostToConnect, portToConnect);
+            address = clientSession.getForwardedPort(portToConnect);
         } catch (RuntimeException e) {
             address = null;
         }
-
-        final ServerSession serverSession = (ServerSession)getSession();
-        final ForwardingFilter filter = serverSession.getServerFactoryManager().getForwardingFilter();
-        if (address == null || filter == null || !filter.canConnect(address, serverSession)) {
+        //final ForwardingFilter filter = clientSession.getClientFactoryManager().getForwardingFilter();
+        if (address == null /*|| filter == null || !filter.canConnect(address, serverSession)*/) {
             super.close(true);
             f.setException(new OpenChannelException(SshConstants.SSH_OPEN_ADMINISTRATIVELY_PROHIBITED, "connect denied"));
             return f;
@@ -115,7 +115,7 @@ public class ChannelDirectTcpip extends AbstractServerChannel {
             }
         };
         connector.setHandler(handler);
-        ConnectFuture future = connector.connect(address);
+        ConnectFuture future = connector.connect(address.toInetSocketAddress());
         future.addListener(new IoFutureListener<ConnectFuture>() {
             public void operationComplete(ConnectFuture future) {
                 if (future.isConnected()) {
@@ -125,9 +125,9 @@ public class ChannelDirectTcpip extends AbstractServerChannel {
                     closeImmediately0();
                     if (future.getException() instanceof ConnectException) {
                         f.setException(new OpenChannelException(
-                            SshConstants.SSH_OPEN_CONNECT_FAILED,
-                            future.getException().getMessage(),
-                            future.getException()));
+                                SshConstants.SSH_OPEN_CONNECT_FAILED,
+                                future.getException().getMessage(),
+                                future.getException()));
                     } else {
                         f.setException(future.getException());
                     }
@@ -192,4 +192,5 @@ public class ChannelDirectTcpip extends AbstractServerChannel {
         buffer.putInt(recipient);
         session.writePacket(buffer);
     }
+
 }

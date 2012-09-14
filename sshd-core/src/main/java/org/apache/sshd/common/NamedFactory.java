@@ -51,9 +51,11 @@ public interface NamedFactory<T> extends Factory<T> {
          * @return a newly created object or <code>null</code> if the factory is not in the list
          */
         public static <T> T create(List<NamedFactory<T>> factories, String name) {
-            for (NamedFactory<T> f : factories) {
-                if (f.getName().equals(name)) {
-                    return f.create();
+            if (factories != null) {
+                for (NamedFactory<T> f : factories) {
+                    if (f.getName().equals(name)) {
+                        return f.create();
+                    }
                 }
             }
             return null;

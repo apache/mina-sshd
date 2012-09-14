@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.apache.sshd.agent.SshAgentFactory;
+import org.apache.sshd.common.ForwardingAcceptorFactory;
 
 /**
  * This interface allows retrieving all the <code>NamedFactory</code> used
@@ -147,4 +148,11 @@ public interface FactoryManager {
      */
     ScheduledExecutorService getScheduledExecutorService();
 
+    /**
+     * Retrieve the IoAcceptor factory to be used to accept incoming connections
+     * to port forwards.
+     *
+     * @return A <code>ForwardNioAcceptorFactory</code>
+     */
+    ForwardingAcceptorFactory getTcpipForwardingAcceptorFactory();
 }
