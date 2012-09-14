@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.apache.sshd.agent.SshAgentFactory;
 import org.slf4j.Logger;
@@ -48,6 +49,8 @@ public abstract class AbstractFactoryManager implements FactoryManager {
     protected String version;
     protected List<NamedFactory<Channel>> channelFactories;
     protected SshAgentFactory agentFactory;
+    protected ScheduledExecutorService executor;
+    protected boolean shutdownExecutor;
 
     protected AbstractFactoryManager() {
         loadVersion();
@@ -172,4 +175,16 @@ public abstract class AbstractFactoryManager implements FactoryManager {
         this.agentFactory = agentFactory;
     }
 
+    public ScheduledExecutorService getScheduledExecutorService() {
+        return executor;
+    }
+
+    public void setScheduledExecutorService(ScheduledExecutorService executor) {
+        setScheduledExecutorService(executor, false);
+    }
+
+    public void setScheduledExecutorService(ScheduledExecutorService executor, boolean shutdownExecutor) {
+        this.executor = executor;
+        this.shutdownExecutor = shutdownExecutor;
+    }
 }

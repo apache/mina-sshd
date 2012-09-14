@@ -23,6 +23,7 @@ import java.net.SocketAddress;
 import java.security.KeyPair;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.mina.core.session.IoSession;
 import org.apache.sshd.ClientChannel;
@@ -333,6 +334,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
                                  username = userAuth.getUsername();
                                  authed = true;
                                  setState(State.Running);
+                                 startHeartBeat();
                                  break;
                              case Failure:
                                  authFuture.setAuthed(false);
@@ -430,6 +432,37 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         synchronized (lock) {
             this.state = newState;
             lock.notifyAll();
+        }
+    }
+
+    protected void startHeartBeat() {
+        String intervalStr = getClientFactoryManager().getProperties().get(ClientFactoryManager.HEARTBEAT_INTERVAL);
+        try {
+            int interval = intervalStr != null ? Integer.parseInt(intervalStr) : 0;
+            if (interval > 0) {
+                getClientFactoryManager().getScheduledExecutorService().scheduleAtFixedRate(new Runnable() {
+                    public void run() {
+                        sendHeartBeat();
+                    }
+                }, interval, interval, TimeUnit.MILLISECONDS);
+            }
+        } catch (NumberFormatException e) {
+            log.warn("Ignoring bad heartbeat interval: {}", intervalStr);
+        }
+    }
+
+    protected void sendHeartBeat() {
+        try {
+            Buffer buf = createBuffer(SshConstants.Message.SSH_MSG_GLOBAL_REQUEST, 0);
+            String request = getClientFactoryManager().getProperties().get(ClientFactoryManager.HEARTBEAT_REQUEST);
+            if (request == null) {
+                request = "keepalive@sshd.apache.org";
+            }
+            buf.putString(request);
+            buf.putBoolean(false);
+            writePacket(buf);
+        } catch (IOException e) {
+            log.info("Error sending keepalive message", e);
         }
     }
 

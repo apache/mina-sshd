@@ -459,6 +459,7 @@ public class ServerSession extends AbstractSession {
                 this.authed = true;
                 this.username = username;
                 unscheduleAuthTimer();
+                scheduleIdleTimer();
                 log.info("Session {}@{} authenticated", getUsername(), getIoSession().getRemoteAddress());
             } else {
                 buffer = createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_FAILURE, 0);

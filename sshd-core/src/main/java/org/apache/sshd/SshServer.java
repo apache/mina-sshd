@@ -31,7 +31,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 
 import org.apache.mina.core.service.IoAcceptor;
 import org.apache.mina.core.session.IoSession;
@@ -142,8 +141,6 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     protected ForwardingFilter forwardingFilter;
     protected ForwardingAcceptorFactory x11ForwardingAcceptorFactory;
     protected ForwardingAcceptorFactory tcpipForwardingAcceptorFactory;
-    protected ScheduledExecutorService executor;
-    protected boolean shutdownExecutor;
 
     public SshServer() {
     }
@@ -287,19 +284,6 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
 
     public void setForwardingFilter(ForwardingFilter forwardingFilter) {
         this.forwardingFilter = forwardingFilter;
-    }
-
-    public ScheduledExecutorService getScheduledExecutorService() {
-        return executor;
-    }
-
-    public void setScheduledExecutorService(ScheduledExecutorService executor) {
-        setScheduledExecutorService(executor, false);
-    }
-
-    public void setScheduledExecutorService(ScheduledExecutorService executor, boolean shutdownExecutor) {
-        this.executor = executor;
-        this.shutdownExecutor = shutdownExecutor;
     }
 
     protected void checkConfig() {

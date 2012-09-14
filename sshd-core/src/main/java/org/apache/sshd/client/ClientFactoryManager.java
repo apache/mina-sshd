@@ -29,6 +29,16 @@ import org.apache.sshd.common.FactoryManager;
 public interface ClientFactoryManager extends FactoryManager {
 
     /**
+     * Key used to set the heartbeat interval in milliseconds (0 to disable which is the default value)
+     */
+    public static final String HEARTBEAT_INTERVAL = "hearbeat-interval";
+
+    /**
+     * Key used to check the hearbeat request that should be sent to the server (default is keepalive@sshd.apache.org).
+     */
+    public static final String HEARTBEAT_REQUEST = "heartbeat-request";
+
+    /**
      * Retrieve the server key verifier to be used to check the key when connecting
      * to an ssh server.
      *

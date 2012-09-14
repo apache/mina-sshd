@@ -19,7 +19,6 @@
 package org.apache.sshd.server;
 
 import java.util.List;
-import java.util.concurrent.ScheduledExecutorService;
 
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
@@ -156,12 +155,5 @@ public interface ServerFactoryManager extends FactoryManager {
      * @return A <code>ForwardNioAcceptorFactory</code>
      */
     ForwardingAcceptorFactory getX11ForwardingAcceptorFactory();
-
-    /**
-     * Retrieve the <code>ScheduledExecutorService</code> to be used.
-     *
-     * @return the <code>ScheduledExecutorService</code>, never <code>null</code>
-     */
-    ScheduledExecutorService getScheduledExecutorService();
 
 }

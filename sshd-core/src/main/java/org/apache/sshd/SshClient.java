@@ -32,6 +32,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.Executors;
 
 import org.apache.mina.core.future.IoFutureListener;
 import org.apache.mina.core.service.IoConnector;
@@ -149,7 +150,25 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         this.serverKeyVerifier = serverKeyVerifier;
     }
 
-    public void start() {
+    protected void checkConfig() {
+        if (getKeyExchangeFactories() == null) {
+            throw new IllegalArgumentException("KeyExchangeFactories not set");
+        }
+        if (getScheduledExecutorService() == null) {
+            setScheduledExecutorService(Executors.newSingleThreadScheduledExecutor(), true);
+        }
+        if (getCipherFactories() == null) {
+            throw new IllegalArgumentException("CipherFactories not set");
+        }
+        if (getCompressionFactories() == null) {
+            throw new IllegalArgumentException("CompressionFactories not set");
+        }
+        if (getMacFactories() == null) {
+            throw new IllegalArgumentException("MacFactories not set");
+        }
+        if (getRandomFactory() == null) {
+            throw new IllegalArgumentException("RandomFactory not set");
+        }
         // Register the additional agent forwarding channel if needed
         if (getAgentFactory() != null) {
             List<NamedFactory<Channel>> factories = getChannelFactories();
@@ -161,6 +180,10 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             factories.add(getAgentFactory().getChannelForwardingFactory());
             setChannelFactories(factories);
         }
+    }
+
+    public void start() {
+        checkConfig();
         connector = createAcceptor();
 
         if (sessionFactory == null) {
@@ -177,6 +200,10 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     public void stop() {
         connector.dispose();
         connector = null;
+        if (shutdownExecutor && executor != null) {
+            executor.shutdown();
+            executor = null;
+        }
     }
 
     public ConnectFuture connect(String host, int port) throws Exception {

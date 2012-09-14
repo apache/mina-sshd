@@ -20,6 +20,7 @@ package org.apache.sshd.common;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.apache.sshd.agent.SshAgentFactory;
 
@@ -138,5 +139,12 @@ public interface FactoryManager {
      * @return the factory
      */
     SshAgentFactory getAgentFactory();
+
+    /**
+     * Retrieve the <code>ScheduledExecutorService</code> to be used.
+     *
+     * @return the <code>ScheduledExecutorService</code>, never <code>null</code>
+     */
+    ScheduledExecutorService getScheduledExecutorService();
 
 }
