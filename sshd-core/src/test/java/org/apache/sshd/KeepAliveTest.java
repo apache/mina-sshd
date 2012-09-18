@@ -18,13 +18,20 @@
  */
 package org.apache.sshd;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
 import java.net.ServerSocket;
+import java.util.concurrent.CountDownLatch;
 
 import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
+import org.apache.sshd.server.Command;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.BogusPublickeyAuthenticator;
+import org.apache.sshd.util.EchoShellFactory;
+import org.apache.sshd.util.TeePipedOutputStream;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -51,7 +58,7 @@ public class KeepAliveTest {
         sshd.getProperties().put(ServerFactoryManager.IDLE_TIMEOUT, "1000");
         sshd.setPort(port);
         sshd.setKeyPairProvider(new FileKeyPairProvider(new String[] { "src/test/resources/hostkey.pem" }));
-        sshd.setShellFactory(new ClientTest.TestEchoShellFactory());
+        sshd.setShellFactory(new TestEchoShellFactory());
         sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
         sshd.setPublickeyAuthenticator(new BogusPublickeyAuthenticator());
         sshd.start();
@@ -94,6 +101,53 @@ public class KeepAliveTest {
 
         channel.close(false);
         client.stop();
+    }
+
+    @Test
+    public void testShellClosedOnClientTimeout() throws Exception {
+        TestEchoShellFactory.TestEchoShell.latch = new CountDownLatch(1);
+
+        SshClient client = SshClient.setUpDefaultClient();
+        client.start();
+        ClientSession session = client.connect("localhost", port).await().getSession();
+        session.authPassword("smx", "smx").await().isSuccess();
+        ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
+        ByteArrayOutputStream sent = new ByteArrayOutputStream();
+        PipedOutputStream pipedIn = new TeePipedOutputStream(sent);
+        channel.setIn(new PipedInputStream(pipedIn));
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ByteArrayOutputStream err = new ByteArrayOutputStream();
+        channel.setOut(out);
+        channel.setErr(err);
+        channel.open().await();
+
+
+        TestEchoShellFactory.TestEchoShell.latch.await();
+        int state = channel.waitFor(ClientChannel.CLOSED, 2000);
+        assertTrue((state & ClientChannel.CLOSED) != 0);
+
+        channel.close(false);
+        client.stop();
+    }
+
+
+    public static class TestEchoShellFactory extends EchoShellFactory {
+        @Override
+        public Command create() {
+            return new TestEchoShell();
+        }
+        public static class TestEchoShell extends EchoShell {
+
+            public static CountDownLatch latch;
+
+            @Override
+            public void destroy() {
+                if (latch != null) {
+                    latch.countDown();
+                }
+                super.destroy();
+            }
+        }
     }
 
 }
