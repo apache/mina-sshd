@@ -21,16 +21,6 @@
         <format>tar.gz</format>
     </formats>
     <fileSets>
-        <!-- Copy license and other files from root -->
-        <fileSet>
-            <directory>${basedir}/..</directory>
-            <outputDirectory>/</outputDirectory>
-            <includes>
-                <include>LICENSE*</include>
-            </includes>
-            <lineEnding>unix</lineEnding>
-        </fileSet>
-
         <fileSet>
             <directory>src/main/distribution</directory>
             <outputDirectory>/</outputDirectory>
