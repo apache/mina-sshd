@@ -155,7 +155,7 @@ public class ResourceKeyPairProvider extends AbstractKeyPairProvider {
             try {
                 is = this.cloader.getResourceAsStream(resource);
                 isr = new InputStreamReader(is);
-                r = new PEMReader(isr);
+                r = new PEMReader(isr, passwordFinder);
 
                 Object o = r.readObject();
 
