@@ -110,6 +110,7 @@
                     <instructions>
                         <Bundle-SymbolicName>org.apache.sshd.core</Bundle-SymbolicName>
                         <Import-Package>
+                            org.apache.mina*;version="[2,3)",
                             com.jcraft.jzlib*;resolution:=optional,
                             org.bouncycastle*;resolution:=optional,
                             org.apache.tomcat.jni*;resolution:=optional,
