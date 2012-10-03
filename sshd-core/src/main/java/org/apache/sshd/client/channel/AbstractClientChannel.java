@@ -92,7 +92,11 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
                     } else {
                         openFuture.addListener(new SshFutureListener<OpenFuture>() {
                             public void operationComplete(OpenFuture future) {
-                                close(true);
+                                if (future.isOpened()) {
+                                    close(immediately);
+                                } else {
+                                    close(true);
+                                }
                             }
                         });
                     }
