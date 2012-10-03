@@ -69,7 +69,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
     private State state = State.ReceiveKexInit;
     private UserAuth userAuth;
     private AuthFuture authFuture;
-    private final TcpipForwardSupport tcpipForward;
+    private final TcpipForwarder tcpipForward;
     private final Map<Integer, SshdSocketAddress> forwards = new HashMap<Integer, SshdSocketAddress>();
 
     /**
@@ -77,9 +77,9 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
      */
     private Map<Object, Object> metadataMap = new HashMap<Object, Object>();
 
-    public ClientSessionImpl(FactoryManager client, IoSession session) throws Exception {
+    public ClientSessionImpl(ClientFactoryManager client, IoSession session) throws Exception {
         super(client, session);
-        tcpipForward = new TcpipForwardSupport(this);
+        tcpipForward = client.getTcpipForwarderFactory().createTcpipForwarder( this );
         log.info("Session created...");
         sendClientIdentification();
         sendKexInit();

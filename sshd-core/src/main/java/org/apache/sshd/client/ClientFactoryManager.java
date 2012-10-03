@@ -18,7 +18,9 @@
  */
 package org.apache.sshd.client;
 
+import org.apache.sshd.client.session.TcpipForwarderFactory;
 import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.ForwardingAcceptorFactory;
 
 /**
  * The <code>ClientFactoryManager</code> enable the retrieval of additional
@@ -46,4 +48,11 @@ public interface ClientFactoryManager extends FactoryManager {
      */
     ServerKeyVerifier getServerKeyVerifier();
 
+    /**
+     * Retrieve the TcpipForwarder factory to be used to accept incoming connections
+     * and forward data.
+     *
+     * @return A <code>TcpipForwarderFactory</code>
+     */
+    TcpipForwarderFactory getTcpipForwarderFactory();
 }

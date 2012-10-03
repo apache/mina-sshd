@@ -47,6 +47,8 @@ import org.apache.sshd.client.kex.DHG1;
 import org.apache.sshd.client.kex.DHG14;
 import org.apache.sshd.client.session.ChannelForwardedTcpip;
 import org.apache.sshd.client.session.ClientSessionImpl;
+import org.apache.sshd.client.session.DefaultTcpipForwarderFactory;
+import org.apache.sshd.client.session.TcpipForwarderFactory;
 import org.apache.sshd.common.AbstractFactoryManager;
 import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.Cipher;
@@ -133,6 +135,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     protected SessionFactory sessionFactory;
 
     private ServerKeyVerifier serverKeyVerifier;
+    private TcpipForwarderFactory tcpipForwarderFactory;
 
     public SshClient() {
     }
@@ -151,6 +154,14 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
     public void setServerKeyVerifier(ServerKeyVerifier serverKeyVerifier) {
         this.serverKeyVerifier = serverKeyVerifier;
+    }
+
+    public TcpipForwarderFactory getTcpipForwarderFactory() {
+       return tcpipForwarderFactory;
+    }
+
+    public void setTcpipForwarderFactory(TcpipForwarderFactory tcpipForwarderFactory) {
+       this.tcpipForwarderFactory = tcpipForwarderFactory;
     }
 
     protected void checkConfig() {
@@ -281,6 +292,8 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                 new ChannelForwardedTcpip.Factory()));
         ForwardingAcceptorFactory faf = new DefaultForwardingAcceptorFactory();
         client.setTcpipForwardNioSocketAcceptorFactory(faf);
+        TcpipForwarderFactory tcpipForwarderFactory = new DefaultTcpipForwarderFactory();
+        client.setTcpipForwarderFactory( tcpipForwarderFactory );
         return client;
     }
 

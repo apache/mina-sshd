@@ -32,6 +32,7 @@ import org.apache.mina.core.session.IoSession;
 import org.apache.mina.filter.executor.ExecutorFilter;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 import org.apache.sshd.ClientChannel;
+import org.apache.sshd.ClientSession;
 import org.apache.sshd.client.SshdSocketAddress;
 import org.apache.sshd.client.channel.AbstractClientChannel;
 import org.apache.sshd.client.future.DefaultOpenFuture;
@@ -46,13 +47,13 @@ import org.apache.sshd.common.util.Buffer;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class TcpipForwardSupport extends IoHandlerAdapter {
+public class TcpipForwardSupport extends IoHandlerAdapter implements TcpipForwarder {
 
-    private final ClientSessionImpl session;
-    private IoAcceptor acceptor;
-    private Map<Integer, SshdSocketAddress> forwards = new HashMap<Integer, SshdSocketAddress>();
+    protected final ClientSession session;
+    protected IoAcceptor acceptor;
+    protected Map<Integer, SshdSocketAddress> forwards = new HashMap<Integer, SshdSocketAddress>();
 
-    public TcpipForwardSupport(ClientSessionImpl session) {
+    public TcpipForwardSupport(ClientSession session) {
         this.session = session;
     }
 
@@ -73,7 +74,7 @@ public class TcpipForwardSupport extends IoHandlerAdapter {
         }
     }
 
-    synchronized void request(SshdSocketAddress local, SshdSocketAddress remote) throws IOException {
+    public synchronized void request(SshdSocketAddress local, SshdSocketAddress remote) throws IOException {
         initialize();
         boolean ok = false;
         if (forwards.get(local.getPort()) != null) {
@@ -83,7 +84,7 @@ public class TcpipForwardSupport extends IoHandlerAdapter {
         forwards.put(local.getPort(), remote);
     }
 
-    synchronized void cancel(SshdSocketAddress local) throws IOException {
+    public synchronized void cancel(SshdSocketAddress local) throws IOException {
         forwards.remove(local.getPort());
         if (acceptor != null) {
             acceptor.unbind(local.toInetSocketAddress());
@@ -195,6 +196,5 @@ public class TcpipForwardSupport extends IoHandlerAdapter {
             serverSession.close(false);
         }
     }
-
 
 }

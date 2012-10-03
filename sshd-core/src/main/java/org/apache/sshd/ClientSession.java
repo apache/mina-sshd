@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.security.KeyPair;
 import java.util.Map;
 
+import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.SshdSocketAddress;
 import org.apache.sshd.client.channel.ChannelDirectTcpip;
 import org.apache.sshd.client.channel.ChannelExec;
@@ -70,7 +71,7 @@ public interface ClientSession extends Session {
     AuthFuture authPassword(String username, String password) throws IOException;
 
     /**
-     * Authenticate the session with the gien username and public key.
+     * Authenticate the session with the given username and public key.
      */
     AuthFuture authPublicKey(String username, KeyPair key) throws IOException;
 
@@ -153,5 +154,10 @@ public interface ClientSession extends Session {
      * Access to the metadata.
      */
     Map<Object, Object> getMetadataMap();
+
+    /**
+     * Return ClientFactoryManager for this session.
+     */
+    ClientFactoryManager getClientFactoryManager();
 
 }
