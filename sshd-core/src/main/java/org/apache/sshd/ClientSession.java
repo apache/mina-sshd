@@ -28,6 +28,7 @@ import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.ChannelSubsystem;
 import org.apache.sshd.client.future.AuthFuture;
+import org.apache.sshd.common.Session;
 import org.apache.sshd.common.future.CloseFuture;
 
 /**
@@ -51,7 +52,7 @@ import org.apache.sshd.common.future.CloseFuture;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface ClientSession {
+public interface ClientSession extends Session {
 
     int TIMEOUT =     0x0001;
     int CLOSED =      0x0002;
