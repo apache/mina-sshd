@@ -19,6 +19,7 @@
 package org.apache.sshd;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.security.InvalidKeyException;
@@ -350,9 +351,25 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         handler.setServer(this);
         acceptor.setHandler(handler);
 
-        acceptor.bind(host != null ? new InetSocketAddress(host, port) : new InetSocketAddress(port));
-        if (port == 0) {
-            port = ((InetSocketAddress) acceptor.getLocalAddress()).getPort();
+        if (host != null) {
+            String[] hosts = host.split(",");
+            LinkedList<InetSocketAddress> addresses = new LinkedList<InetSocketAddress>();
+            for (String host : hosts) {
+                InetAddress[] inetAddresses = InetAddress.getAllByName(host);
+                for (InetAddress inetAddress : inetAddresses) {
+                    InetSocketAddress inetSocketAddress = new InetSocketAddress(inetAddress, port);
+                    if (port == 0) {
+                        port = inetSocketAddress.getPort();
+                    }
+                    addresses.add(inetSocketAddress);
+                }
+            }
+            acceptor.bind(addresses);
+        } else {
+            acceptor.bind(new InetSocketAddress(port));
+            if (port == 0) {
+                port = ((InetSocketAddress) acceptor.getLocalAddress()).getPort();
+            }
         }
     }
 
