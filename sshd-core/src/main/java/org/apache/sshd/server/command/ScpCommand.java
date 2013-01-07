@@ -231,7 +231,7 @@ public class ScpCommand implements Command, Runnable, FileSystemAware {
         } catch (IOException e) {
             try {
                 exitValue = ERROR;
-                exitMessage = e.getMessage();
+                exitMessage = e.getMessage() == null ? "" : e.getMessage();
                 out.write(exitValue);
                 out.write(exitMessage.getBytes());
                 out.write('\n');

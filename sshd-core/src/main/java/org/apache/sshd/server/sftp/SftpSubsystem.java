@@ -571,7 +571,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                         handles.put(handle, new FileHandle(file, pflags)); // handle flags conversion
                         sendHandle(id, handle);
                     } catch (IOException e) {
-                        sendStatus(id, SSH_FX_FAILURE, e.getMessage());
+                        sendStatus(id, SSH_FX_FAILURE, e.getMessage() == null ? "" : e.getMessage());
                     }
                 } else {
                     String path = buffer.getString();
