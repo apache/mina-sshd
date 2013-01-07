@@ -61,6 +61,11 @@ public interface ServerFactoryManager extends FactoryManager {
      */
     public static final String IDLE_TIMEOUT = "idle-timeout";
 
+    /**
+     * Key used to retrieve the value of welcome banner that will be displayed
+     * when a user connects to the server.
+     */
+    public static final String WELCOME_BANNER = "welcome-banner";
 
     /**
      * Retrieve the list of named factories for <code>UserAuth<code> objects.

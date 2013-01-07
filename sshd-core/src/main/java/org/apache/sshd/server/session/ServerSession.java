@@ -70,6 +70,7 @@ public class ServerSession extends AbstractSession {
     private final TcpipForwardSupport tcpipForward;
     private final AgentForwardSupport agentForward;
     private final X11ForwardSupport x11Forward;
+    private String welcomeBanner = null;
 
     private HandshakingUserAuth currentAuth;
 
@@ -87,6 +88,7 @@ public class ServerSession extends AbstractSession {
         tcpipForward = new TcpipForwardSupport(this);
         agentForward = new AgentForwardSupport(this);
         x11Forward = new X11ForwardSupport(this);
+        welcomeBanner = factoryManager.getProperties().get(ServerFactoryManager.WELCOME_BANNER);
         log.info("Session created from {}", ioSession.getRemoteAddress());
         sendServerIdentification();
         sendKexInit();
@@ -413,6 +415,12 @@ public class ServerSession extends AbstractSession {
                 
               } else {
                 log.debug("Unsupported authentication method '{}'", method);
+                if (welcomeBanner != null) {
+                    buffer = createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_BANNER, 0);
+                    buffer.putString(welcomeBanner);
+                    buffer.putString("\n");
+                    writePacket(buffer);
+                }
               }
             } else {
               try {
