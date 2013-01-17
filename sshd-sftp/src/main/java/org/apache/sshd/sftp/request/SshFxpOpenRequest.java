@@ -18,28 +18,27 @@
 */
 package org.apache.sshd.sftp.request;
 
+import org.apache.sshd.sftp.subsystem.SftpConstants;
+
 /**
  * Data container for 'SSH_FXP_OPEN' request.
  * 
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public class SshFxpOpenRequest extends Request {
-	private final int pflags;
-	private final Integer acc;
-	private final String path;
+public class SshFxpOpenRequest extends BaseRequest {
+    private final String path;
+    private final int acc;
+	private final int flags;
 
 	/**
 	 * Creates a SshFxpOpenRequest instance.
 	 * 
 	 * @param id     The request id.
 	 * @param path   The path.
-	 * @param pflags The flags.
+	 * @param flags  The flags.
 	 */
-	public SshFxpOpenRequest(final int id, String path, final int pflags) {
-		super(id);
-		this.path = path;
-		this.pflags = pflags;
-		this.acc = null;
+	public SshFxpOpenRequest(final int id, String path, final int flags) {
+        this(id, path, 0, flags);
 	}
 
 	/**
@@ -48,27 +47,27 @@ public class SshFxpOpenRequest extends Request {
 	 * @param id     The request id.
 	 * @param path   The path.
 	 * @param acc    The acc.
-	 * @param pflags The flags.
+	 * @param flags  The flags.
 	 */
 	public SshFxpOpenRequest(final int id, String path, final int acc, final int flags) {
 		super(id);
 		this.path = path;
 		this.acc = acc;
-		this.pflags = flags;
+		this.flags = flags;
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
-	public String getName() {
-		return "SSH_FXP_OPEN";
-	}
+    public SftpConstants.Type getMessage() {
+        return SftpConstants.Type.SSH_FXP_OPEN;
+    }
 
 	/**
 	 * {@inheritDoc}
 	 */
 	public String toString() {
-        return "Status=" + getName();
+        return getName() + "[path=" + path + ", acc=" + acc + ", flags=" + flags + "]";
 	}
 
 	/**
@@ -86,7 +85,7 @@ public class SshFxpOpenRequest extends Request {
 	 * @return The flags.
 	 */
 	public int getFlags() {
-		return pflags;
+		return flags;
 	}
 
 	/**
@@ -94,7 +93,7 @@ public class SshFxpOpenRequest extends Request {
 	 * 
 	 * @return The acc.
 	 */
-	public Integer getAcc() {
+	public int getAcc() {
 		return acc;
 	}
 }

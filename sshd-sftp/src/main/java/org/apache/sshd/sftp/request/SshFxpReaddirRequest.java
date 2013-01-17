@@ -19,13 +19,14 @@
 package org.apache.sshd.sftp.request;
 
 import org.apache.sshd.sftp.Handle;
+import org.apache.sshd.sftp.subsystem.SftpConstants;
 
 /**
  * Data container for 'SSH_FXP_READDIR' request.
  * 
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public class SshFxpReaddirRequest extends Request {
+public class SshFxpReaddirRequest extends BaseRequest {
 	private final String handleId;
 	private final Handle handle;
 
@@ -45,16 +46,21 @@ public class SshFxpReaddirRequest extends Request {
 	/**
 	 * {@inheritDoc}
 	 */
-	public String getName() {
-		return "SSH_FXP_READDIR";
-	}
+    public SftpConstants.Type getMessage() {
+        return SftpConstants.Type.SSH_FXP_READDIR;
+    }
 
 	/**
 	 * {@inheritDoc}
 	 */
 	public String toString() {
-        return "Status=" + getName() + "; Message="
-        	+ "handle=" + handleId + ", file=" + handle.getFile().getAbsolutePath() + ";";
+        String ps;
+        if (handle != null && handle.getFile() != null) {
+            ps = handle.getFile().getAbsolutePath();
+        } else {
+            ps = "";
+        }
+        return getName() + "[handle=" + handleId + ", file=" + ps + "]";
 	}
 
 	/**

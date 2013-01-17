@@ -48,7 +48,7 @@ import org.slf4j.LoggerFactory;
  */
 public class NativeSshFile implements SshFile {
 
-    private final Logger LOG = LoggerFactory.getLogger(NativeSshFile.class);
+    private static final Logger LOG = LoggerFactory.getLogger(NativeSshFile.class);
 
     // the file name with respect to the user root.
     // The path separator character will be '/' and
@@ -587,5 +587,10 @@ public class NativeSshFile implements SshFile {
      */
     public File getPhysicalFile() {
     	return file;
+    }
+
+    @Override
+    public String toString() {
+        return fileName;
     }
 }

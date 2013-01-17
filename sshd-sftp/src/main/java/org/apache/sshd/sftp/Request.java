@@ -16,38 +16,35 @@
 * specific language governing permissions and limitations
 * under the License.
 */
-package org.apache.sshd.sftp.request;
+package org.apache.sshd.sftp;
+
+import org.apache.sshd.sftp.subsystem.SftpConstants;
 
 /**
  * Common ssh request interface.
- * 
+ *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public abstract class Request {
-	private int id;
-	
-	/**
-	 * Creates a Request instance.
-	 * 
-	 * @param id The request id.
-	 */
-	public Request(final int id) {
-		this.id = id;
-	}
+public interface Request {
 
-	/**
-	 * Returns the request id.
-	 * 
-	 * @return The request id.
-	 */
-	public int getId() {
-		return id;
-	}
+    /**
+     * Returns the request id.
+     *
+     * @return The request id.
+     */
+    int getId();
 
-	/**
-	 * Returns the request name.
-	 * 
-	 * @return The request name.
-	 */
-	public abstract String getName();
+    /**
+     * Returns the message type.
+     *
+     * @return The message type.
+     */
+    SftpConstants.Type getMessage();
+
+    /**
+     * Returns the request name.
+     *
+     * @return The request name.
+     */
+    String getName();
 }

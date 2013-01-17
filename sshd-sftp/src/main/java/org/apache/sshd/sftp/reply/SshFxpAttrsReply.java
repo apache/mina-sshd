@@ -19,90 +19,49 @@
 package org.apache.sshd.sftp.reply;
 
 import org.apache.sshd.server.SshFile;
+import org.apache.sshd.sftp.subsystem.SftpConstants;
 
 /**
  * Data container for 'SSH_FXP_ATTRS' reply.
  * 
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public class SshFxpAttrsReply implements Reply {
+public class SshFxpAttrsReply extends BaseReply {
 
-	private int id;
-	private final SshFile file;
-	private final Integer flags;
+    private final FileAttributes attrs;
 
-	/**
-	 * Creates a SshFxpAttrsReply instance.
-	 * 
-	 * @param id    The reply id.
-	 * @param file  The according file.
-	 * @param flags The file flags.
-	 */
-	public SshFxpAttrsReply(final int id, final SshFile file, final int flags) {
-		this.id = id;
-		this.file = file;
-		this.flags = flags;
-	}
-
-	/**
-	 * Creates a SshFxpAttrsReply instance.
-	 * 
-	 * @param id    The reply id.
-	 * @param file  The according file.
-	 */
-	public SshFxpAttrsReply(final int id, final SshFile file) {
-		this.id = id;
-		this.file = file;
-		this.flags = null;
-	}
+    /**
+     * Creates a SshFxpAttrsReply instance.
+     *
+     * @param id    The reply id.
+     * @param attrs The attributes.
+     */
+    public SshFxpAttrsReply(final int id, final FileAttributes attrs) {
+        super(id);
+        this.attrs = attrs;
+    }
 
 	/**
 	 * {@inheritDoc}
 	 */
-	public String getReplyCodeName() {
-		return "SSH_FXP_ATTRS";
+	public SftpConstants.Type getMessage() {
+        return SftpConstants.Type.SSH_FXP_ATTRS;
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
 	public String toString() {
-		StringBuffer sb = new StringBuffer();
-		sb.append(getReplyCodeName());
-		sb.append(": id=");
-		sb.append(id);
-		sb.append(", file=");
-		sb.append(file.getAbsolutePath());
-		sb.append(", flags=");
-		sb.append(flags);
-
-		return sb.toString();
+        return getName() + "[attrs=" + attrs + "]";
 	}
 
 	/**
-	 * Returns the id.
+	 * Returns the attributes.
 	 * 
-	 * @return The id.
+	 * @return the attributes.
 	 */
-	public int getId() {
-		return id;
+	public FileAttributes getAttributes() {
+		return attrs;
 	}
 
-	/**
-	 * Returns the file.
-	 * 
-	 * @return the file.
-	 */
-	public SshFile getFile() {
-		return file;
-	}
-
-	/**
-	 * Returns the flags.
-	 * 
-	 * @return The flags.
-	 */
-	public Integer getFlags() {
-		return flags;
-	}
 }

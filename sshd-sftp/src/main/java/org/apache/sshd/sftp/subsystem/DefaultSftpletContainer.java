@@ -16,15 +16,19 @@
 * specific language governing permissions and limitations
 * under the License.
 */
-package org.apache.sshd.sftp;
+package org.apache.sshd.sftp.subsystem;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.sshd.common.Session;
 import org.apache.sshd.server.session.ServerSession;
-import org.apache.sshd.sftp.reply.Reply;
-import org.apache.sshd.sftp.request.Request;
+import org.apache.sshd.sftp.Reply;
+import org.apache.sshd.sftp.Request;
+import org.apache.sshd.sftp.SftpSession;
+import org.apache.sshd.sftp.Sftplet;
+import org.apache.sshd.sftp.request.BaseRequest;
 
 
 /**
@@ -39,7 +43,7 @@ public class DefaultSftpletContainer implements Sftplet {
     /**
      * {@inheritDoc}
      */
-    public void onConnect(final ServerSession session) {
+    public void onConnect(final SftpSession session) {
 		for (Sftplet sftpLet : sftpLetList) {
 			sftpLet.onConnect(session);
 		}
@@ -48,7 +52,7 @@ public class DefaultSftpletContainer implements Sftplet {
     /**
      * {@inheritDoc}
      */
-	public void onDisconnect(final ServerSession session) {
+	public void onDisconnect(final SftpSession session) {
 		for (Sftplet sftpLet : sftpLetList) {
 			sftpLet.onDisconnect(session);
 		}
@@ -57,7 +61,7 @@ public class DefaultSftpletContainer implements Sftplet {
     /**
      * {@inheritDoc}
      */
-	public Reply beforeCommand(final ServerSession session, final Request sftpRequest) {
+	public Reply beforeCommand(final SftpSession session, final Request sftpRequest) {
 		Reply reply = null;
 		for (Sftplet sftpLet : sftpLetList) {
 			reply = sftpLet.beforeCommand(session, sftpRequest);
@@ -68,7 +72,7 @@ public class DefaultSftpletContainer implements Sftplet {
     /**
      * {@inheritDoc}
      */
-	public Reply afterCommand(final ServerSession session, final Request sftpRequest, final Reply sftpReply)
+	public Reply afterCommand(final SftpSession session, final Request sftpRequest, final Reply sftpReply)
 			throws IOException {
 		Reply reply = sftpReply;
 		for (Sftplet sftpLet : sftpLetList) {

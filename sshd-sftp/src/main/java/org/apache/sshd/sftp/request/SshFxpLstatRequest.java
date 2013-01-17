@@ -18,37 +18,43 @@
 */
 package org.apache.sshd.sftp.request;
 
+import org.apache.sshd.sftp.subsystem.SftpConstants;
+
 /**
  * Data container for 'SSH_FXP_STAT' request.
  * 
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public class SshFxpLstatRequest extends Request {
+public class SshFxpLstatRequest extends BaseRequest {
+
 	private final String path;
+    private final int flags;
 
 	/**
 	 * Creates a SshFxpLstatRequest instance.
 	 * 
-	 * @param id   The request id.
-	 * @param path The requested path.
+	 * @param id    The request id.
+     * @param path  The requested path.
+     * @param flags The stat flags.
 	 */
-	public SshFxpLstatRequest(final int id, final String path) {
+	public SshFxpLstatRequest(final int id, final String path, final int flags) {
 		super(id);
 		this.path = path;
+        this.flags = flags;
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
-	public String getName() {
-		return "SSH_FXP_STAT";
-	}
+    public SftpConstants.Type getMessage() {
+        return SftpConstants.Type.SSH_FXP_STAT;
+    }
 
 	/**
 	 * {@inheritDoc}
 	 */
 	public String toString() {
-        return "Status=" + getName() + "; Message=path=" + path + ";";
+        return getName() + "[path=" + path + "]";
 	}
 
 	/**
@@ -59,4 +65,8 @@ public class SshFxpLstatRequest extends Request {
 	public String getPath() {
 		return path;
 	}
+
+    public int getFlags() {
+        return flags;
+    }
 }

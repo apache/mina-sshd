@@ -16,51 +16,28 @@
 * specific language governing permissions and limitations
 * under the License.
 */
-package org.apache.sshd.sftp.reply;
+package org.apache.sshd.sftp;
 
-import org.apache.sshd.sftp.Handle;
 import org.apache.sshd.sftp.subsystem.SftpConstants;
 
 /**
- * Data container for 'SSH_FXP_HANDLE' reply.
+ * Common ssh reply interface.
  * 
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public class SshFxpHandleReply extends BaseReply {
+public interface Reply {
 
-	private final Handle handle;
+    /**
+     * Returns the reply message type.
+     *
+     * @return the message type
+     */
+    SftpConstants.Type getMessage();
 
 	/**
-	 * Creates a SshFxpHandleReply instance.
+	 * Returns the name of the reply code.
 	 * 
-	 * @param id       The reply id.
-	 * @param handle   The handle.
+	 * @return The name of the reply code.
 	 */
-	public SshFxpHandleReply(final int id, final Handle handle) {
-        super(id);
-		this.handle = handle;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-    public SftpConstants.Type getMessage() {
-        return SftpConstants.Type.SSH_FXP_HANDLE;
-    }
-
-	/**
-	 * {@inheritDoc}
-	 */
-	public String toString() {
-		return getName() + "[handle=" + handle.getId() + ", file=" + handle.getFile().getAbsolutePath();
-	}
-
-	/**
-	 * Returns the handle.
-	 * 
-	 * @return The handle.
-	 */
-	public Handle getHandle() {
-		return handle;
-	}
+	String getName();
 }

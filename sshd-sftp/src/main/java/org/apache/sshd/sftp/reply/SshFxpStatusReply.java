@@ -21,18 +21,33 @@ package org.apache.sshd.sftp.reply;
 import java.io.IOException;
 
 import org.apache.sshd.server.sftp.SftpSubsystem;
+import org.apache.sshd.sftp.subsystem.SftpConstants;
 
 /**
  * Data container for 'SSH_FXP_STATUS' reply.
  * 
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public class SshFxpStatusReply implements Reply {
+public class SshFxpStatusReply extends BaseReply {
+
 	private String substatusAsSTR;
-	private int id;
 	private String msg;
 	private String lang;
 	private final int substatus;
+
+    /**
+     * Creates a SshFxpStatusReply instance.
+     *
+     * @param id        The reply id.
+     * @param substatus The sub status.
+     * @param msg       The status message.
+     *
+     * @throws IOException If the given reply is unsupported.
+     */
+    public SshFxpStatusReply(final int id, final int substatus, final String msg)
+            throws IOException {
+        this(id, substatus, msg, "");
+    }
 
 	/**
 	 * Creates a SshFxpStatusReply instance.
@@ -46,9 +61,9 @@ public class SshFxpStatusReply implements Reply {
 	 */
 	public SshFxpStatusReply(final int id, final int substatus, final String msg, final String lang)
 			throws IOException {
+        super(id);
 		this.substatus = substatus;
 		this.lang = lang;
-		this.id = id;
 		this.msg = msg;
 
     	switch (substatus) {
@@ -118,24 +133,14 @@ public class SshFxpStatusReply implements Reply {
 	 * {@inheritDoc}
 	 */
 	public String toString() {
-		return getReplyCodeName()
-			+ "/" + substatusAsSTR + ": id=" + id + "; msg=" + msg + "; lang=" + lang;
+		return getName() + "[status=" + substatusAsSTR + ", msg=" + msg + "]";
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
-	public String getReplyCodeName() {
-		return "SSH_FXP_STATUS";
-	}
-
-	/**
-	 * Returns the id.
-	 * 
-	 * @return The id.
-	 */
-	public int getId() {
-		return id;
+	public SftpConstants.Type getMessage() {
+		return SftpConstants.Type.SSH_FXP_STATUS;
 	}
 
 	/**

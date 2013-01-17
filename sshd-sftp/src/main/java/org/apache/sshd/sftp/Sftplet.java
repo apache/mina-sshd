@@ -18,11 +18,10 @@
 */
 package org.apache.sshd.sftp;
 
+import org.apache.sshd.common.Session;
+
 import java.io.IOException;
 
-import org.apache.sshd.server.session.ServerSession;
-import org.apache.sshd.sftp.reply.Reply;
-import org.apache.sshd.sftp.request.Request;
 
 
 /**
@@ -39,14 +38,14 @@ public interface Sftplet {
 	 * 
 	 * @param session The according session.
 	 */
-	void onConnect(ServerSession session);
+	void onConnect(SftpSession session);
 
 	/**
 	 * Client disconnect notification method.
 	 * 
 	 * @param session The according session.
 	 */
-	void onDisconnect(ServerSession session);
+	void onDisconnect(SftpSession session);
 
 	/**
 	 * Called before the server invoke the command.
@@ -57,7 +56,7 @@ public interface Sftplet {
 	 * @return If null, the standard processing goes on.
 	 *         If not null, there will be no further processing and this reply will be returned to client.
 	 */
-	Reply beforeCommand(ServerSession session, Request sftpRequest);
+	Reply beforeCommand(SftpSession session, Request sftpRequest);
 
 	/**
 	 * Called after the server as invoked the command.
@@ -71,5 +70,5 @@ public interface Sftplet {
 	 *         
 	 * @throws IOException If an error occured. 
 	 */
-	Reply afterCommand(ServerSession session, Request sftpRequest, Reply sftpReply) throws IOException;
+	Reply afterCommand(SftpSession session, Request sftpRequest, Reply sftpReply) throws IOException;
 }

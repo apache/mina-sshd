@@ -19,13 +19,14 @@
 package org.apache.sshd.sftp.request;
 
 import org.apache.sshd.sftp.Handle;
+import org.apache.sshd.sftp.subsystem.SftpConstants;
 
 /**
  * Data container for 'SSH_FXP_FSTAT' request.
  * 
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public class SshFxpFstatRequest extends Request {
+public class SshFxpFstatRequest extends BaseRequest {
 	private final String handle;
 	private final Handle handleRef;
 
@@ -45,9 +46,9 @@ public class SshFxpFstatRequest extends Request {
 	/**
 	 * {@inheritDoc}
 	 */
-	public String getName() {
-		return "SSH_FXP_FSTAT";
-	}
+    public SftpConstants.Type getMessage() {
+        return SftpConstants.Type.SSH_FXP_FSTAT;
+    }
 
 	/**
 	 * {@inheritDoc}
@@ -59,7 +60,7 @@ public class SshFxpFstatRequest extends Request {
 		} else {
 			ps = "";
 		}
-        return "Status=" + getName() + "; Message=handle=" + handle + ", file=" + ps + ";";
+        return getName() + "[handle=" + handle + ", file=" + ps + "]";
 	}
 
 	/**

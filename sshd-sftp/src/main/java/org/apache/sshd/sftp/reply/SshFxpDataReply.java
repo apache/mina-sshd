@@ -18,18 +18,19 @@
 */
 package org.apache.sshd.sftp.reply;
 
-import java.util.Arrays;
+import org.apache.sshd.sftp.subsystem.SftpConstants;
 
 /**
  * Data container for 'SSH_FXP_DATA' reply.
  * 
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public class SshFxpDataReply implements Reply {
+public class SshFxpDataReply extends BaseReply {
 
-	private final int id;
-	private final Boolean lenFlag;
 	private final byte[] data;
+    private final int offset;
+    private final int length;
+    private final boolean eof;
 
 	/**
 	 * Creates a SshFxpData instance.
@@ -38,55 +39,38 @@ public class SshFxpDataReply implements Reply {
 	 * @param data The transfer data.
 	 */
 	public SshFxpDataReply(final int id, final byte[] data) {
-		this.id   = id;
-		this.data = Arrays.copyOfRange(data, 0, data.length);
-		lenFlag  = null;
+        this(id, data, 0, data.length, false);
 	}
 
 	/**
 	 * Creates a SshFxpData instance.
 	 * 
 	 * @param id      The reply id.
-	 * @param data    The transfer data.
-	 * @param lenFlag LenFlag.
+     * @param data    The transfer data.
+     * @param offset  The offset in the data.
+     * @param length  The length of data.
+	 * @param eof     The EOF flag.
 	 */
-	public SshFxpDataReply(final int id, final byte[] data, final boolean lenFlag) {
-		this.id   = id;
-		this.data = Arrays.copyOfRange(data, 0, data.length);
-		this.lenFlag  = lenFlag;
+	public SshFxpDataReply(final int id, final byte[] data, final int offset, final int length, final boolean eof) {
+        super(id);
+		this.data = data;
+        this.offset = offset;
+        this.length = length;
+		this.eof  = eof;
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
-	public String getReplyCodeName() {
-		return "SSH_FXP_DATA";
+	public SftpConstants.Type getMessage() {
+		return SftpConstants.Type.SSH_FXP_DATA;
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
 	public String toString() {
-		StringBuffer fs = new StringBuffer();
-		fs.append(getReplyCodeName());
-		fs.append(": id=");
-		fs.append(id);
-		fs.append(", data=<data(len=" + data.length + ")>");
-		if (lenFlag != null) {
-			fs.append(", len=");
-			fs.append(lenFlag);
-		}
-
-		return fs.toString();
-	}
-
-	/**
-	 * Returns the id.
-	 * 
-	 * @return The id.
-	 */
-	public long getId() {
-		return id;
+        return getName() + "[data=<data(len=" + length + ")>, eof=" + eof + "]";
 	}
 
 	/**
@@ -95,15 +79,18 @@ public class SshFxpDataReply implements Reply {
 	 * @return The data.
 	 */
 	public byte[] getData() {
-		return Arrays.copyOf(data, data.length);
+		return data;
 	}
 
-	/**
-	 * Returns the lenflag.
-	 * 
-	 * @return The lenflag.
-	 */
-	public Boolean getLenFlag() {
-		return lenFlag;
-	}
+    public int getOffset() {
+        return offset;
+    }
+
+    public int getLength() {
+        return length;
+    }
+
+    public boolean isEof() {
+        return eof;
+    }
 }

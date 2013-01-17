@@ -18,12 +18,14 @@
 */
 package org.apache.sshd.sftp.request;
 
+import org.apache.sshd.sftp.subsystem.SftpConstants;
+
 /**
  * Data container for 'SSH_FXP_INIT' request.
  * 
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public class SshFxpInitRequest extends Request {
+public class SshFxpInitRequest extends BaseRequest {
 	/**
 	 * Creates a SshFxpInitRequest instance.
 	 * 
@@ -36,13 +38,14 @@ public class SshFxpInitRequest extends Request {
 	/**
 	 * {@inheritDoc}
 	 */
-	public String getName() {
-		return "SSH_FXP_INIT";
-	}
+    public SftpConstants.Type getMessage() {
+        return SftpConstants.Type.SSH_FXP_INIT;
+    }
+
 	/**
 	 * {@inheritDoc}
 	 */
 	public String toString() {
-        return "Status=" + getName();
+        return getName() + "[version=" + getId() + "]";
 	}
 }

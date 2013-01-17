@@ -18,12 +18,14 @@
 */
 package org.apache.sshd.sftp.request;
 
+import org.apache.sshd.sftp.subsystem.SftpConstants;
+
 /**
  * Data container for 'SSH_FXP_REMOVE' request.
  * 
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public class SshFxpRemoveRequest extends Request {
+public class SshFxpRemoveRequest extends BaseRequest {
 	private final String path;
 
 	/**
@@ -40,15 +42,15 @@ public class SshFxpRemoveRequest extends Request {
 	/**
 	 * {@inheritDoc}
 	 */
-	public String getName() {
-		return "SSH_FXP_REMOVE";
-	}
+    public SftpConstants.Type getMessage() {
+        return SftpConstants.Type.SSH_FXP_REMOVE;
+    }
 
 	/**
 	 * {@inheritDoc}
 	 */
 	public String toString() {
-	    return "Status=" + getName() + "; Message=remove " + path  + ";";
+        return getName() + "[path=" + path + "]";
 	}
 
 	/**

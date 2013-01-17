@@ -18,12 +18,14 @@
 */
 package org.apache.sshd.sftp.request;
 
+import org.apache.sshd.sftp.subsystem.SftpConstants;
+
 /**
  * Data container for unknown or unsupported requests.
  * 
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public class UnsupportedRequest extends Request {
+public class UnsupportedRequest extends BaseRequest {
 
 	private final int type;
 
@@ -44,4 +46,11 @@ public class UnsupportedRequest extends Request {
 	public String getName() {
 		return "Unsupported request: " + type;
 	}
+
+    /**
+     * {@inheritDoc}
+     */
+    public SftpConstants.Type getMessage() {
+        return null;
+    }
 }

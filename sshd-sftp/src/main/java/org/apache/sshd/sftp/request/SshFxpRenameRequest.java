@@ -18,12 +18,14 @@
 */
 package org.apache.sshd.sftp.request;
 
+import org.apache.sshd.sftp.subsystem.SftpConstants;
+
 /**
  * Data container for 'SSH_FXP_RENAME' request.
  * 
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public class SshFxpRenameRequest extends Request {
+public class SshFxpRenameRequest extends BaseRequest {
 	private final String oldPath;
 	private final String newPath;
 
@@ -43,15 +45,15 @@ public class SshFxpRenameRequest extends Request {
 	/**
 	 * {@inheritDoc}
 	 */
-	public String getName() {
-		return "SSH_FXP_RENAME";
-	}
+    public SftpConstants.Type getMessage() {
+        return SftpConstants.Type.SSH_FXP_RENAME;
+    }
 
 	/**
 	 * {@inheritDoc}
 	 */
 	public String toString() {
-	    return "Status=" + getName() + "; Message=rename" + oldPath + " to " + newPath + ";";
+        return getName() + "[old=" + oldPath + ", new=" + newPath + "]";
 	}
 
 	/**

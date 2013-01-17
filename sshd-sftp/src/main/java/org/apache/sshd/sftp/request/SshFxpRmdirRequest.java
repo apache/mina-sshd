@@ -18,12 +18,14 @@
 */
 package org.apache.sshd.sftp.request;
 
+import org.apache.sshd.sftp.subsystem.SftpConstants;
+
 /**
  * Data container for 'SSH_FXP_RMDIR' request.
  * 
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public class SshFxpRmdirRequest extends Request {
+public class SshFxpRmdirRequest extends BaseRequest {
 	private final String path;
 
 	/**
@@ -40,15 +42,15 @@ public class SshFxpRmdirRequest extends Request {
 	/**
 	 * {@inheritDoc}
 	 */
-	public String getName() {
-		return "SSH_FXP_RMDIR";
-	}
+    public SftpConstants.Type getMessage() {
+        return SftpConstants.Type.SSH_FXP_RMDIR;
+    }
 
 	/**
 	 * {@inheritDoc}
 	 */
 	public String toString() {
-	    return "Status=" + getName() + "; Message=rmdir " + path + ";";
+        return getName() + "[path=" + path + "]";
 	}
 
 	/**

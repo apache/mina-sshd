@@ -19,13 +19,14 @@
 package org.apache.sshd.sftp.request;
 
 import org.apache.sshd.sftp.Handle;
+import org.apache.sshd.sftp.subsystem.SftpConstants;
 
 /**
  * Data container for 'SSH_FXP_CLOSE' request.
  * 
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public class SshFxpCloseRequest extends Request {
+public class SshFxpCloseRequest extends BaseRequest {
 	private final Handle handle;
 	private final String handleId;
 
@@ -45,8 +46,8 @@ public class SshFxpCloseRequest extends Request {
 	/**
 	 * {@inheritDoc}
 	 */
-	public String getName() {
-		return "SSH_FXP_CLOSE";
+	public SftpConstants.Type getMessage() {
+		return SftpConstants.Type.SSH_FXP_CLOSE;
 	}
 
 	/**
@@ -59,7 +60,7 @@ public class SshFxpCloseRequest extends Request {
 		} else {
 			sh = "";
 		}
-        return "Status=" + getName() + "; Message=handle=" + handleId + ", file=" + sh + ";";
+        return getName() + "[handle=" + handleId + ", file=" + sh + "]";
 	}
 
 	/**

@@ -20,6 +20,7 @@ package org.apache.sshd.sftp;
 
 import org.apache.sshd.server.SshFile;
 
+import java.io.Closeable;
 import java.io.IOException;
 
 /**
@@ -27,20 +28,10 @@ import java.io.IOException;
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public abstract class Handle {
+public interface Handle extends Closeable {
 
-    protected SshFile file;
+    String getId();
 
-    public Handle(SshFile file) {
-        this.file = file;
-    }
-
-    public SshFile getFile() {
-        return file;
-    }
-
-    public void close() throws IOException {
-        file.handleClose();
-    }
+    SshFile getFile();
 
 }

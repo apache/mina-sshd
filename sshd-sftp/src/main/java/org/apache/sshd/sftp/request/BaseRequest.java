@@ -16,19 +16,43 @@
 * specific language governing permissions and limitations
 * under the License.
 */
-package org.apache.sshd.sftp.reply;
+package org.apache.sshd.sftp.request;
+
+import org.apache.sshd.sftp.Request;
 
 /**
- * Common ssh reply interface.
+ * Common ssh request interface.
  * 
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public interface Reply {
+public abstract class BaseRequest implements Request {
+
+	private final int id;
+	
+	/**
+	 * Creates a Request instance.
+	 * 
+	 * @param id The request id.
+	 */
+	public BaseRequest(final int id) {
+		this.id = id;
+	}
 
 	/**
-	 * Returns the name of the reply code.
+	 * Returns the request id.
 	 * 
-	 * @return The name of the reply code.
+	 * @return The request id.
 	 */
-	String getReplyCodeName();
+	public int getId() {
+		return id;
+	}
+
+	/**
+	 * Returns the request name.
+	 * 
+	 * @return The request name.
+	 */
+	public String getName() {
+        return getMessage().toString();
+    }
 }

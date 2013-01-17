@@ -18,13 +18,14 @@
 */
 package org.apache.sshd.sftp.reply;
 
+import org.apache.sshd.sftp.subsystem.SftpConstants;
+
 /**
  * Data container for 'SSH_FXP_VERSION' reply.
  * 
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public class SshFxpVersionReply implements Reply {
-	private final int version;
+public class SshFxpVersionReply extends BaseReply {
 
 	/**
 	 * Creates a SshFxpVersionReply instance.
@@ -32,21 +33,21 @@ public class SshFxpVersionReply implements Reply {
 	 * @param version The requested version.
 	 */
 	public SshFxpVersionReply(final int version) {
-		this.version = version;
+		super(version);
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
-	public String getReplyCodeName() {
-		return "SSH_FXP_VERSION";
+	public SftpConstants.Type getMessage() {
+		return SftpConstants.Type.SSH_FXP_VERSION;
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
 	public String toString() {
-		return getReplyCodeName() + ": version=" + version;
+		return getName() + "[version=" + getId() + "]";
 	}
 
 	/**
@@ -55,6 +56,6 @@ public class SshFxpVersionReply implements Reply {
 	 * @return The requested version.
 	 */
 	public int getVersion() {
-		return version;
+		return getId();
 	}
 }

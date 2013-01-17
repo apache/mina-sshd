@@ -18,12 +18,14 @@
 */
 package org.apache.sshd.sftp.request;
 
+import org.apache.sshd.sftp.subsystem.SftpConstants;
+
 /**
  * Data container for 'SSH_FXP_FSETSTAT' request.
  * 
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public class SshFxpFsetstatRequest extends Request {
+public class SshFxpFsetstatRequest extends BaseRequest {
 
 	/**
 	 * Creates a SshFxpFsetstatRequest instance.
@@ -37,14 +39,14 @@ public class SshFxpFsetstatRequest extends Request {
 	/**
 	 * {@inheritDoc}
 	 */
-	public String getName() {
-		return "SSH_FXP_FSETSTAT";
-	}
+    public SftpConstants.Type getMessage() {
+        return SftpConstants.Type.SSH_FXP_SETSTAT;
+    }
 
 	/**
 	 * {@inheritDoc}
 	 */
 	public String toString() {
-        return "Status=" + getName();
+        return getName() + "[]";
 	}
 }

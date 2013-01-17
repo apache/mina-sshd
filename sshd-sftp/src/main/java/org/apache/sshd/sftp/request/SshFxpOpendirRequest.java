@@ -18,12 +18,14 @@
 */
 package org.apache.sshd.sftp.request;
 
+import org.apache.sshd.sftp.subsystem.SftpConstants;
+
 /**
  * Data container for 'SSH_FXP_OPENDIR' request.
  * 
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public class SshFxpOpendirRequest extends Request {
+public class SshFxpOpendirRequest extends BaseRequest {
 	private final String path;
 
 	/**
@@ -40,15 +42,15 @@ public class SshFxpOpendirRequest extends Request {
 	/**
 	 * {@inheritDoc}
 	 */
-	public String getName() {
-		return "SSH_FXP_OPENDIR";
-	}
+    public SftpConstants.Type getMessage() {
+        return SftpConstants.Type.SSH_FXP_OPENDIR;
+    }
 
 	/**
 	 * {@inheritDoc}
 	 */
 	public String toString() {
-        return "Status=" + getName() + "; Message=open directory " + path + ";";
+        return getName() + "[path=" + path + "]";
 	}
 
 	/**

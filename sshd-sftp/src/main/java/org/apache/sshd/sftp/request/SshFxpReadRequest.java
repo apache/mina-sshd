@@ -19,17 +19,18 @@
 package org.apache.sshd.sftp.request;
 
 import org.apache.sshd.sftp.Handle;
+import org.apache.sshd.sftp.subsystem.SftpConstants;
 
 /**
  * Data container for 'SSH_FXP_READ' request.
  * 
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public class SshFxpReadRequest extends Request {
+public class SshFxpReadRequest extends BaseRequest {
 	private final String handleId;
 	private final long offset;
 	private final Handle handle;
-	private final int len;
+	private final int length;
 
 	/**
 	 * Creates a SshFxpReadRequest instance.
@@ -37,31 +38,36 @@ public class SshFxpReadRequest extends Request {
 	 * @param id       The request id.
 	 * @param handleId The according file handle id.
 	 * @param offset   The read offset.
-	 * @param lenFlag  The lenFlag.
+	 * @param length   The length.
 	 * @param handle   The according file handle.
 	 */
 	public SshFxpReadRequest(
-			final int id, final String handleId, final long offset, final int len, final Handle handle) {
+			final int id, final String handleId, final long offset, final int length, final Handle handle) {
 		super(id);
 		this.handleId = handleId;
 		this.offset = offset;
-		this.len = len;
+		this.length = length;
 		this.handle = handle;
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
-	public String getName() {
-		return "SSH_FXP_READ";
-	}
+    public SftpConstants.Type getMessage() {
+        return SftpConstants.Type.SSH_FXP_READ;
+    }
 
 	/**
 	 * {@inheritDoc}
 	 */
 	public String toString() {
-        return "Status=" + getName() + "; Message=handle=" + handleId + ", file="
-        		+ getHandle().getFile().getAbsolutePath() + ", offset=" + offset + ";";
+        String ps;
+        if (handle != null && handle.getFile() != null) {
+            ps = handle.getFile().getAbsolutePath();
+        } else {
+            ps = "";
+        }
+        return getName() + "[handle=" + handleId + ", file=" + ps + ", offset=" + offset + ", length=" + length + "]";
 	}
 
 	/**
@@ -83,12 +89,12 @@ public class SshFxpReadRequest extends Request {
 	}
 
 	/**
-	 * Returns the len flag.
+	 * Returns the length.
 	 * 
-	 * @return The len flag.
+	 * @return The length.
 	 */
-	public int isLen() {
-		return len;
+	public int getLength() {
+		return length;
 	}
 
 	/**
@@ -100,8 +106,4 @@ public class SshFxpReadRequest extends Request {
 		return offset;
 	}
 
-	public int getLen() {
-		// TODO Auto-generated method stub
-		return 0;
-	}
 }

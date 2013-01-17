@@ -20,121 +20,101 @@ package org.apache.sshd.sftp.reply;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 
 import org.apache.sshd.server.SshFile;
+import org.apache.sshd.sftp.subsystem.SftpConstants;
 
 /**
  * Data container for 'SSH_FXP_NAME' reply.
  * 
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public class SshFxpNameReply implements Reply {
+public class SshFxpNameReply extends BaseReply {
 	/**
 	 * Contains informations of requested files.
 	 */
 	public static class ReplyFile {
 
-		private final String filename;
-		private final String longname;
-		private final Integer x;
+        private final SshFile file;
+		private final String fileName;
+		private final String longName;
 		private final FileAttributes attrs;
 
 		/**
 		 * Creates ReplyFile instance.
 		 * 
-		 * @param filename The file name.
-		 * @param longname The virtual absolute file path.
-		 * @param x        Do not know.
+		 * @param fileName The file name.
+		 * @param longName The virtual absolute file path.
+		 * @param attrs    File attributes.
 		 */
-		public ReplyFile(final String filename, final String longname, final int x) {
-			this.filename = filename;
-			this.longname = longname;
-			this.x = x;
-			attrs = null;
-		}
-
-		/**
-		 * Creates ReplyFile instance.
-		 * 
-		 * @param filename The file name.
-		 * @param longname The virtual absolute file path.
-		 * @param attrs    The file attributes.
-		 */
-		public ReplyFile(final String filename, final String longname, final FileAttributes attrs) {
-			this.filename = filename;
-			this.longname = longname;
+		public ReplyFile(final SshFile file, final String fileName, final String longName, final FileAttributes attrs) {
+            this.file = file;
+			this.fileName = fileName;
+			this.longName = longName;
 			this.attrs = attrs;
-			x = null;
 		}
 
-		/**
-		 * {@inheritDoc}
-		 */
-		public String toString() {
-			return "filename=" + filename + ", longname=" + longname;
-		}
+        public SshFile getFile() {
+            return file;
+        }
 
-		/**
-		 * Returns x. Do not know the meaning.
-		 * 
-		 * @return x value.
-		 */
-		public int getX() {
-			return x;
-		}
+        public String getFileName() {
+            return fileName;
+        }
 
-		/**
-		 * Returns the file attributes.
-		 * 
-		 * @return The file attributes.
-		 */
-		public FileAttributes getAttrs() {
-			return attrs;
-		}
-	}
+        public String getLongName() {
+            return longName;
+        }
 
-	private List<ReplyFile> fileList = new ArrayList<ReplyFile>();
-	private final int id;
-	private int count = 0;
-	private Collection<SshFile> sshFiles = new ArrayList<SshFile>();
-	private final boolean isSendPath;
+        /**
+         * Returns the file attributes.
+         *
+         * @return The file attributes.
+         */
+        public FileAttributes getAttrs() {
+            return attrs;
+        }
 
-	/**
+        public String toString() {
+            return "fileName=" + fileName + ", longName=" + longName;
+        }
+
+    }
+
+	private List<ReplyFile> files = new ArrayList<ReplyFile>();
+    private boolean eol;
+
+    /**
 	 * Creates a SshFxpHandleReply instance.
 	 * 
 	 * @param id         The reply id.
-	 * @param isSendPath If true, it's a send path reply.
 	 */
-	public SshFxpNameReply(final int id, final boolean isSendPath) {
-		this.id = id;
-		this.isSendPath = isSendPath;
-	}
+	public SshFxpNameReply(final int id) {
+		super(id);
+    }
 
 	/**
 	 * {@inheritDoc}
 	 */
-	public String getReplyCodeName() {
-		return "SSH_FXP_NAME";
-	}
+    public SftpConstants.Type getMessage() {
+        return SftpConstants.Type.SSH_FXP_NAME;
+    }
 
 	/**
 	 * {@inheritDoc}
 	 */
 	public String toString() {
 		StringBuffer fs = new StringBuffer();
-		fs.append(getReplyCodeName());
-		fs.append(": id=");
-		fs.append(id);
-		fs.append(", count=");
-		fs.append(count);
-		fs.append(",");
+		fs.append(getName());
+        fs.append("[");
 		fs.append("\n");
-		for (ReplyFile f : fileList) {
+		for (ReplyFile f : files) {
+            fs.append("    ");
 			fs.append(f.toString());
-			fs.append(";\n");
+			fs.append(",\n");
 	    }
+        fs.append("]");
 
 		return fs.toString();
 	}
@@ -145,38 +125,10 @@ public class SshFxpNameReply implements Reply {
 	 * @param sshFile  The ssh file.
 	 * @param filename The file name.
 	 * @param longname The long file message.
-	 * @param x        Don't know!
-	 */
-	public void addFile(final SshFile sshFile, final String filename, final String longname, final int x) {
-		ReplyFile file = new ReplyFile(filename, longname, x);
-		fileList.add(file);
-		sshFiles.add(sshFile);
-		count++;
-	}
-
-	/**
-	 * Add a file to the reply.
-	 * 
-	 * @param sshFile  The ssh file.
-	 * @param filename The file name.
-	 * @param longname The long file message.
 	 * @param attrs    The file attributes.
 	 */
-	public void addFile(final SshFile sshFile, final String filename, final String longname,
-			final FileAttributes attrs) {
-		ReplyFile file = new ReplyFile(filename, longname, attrs);
-		fileList.add(file);
-		sshFiles.add(sshFile);
-		count++;
-	}
-
-	/**
-	 * Returns the id.
-	 * 
-	 * @return The id.
-	 */
-	public int getId() {
-		return id;
+	public void addFile(final SshFile sshFile, final String filename, final String longname, final FileAttributes attrs) {
+		files.add(new ReplyFile(sshFile, filename, longname, attrs));
 	}
 
 	/**
@@ -184,16 +136,15 @@ public class SshFxpNameReply implements Reply {
 	 * 
 	 * @return the files.
 	 */
-	public Iterator<SshFile> getFiles() {
-		return sshFiles.iterator();
+	public Collection<ReplyFile> getFiles() {
+		return files;
 	}
 
-	/**
-	 * Returns the send path reply flag.
-	 * 
-	 * @return True, it's a send path reply.
-	 */
-	public boolean isSendPath() {
-		return isSendPath;
-	}
+    public boolean isEol() {
+        return eol;
+    }
+
+    public void setEol(boolean eol) {
+        this.eol = eol;
+    }
 }
