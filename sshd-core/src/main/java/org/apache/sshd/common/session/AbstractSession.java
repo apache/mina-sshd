@@ -140,6 +140,8 @@ public abstract class AbstractSession implements Session {
     protected final Map<AttributeKey<?>, Object> attributes = new ConcurrentHashMap<AttributeKey<?>, Object>();
     protected String username;
 
+    private State state = State.ReceiveKexInit;
+
     /**
      * Create a new session.
      *
@@ -191,6 +193,18 @@ public abstract class AbstractSession implements Session {
      */
     public static final void attachSession(IoSession ioSession, AbstractSession session) {
         ioSession.setAttribute(SESSION, session);
+    }
+
+    public State getState() {
+        return state;
+    }
+
+    protected void setState(State state) {
+        this.state = state;
+        final ArrayList<SessionListener> l = new ArrayList<SessionListener>(listeners);
+        for (SessionListener sl : l) {
+            sl.sessionChanged(this);
+        }
     }
 
     /**
@@ -290,12 +304,10 @@ public abstract class AbstractSession implements Session {
                     closeFuture.setClosed();
                     lock.notifyAll();
                 }
-
+                state = State.Closed;
                 log.info("Session {}@{} closed", s.getUsername(), s.getIoSession().getRemoteAddress());
                 // Fire 'close' event
-                final ArrayList<SessionListener> l =
-                        new ArrayList<SessionListener>(listeners);
-
+                final ArrayList<SessionListener> l = new ArrayList<SessionListener>(listeners);
                 for (SessionListener sl : l) {
                     sl.sessionClosed(s);
                 }

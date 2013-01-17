@@ -62,11 +62,6 @@ import org.apache.sshd.server.channel.OpenChannelException;
  */
 public class ClientSessionImpl extends AbstractSession implements ClientSession {
 
-    public enum State {
-        ReceiveKexInit, Kex, ReceiveNewKeys, AuthRequestSent, WaitForAuth, UserAuth, Running, Unknown
-    }
-
-    private State state = State.ReceiveKexInit;
     private UserAuth userAuth;
     private AuthFuture authFuture;
     private final TcpipForwarder tcpipForward;
@@ -113,7 +108,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
             }
             authFuture = new DefaultAuthFuture(lock);
             userAuth = new UserAuthAgent(this, username);
-            setState(ClientSessionImpl.State.UserAuth);
+            setState(State.UserAuth);
 
             switch (userAuth.next(null)) {
                 case Success:
@@ -151,7 +146,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
             }
             authFuture = new DefaultAuthFuture(lock);
             userAuth = new UserAuthPassword(this, username, password);
-            setState(ClientSessionImpl.State.UserAuth);
+            setState(State.UserAuth);
 
             switch (userAuth.next(null)) {
                 case Success:
@@ -189,7 +184,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
             }
             authFuture = new DefaultAuthFuture(lock);
             userAuth = new UserAuthPublicKey(this, username, key);
-            setState(ClientSessionImpl.State.UserAuth);
+            setState(State.UserAuth);
 
             switch (userAuth.next(null)) {
                 case Success:
@@ -334,7 +329,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
                 log.info("Received SSH_MSG_IGNORE");
                 break;
             default:
-                switch (state) {
+                switch (getState()) {
                     case ReceiveKexInit:
                         if (cmd != SshConstants.Message.SSH_MSG_KEXINIT) {
                             log.error("Ignoring command " + cmd + " while waiting for " + SshConstants.Message.SSH_MSG_KEXINIT);
@@ -441,7 +436,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
                         }
                         break;
                     default:
-                        throw new IllegalStateException("Unsupported state: " + state);
+                        throw new IllegalStateException("Unsupported state: " + getState());
                 }
         }
     }
@@ -457,7 +452,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
                 if (authed) {
                     cond |= AUTHED;
                 }
-                if (state == State.WaitForAuth) {
+                if (getState() == State.WaitForAuth) {
                     cond |= WAIT_AUTH;
                 }
                 if ((cond & mask) != 0) {
@@ -489,7 +484,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
 
     public void setState(State newState) {
         synchronized (lock) {
-            this.state = newState;
+            super.setState(newState);
             lock.notifyAll();
         }
     }

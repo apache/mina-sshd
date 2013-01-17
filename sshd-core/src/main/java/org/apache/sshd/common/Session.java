@@ -30,6 +30,17 @@ import org.apache.sshd.common.util.Buffer;
  */
 public interface Session {
 
+    public enum State {
+        ReceiveKexInit, Kex, ReceiveNewKeys, AuthRequestSent, WaitForAuth, UserAuth, Running, Closed
+    }
+
+    /**
+     * Retrieve the state of this session.
+     * @return the session's state
+     * @see SessionListener
+     */
+    State getState();
+
     /**
      * Returns the value of the user-defined attribute of this session.
      *

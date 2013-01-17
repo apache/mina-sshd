@@ -25,8 +25,23 @@ package org.apache.sshd.common;
  */
 public interface SessionListener {
 
+    /**
+     * A new session just been created
+     * @param session
+     */
     void sessionCreated(Session session);
 
-    void sessionClosed(Session s);
+    /**
+     * A session state has changed
+     * @param session
+     * @see org.apache.sshd.common.Session#getState()
+     */
+    void sessionChanged(Session session);
+
+    /**
+     * A session has been closed
+     * @param session
+     */
+    void sessionClosed(Session session);
 
 }

@@ -61,7 +61,6 @@ public class ServerSession extends AbstractSession {
 
     private Future authTimerFuture;
     private Future idleTimerFuture;
-    private State state = State.ReceiveKexInit;
     private int maxAuthRequests = 20;
     private int nbAuthRequests;
     private int authTimeout = 10 * 60 * 1000; // 10 minutes in milliseconds
@@ -75,10 +74,6 @@ public class ServerSession extends AbstractSession {
     private HandshakingUserAuth currentAuth;
 
     private List<NamedFactory<UserAuth>> userAuthFactories;
-
-    private enum State {
-        ReceiveKexInit, Kex, ReceiveNewKeys, WaitingUserAuth, UserAuth, Running, Unknown
-    }
 
     public ServerSession(FactoryManager server, IoSession ioSession) throws Exception {
         super(server, ioSession);
@@ -150,7 +145,7 @@ public class ServerSession extends AbstractSession {
                 log.debug("Received SSH_MSG_IGNORE");
                 break;
             default:
-                switch (state) {
+                switch (getState()) {
                     case ReceiveKexInit:
                         if (cmd != SshConstants.Message.SSH_MSG_KEXINIT) {
                             log.warn("Ignoring command " + cmd + " while waiting for " + SshConstants.Message.SSH_MSG_KEXINIT);
@@ -161,13 +156,13 @@ public class ServerSession extends AbstractSession {
                         negociate();
                         kex = NamedFactory.Utils.create(factoryManager.getKeyExchangeFactories(), negociated[SshConstants.PROPOSAL_KEX_ALGS]);
                         kex.init(this, serverVersion.getBytes(), clientVersion.getBytes(), I_S, I_C);
-                        state = State.Kex;
+                        setState(State.Kex);
                         break;
                     case Kex:
                         buffer.rpos(buffer.rpos() - 1);
                         if (kex.next(buffer)) {
                             sendNewKeys();
-                            state = State.ReceiveNewKeys;
+                            setState(State.ReceiveNewKeys);
                         }
                         break;
                     case ReceiveNewKeys:
@@ -177,10 +172,10 @@ public class ServerSession extends AbstractSession {
                         }
                         log.debug("Received SSH_MSG_NEWKEYS");
                         receiveNewKeys(true);
-                        state = State.WaitingUserAuth;
+                        setState(State.WaitForAuth);
                         scheduleAuthTimer();
                         break;
-                    case WaitingUserAuth:
+                    case WaitForAuth:
                         if (cmd != SshConstants.Message.SSH_MSG_SERVICE_REQUEST) {
                             log.debug("Expecting a {}, but received {}", SshConstants.Message.SSH_MSG_SERVICE_REQUEST, cmd);
                             notImplemented();
@@ -208,7 +203,7 @@ public class ServerSession extends AbstractSession {
                         scheduleIdleTimer();
                         break;
                     default:
-                        throw new IllegalStateException("Unsupported state: " + state);
+                        throw new IllegalStateException("Unsupported state: " + getState());
                 }
         }
     }
@@ -364,14 +359,14 @@ public class ServerSession extends AbstractSession {
     }
 
     private void userAuth(Buffer buffer, SshConstants.Message cmd) throws Exception {
-        if (state == State.WaitingUserAuth) {
+        if (getState() == State.WaitForAuth) {
             log.debug("Accepting user authentication request");
             buffer = createBuffer(SshConstants.Message.SSH_MSG_SERVICE_ACCEPT, 0);
             buffer.putString("ssh-userauth");
             writePacket(buffer);
             userAuthFactories = new ArrayList<NamedFactory<UserAuth>>(getServerFactoryManager().getUserAuthFactories());
             log.debug("Authorized authentication methods: {}", NamedFactory.Utils.getNames(userAuthFactories));
-            state = State.UserAuth;
+            setState(State.UserAuth);
         } else {
             if (nbAuthRequests++ > maxAuthRequests) {
                 throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "Too may authentication failures");
@@ -463,7 +458,7 @@ public class ServerSession extends AbstractSession {
 
                 buffer = createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_SUCCESS, 0);
                 writePacket(buffer);
-                state = State.Running;
+                setState(State.Running);
                 this.authed = true;
                 this.username = username;
                 unscheduleAuthTimer();
