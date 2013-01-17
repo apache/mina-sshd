@@ -614,4 +614,12 @@ public class ServerSession extends AbstractSession {
         return x11Forward.createDisplay(singleConnection, authenticationProtocol, authenticationCookie, screen);
     }
 
+	/**
+	 * Returns the session id.
+	 * 
+	 * @return The session id.
+	 */
+	public long getId() {
+		return ioSession.getId();
+	}
 }

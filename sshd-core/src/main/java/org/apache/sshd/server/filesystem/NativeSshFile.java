@@ -19,6 +19,8 @@
 
 package org.apache.sshd.server.filesystem;
 
+import org.apache.sshd.server.filesystem.NameEqualsFileFilter;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -57,11 +59,15 @@ public class NativeSshFile implements SshFile {
 
     private String userName;
 
+	private final NativeFileSystemView nativeFileSystemView;
+
     /**
      * Constructor, internal do not use directly.
+     * @param nativeFileSystemView 
      */
-    protected NativeSshFile(final String fileName, final File file,
+    protected NativeSshFile(final NativeFileSystemView nativeFileSystemView, final String fileName, final File file,
             final String userName) {
+        this.nativeFileSystemView = nativeFileSystemView;
         if (fileName == null) {
             throw new IllegalArgumentException("fileName can not be null");
         }
@@ -249,7 +255,7 @@ public class NativeSshFile implements SshFile {
         }
 
         // we check if the parent FileObject is writable.
-        NativeSshFile parentObject = new NativeSshFile(parentFullName, file
+        NativeSshFile parentObject = nativeFileSystemView.createNativeSshFile(parentFullName, file
                 .getAbsoluteFile().getParentFile(), userName);
         return parentObject.isWritable();
     }
@@ -264,7 +270,7 @@ public class NativeSshFile implements SshFile {
         }
 
         // we check if the parent FileObject is writable.
-        return new NativeSshFile(parentFullName, file
+        return nativeFileSystemView.createNativeSshFile(parentFullName, file
                 .getAbsoluteFile().getParentFile(), userName);
     }
 
@@ -363,7 +369,7 @@ public class NativeSshFile implements SshFile {
         for (int i = 0; i < files.length; ++i) {
             File fileObj = files[i];
             String fileName = virtualFileStr + fileObj.getName();
-            virtualFiles[i] = new NativeSshFile(fileName, fileObj, userName);
+            virtualFiles[i] = nativeFileSystemView.createNativeSshFile(fileName, fileObj, userName);
         }
 
         return Collections.unmodifiableList(Arrays.asList(virtualFiles));
@@ -572,5 +578,14 @@ public class NativeSshFile implements SshFile {
             return thisCanonicalFile.equals(otherCanonicalFile);
         }
         return false;
+    }
+    
+    /**
+     * Returns the according physical file. Needed for logging, monitoring, event handling, etc.
+     * 
+     * @return The according physical file.
+     */
+    public File getPhysicalFile() {
+    	return file;
     }
 }

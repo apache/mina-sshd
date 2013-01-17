@@ -41,12 +41,14 @@
         <dependency>
             <groupId>org.apache.sshd</groupId>
             <artifactId>sshd-core</artifactId>
-            <version>0.9.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.sshd</groupId>
+            <artifactId>sshd-sftp</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.sshd</groupId>
             <artifactId>sshd-pam</artifactId>
-            <version>0.9.0-SNAPSHOT</version>
             <exclusions>
                 <exclusion>
                     <groupId>net.sf.jpam</groupId>

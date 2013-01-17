@@ -65,7 +65,7 @@ public class NativeFileSystemView implements FileSystemView {
 
         this.caseInsensitive = caseInsensitive;
 
-        currDir = System.getProperty("user.dir");
+        currDir = getVirtualUserDir();
         this.userName = userName;
 
         // add last '/' if necessary
@@ -85,12 +85,35 @@ public class NativeFileSystemView implements FileSystemView {
 
     protected SshFile getFile(String dir, String file) {
         // get actual file object
-        String physicalName = NativeSshFile.getPhysicalName("/",
+        String physicalName = NativeSshFile.getPhysicalName(getPhysicalUserDir(),
                 dir, file, caseInsensitive);
         File fileObj = new File(physicalName);
 
         // strip the root directory and return
-        String userFileName = physicalName.substring("/".length() - 1);
-        return new NativeSshFile(userFileName, fileObj, userName);
+        String userFileName = physicalName.substring(getPhysicalUserDir().length() - 1);
+        return createNativeSshFile(userFileName, fileObj, userName);
     }
+
+    /**
+     * Returns the physical user directory, for accessing the according files or directories.
+     *  
+     * @return The physical user directory.
+     */
+    public String getPhysicalUserDir() {
+    	return "/";
+	}
+
+	/**
+	 * Returns the virtual user directory.
+	 * The will be shown in sftp client. It is relative to the physical user directory. 
+	 * 
+	 * @return The virtual user directory.
+	 */
+	public String getVirtualUserDir() {
+		return System.getProperty("user.dir");
+	}
+
+    public NativeSshFile createNativeSshFile(final String fileName2, final File fileObj,	final String userName2) {
+		return new NativeSshFile(this, fileName2, fileObj, userName2);
+	}
 }

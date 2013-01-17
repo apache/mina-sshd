@@ -28,12 +28,11 @@
     </parent>
 
     <groupId>org.apache.sshd</groupId>
-    <artifactId>sshd-pam</artifactId>
+    <artifactId>sshd-sftp</artifactId>
     <version>0.9.0-SNAPSHOT</version>
-    <name>Apache Mina SSHD :: PAM</name>
-    <!--
-    <packaging>bundle</packaging>
-    -->
+    <name>Apache Mina SSHD :: SFTP</name>
+    <packaging>jar</packaging>
+    <inceptionYear>2008</inceptionYear>
 
     <properties>
         <projectRoot>${basedir}/..</projectRoot>
@@ -44,37 +43,64 @@
             <groupId>org.apache.sshd</groupId>
             <artifactId>sshd-core</artifactId>
         </dependency>
-        <dependency>
-            <groupId>net.sf.jpam</groupId>
-            <artifactId>jpam</artifactId>
-        </dependency>
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/filtered-resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
         <plugins>
-            <!--
             <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
-                <version>1.4.3</version>
-                <extensions>true</extensions>
                 <configuration>
                     <instructions>
-                        <Bundle-SymbolicName>org.apache.sshd.pam</Bundle-SymbolicName>
+                        <Bundle-SymbolicName>org.apache.sshd.core</Bundle-SymbolicName>
                         <Import-Package>
+                            org.apache.mina*;version="[2,3)",
                             com.jcraft.jzlib*;resolution:=optional,
-                            net.sf.jpam*;resolution:=optional,
                             org.bouncycastle*;resolution:=optional,
+                            org.apache.tomcat.jni*;resolution:=optional,
                             *
                         </Import-Package>
                         <Export-Package>
-                            org.apache.sshd*;version=${version};-noimport:=true
+                            org.apache.sshd*;version=${project.version};-noimport:=true
                         </Export-Package>
+                        <_versionpolicy>[$(version;==;$(@)),$(version;+;$(@)))</_versionpolicy>
                     </instructions>
                     <unpackBundle>true</unpackBundle>
                 </configuration>
+                <executions>
+                    <execution>
+                        <id>bundle-manifest</id>
+                        <phase>process-classes</phase>
+                        <goals>
+                            <goal>manifest</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
-            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>2.1</version>
+                <configuration>
+                    <archive>
+                        <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+                    </archive>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <redirectTestOutputToFile>true</redirectTestOutputToFile>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
+
 </project>

@@ -85,6 +85,21 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
+                <groupId>org.apache.sshd</groupId>
+                <artifactId>sshd-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.sshd</groupId>
+                <artifactId>sshd-pam</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.sshd</groupId>
+                <artifactId>sshd-sftp</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.apache.mina</groupId>
                 <artifactId>mina-core</artifactId>
                 <version>2.0.5</version>
@@ -230,6 +245,7 @@
     <modules>
         <module>sshd-core</module>
         <module>sshd-pam</module>
+        <module>sshd-sftp</module>
         <module>assembly</module>
     </modules>
 
