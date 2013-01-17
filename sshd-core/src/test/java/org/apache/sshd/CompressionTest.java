@@ -29,10 +29,11 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.compression.CompressionDelayedZlib;
 import org.apache.sshd.common.compression.CompressionNone;
 import org.apache.sshd.common.compression.CompressionZlib;
-import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
+import org.apache.sshd.util.Utils;
 import org.junit.After;
+
 import static org.junit.Assert.assertEquals;
 import org.junit.Test;
 
@@ -67,7 +68,7 @@ public class CompressionTest {
     protected void setUp(NamedFactory<org.apache.sshd.common.Compression> compression) throws Exception {
         sshd = SshServer.setUpDefaultServer();
         sshd.setPort(8000);
-        sshd.setKeyPairProvider(new FileKeyPairProvider(new String[] { "src/test/resources/hostkey.pem" }));
+        sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setCompressionFactories(Arrays.<NamedFactory<org.apache.sshd.common.Compression>>asList(compression));
         sshd.setShellFactory(new EchoShellFactory());
         sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());

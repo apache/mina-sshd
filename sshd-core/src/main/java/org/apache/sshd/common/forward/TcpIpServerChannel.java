@@ -16,11 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.client.session;
-
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.ConnectException;
+package org.apache.sshd.common.forward;
 
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.future.ConnectFuture;
@@ -30,12 +26,9 @@ import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.transport.socket.nio.NioSocketConnector;
-import org.apache.sshd.client.SshdSocketAddress;
 import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
-import org.apache.sshd.common.Channel;
-import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.*;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFuture;
@@ -44,32 +37,53 @@ import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.server.channel.AbstractServerChannel;
 import org.apache.sshd.server.channel.OpenChannelException;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.ConnectException;
+
 /**
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ChannelForwardedTcpip extends AbstractServerChannel {
+public class TcpipServerChannel extends AbstractServerChannel {
 
-    public static class Factory implements NamedFactory<Channel> {
+    public static class DirectTcpipFactory implements NamedFactory<Channel> {
+
+        public String getName() {
+            return "direct-tcpip";
+        }
+
+        public Channel create() {
+            return new TcpipServerChannel(Type.Direct);
+        }
+    }
+
+    public static class ForwardedTcpipFactory implements NamedFactory<Channel> {
 
         public String getName() {
             return "forwarded-tcpip";
         }
 
         public Channel create() {
-            return new ChannelForwardedTcpip();
+            return new TcpipServerChannel(Type.Forwarded);
         }
     }
 
+    private enum Type {
+        Direct,
+        Forwarded
+    }
+
+    private final Type type;
     private IoConnector connector;
     private IoSession ioSession;
     private OutputStream out;
 
-    public ChannelForwardedTcpip() {
+    public TcpipServerChannel(Type type) {
+        this.type = type;
     }
 
-    @Override
     protected OpenFuture doInit(Buffer buffer) {
         final OpenFuture f = new DefaultOpenFuture(this);
 
@@ -80,19 +94,19 @@ public class ChannelForwardedTcpip extends AbstractServerChannel {
         log.info("Receiving request for direct tcpip: hostToConnect={}, portToConnect={}, originatorIpAddress={}, originatorPort={}",
                 new Object[] { hostToConnect, portToConnect, originatorIpAddress, originatorPort });
 
-        final ClientSessionImpl clientSession = (ClientSessionImpl)getSession();
-        SshdSocketAddress address;
-        try {
-            address = clientSession.getForwardedPort(portToConnect);
-        } catch (RuntimeException e) {
-            address = null;
+
+        SshdSocketAddress address = null;
+        switch (type) {
+            case Direct:    address = new SshdSocketAddress(hostToConnect, portToConnect); break;
+            case Forwarded: address = getSession().getTcpipForwarder().getForwardedPort(portToConnect); break;
         }
-        //final ForwardingFilter filter = clientSession.getClientFactoryManager().getForwardingFilter();
-        if (address == null /*|| filter == null || !filter.canConnect(address, serverSession)*/) {
+        final ForwardingFilter filter = getSession().getFactoryManager().getTcpipForwardingFilter();
+        if (address == null || filter == null || !filter.canConnect(address, getSession())) {
             super.close(true);
-            f.setException(new OpenChannelException(SshConstants.SSH_OPEN_ADMINISTRATIVELY_PROHIBITED, "connect denied"));
+            f.setException(new OpenChannelException(SshConstants.SSH_OPEN_ADMINISTRATIVELY_PROHIBITED, "Connection denied"));
             return f;
         }
+
 
         connector = new NioSocketConnector();
         out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.Message.SSH_MSG_CHANNEL_DATA);
@@ -125,9 +139,9 @@ public class ChannelForwardedTcpip extends AbstractServerChannel {
                     closeImmediately0();
                     if (future.getException() instanceof ConnectException) {
                         f.setException(new OpenChannelException(
-                                SshConstants.SSH_OPEN_CONNECT_FAILED,
-                                future.getException().getMessage(),
-                                future.getException()));
+                            SshConstants.SSH_OPEN_CONNECT_FAILED,
+                            future.getException().getMessage(),
+                            future.getException()));
                     } else {
                         f.setException(future.getException());
                     }
@@ -151,7 +165,7 @@ public class ChannelForwardedTcpip extends AbstractServerChannel {
         // causes deadlock.  Instead create a new thread to dispose of the
         // connector in the background.
         //
-        new Thread("ChannelDirectTcpip-ConnectorCleanup") {
+        new Thread("TcpIpServerChannel-ConnectorCleanup") {
             @Override
             public void run() {
                 connector.dispose();
@@ -181,7 +195,7 @@ public class ChannelForwardedTcpip extends AbstractServerChannel {
     }
 
     protected void doWriteExtendedData(byte[] data, int off, int len) throws IOException {
-        throw new UnsupportedOperationException("DirectTcpip channel does not support extended data");
+        throw new UnsupportedOperationException(type + "Tcpip channel does not support extended data");
     }
 
     public void handleRequest(Buffer buffer) throws IOException {
@@ -192,5 +206,4 @@ public class ChannelForwardedTcpip extends AbstractServerChannel {
         buffer.putInt(recipient);
         session.writePacket(buffer);
     }
-
 }

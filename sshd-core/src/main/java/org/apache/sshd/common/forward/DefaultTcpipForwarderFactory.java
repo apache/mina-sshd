@@ -16,15 +16,22 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.client.session;
+package org.apache.sshd.common.forward;
 
-import org.apache.sshd.ClientSession;
+import org.apache.sshd.common.Session;
+import org.apache.sshd.common.TcpipForwarder;
+import org.apache.sshd.common.TcpipForwarderFactory;
 
-public class DefaultTcpipForwarderFactory
-      implements TcpipForwarderFactory
+/**
+ * The default {link TcpipForwarderFactory} implementation.
+ *
+ * @see DefaultTcpipForwarder
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ */
+public class DefaultTcpipForwarderFactory implements TcpipForwarderFactory
 {
-   public TcpipForwarder createTcpipForwarder( ClientSession clientsession )
+   public TcpipForwarder create( Session session )
    {
-      return new TcpipForwardSupport( clientsession );
+      return new DefaultTcpipForwarder( session );
    }
 }

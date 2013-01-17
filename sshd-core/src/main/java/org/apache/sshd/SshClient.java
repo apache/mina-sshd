@@ -45,10 +45,9 @@ import org.apache.sshd.client.future.ConnectFuture;
 import org.apache.sshd.client.future.DefaultConnectFuture;
 import org.apache.sshd.client.kex.DHG1;
 import org.apache.sshd.client.kex.DHG14;
-import org.apache.sshd.client.session.ChannelForwardedTcpip;
 import org.apache.sshd.client.session.ClientSessionImpl;
-import org.apache.sshd.client.session.DefaultTcpipForwarderFactory;
-import org.apache.sshd.client.session.TcpipForwarderFactory;
+import org.apache.sshd.common.forward.DefaultTcpipForwarderFactory;
+import org.apache.sshd.common.TcpipForwarderFactory;
 import org.apache.sshd.common.AbstractFactoryManager;
 import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.Cipher;
@@ -69,6 +68,7 @@ import org.apache.sshd.common.cipher.BlowfishCBC;
 import org.apache.sshd.common.cipher.TripleDESCBC;
 import org.apache.sshd.common.compression.CompressionNone;
 import org.apache.sshd.common.forward.DefaultForwardingAcceptorFactory;
+import org.apache.sshd.common.forward.TcpipServerChannel;
 import org.apache.sshd.common.mac.HMACMD5;
 import org.apache.sshd.common.mac.HMACMD596;
 import org.apache.sshd.common.mac.HMACSHA1;
@@ -135,7 +135,6 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     protected SessionFactory sessionFactory;
 
     private ServerKeyVerifier serverKeyVerifier;
-    private TcpipForwarderFactory tcpipForwarderFactory;
 
     public SshClient() {
     }
@@ -156,14 +155,6 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         this.serverKeyVerifier = serverKeyVerifier;
     }
 
-    public TcpipForwarderFactory getTcpipForwarderFactory() {
-       return tcpipForwarderFactory;
-    }
-
-    public void setTcpipForwarderFactory(TcpipForwarderFactory tcpipForwarderFactory) {
-       this.tcpipForwarderFactory = tcpipForwarderFactory;
-    }
-
     protected void checkConfig() {
         if (getKeyExchangeFactories() == null) {
             throw new IllegalArgumentException("KeyExchangeFactories not set");
@@ -182,6 +173,9 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         }
         if (getRandomFactory() == null) {
             throw new IllegalArgumentException("RandomFactory not set");
+        }
+        if (getTcpipForwarderFactory() == null) {
+            throw new IllegalArgumentException("TcpipForwarderFactory not set");
         }
         if (getTcpipForwardingAcceptorFactory() == null) {
             throw new IllegalArgumentException("TcpipForwardingAcceptorFactory not set");
@@ -289,9 +283,9 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                 new SignatureDSA.Factory(),
                 new SignatureRSA.Factory()));
         client.setChannelFactories(Arrays.<NamedFactory<Channel>>asList(
-                new ChannelForwardedTcpip.Factory()));
+                new TcpipServerChannel.ForwardedTcpipFactory()));
         ForwardingAcceptorFactory faf = new DefaultForwardingAcceptorFactory();
-        client.setTcpipForwardNioSocketAcceptorFactory(faf);
+        client.setTcpipForwardingAcceptorFactory(faf);
         TcpipForwarderFactory tcpipForwarderFactory = new DefaultTcpipForwarderFactory();
         client.setTcpipForwarderFactory( tcpipForwarderFactory );
         return client;

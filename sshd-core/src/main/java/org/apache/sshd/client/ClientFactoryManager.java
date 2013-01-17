@@ -18,9 +18,8 @@
  */
 package org.apache.sshd.client;
 
-import org.apache.sshd.client.session.TcpipForwarderFactory;
+import org.apache.sshd.common.TcpipForwarderFactory;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.ForwardingAcceptorFactory;
 
 /**
  * The <code>ClientFactoryManager</code> enable the retrieval of additional

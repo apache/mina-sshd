@@ -22,7 +22,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
-import java.net.ServerSocket;
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.List;
@@ -34,15 +33,13 @@ import org.apache.sshd.agent.unix.AgentClient;
 import org.apache.sshd.agent.unix.AgentServer;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.common.KeyPairProvider;
-import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.Environment;
-import org.apache.sshd.util.BogusPasswordAuthenticator;
-import org.apache.sshd.util.BogusPublickeyAuthenticator;
-import org.apache.sshd.util.EchoShellFactory;
-import org.apache.sshd.util.TeePipedOutputStream;
+import org.apache.sshd.util.*;
 import org.junit.Test;
 
+import static org.apache.sshd.util.Utils.createTestKeyPairProvider;
+import static org.apache.sshd.util.Utils.getFreePort;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -68,7 +65,7 @@ public class AgentTest {
         assertNotNull(keys);
         assertEquals(0, keys.size());
 
-        KeyPair[] k = new FileKeyPairProvider(new String[] { "src/test/resources/hostkey.pem"}).loadKeys();
+        KeyPair[] k = Utils.createTestHostKeyProvider().loadKeys();
         client.addIdentity(k[0], "");
         keys = client.getIdentities();
         assertNotNull(keys);
@@ -96,12 +93,12 @@ public class AgentTest {
         ProxyAgentFactory agentFactory = new ProxyAgentFactory();
         LocalAgentFactory localAgentFactory = new LocalAgentFactory();
 
-        KeyPair pair = new FileKeyPairProvider(new String[] { "src/test/resources/dsaprivkey.pem" }).loadKey(KeyPairProvider.SSH_DSS);
+        KeyPair pair = createTestKeyPairProvider("dsaprivkey.pem").loadKey(KeyPairProvider.SSH_DSS);
         localAgentFactory.getAgent().addIdentity(pair, "smx");
 
         SshServer sshd1 = SshServer.setUpDefaultServer();
         sshd1.setPort(port1);
-        sshd1.setKeyPairProvider(new FileKeyPairProvider(new String[]{"src/test/resources/hostkey.pem"}));
+        sshd1.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd1.setShellFactory(shellFactory);
         sshd1.setPasswordAuthenticator(new BogusPasswordAuthenticator());
         sshd1.setPublickeyAuthenticator(new BogusPublickeyAuthenticator());
@@ -110,7 +107,7 @@ public class AgentTest {
 
         SshServer sshd2 = SshServer.setUpDefaultServer();
         sshd2.setPort(port2);
-        sshd2.setKeyPairProvider(new FileKeyPairProvider(new String[]{"src/test/resources/hostkey.pem"}));
+        sshd2.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd2.setShellFactory(new TestEchoShellFactory());
         sshd2.setPasswordAuthenticator(new BogusPasswordAuthenticator());
         sshd2.setPublickeyAuthenticator(new BogusPublickeyAuthenticator());
@@ -180,10 +177,4 @@ public class AgentTest {
         }
     }
 
-    private static int getFreePort() throws IOException {
-        ServerSocket s = new ServerSocket(0);
-        int port = s.getLocalPort();
-        s.close();
-        return port;
-    }
 }

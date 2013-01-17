@@ -30,13 +30,8 @@ import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.SshAgentFactory;
-import org.apache.sshd.common.Channel;
-import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.PtyMode;
-import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.*;
 import org.apache.sshd.common.channel.ChannelOutputStream;
-import org.apache.sshd.common.channel.ChannelPipedInputStream;
-import org.apache.sshd.common.channel.ChannelPipedOutputStream;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.future.SshFutureListener;
@@ -474,7 +469,7 @@ public class ChannelSession extends AbstractServerChannel {
         boolean wantReply = buffer.getBoolean();
 
         final ServerSession server = (ServerSession) session;
-        final ForwardingFilter filter = server.getServerFactoryManager().getForwardingFilter();
+        final ForwardingFilter filter = server.getServerFactoryManager().getTcpipForwardingFilter();
         final SshAgentFactory factory = server.getServerFactoryManager().getAgentFactory();
         if (factory == null || (filter != null && !filter.canForwardAgent(server))) {
             if (wantReply) {
@@ -500,7 +495,7 @@ public class ChannelSession extends AbstractServerChannel {
         boolean wantReply = buffer.getBoolean();
 
         final ServerSession server = (ServerSession) session;
-        final ForwardingFilter filter = server.getServerFactoryManager().getForwardingFilter();
+        final ForwardingFilter filter = server.getServerFactoryManager().getTcpipForwardingFilter();
         if (filter == null || !filter.canForwardX11(server)) {
             if (wantReply) {
                 buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_FAILURE, 0);

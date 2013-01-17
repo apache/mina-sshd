@@ -33,16 +33,13 @@ import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.CloseFuture;
-import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.BufferUtils;
 import org.apache.sshd.server.Command;
-import org.apache.sshd.util.BogusPasswordAuthenticator;
-import org.apache.sshd.util.BogusPublickeyAuthenticator;
-import org.apache.sshd.util.EchoShellFactory;
-import org.apache.sshd.util.TeePipedOutputStream;
+import org.apache.sshd.util.*;
 import org.junit.After;
+
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -67,7 +64,7 @@ public class ClientTest {
 
         sshd = SshServer.setUpDefaultServer();
         sshd.setPort(port);
-        sshd.setKeyPairProvider(new FileKeyPairProvider(new String[] { "src/test/resources/hostkey.pem" }));
+        sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setShellFactory(new TestEchoShellFactory());
         sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
         sshd.setPublickeyAuthenticator(new BogusPublickeyAuthenticator());
@@ -283,7 +280,7 @@ public class ClientTest {
         client.start();
         ClientSession session = client.connect("localhost", port).await().getSession();
 
-        KeyPair pair = new FileKeyPairProvider(new String[] { "src/test/resources/hostkey.pem" }).loadKey(KeyPairProvider.SSH_RSA);
+        KeyPair pair = Utils.createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
 
         assertTrue(session.authPublicKey("smx", pair).await().isSuccess());
     }

@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.future.IoFuture;
@@ -46,6 +47,8 @@ import org.apache.sshd.common.Session;
 import org.apache.sshd.common.SessionListener;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.forward.DefaultTcpipForwarder;
+import org.apache.sshd.common.TcpipForwarder;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.future.SshFuture;
@@ -84,6 +87,8 @@ public abstract class AbstractSession implements Session {
     protected final IoSession ioSession;
     /** The pseudo random generator */
     protected final Random random;
+    /** The tcpip forwarder */
+    protected final TcpipForwarder tcpipForwarder;
     /** Lock object for this session state */
     protected final Object lock = new Object();
     /**
@@ -136,7 +141,7 @@ public abstract class AbstractSession implements Session {
     protected final Object encodeLock = new Object();
     protected final Object decodeLock = new Object();
     protected final Object requestLock = new Object();
-    protected final AtomicBoolean requestResult = new AtomicBoolean();
+    protected final AtomicReference<Buffer> requestResult = new AtomicReference<Buffer>();
     protected final Map<AttributeKey<?>, Object> attributes = new ConcurrentHashMap<AttributeKey<?>, Object>();
     protected String username;
 
@@ -152,6 +157,7 @@ public abstract class AbstractSession implements Session {
         this.factoryManager = factoryManager;
         this.ioSession = ioSession;
         this.random = factoryManager.getRandomFactory().create();
+        this.tcpipForwarder = factoryManager.getTcpipForwarderFactory().create(this);
     }
 
     /**
@@ -313,6 +319,7 @@ public abstract class AbstractSession implements Session {
                 }
             }
         }
+        tcpipForwarder.close();
         synchronized (lock) {
             if (!closing) {
                 try {
@@ -373,7 +380,7 @@ public abstract class AbstractSession implements Session {
      * @return <code>true</code> if the request was successful, <code>false</code> otherwise.
      * @throws java.io.IOException if an error occured when encoding sending the packet
      */
-    public boolean request(Buffer buffer) throws IOException {
+    public Buffer request(Buffer buffer) throws IOException {
         synchronized (requestLock) {
             try {
                 synchronized (requestResult) {
@@ -947,14 +954,14 @@ public abstract class AbstractSession implements Session {
 
     protected void requestSuccess(Buffer buffer) throws Exception{
         synchronized (requestResult) {
-            requestResult.set(true);
+            requestResult.set(new Buffer(buffer.getCompactData()));
             requestResult.notify();
         }
     }
 
     protected void requestFailure(Buffer buffer) throws Exception{
         synchronized (requestResult) {
-            requestResult.set(false);
+            requestResult.set(null);
             requestResult.notify();
         }
     }
@@ -1164,5 +1171,12 @@ public abstract class AbstractSession implements Session {
         synchronized (this.listeners) {
             this.listeners.remove(listener);
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public TcpipForwarder getTcpipForwarder() {
+        return this.tcpipForwarder;
     }
 }

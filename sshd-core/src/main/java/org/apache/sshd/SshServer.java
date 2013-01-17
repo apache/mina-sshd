@@ -37,15 +37,8 @@ import org.apache.mina.core.service.IoAcceptor;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.session.IoSessionConfig;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
-import org.apache.sshd.common.AbstractFactoryManager;
-import org.apache.sshd.common.Channel;
-import org.apache.sshd.common.Cipher;
-import org.apache.sshd.common.Compression;
-import org.apache.sshd.common.Factory;
-import org.apache.sshd.common.KeyExchange;
-import org.apache.sshd.common.Mac;
-import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.Signature;
+import org.apache.sshd.common.SshdSocketAddress;
+import org.apache.sshd.common.*;
 import org.apache.sshd.common.cipher.AES128CBC;
 import org.apache.sshd.common.cipher.AES128CTR;
 import org.apache.sshd.common.cipher.AES192CBC;
@@ -56,6 +49,8 @@ import org.apache.sshd.common.cipher.ARCFOUR256;
 import org.apache.sshd.common.cipher.BlowfishCBC;
 import org.apache.sshd.common.cipher.TripleDESCBC;
 import org.apache.sshd.common.compression.CompressionNone;
+import org.apache.sshd.common.forward.DefaultTcpipForwarderFactory;
+import org.apache.sshd.common.forward.TcpipServerChannel;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.mac.HMACMD5;
@@ -73,8 +68,7 @@ import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.CommandFactory;
 import org.apache.sshd.server.FileSystemFactory;
-import org.apache.sshd.common.ForwardingAcceptorFactory;
-import org.apache.sshd.server.ForwardingFilter;
+import org.apache.sshd.common.ForwardingFilter;
 import org.apache.sshd.server.PasswordAuthenticator;
 import org.apache.sshd.server.PublickeyAuthenticator;
 import org.apache.sshd.server.ServerFactoryManager;
@@ -83,7 +77,6 @@ import org.apache.sshd.server.auth.UserAuthPassword;
 import org.apache.sshd.server.auth.UserAuthPublicKey;
 import org.apache.sshd.server.auth.gss.GSSAuthenticator;
 import org.apache.sshd.server.auth.gss.UserAuthGSS;
-import org.apache.sshd.server.channel.ChannelDirectTcpip;
 import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.filesystem.NativeFileSystemFactory;
 import org.apache.sshd.server.kex.DHG1;
@@ -139,7 +132,6 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     protected PasswordAuthenticator passwordAuthenticator;
     protected PublickeyAuthenticator publickeyAuthenticator;
     protected GSSAuthenticator gssAuthenticator;
-    protected ForwardingFilter forwardingFilter;
     protected ForwardingAcceptorFactory x11ForwardingAcceptorFactory;
 
     public SshServer() {
@@ -262,10 +254,6 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
       this.gssAuthenticator = gssAuthenticator;
     }
 
-    public ForwardingFilter getForwardingFilter() {
-        return forwardingFilter;
-    }
-
     public void setX11ForwardNioSocketAcceptorFactory(ForwardingAcceptorFactory f) {
         x11ForwardingAcceptorFactory = f;
     }
@@ -274,8 +262,8 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         return x11ForwardingAcceptorFactory;
     }
 
-    public void setForwardingFilter(ForwardingFilter forwardingFilter) {
-        this.forwardingFilter = forwardingFilter;
+    public void setTcpipForwardingFilter(ForwardingFilter forwardingFilter) {
+        this.tcpipForwardingFilter = forwardingFilter;
     }
 
     protected void checkConfig() {
@@ -487,14 +475,15 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
                 new HMACSHA196.Factory()));
         sshd.setChannelFactories(Arrays.<NamedFactory<Channel>>asList(
                 new ChannelSession.Factory(),
-                new ChannelDirectTcpip.Factory()));
+                new TcpipServerChannel.DirectTcpipFactory()));
         sshd.setSignatureFactories(Arrays.<NamedFactory<Signature>>asList(
                 new SignatureDSA.Factory(),
                 new SignatureRSA.Factory()));
         sshd.setFileSystemFactory(new NativeFileSystemFactory());
-        
+
+        sshd.setTcpipForwarderFactory(new DefaultTcpipForwarderFactory());
         ForwardingAcceptorFactory faf = new DefaultForwardingAcceptorFactory();
-        sshd.setTcpipForwardNioSocketAcceptorFactory(faf);
+        sshd.setTcpipForwardingAcceptorFactory(faf);
         sshd.setX11ForwardNioSocketAcceptorFactory(faf);
         
         return sshd;
@@ -585,20 +574,17 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
                 return true;
             }
         });
-        sshd.setForwardingFilter(new ForwardingFilter() {
-            public boolean canForwardAgent(ServerSession session) {
+        sshd.setTcpipForwardingFilter(new ForwardingFilter() {
+            public boolean canForwardAgent(Session session) {
                 return true;
             }
-
-            public boolean canForwardX11(ServerSession session) {
+            public boolean canForwardX11(Session session) {
                 return true;
             }
-
-            public boolean canListen(InetSocketAddress address, ServerSession session) {
+            public boolean canListen(SshdSocketAddress address, Session session) {
                 return true;
             }
-
-            public boolean canConnect(InetSocketAddress address, ServerSession session) {
+            public boolean canConnect(SshdSocketAddress address, Session session) {
                 return true;
             }
         });

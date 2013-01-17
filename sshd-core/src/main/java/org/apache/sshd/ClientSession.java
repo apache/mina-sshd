@@ -23,7 +23,7 @@ import java.security.KeyPair;
 import java.util.Map;
 
 import org.apache.sshd.client.ClientFactoryManager;
-import org.apache.sshd.client.SshdSocketAddress;
+import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.client.channel.ChannelDirectTcpip;
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ChannelShell;
@@ -109,7 +109,7 @@ public interface ClientSession extends Session {
     /**
      * Start forwarding the given local address on the client to the given address on the server.
      */
-    void startLocalPortForwarding(SshdSocketAddress local, SshdSocketAddress remote) throws Exception;
+    SshdSocketAddress startLocalPortForwarding(SshdSocketAddress local, SshdSocketAddress remote) throws Exception;
 
     /**
      * Stop forwarding the given local address.
@@ -133,7 +133,7 @@ public interface ClientSession extends Session {
      * </ul>
      *
      */
-    void startRemotePortForwarding(SshdSocketAddress remote, SshdSocketAddress local) throws Exception;
+    SshdSocketAddress startRemotePortForwarding(SshdSocketAddress remote, SshdSocketAddress local) throws Exception;
 
     /**
      * Stop forwarding of the given remote address.

@@ -16,9 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.client.session;
-
-import org.apache.sshd.ClientSession;
+package org.apache.sshd.common;
 
 /**
  * A factory for creating TcpipForwarder objects for client Port forwarding
@@ -29,9 +27,9 @@ public interface TcpipForwarderFactory {
      * Creates the TcpipForwarder to be used for TCP/IP port forwards for
      * this ClientSession.
      *
-     * @param clientsession the ClientSession the connections are forwarded through
+     * @param session the Session the connections are forwarded through
      * @return the TcpipForwarder that will listen for connections and set up forwarding
      */
-    public TcpipForwarder createTcpipForwarder(ClientSession clientsession);
+    public TcpipForwarder create(Session session);
 
 }

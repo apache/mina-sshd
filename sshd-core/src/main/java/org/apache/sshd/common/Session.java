@@ -104,6 +104,17 @@ public interface Session {
     WriteFuture writePacket(Buffer buffer) throws IOException;
 
     /**
+     * Send a global request and wait for the response.
+     * This must only be used when sending a SSH_MSG_GLOBAL_REQUEST with a result expected,
+     * else it will wait forever.
+     *
+     * @param buffer the buffer containing the global request
+     * @return the return buffer if the request was successful, <code>null</code> otherwise.
+     * @throws java.io.IOException if an error occurred when encoding sending the packet
+     */
+    Buffer request(Buffer buffer) throws IOException;
+
+    /**
      * Handle any exceptions that occured on this session.
      * The session will be closed and a disconnect packet will be
      * sent before if the given exception is an
@@ -143,6 +154,12 @@ public interface Session {
      * @param listener the session listener to remove
      */
     void removeListener(SessionListener listener);
+
+    /**
+     * Retrieve the tcpip forwarder
+     * @return
+     */
+    TcpipForwarder getTcpipForwarder();
 
     /**
      * Type safe key for storage within the user attributes of {@link org.apache.sshd.common.session.AbstractSession}.

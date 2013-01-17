@@ -18,10 +18,9 @@
  */
 package org.apache.sshd.util;
 
-import org.apache.sshd.server.ForwardingFilter;
-import org.apache.sshd.server.session.ServerSession;
-
-import java.net.InetSocketAddress;
+import org.apache.sshd.common.SshdSocketAddress;
+import org.apache.sshd.common.Session;
+import org.apache.sshd.common.ForwardingFilter;
 
 /**
  * TODO Add javadoc
@@ -29,19 +28,19 @@ import java.net.InetSocketAddress;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class BogusForwardingFilter implements ForwardingFilter {
-    public boolean canForwardAgent(ServerSession session) {
+    public boolean canForwardAgent(Session session) {
         return true;
     }
 
-    public boolean canForwardX11(ServerSession session) {
+    public boolean canForwardX11(Session session) {
         return true;
     }
 
-    public boolean canConnect(InetSocketAddress address, ServerSession session) {
+    public boolean canConnect(SshdSocketAddress address, Session session) {
         return true;
     }
 
-    public boolean canListen(InetSocketAddress address, ServerSession session) {
+    public boolean canListen(SshdSocketAddress address, Session session) {
         return true;
     }
 }

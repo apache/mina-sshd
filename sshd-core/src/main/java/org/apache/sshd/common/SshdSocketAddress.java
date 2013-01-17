@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.client;
+package org.apache.sshd.common;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -32,6 +32,12 @@ public class SshdSocketAddress extends SocketAddress {
     private final int port;
 
     public SshdSocketAddress(String hostName, int port) {
+        if (hostName == null) {
+            throw new IllegalArgumentException("HostName can not be null");
+        }
+        if (port < 0) {
+            throw new IllegalArgumentException("Port must be >= 0");
+        }
         this.hostName = hostName;
         this.port = port;
     }
@@ -45,6 +51,28 @@ public class SshdSocketAddress extends SocketAddress {
     }
 
     public InetSocketAddress toInetSocketAddress() {
-        return new InetSocketAddress(hostName, port);
+        return new InetSocketAddress(hostName.length() == 0 ? "0.0.0.0" : hostName, port);
+    }
+
+    @Override
+    public String toString() {
+        return hostName + ":" + port;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        SshdSocketAddress that = (SshdSocketAddress) o;
+        if (port != that.port) return false;
+        if (!hostName.equals(that.hostName)) return false;
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = hostName.hashCode();
+        result = 31 * result + port;
+        return result;
     }
 }

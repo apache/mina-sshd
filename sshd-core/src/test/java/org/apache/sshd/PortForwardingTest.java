@@ -20,10 +20,7 @@ package org.apache.sshd;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.URL;
+import java.net.*;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -46,14 +43,14 @@ import org.apache.mina.core.service.IoAcceptor;
 import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
-import org.apache.sshd.client.SshdSocketAddress;
+import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.client.channel.ChannelDirectTcpip;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.ConnectFuture;
-import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.util.BogusForwardingFilter;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
+import org.apache.sshd.util.Utils;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -61,6 +58,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.sshd.util.Utils.getFreePort;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -76,15 +74,6 @@ public class PortForwardingTest {
     private int echoPort;
     private IoAcceptor acceptor;
 
-    private static int getFreePort() throws Exception {
-        ServerSocket s = new ServerSocket(0);
-        try {
-            return s.getLocalPort();
-        } finally {
-            s.close();
-        }
-    }
-
     @Before
     public void setUp() throws Exception {
         sshPort = getFreePort();
@@ -92,10 +81,10 @@ public class PortForwardingTest {
 
         sshd = SshServer.setUpDefaultServer();
         sshd.setPort(sshPort);
-        sshd.setKeyPairProvider(new FileKeyPairProvider(new String[] { "src/test/resources/hostkey.pem" }));
+        sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setShellFactory(new EchoShellFactory());
         sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
-        sshd.setForwardingFilter(new BogusForwardingFilter());
+        sshd.setTcpipForwardingFilter(new BogusForwardingFilter());
         sshd.start();
 
         NioSocketAcceptor acceptor = new NioSocketAcceptor();
@@ -169,6 +158,27 @@ public class PortForwardingTest {
     }
 
     @Test
+    public void testRemoteForwardingNativeNoExplicitPort() throws Exception {
+        ClientSession session = createNativeSession();
+
+        SshdSocketAddress remote = new SshdSocketAddress("0.0.0.0", 0);
+        SshdSocketAddress local = new SshdSocketAddress("localhost", echoPort);
+
+        SshdSocketAddress bound = session.startRemotePortForwarding(remote, local);
+
+        Socket s = new Socket(bound.getHostName(), bound.getPort());
+        s.getOutputStream().write("Hello".getBytes());
+        s.getOutputStream().flush();
+        byte[] buf = new byte[1024];
+        int n = s.getInputStream().read(buf);
+        String res = new String(buf, 0, n);
+        assertEquals("Hello", res);
+        s.close();
+
+        session.stopRemotePortForwarding(bound);
+    }
+
+    @Test
     public void testLocalForwarding() throws Exception {
         Session session = createSession();
 
@@ -191,13 +201,12 @@ public class PortForwardingTest {
     public void testLocalForwardingNative() throws Exception {
         ClientSession session = createNativeSession();
 
-        int forwardedPort = getFreePort();
-        SshdSocketAddress local = new SshdSocketAddress("", forwardedPort);
+        SshdSocketAddress local = new SshdSocketAddress("", getFreePort());
         SshdSocketAddress remote = new SshdSocketAddress("localhost", echoPort);
 
-        session.startLocalPortForwarding(local, remote);
+        SshdSocketAddress bound = session.startLocalPortForwarding(local, remote);
 
-        Socket s = new Socket(local.getHostName(), local.getPort());
+        Socket s = new Socket(bound.getHostName(), bound.getPort());
         s.getOutputStream().write("Hello".getBytes());
         s.getOutputStream().flush();
         byte[] buf = new byte[1024];
@@ -206,7 +215,7 @@ public class PortForwardingTest {
         assertEquals("Hello", res);
         s.close();
 
-        session.stopLocalPortForwarding(local);
+        session.stopLocalPortForwarding(bound);
     }
 
     @Test
@@ -461,6 +470,7 @@ public class PortForwardingTest {
 
     protected ClientSession createNativeSession() throws Exception {
         SshClient client = SshClient.setUpDefaultClient();
+        client.setTcpipForwardingFilter(new BogusForwardingFilter());
         client.start();
         ConnectFuture sessionFuture = client.connect("localhost", sshPort);
         sessionFuture.await();

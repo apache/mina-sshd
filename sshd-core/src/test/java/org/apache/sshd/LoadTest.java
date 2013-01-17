@@ -32,11 +32,12 @@ import org.apache.sshd.common.Cipher;
 import org.apache.sshd.common.KeyExchange;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.cipher.BlowfishCBC;
-import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.TeePipedOutputStream;
+import org.apache.sshd.util.Utils;
 import org.junit.After;
+
 import static org.junit.Assert.assertArrayEquals;
 import org.junit.Before;
 import org.junit.Test;
@@ -54,7 +55,7 @@ public class LoadTest {
 
         sshd = SshServer.setUpDefaultServer();
         sshd.setPort(port);
-        sshd.setKeyPairProvider(new FileKeyPairProvider(new String[] { "src/test/resources/hostkey.pem" }));
+        sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setShellFactory(new EchoShellFactory());
         sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
         sshd.start();

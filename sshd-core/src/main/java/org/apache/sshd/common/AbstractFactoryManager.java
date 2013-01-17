@@ -26,7 +26,6 @@ import java.util.Properties;
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.apache.sshd.agent.SshAgentFactory;
-import org.apache.sshd.common.ForwardingAcceptorFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,7 +51,9 @@ public abstract class AbstractFactoryManager implements FactoryManager {
     protected SshAgentFactory agentFactory;
     protected ScheduledExecutorService executor;
     protected boolean shutdownExecutor;
+    protected TcpipForwarderFactory tcpipForwarderFactory;
     protected ForwardingAcceptorFactory tcpipForwardingAcceptorFactory;
+    protected ForwardingFilter tcpipForwardingFilter;
 
     protected AbstractFactoryManager() {
         loadVersion();
@@ -190,11 +191,27 @@ public abstract class AbstractFactoryManager implements FactoryManager {
         this.shutdownExecutor = shutdownExecutor;
     }
 
+    public TcpipForwarderFactory getTcpipForwarderFactory() {
+        return tcpipForwarderFactory;
+    }
+
+    public void setTcpipForwarderFactory(TcpipForwarderFactory tcpipForwarderFactory) {
+        this.tcpipForwarderFactory = tcpipForwarderFactory;
+    }
+
     public ForwardingAcceptorFactory getTcpipForwardingAcceptorFactory() {
         return tcpipForwardingAcceptorFactory;
     }
 
-    public void setTcpipForwardNioSocketAcceptorFactory(ForwardingAcceptorFactory f) {
+    public void setTcpipForwardingAcceptorFactory(ForwardingAcceptorFactory f) {
         tcpipForwardingAcceptorFactory = f;
+    }
+
+    public ForwardingFilter getTcpipForwardingFilter() {
+        return tcpipForwardingFilter;
+    }
+
+    public void setTcpipForwardingFilter(ForwardingFilter tcpipForwardingFilter) {
+        this.tcpipForwardingFilter = tcpipForwardingFilter;
     }
 }

@@ -16,12 +16,9 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.server;
+package org.apache.sshd.common;
 
 import org.apache.sshd.agent.SshAgent;
-import org.apache.sshd.server.session.ServerSession;
-
-import java.net.InetSocketAddress;
 
 /**
  * Determines if a forwarding request will be permitted.
@@ -39,7 +36,7 @@ public interface ForwardingFilter {
      * @param session session requesting permission to forward the agent.
      * @return true if the agent forwarding is permitted, false if denied.
      */
-    boolean canForwardAgent(ServerSession session);
+    boolean canForwardAgent(Session session);
 
     /**
      * Determine if the session may arrange for X11 forwarding.
@@ -51,7 +48,7 @@ public interface ForwardingFilter {
      * @param session session requesting permission to forward X11 connections.
      * @return true if the X11 forwarding is permitted, false if denied.
      */
-    boolean canForwardX11(ServerSession session);
+    boolean canForwardX11(Session session);
 
     /**
      * Determine if the session may listen for inbound connections.
@@ -67,7 +64,7 @@ public interface ForwardingFilter {
      * @param session session requesting permission to listen for connections.
      * @return true if the socket is permitted; false if it must be denied.
      */
-    boolean canListen(InetSocketAddress address, ServerSession session);
+    boolean canListen(SshdSocketAddress address, Session session);
 
     /**
      * Determine if the session may create an outbound connection.
@@ -82,5 +79,5 @@ public interface ForwardingFilter {
      * @param session session requesting permission to listen for connections.
      * @return true if the socket is permitted; false if it must be denied.
      */
-    boolean canConnect(InetSocketAddress address, ServerSession session);
+    boolean canConnect(SshdSocketAddress address, Session session);
 }

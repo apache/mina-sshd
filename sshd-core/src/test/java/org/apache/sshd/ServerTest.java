@@ -25,11 +25,11 @@ import org.apache.mina.core.session.IoSession;
 import org.apache.sshd.client.SessionFactory;
 import org.apache.sshd.client.session.ClientSessionImpl;
 import org.apache.sshd.common.SshConstants;
-import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.server.command.ScpCommandFactory;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
+import org.apache.sshd.util.Utils;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -54,7 +54,7 @@ public class ServerTest {
 
         sshd = SshServer.setUpDefaultServer();
         sshd.setPort(port);
-        sshd.setKeyPairProvider(new FileKeyPairProvider(new String[] { "src/test/resources/hostkey.pem" }));
+        sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setShellFactory(new EchoShellFactory());
         sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
         sshd.start();
@@ -130,7 +130,7 @@ public class ServerTest {
     public static void main(String[] args) throws Exception {
         SshServer sshd = SshServer.setUpDefaultServer();
         sshd.setPort(8001);
-        sshd.setKeyPairProvider(new FileKeyPairProvider(new String[] { "src/test/resources/hostkey.pem" }));
+        sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setShellFactory(new EchoShellFactory());
         sshd.setCommandFactory(new ScpCommandFactory());
         sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());

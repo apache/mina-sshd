@@ -25,13 +25,9 @@ import java.net.ServerSocket;
 import java.util.concurrent.CountDownLatch;
 
 import org.apache.sshd.client.ClientFactoryManager;
-import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.ServerFactoryManager;
-import org.apache.sshd.util.BogusPasswordAuthenticator;
-import org.apache.sshd.util.BogusPublickeyAuthenticator;
-import org.apache.sshd.util.EchoShellFactory;
-import org.apache.sshd.util.TeePipedOutputStream;
+import org.apache.sshd.util.*;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -57,7 +53,7 @@ public class KeepAliveTest {
         sshd = SshServer.setUpDefaultServer();
         sshd.getProperties().put(ServerFactoryManager.IDLE_TIMEOUT, "1000");
         sshd.setPort(port);
-        sshd.setKeyPairProvider(new FileKeyPairProvider(new String[] { "src/test/resources/hostkey.pem" }));
+        sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setShellFactory(new TestEchoShellFactory());
         sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
         sshd.setPublickeyAuthenticator(new BogusPublickeyAuthenticator());

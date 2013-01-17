@@ -33,10 +33,10 @@ import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Logger;
 import com.jcraft.jsch.UserInfo;
-import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.server.command.ScpCommandFactory;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
+import org.apache.sshd.util.Utils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -65,7 +65,7 @@ public class ScpTest {
 
         sshd = SshServer.setUpDefaultServer();
         sshd.setPort(port);
-        sshd.setKeyPairProvider(new FileKeyPairProvider(new String[] { "src/test/resources/hostkey.pem" }));
+        sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setCommandFactory(new ScpCommandFactory());
         sshd.setShellFactory(new EchoShellFactory());
         sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());

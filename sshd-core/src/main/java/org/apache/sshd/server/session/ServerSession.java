@@ -19,9 +19,12 @@
 package org.apache.sshd.server.session;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.security.KeyPair;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -29,12 +32,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.mina.core.session.IoSession;
 import org.apache.sshd.agent.common.AgentForwardSupport;
 import org.apache.sshd.client.future.OpenFuture;
-import org.apache.sshd.common.Channel;
-import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.KeyExchange;
-import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.SshConstants;
-import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.*;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.session.AbstractSession;
@@ -66,7 +64,6 @@ public class ServerSession extends AbstractSession {
     private int authTimeout = 10 * 60 * 1000; // 10 minutes in milliseconds
     private int idleTimeout = 10 * 60 * 1000; // 10 minutes in milliseconds
     private boolean allowMoreSessions = true;
-    private final TcpipForwardSupport tcpipForward;
     private final AgentForwardSupport agentForward;
     private final X11ForwardSupport x11Forward;
     private String welcomeBanner = null;
@@ -80,7 +77,6 @@ public class ServerSession extends AbstractSession {
         maxAuthRequests = getIntProperty(ServerFactoryManager.MAX_AUTH_REQUESTS, maxAuthRequests);
         authTimeout = getIntProperty(ServerFactoryManager.AUTH_TIMEOUT, authTimeout);
         idleTimeout = getIntProperty(ServerFactoryManager.IDLE_TIMEOUT, idleTimeout);
-        tcpipForward = new TcpipForwardSupport(this);
         agentForward = new AgentForwardSupport(this);
         x11Forward = new X11ForwardSupport(this);
         welcomeBanner = factoryManager.getProperties().get(ServerFactoryManager.WELCOME_BANNER);
@@ -93,7 +89,6 @@ public class ServerSession extends AbstractSession {
     public CloseFuture close(boolean immediately) {
         unscheduleAuthTimer();
         unscheduleIdleTimer();
-        tcpipForward.close();
         agentForward.close();
         x11Forward.close();
         return super.close(immediately);
@@ -575,10 +570,31 @@ public class ServerSession extends AbstractSession {
         } else if (req.equals("no-more-sessions@openssh.com")) {
             allowMoreSessions = false;
         } else if (req.equals("tcpip-forward")) {
-            tcpipForward.request(buffer, wantReply);
+            String address = buffer.getString();
+            int port = buffer.getInt();
+            try {
+                SshdSocketAddress bound = getTcpipForwarder().localPortForwardingRequested(new SshdSocketAddress(address, port));
+                port = bound.getPort();
+                if (wantReply){
+                    buffer = createBuffer(SshConstants.Message.SSH_MSG_REQUEST_SUCCESS, 0);
+                    buffer.putInt(port);
+                    writePacket(buffer);
+                }
+            } catch (Exception e) {
+                if (wantReply) {
+                    buffer = createBuffer(SshConstants.Message.SSH_MSG_REQUEST_FAILURE, 0);
+                    writePacket(buffer);
+                }
+            }
             return;
         } else if (req.equals("cancel-tcpip-forward")) {
-            tcpipForward.cancel(buffer, wantReply);
+            String address = buffer.getString();
+            int port = buffer.getInt();
+            getTcpipForwarder().localPortForwardingCancelled(new SshdSocketAddress(address, port));
+            if (wantReply){
+                buffer = createBuffer(SshConstants.Message.SSH_MSG_REQUEST_SUCCESS, 0);
+                writePacket(buffer);
+            }
             return;
         } else {
             log.debug("Received SSH_MSG_GLOBAL_REQUEST {}", req);

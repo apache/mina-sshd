@@ -105,15 +105,6 @@ public interface ServerFactoryManager extends FactoryManager {
     GSSAuthenticator getGSSAuthenticator();
 
     /**
-     * Retrieve the <code>ForwardingFilter</code> to be used by the SSH server.
-     * If no filter has been configured (i.e. this method returns
-     * <code>null</code>), then all forwarding requests will be rejected.
-     *
-     * @return the <code>ForwardingFilter</code> or <code>null</code>
-     */
-    ForwardingFilter getForwardingFilter();
-
-    /**
      * Retrieve the <code>ShellFactory</code> object to be used to create shells.
      *
      * @return a valid <code>ShellFactory</code> object or <code>null</code> if shells

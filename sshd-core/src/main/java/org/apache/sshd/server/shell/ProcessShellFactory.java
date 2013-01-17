@@ -130,7 +130,11 @@ public class ProcessShellFactory implements Factory<Command> {
         }
 
         public int exitValue() {
-            return process.exitValue();
+            try {
+                return process.waitFor();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         public void destroy() {

@@ -16,15 +16,12 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.client.channel;
+package org.apache.sshd.common.forward;
 
-import java.io.IOException;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-
+import org.apache.mina.core.buffer.IoBuffer;
+import org.apache.mina.core.session.IoSession;
 import org.apache.sshd.common.SshdSocketAddress;
+import org.apache.sshd.client.channel.AbstractClientChannel;
 import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.SshConstants;
@@ -32,35 +29,49 @@ import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.util.Buffer;
 
+import java.io.IOException;
+import java.net.InetSocketAddress;
+
 /**
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ChannelDirectTcpip extends AbstractClientChannel {
+public class TcpipClientChannel extends AbstractClientChannel {
 
-    private final SshdSocketAddress local;
+    public enum Type {
+        Direct,
+        Forwarded
+    }
+
+    private final Type typeEnum;
+    private final IoSession serverSession;
     private final SshdSocketAddress remote;
-    private final PipedOutputStream pipe = new PipedOutputStream();
 
-    public ChannelDirectTcpip(SshdSocketAddress local, SshdSocketAddress remote) {
-        super("direct-tcpip");
-        if (local == null) {
-            try {
-                local = new SshdSocketAddress(InetAddress.getLocalHost().getHostName(), 0);
-            } catch (UnknownHostException e) {
-                throw new IllegalStateException("Unable to retrieve local host name");
-            }
-        }
-        if (remote == null) {
-            throw new IllegalArgumentException("Remote address must not be null");
-        }
-        this.local = local;
+    public TcpipClientChannel(Type type, IoSession serverSession, SshdSocketAddress remote) {
+        super(type == Type.Direct ? "direct-tcpip" : "forwarded-tcpip");
+        this.typeEnum = type;
+        this.serverSession = serverSession;
         this.remote = remote;
     }
 
-    @Override
-    protected OpenFuture internalOpen() throws Exception {
+
+    public OpenFuture getOpenFuture() {
+        return openFuture;
+    }
+
+    public synchronized OpenFuture open() throws Exception {
+        InetSocketAddress src = null, dst = null;
+        switch (typeEnum) {
+            case Direct:
+                src = (InetSocketAddress) serverSession.getRemoteAddress();
+                dst = this.remote.toInetSocketAddress();
+                break;
+            case Forwarded:
+                src = (InetSocketAddress) serverSession.getRemoteAddress();
+                dst = (InetSocketAddress) serverSession.getLocalAddress();
+                break;
+        }
         if (closeFuture.isClosed()) {
             throw new SshException("Session has been closed");
         }
@@ -71,29 +82,36 @@ public class ChannelDirectTcpip extends AbstractClientChannel {
         buffer.putInt(id);
         buffer.putInt(localWindow.getSize());
         buffer.putInt(localWindow.getPacketSize());
-        buffer.putString(remote.getHostName());
-        buffer.putInt(remote.getPort());
-        buffer.putString(local.getHostName());
-        buffer.putInt(local.getPort());
+        buffer.putString(dst.getAddress().getHostAddress());
+        buffer.putInt(dst.getPort());
+        buffer.putString(src.getAddress().getHostAddress());
+        buffer.putInt(src.getPort());
         session.writePacket(buffer);
         return openFuture;
     }
 
     @Override
-    protected void doOpen() throws Exception {
+    protected synchronized void doOpen() throws Exception {
         out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.Message.SSH_MSG_CHANNEL_DATA);
-        in = new PipedInputStream(pipe);
-    }
-
-    public OpenFuture open() throws Exception {
-        return internalOpen();
     }
 
     @Override
-    protected void doWriteData(byte[] data, int off, int len) throws IOException {
-        pipe.write(data, off, len);
-        pipe.flush();
-        localWindow.consumeAndCheck(len);
+    protected synchronized void doClose() {
+        serverSession.close(false);
+        super.doClose();
     }
 
+    protected synchronized void doWriteData(byte[] data, int off, int len) throws IOException {
+        IoBuffer buf = IoBuffer.allocate(len);
+        buf.put(data, off, len);
+        buf.flip();
+        localWindow.consumeAndCheck(len);
+        serverSession.write(buf);
+    }
+
+    @Override
+    public void handleEof() throws IOException {
+        super.handleEof();
+        serverSession.close(false);
+    }
 }

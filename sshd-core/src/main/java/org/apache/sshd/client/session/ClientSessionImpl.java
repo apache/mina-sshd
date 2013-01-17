@@ -30,7 +30,7 @@ import org.apache.sshd.ClientChannel;
 import org.apache.sshd.ClientSession;
 import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.ServerKeyVerifier;
-import org.apache.sshd.client.SshdSocketAddress;
+import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.client.UserAuth;
 import org.apache.sshd.client.auth.UserAuthAgent;
 import org.apache.sshd.client.auth.UserAuthPassword;
@@ -43,7 +43,6 @@ import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.DefaultAuthFuture;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.Channel;
-import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.KeyExchange;
 import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.NamedFactory;
@@ -64,8 +63,6 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
 
     private UserAuth userAuth;
     private AuthFuture authFuture;
-    private final TcpipForwarder tcpipForward;
-    private final Map<Integer, SshdSocketAddress> forwards = new HashMap<Integer, SshdSocketAddress>();
 
     /**
      * For clients to store their own metadata
@@ -74,7 +71,6 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
 
     public ClientSessionImpl(ClientFactoryManager client, IoSession session) throws Exception {
         super(client, session);
-        tcpipForward = client.getTcpipForwarderFactory().createTcpipForwarder( this );
         log.info("Session created...");
         sendClientIdentification();
         sendKexInit();
@@ -245,46 +241,20 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         return channel;
     }
 
-    public void startLocalPortForwarding(SshdSocketAddress local, SshdSocketAddress remote) throws Exception {
-        tcpipForward.request(local, remote);
+    public SshdSocketAddress startLocalPortForwarding(SshdSocketAddress local, SshdSocketAddress remote) throws Exception {
+        return getTcpipForwarder().startLocalPortForwarding(local, remote);
     }
 
     public void stopLocalPortForwarding(SshdSocketAddress local) throws Exception {
-        tcpipForward.cancel(local);
+        getTcpipForwarder().stopLocalPortForwarding(local);
     }
 
-    SshdSocketAddress getForwardedPort(int remotePort) {
-        return forwards.get(remotePort);
-    }
-
-    public void startRemotePortForwarding(SshdSocketAddress remote, SshdSocketAddress local) throws Exception {
-        forwards.put(remote.getPort(), local);
-        try {
-            Buffer buffer = createBuffer(SshConstants.Message.SSH_MSG_GLOBAL_REQUEST, 0);
-            buffer.putString("tcpip-forward");
-            buffer.putBoolean(true);
-            String host = remote.getHostName();
-
-            buffer.putString(remote.getHostName());
-            buffer.putInt(remote.getPort());
-            boolean res = request(buffer);
-            if (!res) {
-                throw new SshException("Tcpip forwarding request denied by server");
-            }
-        } catch (Exception e) {
-            forwards.remove(remote);
-            throw e;
-        }
+    public SshdSocketAddress startRemotePortForwarding(SshdSocketAddress remote, SshdSocketAddress local) throws Exception {
+        return getTcpipForwarder().startRemotePortForwarding(remote, local);
     }
 
     public void stopRemotePortForwarding(SshdSocketAddress remote) throws Exception {
-        forwards.remove(remote);
-        Buffer buffer = createBuffer(SshConstants.Message.SSH_MSG_GLOBAL_REQUEST, 0);
-        buffer.putString("cancel-tcpip-forward");
-        buffer.putBoolean(false);
-        buffer.putString(remote.getHostName());
-        buffer.putInt(remote.getPort());
-        writePacket(buffer);
+        getTcpipForwarder().stopRemotePortForwarding(remote);
     }
 
     @Override

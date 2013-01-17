@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.apache.sshd.agent.SshAgentFactory;
-import org.apache.sshd.common.ForwardingAcceptorFactory;
 
 /**
  * This interface allows retrieving all the <code>NamedFactory</code> used
@@ -155,4 +154,20 @@ public interface FactoryManager {
      * @return A <code>ForwardNioAcceptorFactory</code>
      */
     ForwardingAcceptorFactory getTcpipForwardingAcceptorFactory();
+
+    /**
+     * Retrieve the <code>ForwardingFilter</code> to be used by the SSH server.
+     * If no filter has been configured (i.e. this method returns
+     * <code>null</code>), then all forwarding requests will be rejected.
+     *
+     * @return the <code>ForwardingFilter</code> or <code>null</code>
+     */
+    ForwardingFilter getTcpipForwardingFilter();
+
+    /**
+     * Retrieve the tcpip forwarder factory used to support tcpip forwarding.
+     *
+     * @return the <code>TcpipForwarderFactory</code>
+     */
+    TcpipForwarderFactory getTcpipForwarderFactory();
 }

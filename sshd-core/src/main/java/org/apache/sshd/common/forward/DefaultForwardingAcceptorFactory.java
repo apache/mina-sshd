@@ -60,8 +60,7 @@ public class DefaultForwardingAcceptorFactory implements ForwardingAcceptorFacto
         final Socket s = new Socket();
         try {
             try {
-                nio.getSessionConfig().setReceiveBufferSize(
-                        s.getReceiveBufferSize());
+                nio.getSessionConfig().setReceiveBufferSize(s.getReceiveBufferSize());
             } finally {
                 s.close();
             }
