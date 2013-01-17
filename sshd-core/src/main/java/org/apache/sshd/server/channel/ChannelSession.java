@@ -159,11 +159,10 @@ public class ChannelSession extends AbstractServerChannel {
     }
 
     protected String type;
-    protected InputStream in;
     protected OutputStream out;
     protected OutputStream err;
     protected Command command;
-    protected OutputStream shellIn;
+    protected ChannelDataReceiver receiver;
     protected StandardEnvironment env = new StandardEnvironment();
 
     public ChannelSession() {
@@ -177,7 +176,7 @@ public class ChannelSession extends AbstractServerChannel {
                     command = null;
                 }
                 remoteWindow.notifyClosed();
-                IoUtils.closeQuietly(in, out, err, shellIn);
+                IoUtils.closeQuietly(out, err, receiver);
             }
         });
     }
@@ -185,7 +184,7 @@ public class ChannelSession extends AbstractServerChannel {
     @Override
     public void handleEof() throws IOException {
         super.handleEof();
-        shellIn.close();
+        receiver.close();
     }
 
     public void handleRequest(Buffer buffer) throws IOException {
@@ -200,10 +199,9 @@ public class ChannelSession extends AbstractServerChannel {
     }
 
     protected void doWriteData(byte[] data, int off, int len) throws IOException {
-        if (shellIn != null) {
-            shellIn.write(data, off, len);
-            shellIn.flush();
-        }
+        int r = receiver.data(this, data, off, len);
+        if (r>0)
+            localWindow.consumeAndCheck(r);
     }
 
     protected void doWriteExtendedData(byte[] data, int off, int len) throws IOException {
@@ -411,12 +409,26 @@ public class ChannelSession extends AbstractServerChannel {
         return true;
     }
 
+    /**
+     * For {@link Command} to install {@link ChannelDataReceiver}.
+     * When you do this, {@link Command#setInputStream(InputStream)}
+     * will no longer be invoked. If you call this method from {@link Command#start(Environment)},
+     * the input stream you received in {@link Command#setInputStream(InputStream)} will
+     * not read any data.
+     */
+    public void setDataReceiver(ChannelDataReceiver receiver) {
+        this.receiver = receiver;
+    }
+
     protected void prepareCommand() throws IOException {
         // Add the user
         addEnvVariable(Environment.ENV_USER, ((ServerSession) session).getUsername());
         // If the shell wants to be aware of the session, let's do that
         if (command instanceof SessionAware) {
             ((SessionAware) command).setSession((ServerSession) session);
+        }
+        if (command instanceof ChannelSessionAware) {
+            ((ChannelSessionAware) command).setChannelSession(this);
         }
         // If the shell wants to be aware of the file system, let's do that too
         if (command instanceof FileSystemAware) {
@@ -425,17 +437,20 @@ public class ChannelSession extends AbstractServerChannel {
         }
         out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.Message.SSH_MSG_CHANNEL_DATA);
         err = new ChannelOutputStream(this, remoteWindow, log, SshConstants.Message.SSH_MSG_CHANNEL_EXTENDED_DATA);
-        in = new ChannelPipedInputStream(localWindow);
-        shellIn = new ChannelPipedOutputStream((ChannelPipedInputStream) in);
         if (log != null && log.isTraceEnabled()) {
             // Wrap in logging filters
             out = new LoggingFilterOutputStream(out, "OUT:", log);
             err = new LoggingFilterOutputStream(err, "ERR:", log);
-            shellIn = new LoggingFilterOutputStream(shellIn, "IN: ", log);
         }
-        command.setInputStream(in);
         command.setOutputStream(out);
         command.setErrorStream(err);
+        if (this.receiver==null) {
+            // if the command hasn't installed any ChannelDataReceiver, install the default
+            // and give the command an InputStream
+            PipeDataReceiver recv = new PipeDataReceiver(localWindow);
+            setDataReceiver(recv);
+            command.setInputStream(recv.getIn());
+        }
         command.setExitCallback(new ExitCallback() {
             public void onExit(int exitValue) {
                 try {
