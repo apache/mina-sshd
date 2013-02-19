@@ -43,6 +43,7 @@ public class ChannelOutputStream extends OutputStream {
     private boolean closed;
     private int bufferLength;
     private int lastSize;
+    private boolean noDelay = false;
 
     public ChannelOutputStream(AbstractChannel channel, Window remoteWindow, Logger log, SshConstants.Message cmd) {
         this.channel = channel;
@@ -50,6 +51,14 @@ public class ChannelOutputStream extends OutputStream {
         this.log = log;
         this.cmd = cmd;
         newBuffer(0);
+    }
+
+    public void setNoDelay(boolean noDelay) {
+        this.noDelay = noDelay;
+    }
+
+    public boolean isNoDelay() {
+        return noDelay;
     }
 
     public synchronized void write(int w) throws IOException {
@@ -89,6 +98,9 @@ public class ChannelOutputStream extends OutputStream {
             bufferLength += _l;
             s += _l;
             l -= _l;
+        }
+        if (noDelay) {
+            flush();
         }
     }
 
