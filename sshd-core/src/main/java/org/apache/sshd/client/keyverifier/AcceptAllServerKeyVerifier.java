@@ -42,7 +42,7 @@ public class AcceptAllServerKeyVerifier implements ServerKeyVerifier {
 	}
 
 	public boolean verifyServerKey(ClientSession sshClientSession, SocketAddress remoteAddress, PublicKey serverKey) {
-		log.trace("Accepting key for " + remoteAddress + " key=" + BufferUtils.printHex(serverKey.getEncoded()));
+        log.warn("Server at {} presented unverified key: ", remoteAddress, BufferUtils.printHex(serverKey.getEncoded()));
 		return true;
 	}
 }

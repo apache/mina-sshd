@@ -520,12 +520,10 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
 
     private void checkHost() throws SshException {
         ServerKeyVerifier serverKeyVerifier = getClientFactoryManager().getServerKeyVerifier();
+        SocketAddress remoteAddress = ioSession.getRemoteAddress();
 
-        if (serverKeyVerifier != null) {
-            SocketAddress remoteAddress = ioSession.getRemoteAddress();
-
-            if (!serverKeyVerifier.verifyServerKey(this, remoteAddress, kex.getServerKey()))
-                throw new SshException("Server key did not validate");
+        if (!serverKeyVerifier.verifyServerKey(this, remoteAddress, kex.getServerKey())) {
+            throw new SshException("Server key did not validate");
         }
     }
 

@@ -45,6 +45,7 @@ import org.apache.sshd.client.future.ConnectFuture;
 import org.apache.sshd.client.future.DefaultConnectFuture;
 import org.apache.sshd.client.kex.DHG1;
 import org.apache.sshd.client.kex.DHG14;
+import org.apache.sshd.client.keyverifier.AcceptAllServerKeyVerifier;
 import org.apache.sshd.client.session.ClientSessionImpl;
 import org.apache.sshd.common.forward.DefaultTcpipForwarderFactory;
 import org.apache.sshd.common.TcpipForwarderFactory;
@@ -180,6 +181,9 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         if (getTcpipForwardingAcceptorFactory() == null) {
             throw new IllegalArgumentException("TcpipForwardingAcceptorFactory not set");
         }
+        if (getServerKeyVerifier() == null) {
+            throw new IllegalArgumentException("ServerKeyVerifier not set");
+        }
         // Register the additional agent forwarding channel if needed
         if (getAgentFactory() != null) {
             List<NamedFactory<Channel>> factories = getChannelFactories();
@@ -288,6 +292,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         client.setTcpipForwardingAcceptorFactory(faf);
         TcpipForwarderFactory tcpipForwarderFactory = new DefaultTcpipForwarderFactory();
         client.setTcpipForwarderFactory( tcpipForwarderFactory );
+        client.setServerKeyVerifier(AcceptAllServerKeyVerifier.INSTANCE);
         return client;
     }
 

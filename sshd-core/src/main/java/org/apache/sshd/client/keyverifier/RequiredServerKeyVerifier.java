@@ -46,10 +46,11 @@ public class RequiredServerKeyVerifier implements ServerKeyVerifier {
 
 	public boolean verifyServerKey(ClientSession sshClientSession, SocketAddress remoteAddress, PublicKey serverKey) {
 		if (requiredKey.equals(serverKey)) {
+            log.debug("Server at {} presented expected key: {}", remoteAddress, BufferUtils.printHex(serverKey.getEncoded()));
 			return true;
-		}
-
-		log.info("Server at " + remoteAddress + " presented wrong key: " + BufferUtils.printHex(serverKey.getEncoded()));
-		return false;
+		} else {
+            log.error("Server at {} presented wrong key: {}", remoteAddress, BufferUtils.printHex(serverKey.getEncoded()));
+            return false;
+        }
 	}
 }
