@@ -21,6 +21,11 @@ package org.apache.sshd.common.channel;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
+import java.net.SocketException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.sshd.common.util.Buffer;
 
@@ -35,6 +40,12 @@ public class ChannelPipedInputStream extends InputStream {
     private final Buffer buffer = new Buffer();
     private final byte[] b = new byte[1];
     private boolean closed;
+
+    private final Lock lock = new ReentrantLock();
+    private final Condition dataAvailable = lock.newCondition();
+
+    private int timeout = 0; // zero is infinite
+
     /**
      * {@link ChannelPipedOutputStream} is already closed and so we will not receive additional data.
      * This is different from the {@link #closed}, which indicates that the reader of this {@link InputStream}
@@ -46,14 +57,25 @@ public class ChannelPipedInputStream extends InputStream {
         this.localWindow = localWindow;
     }
 
+    public void setTimeout(int timeout) {
+        this.timeout = timeout;
+    }
+
+    public int getTimeout() {
+        return timeout;
+    }
+
     @Override
     public int available() throws IOException {
-        synchronized (buffer) {
+        lock.lock();
+        try {
             int avail = buffer.available();
             if (avail == 0 && writerClosed) {
                 return -1;
             }
             return avail;
+        } finally {
+            lock.unlock();
         }
     }
 
@@ -70,7 +92,9 @@ public class ChannelPipedInputStream extends InputStream {
     @Override
     public int read(byte[] b, int off, int len) throws IOException {
         int avail;
-        synchronized (buffer) {
+        long startTime = System.currentTimeMillis();
+        lock.lock();
+        try {
             for (;;) {
                 if (closed) {
                     throw new IOException("Pipe closed");
@@ -82,7 +106,15 @@ public class ChannelPipedInputStream extends InputStream {
                     return -1; // no more data to read
                 }
                 try {
-                    buffer.wait();
+                    if (timeout > 0) {
+                        long remaining = timeout - (System.currentTimeMillis() - startTime);
+                        if (remaining <= 0) {
+                            throw new SocketException("timeout");
+                        }
+                        dataAvailable.await(remaining, TimeUnit.MILLISECONDS);
+                    } else {
+                        dataAvailable.await();
+                    }
                 } catch (InterruptedException e) {
                     throw (IOException) new InterruptedIOException().initCause(e);
                 }
@@ -95,33 +127,44 @@ public class ChannelPipedInputStream extends InputStream {
                 buffer.compact();
             }
             avail = localWindow.getMaxSize() - buffer.available();
+        } finally {
+            lock.unlock();
         }
         localWindow.check(avail);
         return len;
     }
 
     protected void eof() {
-        synchronized (buffer) {
+        lock.lock();
+        try {
             writerClosed = true;
-            buffer.notifyAll();
+            dataAvailable.signalAll();
+        } finally {
+            lock.unlock();
         }
     }
 
     @Override
     public void close() throws IOException {
-        synchronized (buffer) {
+        lock.lock();
+        try {
             closed = true;
-            buffer.notifyAll();
+            dataAvailable.signalAll();
+        } finally {
+            lock.unlock();
         }
     }
 
     public void receive(byte[] bytes, int off, int len) throws IOException {
-        synchronized (buffer) {
+        lock.lock();
+        try {
             if (writerClosed || closed) {
                 throw new IOException("Pipe closed");
             }
             buffer.putRawBytes(bytes, off, len);
-            buffer.notifyAll();
+            dataAvailable.signalAll();
+        } finally {
+            lock.unlock();
         }
         localWindow.consume(len);
     }
