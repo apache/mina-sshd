@@ -50,7 +50,7 @@ import org.apache.sshd.common.cipher.BlowfishCBC;
 import org.apache.sshd.common.cipher.TripleDESCBC;
 import org.apache.sshd.common.compression.CompressionNone;
 import org.apache.sshd.common.forward.DefaultTcpipForwarderFactory;
-import org.apache.sshd.common.forward.TcpipServerChannel2;
+import org.apache.sshd.common.forward.TcpipServerChannel;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.mac.HMACMD5;
@@ -475,7 +475,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
                 new HMACSHA196.Factory()));
         sshd.setChannelFactories(Arrays.<NamedFactory<Channel>>asList(
                 new ChannelSession.Factory(),
-                new TcpipServerChannel2.DirectTcpipFactory()));
+                new TcpipServerChannel.DirectTcpipFactory()));
         sshd.setSignatureFactories(Arrays.<NamedFactory<Signature>>asList(
                 new SignatureDSA.Factory(),
                 new SignatureRSA.Factory()));

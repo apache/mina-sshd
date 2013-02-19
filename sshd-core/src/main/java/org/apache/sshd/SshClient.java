@@ -68,7 +68,7 @@ import org.apache.sshd.common.cipher.BlowfishCBC;
 import org.apache.sshd.common.cipher.TripleDESCBC;
 import org.apache.sshd.common.compression.CompressionNone;
 import org.apache.sshd.common.forward.DefaultForwardingAcceptorFactory;
-import org.apache.sshd.common.forward.TcpipServerChannel2;
+import org.apache.sshd.common.forward.TcpipServerChannel;
 import org.apache.sshd.common.mac.HMACMD5;
 import org.apache.sshd.common.mac.HMACMD596;
 import org.apache.sshd.common.mac.HMACSHA1;
@@ -283,7 +283,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                 new SignatureDSA.Factory(),
                 new SignatureRSA.Factory()));
         client.setChannelFactories(Arrays.<NamedFactory<Channel>>asList(
-                new TcpipServerChannel2.ForwardedTcpipFactory()));
+                new TcpipServerChannel.ForwardedTcpipFactory()));
         ForwardingAcceptorFactory faf = new DefaultForwardingAcceptorFactory();
         client.setTcpipForwardingAcceptorFactory(faf);
         TcpipForwarderFactory tcpipForwarderFactory = new DefaultTcpipForwarderFactory();

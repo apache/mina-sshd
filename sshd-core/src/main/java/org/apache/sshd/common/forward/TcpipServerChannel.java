@@ -46,7 +46,7 @@ import java.net.ConnectException;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class TcpipServerChannel2 extends AbstractServerChannel {
+public class TcpipServerChannel extends AbstractServerChannel {
 
     public static class DirectTcpipFactory implements NamedFactory<Channel> {
 
@@ -55,7 +55,7 @@ public class TcpipServerChannel2 extends AbstractServerChannel {
         }
 
         public Channel create() {
-            return new TcpipServerChannel2(Type.Direct);
+            return new TcpipServerChannel(Type.Direct);
         }
     }
 
@@ -66,7 +66,7 @@ public class TcpipServerChannel2 extends AbstractServerChannel {
         }
 
         public Channel create() {
-            return new TcpipServerChannel2(Type.Forwarded);
+            return new TcpipServerChannel(Type.Forwarded);
         }
     }
 
@@ -80,7 +80,7 @@ public class TcpipServerChannel2 extends AbstractServerChannel {
     private IoSession ioSession;
     private OutputStream out;
 
-    public TcpipServerChannel2(Type type) {
+    public TcpipServerChannel(Type type) {
         this.type = type;
     }
 
