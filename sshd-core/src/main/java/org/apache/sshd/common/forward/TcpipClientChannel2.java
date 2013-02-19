@@ -37,7 +37,7 @@ import java.net.InetSocketAddress;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class TcpipClientChannel extends AbstractClientChannel {
+public class TcpipClientChannel2 extends AbstractClientChannel {
 
     public enum Type {
         Direct,
@@ -48,7 +48,7 @@ public class TcpipClientChannel extends AbstractClientChannel {
     private final IoSession serverSession;
     private final SshdSocketAddress remote;
 
-    public TcpipClientChannel(Type type, IoSession serverSession, SshdSocketAddress remote) {
+    public TcpipClientChannel2(Type type, IoSession serverSession, SshdSocketAddress remote) {
         super(type == Type.Direct ? "direct-tcpip" : "forwarded-tcpip");
         this.typeEnum = type;
         this.serverSession = serverSession;

@@ -33,8 +33,6 @@ import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.util.Buffer;
 
 import java.io.IOException;
-import java.net.Inet4Address;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.*;
@@ -44,7 +42,7 @@ import java.util.*;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class DefaultTcpipForwarder extends IoHandlerAdapter implements TcpipForwarder {
+public class DefaultTcpipForwarder2 extends IoHandlerAdapter implements TcpipForwarder {
 
     private final Session session;
     private final Map<Integer, SshdSocketAddress> localToRemote = new HashMap<Integer, SshdSocketAddress>();
@@ -52,7 +50,7 @@ public class DefaultTcpipForwarder extends IoHandlerAdapter implements TcpipForw
     private final Set<SshdSocketAddress> localForwards = new HashSet<SshdSocketAddress>();
     protected IoAcceptor acceptor;
 
-    public DefaultTcpipForwarder(Session session) {
+    public DefaultTcpipForwarder2(Session session) {
         this.session = session;
     }
 
@@ -163,21 +161,21 @@ public class DefaultTcpipForwarder extends IoHandlerAdapter implements TcpipForw
 
     @Override
     public void sessionCreated(final IoSession session) throws Exception {
-        final TcpipClientChannel channel;
+        final TcpipClientChannel2 channel;
         int localPort = ((InetSocketAddress) session.getLocalAddress()).getPort();
         if (localToRemote.containsKey(localPort)) {
             SshdSocketAddress remote = localToRemote.get(localPort);
-            channel = new TcpipClientChannel(TcpipClientChannel.Type.Direct, session, remote);
+            channel = new TcpipClientChannel2(TcpipClientChannel2.Type.Direct, session, remote);
         } else {
-            channel = new TcpipClientChannel(TcpipClientChannel.Type.Forwarded, session, null);
+            channel = new TcpipClientChannel2(TcpipClientChannel2.Type.Forwarded, session, null);
         }
-        session.setAttribute(TcpipClientChannel.class, channel);
+        session.setAttribute(TcpipClientChannel2.class, channel);
         this.session.registerChannel(channel);
         channel.open().addListener(new SshFutureListener<OpenFuture>() {
             public void operationComplete(OpenFuture future) {
                 Throwable t = future.getException();
                 if (t != null) {
-                    DefaultTcpipForwarder.this.session.unregisterChannel(channel);
+                    DefaultTcpipForwarder2.this.session.unregisterChannel(channel);
                     channel.close(false);
                 }
             }
@@ -186,7 +184,7 @@ public class DefaultTcpipForwarder extends IoHandlerAdapter implements TcpipForw
 
     @Override
     public void sessionClosed(IoSession session) throws Exception {
-        TcpipClientChannel channel = (TcpipClientChannel) session.getAttribute(TcpipClientChannel.class);
+        TcpipClientChannel2 channel = (TcpipClientChannel2) session.getAttribute(TcpipClientChannel2.class);
         if (channel != null) {
             channel.close(false);
         }
@@ -194,7 +192,7 @@ public class DefaultTcpipForwarder extends IoHandlerAdapter implements TcpipForw
 
     @Override
     public void messageReceived(IoSession session, Object message) throws Exception {
-        TcpipClientChannel channel = (TcpipClientChannel) session.getAttribute(TcpipClientChannel.class);
+        TcpipClientChannel2 channel = (TcpipClientChannel2) session.getAttribute(TcpipClientChannel2.class);
         IoBuffer ioBuffer = (IoBuffer) message;
         int r = ioBuffer.remaining();
         byte[] b = new byte[r];
