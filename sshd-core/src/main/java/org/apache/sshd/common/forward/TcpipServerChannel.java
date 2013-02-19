@@ -129,9 +129,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
 
             @Override
             public void sessionClosed(IoSession session) throws Exception {
-                if (!closing) {
-                    sendEof();
-                }
+                close(false);
             }
         };
         connector.setHandler(handler);
@@ -185,12 +183,6 @@ public class TcpipServerChannel extends AbstractServerChannel {
                 closeImmediately0();
             }
         });
-    }
-
-    @Override
-    public void handleEof() throws IOException {
-        super.handleEof();
-        close(false);
     }
 
     protected void doWriteData(byte[] data, int off, int len) throws IOException {

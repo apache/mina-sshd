@@ -108,10 +108,4 @@ public class TcpipClientChannel extends AbstractClientChannel {
         localWindow.consumeAndCheck(len);
         serverSession.write(buf);
     }
-
-    @Override
-    public void handleEof() throws IOException {
-        super.handleEof();
-        serverSession.close(false);
-    }
 }
