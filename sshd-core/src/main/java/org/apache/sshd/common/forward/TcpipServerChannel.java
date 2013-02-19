@@ -113,12 +113,18 @@ public class TcpipServerChannel extends AbstractServerChannel {
         IoHandler handler = new IoHandlerAdapter() {
             @Override
             public void messageReceived(IoSession session, Object message) throws Exception {
-                IoBuffer ioBuffer = (IoBuffer) message;
-                int r = ioBuffer.remaining();
-                byte[] b = new byte[r];
-                ioBuffer.get(b, 0, r);
-                out.write(b, 0, r);
-                out.flush();
+                synchronized (lock) {
+                    if (closing) {
+                        log.debug("Ignoring write to channel {} in CLOSING state", id);
+                    } else {
+                        IoBuffer ioBuffer = (IoBuffer) message;
+                        int r = ioBuffer.remaining();
+                        byte[] b = new byte[r];
+                        ioBuffer.get(b, 0, r);
+                        out.write(b, 0, r);
+                        out.flush();
+                    }
+                }
             }
 
             @Override
