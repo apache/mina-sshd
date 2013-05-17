@@ -134,7 +134,7 @@ public class ChannelPipedInputStream extends InputStream {
         return len;
     }
 
-    protected void eof() {
+    public void eof() {
         lock.lock();
         try {
             writerClosed = true;
