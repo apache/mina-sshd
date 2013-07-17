@@ -32,6 +32,7 @@ public class FileHandle extends BaseHandle {
     long outputPos;
     InputStream input;
     long inputPos;
+    long length;
 
     public FileHandle(String id, SshFile sshFile, int flags) {
         super(id, sshFile);
@@ -43,13 +44,20 @@ public class FileHandle extends BaseHandle {
     }
 
     public int read(byte[] data, long offset) throws IOException {
+        if (input != null && offset >= length) {
+            return -1;
+        }
         if (input != null && offset != inputPos) {
             IoUtils.closeQuietly(input);
             input = null;
         }
         if (input == null) {
             input = getFile().createInputStream(offset);
+            length = getFile().getSize();
             inputPos = offset;
+        }
+        if (offset >= length) {
+            return -1;
         }
         int read = input.read(data);
         inputPos += read;

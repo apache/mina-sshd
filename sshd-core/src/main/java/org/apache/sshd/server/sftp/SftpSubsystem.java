@@ -397,6 +397,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         long outputPos;
         InputStream input;
         long inputPos;
+        long length;
 
         public FileHandle(SshFile sshFile, int flags) {
             super(sshFile);
@@ -408,13 +409,20 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         }
         
         public int read(byte[] data, long offset) throws IOException {
+            if (input != null && offset >= length) {
+                return -1;
+            }
             if (input != null && offset != inputPos) {
                 IoUtils.closeQuietly(input);
                 input = null;
             }
             if (input == null) {
                 input = file.createInputStream(offset);
+                length = file.getSize();
                 inputPos = offset;
+            }
+            if (offset >= length) {
+                return -1;
             }
             int read = input.read(data);
             inputPos += read;
