@@ -32,17 +32,14 @@ import org.slf4j.LoggerFactory;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class UserAuthPassword implements UserAuth {
+public class UserAuthPassword extends AbstractUserAuth {
 
     protected final Logger log = LoggerFactory.getLogger(getClass());
 
-    private final ClientSessionImpl session;
-    private final String username;
     private final String password;
 
-    public UserAuthPassword(ClientSessionImpl session, String username, String password) {
-        this.session = session;
-        this.username = username;
+    public UserAuthPassword(ClientSessionImpl session, String service, String username, String password) {
+        super(session, service, username);
         this.password = password;
     }
 
@@ -55,7 +52,7 @@ public class UserAuthPassword implements UserAuth {
             log.info("Send SSH_MSG_USERAUTH_REQUEST for password");
             buffer = session.createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_REQUEST, 0);
             buffer.putString(username);
-            buffer.putString("ssh-connection");
+            buffer.putString(service);
             buffer.putString("password");
             buffer.putByte((byte) 0);
             buffer.putString(password);

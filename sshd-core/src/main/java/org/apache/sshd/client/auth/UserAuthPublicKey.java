@@ -37,17 +37,14 @@ import org.slf4j.LoggerFactory;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class UserAuthPublicKey implements UserAuth {
+public class UserAuthPublicKey extends AbstractUserAuth {
 
     protected final Logger log = LoggerFactory.getLogger(getClass());
 
-    private final ClientSessionImpl session;
-    private final String username;
     private final KeyPair key;
 
-    public UserAuthPublicKey(ClientSessionImpl session, String username, KeyPair key) {
-        this.session = session;
-        this.username = username;
+    public UserAuthPublicKey(ClientSessionImpl session, String service, String username, KeyPair key) {
+        super(session, service, username);
         this.key = key;
     }
 
@@ -62,7 +59,7 @@ public class UserAuthPublicKey implements UserAuth {
                 buffer = session.createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_REQUEST, 0);
                 int pos1 = buffer.wpos() - 1;
                 buffer.putString(username);
-                buffer.putString("ssh-connection");
+                buffer.putString(service);
                 buffer.putString("publickey");
                 buffer.putByte((byte) 1);
                 buffer.putString((key.getPublic() instanceof RSAPublicKey) ? KeyPairProvider.SSH_RSA : KeyPairProvider.SSH_DSS);
@@ -76,7 +73,7 @@ public class UserAuthPublicKey implements UserAuth {
                 bs.putString(session.getKex().getH());
                 bs.putCommand(SshConstants.Message.SSH_MSG_USERAUTH_REQUEST);
                 bs.putString(username);
-                bs.putString("ssh-connection");
+                bs.putString(service);
                 bs.putString("publickey");
                 bs.putByte((byte) 1);
                 bs.putString((key.getPublic() instanceof RSAPublicKey) ? KeyPairProvider.SSH_RSA : KeyPairProvider.SSH_DSS);

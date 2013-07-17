@@ -62,6 +62,8 @@ import org.apache.sshd.server.channel.OpenChannelException;
  */
 public class ClientSessionImpl extends AbstractSession implements ClientSession {
 
+    private static final String AUTHENTICATION_SERVICE = "ssh-connection";
+
     private UserAuth userAuth;
     private AuthFuture authFuture;
 
@@ -104,7 +106,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
                 throw new IllegalStateException("Session is closed");
             }
             authFuture = new DefaultAuthFuture(lock);
-            userAuth = new UserAuthAgent(this, user);
+            userAuth = new UserAuthAgent(this, AUTHENTICATION_SERVICE, user);
             setState(State.UserAuth);
 
             switch (userAuth.next(null)) {
@@ -142,7 +144,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
                 throw new IllegalStateException("Session is closed");
             }
             authFuture = new DefaultAuthFuture(lock);
-            userAuth = new UserAuthPassword(this, user, password);
+            userAuth = new UserAuthPassword(this, AUTHENTICATION_SERVICE, user, password);
             setState(State.UserAuth);
 
             switch (userAuth.next(null)) {
@@ -180,7 +182,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
                 throw new IllegalStateException("Session is closed");
             }
             authFuture = new DefaultAuthFuture(lock);
-            userAuth = new UserAuthPublicKey(this, user, key);
+            userAuth = new UserAuthPublicKey(this, AUTHENTICATION_SERVICE, user, key);
             setState(State.UserAuth);
 
             switch (userAuth.next(null)) {

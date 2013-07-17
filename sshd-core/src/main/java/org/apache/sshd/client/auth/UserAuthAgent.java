@@ -24,35 +24,23 @@ import java.security.interfaces.RSAPublicKey;
 import java.util.Iterator;
 
 import org.apache.sshd.agent.SshAgent;
-import org.apache.sshd.client.UserAuth;
 import org.apache.sshd.client.session.ClientSessionImpl;
 import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.util.Buffer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Authentication delegating to an SSH agent
  */
-public class UserAuthAgent implements UserAuth {
+public class UserAuthAgent extends AbstractUserAuth {
 
-    protected final Logger log = LoggerFactory.getLogger(getClass());
-
-    private final ClientSessionImpl session;
-    private final String username;
     private final SshAgent agent;
     private final Iterator<SshAgent.Pair<PublicKey, String>> keys;
 
-    public UserAuthAgent(ClientSessionImpl session, String username) throws IOException {
-        this.session = session;
-        this.username = username;
+    public UserAuthAgent(ClientSessionImpl session, String service, String username) throws IOException {
+        super(session, service, username);
         this.agent = session.getFactoryManager().getAgentFactory().createClient(session);
         this.keys = agent.getIdentities().iterator();
-    }
-
-    public String getUsername() {
-        return username;
     }
 
     protected void sendNextKey(PublicKey key) throws IOException {
@@ -61,7 +49,7 @@ public class UserAuthAgent implements UserAuth {
             Buffer buffer = session.createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_REQUEST, 0);
             int pos1 = buffer.wpos() - 1;
             buffer.putString(username);
-            buffer.putString("ssh-connection");
+            buffer.putString(service);
             buffer.putString("publickey");
             buffer.putByte((byte) 1);
             buffer.putString((key instanceof RSAPublicKey) ? KeyPairProvider.SSH_RSA : KeyPairProvider.SSH_DSS);
@@ -73,7 +61,7 @@ public class UserAuthAgent implements UserAuth {
             bs.putString(session.getKex().getH());
             bs.putCommand(SshConstants.Message.SSH_MSG_USERAUTH_REQUEST);
             bs.putString(username);
-            bs.putString("ssh-connection");
+            bs.putString(AUTHENTICATION_SERVICE);
             bs.putString("publickey");
             bs.putByte((byte) 1);
             bs.putString((key instanceof RSAPublicKey) ? KeyPairProvider.SSH_RSA : KeyPairProvider.SSH_DSS);
