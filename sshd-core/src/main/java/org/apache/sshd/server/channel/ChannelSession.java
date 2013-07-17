@@ -205,8 +205,11 @@ public class ChannelSession extends AbstractServerChannel {
     }
 
     protected void doWriteData(byte[] data, int off, int len) throws IOException {
-        int r = receiver.data(this, data, off, len);
-        if (r>0)
+        int r = len;
+        if (receiver != null) {
+            r = receiver.data(this, data, off, len);
+        }
+        if (r > 0)
             localWindow.consumeAndCheck(r);
     }
 
@@ -371,6 +374,7 @@ public class ChannelSession extends AbstractServerChannel {
         boolean wantReply = buffer.getBoolean();
         String commandLine = buffer.getString();
         if (((ServerSession) session).getServerFactoryManager().getCommandFactory() == null) {
+            log.warn("Unsupported command: {}", commandLine);
             return false;
         }
         if (log.isInfoEnabled()) {
@@ -398,10 +402,12 @@ public class ChannelSession extends AbstractServerChannel {
         String subsystem = buffer.getString();
         List<NamedFactory<Command>> factories = ((ServerSession) session).getServerFactoryManager().getSubsystemFactories();
         if (factories == null) {
+            log.warn("Unsupported subsystem: {}", subsystem);
             return false;
         }
         command = NamedFactory.Utils.create(factories, subsystem);
         if (command == null) {
+            log.warn("Unsupported subsystem: {}", subsystem);
             return false;
         }
         prepareCommand();

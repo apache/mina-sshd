@@ -223,4 +223,16 @@ public class SftpTest {
         c.disconnect();
     }
 
+    public static void main(String[] args) throws Exception {
+        SshServer sshd = SshServer.setUpDefaultServer();
+        sshd.setPort(8001);
+        sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
+        sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(new SftpSubsystem.Factory()));
+        sshd.setShellFactory(new EchoShellFactory());
+        sshd.setCommandFactory(new ScpCommandFactory());
+        sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
+        sshd.start();
+        Thread.sleep(100000);
+    }
+
 }

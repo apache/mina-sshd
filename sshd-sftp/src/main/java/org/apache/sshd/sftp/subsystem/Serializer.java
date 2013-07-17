@@ -448,7 +448,15 @@ public class Serializer {
             buffer.putString(attrs.getGroup());
         }
         if ((flags & SSH_FILEXFER_ATTR_PERMISSIONS) != 0) {
-            buffer.putInt(attrs.getPermissions());
+            int perms = attrs.getPermissions();
+            if (session.getVersion() < 4) {
+                if (attrs.getType() == SSH_FILEXFER_TYPE_REGULAR) {
+                    perms |= 0100000;
+                } else if (attrs.getType() == SSH_FILEXFER_TYPE_DIRECTORY) {
+                    perms |= 0040000;
+                }
+            }
+            buffer.putInt(perms);
         }
     }
 

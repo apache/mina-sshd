@@ -19,14 +19,18 @@
 package org.apache.sshd;
 
 import java.net.ServerSocket;
+import java.util.Arrays;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.mina.core.session.IoSession;
 import org.apache.sshd.client.SessionFactory;
 import org.apache.sshd.client.session.ClientSessionImpl;
+import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.session.AbstractSession;
+import org.apache.sshd.server.Command;
 import org.apache.sshd.server.command.ScpCommandFactory;
+import org.apache.sshd.server.sftp.SftpSubsystem;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.Utils;
@@ -131,6 +135,7 @@ public class ServerTest {
         SshServer sshd = SshServer.setUpDefaultServer();
         sshd.setPort(8001);
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
+        sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(new SftpSubsystem.Factory()));
         sshd.setShellFactory(new EchoShellFactory());
         sshd.setCommandFactory(new ScpCommandFactory());
         sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
