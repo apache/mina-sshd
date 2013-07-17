@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.apache.mina.util.NamePreservingRunnable;
@@ -33,7 +34,7 @@ import org.apache.sshd.server.session.ServerSession;
 
 /**
  * A shell implementation that wraps an instance of {@link InvertedShell}
- * as a {@link ShellFactory.Shell}.  This is useful when using external
+ * as a {@link Command}.  This is useful when using external
  * processes.
  * When starting the shell, this wrapper will also create a thread used
  * to pump the streams and also to check if the shell is alive. 
@@ -55,23 +56,29 @@ public class InvertedShellWrapper implements Command, SessionAware {
     private InputStream shellOut;
     private InputStream shellErr;
     private ExitCallback callback;
+    private boolean shutdownExecutor;
 
     public InvertedShellWrapper(InvertedShell shell) {
-        this(shell, Executors.newSingleThreadExecutor(), DEFAULT_BUFFER_SIZE);
+        this(shell, Executors.newSingleThreadExecutor(), true, DEFAULT_BUFFER_SIZE);
     }
 
     public InvertedShellWrapper(InvertedShell shell, Executor executor) {
-        this(shell, executor, DEFAULT_BUFFER_SIZE);
+        this(shell, executor, false, DEFAULT_BUFFER_SIZE);
     }
 
     public InvertedShellWrapper(InvertedShell shell, int bufferSize) {
-        this(shell, Executors.newSingleThreadExecutor(), bufferSize);
+        this(shell, Executors.newSingleThreadExecutor(), true, bufferSize);
     }
 
     public InvertedShellWrapper(InvertedShell shell, Executor executor, int bufferSize) {
+        this(shell, executor, false, bufferSize);
+    }
+
+    public InvertedShellWrapper(InvertedShell shell, Executor executor, boolean shutdownExecutor, int bufferSize) {
         this.shell = shell;
         this.executor = executor;
         this.bufferSize = bufferSize;
+        this.shutdownExecutor = shutdownExecutor;
     }
 
     public void setInputStream(InputStream in) {
@@ -111,6 +118,9 @@ public class InvertedShellWrapper implements Command, SessionAware {
 
     public void destroy() {
         shell.destroy();
+        if (shutdownExecutor && executor instanceof ExecutorService) {
+            ((ExecutorService) executor).shutdown();
+        }
     }
 
     protected void pumpStreams() {
