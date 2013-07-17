@@ -944,7 +944,18 @@ public abstract class AbstractSession implements Session {
                 }
             }
             if (guess[i] == null && i != SshConstants.PROPOSAL_LANG_CTOS && i != SshConstants.PROPOSAL_LANG_STOC) {
-                throw new IllegalStateException("Unable to negociate key exchange for item " + i);
+                final String[] items = new String[] {
+                    "kex algorithms",
+                    "server host key algorithms",
+                    "encryption algorithms (client to server)",
+                    "encryption algorithms (server to client)",
+                    "mac algorithms (client to server)",
+                    "mac algorithms (server to client)",
+                    "compression algorithms (client to server)",
+                    "compression algorithms (server to client)"
+                };
+                throw new IllegalStateException("Unable to negociate key exchange for " + items[i] +
+                        " (client: " + clientProposal[i] + " / server: " + serverProposal[i] + ")");
             }
         }
         negociated = guess;
