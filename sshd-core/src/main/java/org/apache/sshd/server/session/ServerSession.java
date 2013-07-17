@@ -28,6 +28,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.mina.core.future.WriteFuture;
 import org.apache.mina.core.session.IoSession;
 import org.apache.sshd.SshServer;
 import org.apache.sshd.agent.common.AgentForwardSupport;
@@ -119,6 +120,19 @@ public class ServerSession extends AbstractSession {
 
     protected ScheduledExecutorService getScheduledExecutorService() {
         return getServerFactoryManager().getScheduledExecutorService();
+    }
+
+    @Override
+    public WriteFuture writePacket(Buffer buffer) throws IOException {
+        boolean rescheduleIdleTimer = getState() == State.Running;
+        if (rescheduleIdleTimer) {
+            unscheduleIdleTimer();
+        }
+        WriteFuture future = super.writePacket(buffer);
+        if (rescheduleIdleTimer) {
+            scheduleIdleTimer();
+        }
+        return future;
     }
 
     protected void handleMessage(Buffer buffer) throws Exception {
@@ -291,6 +305,7 @@ public class ServerSession extends AbstractSession {
             // A timeout less than one means there is no timeout.
             return;
         }
+        unscheduleIdleTimer();
         Runnable idleTimerTask = new Runnable() {
             public void run() {
                 try {
