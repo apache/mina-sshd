@@ -19,13 +19,13 @@
 
 package org.apache.sshd.server.filesystem;
 
+import java.io.File;
+
 import org.apache.sshd.common.Session;
 import org.apache.sshd.server.FileSystemFactory;
 import org.apache.sshd.server.FileSystemView;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
 
 /**
  * Native file system factory. It uses the OS file system.

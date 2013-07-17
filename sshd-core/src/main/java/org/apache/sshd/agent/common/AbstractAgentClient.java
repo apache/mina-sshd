@@ -27,7 +27,15 @@ import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.util.Buffer;
 
-import static org.apache.sshd.agent.SshAgentConstants.*;
+import static org.apache.sshd.agent.SshAgentConstants.SSH2_AGENTC_ADD_IDENTITY;
+import static org.apache.sshd.agent.SshAgentConstants.SSH2_AGENTC_REMOVE_ALL_IDENTITIES;
+import static org.apache.sshd.agent.SshAgentConstants.SSH2_AGENTC_REMOVE_IDENTITY;
+import static org.apache.sshd.agent.SshAgentConstants.SSH2_AGENTC_REQUEST_IDENTITIES;
+import static org.apache.sshd.agent.SshAgentConstants.SSH2_AGENTC_SIGN_REQUEST;
+import static org.apache.sshd.agent.SshAgentConstants.SSH2_AGENT_FAILURE;
+import static org.apache.sshd.agent.SshAgentConstants.SSH2_AGENT_IDENTITIES_ANSWER;
+import static org.apache.sshd.agent.SshAgentConstants.SSH2_AGENT_SIGN_RESPONSE;
+import static org.apache.sshd.agent.SshAgentConstants.SSH_AGENT_SUCCESS;
 
 public abstract class AbstractAgentClient {
 

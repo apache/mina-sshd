@@ -19,9 +19,9 @@
 
 package org.apache.sshd.server;
 
-import org.apache.sshd.common.Session;
-
 import java.io.IOException;
+
+import org.apache.sshd.common.Session;
 
 /**
  * Factory for file system implementations - it returns the file system view for user.

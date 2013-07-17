@@ -18,19 +18,19 @@
  */
 package org.apache.sshd.common.forward;
 
+import java.io.IOException;
+import java.net.InetSocketAddress;
+
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.session.IoSession;
-import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.client.channel.AbstractClientChannel;
 import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.util.Buffer;
-
-import java.io.IOException;
-import java.net.InetSocketAddress;
 
 /**
  * TODO Add javadoc

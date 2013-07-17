@@ -22,8 +22,8 @@ import java.util.List;
 
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.ForwardingAcceptorFactory;
+import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.server.auth.gss.GSSAuthenticator;
 
 /**

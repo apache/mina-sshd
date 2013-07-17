@@ -19,8 +19,6 @@
 
 package org.apache.sshd.server.filesystem;
 
-import org.apache.sshd.server.filesystem.NameEqualsFileFilter;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;

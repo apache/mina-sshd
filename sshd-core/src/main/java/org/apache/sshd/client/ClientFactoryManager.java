@@ -18,8 +18,8 @@
  */
 package org.apache.sshd.client;
 
-import org.apache.sshd.common.TcpipForwarderFactory;
 import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.TcpipForwarderFactory;
 
 /**
  * The <code>ClientFactoryManager</code> enable the retrieval of additional

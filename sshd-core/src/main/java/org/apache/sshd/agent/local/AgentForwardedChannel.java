@@ -23,8 +23,8 @@ import java.io.InterruptedIOException;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 
-import org.apache.sshd.agent.common.AbstractAgentProxy;
 import org.apache.sshd.agent.SshAgent;
+import org.apache.sshd.agent.common.AbstractAgentProxy;
 import org.apache.sshd.client.channel.AbstractClientChannel;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.SshConstants;

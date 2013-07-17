@@ -37,8 +37,19 @@ import org.apache.mina.core.service.IoAcceptor;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.session.IoSessionConfig;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
+import org.apache.sshd.common.AbstractFactoryManager;
+import org.apache.sshd.common.Channel;
+import org.apache.sshd.common.Cipher;
+import org.apache.sshd.common.Compression;
+import org.apache.sshd.common.Factory;
+import org.apache.sshd.common.ForwardingAcceptorFactory;
+import org.apache.sshd.common.ForwardingFilter;
+import org.apache.sshd.common.KeyExchange;
+import org.apache.sshd.common.Mac;
+import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.Session;
+import org.apache.sshd.common.Signature;
 import org.apache.sshd.common.SshdSocketAddress;
-import org.apache.sshd.common.*;
 import org.apache.sshd.common.cipher.AES128CBC;
 import org.apache.sshd.common.cipher.AES128CTR;
 import org.apache.sshd.common.cipher.AES192CBC;
@@ -49,6 +60,7 @@ import org.apache.sshd.common.cipher.ARCFOUR256;
 import org.apache.sshd.common.cipher.BlowfishCBC;
 import org.apache.sshd.common.cipher.TripleDESCBC;
 import org.apache.sshd.common.compression.CompressionNone;
+import org.apache.sshd.common.forward.DefaultForwardingAcceptorFactory;
 import org.apache.sshd.common.forward.DefaultTcpipForwarderFactory;
 import org.apache.sshd.common.forward.TcpipServerChannel;
 import org.apache.sshd.common.future.CloseFuture;
@@ -68,7 +80,6 @@ import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.CommandFactory;
 import org.apache.sshd.server.FileSystemFactory;
-import org.apache.sshd.common.ForwardingFilter;
 import org.apache.sshd.server.PasswordAuthenticator;
 import org.apache.sshd.server.PublickeyAuthenticator;
 import org.apache.sshd.server.ServerFactoryManager;
@@ -83,7 +94,6 @@ import org.apache.sshd.server.kex.DHG1;
 import org.apache.sshd.server.kex.DHG14;
 import org.apache.sshd.server.keyprovider.PEMGeneratorHostKeyProvider;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
-import org.apache.sshd.common.forward.DefaultForwardingAcceptorFactory;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.session.SessionFactory;
 import org.apache.sshd.server.shell.ProcessShellFactory;
@@ -579,12 +589,15 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
             public boolean canForwardAgent(Session session) {
                 return true;
             }
+
             public boolean canForwardX11(Session session) {
                 return true;
             }
+
             public boolean canListen(SshdSocketAddress address, Session session) {
                 return true;
             }
+
             public boolean canConnect(SshdSocketAddress address, Session session) {
                 return true;
             }

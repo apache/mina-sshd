@@ -18,12 +18,6 @@
  */
 package org.apache.sshd.server;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-
-import org.apache.sshd.server.session.ServerSession;
-
 /**
  * A factory of commands.
  * Commands are executed on the server side when an "exec" channel is

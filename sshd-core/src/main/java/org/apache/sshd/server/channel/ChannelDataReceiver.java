@@ -18,12 +18,12 @@
  */
 package org.apache.sshd.server.channel;
 
-import org.apache.sshd.server.ChannelSessionAware;
-import org.apache.sshd.server.Command;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
+
+import org.apache.sshd.server.ChannelSessionAware;
+import org.apache.sshd.server.Command;
 
 /**
  * Receiving end of the data stream from the client.

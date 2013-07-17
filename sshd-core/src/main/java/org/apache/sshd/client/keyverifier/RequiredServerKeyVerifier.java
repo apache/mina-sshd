@@ -20,7 +20,6 @@ package org.apache.sshd.client.keyverifier;
 
 import java.net.SocketAddress;
 import java.security.PublicKey;
-import java.util.Arrays;
 
 import org.apache.sshd.ClientSession;
 import org.apache.sshd.client.ServerKeyVerifier;

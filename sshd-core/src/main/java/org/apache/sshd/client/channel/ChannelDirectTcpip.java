@@ -24,11 +24,11 @@ import java.io.PipedOutputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
-import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.util.Buffer;
 

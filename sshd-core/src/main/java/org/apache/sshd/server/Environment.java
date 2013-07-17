@@ -18,10 +18,10 @@
  */
 package org.apache.sshd.server;
 
-import org.apache.sshd.common.PtyMode;
-
 import java.util.EnumSet;
 import java.util.Map;
+
+import org.apache.sshd.common.PtyMode;
 
 /**
  * Interface providing access to the environment map and allowing the registration

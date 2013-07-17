@@ -18,6 +18,15 @@
  */
 package org.apache.sshd.common.forward;
 
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.service.IoAcceptor;
 import org.apache.mina.core.service.IoHandlerAdapter;
@@ -26,16 +35,15 @@ import org.apache.mina.core.session.IoSession;
 import org.apache.mina.filter.executor.ExecutorFilter;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 import org.apache.sshd.ClientChannel;
-import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.client.future.OpenFuture;
-import org.apache.sshd.common.*;
+import org.apache.sshd.common.ForwardingFilter;
+import org.apache.sshd.common.Session;
+import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.SshdSocketAddress;
+import org.apache.sshd.common.TcpipForwarder;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.util.Buffer;
-
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.util.*;
 
 /**
  * TODO Add javadoc

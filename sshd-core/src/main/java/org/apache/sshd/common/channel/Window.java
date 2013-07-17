@@ -20,7 +20,6 @@ package org.apache.sshd.common.channel;
 
 import java.io.IOException;
 
-import org.apache.sshd.common.SshException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -19,12 +19,12 @@
 
 package org.apache.sshd.server.filesystem;
 
-import org.apache.sshd.server.SshFile;
+import java.io.File;
+
 import org.apache.sshd.server.FileSystemView;
+import org.apache.sshd.server.SshFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
 
 /**
  * <strong>Internal class, do not use directly.</strong>

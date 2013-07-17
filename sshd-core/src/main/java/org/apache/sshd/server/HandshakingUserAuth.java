@@ -18,7 +18,6 @@
  */
 package org.apache.sshd.server;
 
-import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.server.session.ServerSession;
 
