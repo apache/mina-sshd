@@ -30,6 +30,7 @@ import org.apache.sshd.ClientChannel;
 import org.apache.sshd.ClientSession;
 import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.ServerKeyVerifier;
+import org.apache.sshd.client.UserInteraction;
 import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.client.UserAuth;
 import org.apache.sshd.client.auth.UserAuthAgent;
@@ -345,22 +346,32 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
                         if (userAuth == null) {
                             throw new IllegalStateException("State is userAuth, but no user auth pending!!!");
                         }
-                        buffer.rpos(buffer.rpos() - 1);
-                        switch (userAuth.next(buffer)) {
-                             case Success:
-                                 authFuture.setAuthed(true);
-                                 username = userAuth.getUsername();
-                                 authed = true;
-                                 setState(State.Running);
-                                 startHeartBeat();
-                                 break;
-                             case Failure:
-                                 authFuture.setAuthed(false);
-                                 userAuth = null;
-                                 setState(State.WaitForAuth);
-                                 break;
-                             case Continued:
-                                 break;
+                        if (cmd == SshConstants.Message.SSH_MSG_USERAUTH_BANNER) {
+                            String welcome = buffer.getString();
+                            String lang = buffer.getString();
+                            log.debug("Welcome banner: " + welcome);
+                            UserInteraction ui = getClientFactoryManager().getUserInteraction();
+                            if (ui != null) {
+                                ui.welcome(welcome);
+                            }
+                        } else {
+                            buffer.rpos(buffer.rpos() - 1);
+                            switch (userAuth.next(buffer)) {
+                                 case Success:
+                                     authFuture.setAuthed(true);
+                                     username = userAuth.getUsername();
+                                     authed = true;
+                                     setState(State.Running);
+                                     startHeartBeat();
+                                     break;
+                                 case Failure:
+                                     authFuture.setAuthed(false);
+                                     userAuth = null;
+                                     setState(State.WaitForAuth);
+                                     break;
+                                 case Continued:
+                                     break;
+                            }
                         }
                         break;
                     case Running:

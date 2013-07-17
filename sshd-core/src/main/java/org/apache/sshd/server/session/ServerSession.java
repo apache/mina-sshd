@@ -447,7 +447,7 @@ public class ServerSession extends AbstractSession {
                 if (welcomeBanner != null) {
                     buffer = createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_BANNER, 0);
                     buffer.putString(welcomeBanner);
-                    buffer.putString("\n");
+                    buffer.putString("en");
                     writePacket(buffer);
                 }
 

@@ -40,6 +40,7 @@ import org.apache.mina.transport.socket.nio.NioSocketConnector;
 import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.ServerKeyVerifier;
 import org.apache.sshd.client.SessionFactory;
+import org.apache.sshd.client.UserInteraction;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.future.ConnectFuture;
 import org.apache.sshd.client.future.DefaultConnectFuture;
@@ -134,6 +135,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
     protected IoConnector connector;
     protected SessionFactory sessionFactory;
+    protected UserInteraction userInteraction;
 
     private ServerKeyVerifier serverKeyVerifier;
 
@@ -154,6 +156,14 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
     public void setServerKeyVerifier(ServerKeyVerifier serverKeyVerifier) {
         this.serverKeyVerifier = serverKeyVerifier;
+    }
+
+    public UserInteraction getUserInteraction() {
+        return userInteraction;
+    }
+
+    public void setUserInteraction(UserInteraction userInteraction) {
+        this.userInteraction = userInteraction;
     }
 
     protected void checkConfig() {

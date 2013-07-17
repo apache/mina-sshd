@@ -54,4 +54,11 @@ public interface ClientFactoryManager extends FactoryManager {
      * @return A <code>TcpipForwarderFactory</code>
      */
     TcpipForwarderFactory getTcpipForwarderFactory();
+
+    /**
+     * Retrieve the UserInteraction object to communicate with the user.
+     *
+     * @return A <code>UserInteraction</code> or <code>null</code>
+     */
+    UserInteraction getUserInteraction();
 }
