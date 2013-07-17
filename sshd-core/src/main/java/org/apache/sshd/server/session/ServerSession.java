@@ -364,69 +364,69 @@ public class ServerSession extends AbstractSession {
             if (nbAuthRequests++ > maxAuthRequests) {
                 throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "Too may authentication failures");
             }
-            
-            Boolean authed   = null;
-            String  username = null;
+
+            Boolean authed = null;
+            String username = null;
 
             if (cmd == SshConstants.Message.SSH_MSG_USERAUTH_REQUEST) {
-              username = buffer.getString();
-              
-              String svcName = buffer.getString();
-              String method = buffer.getString();
-              
-              log.debug("Authenticating user '{}' with method '{}'", username, method);
-              NamedFactory<UserAuth> factory = NamedFactory.Utils.get(userAuthFactories, method);
-              if (factory != null) {
-                UserAuth auth = factory.create();
-                try {
-                  authed = auth.auth(this, username, buffer);
-                  if (authed == null) {
-                    // authentication is still ongoing
-                    log.debug("Authentication not finished");
-                    
-                    if (auth instanceof HandshakingUserAuth) {
-                      currentAuth = (HandshakingUserAuth) auth;
-                      
-                      // GSSAPI needs the user name and service to verify the MIC
-                      
-                      currentAuth.setServiceName(svcName);
+                username = buffer.getString();
+
+                String svcName = buffer.getString();
+                String method = buffer.getString();
+
+                log.debug("Authenticating user '{}' with method '{}'", username, method);
+                NamedFactory<UserAuth> factory = NamedFactory.Utils.get(userAuthFactories, method);
+                if (factory != null) {
+                    UserAuth auth = factory.create();
+                    try {
+                        authed = auth.auth(this, username, buffer);
+                        if (authed == null) {
+                            // authentication is still ongoing
+                            log.debug("Authentication not finished");
+
+                            if (auth instanceof HandshakingUserAuth) {
+                                currentAuth = (HandshakingUserAuth) auth;
+
+                                // GSSAPI needs the user name and service to verify the MIC
+
+                                currentAuth.setServiceName(svcName);
+                            }
+                            return;
+                        } else {
+                            log.debug(authed ? "Authentication succeeded" : "Authentication failed");
+                        }
+                    } catch (Exception e) {
+                        // Continue
+                        authed = false;
+                        log.debug("Authentication failed: {}", e.getMessage());
                     }
-                    return;
-                  } else {
-                    log.debug(authed ? "Authentication succeeded" : "Authentication failed");
-                  }
-                } catch (Exception e) {
-                  // Continue
-                  authed = false;
-                  log.debug("Authentication failed: {}", e.getMessage());
+
+                } else {
+                    log.debug("Unsupported authentication method '{}'", method);
                 }
-                
-              } else {
-                log.debug("Unsupported authentication method '{}'", method);
-              }
             } else {
-              try {
-                authed = currentAuth.next(this, cmd, buffer);
-                
-                if (authed == null) {
-                  // authentication is still ongoing
-                  log.debug("Authentication still not finished");
-                  return;
-                } else if (authed.booleanValue()) {
-                  username = currentAuth.getUserName();
+                try {
+                    authed = currentAuth.next(this, cmd, buffer);
+
+                    if (authed == null) {
+                        // authentication is still ongoing
+                        log.debug("Authentication still not finished");
+                        return;
+                    } else if (authed.booleanValue()) {
+                        username = currentAuth.getUserName();
+                    }
+                } catch (Exception e) {
+                    // failed
+                    authed = false;
+                    log.debug("Authentication next failed: {}", e.getMessage());
                 }
-              } catch (Exception e) {
-                // failed
-                authed = false;
-                log.debug("Authentication next failed: {}", e.getMessage());
-              }
             }
 
             // No more handshakes now - clean up if necessary
-            
+
             if (currentAuth != null) {
-              currentAuth.destroy();
-              currentAuth = null;
+                currentAuth.destroy();
+                currentAuth = null;
             }
 
             if (authed != null && authed) {

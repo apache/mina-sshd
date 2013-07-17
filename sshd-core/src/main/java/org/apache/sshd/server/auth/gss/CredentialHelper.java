@@ -39,94 +39,92 @@ import org.ietf.jgss.GSSManager;
  */
 
 public class CredentialHelper {
-  
-  public static GSSCredential creds(GSSManager mgr, String spn, String keytab) throws LoginException, GSSException {
-    LoginContext lc = new LoginContext("x", null, null, new FixedLoginConfiguration(spn, keytab));         
-    
-    lc.login();
-            
-    try {
-      return (GSSCredential) Subject.doAs(lc.getSubject(), new G(mgr));
-    } catch (PrivilegedActionException e) {
-      throw (GSSException) e.getCause();
-    }
-  }
-  
-  /**
-   * A login configuration which is defined from code.
-   *
-   * @author Richard Evans
-   */
 
-  private static class FixedLoginConfiguration extends Configuration {
-    
-    private AppConfigurationEntry entry;
-    
-    /**
-     * Constructor.
-     */
-    
-    private FixedLoginConfiguration(String spn, String keytab) {
-      Map<String, String> parms = new HashMap<String, String>();
-      
-      parms.put("isInitiator", "false");
-      parms.put("principal",   spn);
-      parms.put("useKeyTab",   "true");
-      parms.put("storeKey",    "true");
-      
-      if (keytab != null) {
-        parms.put("keyTab", keytab);
-      }
-      
-      entry = new AppConfigurationEntry("com.sun.security.auth.module.Krb5LoginModule", AppConfigurationEntry.LoginModuleControlFlag.REQUIRED, parms);
-    }
-    
-    /**
-     * Get the configuration entries for a name.
-     * 
-     * @param name The name
-     * 
-     * @return The entries, or <code>null</code> if the name is not known
-     */
-    
-    public AppConfigurationEntry[] getAppConfigurationEntry(String name) {
-      return new AppConfigurationEntry [] { entry };
+    public static GSSCredential creds(GSSManager mgr, String spn, String keytab) throws LoginException, GSSException {
+        LoginContext lc = new LoginContext("x", null, null, new FixedLoginConfiguration(spn, keytab));
+
+        lc.login();
+
+        try {
+            return (GSSCredential) Subject.doAs(lc.getSubject(), new G(mgr));
+        } catch (PrivilegedActionException e) {
+            throw (GSSException) e.getCause();
+        }
     }
 
     /**
-     * Refresh the configuration.  Nothing to do here.
+     * A login configuration which is defined from code.
+     *
+     * @author Richard Evans
      */
-    
-    public void refresh() {    
-    }
-  }
-  
-  /**
-   * Privileged action which runs as the subject to get the credentials.
-   */
 
-  private static final class G implements PrivilegedExceptionAction<GSSCredential> {
-    
-    private GSSManager mgr;
-    
-    /**
-     * @param mgr The existing GSS manager
-     */
-    
-    private G(GSSManager mgr) {
-      this.mgr      = mgr;
+    private static class FixedLoginConfiguration extends Configuration {
+
+        private AppConfigurationEntry entry;
+
+        /**
+         * Constructor.
+         */
+
+        private FixedLoginConfiguration(String spn, String keytab) {
+            Map<String, String> parms = new HashMap<String, String>();
+
+            parms.put("isInitiator", "false");
+            parms.put("principal", spn);
+            parms.put("useKeyTab", "true");
+            parms.put("storeKey", "true");
+
+            if (keytab != null) {
+                parms.put("keyTab", keytab);
+            }
+
+            entry = new AppConfigurationEntry("com.sun.security.auth.module.Krb5LoginModule", AppConfigurationEntry.LoginModuleControlFlag.REQUIRED, parms);
+        }
+
+        /**
+         * Get the configuration entries for a name.
+         *
+         * @param name The name
+         * @return The entries, or <code>null</code> if the name is not known
+         */
+
+        public AppConfigurationEntry[] getAppConfigurationEntry(String name) {
+            return new AppConfigurationEntry[]{entry};
+        }
+
+        /**
+         * Refresh the configuration.  Nothing to do here.
+         */
+
+        public void refresh() {
+        }
     }
-    
+
     /**
-     * Do the action.
-     * 
-     * @return The new credentials
-     * 
-     * @throws GSSException If an error occurred
+     * Privileged action which runs as the subject to get the credentials.
      */
-    
-    public GSSCredential run() throws GSSException {
-      return mgr.createCredential(null, GSSCredential.INDEFINITE_LIFETIME, UserAuthGSS.KRB5_MECH, GSSCredential.ACCEPT_ONLY);      
+
+    private static final class G implements PrivilegedExceptionAction<GSSCredential> {
+
+        private GSSManager mgr;
+
+        /**
+         * @param mgr The existing GSS manager
+         */
+
+        private G(GSSManager mgr) {
+            this.mgr = mgr;
+        }
+
+        /**
+         * Do the action.
+         *
+         * @return The new credentials
+         * @throws GSSException If an error occurred
+         */
+
+        public GSSCredential run() throws GSSException {
+            return mgr.createCredential(null, GSSCredential.INDEFINITE_LIFETIME, UserAuthGSS.KRB5_MECH, GSSCredential.ACCEPT_ONLY);
+        }
     }
-  }
 }
