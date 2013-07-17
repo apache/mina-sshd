@@ -23,6 +23,8 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.security.KeyPair;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Future;
@@ -30,6 +32,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.mina.core.session.IoSession;
+import org.apache.sshd.SshServer;
 import org.apache.sshd.agent.common.AgentForwardSupport;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.*;
@@ -67,9 +70,12 @@ public class ServerSession extends AbstractSession {
     private final AgentForwardSupport agentForward;
     private final X11ForwardSupport x11Forward;
 
-    private HandshakingUserAuth currentAuth;
-
     private List<NamedFactory<UserAuth>> userAuthFactories;
+    private List<List<String>> authMethods;
+    private String authUserName;
+    private String authMethod;
+    private String authService;
+    private HandshakingUserAuth currentAuth;
 
     public ServerSession(FactoryManager server, IoSession ioSession) throws Exception {
         super(server, ioSession);
@@ -183,7 +189,7 @@ public class ServerSession extends AbstractSession {
                         }
                         break;
                     case UserAuth:
-                        if (cmd != SshConstants.Message.SSH_MSG_USERAUTH_REQUEST && (currentAuth == null || !currentAuth.handles(cmd))) {
+                        if (cmd != SshConstants.Message.SSH_MSG_USERAUTH_REQUEST && currentAuth == null) {
                             disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "Protocol error: expected packet " + SshConstants.Message.SSH_MSG_USERAUTH_REQUEST + ", got " + cmd);
                             return;
                         }
@@ -358,113 +364,177 @@ public class ServerSession extends AbstractSession {
             buffer.putString("ssh-userauth");
             writePacket(buffer);
             userAuthFactories = new ArrayList<NamedFactory<UserAuth>>(getServerFactoryManager().getUserAuthFactories());
-            log.debug("Authorized authentication methods: {}", NamedFactory.Utils.getNames(userAuthFactories));
-            setState(State.UserAuth);
-        } else {
-            if (nbAuthRequests++ > maxAuthRequests) {
-                throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "Too may authentication failures");
-            }
-
-            Boolean authed = null;
-            String username = null;
-
-            if (cmd == SshConstants.Message.SSH_MSG_USERAUTH_REQUEST) {
-                username = buffer.getString();
-
-                String svcName = buffer.getString();
-                String method = buffer.getString();
-
-                log.debug("Authenticating user '{}' with method '{}'", username, method);
-                NamedFactory<UserAuth> factory = NamedFactory.Utils.get(userAuthFactories, method);
-                if (factory != null) {
-                    UserAuth auth = factory.create();
-                    try {
-                        authed = auth.auth(this, username, buffer);
-                        if (authed == null) {
-                            // authentication is still ongoing
-                            log.debug("Authentication not finished");
-
-                            if (auth instanceof HandshakingUserAuth) {
-                                currentAuth = (HandshakingUserAuth) auth;
-
-                                // GSSAPI needs the user name and service to verify the MIC
-
-                                currentAuth.setServiceName(svcName);
-                            }
-                            return;
-                        } else {
-                            log.debug(authed ? "Authentication succeeded" : "Authentication failed");
-                        }
-                    } catch (Exception e) {
-                        // Continue
-                        authed = false;
-                        log.debug("Authentication failed: {}", e.getMessage());
-                    }
-
-                } else {
-                    log.debug("Unsupported authentication method '{}'", method);
+            // Get authentication methods
+            authMethods = new ArrayList<List<String>>();
+            String mths = getServerFactoryManager().getProperties().get(SshServer.AUTH_METHODS);
+            if (mths == null) {
+                for (NamedFactory<UserAuth> uaf : getServerFactoryManager().getUserAuthFactories()) {
+                    authMethods.add(new ArrayList<String>(Collections.singletonList(uaf.getName())));
                 }
             } else {
-                try {
-                    authed = currentAuth.next(this, cmd, buffer);
-
-                    if (authed == null) {
-                        // authentication is still ongoing
-                        log.debug("Authentication still not finished");
-                        return;
-                    } else if (authed.booleanValue()) {
-                        username = currentAuth.getUserName();
+                for (String mthl : mths.split("\\s")) {
+                    authMethods.add(new ArrayList<String>(Arrays.asList(mthl.split(","))));
+                }
+            }
+            // Verify all required methods are supported
+            for (List<String> l : authMethods) {
+                for (String m : l) {
+                    if (NamedFactory.Utils.get(userAuthFactories, m) == null) {
+                        throw new SshException("Configured method is not supported: " + m);
                     }
+                }
+            }
+            log.debug("Authorized authentication methods: {}", NamedFactory.Utils.getNames(userAuthFactories));
+            setState(State.UserAuth);
+
+        } else {
+
+            UserAuth auth = this.currentAuth;
+            Boolean authed = Boolean.FALSE;
+
+            if (cmd == SshConstants.Message.SSH_MSG_USERAUTH_REQUEST) {
+                if (this.currentAuth != null) {
+                    this.currentAuth.destroy();
+                    this.currentAuth = null;
+                }
+
+                String username = buffer.getString();
+                String service = buffer.getString();
+                String method = buffer.getString();
+                if (this.authUserName == null || this.authService == null) {
+                    this.authUserName = username;
+                    this.authService = service;
+                } else if (!this.authUserName.equals(username) || !this.authService.equals(service)) {
+                    disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
+                            "Change of username or service is not allowed (" + this.authUserName + ", " + this.authService + ") -> ("
+                                + username + ", " + service + ")");
+                    return;
+                }
+                this.authMethod = method;
+                if (nbAuthRequests++ > maxAuthRequests) {
+                    disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "Too may authentication failures");
+                    return;
+                }
+
+                log.debug("Authenticating user '{}' with service '{}' and method '{}'", new Object[] { username, service, method });
+                NamedFactory<UserAuth> factory = NamedFactory.Utils.get(userAuthFactories, method);
+                if (factory != null) {
+                    auth = factory.create();
+                    try {
+                        authed = auth.auth(this, username, service, buffer);
+                    } catch (Exception e) {
+                        // Continue
+                        log.debug("Authentication failed: {}", e.getMessage());
+                    }
+                }
+            } else  {
+                if (this.currentAuth == null) {
+                    // This should not happen
+                    throw new IllegalStateException();
+                }
+                buffer.rpos(buffer.rpos() - 1);
+                try {
+                    authed = currentAuth.next(this, buffer);
                 } catch (Exception e) {
-                    // failed
-                    authed = false;
-                    log.debug("Authentication next failed: {}", e.getMessage());
+                    // Continue
+                    log.debug("Authentication failed: {}", e.getMessage());
                 }
             }
 
-            // No more handshakes now - clean up if necessary
+            if (authed == null) {
+                // authentication is still ongoing
+                log.debug("Authentication not finished");
+                if (auth instanceof HandshakingUserAuth) {
+                    currentAuth = (HandshakingUserAuth) auth;
+                }
+            } else if (authed) {
+                log.debug("Authentication succeeded");
+                if (currentAuth != null) {
+                    username = currentAuth.getUserName();
+                } else {
+                    username = this.authUserName;
+                }
 
-            if (currentAuth != null) {
-                currentAuth.destroy();
-                currentAuth = null;
-            }
-
-            if (authed != null && authed) {
-
-                if (getFactoryManager().getProperties() != null) {
-                    String maxSessionCountAsString = getFactoryManager().getProperties().get(ServerFactoryManager.MAX_CONCURRENT_SESSIONS);
-                    if (maxSessionCountAsString != null) {
-                        int maxSessionCount = Integer.parseInt(maxSessionCountAsString);
-                        int currentSessionCount = getActiveSessionCountForUser(username);
-                        if (currentSessionCount >= maxSessionCount) {
-                            disconnect(SshConstants.SSH2_DISCONNECT_SERVICE_NOT_AVAILABLE, "Too many concurrent connections");
-                            return;
+                boolean success = false;
+                for (List<String> l : authMethods) {
+                    if (!l.isEmpty() && l.get(0).equals(authMethod)) {
+                        l.remove(0);
+                        success |= l.isEmpty();
+                    }
+                }
+                if (success) {
+                    if (getFactoryManager().getProperties() != null) {
+                        String maxSessionCountAsString = getFactoryManager().getProperties().get(ServerFactoryManager.MAX_CONCURRENT_SESSIONS);
+                        if (maxSessionCountAsString != null) {
+                            int maxSessionCount = Integer.parseInt(maxSessionCountAsString);
+                            int currentSessionCount = getActiveSessionCountForUser(username);
+                            if (currentSessionCount >= maxSessionCount) {
+                                disconnect(SshConstants.SSH2_DISCONNECT_SERVICE_NOT_AVAILABLE, "Too many concurrent connections");
+                                return;
+                            }
                         }
                     }
-                }
 
-                String welcomeBanner = factoryManager.getProperties().get(ServerFactoryManager.WELCOME_BANNER);
-                if (welcomeBanner != null) {
-                    buffer = createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_BANNER, 0);
-                    buffer.putString(welcomeBanner);
-                    buffer.putString("en");
+                    String welcomeBanner = factoryManager.getProperties().get(ServerFactoryManager.WELCOME_BANNER);
+                    if (welcomeBanner != null) {
+                        buffer = createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_BANNER, 0);
+                        buffer.putString(welcomeBanner);
+                        buffer.putString("en");
+                        writePacket(buffer);
+                    }
+
+                    buffer = createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_SUCCESS, 0);
+                    writePacket(buffer);
+                    setState(State.Running);
+                    this.authed = true;
+                    unscheduleAuthTimer();
+                    scheduleIdleTimer();
+                    log.info("Session {}@{} authenticated", getUsername(), getIoSession().getRemoteAddress());
+
+                } else {
+                    buffer = createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_FAILURE, 0);
+                    StringBuilder sb = new StringBuilder();
+                    for (List<String> l : authMethods) {
+                        if (!l.isEmpty()) {
+                            if (sb.length() > 0) {
+                                sb.append(",");
+                            }
+                            sb.append(l.get(0));
+                        }
+                    }
+                    buffer.putString(sb.toString());
+                    buffer.putByte((byte) 1);
                     writePacket(buffer);
                 }
 
-                buffer = createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_SUCCESS, 0);
-                writePacket(buffer);
-                setState(State.Running);
-                this.authed = true;
-                this.username = username;
-                unscheduleAuthTimer();
-                scheduleIdleTimer();
-                log.info("Session {}@{} authenticated", getUsername(), getIoSession().getRemoteAddress());
+                if (currentAuth != null) {
+                    currentAuth.destroy();
+                    currentAuth = null;
+                }
             } else {
+                log.debug("Authentication failed");
+
                 buffer = createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_FAILURE, 0);
-                NamedFactory.Utils.remove(userAuthFactories, "none"); // 'none' MUST NOT be listed
-                buffer.putString(NamedFactory.Utils.getNames(userAuthFactories));
-                buffer.putByte((byte) 0);
+                StringBuilder sb = new StringBuilder();
+                for (List<String> l : authMethods) {
+                    if (!l.isEmpty()) {
+                        String m = l.get(0);
+                        if (!"none".equals(m)) {
+                            if (sb.length() > 0) {
+                                sb.append(",");
+                            }
+                            sb.append(l.get(0));
+                        }
+                    }
+                }
+                buffer.putString(sb.toString());
+                buffer.putByte((byte) 1);
                 writePacket(buffer);
+
+                if (currentAuth != null) {
+                    currentAuth.destroy();
+                    currentAuth = null;
+                }
             }
         }
     }

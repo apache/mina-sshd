@@ -42,6 +42,6 @@ public interface UserAuth {
      *          is not finished yet
      * @throws Exception if the authentication fails
      */
-    Boolean auth(ServerSession session, String username, Buffer buffer) throws Exception;
+    Boolean auth(ServerSession session, String username, String service, Buffer buffer) throws Exception;
 
 }

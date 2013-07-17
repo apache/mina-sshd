@@ -19,6 +19,8 @@
 package org.apache.sshd.server.auth;
 
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.server.PasswordAuthenticator;
 import org.apache.sshd.server.UserAuth;
@@ -40,7 +42,10 @@ public class UserAuthPassword implements UserAuth {
         }
     }
 
-    public Boolean auth(ServerSession session, String username, Buffer buffer) throws Exception {
+    public Boolean auth(ServerSession session, String username, String service, Buffer buffer) throws Exception {
+        if (!"ssh-connection".equals(service)) {
+            throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "Unsupported service '" + service + "'");
+        }
         boolean newPassword = buffer.getBoolean();
         if (newPassword) {
             throw new IllegalStateException("Password changes are not supported");

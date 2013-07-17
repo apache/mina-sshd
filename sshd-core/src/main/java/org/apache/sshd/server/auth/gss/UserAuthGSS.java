@@ -20,6 +20,7 @@ package org.apache.sshd.server.auth.gss;
 
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.server.HandshakingUserAuth;
 import org.apache.sshd.server.UserAuth;
@@ -39,7 +40,6 @@ import org.slf4j.LoggerFactory;
  * <p/>
  * Several methods are available for overriding in specific circumstances.
  */
-
 public class UserAuthGSS implements HandshakingUserAuth {
 
     // Oids for the Kerberos 5 mechanism and principal
@@ -88,10 +88,11 @@ public class UserAuthGSS implements HandshakingUserAuth {
      * @throws Exception If something went wrong
      */
 
-    public Boolean auth(ServerSession sess, String user, Buffer buff) throws Exception {
+    public Boolean auth(ServerSession sess, String user, String service, Buffer buff) throws Exception {
         GSSAuthenticator auth = getAuthenticator(sess);
 
         this.user = user;
+        this.service = service;
 
         // Get mechanism count from buffer and look for Kerberos 5.
 
@@ -136,22 +137,11 @@ public class UserAuthGSS implements HandshakingUserAuth {
     }
 
     /**
-     * Set the service name from the original request.  This may be required for MIC verification later.
-     *
-     * @param service The service name
-     */
-
-    public void setServiceName(String service) {
-        this.service = service;
-    }
-
-    /**
      * Check whether a particular message is handled here.
      *
      * @param msg The message
      * @return <code>true</code> if the message is handled
      */
-
     public boolean handles(SshConstants.Message msg) {
         return msg == SshConstants.Message.SSH_MSG_USERAUTH_INFO_RESPONSE || msg == SshConstants.Message.SSH_MSG_USERAUTH_GSSAPI_MIC && ctxt.isEstablished();
     }
@@ -165,8 +155,13 @@ public class UserAuthGSS implements HandshakingUserAuth {
      *         is not finished yet
      * @throws Exception if the authentication fails
      */
+    public Boolean next(ServerSession session, Buffer buffer) throws Exception {
 
-    public Boolean next(ServerSession session, SshConstants.Message msg, Buffer buffer) throws Exception {
+        SshConstants.Message msg = buffer.getCommand();
+        if (!handles(msg)) {
+            throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "Packet not supported by user authentication method");
+        }
+
         GSSAuthenticator auth = getAuthenticator(session);
 
         log.debug("In krb5.next: msg = " + msg);
@@ -229,7 +224,7 @@ public class UserAuthGSS implements HandshakingUserAuth {
                 session.writePacket(b);
                 return null;
             } else {
-                return Boolean.valueOf(established);
+                return established;
             }
         }
     }
@@ -240,7 +235,6 @@ public class UserAuthGSS implements HandshakingUserAuth {
      *
      * @return The user name
      */
-
     public String getUserName() throws GSSException {
         return identity;
     }
@@ -248,7 +242,6 @@ public class UserAuthGSS implements HandshakingUserAuth {
     /**
      * Free any system resources used by the module.
      */
-
     public void destroy() {
         if (creds != null) {
             try {
@@ -275,7 +268,6 @@ public class UserAuthGSS implements HandshakingUserAuth {
      * @return The GSS authenticator
      * @throws Exception If no GSS authenticator is defined
      */
-
     private GSSAuthenticator getAuthenticator(ServerSession session) throws Exception {
         GSSAuthenticator ga = session.getServerFactoryManager().getGSSAuthenticator();
 
@@ -292,7 +284,6 @@ public class UserAuthGSS implements HandshakingUserAuth {
      * @param rep The string form
      * @return The Oid
      */
-
     private static Oid createOID(String rep) {
         try {
             return new Oid(rep);
@@ -305,7 +296,6 @@ public class UserAuthGSS implements HandshakingUserAuth {
     /**
      * Factory class.
      */
-
     public static class Factory implements NamedFactory<UserAuth> {
 
         /**

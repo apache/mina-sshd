@@ -85,7 +85,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         return kex;
     }
 
-    public AuthFuture authAgent(String username) throws IOException {
+    public AuthFuture authAgent(String user) throws IOException {
         synchronized (lock) {
             if (closeFuture.isClosed()) {
                 throw new IllegalStateException("Session is closed");
@@ -104,7 +104,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
                 throw new IllegalStateException("Session is closed");
             }
             authFuture = new DefaultAuthFuture(lock);
-            userAuth = new UserAuthAgent(this, username);
+            userAuth = new UserAuthAgent(this, user);
             setState(State.UserAuth);
 
             switch (userAuth.next(null)) {
@@ -126,7 +126,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         }
     }
 
-    public AuthFuture authPassword(String username, String password) throws IOException {
+    public AuthFuture authPassword(String user, String password) throws IOException {
         synchronized (lock) {
             if (closeFuture.isClosed()) {
                 throw new IllegalStateException("Session is closed");
@@ -142,7 +142,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
                 throw new IllegalStateException("Session is closed");
             }
             authFuture = new DefaultAuthFuture(lock);
-            userAuth = new UserAuthPassword(this, username, password);
+            userAuth = new UserAuthPassword(this, user, password);
             setState(State.UserAuth);
 
             switch (userAuth.next(null)) {
@@ -164,7 +164,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         }
     }
 
-    public AuthFuture authPublicKey(String username, KeyPair key) throws IOException {
+    public AuthFuture authPublicKey(String user, KeyPair key) throws IOException {
         synchronized (lock) {
             if (closeFuture.isClosed()) {
                 throw new IllegalStateException("Session is closed");
@@ -180,7 +180,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
                 throw new IllegalStateException("Session is closed");
             }
             authFuture = new DefaultAuthFuture(lock);
-            userAuth = new UserAuthPublicKey(this, username, key);
+            userAuth = new UserAuthPublicKey(this, user, key);
             setState(State.UserAuth);
 
             switch (userAuth.next(null)) {

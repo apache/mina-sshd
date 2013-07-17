@@ -68,6 +68,20 @@ public interface ServerFactoryManager extends FactoryManager {
     public static final String WELCOME_BANNER = "welcome-banner";
 
     /**
+     * This key is used when configuring multi-step authentications.
+     * The value needs to be a blank separated list of comma separated list
+     * of authentication method names.
+     * For example, an argument of
+     * <code>publickey,password publickey,keyboard-interactive</code>
+     * would require the user to complete public key authentication,
+     * followed by either password or keyboard interactive authentication.
+     * Only methods that are next in one or more lists are offered at each
+     * stage, so for this example, it would not be possible to attempt
+     * password or keyboard-interactive authentication before public key.
+     */
+    public static final String AUTH_METHODS = "auth-methods";
+
+    /**
      * Retrieve the list of named factories for <code>UserAuth<code> objects.
      *
      * @return a list of named <code>UserAuth</code> factories, never <code>null</code>

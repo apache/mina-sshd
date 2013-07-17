@@ -25,6 +25,7 @@ import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.Signature;
 import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.server.PublickeyAuthenticator;
 import org.apache.sshd.server.UserAuth;
@@ -46,7 +47,10 @@ public class UserAuthPublicKey implements UserAuth {
         }
     }
 
-    public Boolean auth(ServerSession session, String username, Buffer buffer) throws Exception {
+    public Boolean auth(ServerSession session, String username, String service, Buffer buffer) throws Exception {
+        if (!"ssh-connection".equals(service)) {
+            throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "Unsupported service '" + service + "'");
+        }
         boolean hasSig = buffer.getBoolean();
         String alg = buffer.getString();
 
