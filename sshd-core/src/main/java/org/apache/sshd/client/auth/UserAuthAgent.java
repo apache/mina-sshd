@@ -61,7 +61,7 @@ public class UserAuthAgent extends AbstractUserAuth {
             bs.putString(session.getKex().getH());
             bs.putCommand(SshConstants.Message.SSH_MSG_USERAUTH_REQUEST);
             bs.putString(username);
-            bs.putString(AUTHENTICATION_SERVICE);
+            bs.putString(service);
             bs.putString("publickey");
             bs.putByte((byte) 1);
             bs.putString((key instanceof RSAPublicKey) ? KeyPairProvider.SSH_RSA : KeyPairProvider.SSH_DSS);
