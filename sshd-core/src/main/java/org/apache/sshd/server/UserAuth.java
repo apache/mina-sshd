@@ -39,9 +39,32 @@ public interface UserAuth {
      * @param username the user trying to log in
      * @param buffer the request buffer containing parameters specific to this request
      * @return <code>true</code> if the authentication succeeded, <code>false</code> if the authentication
-     *          is not finished yet
+     *          failed and <code>null</code></code>is not finished yet
      * @throws Exception if the authentication fails
      */
     Boolean auth(ServerSession session, String username, String service, Buffer buffer) throws Exception;
 
+    /**
+     * Handle another step in the authentication process.
+     *
+     * @param buffer  the request buffer containing parameters specific to this request
+     * @return <code>true</code> if the authentication succeeded, <code>false</code> if the authentication
+     *          failed and <code>null</code></code>is not finished yet
+     * @throws Exception if the authentication fails
+     */
+    Boolean next(Buffer buffer) throws Exception;
+
+    /**
+     * Get a user name which has been derived from the handshaking process, or the initial name if
+     * nothing has been found.
+     *
+     * @return The user name
+     * @throws Exception if the request fails
+     */
+    String getUserName() throws Exception;
+
+    /**
+     * Free any system resources used by the module.
+     */
+    void destroy();
 }

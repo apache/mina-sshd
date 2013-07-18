@@ -18,29 +18,44 @@
  */
 package org.apache.sshd.server.auth;
 
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.server.UserAuth;
 import org.apache.sshd.server.session.ServerSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * TODO Add javadoc
- *
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class UserAuthNone extends AbstractUserAuth {
+public abstract class AbstractUserAuth implements UserAuth {
 
-    public static class Factory implements NamedFactory<UserAuth> {
-        public String getName() {
-            return "none";
-        }
-        public UserAuth create() {
-            return new UserAuthNone();
-        }
+    protected final Logger log = LoggerFactory.getLogger(this.getClass());
+
+    protected ServerSession session;
+    protected String service;
+    protected String username;
+
+    public String getUserName() {
+        return username;
     }
 
-    public Boolean doAuth(Buffer buffer, boolean init) {
-        return true;
+    public String getService() {
+        return service;
     }
+
+    public Boolean auth(ServerSession session, String username, String service, Buffer buffer) throws Exception {
+        this.session = session;
+        this.username = username;
+        this.service = service;
+        return doAuth(buffer, true);
+    }
+
+    public Boolean next(Buffer buffer) throws Exception {
+        return doAuth(buffer, false);
+    }
+
+    public void destroy() {
+    }
+
+    protected abstract Boolean doAuth(Buffer buffer, boolean init) throws Exception;
 
 }

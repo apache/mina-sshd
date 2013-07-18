@@ -43,10 +43,6 @@ public class UserAuthPassword extends AbstractUserAuth {
         this.password = password;
     }
 
-    public String getUsername() {
-        return username;
-    }
-
     public Result next(Buffer buffer) throws IOException {
         if (buffer == null) {
             log.info("Send SSH_MSG_USERAUTH_REQUEST for password");

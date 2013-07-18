@@ -32,4 +32,9 @@ public interface UserInteraction {
      */
     void welcome(String banner);
 
+    String[] interactive(String destination,
+                         String name,
+                         String instruction,
+                         String[] prompt,
+                         boolean[] echo);
 }

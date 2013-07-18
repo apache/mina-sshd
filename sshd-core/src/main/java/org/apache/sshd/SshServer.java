@@ -84,6 +84,7 @@ import org.apache.sshd.server.PasswordAuthenticator;
 import org.apache.sshd.server.PublickeyAuthenticator;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.UserAuth;
+import org.apache.sshd.server.auth.UserAuthKeyboardInteractive;
 import org.apache.sshd.server.auth.UserAuthPassword;
 import org.apache.sshd.server.auth.UserAuthPublicKey;
 import org.apache.sshd.server.auth.gss.GSSAuthenticator;
@@ -287,6 +288,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
             List<NamedFactory<UserAuth>> factories = new ArrayList<NamedFactory<UserAuth>>();
             if (getPasswordAuthenticator() != null) {
                 factories.add(new UserAuthPassword.Factory());
+                factories.add(new UserAuthKeyboardInteractive.Factory());
             }
             if (getPublickeyAuthenticator() != null) {
                 factories.add(new UserAuthPublicKey.Factory());

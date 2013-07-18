@@ -71,6 +71,11 @@ public interface ClientSession extends Session {
     AuthFuture authPassword(String username, String password) throws IOException;
 
     /**
+     * Authenticate the session with the given username and password.
+     */
+    AuthFuture authInteractive(String username, String password) throws IOException;
+
+    /**
      * Authenticate the session with the given username and public key.
      */
     AuthFuture authPublicKey(String username, KeyPair key) throws IOException;

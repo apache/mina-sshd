@@ -41,6 +41,7 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.server.UserAuth;
+import org.apache.sshd.server.auth.AbstractUserAuth;
 import org.apache.sshd.server.auth.UserAuthPassword;
 import org.apache.sshd.server.auth.UserAuthPublicKey;
 import org.apache.sshd.server.session.ServerSession;
@@ -80,11 +81,8 @@ public class AuthenticationTest {
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
         sshd.setPublickeyAuthenticator(new BogusPublickeyAuthenticator());
-        sshd.setUserAuthFactories(Arrays.asList(
-                new UserAuthDummy.Factory(), new UserAuthPassword.Factory(), new UserAuthPublicKey.Factory()
-        ));
         sshd.getProperties().put(SshServer.WELCOME_BANNER, WELCOME);
-        sshd.getProperties().put(SshServer.AUTH_METHODS, "publickey,password publickey,dummy");
+        sshd.getProperties().put(SshServer.AUTH_METHODS, "publickey,password publickey,keyboard-interactive");
         sshd.setSessionFactory(new SessionFactory() {
             @Override
             protected AbstractSession doCreateSession(IoSession ioSession) throws Exception {
@@ -116,7 +114,7 @@ public class AuthenticationTest {
     }
 
     @Test
-    public void testAuth() throws Exception {
+    public void testAuthPasswordOnly() throws Exception {
         SshClient client = SshClient.setUpDefaultClient();
         client.start();
         ClientSession s = client.connect("localhost", port).await().getSession();
@@ -124,10 +122,37 @@ public class AuthenticationTest {
 
         assertFalse(s.authPassword("smx", "smx").await().isSuccess());
 
+        s.close(true);
+        client.stop();
+    }
+
+    @Test
+    public void testAuthKeyPassword() throws Exception {
+        SshClient client = SshClient.setUpDefaultClient();
+        client.start();
+        ClientSession s = client.connect("localhost", port).await().getSession();
+        s.waitFor(ClientSession.CLOSED | ClientSession.WAIT_AUTH, 0);
+
         KeyPair pair = Utils.createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
         assertFalse(s.authPublicKey("smx", pair).await().isSuccess());
 
         assertTrue(s.authPassword("smx", "smx").await().isSuccess());
+
+        s.close(true);
+        client.stop();
+    }
+
+    @Test
+    public void testAuthKeyInteractive() throws Exception {
+        SshClient client = SshClient.setUpDefaultClient();
+        client.start();
+        ClientSession s = client.connect("localhost", port).await().getSession();
+        s.waitFor(ClientSession.CLOSED | ClientSession.WAIT_AUTH, 0);
+
+        KeyPair pair = Utils.createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
+        assertFalse(s.authPublicKey("smx", pair).await().isSuccess());
+
+        assertTrue(s.authInteractive("smx", "smx").await().isSuccess());
 
         s.close(true);
         client.stop();
@@ -145,17 +170,4 @@ public class AuthenticationTest {
         }
     }
 
-    public static class UserAuthDummy implements UserAuth {
-        public static class Factory implements NamedFactory<UserAuth> {
-            public String getName() {
-                return "dummy";
-            }
-            public UserAuth create() {
-                return new UserAuthDummy();
-            }
-        }
-        public Boolean auth(ServerSession session, String username, String service, Buffer buffer) throws Exception {
-            return Boolean.TRUE;
-        }
-    }
 }

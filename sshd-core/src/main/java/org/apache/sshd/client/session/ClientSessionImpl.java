@@ -33,6 +33,7 @@ import org.apache.sshd.client.ServerKeyVerifier;
 import org.apache.sshd.client.UserAuth;
 import org.apache.sshd.client.UserInteraction;
 import org.apache.sshd.client.auth.UserAuthAgent;
+import org.apache.sshd.client.auth.UserAuthKeyboardInteractive;
 import org.apache.sshd.client.auth.UserAuthPassword;
 import org.apache.sshd.client.auth.UserAuthPublicKey;
 import org.apache.sshd.client.channel.ChannelDirectTcpip;
@@ -145,6 +146,44 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
             }
             authFuture = new DefaultAuthFuture(lock);
             userAuth = new UserAuthPassword(this, AUTHENTICATION_SERVICE, user, password);
+            setState(State.UserAuth);
+
+            switch (userAuth.next(null)) {
+                case Success:
+                    authFuture.setAuthed(true);
+                    username = userAuth.getUsername();
+                    authed = true;
+                    setState(State.Running);
+                    break;
+                case Failure:
+                    authFuture.setAuthed(false);
+                    userAuth = null;
+                    setState(State.WaitForAuth);
+                    break;
+                case Continued:
+                    break;
+            }
+            return authFuture;
+        }
+    }
+
+    public AuthFuture authInteractive(String user, String password) throws IOException {
+        synchronized (lock) {
+            if (closeFuture.isClosed()) {
+                throw new IllegalStateException("Session is closed");
+            }
+            if (authed) {
+                throw new IllegalStateException("User authentication has already been performed");
+            }
+            if (userAuth != null) {
+                throw new IllegalStateException("A user authentication request is already pending");
+            }
+            waitFor(CLOSED | WAIT_AUTH, 0);
+            if (closeFuture.isClosed()) {
+                throw new IllegalStateException("Session is closed");
+            }
+            authFuture = new DefaultAuthFuture(lock);
+            userAuth = new UserAuthKeyboardInteractive(this, AUTHENTICATION_SERVICE, user, password);
             setState(State.UserAuth);
 
             switch (userAuth.next(null)) {

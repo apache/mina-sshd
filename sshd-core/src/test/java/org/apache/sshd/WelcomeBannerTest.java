@@ -69,6 +69,9 @@ public class WelcomeBannerTest {
             public void welcome(String banner) {
                 welcome.set(banner);
             }
+            public String[] interactive(String destination, String name, String instruction, String[] prompt, boolean[] echo) {
+                return null;
+            }
         });
         client.start();
         ClientSession session = client.connect("localhost", port).await().getSession();

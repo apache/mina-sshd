@@ -44,7 +44,6 @@ import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.Buffer;
-import org.apache.sshd.server.HandshakingUserAuth;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.UserAuth;
 import org.apache.sshd.server.channel.OpenChannelException;
@@ -79,7 +78,7 @@ public class ServerSession extends AbstractSession {
     private String authUserName;
     private String authMethod;
     private String authService;
-    private HandshakingUserAuth currentAuth;
+    private UserAuth currentAuth;
 
     public ServerSession(FactoryManager server, IoSession ioSession) throws Exception {
         super(server, ioSession);
@@ -305,23 +304,27 @@ public class ServerSession extends AbstractSession {
             // A timeout less than one means there is no timeout.
             return;
         }
-        unscheduleIdleTimer();
-        Runnable idleTimerTask = new Runnable() {
-            public void run() {
-                try {
-                    processIdleTimer();
-                } catch (IOException e) {
-                    // Ignore
+        synchronized (this) {
+            unscheduleIdleTimer();
+            Runnable idleTimerTask = new Runnable() {
+                public void run() {
+                    try {
+                        processIdleTimer();
+                    } catch (IOException e) {
+                        // Ignore
+                    }
                 }
-            }
-        };
-        idleTimerFuture = getScheduledExecutorService().schedule(idleTimerTask, idleTimeout, TimeUnit.MILLISECONDS);
+            };
+            idleTimerFuture = getScheduledExecutorService().schedule(idleTimerTask, idleTimeout, TimeUnit.MILLISECONDS);
+        }
     }
 
     private void unscheduleIdleTimer() {
-        if (idleTimerFuture != null) {
-            idleTimerFuture.cancel(false);
-            idleTimerFuture = null;
+        synchronized (this) {
+            if (idleTimerFuture != null) {
+                idleTimerFuture.cancel(false);
+                idleTimerFuture = null;
+            }
         }
     }
 
@@ -452,7 +455,7 @@ public class ServerSession extends AbstractSession {
                 }
                 buffer.rpos(buffer.rpos() - 1);
                 try {
-                    authed = currentAuth.next(this, buffer);
+                    authed = currentAuth.next(buffer);
                 } catch (Exception e) {
                     // Continue
                     log.debug("Authentication failed: {}", e.getMessage());
@@ -462,9 +465,7 @@ public class ServerSession extends AbstractSession {
             if (authed == null) {
                 // authentication is still ongoing
                 log.debug("Authentication not finished");
-                if (auth instanceof HandshakingUserAuth) {
-                    currentAuth = (HandshakingUserAuth) auth;
-                }
+                currentAuth = auth;
             } else if (authed) {
                 log.debug("Authentication succeeded");
                 if (currentAuth != null) {

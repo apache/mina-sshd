@@ -31,30 +31,45 @@ import org.apache.sshd.server.session.ServerSession;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class UserAuthPassword extends AbstractUserAuth {
+public class UserAuthKeyboardInteractive extends AbstractUserAuth {
 
     public static class Factory implements NamedFactory<UserAuth> {
         public String getName() {
-            return "password";
+            return "keyboard-interactive";
         }
         public UserAuth create() {
-            return new UserAuthPassword();
+            return new UserAuthKeyboardInteractive();
         }
     }
 
-    public Boolean doAuth(Buffer buffer, boolean init) throws Exception {
-        if (!init) {
-            throw new IllegalStateException();
-        }
+    @Override
+    protected Boolean doAuth(Buffer buffer, boolean init) throws Exception {
         if (!"ssh-connection".equals(service)) {
             throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "Unsupported service '" + service + "'");
         }
-        boolean newPassword = buffer.getBoolean();
-        if (newPassword) {
-            throw new IllegalStateException("Password changes are not supported");
+        if (init) {
+            // Prompt for password
+            buffer = session.createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_INFO_REQUEST, 0);
+            buffer.putString("Password authentication");
+            buffer.putString("");
+            buffer.putString("en-US");
+            buffer.putInt(1);
+            buffer.putString("Password: ");
+            buffer.putBoolean(false);
+            session.writePacket(buffer);
+            return null;
+        } else {
+            SshConstants.Message cmd = buffer.getCommand();
+            if (cmd != SshConstants.Message.SSH_MSG_USERAUTH_INFO_RESPONSE) {
+                throw new SshException("Received unexepected message: " + cmd);
+            }
+            int num = buffer.getInt();
+            if (num != 1) {
+                throw new SshException("Expected 1 response from user but received " + num);
+            }
+            String password = buffer.getString();
+            return checkPassword(session, username, password);
         }
-        String password = buffer.getString();
-        return checkPassword(session, username, password);
     }
 
     private boolean checkPassword(ServerSession session, String username, String password) throws Exception {

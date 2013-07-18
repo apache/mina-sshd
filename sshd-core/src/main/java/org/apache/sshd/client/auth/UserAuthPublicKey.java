@@ -48,10 +48,6 @@ public class UserAuthPublicKey extends AbstractUserAuth {
         this.key = key;
     }
 
-    public String getUsername() {
-        return username;
-    }
-
     public Result next(Buffer buffer) throws IOException {
         if (buffer == null) {
             try {

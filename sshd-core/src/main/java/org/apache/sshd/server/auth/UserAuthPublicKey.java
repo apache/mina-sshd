@@ -36,7 +36,7 @@ import org.apache.sshd.server.session.ServerSession;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class UserAuthPublicKey implements UserAuth {
+public class UserAuthPublicKey extends AbstractUserAuth {
 
     public static class Factory implements NamedFactory<UserAuth> {
         public String getName() {
@@ -47,7 +47,10 @@ public class UserAuthPublicKey implements UserAuth {
         }
     }
 
-    public Boolean auth(ServerSession session, String username, String service, Buffer buffer) throws Exception {
+    public Boolean doAuth(Buffer buffer, boolean init) throws Exception {
+        if (!init) {
+            throw new IllegalStateException();
+        }
         if (!"ssh-connection".equals(service)) {
             throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "Unsupported service '" + service + "'");
         }

@@ -22,8 +22,8 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.util.Buffer;
-import org.apache.sshd.server.HandshakingUserAuth;
 import org.apache.sshd.server.UserAuth;
+import org.apache.sshd.server.auth.AbstractUserAuth;
 import org.apache.sshd.server.session.ServerSession;
 import org.ietf.jgss.GSSContext;
 import org.ietf.jgss.GSSCredential;
@@ -31,8 +31,6 @@ import org.ietf.jgss.GSSException;
 import org.ietf.jgss.GSSManager;
 import org.ietf.jgss.MessageProp;
 import org.ietf.jgss.Oid;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Prototype user authentication handling gssapi-with-mic.  Implements <code>HandshakingUserAuth</code> because
@@ -40,191 +38,138 @@ import org.slf4j.LoggerFactory;
  * <p/>
  * Several methods are available for overriding in specific circumstances.
  */
-public class UserAuthGSS implements HandshakingUserAuth {
+public class UserAuthGSS extends AbstractUserAuth {
 
     // Oids for the Kerberos 5 mechanism and principal
 
     public static final Oid KRB5_MECH = createOID("1.2.840.113554.1.2.2");
     public static final Oid KRB5_NT_PRINCIPAL = createOID("1.2.840.113554.1.2.2.1");
 
-    // Options:
-    //
-    // Service principal name: if unset, use host/hostname
-
-    private String servicePrincipalName;
-
-    // Location of Kerberos key table; if unset use default
-
-    private String keytabFile;
-
     // The on-going GSS context.
-
-    private GSSContext ctxt;
-
-    // Accept credentials
-
-    private GSSCredential creds;
-
-    // Original request data
-
-    private String user;
-    private String service;
+    private GSSContext context;
 
     // Identity from context
-
     private String identity;
-
-    // Logging
-
-    private Logger log = LoggerFactory.getLogger(getClass());
 
     /**
      * Handle the first authentication step.
-     *
-     * @param sess The server session
-     * @param user The user name from the request
-     * @param buff The request buffer
-     * @return True or false if the authentication succeeded, or <code>null</code> to continue further
-     * @throws Exception If something went wrong
      */
-
-    public Boolean auth(ServerSession sess, String user, String service, Buffer buff) throws Exception {
-        GSSAuthenticator auth = getAuthenticator(sess);
-
-        this.user = user;
-        this.service = service;
-
-        // Get mechanism count from buffer and look for Kerberos 5.
-
-        int num = buff.getInt();
-
-        for (int i = 0; i < num; i++) {
-            Oid oid = new Oid(buff.getBytes());
-
-            if (oid.equals(KRB5_MECH)) {
-                log.debug("UserAuthGSS: found Kerberos 5");
-
-                // Validate initial user before proceeding
-
-                if (!auth.validateInitialUser(sess, user)) {
-                    return Boolean.FALSE;
-                }
-
-                GSSManager mgr = auth.getGSSManager();
-                GSSCredential creds = auth.getGSSCredential(mgr);
-
-                if (creds == null) {
-                    return Boolean.FALSE;
-                }
-
-                ctxt = mgr.createContext(creds);
-
-                // Send the matching mechanism back to the client
-
-                Buffer b = sess.createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_INFO_REQUEST, 0);
-                byte[] out = oid.getDER();
-
-                b.putBytes(out);
-                sess.writePacket(b);
-
-                return null;
-            }
-        }
-
-        // No matching mechanism found
-
-        return Boolean.FALSE;
-    }
-
-    /**
-     * Check whether a particular message is handled here.
-     *
-     * @param msg The message
-     * @return <code>true</code> if the message is handled
-     */
-    public boolean handles(SshConstants.Message msg) {
-        return msg == SshConstants.Message.SSH_MSG_USERAUTH_INFO_RESPONSE || msg == SshConstants.Message.SSH_MSG_USERAUTH_GSSAPI_MIC && ctxt.isEstablished();
-    }
-
-    /**
-     * Handle another step in the authentication process.
-     *
-     * @param session the current ssh session
-     * @param buffer  the request buffer containing parameters specific to this request
-     * @return <code>true</code> if the authentication succeeded, <code>false</code> if the authentication
-     *         is not finished yet
-     * @throws Exception if the authentication fails
-     */
-    public Boolean next(ServerSession session, Buffer buffer) throws Exception {
-
-        SshConstants.Message msg = buffer.getCommand();
-        if (!handles(msg)) {
-            throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "Packet not supported by user authentication method");
-        }
-
+    protected Boolean doAuth(Buffer buffer, boolean initial) throws Exception {
         GSSAuthenticator auth = getAuthenticator(session);
 
-        log.debug("In krb5.next: msg = " + msg);
+        if (initial) {
+            // Get mechanism count from buffer and look for Kerberos 5.
 
-        // If the context is established, this must be a MIC message
+            int num = buffer.getInt();
 
-        if (ctxt.isEstablished()) {
+            for (int i = 0; i < num; i++) {
+                Oid oid = new Oid(buffer.getBytes());
 
-            if (msg != SshConstants.Message.SSH_MSG_USERAUTH_GSSAPI_MIC) {
-                return Boolean.FALSE;
-            }
+                if (oid.equals(KRB5_MECH)) {
+                    log.debug("UserAuthGSS: found Kerberos 5");
 
-            // Make the MIC message so the token can be verified
+                    // Validate initial user before proceeding
 
-            Buffer msgbuf = new Buffer();
+                    if (!auth.validateInitialUser(session, username)) {
+                        return Boolean.FALSE;
+                    }
 
-            msgbuf.putString(session.getSessionId());
-            msgbuf.putByte(SshConstants.Message.SSH_MSG_USERAUTH_REQUEST.toByte());
-            msgbuf.putString(user.getBytes("UTF-8"));
-            msgbuf.putString(service);
-            msgbuf.putString("gssapi-with-mic");
+                    GSSManager mgr = auth.getGSSManager();
+                    GSSCredential creds = auth.getGSSCredential(mgr);
 
-            byte[] msgbytes = msgbuf.getCompactData();
-            byte[] inmic = buffer.getBytes();
+                    if (creds == null) {
+                        return Boolean.FALSE;
+                    }
 
-            try {
-                ctxt.verifyMIC(inmic, 0, inmic.length, msgbytes, 0, msgbytes.length, new MessageProp(false));
-                log.debug("MIC verified");
-                return Boolean.TRUE;
-            } catch (GSSException e) {
-                log.info("GSS verification error: {}", e.toString());
-                return Boolean.FALSE;
-            }
+                    context = mgr.createContext(creds);
 
-        } else {
+                    // Send the matching mechanism back to the client
 
-            // Not established - new token to process
+                    Buffer b = session.createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_INFO_REQUEST, 0);
+                    byte[] out = oid.getDER();
 
-            byte[] tok = buffer.getBytes();
-            byte[] out = ctxt.acceptSecContext(tok, 0, tok.length);
-            boolean established = ctxt.isEstablished();
+                    b.putBytes(out);
+                    session.writePacket(b);
 
-            // Validate identity if context is now established
-
-            if (established && identity == null) {
-                identity = ctxt.getSrcName().toString();
-                log.info("GSS identity is {}", identity);
-
-                if (!auth.validateIdentity(session, identity)) {
-                    return Boolean.FALSE;
+                    return null;
                 }
             }
 
-            // Send return token if necessary
+            // No matching mechanism found
 
-            if (out != null && out.length > 0) {
-                Buffer b = session.createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_INFO_RESPONSE, 0);
+            return Boolean.FALSE;
+        }
+        else
+        {
+            SshConstants.Message msg = buffer.getCommand();
+            if (!(msg == SshConstants.Message.SSH_MSG_USERAUTH_INFO_RESPONSE ||
+                    msg == SshConstants.Message.SSH_MSG_USERAUTH_GSSAPI_MIC && context.isEstablished())) {
+                throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
+                        "Packet not supported by user authentication method");
+            }
 
-                b.putBytes(out);
-                session.writePacket(b);
-                return null;
+            log.debug("In krb5.next: msg = " + msg);
+
+            // If the context is established, this must be a MIC message
+
+            if (context.isEstablished()) {
+
+                if (msg != SshConstants.Message.SSH_MSG_USERAUTH_GSSAPI_MIC) {
+                    return Boolean.FALSE;
+                }
+
+                // Make the MIC message so the token can be verified
+
+                Buffer msgbuf = new Buffer();
+
+                msgbuf.putString(session.getSessionId());
+                msgbuf.putByte(SshConstants.Message.SSH_MSG_USERAUTH_REQUEST.toByte());
+                msgbuf.putString(username.getBytes("UTF-8"));
+                msgbuf.putString(service);
+                msgbuf.putString("gssapi-with-mic");
+
+                byte[] msgbytes = msgbuf.getCompactData();
+                byte[] inmic = buffer.getBytes();
+
+                try {
+                    context.verifyMIC(inmic, 0, inmic.length, msgbytes, 0, msgbytes.length, new MessageProp(false));
+                    log.debug("MIC verified");
+                    return Boolean.TRUE;
+                } catch (GSSException e) {
+                    log.info("GSS verification error: {}", e.toString());
+                    return Boolean.FALSE;
+                }
+
             } else {
-                return established;
+
+                // Not established - new token to process
+
+                byte[] tok = buffer.getBytes();
+                byte[] out = context.acceptSecContext(tok, 0, tok.length);
+                boolean established = context.isEstablished();
+
+                // Validate identity if context is now established
+
+                if (established && identity == null) {
+                    identity = context.getSrcName().toString();
+                    log.info("GSS identity is {}", identity);
+
+                    if (!auth.validateIdentity(session, identity)) {
+                        return Boolean.FALSE;
+                    }
+                }
+
+                // Send return token if necessary
+
+                if (out != null && out.length > 0) {
+                    Buffer b = session.createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_INFO_RESPONSE, 0);
+
+                    b.putBytes(out);
+                    session.writePacket(b);
+                    return null;
+                } else {
+                    return established;
+                }
             }
         }
     }
@@ -235,28 +180,21 @@ public class UserAuthGSS implements HandshakingUserAuth {
      *
      * @return The user name
      */
-    public String getUserName() throws GSSException {
-        return identity;
+    public String getUserName() {
+        return identity != null ? identity : username;
     }
 
     /**
      * Free any system resources used by the module.
      */
     public void destroy() {
-        if (creds != null) {
+        if (context != null) {
             try {
-                creds.dispose();
+                context.dispose();
             } catch (GSSException e) {
                 // ignore
-            }
-
-            if (ctxt != null) {
-
-                try {
-                    ctxt.dispose();
-                } catch (GSSException e) {
-                    // ignore
-                }
+            } finally {
+                context = null;
             }
         }
     }
@@ -303,7 +241,6 @@ public class UserAuthGSS implements HandshakingUserAuth {
          *
          * @return Tge name, always 'gssapi-with-mic' here.
          */
-
         public String getName() {
             return "gssapi-with-mic";
         }
@@ -313,7 +250,6 @@ public class UserAuthGSS implements HandshakingUserAuth {
          *
          * @return The instance
          */
-
         public UserAuth create() {
             return new UserAuthGSS();
         }
