@@ -44,6 +44,8 @@ import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.TcpipForwarder;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.util.Buffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * TODO Add javadoc
@@ -51,6 +53,8 @@ import org.apache.sshd.common.util.Buffer;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class DefaultTcpipForwarder extends IoHandlerAdapter implements TcpipForwarder {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultTcpipForwarder.class);
 
     private final Session session;
     private final Map<Integer, SshdSocketAddress> localToRemote = new HashMap<Integer, SshdSocketAddress>();
@@ -194,6 +198,7 @@ public class DefaultTcpipForwarder extends IoHandlerAdapter implements TcpipForw
     public void sessionClosed(IoSession session) throws Exception {
         TcpipClientChannel channel = (TcpipClientChannel) session.getAttribute(TcpipClientChannel.class);
         if (channel != null) {
+            LOGGER.debug("Session closed, will now close the channel");
             channel.close(false);
         }
     }
