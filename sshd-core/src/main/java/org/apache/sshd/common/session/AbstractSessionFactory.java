@@ -20,6 +20,7 @@ package org.apache.sshd.common.session;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.apache.mina.core.session.IoSession;
 import org.apache.sshd.common.AbstractSessionIoHandler;
@@ -32,13 +33,12 @@ import org.apache.sshd.common.SessionListener;
  */
 public abstract class AbstractSessionFactory extends AbstractSessionIoHandler {
 
-    protected final List<SessionListener> listeners = new ArrayList<SessionListener>();
+    protected final List<SessionListener> listeners = new CopyOnWriteArrayList<SessionListener>();
 
     protected AbstractSession createSession(IoSession ioSession) throws Exception {
         AbstractSession session = doCreateSession(ioSession);
-        List<SessionListener> sl = new ArrayList<SessionListener>(this.listeners);
 
-        for (SessionListener l : sl) {
+        for (SessionListener l : listeners) {
             l.sessionCreated(session);
             session.addListener(l);
         }
@@ -57,10 +57,7 @@ public abstract class AbstractSessionFactory extends AbstractSessionIoHandler {
         if (listener == null) {
             throw new IllegalArgumentException();
         }
-
-        synchronized (this.listeners) {
-            this.listeners.add(listener);
-        }
+        this.listeners.add(listener);
     }
 
     /**
@@ -69,9 +66,7 @@ public abstract class AbstractSessionFactory extends AbstractSessionIoHandler {
      * @param listener the session listener to remove
      */
     public void removeListener(SessionListener listener) {
-        synchronized (this.listeners) {
-            this.listeners.remove(listener);
-        }
+        this.listeners.remove(listener);
     }
 
 }
