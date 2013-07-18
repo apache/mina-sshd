@@ -171,11 +171,20 @@ public class ScpTest {
         final Properties props = new Properties();
         props.setProperty("test", "test-passed");
         File f = new File("target/scp/gan");
-        scp_client.put(toBytes(props, ""), "test.properties", "target/scp/gan");
+        f.mkdirs();
         assertTrue(f.exists());
-        scp_client.put(toBytes(props, ""), "test2.properties", "target/scp/gan");
-        assertTrue(f.exists());
-        f.delete();
+
+        String name = "test.properties";
+        scp_client.put(toBytes(props, ""), name, "target/scp/gan");
+        assertTrue(new File(f, name).exists());
+        assertTrue(new File(f, name).delete());
+
+        name = "test2.properties";
+        scp_client.put(toBytes(props, ""), name, "target/scp/gan");
+        assertTrue(new File(f, name).exists());
+        assertTrue(new File(f, name).delete());
+
+        assertTrue(f.delete());
         conn.close();
     }
 
