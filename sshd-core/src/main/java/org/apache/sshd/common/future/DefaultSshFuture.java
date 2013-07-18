@@ -134,7 +134,8 @@ public class DefaultSshFuture<T extends SshFuture> implements SshFuture<T> {
      * when it's not allowed.
      */
     private boolean await0(long timeoutMillis, boolean interruptable) throws InterruptedException {
-        long endTime = System.currentTimeMillis() + timeoutMillis;
+        long curTime = System.currentTimeMillis();
+        long endTime = Long.MAX_VALUE - timeoutMillis < curTime ? Long.MAX_VALUE : curTime + timeoutMillis;
 
         synchronized (lock) {
             if (ready) {
