@@ -28,10 +28,12 @@ import org.apache.sshd.sftp.reply.*;
 import org.apache.sshd.sftp.request.*;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.GregorianCalendar;
 import java.util.Iterator;
+import java.util.List;
 
 import static org.apache.sshd.sftp.subsystem.SftpConstants.*;
 import static org.apache.sshd.sftp.subsystem.SftpConstants.SSH_FXP_STATUS;
@@ -143,7 +145,15 @@ public class Serializer {
             }
             case SSH_FXP_REALPATH: {
                 String path = buffer.getString();
-                request = new SshFxpRealpathRequest(id, path);
+                byte options = SSH_FXP_REALPATH_NO_CHECK;
+                List<String> compose = new ArrayList<String>();
+                if (session.getVersion() >= 6 && buffer.available() > 0) {
+                    options = buffer.getByte();
+                }
+                while (session.getVersion() >= 6 && buffer.available() > 0) {
+                    compose.add(buffer.getString());
+                }
+                request = new SshFxpRealpathRequest(id, path, options, compose);
                 break;
             }
             case SSH_FXP_STAT: {

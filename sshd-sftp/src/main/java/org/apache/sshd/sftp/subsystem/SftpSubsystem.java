@@ -307,10 +307,9 @@ public class SftpSubsystem implements Command, SessionAware, FileSystemAware, Sf
         if (path.trim().length() == 0) {
             path = ".";
         }
-        // TODO: handle optional args
         SshFile p = resolveFile(path);
-        if (!p.doesExist()) {
-            return new SshFxpStatusReply(id, SSH_FX_NO_SUCH_FILE, p.getAbsolutePath());
+        for (String s : request.getCompose()) {
+            p = this.root.getFile(p, s);
         }
         String normalizedPath = SelectorUtils.normalizePath(p.getAbsolutePath(), "/");
         if (normalizedPath.length() == 0) {
@@ -320,10 +319,19 @@ public class SftpSubsystem implements Command, SessionAware, FileSystemAware, Sf
         if (p.getName().length() == 0) {
             p = resolveFile(".");
         }
-        SshFxpNameReply reply = new SshFxpNameReply(id);
-        int flags = SSH_FILEXFER_ATTR_PERMISSIONS | SSH_FILEXFER_ATTR_SIZE;
-        reply.addFile(p, normalizedPath, getLongName(p), new FileAttributes(p, flags));
-        return reply;
+        boolean exists = (request.getOptions() != SSH_FXP_REALPATH_NO_CHECK) && p.doesExist();
+        if (!exists && request.getOptions() == SSH_FXP_REALPATH_STAT_ALWAYS) {
+            return new SshFxpStatusReply(id, SSH_FX_NO_SUCH_FILE, p.getAbsolutePath());
+        } else if (exists && (request.getOptions() == SSH_FXP_REALPATH_STAT_IF || request.getOptions() == SSH_FXP_REALPATH_STAT_ALWAYS)) {
+            SshFxpNameReply reply = new SshFxpNameReply(id);
+            int flags = SSH_FILEXFER_ATTR_PERMISSIONS | SSH_FILEXFER_ATTR_SIZE;
+            reply.addFile(p, normalizedPath, getLongName(p), new FileAttributes(p, flags));
+            return reply;
+        } else {
+            SshFxpNameReply reply = new SshFxpNameReply(id);
+            reply.addFile(p, normalizedPath, getLongName(p), new FileAttributes());
+            return reply;
+        }
     }
 
     private Reply doProcessRmdir(SshFxpRmdirRequest request) throws IOException {

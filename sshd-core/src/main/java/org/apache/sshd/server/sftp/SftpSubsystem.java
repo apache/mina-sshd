@@ -21,10 +21,12 @@ package org.apache.sshd.server.sftp;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.EOFException;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
@@ -203,6 +205,10 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
     public static final int SSH_FXF_TRUNC = 0x00000010;
     public static final int SSH_FXF_EXCL = 0x00000020;
     public static final int SSH_FXF_TEXT = 0x00000040;
+
+    public static final int SSH_FXP_REALPATH_NO_CHECK =    0x00000001;
+    public static final int SSH_FXP_REALPATH_STAT_IF =     0x00000002;
+    public static final int SSH_FXP_REALPATH_STAT_ALWAYS = 0x00000003;
 
     public static final int ACE4_READ_DATA = 0x00000001;
     public static final int ACE4_LIST_DIRECTORY = 0x00000001;
@@ -895,10 +901,20 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                 if (path.trim().length() == 0) {
                     path = ".";
                 }
-                // TODO: handle optional args
+                byte options = SSH_FXP_REALPATH_NO_CHECK;
+                List<String> compose = new ArrayList<String>();
+                if (version >= 6 && buffer.available() > 0) {
+                    options = buffer.getByte();
+                }
+                while (version >= 6 && buffer.available() > 0) {
+                    compose.add(buffer.getString());
+                }
                 try {
                     SshFile p = resolveFile(path);
-                    sendPath(id, p);
+                    for (String s : compose) {
+                        p = this.root.getFile(p, s);
+                    }
+                    sendPath(id, p, options);
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
                     sendStatus(id, SSH_FX_NO_SUCH_FILE, e.getMessage());
@@ -970,7 +986,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
     }
 
 
-    protected void sendPath(int id, SshFile f) throws IOException {
+    protected void sendPath(int id, SshFile f, byte options) throws IOException {
         Buffer buffer = new Buffer();
         buffer.putByte((byte) SSH_FXP_NAME);
         buffer.putInt(id);
@@ -985,12 +1001,18 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         if (f.getName().length() == 0) {
             f = resolveFile(".");
         }
-        if (version <= 3) {
-            buffer.putString(getLongName(f)); // Format specified in the specs
-            buffer.putInt(0);
-        } else {
+        if (options == SSH_FXP_REALPATH_STAT_IF && f.doesExist() || options == SSH_FXP_REALPATH_STAT_ALWAYS) {
             buffer.putString(f.getName()); // Supposed to be UTF-8
             writeAttrs(buffer, f);
+        } else {
+            if (version <= 3) {
+                buffer.putString(getLongName(f)); // Format specified in the specs
+                buffer.putInt(0);
+            } else if (version >= 4 || options == SSH_FXP_REALPATH_NO_CHECK) {
+                buffer.putString(f.getName());
+                buffer.putInt(0);
+                buffer.putByte((byte) 0);
+            }
         }
         send(buffer);
     }

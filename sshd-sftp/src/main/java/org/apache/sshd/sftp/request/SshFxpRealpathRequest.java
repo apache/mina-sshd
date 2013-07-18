@@ -18,6 +18,8 @@
 */
 package org.apache.sshd.sftp.request;
 
+import java.util.List;
+
 import org.apache.sshd.sftp.subsystem.SftpConstants;
 
 /**
@@ -27,6 +29,8 @@ import org.apache.sshd.sftp.subsystem.SftpConstants;
  */
 public class SshFxpRealpathRequest extends BaseRequest {
 	private final String path;
+    private final byte options;
+    private final List<String> compose;
 
 	/**
 	 * Creates a SshFxpRealpathRequest instance.
@@ -34,9 +38,11 @@ public class SshFxpRealpathRequest extends BaseRequest {
 	 * @param id   The request id.
 	 * @param path The requested file path.
 	 */
-	public SshFxpRealpathRequest(final int id, final String path) {
+	public SshFxpRealpathRequest(final int id, final String path, final byte options, final List<String> compose) {
 		super(id);
 		this.path = path;
+        this.options = options;
+        this.compose = compose;
 	}
 
 	/**
@@ -61,4 +67,12 @@ public class SshFxpRealpathRequest extends BaseRequest {
 	public String getPath() {
 		return path;
 	}
+
+    public byte getOptions() {
+        return options;
+    }
+
+    public List<String> getCompose() {
+        return compose;
+    }
 }

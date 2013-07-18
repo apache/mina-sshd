@@ -268,6 +268,10 @@ public final class SftpConstants {
     public static final int SSH_FXF_EXCL = 0x00000020;
     public static final int SSH_FXF_TEXT = 0x00000040;
 
+    public static final int SSH_FXP_REALPATH_NO_CHECK =    0x00000001;
+    public static final int SSH_FXP_REALPATH_STAT_IF =     0x00000002;
+    public static final int SSH_FXP_REALPATH_STAT_ALWAYS = 0x00000003;
+
     public static final int ACE4_READ_DATA = 0x00000001;
     public static final int ACE4_LIST_DIRECTORY = 0x00000001;
     public static final int ACE4_WRITE_DATA = 0x00000002;
