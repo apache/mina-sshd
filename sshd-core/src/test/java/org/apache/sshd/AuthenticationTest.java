@@ -18,32 +18,14 @@
  */
 package org.apache.sshd;
 
-import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.Logger;
-import com.jcraft.jsch.UserInfo;
-import org.apache.mina.core.filterchain.IoFilterChain;
-import org.apache.mina.core.service.IoProcessor;
-import org.apache.mina.core.service.IoService;
-import org.apache.mina.core.service.TransportMetadata;
-import org.apache.mina.core.session.AbstractIoSession;
+import java.net.ServerSocket;
+import java.security.KeyPair;
+
 import org.apache.mina.core.session.IoSession;
-import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
-import org.apache.mina.transport.vmpipe.VmPipeAcceptor;
-import org.apache.mina.transport.vmpipe.VmPipeAddress;
-import org.apache.mina.transport.vmpipe.VmPipeConnector;
-import org.apache.sshd.client.UserInteraction;
-import org.apache.sshd.client.future.AuthFuture;
-import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.KeyPairProvider;
-import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.Session;
-import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.Buffer;
-import org.apache.sshd.server.UserAuth;
-import org.apache.sshd.server.auth.AbstractUserAuth;
-import org.apache.sshd.server.auth.UserAuthPassword;
-import org.apache.sshd.server.auth.UserAuthPublicKey;
+import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.session.SessionFactory;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
@@ -52,12 +34,6 @@ import org.apache.sshd.util.Utils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.net.ServerSocket;
-import java.net.SocketAddress;
-import java.security.KeyPair;
-import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertFalse;
@@ -159,7 +135,7 @@ public class AuthenticationTest {
     }
 
     public static class TestSession extends ServerSession {
-        public TestSession(FactoryManager server, IoSession ioSession) throws Exception {
+        public TestSession(ServerFactoryManager server, IoSession ioSession) throws Exception {
             super(server, ioSession);
         }
         public void setState(State state) {

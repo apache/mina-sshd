@@ -19,23 +19,23 @@
 package org.apache.sshd.server.session;
 
 import org.apache.mina.core.session.IoSession;
-import org.apache.sshd.SshServer;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.session.AbstractSessionFactory;
+import org.apache.sshd.server.ServerFactoryManager;
 
 /**
  * A factory of server sessions.
  * This class can be used as a way to customize the creation of server sessions.
  *
- * @see SshServer#setSessionFactory(SessionFactory) 
+ * @see org.apache.sshd.SshServer#setSessionFactory(SessionFactory)
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class SessionFactory extends AbstractSessionFactory {
 
-    protected SshServer server;
+    protected ServerFactoryManager server;
 
-    public void setServer(SshServer server) {
+    public void setServer(ServerFactoryManager server) {
         this.server = server;
     }
 

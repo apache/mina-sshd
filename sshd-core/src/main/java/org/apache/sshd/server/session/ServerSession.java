@@ -80,7 +80,7 @@ public class ServerSession extends AbstractSession {
     private String authService;
     private UserAuth currentAuth;
 
-    public ServerSession(FactoryManager server, IoSession ioSession) throws Exception {
+    public ServerSession(ServerFactoryManager server, IoSession ioSession) throws Exception {
         super(server, ioSession);
         maxAuthRequests = getIntProperty(ServerFactoryManager.MAX_AUTH_REQUESTS, maxAuthRequests);
         authTimeout = getIntProperty(ServerFactoryManager.AUTH_TIMEOUT, authTimeout);
