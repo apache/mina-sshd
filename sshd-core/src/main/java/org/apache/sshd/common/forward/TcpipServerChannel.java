@@ -182,8 +182,8 @@ public class TcpipServerChannel extends AbstractServerChannel {
     }
 
     public CloseFuture close(boolean immediately) {
-        return super.close(immediately).addListener(new SshFutureListener() {
-            public void operationComplete(SshFuture sshFuture) {
+        return super.close(immediately).addListener(new SshFutureListener<CloseFuture>() {
+            public void operationComplete(CloseFuture sshFuture) {
                 closeImmediately0();
             }
         });

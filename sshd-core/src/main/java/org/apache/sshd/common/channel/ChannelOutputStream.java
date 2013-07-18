@@ -132,8 +132,8 @@ public class ChannelOutputStream extends OutputStream {
                 channel.getSession().writePacket(buf);
             }
         } catch (WindowClosedException e) {
-          closed = true;
-          throw e;
+            closed = true;
+            throw e;
         } catch (SshException e) {
             throw e;
         } catch (Exception e) {
