@@ -18,15 +18,21 @@
  */
 package org.apache.sshd;
 
+import java.io.ByteArrayOutputStream;
 import java.net.ServerSocket;
 import java.util.Arrays;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.mina.core.session.IoSession;
 import org.apache.sshd.client.SessionFactory;
+import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.session.ClientSessionImpl;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.Session;
+import org.apache.sshd.common.SessionListener;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.server.Command;
@@ -65,6 +71,7 @@ public class ServerTest {
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setShellFactory(new EchoShellFactory());
         sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
+        sshd.setSessionFactory(new org.apache.sshd.server.session.SessionFactory());
         sshd.start();
     }
 
@@ -133,6 +140,39 @@ public class ServerTest {
         ClientSession s = client.connect("localhost", port).await().getSession();
         int res = s.waitFor(ClientSession.CLOSED, 5000);
         assertTrue((res & ClientSession.CLOSED) != 0);
+    }
+
+    @Test
+    public void testIdleTimeout() throws Exception {
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        sshd.getProperties().put(SshServer.IDLE_TIMEOUT, "1000");
+        sshd.getSessionFactory().addListener(new SessionListener() {
+            public void sessionCreated(Session session) {
+                System.out.println("Session created");
+            }
+            public void sessionChanged(Session session) {
+                System.out.println("Session changed");
+            }
+            public void sessionClosed(Session session) {
+                System.out.println("Session closed");
+                latch.countDown();
+            }
+        });
+
+        client = SshClient.setUpDefaultClient();
+        client.start();
+        ClientSession s = client.connect("localhost", port).await().getSession();
+        s.authPassword("test", "test").await();
+        ChannelShell shell = s.createShellChannel();
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ByteArrayOutputStream err = new ByteArrayOutputStream();
+        shell.setOut(out);
+        shell.setErr(err);
+        shell.open().await();
+        int res = s.waitFor(ClientSession.CLOSED, 5000);
+        assertTrue((res & ClientSession.CLOSED) != 0);
+        assertTrue(latch.await(1, TimeUnit.SECONDS));
     }
 
     @Test
