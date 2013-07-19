@@ -108,9 +108,6 @@ public class KeepAliveTest {
         ClientSession session = client.connect("localhost", port).await().getSession();
         session.authPassword("smx", "smx").await().isSuccess();
         ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
-        ByteArrayOutputStream sent = new ByteArrayOutputStream();
-        PipedOutputStream pipedIn = new TeePipedOutputStream(sent);
-        channel.setIn(new PipedInputStream(pipedIn));
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         ByteArrayOutputStream err = new ByteArrayOutputStream();
         channel.setOut(out);

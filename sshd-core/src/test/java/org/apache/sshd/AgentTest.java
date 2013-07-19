@@ -20,6 +20,7 @@ package org.apache.sshd;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.security.KeyPair;
@@ -120,15 +121,13 @@ public class AgentTest {
         ClientSession session1 = client1.connect("localhost", port1).await().getSession();
         assertTrue(session1.authAgent("smx").await().isSuccess());
         ChannelShell channel1 = session1.createShellChannel();
-        ByteArrayOutputStream sent = new ByteArrayOutputStream();
-        PipedOutputStream pipedIn = new TeePipedOutputStream(sent);
-        channel1.setIn(new PipedInputStream(pipedIn));
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         ByteArrayOutputStream err = new ByteArrayOutputStream();
         channel1.setOut(out);
         channel1.setErr(err);
         channel1.setAgentForwarding(true);
         channel1.open().await();
+        OutputStream pipedIn = channel1.getInvertedIn();
 
         synchronized (shellFactory.shell) {
             System.out.println("Possibly waiting for remote shell to start");

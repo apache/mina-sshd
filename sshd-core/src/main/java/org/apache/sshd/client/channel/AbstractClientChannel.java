@@ -43,6 +43,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     protected boolean opened;
     protected final String type;
     protected InputStream in;
+    protected OutputStream invertedIn;
     protected OutputStream out;
     protected OutputStream err;
     protected Integer exitStatus;
@@ -53,6 +54,10 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
 
     protected AbstractClientChannel(String type) {
         this.type = type;
+    }
+
+    public OutputStream getInvertedIn() {
+        return invertedIn;
     }
 
     public InputStream getIn() {
@@ -112,7 +117,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     @Override
     protected void doClose() {
         super.doClose();
-        IoUtils.closeQuietly(in, out, err);
+        IoUtils.closeQuietly(invertedIn, in, out, err);
     }
 
     public int waitFor(int mask, long timeout) {
@@ -239,7 +244,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         if ("exit-status".equals(req)) {
             buffer.getBoolean();
             synchronized (lock) {
-                exitStatus = Integer.valueOf(buffer.getInt());
+                exitStatus = buffer.getInt();
                 lock.notifyAll();
             }
         } else if ("exit-signal".equals(req)) {

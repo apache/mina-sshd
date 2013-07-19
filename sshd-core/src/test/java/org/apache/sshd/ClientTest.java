@@ -20,6 +20,7 @@ package org.apache.sshd;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.net.ServerSocket;
@@ -88,13 +89,52 @@ public class ClientTest {
         ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
 
         ByteArrayOutputStream sent = new ByteArrayOutputStream();
-        PipedOutputStream pipedIn = new TeePipedOutputStream(sent);
+        PipedOutputStream pipedIn = new PipedOutputStream();
         channel.setIn(new PipedInputStream(pipedIn));
+        OutputStream teeOut = new TeeOutputStream(sent, pipedIn);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         ByteArrayOutputStream err = new ByteArrayOutputStream();
         channel.setOut(out);
         channel.setErr(err);
         channel.open();
+
+        teeOut.write("this is my command\n".getBytes());
+        teeOut.flush();
+
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < 1000; i++) {
+            sb.append("0123456789");
+        }
+        sb.append("\n");
+        teeOut.write(sb.toString().getBytes());
+
+        teeOut.write("exit\n".getBytes());
+        teeOut.flush();
+
+        channel.waitFor(ClientChannel.CLOSED, 0);
+
+        channel.close(false);
+        client.stop();
+
+        assertArrayEquals(sent.toByteArray(), out.toByteArray());
+    }
+
+    @Test
+    public void testClientInverted() throws Exception {
+        SshClient client = SshClient.setUpDefaultClient();
+        client.start();
+        ClientSession session = client.connect("localhost", port).await().getSession();
+        session.authPassword("smx", "smx").await().isSuccess();
+        ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
+
+        ByteArrayOutputStream sent = new ByteArrayOutputStream();
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ByteArrayOutputStream err = new ByteArrayOutputStream();
+        channel.setOut(out);
+        channel.setErr(err);
+        channel.open().await();
+
+        OutputStream pipedIn = new TeeOutputStream(sent, channel.getInvertedIn());
 
         pipedIn.write("this is my command\n".getBytes());
         pipedIn.flush();
@@ -127,7 +167,8 @@ public class ClientTest {
 
 
         ByteArrayOutputStream sent = new ByteArrayOutputStream();
-        PipedOutputStream pipedIn = new TeePipedOutputStream(sent);
+        PipedOutputStream pipedIn = new PipedOutputStream();
+        OutputStream teeOut = new TeeOutputStream(sent, pipedIn);
         channel.setIn(new PipedInputStream(pipedIn));
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         ByteArrayOutputStream err = new ByteArrayOutputStream();
@@ -135,17 +176,17 @@ public class ClientTest {
         channel.setErr(err);
         channel.open();
 
-        pipedIn.write("this is my command\n".getBytes());
-        pipedIn.flush();
+        teeOut.write("this is my command\n".getBytes());
+        teeOut.flush();
 
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < 1000; i++) {
             sb.append("0123456789");
         }
         sb.append("\n");
-        pipedIn.write(sb.toString().getBytes());
+        teeOut.write(sb.toString().getBytes());
 
-        pipedIn.close();
+        teeOut.close();
 
         channel.waitFor(ClientChannel.CLOSED, 0);
 
@@ -168,7 +209,8 @@ public class ClientTest {
         session.authPassword("smx", "smx");
         ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
         ByteArrayOutputStream sent = new ByteArrayOutputStream();
-        PipedOutputStream pipedIn = new TeePipedOutputStream(sent);
+        PipedOutputStream pipedIn = new PipedOutputStream();
+        OutputStream teeOut = new TeeOutputStream(sent, pipedIn);
         channel.setIn(new PipedInputStream(pipedIn));
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         ByteArrayOutputStream err = new ByteArrayOutputStream();
@@ -181,15 +223,15 @@ public class ClientTest {
         int bytes = 0;
         for (int i = 0; i < 10000; i++) {
             byte[] data = "01234567890123456789012345678901234567890123456789\n".getBytes();
-            pipedIn.write(data);
-            pipedIn.flush();
+            teeOut.write(data);
+            teeOut.flush();
             bytes += data.length;
             if ((bytes & 0xFFF00000) != ((bytes - data.length) & 0xFFF00000)) {
                 System.out.println("Bytes written: " + bytes);
             }
         }
-        pipedIn.write("exit\n".getBytes());
-        pipedIn.flush();
+        teeOut.write("exit\n".getBytes());
+        teeOut.flush();
 
         long t1 = System.currentTimeMillis();
 
@@ -215,8 +257,7 @@ public class ClientTest {
         ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
         session.close(false);
 
-        ByteArrayOutputStream sent = new ByteArrayOutputStream();
-        PipedOutputStream pipedIn = new TeePipedOutputStream(sent);
+        PipedOutputStream pipedIn = new PipedOutputStream();
         channel.setIn(new PipedInputStream(pipedIn));
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         ByteArrayOutputStream err = new ByteArrayOutputStream();
@@ -295,8 +336,7 @@ public class ClientTest {
             ClientSession session = client.connect("localhost", port).await().getSession();
             session.authPassword("smx", "smx");
             ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
-            ByteArrayOutputStream sent = new ByteArrayOutputStream();
-            PipedOutputStream pipedIn = new TeePipedOutputStream(sent);
+            PipedOutputStream pipedIn = new PipedOutputStream();
             channel.setIn(new PipedInputStream(pipedIn));
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             ByteArrayOutputStream err = new ByteArrayOutputStream();

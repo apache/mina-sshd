@@ -19,6 +19,7 @@
 package org.apache.sshd;
 
 import java.io.ByteArrayOutputStream;
+import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.net.ServerSocket;
@@ -34,7 +35,7 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.cipher.BlowfishCBC;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
-import org.apache.sshd.util.TeePipedOutputStream;
+import org.apache.sshd.util.TeeOutputStream;
 import org.apache.sshd.util.Utils;
 import org.junit.After;
 
@@ -118,14 +119,12 @@ public class LoadTest {
         session.authPassword("sshd", "sshd").await().isSuccess();
 
         ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
-        ByteArrayOutputStream sent = new ByteArrayOutputStream();
-        PipedOutputStream pipedIn = new TeePipedOutputStream(sent);
-        channel.setIn(new PipedInputStream(pipedIn));
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         ByteArrayOutputStream err = new ByteArrayOutputStream();
         channel.setOut(out);
         channel.setErr(err);
         channel.open();
+        OutputStream pipedIn = channel.getInvertedIn();
 
         msg += "\nexit\n";
         pipedIn.write(msg.getBytes());

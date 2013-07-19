@@ -46,6 +46,24 @@ public interface ClientChannel {
     int EXIT_SIGNAL = 0x0040;
     int OPENED =      0x0080;
 
+    /**
+     * Access to an output stream to send data directly to the remote channel.
+     * This can be used instead of using {@link #setIn(java.io.InputStream)} method
+     * and having the channel polling for data in that stream.
+     *
+     * @return an OutputStream to be used to send data
+     */
+    OutputStream getInvertedIn();
+
+    /**
+     * Set an input stream that will be read by this channel and forwarded to
+     * the remote channel.  Note that using such a stream will create an additional
+     * thread for pumping the stream which will only be able to end when that stream
+     * is actually closed or some data is read.  It is recommended to use the
+     * {@link #getInvertedIn()} method instead and write data directly.
+     *
+     * @param in an InputStream to be polled and forwarded
+     */
     void setIn(InputStream in);
 
     void setOut(OutputStream out);

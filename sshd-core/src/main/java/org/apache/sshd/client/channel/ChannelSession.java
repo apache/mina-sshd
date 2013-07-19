@@ -23,6 +23,7 @@ import java.io.InputStream;
 
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.util.Buffer;
 
 /**
@@ -39,7 +40,8 @@ public class ChannelSession extends AbstractClientChannel {
     }
 
     public OpenFuture open() throws Exception {
-        if (in == null || out == null || err == null) {
+        invertedIn = new ChannelOutputStream(this, remoteWindow, log, SshConstants.Message.SSH_MSG_CHANNEL_DATA);
+        if (out == null || err == null) {
             throw new IllegalStateException("in, out and err streams should be set before opening channel");
         }
         return internalOpen();
@@ -47,17 +49,19 @@ public class ChannelSession extends AbstractClientChannel {
 
     @Override
     protected void doOpen() throws Exception {
-        streamPumper = new Thread("ClientInputStreamPump") {
-            @Override
-            public void run() {
-                pumpInputStream();
-            }
-        };
-        // Interrupt does not really work and the thread will only exit when
-        // the call to read() will return.  So ensure this thread is a daemon
-        // to avoid blocking the whole app
-        streamPumper.setDaemon(true);
-        streamPumper.start();
+        if (in != null) {
+            streamPumper = new Thread("ClientInputStreamPump") {
+                @Override
+                public void run() {
+                    pumpInputStream();
+                }
+            };
+            // Interrupt does not really work and the thread will only exit when
+            // the call to read() will return.  So ensure this thread is a daemon
+            // to avoid blocking the whole app
+            streamPumper.setDaemon(true);
+            streamPumper.start();
+        }
     }
 
     @Override
@@ -71,21 +75,12 @@ public class ChannelSession extends AbstractClientChannel {
 
     protected void pumpInputStream() {
         try {
+            byte[] buffer = new byte[remoteWindow.getPacketSize()];
             while (!closeFuture.isClosed()) {
-                Buffer buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_DATA, 0);
-                buffer.putInt(recipient);
-                int wpos1 = buffer.wpos(); // keep buffer position to write data length later
-                buffer.putInt(0);
-                int wpos2 = buffer.wpos(); // keep buffer position for data write
-                buffer.wpos(wpos2 + remoteWindow.getPacketSize()); // Make room
-                int len = securedRead(in, buffer.array(), wpos2, remoteWindow.getPacketSize()); // read data into buffer
+                int len = securedRead(in, buffer, 0, buffer.length);
                 if (len > 0) {
-                    buffer.wpos(wpos1);
-                    buffer.putInt(len);
-                    buffer.wpos(wpos2 + len);
-                    remoteWindow.waitAndConsume(len);
-                    log.debug("Send SSH_MSG_CHANNEL_DATA on channel {}", id);
-                    writePacket(buffer);
+                    invertedIn.write(buffer, 0, len);
+                    invertedIn.flush();
                 } else {
                     sendEof();
                     break;
@@ -116,7 +111,7 @@ public class ChannelSession extends AbstractClientChannel {
                 return n;
             }
             // if not closed but no bytes available, return
-            if (in != null && in.available() <= 0) {
+            if (in.available() <= 0) {
                 return n;
             }
         }

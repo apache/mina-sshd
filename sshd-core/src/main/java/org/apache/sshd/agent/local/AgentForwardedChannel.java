@@ -56,8 +56,8 @@ public class AgentForwardedChannel extends AbstractClientChannel {
     protected Buffer request(Buffer buffer) throws IOException {
         synchronized (messages) {
             try {
-                getOut().write(buffer.array(), buffer.rpos(), buffer.available());
-                getOut().flush();
+                getInvertedIn().write(buffer.array(), buffer.rpos(), buffer.available());
+                getInvertedIn().flush();
                 localWindow.consumeAndCheck(buffer.available());
                 if (messages.isEmpty()) {
                     messages.wait();
@@ -75,7 +75,7 @@ public class AgentForwardedChannel extends AbstractClientChannel {
 
     @Override
     protected void doOpen() throws Exception {
-        out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.Message.SSH_MSG_CHANNEL_DATA);
+        invertedIn = new ChannelOutputStream(this, remoteWindow, log, SshConstants.Message.SSH_MSG_CHANNEL_DATA);
     }
 
     protected void doWriteData(byte[] data, int off, int len) throws IOException {

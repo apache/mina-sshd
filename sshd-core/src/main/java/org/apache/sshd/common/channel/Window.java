@@ -67,9 +67,12 @@ public class Window {
     }
 
     public void init(int size, int packetSize) {
-        this.size = size;
-        this.maxSize = size;
-        this.packetSize = packetSize;
+        synchronized (lock) {
+            this.size = size;
+            this.maxSize = size;
+            this.packetSize = packetSize;
+            lock.notifyAll();
+        }
     }
 
     public void expand(int window) {

@@ -20,30 +20,45 @@ package org.apache.sshd.util;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.PipedOutputStream;
 
 /**
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class TeePipedOutputStream extends PipedOutputStream {
+public class TeeOutputStream extends OutputStream {
 
-    private OutputStream tee;
+    private OutputStream[] tees;
 
-    public TeePipedOutputStream(OutputStream tee) {
-        this.tee = tee;
+    public TeeOutputStream(OutputStream... tees) {
+        this.tees = tees;
     }
 
     @Override
     public void write(int b) throws IOException {
-        super.write(b);
-        tee.write(b);
+        for (OutputStream s : tees) {
+            s.write(b);
+        }
     }
 
     @Override
     public void write(byte[] b, int off, int len) throws IOException {
-        super.write(b, off, len);
-        tee.write(b, off, len);
+        for (OutputStream s : tees) {
+            s.write(b, off, len);
+        }
+    }
+
+    @Override
+    public void flush() throws IOException {
+        for (OutputStream s : tees) {
+            s.flush();
+        }
+    }
+
+    @Override
+    public void close() throws IOException {
+        for (OutputStream s : tees) {
+            s.close();
+        }
     }
 }
