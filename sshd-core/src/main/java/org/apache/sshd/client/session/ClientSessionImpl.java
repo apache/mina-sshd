@@ -66,7 +66,11 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
     private static final String AUTHENTICATION_SERVICE = "ssh-connection";
 
     private UserAuth userAuth;
-    private AuthFuture authFuture;
+    /**
+     * The AuthFuture that is being used by the current auth request.  This encodes the state.
+     * isSuccess -> authenticated, else if isDone -> server waiting for user auth, else authenticating.
+     */
+    private volatile AuthFuture authFuture;
 
     /**
      * For clients to store their own metadata
@@ -78,6 +82,8 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         log.info("Session created...");
         sendClientIdentification();
         sendKexInit();
+        // Maintain the current auth status in the authFuture.
+        authFuture = new DefaultAuthFuture(lock);
     }
 
     public ClientFactoryManager getClientFactoryManager() {
@@ -88,156 +94,117 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         return kex;
     }
 
-    public AuthFuture authAgent(String user) throws IOException {
-        synchronized (lock) {
-            if (closeFuture.isClosed()) {
-                throw new IllegalStateException("Session is closed");
+    /**
+     * return true if/when ready for auth; false if never ready.
+     * @return server is ready and waiting for auth
+     */
+    private boolean readyForAuth() {
+        // isDone indicates that the last auth finished and a new one can commence.
+        while (!this.authFuture.isDone()) {
+            log.debug("waiting to send authentication");
+            try {
+                this.authFuture.await();
+            } catch (InterruptedException e) {
+                log.debug("Unexpected interrupt", e);
+                throw new RuntimeException(e);
             }
-            if (authed) {
-                throw new IllegalStateException("User authentication has already been performed");
-            }
-            if (userAuth != null) {
-                throw new IllegalStateException("A user authentication request is already pending");
-            }
-            if (getFactoryManager().getAgentFactory() == null) {
-                throw new IllegalStateException("No ssh agent factory has been configured");
-            }
-            waitFor(CLOSED | WAIT_AUTH, 0);
-            if (closeFuture.isClosed()) {
-                throw new IllegalStateException("Session is closed");
-            }
-            authFuture = new DefaultAuthFuture(lock);
-            userAuth = new UserAuthAgent(this, AUTHENTICATION_SERVICE, user);
-            setState(State.UserAuth);
+        }
+        if (this.authFuture.isSuccess()) {
+            log.debug("already authenticated");
+            throw new IllegalStateException("Already authenticated");
+        }
+        if (this.authFuture.getException() != null) {
+            log.debug("probably closed", this.authFuture.getException());
+            return false;
+        }
+        if (!this.authFuture.isFailure()) {
+            log.debug("unexpected state");
+            throw new IllegalStateException("Unexpected authentication state");
+        }
+        if (this.userAuth != null) {
+            log.debug("authentication already in progress");
+            throw new IllegalStateException("Authentication already in progress?");
+        }
+        log.debug("ready to try authentication with new lock");
+        // The new future !isDone() - i.e., in progress blocking out other waits.
+        this.authFuture = new DefaultAuthFuture(lock);
+        return true;
+    }
 
-            switch (userAuth.next(null)) {
-                case Success:
-                    authFuture.setAuthed(true);
-                    username = userAuth.getUsername();
-                    authed = true;
-                    setState(State.Running);
-                    break;
-                case Failure:
-                    authFuture.setAuthed(false);
-                    userAuth = null;
-                    setState(State.WaitForAuth);
-                    break;
-                case Continued:
-                    break;
+    /**
+     * execute one step in user authentication.
+     * @param buffer
+     * @throws IOException
+     */
+    private void processUserAuth(Buffer buffer) throws IOException {
+        log.debug("processing {}", userAuth);
+        switch (userAuth.next(buffer)) {
+            case Success:
+                log.debug("succeeded with {}", userAuth);
+                this.authed = true;
+                this.username = userAuth.getUsername();
+                setState(State.Running);
+                // Will wake up anyone sitting in waitFor
+                authFuture.setAuthed(true);
+                startHeartBeat();
+                break;
+            case Failure:
+                log.debug("failed with {}", userAuth);
+                this.userAuth = null;
+                setState(State.WaitForAuth);
+                // Will wake up anyone sitting in waitFor
+                this.authFuture.setAuthed(false);
+                break;
+            case Continued:
+                // Will wake up anyone sitting in waitFor
+                setState(State.UserAuth);
+                log.debug("continuing with {}", userAuth);
+                break;
+        }
+    }
+
+    public AuthFuture authAgent(String user) throws IOException {
+        log.debug("Trying agent authentication");
+        if (getFactoryManager().getAgentFactory() == null) {
+            throw new IllegalStateException("No ssh agent factory has been configured");
+        }
+        synchronized (lock) {
+            if (readyForAuth()) {
+                userAuth = new UserAuthAgent(this, AUTHENTICATION_SERVICE, user);
+                processUserAuth(null);
             }
             return authFuture;
         }
     }
 
     public AuthFuture authPassword(String user, String password) throws IOException {
+        log.debug("Trying password authentication");
         synchronized (lock) {
-            if (closeFuture.isClosed()) {
-                throw new IllegalStateException("Session is closed");
-            }
-            if (authed) {
-                throw new IllegalStateException("User authentication has already been performed");
-            }
-            if (userAuth != null) {
-                throw new IllegalStateException("A user authentication request is already pending");
-            }
-            waitFor(CLOSED | WAIT_AUTH, 0);
-            if (closeFuture.isClosed()) {
-                throw new IllegalStateException("Session is closed");
-            }
-            authFuture = new DefaultAuthFuture(lock);
-            userAuth = new UserAuthPassword(this, AUTHENTICATION_SERVICE, user, password);
-            setState(State.UserAuth);
-
-            switch (userAuth.next(null)) {
-                case Success:
-                    authFuture.setAuthed(true);
-                    username = userAuth.getUsername();
-                    authed = true;
-                    setState(State.Running);
-                    break;
-                case Failure:
-                    authFuture.setAuthed(false);
-                    userAuth = null;
-                    setState(State.WaitForAuth);
-                    break;
-                case Continued:
-                    break;
+            if (readyForAuth()) {
+                userAuth = new UserAuthPassword(this, AUTHENTICATION_SERVICE, user, password);
+                processUserAuth(null);
             }
             return authFuture;
         }
     }
 
     public AuthFuture authInteractive(String user, String password) throws IOException {
+        log.debug("Trying keyboard-interactive authentication");
         synchronized (lock) {
-            if (closeFuture.isClosed()) {
-                throw new IllegalStateException("Session is closed");
-            }
-            if (authed) {
-                throw new IllegalStateException("User authentication has already been performed");
-            }
-            if (userAuth != null) {
-                throw new IllegalStateException("A user authentication request is already pending");
-            }
-            waitFor(CLOSED | WAIT_AUTH, 0);
-            if (closeFuture.isClosed()) {
-                throw new IllegalStateException("Session is closed");
-            }
-            authFuture = new DefaultAuthFuture(lock);
-            userAuth = new UserAuthKeyboardInteractive(this, AUTHENTICATION_SERVICE, user, password);
-            setState(State.UserAuth);
-
-            switch (userAuth.next(null)) {
-                case Success:
-                    authFuture.setAuthed(true);
-                    username = userAuth.getUsername();
-                    authed = true;
-                    setState(State.Running);
-                    break;
-                case Failure:
-                    authFuture.setAuthed(false);
-                    userAuth = null;
-                    setState(State.WaitForAuth);
-                    break;
-                case Continued:
-                    break;
+            if (readyForAuth()) {
+                userAuth = new UserAuthKeyboardInteractive(this, AUTHENTICATION_SERVICE, user, password);
+                processUserAuth(null);
             }
             return authFuture;
         }
-    }
+   }
 
     public AuthFuture authPublicKey(String user, KeyPair key) throws IOException {
+        log.debug("Trying publickey authentication");
         synchronized (lock) {
-            if (closeFuture.isClosed()) {
-                throw new IllegalStateException("Session is closed");
-            }
-            if (authed) {
-                throw new IllegalStateException("User authentication has already been performed");
-            }
-            if (userAuth != null) {
-                throw new IllegalStateException("A user authentication request is already pending");
-            }
-            waitFor(CLOSED | WAIT_AUTH, 0);
-            if (closeFuture.isClosed()) {
-                throw new IllegalStateException("Session is closed");
-            }
-            authFuture = new DefaultAuthFuture(lock);
-            userAuth = new UserAuthPublicKey(this, AUTHENTICATION_SERVICE, user, key);
-            setState(State.UserAuth);
-
-            switch (userAuth.next(null)) {
-                case Success:
-                    authFuture.setAuthed(true);
-                    username = userAuth.getUsername();
-                    authed = true;
-                    setState(State.Running);
-                    break;
-                case Failure:
-                    authFuture.setAuthed(false);
-                    userAuth = null;
-                    setState(State.WaitForAuth);
-                    break;
-                case Continued:
-                    break;
+            if (readyForAuth()) {
+                userAuth = new UserAuthPublicKey(this, AUTHENTICATION_SERVICE, user, key);
+                processUserAuth(null);
             }
             return authFuture;
         }
@@ -302,7 +269,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
     @Override
     public CloseFuture close(boolean immediately) {
         synchronized (lock) {
-            if (authFuture != null && !authFuture.isDone()) {
+            if (!authFuture.isDone()) {
                 authFuture.setException(new SshException("Session is closed"));
             }
             return super.close(immediately);
@@ -377,6 +344,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
                             disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "Protocol error: expected packet SSH_MSG_SERVICE_ACCEPT, got " + cmd);
                             return;
                         }
+                        authFuture.setAuthed(false);
                         setState(State.WaitForAuth);
                         break;
                     case WaitForAuth:
@@ -397,22 +365,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
                             }
                         } else {
                             buffer.rpos(buffer.rpos() - 1);
-                            switch (userAuth.next(buffer)) {
-                                 case Success:
-                                     authFuture.setAuthed(true);
-                                     username = userAuth.getUsername();
-                                     authed = true;
-                                     setState(State.Running);
-                                     startHeartBeat();
-                                     break;
-                                 case Failure:
-                                     authFuture.setAuthed(false);
-                                     userAuth = null;
-                                     setState(State.WaitForAuth);
-                                     break;
-                                 case Continued:
-                                     break;
-                            }
+                            processUserAuth(buffer);
                         }
                         break;
                     case Running:
@@ -471,10 +424,10 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
                 if (closeFuture.isClosed()) {
                     cond |= CLOSED;
                 }
-                if (authed) {
+                if (authed) { // authFuture.isSuccess()
                     cond |= AUTHED;
                 }
-                if (getState() == State.WaitForAuth) {
+                if (authFuture.isFailure()) {
                     cond |= WAIT_AUTH;
                 }
                 if ((cond & mask) != 0) {

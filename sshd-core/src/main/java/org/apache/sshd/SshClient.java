@@ -42,6 +42,7 @@ import org.apache.sshd.client.ServerKeyVerifier;
 import org.apache.sshd.client.SessionFactory;
 import org.apache.sshd.client.UserInteraction;
 import org.apache.sshd.client.channel.ChannelShell;
+import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.ConnectFuture;
 import org.apache.sshd.client.future.DefaultConnectFuture;
 import org.apache.sshd.client.kex.DHG1;
@@ -452,19 +453,19 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             ClientSession session = client.connect(host, port).await().getSession();
             int ret = ClientSession.WAIT_AUTH;
 
-            while ((ret & ClientSession.WAIT_AUTH) != 0) {
+            AuthFuture authFuture;
+            do {
                 if (hasKeys) {
-                    session.authAgent(login);
-                    ret = session.waitFor(ClientSession.WAIT_AUTH | ClientSession.CLOSED | ClientSession.AUTHED, 0);
+                    authFuture = session.authAgent(login);
                 } else {
                     System.out.print("Password:");
                     BufferedReader r = new BufferedReader(new InputStreamReader(System.in));
                     String password = r.readLine();
-                    session.authPassword(login, password);
-                    ret = session.waitFor(ClientSession.WAIT_AUTH | ClientSession.CLOSED | ClientSession.AUTHED, 0);
+                    authFuture = session.authPassword(login, password);
                 }
-            }
-            if ((ret & ClientSession.CLOSED) != 0) {
+                authFuture.await();
+            } while (authFuture.isFailure());
+            if (!authFuture.isSuccess()) {
                 System.err.println("error");
                 System.exit(-1);
             }

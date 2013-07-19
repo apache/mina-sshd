@@ -24,6 +24,7 @@ import java.util.concurrent.TimeoutException;
 
 import org.apache.mina.core.session.IoSession;
 import org.apache.sshd.client.SessionFactory;
+import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.session.ClientSessionImpl;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
@@ -35,9 +36,12 @@ import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.Utils;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * TODO Add javadoc
@@ -79,7 +83,7 @@ public class ServerTest {
      * @throws Exception
      */
     @Test
-    public void testFailAuthentication() throws Exception {
+    public void testFailAuthenticationWithWaitFor() throws Exception {
         sshd.getProperties().put(SshServer.MAX_AUTH_REQUESTS, "10");
 
         client = SshClient.setUpDefaultClient();
@@ -95,7 +99,29 @@ public class ServerTest {
                 throw new TimeoutException();
             }
         }
-        Assert.assertTrue(nbTrials > 10);
+        assertTrue(nbTrials > 10);
+    }
+
+    @Test
+    public void testFailAuthenticationWithFuture() throws Exception {
+        sshd.getProperties().put(SshServer.MAX_AUTH_REQUESTS, "10");
+
+        client = SshClient.setUpDefaultClient();
+        client.start();
+        ClientSession s = client.connect("localhost", port).await().getSession();
+        int nbTrials = 0;
+        AuthFuture authFuture;
+        do {
+            nbTrials++;
+            assertTrue(nbTrials < 100);
+            authFuture = s.authPassword("smx", "buggy");
+            assertTrue(authFuture.await(5000));
+            assertTrue(authFuture.isDone());
+            assertFalse(authFuture.isSuccess());
+        }
+        while (authFuture.isFailure());
+        assertNotNull(authFuture.getException());
+        assertTrue(nbTrials > 10);
     }
 
     @Test
@@ -106,7 +132,7 @@ public class ServerTest {
         client.start();
         ClientSession s = client.connect("localhost", port).await().getSession();
         int res = s.waitFor(ClientSession.CLOSED, 5000);
-        Assert.assertTrue((res & ClientSession.CLOSED) != 0);
+        assertTrue((res & ClientSession.CLOSED) != 0);
     }
 
     @Test
