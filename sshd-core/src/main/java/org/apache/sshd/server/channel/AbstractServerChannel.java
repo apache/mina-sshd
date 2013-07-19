@@ -65,7 +65,7 @@ public abstract class AbstractServerChannel extends AbstractChannel {
             buffer.putString("exit-status");
             buffer.putByte((byte) 0);
             buffer.putInt(v);
-            session.writePacket(buffer);
+            writePacket(buffer);
         }
     }
 

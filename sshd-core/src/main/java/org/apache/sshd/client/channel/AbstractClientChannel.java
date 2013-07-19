@@ -176,7 +176,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         buffer.putInt(id);
         buffer.putInt(localWindow.getSize());
         buffer.putInt(localWindow.getPacketSize());
-        session.writePacket(buffer);
+        writePacket(buffer);
         return openFuture;
     }
 

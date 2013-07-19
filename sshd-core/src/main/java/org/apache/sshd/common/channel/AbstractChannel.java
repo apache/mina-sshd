@@ -19,7 +19,10 @@
 package org.apache.sshd.common.channel;
 
 import java.io.IOException;
+import java.io.InterruptedIOException;
 
+import org.apache.mina.core.future.IoFutureListener;
+import org.apache.mina.core.future.WriteFuture;
 import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.Session;
@@ -51,6 +54,7 @@ public abstract class AbstractChannel implements Channel {
     protected boolean eof;
     protected final CloseFuture closeFuture = new DefaultCloseFuture(lock);
     protected boolean closing;
+    protected boolean closedByOtherSide;
 
     public int getId() {
         return id;
@@ -79,6 +83,9 @@ public abstract class AbstractChannel implements Channel {
     }
 
     public CloseFuture close(boolean immediately) {
+        if (closeFuture.isClosed()) {
+            return closeFuture;
+        }
         try {
             synchronized (lock) {
                 if (immediately) {
@@ -92,7 +99,18 @@ public abstract class AbstractChannel implements Channel {
                         log.debug("Send SSH_MSG_CHANNEL_CLOSE on channel {}", id);
                         Buffer buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_CLOSE, 0);
                         buffer.putInt(recipient);
-                        session.writePacket(buffer);
+                        session.writePacket(buffer).addListener(new IoFutureListener<WriteFuture>() {
+                            public void operationComplete(WriteFuture future) {
+                                synchronized (lock) {
+                                    if (closedByOtherSide) {
+                                        log.debug("Message SSH_MSG_CHANNEL_CLOSE written on channel {}", id);
+                                        closeFuture.setClosed();
+                                        doClose();
+                                        lock.notifyAll();
+                                    }
+                                }
+                            }
+                        });
                     }
                 }
             }
@@ -106,13 +124,28 @@ public abstract class AbstractChannel implements Channel {
     public void handleClose() throws IOException {
         log.debug("Received SSH_MSG_CHANNEL_CLOSE on channel {}", id);
         synchronized (lock) {
-            close(false).setClosed();
-            doClose();
-            lock.notifyAll();
+            closedByOtherSide = !closing;
+            if (closedByOtherSide) {
+                close(false);
+            } else {
+                close(false).setClosed();
+                doClose();
+                lock.notifyAll();
+            }
         }
     }
 
     protected void doClose() {
+    }
+
+    protected void writePacket(Buffer buffer) throws IOException {
+        synchronized (lock) {
+            if (!closing) {
+                session.writePacket(buffer);
+            } else {
+                log.debug("Discarding output packet because channel is being closed");
+            }
+        }
     }
 
     public void handleData(Buffer buffer) throws IOException {
@@ -134,7 +167,7 @@ public abstract class AbstractChannel implements Channel {
             log.debug("Send SSH_MSG_CHANNEL_FAILURE on channel {}", id);
             buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_FAILURE, 0);
             buffer.putInt(recipient);
-            session.writePacket(buffer);
+            writePacket(buffer);
             return;
         }
         int len = buffer.getInt();
@@ -175,7 +208,7 @@ public abstract class AbstractChannel implements Channel {
         log.debug("Send SSH_MSG_CHANNEL_EOF on channel {}", id);
         Buffer buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_EOF, 0);
         buffer.putInt(recipient);
-        session.writePacket(buffer);
+        writePacket(buffer);
     }
 
     protected void configureWindow() {
@@ -189,6 +222,6 @@ public abstract class AbstractChannel implements Channel {
         Buffer buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_WINDOW_ADJUST, 0);
         buffer.putInt(recipient);
         buffer.putInt(len);
-        session.writePacket(buffer);
+        writePacket(buffer);
     }
 }

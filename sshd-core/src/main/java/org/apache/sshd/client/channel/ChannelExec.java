@@ -45,7 +45,7 @@ public class ChannelExec extends ChannelSession {
         buffer.putString("exec");
         buffer.putBoolean(false);
         buffer.putString(command);
-        session.writePacket(buffer);
+        writePacket(buffer);
 
     }
 }

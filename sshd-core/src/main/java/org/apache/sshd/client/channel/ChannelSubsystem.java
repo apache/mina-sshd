@@ -45,7 +45,7 @@ public class ChannelSubsystem extends ChannelSession {
         buffer.putString("subsystem");
         buffer.putBoolean(false);
         buffer.putString(subsystem);
-        session.writePacket(buffer);
+        writePacket(buffer);
 
     }
 }

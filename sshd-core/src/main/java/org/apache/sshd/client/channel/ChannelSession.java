@@ -85,7 +85,7 @@ public class ChannelSession extends AbstractClientChannel {
                     buffer.wpos(wpos2 + len);
                     remoteWindow.waitAndConsume(len);
                     log.debug("Send SSH_MSG_CHANNEL_DATA on channel {}", id);
-                    session.writePacket(buffer);
+                    writePacket(buffer);
                 } else {
                     sendEof();
                     break;

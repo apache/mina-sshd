@@ -158,7 +158,7 @@ public class ChannelShell extends ChannelSession {
             buffer.putInt(recipient);
             buffer.putString("auth-agent-req@openssh.com");
             buffer.putBoolean(false);
-            session.writePacket(buffer);
+            writePacket(buffer);
         }
 
         if (usePty) {
@@ -179,7 +179,7 @@ public class ChannelShell extends ChannelSession {
             }
             modes.putByte((byte) 0);
             buffer.putBytes(modes.getCompactData());
-            session.writePacket(buffer);
+            writePacket(buffer);
         }
 
         if (!env.isEmpty()) {
@@ -191,7 +191,7 @@ public class ChannelShell extends ChannelSession {
                 buffer.putBoolean(false);
                 buffer.putString(entry.getKey());
                 buffer.putString(entry.getValue());
-                session.writePacket(buffer);
+                writePacket(buffer);
             }
         }
 
@@ -200,7 +200,7 @@ public class ChannelShell extends ChannelSession {
         buffer.putInt(recipient);
         buffer.putString("shell");
         buffer.putBoolean(false);
-        session.writePacket(buffer);
+        writePacket(buffer);
 
     }
 

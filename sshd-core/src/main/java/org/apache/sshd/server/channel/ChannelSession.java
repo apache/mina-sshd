@@ -200,7 +200,7 @@ public class ChannelSession extends AbstractServerChannel {
         if (!handleRequest(type, buffer)) {
             buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_FAILURE, 0);
             buffer.putInt(recipient);
-            session.writePacket(buffer);
+            writePacket(buffer);
         }
     }
 
@@ -277,7 +277,7 @@ public class ChannelSession extends AbstractServerChannel {
         if (wantReply) {
             buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS, 0);
             buffer.putInt(recipient);
-            session.writePacket(buffer);
+            writePacket(buffer);
         }
         return true;
     }
@@ -307,7 +307,7 @@ public class ChannelSession extends AbstractServerChannel {
         if (wantReply) {
             buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS, 0);
             buffer.putInt(recipient);
-            session.writePacket(buffer);
+            writePacket(buffer);
         }
         return true;
     }
@@ -328,7 +328,7 @@ public class ChannelSession extends AbstractServerChannel {
         if (wantReply) {
             buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS, 0);
             buffer.putInt(recipient);
-            session.writePacket(buffer);
+            writePacket(buffer);
         }
         return true;
     }
@@ -349,7 +349,7 @@ public class ChannelSession extends AbstractServerChannel {
         if (wantReply) {
             buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS, 0);
             buffer.putInt(recipient);
-            session.writePacket(buffer);
+            writePacket(buffer);
         }
         return true;
     }
@@ -364,7 +364,7 @@ public class ChannelSession extends AbstractServerChannel {
         if (wantReply) {
             buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS, 0);
             buffer.putInt(recipient);
-            session.writePacket(buffer);
+            writePacket(buffer);
         }
         command.start(getEnvironment());
         return true;
@@ -390,7 +390,7 @@ public class ChannelSession extends AbstractServerChannel {
         if (wantReply) {
             buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS, 0);
             buffer.putInt(recipient);
-            session.writePacket(buffer);
+            writePacket(buffer);
         }
         // Launch command
         command.start(getEnvironment());
@@ -414,7 +414,7 @@ public class ChannelSession extends AbstractServerChannel {
         if (wantReply) {
             buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS, 0);
             buffer.putInt(recipient);
-            session.writePacket(buffer);
+            writePacket(buffer);
         }
         // Launch command
         command.start(getEnvironment());
@@ -492,7 +492,7 @@ public class ChannelSession extends AbstractServerChannel {
             if (wantReply) {
                 buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_FAILURE, 0);
                 buffer.putInt(recipient);
-                session.writePacket(buffer);
+                writePacket(buffer);
             }
             return true;
         }
@@ -503,7 +503,7 @@ public class ChannelSession extends AbstractServerChannel {
         if (wantReply) {
             buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS, 0);
             buffer.putInt(recipient);
-            session.writePacket(buffer);
+            writePacket(buffer);
         }
         return true;
     }
@@ -517,7 +517,7 @@ public class ChannelSession extends AbstractServerChannel {
             if (wantReply) {
                 buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_FAILURE, 0);
                 buffer.putInt(recipient);
-                session.writePacket(buffer);
+                writePacket(buffer);
             }
             return true;
         }
@@ -528,7 +528,7 @@ public class ChannelSession extends AbstractServerChannel {
             if (wantReply) {
                 buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_FAILURE, 0);
                 buffer.putInt(recipient);
-                session.writePacket(buffer);
+                writePacket(buffer);
             }
             return true;
         }
@@ -538,7 +538,7 @@ public class ChannelSession extends AbstractServerChannel {
         if (wantReply) {
             buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS, 0);
             buffer.putInt(recipient);
-            session.writePacket(buffer);
+            writePacket(buffer);
         }
         return true;
     }

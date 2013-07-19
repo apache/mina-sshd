@@ -206,6 +206,6 @@ public class TcpipServerChannel extends AbstractServerChannel {
         log.info("Received channel request: {}", type);
         buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_FAILURE, 0);
         buffer.putInt(recipient);
-        session.writePacket(buffer);
+        writePacket(buffer);
     }
 }

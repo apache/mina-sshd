@@ -86,7 +86,7 @@ public class TcpipClientChannel extends AbstractClientChannel {
         buffer.putInt(dst.getPort());
         buffer.putString(src.getAddress().getHostAddress());
         buffer.putInt(src.getPort());
-        session.writePacket(buffer);
+        writePacket(buffer);
         return openFuture;
     }
 

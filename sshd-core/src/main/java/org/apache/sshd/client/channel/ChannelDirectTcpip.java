@@ -75,7 +75,7 @@ public class ChannelDirectTcpip extends AbstractClientChannel {
         buffer.putInt(remote.getPort());
         buffer.putString(local.getHostName());
         buffer.putInt(local.getPort());
-        session.writePacket(buffer);
+        writePacket(buffer);
         return openFuture;
     }
 

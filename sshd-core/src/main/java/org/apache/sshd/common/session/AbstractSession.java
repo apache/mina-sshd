@@ -279,6 +279,12 @@ public abstract class AbstractSession implements Session {
      * @throws IOException
      */
     public void exceptionCaught(Throwable t) {
+        // Ignore exceptions that happen while closing
+        synchronized (lock) {
+            if (closing) {
+                return;
+            }
+        }
         log.warn("Exception caught", t);
         try {
             if (t instanceof SshException) {

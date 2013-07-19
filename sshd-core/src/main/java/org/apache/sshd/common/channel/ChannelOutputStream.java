@@ -129,7 +129,7 @@ public class ChannelOutputStream extends OutputStream {
                 lastSize = length;
                 remoteWindow.waitAndConsume(length);
                 log.debug("Send {} on channel {}", cmd, channel.getId());
-                channel.getSession().writePacket(buf);
+                channel.writePacket(buf);
             }
         } catch (WindowClosedException e) {
             closed = true;

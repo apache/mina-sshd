@@ -197,7 +197,7 @@ public class X11ForwardSupport extends IoHandlerAdapter {
             buffer.putInt(localWindow.getPacketSize());
             buffer.putString(remote.getAddress().getHostAddress());
             buffer.putInt(remote.getPort());
-            session.writePacket(buffer);
+            writePacket(buffer);
             return openFuture;
         }
 
