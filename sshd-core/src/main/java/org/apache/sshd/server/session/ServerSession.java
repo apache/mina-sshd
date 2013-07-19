@@ -503,9 +503,9 @@ public class ServerSession extends AbstractSession {
 
                     buffer = createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_SUCCESS, 0);
                     writePacket(buffer);
-                    setState(State.Running);
                     this.authed = true;
                     unscheduleAuthTimer();
+                    setState(State.Running);
                     scheduleIdleTimer();
                     log.info("Session {}@{} authenticated", getUsername(), getIoSession().getRemoteAddress());
 
