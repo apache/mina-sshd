@@ -34,7 +34,6 @@ import org.apache.sshd.SshServer;
 import org.apache.sshd.agent.common.AgentForwardSupport;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.Channel;
-import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.KeyExchange;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
