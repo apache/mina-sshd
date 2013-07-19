@@ -18,6 +18,15 @@
  */
 package org.apache.sshd.sftp;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.ServerSocket;
+import java.util.Arrays;
+import java.util.Vector;
+
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.Logger;
@@ -35,12 +44,9 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import java.io.*;
-import java.net.ServerSocket;
-import java.util.Arrays;
-import java.util.Vector;
-
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class SftpTest {
 
@@ -177,6 +183,58 @@ public class SftpTest {
             System.out.println(f.toString());
         }
     }
+
+    /*
+     * TODO: upgrade to a more recent version of ganymed to be able to test that
+
+    @Test
+    public void testBigFileWithGanymed() throws Exception {
+        final Connection conn = new Connection("localhost", port);
+        conn.connect(null, 5000, 0);
+        conn.authenticateWithPassword("sshd", "sshd");
+        final SFTPv3Client sftp_client = new SFTPv3Client(conn);
+
+        StringBuilder sb = new StringBuilder();
+        for (int i = 1; i < 1000; i++) {
+            sb.append("0123456789");
+            if (i % 10 == 0) {
+                sb.append("\n");
+            }
+        }
+        sb.append("\n");
+        byte[] buffer = sb.toString().getBytes();
+
+        // Upload
+
+        SFTPv3FileHandle handle = sftp_client.openFileRW("target/bigfile.txt");
+
+        long offset = 0;
+        for (int i = 0; i < 100; i++) {
+            sftp_client.write(handle, offset, buffer, 0, buffer.length);
+            offset += buffer.length;
+        }
+
+        sftp_client.closeFile(handle);
+
+        handle = sftp_client.openFileRW("target/bigfile.txt");
+
+        offset = 0;
+        buffer = new byte[32768];
+        for (;;) {
+            int len = sftp_client.read(handle, offset, buffer, 0, buffer.length);
+            if (len >= 0) {
+                offset += len;
+            } else {
+                break;
+            }
+        }
+
+        sftp_client.closeFile(handle);
+
+        sftp_client.close();
+
+    }
+    */
 
     protected void assertFileLength(File file, long length, long timeout) throws Exception {
         boolean ok = false;

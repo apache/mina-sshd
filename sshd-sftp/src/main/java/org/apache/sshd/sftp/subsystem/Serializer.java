@@ -468,6 +468,10 @@ public class Serializer {
             }
             buffer.putInt(perms);
         }
+        if (version <= 3 && (flags & SSH_FILEXFER_ATTR_ACMODTIME) != 0) {
+            buffer.putInt(attrs.getAccessTime());
+            buffer.putInt(attrs.getAccessTime());
+        }
     }
 
     protected void writeAttrs(Buffer buffer, SshFile file, int flags) {

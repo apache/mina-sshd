@@ -72,6 +72,16 @@ public class FileAttributes {
         if ((flags & SSH_FILEXFER_ATTR_PERMISSIONS) != 0) {
             setPermissions((file.isReadable() ? S_IRUSR : 0) | (file.isWritable() ? S_IWUSR : 0) | (file.isExecutable() ? S_IXUSR : 0));
         }
+        // Times
+        if ((flags & SSH_FILEXFER_ATTR_ACCESSTIME) != 0) {
+            setAccessTime(file.getLastModified() / 1000);
+        }
+        if ((flags & SSH_FILEXFER_ATTR_CREATETIME) != 0) {
+            setCreateTime(file.getLastModified() / 1000);
+        }
+        if ((flags & SSH_FILEXFER_ATTR_MODIFYTIME) != 0) {
+            setModifyTime(file.getLastModified() / 1000);
+        }
     }
 
     public int getFlags() {
@@ -125,5 +135,32 @@ public class FileAttributes {
     public void setPermissions(int permissions) {
         this.flags |= SSH_FILEXFER_ATTR_PERMISSIONS;
         this.permissions = permissions;
+    }
+
+    public long getAccessTime() {
+        return accessTime;
+    }
+
+    public void setAccessTime(long accessTime) {
+        this.flags |= SSH_FILEXFER_ATTR_ACCESSTIME;
+        this.accessTime = accessTime;
+    }
+
+    public long getModifyTime() {
+        return modifyTime;
+    }
+
+    public void setModifyTime(long modifyTime) {
+        this.flags |= SSH_FILEXFER_ATTR_MODIFYTIME;
+        this.modifyTime = modifyTime;
+    }
+
+    public long getCreateTime() {
+        return createTime;
+    }
+
+    public void setCreateTime(long createTime) {
+        this.flags |= SSH_FILEXFER_ATTR_CREATETIME;
+        this.createTime = createTime;
     }
 }

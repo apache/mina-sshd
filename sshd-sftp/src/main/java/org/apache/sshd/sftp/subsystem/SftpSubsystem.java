@@ -34,6 +34,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static org.apache.sshd.sftp.subsystem.SftpConstants.*;
 
@@ -88,7 +90,10 @@ public class SftpSubsystem implements Command, SessionAware, FileSystemAware, Sf
     private Sftplet sftpLet = new DefaultSftpletContainer();
     private Serializer serializer = new Serializer(this);
 
+    private final ExecutorService executor;
+
     public SftpSubsystem() {
+        executor = Executors.newSingleThreadExecutor();
     }
 
     public void setSftpLet(final Sftplet sftpLet) {
@@ -193,10 +198,12 @@ public class SftpSubsystem implements Command, SessionAware, FileSystemAware, Sf
                 return true;
             }
         }
+        incoming.rpos(rpos);
         return false;
     }
 
     public void close() throws IOException {
+        executor.shutdownNow();
         if (handles != null) {
             for (Map.Entry<String, Handle> entry : handles.entrySet()) {
                 Handle handle = entry.getValue();
@@ -212,22 +219,31 @@ public class SftpSubsystem implements Command, SessionAware, FileSystemAware, Sf
     }
 
     public void process(Buffer buffer) throws IOException {
-        Request request = serializer.readRequest(buffer);
+        final Request request = serializer.readRequest(buffer);
         if (LOG.isDebugEnabled()) {
             LOG.debug("Received sftp request: " + request);
         }
-        Reply reply = sftpLet.beforeCommand(this, request);
-        if (reply == null) {
-            reply = doProcess(request);
-        }
-        reply = sftpLet.afterCommand(this, request, reply);
-        if (reply != null) {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Sending sftp reply: " + reply);
+        executor.execute(new Runnable() {
+            public void run() {
+                try {
+                    Reply reply = sftpLet.beforeCommand(SftpSubsystem.this, request);
+                    if (reply == null) {
+                        reply = doProcess(request);
+                    }
+                    reply = sftpLet.afterCommand(SftpSubsystem.this, request, reply);
+                    if (reply != null) {
+                        if (LOG.isDebugEnabled()) {
+                            LOG.debug("Sending sftp reply: " + reply);
+                        }
+                        Buffer buffer = serializer.writeReply(reply);
+                        send(buffer);
+                    }
+                } catch (Throwable t) {
+                    // TODO do something
+                    t.printStackTrace();
+                }
             }
-            buffer = serializer.writeReply(reply);
-            send(buffer);
-        }
+        });
     }
 
     protected Reply doProcess(Request request) throws IOException {
@@ -504,7 +520,7 @@ public class SftpSubsystem implements Command, SessionAware, FileSystemAware, Sf
             return new SshFxpStatusReply(id, SSH_FX_INVALID_HANDLE, handle);
         } else {
             FileHandle fh = (FileHandle) p;
-            byte[] b = new byte[Math.min(len, 1024 * 32)];
+            byte[] b = new byte[len];
             len = fh.read(b, offset);
             if (len >= 0) {
                 return new SshFxpDataReply(id, b, 0, len, len < b.length);
@@ -516,7 +532,7 @@ public class SftpSubsystem implements Command, SessionAware, FileSystemAware, Sf
 
     private Reply doProcessClose(SshFxpCloseRequest sftpRequest) throws IOException {
         int id = sftpRequest.getId();
-        SshFxpCloseRequest sshFxpCloseRequest = (SshFxpCloseRequest) sftpRequest;
+        SshFxpCloseRequest sshFxpCloseRequest = sftpRequest;
         String handle = sshFxpCloseRequest.getHandleId();
         Handle h = getHandle(handle);
         if (h == null) {
@@ -645,7 +661,7 @@ public class SftpSubsystem implements Command, SessionAware, FileSystemAware, Sf
                 nb += filename.length();
             }
             nb += 10; // Attrs size
-            int flags = SSH_FILEXFER_ATTR_PERMISSIONS | SSH_FILEXFER_ATTR_SIZE;
+            int flags = SSH_FILEXFER_ATTR_PERMISSIONS | SSH_FILEXFER_ATTR_SIZE | SSH_FILEXFER_ATTR_ACCESSTIME;
             reply.addFile(f, filename, getLongName(f), new FileAttributes(f, flags));
         }
         reply.setEol(!files.hasNext());
