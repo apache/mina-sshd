@@ -131,7 +131,10 @@ public class AgentTest {
         channel1.open().await();
 
         synchronized (shellFactory.shell) {
-            shellFactory.shell.wait();
+            System.out.println("Possibly waiting for remote shell to start");
+            if (!shellFactory.shell.started) {
+                shellFactory.shell.wait();
+            }
         }
 
         SshClient client2 = SshClient.setUpDefaultClient();
@@ -168,9 +171,12 @@ public class AgentTest {
 
         public class TestEchoShell extends EchoShell {
 
+            boolean started;
+
             @Override
             public synchronized void start(Environment env) throws IOException {
                 super.start(env);
+                started = true;
                 notifyAll();
             }
 
