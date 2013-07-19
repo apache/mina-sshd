@@ -409,7 +409,6 @@ public class ServerSession extends AbstractSession {
 
         } else {
 
-            UserAuth auth = this.currentAuth;
             Boolean authed = Boolean.FALSE;
 
             if (cmd == SshConstants.Message.SSH_MSG_USERAUTH_REQUEST) {
@@ -439,9 +438,9 @@ public class ServerSession extends AbstractSession {
                 log.debug("Authenticating user '{}' with service '{}' and method '{}'", new Object[] { username, service, method });
                 NamedFactory<UserAuth> factory = NamedFactory.Utils.get(userAuthFactories, method);
                 if (factory != null) {
-                    auth = factory.create();
+                    currentAuth = factory.create();
                     try {
-                        authed = auth.auth(this, username, service, buffer);
+                        authed = currentAuth.auth(this, username, service, buffer);
                     } catch (Exception e) {
                         // Continue
                         log.debug("Authentication failed: {}", e.getMessage());
@@ -464,14 +463,9 @@ public class ServerSession extends AbstractSession {
             if (authed == null) {
                 // authentication is still ongoing
                 log.debug("Authentication not finished");
-                currentAuth = auth;
             } else if (authed) {
                 log.debug("Authentication succeeded");
-                if (currentAuth != null) {
-                    username = currentAuth.getUserName();
-                } else {
-                    username = this.authUserName;
-                }
+                username = currentAuth.getUserName();
 
                 boolean success = false;
                 for (List<String> l : authMethods) {
@@ -525,10 +519,8 @@ public class ServerSession extends AbstractSession {
                     writePacket(buffer);
                 }
 
-                if (currentAuth != null) {
-                    currentAuth.destroy();
-                    currentAuth = null;
-                }
+                currentAuth.destroy();
+                currentAuth = null;
             } else {
                 log.debug("Authentication failed");
 
