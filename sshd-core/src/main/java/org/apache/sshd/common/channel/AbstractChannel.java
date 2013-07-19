@@ -68,6 +68,10 @@ public abstract class AbstractChannel implements Channel {
         return localWindow;
     }
 
+    public Window getRemoteWindow() {
+        return remoteWindow;
+    }
+
     public Session getSession() {
         return session;
     }

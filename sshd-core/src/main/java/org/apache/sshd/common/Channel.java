@@ -36,6 +36,8 @@ public interface Channel {
 
     Window getLocalWindow();
 
+    Window getRemoteWindow();
+
     Session getSession();
 
     void handleClose() throws IOException;
