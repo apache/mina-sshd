@@ -69,12 +69,12 @@ public class AgentForwardedChannel extends AbstractClientChannel {
         }
     }
 
-    public OpenFuture open() throws Exception {
+    public OpenFuture open() throws IOException {
         return internalOpen();
     }
 
     @Override
-    protected void doOpen() throws Exception {
+    protected void doOpen() throws IOException {
         invertedIn = new ChannelOutputStream(this, remoteWindow, log, SshConstants.Message.SSH_MSG_CHANNEL_DATA);
     }
 

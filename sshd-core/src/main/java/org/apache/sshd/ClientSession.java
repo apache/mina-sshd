@@ -84,42 +84,42 @@ public interface ClientSession extends Session {
      * Create a channel of the given type.
      * Same as calling <code>createChannel(type, null)</code>.
      */
-    ClientChannel createChannel(String type) throws Exception;
+    ClientChannel createChannel(String type) throws IOException;
 
     /**
      * Create a channel of the given type and subtype.
      */
-    ClientChannel createChannel(String type, String subType) throws Exception;
+    ClientChannel createChannel(String type, String subType) throws IOException;
 
     /**
      * Create a channel to start a shell.
      */
-    ChannelShell createShellChannel() throws Exception;
+    ChannelShell createShellChannel() throws IOException;
 
     /**
      * Create a channel to execute a command.
      */
-    ChannelExec createExecChannel(String command) throws Exception;
+    ChannelExec createExecChannel(String command) throws IOException;
 
     /**
      * Create a subsystem channel.
      */
-    ChannelSubsystem createSubsystemChannel(String subsystem) throws Exception;
+    ChannelSubsystem createSubsystemChannel(String subsystem) throws IOException;
 
     /**
      * Create a direct tcp-ip channel which can be used to stream data to a remote port from the server.
      */
-    ChannelDirectTcpip createDirectTcpipChannel(SshdSocketAddress local, SshdSocketAddress remote) throws Exception;
+    ChannelDirectTcpip createDirectTcpipChannel(SshdSocketAddress local, SshdSocketAddress remote) throws IOException;
 
     /**
      * Start forwarding the given local address on the client to the given address on the server.
      */
-    SshdSocketAddress startLocalPortForwarding(SshdSocketAddress local, SshdSocketAddress remote) throws Exception;
+    SshdSocketAddress startLocalPortForwarding(SshdSocketAddress local, SshdSocketAddress remote) throws IOException;
 
     /**
      * Stop forwarding the given local address.
      */
-    void stopLocalPortForwarding(SshdSocketAddress local) throws Exception;
+    void stopLocalPortForwarding(SshdSocketAddress local) throws IOException;
 
     /**
      * Start forwarding tcpip from the given address on the server to the
@@ -138,12 +138,12 @@ public interface ClientSession extends Session {
      * </ul>
      *
      */
-    SshdSocketAddress startRemotePortForwarding(SshdSocketAddress remote, SshdSocketAddress local) throws Exception;
+    SshdSocketAddress startRemotePortForwarding(SshdSocketAddress remote, SshdSocketAddress local) throws IOException;
 
     /**
      * Stop forwarding of the given remote address.
      */
-    void stopRemotePortForwarding(SshdSocketAddress remote) throws Exception;
+    void stopRemotePortForwarding(SshdSocketAddress remote) throws IOException;
 
     /**
      * Wait for a specific state.

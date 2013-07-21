@@ -18,6 +18,7 @@
  */
 package org.apache.sshd;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
@@ -70,7 +71,7 @@ public interface ClientChannel {
 
     void setErr(OutputStream err);
 
-    OpenFuture open() throws Exception;
+    OpenFuture open() throws IOException;
 
     int waitFor(int mask, long timeout);
 

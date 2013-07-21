@@ -60,7 +60,7 @@ public class ChannelDirectTcpip extends AbstractClientChannel {
     }
 
     @Override
-    protected OpenFuture internalOpen() throws Exception {
+    protected OpenFuture internalOpen() throws IOException {
         if (closeFuture.isClosed()) {
             throw new SshException("Session has been closed");
         }
@@ -80,12 +80,12 @@ public class ChannelDirectTcpip extends AbstractClientChannel {
     }
 
     @Override
-    protected void doOpen() throws Exception {
+    protected void doOpen() throws IOException {
         out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.Message.SSH_MSG_CHANNEL_DATA);
         in = new PipedInputStream(pipe);
     }
 
-    public OpenFuture open() throws Exception {
+    public OpenFuture open() throws IOException {
         return internalOpen();
     }
 

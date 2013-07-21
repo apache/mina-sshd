@@ -21,6 +21,7 @@ package org.apache.sshd;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
@@ -232,7 +233,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         }
     }
 
-    public ConnectFuture connect(String host, int port) throws Exception {
+    public ConnectFuture connect(String host, int port) throws IOException {
         assert host != null;
         assert port >= 0;
         if (connector == null) {
@@ -242,7 +243,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         return connect(address);
     }
 
-    public ConnectFuture connect(SocketAddress address) throws Exception {
+    public ConnectFuture connect(SocketAddress address) throws IOException {
         assert address != null;
         if (connector == null) {
             throw new IllegalStateException("SshClient not started. Please call start() method before connecting to a server");
@@ -302,7 +303,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         ForwardingAcceptorFactory faf = new DefaultForwardingAcceptorFactory();
         client.setTcpipForwardingAcceptorFactory(faf);
         TcpipForwarderFactory tcpipForwarderFactory = new DefaultTcpipForwarderFactory();
-        client.setTcpipForwarderFactory( tcpipForwarderFactory );
+        client.setTcpipForwarderFactory(tcpipForwarderFactory);
         client.setServerKeyVerifier(AcceptAllServerKeyVerifier.INSTANCE);
         return client;
     }

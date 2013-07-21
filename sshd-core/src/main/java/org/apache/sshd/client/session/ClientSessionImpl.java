@@ -210,11 +210,11 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         }
     }
 
-    public ClientChannel createChannel(String type) throws Exception {
+    public ClientChannel createChannel(String type) throws IOException {
         return createChannel(type, null);
     }
 
-    public ClientChannel createChannel(String type, String subType) throws Exception {
+    public ClientChannel createChannel(String type, String subType) throws IOException {
         if (ClientChannel.CHANNEL_SHELL.equals(type)) {
             return createShellChannel();
         } else if (ClientChannel.CHANNEL_EXEC.equals(type)) {
@@ -226,43 +226,43 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         }
     }
 
-    public ChannelShell createShellChannel() throws Exception {
+    public ChannelShell createShellChannel() throws IOException {
         ChannelShell channel = new ChannelShell();
         registerChannel(channel);
         return channel;
     }
 
-    public ChannelExec createExecChannel(String command) throws Exception {
+    public ChannelExec createExecChannel(String command) throws IOException {
         ChannelExec channel = new ChannelExec(command);
         registerChannel(channel);
         return channel;
     }
 
-    public ChannelSubsystem createSubsystemChannel(String subsystem) throws Exception {
+    public ChannelSubsystem createSubsystemChannel(String subsystem) throws IOException {
         ChannelSubsystem channel = new ChannelSubsystem(subsystem);
         registerChannel(channel);
         return channel;
     }
 
-    public ChannelDirectTcpip createDirectTcpipChannel(SshdSocketAddress local, SshdSocketAddress remote) throws Exception {
+    public ChannelDirectTcpip createDirectTcpipChannel(SshdSocketAddress local, SshdSocketAddress remote) throws IOException {
         ChannelDirectTcpip channel = new ChannelDirectTcpip(local, remote);
         registerChannel(channel);
         return channel;
     }
 
-    public SshdSocketAddress startLocalPortForwarding(SshdSocketAddress local, SshdSocketAddress remote) throws Exception {
+    public SshdSocketAddress startLocalPortForwarding(SshdSocketAddress local, SshdSocketAddress remote) throws IOException {
         return getTcpipForwarder().startLocalPortForwarding(local, remote);
     }
 
-    public void stopLocalPortForwarding(SshdSocketAddress local) throws Exception {
+    public void stopLocalPortForwarding(SshdSocketAddress local) throws IOException {
         getTcpipForwarder().stopLocalPortForwarding(local);
     }
 
-    public SshdSocketAddress startRemotePortForwarding(SshdSocketAddress remote, SshdSocketAddress local) throws Exception {
+    public SshdSocketAddress startRemotePortForwarding(SshdSocketAddress remote, SshdSocketAddress local) throws IOException {
         return getTcpipForwarder().startRemotePortForwarding(remote, local);
     }
 
-    public void stopRemotePortForwarding(SshdSocketAddress remote) throws Exception {
+    public void stopRemotePortForwarding(SshdSocketAddress remote) throws IOException {
         getTcpipForwarder().stopRemotePortForwarding(remote);
     }
 

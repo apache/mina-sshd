@@ -988,7 +988,7 @@ public abstract class AbstractSession implements Session {
         }
     }
 
-    public int registerChannel(Channel channel) throws Exception {
+    public int registerChannel(Channel channel) throws IOException {
         int channelId = getNextChannelId();
         channel.init(this, channelId);
         channels.put(channelId, channel);
@@ -1017,7 +1017,7 @@ public abstract class AbstractSession implements Session {
      * @param buffer the buffer containing the data
      * @throws Exception if an error occurs
      */
-    protected void channelData(Buffer buffer) throws Exception {
+    protected void channelData(Buffer buffer) throws IOException {
         Channel channel = getChannel(buffer);
         channel.handleData(buffer);
     }
@@ -1028,7 +1028,7 @@ public abstract class AbstractSession implements Session {
      * @param buffer the buffer containing the data
      * @throws Exception if an error occurs
      */
-    protected void channelExtendedData(Buffer buffer) throws Exception {
+    protected void channelExtendedData(Buffer buffer) throws IOException {
         Channel channel = getChannel(buffer);
         channel.handleExtendedData(buffer);
     }
@@ -1039,7 +1039,7 @@ public abstract class AbstractSession implements Session {
      * @param buffer the buffer containing the window adjustement parameters
      * @throws Exception if an error occurs
      */
-    protected void channelWindowAdjust(Buffer buffer) throws Exception {
+    protected void channelWindowAdjust(Buffer buffer) throws IOException {
         try {
             Channel channel = getChannel(buffer);
             channel.handleWindowAdjust(buffer);
@@ -1054,7 +1054,7 @@ public abstract class AbstractSession implements Session {
      * @param buffer the buffer containing the packet
      * @throws Exception if an error occurs
      */
-    protected void channelEof(Buffer buffer) throws Exception {
+    protected void channelEof(Buffer buffer) throws IOException {
         Channel channel = getChannel(buffer);
         channel.handleEof();
     }
@@ -1065,7 +1065,7 @@ public abstract class AbstractSession implements Session {
      * @param buffer the buffer containing the packet
      * @throws Exception if an error occurs
      */
-    protected void channelClose(Buffer buffer) throws Exception {
+    protected void channelClose(Buffer buffer) throws IOException {
         Channel channel = getChannel(buffer);
         channel.handleClose();
         unregisterChannel(channel);
@@ -1097,7 +1097,7 @@ public abstract class AbstractSession implements Session {
      * @param buffer the buffer containing the packet
      * @throws Exception if an error occurs
      */
-    protected void channelFailure(Buffer buffer) throws Exception {
+    protected void channelFailure(Buffer buffer) throws IOException {
         Channel channel = getChannel(buffer);
         channel.handleFailure();
     }

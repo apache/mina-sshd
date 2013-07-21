@@ -170,7 +170,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         }
     }
 
-    protected OpenFuture internalOpen() throws Exception {
+    protected OpenFuture internalOpen() throws IOException {
         if (closeFuture.isClosed()) {
             throw new SshException("Session has been closed");
         }
@@ -207,7 +207,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         }
     }
 
-    protected abstract void doOpen() throws Exception;
+    protected abstract void doOpen() throws IOException;
 
     public void handleOpenFailure(Buffer buffer) {
         int reason = buffer.getInt();

@@ -183,7 +183,7 @@ public class X11ForwardSupport extends IoHandlerAdapter {
             this.serverSession = serverSession;
         }
 
-        public synchronized OpenFuture open() throws Exception {
+        public synchronized OpenFuture open() throws IOException {
             InetSocketAddress remote = (InetSocketAddress) serverSession.getRemoteAddress();
             if (closeFuture.isClosed()) {
                 throw new SshException("Session has been closed");
@@ -202,7 +202,7 @@ public class X11ForwardSupport extends IoHandlerAdapter {
         }
 
         @Override
-        protected synchronized void doOpen() throws Exception {
+        protected synchronized void doOpen() throws IOException {
             out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.Message.SSH_MSG_CHANNEL_DATA);
         }
 

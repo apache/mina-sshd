@@ -19,17 +19,19 @@
 package org.apache.sshd.common;
 
 
+import java.io.IOException;
+
 public interface TcpipForwarder {
 
     /**
      * Start forwarding the given local address on the client to the given address on the server.
      */
-    SshdSocketAddress startLocalPortForwarding(SshdSocketAddress local, SshdSocketAddress remote) throws Exception;
+    SshdSocketAddress startLocalPortForwarding(SshdSocketAddress local, SshdSocketAddress remote) throws IOException;
 
     /**
      * Stop forwarding the given local address.
      */
-    void stopLocalPortForwarding(SshdSocketAddress local) throws Exception;
+    void stopLocalPortForwarding(SshdSocketAddress local) throws IOException;
 
     /**
      * Start forwarding tcpip from the given remote address to the
@@ -48,12 +50,12 @@ public interface TcpipForwarder {
      * </ul>
      *
      */
-    SshdSocketAddress startRemotePortForwarding(SshdSocketAddress remote, SshdSocketAddress local) throws Exception;
+    SshdSocketAddress startRemotePortForwarding(SshdSocketAddress remote, SshdSocketAddress local) throws IOException;
 
     /**
      * Stop forwarding of the given remote address.
      */
-    void stopRemotePortForwarding(SshdSocketAddress remote) throws Exception;
+    void stopRemotePortForwarding(SshdSocketAddress remote) throws IOException;
 
     /**
      * Retrieve the local address that the remote port is forwarded to
@@ -68,14 +70,14 @@ public interface TcpipForwarder {
      * @return the list of bound local addresses
      * @throws Exception
      */
-    SshdSocketAddress localPortForwardingRequested(SshdSocketAddress local) throws Exception;
+    SshdSocketAddress localPortForwardingRequested(SshdSocketAddress local) throws IOException;
 
     /**
      * Called when the other side cancelled a remote port forward.
      * @param local
      * @throws Exception
      */
-    void localPortForwardingCancelled(SshdSocketAddress local) throws Exception;
+    void localPortForwardingCancelled(SshdSocketAddress local) throws IOException;
 
     /**
      * Close the forwarder

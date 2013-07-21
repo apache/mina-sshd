@@ -70,7 +70,7 @@ public class DefaultTcpipForwarder extends IoHandlerAdapter implements TcpipForw
     // TcpIpForwarder implementation
     //
 
-    public synchronized SshdSocketAddress startLocalPortForwarding(SshdSocketAddress local, SshdSocketAddress remote) throws Exception {
+    public synchronized SshdSocketAddress startLocalPortForwarding(SshdSocketAddress local, SshdSocketAddress remote) throws IOException {
         if (local == null) {
             throw new IllegalArgumentException("Local address is null");
         }
@@ -85,7 +85,7 @@ public class DefaultTcpipForwarder extends IoHandlerAdapter implements TcpipForw
         return bound;
     }
 
-    public synchronized void stopLocalPortForwarding(SshdSocketAddress local) throws Exception {
+    public synchronized void stopLocalPortForwarding(SshdSocketAddress local) throws IOException {
         if (localToRemote.remove(local.getPort()) != null && acceptor != null) {
             acceptor.unbind(local.toInetSocketAddress());
             if (acceptor.getLocalAddresses().isEmpty()) {
@@ -94,7 +94,7 @@ public class DefaultTcpipForwarder extends IoHandlerAdapter implements TcpipForw
         }
     }
 
-    public synchronized SshdSocketAddress startRemotePortForwarding(SshdSocketAddress remote, SshdSocketAddress local) throws Exception {
+    public synchronized SshdSocketAddress startRemotePortForwarding(SshdSocketAddress remote, SshdSocketAddress local) throws IOException {
         Buffer buffer = session.createBuffer(SshConstants.Message.SSH_MSG_GLOBAL_REQUEST, 0);
         buffer.putString("tcpip-forward");
         buffer.putBoolean(true);
@@ -110,7 +110,7 @@ public class DefaultTcpipForwarder extends IoHandlerAdapter implements TcpipForw
         return new SshdSocketAddress(remote.getHostName(), port);
     }
 
-    public synchronized void stopRemotePortForwarding(SshdSocketAddress remote) throws Exception {
+    public synchronized void stopRemotePortForwarding(SshdSocketAddress remote) throws IOException {
         if (remoteToLocal.remove(remote.getPort()) != null) {
             Buffer buffer = session.createBuffer(SshConstants.Message.SSH_MSG_GLOBAL_REQUEST, 0);
             buffer.putString("cancel-tcpip-forward");
@@ -125,7 +125,7 @@ public class DefaultTcpipForwarder extends IoHandlerAdapter implements TcpipForw
         return remoteToLocal.get(remotePort);
     }
 
-    public synchronized SshdSocketAddress localPortForwardingRequested(SshdSocketAddress local) throws Exception {
+    public synchronized SshdSocketAddress localPortForwardingRequested(SshdSocketAddress local) throws IOException {
         if (local == null) {
             throw new IllegalArgumentException("Local address is null");
         }
@@ -141,7 +141,7 @@ public class DefaultTcpipForwarder extends IoHandlerAdapter implements TcpipForw
         return bound;
     }
 
-    public synchronized void localPortForwardingCancelled(SshdSocketAddress local) throws Exception {
+    public synchronized void localPortForwardingCancelled(SshdSocketAddress local) throws IOException {
         if (localForwards.remove(local) && acceptor != null) {
             acceptor.unbind(local.toInetSocketAddress());
             if (acceptor.getLocalAddresses().isEmpty()) {

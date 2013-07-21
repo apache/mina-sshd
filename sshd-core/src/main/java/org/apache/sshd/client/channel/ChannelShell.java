@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.client.channel;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -147,7 +148,7 @@ public class ChannelShell extends ChannelSession {
         env.put(key, value);
     }
 
-    protected void doOpen() throws Exception {
+    protected void doOpen() throws IOException {
         super.doOpen();
 
         Buffer buffer;

@@ -60,7 +60,7 @@ public class TcpipClientChannel extends AbstractClientChannel {
         return openFuture;
     }
 
-    public synchronized OpenFuture open() throws Exception {
+    public synchronized OpenFuture open() throws IOException {
         InetSocketAddress src = null, dst = null;
         switch (typeEnum) {
             case Direct:
@@ -91,7 +91,7 @@ public class TcpipClientChannel extends AbstractClientChannel {
     }
 
     @Override
-    protected synchronized void doOpen() throws Exception {
+    protected synchronized void doOpen() throws IOException {
         out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.Message.SSH_MSG_CHANNEL_DATA);
     }
 

@@ -18,6 +18,8 @@
  */
 package org.apache.sshd.client.channel;
 
+import java.io.IOException;
+
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.util.Buffer;
 
@@ -37,7 +39,7 @@ public class ChannelSubsystem extends ChannelSession {
         this.subsystem = subsystem;
     }
 
-    protected void doOpen() throws Exception {
+    protected void doOpen() throws IOException {
         super.doOpen();
         log.info("Send SSH_MSG_CHANNEL_REQUEST exec");
         Buffer buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_REQUEST, 0);

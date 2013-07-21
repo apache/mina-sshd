@@ -56,12 +56,12 @@ public class AgentForwardedChannel extends AbstractClientChannel implements Runn
         }
     }
 
-    public synchronized OpenFuture open() throws Exception {
+    public synchronized OpenFuture open() throws IOException {
         return internalOpen();
     }
 
     @Override
-    protected synchronized void doOpen() throws Exception {
+    protected synchronized void doOpen() throws IOException {
         out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.Message.SSH_MSG_CHANNEL_DATA);
     }
 
