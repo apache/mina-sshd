@@ -17,13 +17,13 @@
  * under the License.
  */
 
-package org.apache.sshd.server.filesystem;
+package org.apache.sshd.common.file.nativefs;
 
 import java.io.File;
 
 import org.apache.sshd.common.Session;
-import org.apache.sshd.server.FileSystemFactory;
-import org.apache.sshd.server.FileSystemView;
+import org.apache.sshd.common.file.FileSystemFactory;
+import org.apache.sshd.common.file.FileSystemView;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

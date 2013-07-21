@@ -26,6 +26,7 @@ import java.util.Properties;
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.apache.sshd.agent.SshAgentFactory;
+import org.apache.sshd.common.file.FileSystemFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,6 +55,7 @@ public abstract class AbstractFactoryManager implements FactoryManager {
     protected TcpipForwarderFactory tcpipForwarderFactory;
     protected ForwardingAcceptorFactory tcpipForwardingAcceptorFactory;
     protected ForwardingFilter tcpipForwardingFilter;
+    protected FileSystemFactory fileSystemFactory;
 
     protected AbstractFactoryManager() {
         loadVersion();
@@ -214,4 +216,13 @@ public abstract class AbstractFactoryManager implements FactoryManager {
     public void setTcpipForwardingFilter(ForwardingFilter tcpipForwardingFilter) {
         this.tcpipForwardingFilter = tcpipForwardingFilter;
     }
+
+    public FileSystemFactory getFileSystemFactory() {
+        return fileSystemFactory;
+    }
+
+    public void setFileSystemFactory(FileSystemFactory fileSystemFactory) {
+        this.fileSystemFactory = fileSystemFactory;
+    }
+
 }

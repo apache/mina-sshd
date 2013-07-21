@@ -18,10 +18,9 @@
 */
 package org.apache.sshd.sftp;
 
-import org.apache.sshd.server.SshFile;
+import org.apache.sshd.common.file.SshFile;
 
 import java.io.Closeable;
-import java.io.IOException;
 
 /**
  * A sftp handle.

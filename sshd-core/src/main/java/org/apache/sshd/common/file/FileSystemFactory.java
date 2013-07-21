@@ -17,28 +17,25 @@
  * under the License.
  */
 
-package org.apache.sshd.server;
+package org.apache.sshd.common.file;
+
+import java.io.IOException;
+
+import org.apache.sshd.common.Session;
 
 /**
- * This is an abstraction over the user file system view.
+ * Factory for file system implementations - it returns the file system view for user.
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public interface FileSystemView {
+public interface FileSystemFactory {
 
     /**
-     * Get file object.
-     * @param file The path to the file to get
-     * @return The {@link SshFile} for the provided path
+     * Create user specific file system view.
+     * @param session The session created for the user
+     * @return The current {@link FileSystemView} for the provided session
+     * @throws IOException when the filesystem view can not be created
      */
-    SshFile getFile(String file);
-
-    /**
-     * Get file object.
-     * @param baseDir The reference towards which the file should be resolved
-     * @param file The path to the file to get
-     * @return The {@link SshFile} for the provided path
-     */
-    SshFile getFile(SshFile baseDir, String file);
+    FileSystemView createFileSystemView(Session session) throws IOException;
 
 }

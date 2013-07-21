@@ -19,7 +19,7 @@
 package org.apache.sshd.sftp.subsystem;
 
 import org.apache.sshd.common.util.IoUtils;
-import org.apache.sshd.server.SshFile;
+import org.apache.sshd.common.file.SshFile;
 
 import java.io.IOException;
 import java.io.InputStream;

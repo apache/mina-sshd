@@ -79,7 +79,7 @@ import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.CommandFactory;
-import org.apache.sshd.server.FileSystemFactory;
+import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.server.PasswordAuthenticator;
 import org.apache.sshd.server.PublickeyAuthenticator;
 import org.apache.sshd.server.ServerFactoryManager;
@@ -90,7 +90,7 @@ import org.apache.sshd.server.auth.UserAuthPublicKey;
 import org.apache.sshd.server.auth.gss.GSSAuthenticator;
 import org.apache.sshd.server.auth.gss.UserAuthGSS;
 import org.apache.sshd.server.channel.ChannelSession;
-import org.apache.sshd.server.filesystem.NativeFileSystemFactory;
+import org.apache.sshd.common.file.nativefs.NativeFileSystemFactory;
 import org.apache.sshd.server.kex.DHG1;
 import org.apache.sshd.server.kex.DHG14;
 import org.apache.sshd.server.keyprovider.PEMGeneratorHostKeyProvider;
@@ -138,7 +138,6 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     protected Factory<Command> shellFactory;
     protected SessionFactory sessionFactory;
     protected CommandFactory commandFactory;
-    protected FileSystemFactory fileSystemFactory;
     protected List<NamedFactory<Command>> subsystemFactories;
     protected PasswordAuthenticator passwordAuthenticator;
     protected PublickeyAuthenticator publickeyAuthenticator;
@@ -223,14 +222,6 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
 
     public void setCommandFactory(CommandFactory commandFactory) {
         this.commandFactory = commandFactory;
-    }
-
-    public FileSystemFactory getFileSystemFactory() {
-        return fileSystemFactory;
-    }
-
-    public void setFileSystemFactory(FileSystemFactory fileSystemFactory) {
-        this.fileSystemFactory = fileSystemFactory;
     }
 
     public List<NamedFactory<Command>> getSubsystemFactories() {

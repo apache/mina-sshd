@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.apache.sshd.agent.SshAgentFactory;
+import org.apache.sshd.common.file.FileSystemFactory;
 
 /**
  * This interface allows retrieving all the <code>NamedFactory</code> used
@@ -170,4 +171,13 @@ public interface FactoryManager {
      * @return the <code>TcpipForwarderFactory</code>
      */
     TcpipForwarderFactory getTcpipForwarderFactory();
+
+    /**
+     * Retrieve the <code>FileSystemFactory</code> to be used to traverse the file system.
+     *
+     * @return a valid <code>FileSystemFactory</code> object or <code>null</code> if commands
+     *         are not supported on this server
+     */
+    FileSystemFactory getFileSystemFactory();
+
 }

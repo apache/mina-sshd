@@ -29,9 +29,9 @@ import org.apache.sshd.common.util.DirectoryScanner;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
-import org.apache.sshd.server.FileSystemAware;
-import org.apache.sshd.server.FileSystemView;
-import org.apache.sshd.server.SshFile;
+import org.apache.sshd.common.file.FileSystemAware;
+import org.apache.sshd.common.file.FileSystemView;
+import org.apache.sshd.common.file.SshFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

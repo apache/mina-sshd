@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.sshd.server.filesystem;
+package org.apache.sshd.common.file.nativefs;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -33,7 +33,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.StringTokenizer;
 
-import org.apache.sshd.server.SshFile;
+import org.apache.sshd.common.file.SshFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

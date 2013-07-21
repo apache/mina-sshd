@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.apache.sshd.server.SshFile;
+import org.apache.sshd.common.file.SshFile;
 import org.apache.sshd.sftp.subsystem.SftpConstants;
 
 /**

@@ -18,7 +18,6 @@
 */
 package org.apache.sshd.sftp.reply;
 
-import org.apache.sshd.server.SshFile;
 import org.apache.sshd.sftp.subsystem.SftpConstants;
 
 /**

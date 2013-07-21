@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.sshd.server.filesystem;
+package org.apache.sshd.common.file.nativefs;
 
 import java.io.File;
 import java.io.FileFilter;

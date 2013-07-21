@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.sshd.server;
+package org.apache.sshd.common.file;
 
 import java.io.IOException;
 import java.io.InputStream;

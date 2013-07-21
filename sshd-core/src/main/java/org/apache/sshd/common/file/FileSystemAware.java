@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -16,26 +16,17 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
-package org.apache.sshd.server;
-
-import java.io.IOException;
-
-import org.apache.sshd.common.Session;
+package org.apache.sshd.common.file;
 
 /**
- * Factory for file system implementations - it returns the file system view for user.
- *
- * @author <a href="http://mina.apache.org">Apache MINA Project</a>
+ * Interface that can be implemented by a command to be able to access the
+ * file system in which this command will be used.
  */
-public interface FileSystemFactory {
-
+public interface FileSystemAware {
     /**
-     * Create user specific file system view.
-     * @param session The session created for the user
-     * @return The current {@link FileSystemView} for the provided session
-     * @throws IOException when the filesystem view can not be created
+     * Set the file system in which this shell will be executed.
+     *
+     * @param view
      */
-    FileSystemView createFileSystemView(Session session) throws IOException;
-
+    void setFileSystemView(FileSystemView view);
 }

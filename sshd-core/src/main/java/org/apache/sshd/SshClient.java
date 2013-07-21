@@ -70,6 +70,7 @@ import org.apache.sshd.common.cipher.ARCFOUR256;
 import org.apache.sshd.common.cipher.BlowfishCBC;
 import org.apache.sshd.common.cipher.TripleDESCBC;
 import org.apache.sshd.common.compression.CompressionNone;
+import org.apache.sshd.common.file.nativefs.NativeFileSystemFactory;
 import org.apache.sshd.common.forward.DefaultForwardingAcceptorFactory;
 import org.apache.sshd.common.forward.DefaultTcpipForwarderFactory;
 import org.apache.sshd.common.forward.TcpipServerChannel;
@@ -305,6 +306,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         TcpipForwarderFactory tcpipForwarderFactory = new DefaultTcpipForwarderFactory();
         client.setTcpipForwarderFactory(tcpipForwarderFactory);
         client.setServerKeyVerifier(AcceptAllServerKeyVerifier.INSTANCE);
+        client.setFileSystemFactory(new NativeFileSystemFactory());
         return client;
     }
 

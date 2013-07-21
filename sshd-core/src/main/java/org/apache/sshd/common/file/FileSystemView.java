@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ *  http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -16,17 +16,29 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.server;
+
+package org.apache.sshd.common.file;
 
 /**
- * Interface that can be implemented by a command to be able to access the
- * file system in which this command will be used.
+ * This is an abstraction over the user file system view.
+ *
+ * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public interface FileSystemAware {
+public interface FileSystemView {
+
     /**
-     * Set the file system in which this shell will be executed.
-     *
-     * @param view
+     * Get file object.
+     * @param file The path to the file to get
+     * @return The {@link SshFile} for the provided path
      */
-    void setFileSystemView(FileSystemView view);
+    SshFile getFile(String file);
+
+    /**
+     * Get file object.
+     * @param baseDir The reference towards which the file should be resolved
+     * @param file The path to the file to get
+     * @return The {@link SshFile} for the provided path
+     */
+    SshFile getFile(SshFile baseDir, String file);
+
 }

@@ -24,6 +24,7 @@ import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.ForwardingAcceptorFactory;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.server.auth.gss.GSSAuthenticator;
 
 /**
@@ -133,14 +134,6 @@ public interface ServerFactoryManager extends FactoryManager {
      *         are not supported on this server
      */
     CommandFactory getCommandFactory();
-
-    /**
-     * Retrieve the <code>FileSystemFactory</code> to be used to traverse the file system.
-     *
-     * @return a valid <code>FileSystemFactory</code> object or <code>null</code> if commands
-     *         are not supported on this server
-     */
-    FileSystemFactory getFileSystemFactory();
 
     /**
      * Retrieve the list of named factories for <code>CommandFactory.Command</code> to

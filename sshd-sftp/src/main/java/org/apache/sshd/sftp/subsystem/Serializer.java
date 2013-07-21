@@ -19,7 +19,7 @@
 package org.apache.sshd.sftp.subsystem;
 
 import org.apache.sshd.common.util.Buffer;
-import org.apache.sshd.server.SshFile;
+import org.apache.sshd.common.file.SshFile;
 import org.apache.sshd.sftp.Handle;
 import org.apache.sshd.sftp.Reply;
 import org.apache.sshd.sftp.Request;
@@ -29,10 +29,7 @@ import org.apache.sshd.sftp.request.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collection;
-import java.util.GregorianCalendar;
-import java.util.Iterator;
 import java.util.List;
 
 import static org.apache.sshd.sftp.subsystem.SftpConstants.*;

@@ -20,6 +20,9 @@ package org.apache.sshd.sftp.subsystem;
 
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.Session;
+import org.apache.sshd.common.file.FileSystemAware;
+import org.apache.sshd.common.file.FileSystemView;
+import org.apache.sshd.common.file.SshFile;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.SelectorUtils;
 import org.apache.sshd.server.*;
