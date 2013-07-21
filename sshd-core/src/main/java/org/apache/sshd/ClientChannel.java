@@ -56,6 +56,10 @@ public interface ClientChannel {
      */
     OutputStream getInvertedIn();
 
+    InputStream getInvertedOut();
+
+    InputStream getInvertedErr();
+
     /**
      * Set an input stream that will be read by this channel and forwarded to
      * the remote channel.  Note that using such a stream will create an additional

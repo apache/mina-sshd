@@ -45,7 +45,9 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     protected InputStream in;
     protected OutputStream invertedIn;
     protected OutputStream out;
+    protected InputStream invertedOut;
     protected OutputStream err;
+    protected InputStream invertedErr;
     protected Integer exitStatus;
     protected String exitSignal;
     protected int openFailureReason;
@@ -68,12 +70,20 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         this.in = in;
     }
 
+    public InputStream getInvertedOut() {
+        return invertedOut;
+    }
+
     public OutputStream getOut() {
         return out;
     }
 
     public void setOut(OutputStream out) {
         this.out = out;
+    }
+
+    public InputStream getInvertedErr() {
+        return invertedErr;
     }
 
     public OutputStream getErr() {

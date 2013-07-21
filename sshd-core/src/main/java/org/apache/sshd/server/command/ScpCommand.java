@@ -18,20 +18,19 @@
  */
 package org.apache.sshd.server.command;
 
-import java.io.ByteArrayOutputStream;
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
-import org.apache.sshd.common.util.DirectoryScanner;
+import org.apache.sshd.common.file.FileSystemAware;
+import org.apache.sshd.common.file.FileSystemView;
+import org.apache.sshd.common.scp.ScpHelper;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
-import org.apache.sshd.common.file.FileSystemAware;
-import org.apache.sshd.common.file.FileSystemView;
-import org.apache.sshd.common.file.SshFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,19 +44,15 @@ import org.slf4j.LoggerFactory;
 public class ScpCommand implements Command, Runnable, FileSystemAware {
 
     protected static final Logger log = LoggerFactory.getLogger(ScpCommand.class);
-    protected static final int OK = 0;
-    protected static final int WARNING = 1;
-    protected static final int ERROR = 2;
 
     protected String name;
     protected boolean optR;
     protected boolean optT;
     protected boolean optF;
-    protected boolean optV;
     protected boolean optD;
-    protected boolean optP;
+    protected boolean optP; // TODO: handle modification times
     protected FileSystemView root;
-    protected String path;
+    protected List<String> paths;
     protected InputStream in;
     protected OutputStream out;
     protected OutputStream err;
@@ -69,7 +64,7 @@ public class ScpCommand implements Command, Runnable, FileSystemAware {
         if (log.isDebugEnabled()) {
             log.debug("Executing command {}", name);
         }
-        path = ".";
+        paths = new ArrayList<String>();
         for (int i = 1; i < args.length; i++) {
             if (args[i].charAt(0) == '-') {
                 for (int j = 1; j < args[i].length(); j++) {
@@ -86,9 +81,6 @@ public class ScpCommand implements Command, Runnable, FileSystemAware {
                         case 't':
                             optT = true;
                             break;
-                        case 'v':
-                            optV = true;
-                            break;
                         case 'd':
                             optD = true;
                             break;
@@ -98,11 +90,14 @@ public class ScpCommand implements Command, Runnable, FileSystemAware {
                     }
                 }
             } else if (i == args.length - 1) {
-                path = args[args.length - 1];
+                paths.add(args[args.length - 1]);
             }
         }
         if (!optF && !optT) {
             error = new IOException("Either -f or -t option should be set");
+        }
+        if (optT && paths.size() != 1) {
+            error = new IOException("One and only one path must be given with -t option");
         }
     }
 
@@ -122,6 +117,10 @@ public class ScpCommand implements Command, Runnable, FileSystemAware {
         this.callback = callback;
     }
 
+    public void setFileSystemView(FileSystemView view) {
+        this.root = view;
+    }
+
     public void start(Environment env) throws IOException {
         if (error != null) {
             throw error;
@@ -133,104 +132,20 @@ public class ScpCommand implements Command, Runnable, FileSystemAware {
     }
 
     public void run() {
-        int exitValue = OK;
+        int exitValue = ScpHelper.OK;
         String exitMessage = null;
-        
+        ScpHelper helper = new ScpHelper(in, out, root);
         try {
-            if (optT)
-            {
-                ack();
-                for (; ;)
-                {
-                    String line;
-                    boolean isDir = false;
-                    int c = readAck(true);
-                    switch (c)
-                    {
-                        case -1:
-                            return;
-                        case 'D':
-                            isDir = true;
-                        case 'C':
-                            line = ((char) c) + readLine();
-                            break;
-                        case 'T':
-                            readLine();
-                            ack();
-                            continue;
-                        case 'E':
-                            readLine();
-                            return;
-                        default:
-                            //a real ack that has been acted upon already
-                            continue;
-                    }
-
-                    if (optR && isDir)
-                    {
-                        writeDir(line, root.getFile(path));
-                    }
-                    else
-                    {
-                        writeFile(line, root.getFile(path));
-                    }
-                }
+            if (optT) {
+                helper.receive(root.getFile(paths.get(0)), optR, optD);
             } else if (optF) {
-                String pattern = path;
-                int idx = pattern.indexOf('*');
-                if (idx >= 0) {
-                    String basedir = "";
-                    int lastSep = pattern.substring(0, idx).lastIndexOf('/');
-                    if (lastSep >= 0) {
-                        basedir = pattern.substring(0, lastSep);
-                        pattern = pattern.substring(lastSep + 1);
-                    }
-                    String[] included = new DirectoryScanner(basedir, pattern).scan();
-                    for (String path : included) {
-                        SshFile file = root.getFile(basedir + "/" + path);
-                        if (file.isFile()) {
-                            readFile(file);
-                        } else if (file.isDirectory()) {
-                            if (!optR) {
-                                out.write(WARNING);
-                                out.write((path + " not a regular file\n").getBytes());
-                            } else {
-                                readDir(file);
-                            }
-                        } else {
-                            out.write(WARNING);
-                            out.write((path + " unknown file type\n").getBytes());
-                        }
-                    }
-                } else {
-                    String basedir = "";
-                    int lastSep = pattern.lastIndexOf('/');
-                    if (lastSep >= 0) {
-                        basedir = pattern.substring(0, lastSep);
-                        pattern = pattern.substring(lastSep + 1);
-                    }
-                    SshFile file = root.getFile(basedir + "/" + pattern);
-                    if (!file.doesExist()) {
-                        throw new IOException(file + ": no such file or directory");
-                    }
-                    if (file.isFile()) {
-                        readFile(file);
-                    } else if (file.isDirectory()) {
-                        if (!optR) {
-                            throw new IOException(file + " not a regular file");
-                        } else {
-                            readDir(file);
-                        }
-                    } else {
-                        throw new IOException(file + ": unknown file type");
-                    }
-                }
+                helper.send(paths, optR);
             } else {
                 throw new IOException("Unsupported mode");
             }
         } catch (IOException e) {
             try {
-                exitValue = ERROR;
+                exitValue = ScpHelper.ERROR;
                 exitMessage = e.getMessage() == null ? "" : e.getMessage();
                 out.write(exitValue);
                 out.write(exitMessage.getBytes());
@@ -247,207 +162,5 @@ public class ScpCommand implements Command, Runnable, FileSystemAware {
         }
     }
 
-    protected void writeDir(String header, SshFile path) throws IOException {
-        if (log.isDebugEnabled()) {
-            log.debug("Writing dir {}", path);
-        }
-        if (!header.startsWith("D")) {
-            throw new IOException("Expected a D message but got '" + header + "'");
-        }
-
-        String perms = header.substring(1, 5);
-        int length = Integer.parseInt(header.substring(6, header.indexOf(' ', 6)));
-        String name = header.substring(header.indexOf(' ', 6) + 1);
-
-        if (length != 0) {
-            throw new IOException("Expected 0 length for directory but got " + length);
-        }
-        SshFile file;
-        if (path.doesExist() && path.isDirectory()) {
-            file = root.getFile(path, name);
-        } else if (!path.doesExist() && path.getParentFile().doesExist() && path.getParentFile().isDirectory()) {
-            file = path;
-        } else {
-            throw new IOException("Can not write to " + path);
-        }
-        if (!(file.doesExist() && file.isDirectory()) && !file.mkdir()) {
-            throw new IOException("Could not create directory " + file);
-        }
-
-        ack();
-
-        for (;;) {
-            header = readLine();
-            if (header.startsWith("C")) {
-                writeFile(header, file);
-            } else if (header.startsWith("D")) {
-                writeDir(header, file);
-            } else if (header.equals("E")) {
-                ack();
-                break;
-            } else if (header.equals("T")) {
-                ack();
-                break;
-            } else {
-                throw new IOException("Unexpected message: '" + header + "'");
-            }
-        }
-
-    }
-
-    protected void writeFile(String header, SshFile path) throws IOException {
-        if (log.isDebugEnabled()) {
-            log.debug("Writing file {}", path);
-        }
-        if (!header.startsWith("C")) {
-            throw new IOException("Expected a C message but got '" + header + "'");
-        }
-
-        String perms = header.substring(1, 5);
-        long length = Long.parseLong(header.substring(6, header.indexOf(' ', 6)));
-        String name = header.substring(header.indexOf(' ', 6) + 1);
-
-        SshFile file;
-        if (path.doesExist() && path.isDirectory()) {
-            file = root.getFile(path, name);
-        } else if (path.doesExist() && path.isFile()) {
-            file = path;
-        } else if (!path.doesExist() && path.getParentFile().doesExist() && path.getParentFile().isDirectory()) {
-            file = path;
-        } else {
-            throw new IOException("Can not write to " + path);
-        }
-        if (file.doesExist() && file.isDirectory()) {
-            throw new IOException("File is a directory: " + file);
-        } else if (file.doesExist() && !file.isWritable()) {
-            throw new IOException("Can not write to file: " + file);
-        }
-        OutputStream os = file.createOutputStream(0);
-        try {
-            ack();
-
-            byte[] buffer = new byte[8192];
-            while (length > 0) {
-                int len = (int) Math.min(length, buffer.length);
-                len = in.read(buffer, 0, len);
-                if (len <= 0) {
-                    throw new IOException("End of stream reached");
-                }
-                os.write(buffer, 0, len);
-                length -= len;
-            }
-        } finally {
-            os.close();
-        }
-
-        ack();
-        readAck(false);
-    }
-
-    protected String readLine() throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        for (;;) {
-            int c = in.read();
-            if (c == '\n') {
-                return baos.toString();
-            } else if (c == -1) {
-                throw new IOException("End of stream");
-            } else {
-                baos.write(c);
-            }
-        }
-    }
-
-    protected void readFile(SshFile path) throws IOException {
-        if (log.isDebugEnabled()) {
-            log.debug("Reading file {}", path);
-        }
-        StringBuffer buf = new StringBuffer();
-        buf.append("C");
-        buf.append("0644"); // what about perms
-        buf.append(" ");
-        buf.append(path.getSize()); // length
-        buf.append(" ");
-        buf.append(path.getName());
-        buf.append("\n");
-        out.write(buf.toString().getBytes());
-        out.flush();
-        readAck(false);
-
-        InputStream is = path.createInputStream(0);
-        try {
-            byte[] buffer = new byte[8192];
-            for (;;) {
-                int len = is.read(buffer, 0, buffer.length);
-                if (len == -1) {
-                    break;
-                }
-                out.write(buffer, 0, len);
-            }
-        } finally {
-            is.close();
-        }
-        ack();
-        readAck(false);
-    }
-
-    protected void readDir(SshFile path) throws IOException {
-        if (log.isDebugEnabled()) {
-            log.debug("Reading directory {}", path);
-        }
-        StringBuffer buf = new StringBuffer();
-        buf.append("D");
-        buf.append("0755"); // what about perms
-        buf.append(" ");
-        buf.append("0"); // length
-        buf.append(" ");
-        buf.append(path.getName());
-        buf.append("\n");
-        out.write(buf.toString().getBytes());
-        out.flush();
-        readAck(false);
-
-        for (SshFile child : path.listSshFiles()) {
-            if (child.isFile()) {
-                readFile(child);
-            } else if (child.isDirectory()) {
-                readDir(child);
-            }
-        }
-
-        out.write("E\n".getBytes());
-        out.flush();
-        readAck(false);
-    }
-
-    protected void ack() throws IOException {
-        out.write(0);
-        out.flush();
-    }
-
-    protected int readAck(boolean canEof) throws IOException {
-        int c = in.read();
-        switch (c) {
-            case -1:
-                if (!canEof) {
-                    throw new EOFException();
-                }
-                break;
-            case OK:
-                break;
-            case WARNING:
-                log.warn("Received warning: " + readLine());
-                break;
-            case ERROR:
-                throw new IOException("Received nack: " + readLine());
-            default:
-                break;
-        }
-        return c;
-    }
-
-    public void setFileSystemView(FileSystemView view) {
-        this.root = view;
-    }
 
 }

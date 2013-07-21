@@ -24,6 +24,8 @@ import java.io.InputStream;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.ChannelOutputStream;
+import org.apache.sshd.common.channel.ChannelPipedInputStream;
+import org.apache.sshd.common.channel.ChannelPipedOutputStream;
 import org.apache.sshd.common.util.Buffer;
 
 /**
@@ -41,8 +43,17 @@ public class ChannelSession extends AbstractClientChannel {
 
     public OpenFuture open() throws IOException {
         invertedIn = new ChannelOutputStream(this, remoteWindow, log, SshConstants.Message.SSH_MSG_CHANNEL_DATA);
-        if (out == null || err == null) {
-            throw new IllegalStateException("in, out and err streams should be set before opening channel");
+        if (out == null) {
+            ChannelPipedInputStream pis = new ChannelPipedInputStream(localWindow);
+            ChannelPipedOutputStream pos = new ChannelPipedOutputStream(pis);
+            out = pos;
+            invertedOut = pis;
+        }
+        if (err == null) {
+            ChannelPipedInputStream pis = new ChannelPipedInputStream(localWindow);
+            ChannelPipedOutputStream pos = new ChannelPipedOutputStream(pis);
+            err = pos;
+            invertedErr = pis;
         }
         return internalOpen();
     }

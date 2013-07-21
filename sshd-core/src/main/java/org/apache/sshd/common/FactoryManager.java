@@ -175,8 +175,8 @@ public interface FactoryManager {
     /**
      * Retrieve the <code>FileSystemFactory</code> to be used to traverse the file system.
      *
-     * @return a valid <code>FileSystemFactory</code> object or <code>null</code> if commands
-     *         are not supported on this server
+     * @return a valid <code>FileSystemFactory</code> object or <code>null</code> if file based
+     *         interactions are not supported on this server
      */
     FileSystemFactory getFileSystemFactory();
 

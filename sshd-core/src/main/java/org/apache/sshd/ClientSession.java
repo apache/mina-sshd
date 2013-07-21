@@ -23,6 +23,7 @@ import java.security.KeyPair;
 import java.util.Map;
 
 import org.apache.sshd.client.ClientFactoryManager;
+import org.apache.sshd.client.ScpClient;
 import org.apache.sshd.client.channel.ChannelDirectTcpip;
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ChannelShell;
@@ -110,6 +111,11 @@ public interface ClientSession extends Session {
      * Create a direct tcp-ip channel which can be used to stream data to a remote port from the server.
      */
     ChannelDirectTcpip createDirectTcpipChannel(SshdSocketAddress local, SshdSocketAddress remote) throws IOException;
+
+    /**
+     * Create an SCP client from this session.
+     */
+    ScpClient createScpClient();
 
     /**
      * Start forwarding the given local address on the client to the given address on the server.

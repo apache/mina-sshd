@@ -29,6 +29,7 @@ import org.apache.mina.core.session.IoSession;
 import org.apache.sshd.ClientChannel;
 import org.apache.sshd.ClientSession;
 import org.apache.sshd.client.ClientFactoryManager;
+import org.apache.sshd.client.ScpClient;
 import org.apache.sshd.client.ServerKeyVerifier;
 import org.apache.sshd.client.UserAuth;
 import org.apache.sshd.client.UserInteraction;
@@ -43,6 +44,7 @@ import org.apache.sshd.client.channel.ChannelSubsystem;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.DefaultAuthFuture;
 import org.apache.sshd.client.future.OpenFuture;
+import org.apache.sshd.client.scp.DefaultScpClient;
 import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.KeyExchange;
 import org.apache.sshd.common.KeyPairProvider;
@@ -248,6 +250,10 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         ChannelDirectTcpip channel = new ChannelDirectTcpip(local, remote);
         registerChannel(channel);
         return channel;
+    }
+
+    public ScpClient createScpClient() {
+        return new DefaultScpClient(this);
     }
 
     public SshdSocketAddress startLocalPortForwarding(SshdSocketAddress local, SshdSocketAddress remote) throws IOException {
