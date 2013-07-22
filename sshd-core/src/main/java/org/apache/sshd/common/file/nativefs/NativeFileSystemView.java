@@ -113,7 +113,23 @@ public class NativeFileSystemView implements FileSystemView {
 		return System.getProperty("user.dir");
 	}
 
+    static boolean isJava7;
+    static {
+        boolean j7 = false;
+        try {
+            ClassLoader.getSystemClassLoader().loadClass("java.nio.file.Files");
+            j7 = true;
+        } catch (Throwable t) {
+            // Ignore
+        }
+        isJava7 = j7;
+    }
+
     public NativeSshFile createNativeSshFile(final String fileName2, final File fileObj, final String userName2) {
-		return new NativeSshFile(this, fileName2, fileObj, userName2);
+        if (isJava7) {
+            return new NativeSshFileNio(this, fileName2, fileObj, userName2);
+        } else {
+		    return new NativeSshFile(this, fileName2, fileObj, userName2);
+        }
 	}
 }

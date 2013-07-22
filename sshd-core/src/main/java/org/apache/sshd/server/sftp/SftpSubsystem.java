@@ -542,6 +542,8 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                     sendStatus(id, SSH_FX_NO_SUCH_FILE, e.getMessage());
                 } catch (IOException e) {
                     sendStatus(id, SSH_FX_FAILURE, e.getMessage());
+                } catch (UnsupportedOperationException e) {
+                    sendStatus(id, SSH_FX_FAILURE, "");
                 }
                 break;
             }
@@ -560,6 +562,8 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                 } catch (FileNotFoundException e) {
                     sendStatus(id, SSH_FX_NO_SUCH_FILE, e.getMessage());
                 } catch (IOException e) {
+                    sendStatus(id, SSH_FX_FAILURE, e.getMessage());
+                } catch (UnsupportedOperationException e) {
                     sendStatus(id, SSH_FX_FAILURE, e.getMessage());
                 }
                 break;
@@ -754,6 +758,8 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                     SshFile f = resolveFile(path);
                     String l = f.readSymbolicLink();
                     sendLink(id, l);
+                } catch (UnsupportedOperationException e) {
+                    sendStatus(id, SSH_FX_OP_UNSUPPORTED, "Command " + type + " is unsupported or not implemented");
                 } catch (IOException e) {
                     sendStatus(id, SSH_FX_FAILURE, e.getMessage());
                 }
@@ -919,28 +925,41 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
             throw new FileNotFoundException(file.getAbsolutePath());
         }
         Map<SshFile.Attribute, Object> attributes = file.getAttributes(followLinks);
-        boolean isReg = (Boolean) attributes.get(SshFile.Attribute.IsRegularFile);
-        boolean isDir = (Boolean) attributes.get(SshFile.Attribute.IsDirectory);
-        boolean isLnk = (Boolean) attributes.get(SshFile.Attribute.IsSymbolicLink);
-        int pf = getPermissions(attributes);
-        if (isReg || isLnk) {
-            buffer.putInt(SSH_FILEXFER_ATTR_SIZE | SSH_FILEXFER_ATTR_UIDGID | SSH_FILEXFER_ATTR_PERMISSIONS | SSH_FILEXFER_ATTR_ACMODTIME);
-            buffer.putLong((Long) attributes.get(SshFile.Attribute.Size));
-            buffer.putInt((Integer) attributes.get(SshFile.Attribute.Uid));
-            buffer.putInt((Integer) attributes.get(SshFile.Attribute.Gid));
-            buffer.putInt(pf);
-            buffer.putInt(((Long) attributes.get(SshFile.Attribute.LastAccessTime)) / 1000);
-            buffer.putInt(((Long) attributes.get(SshFile.Attribute.LastModifiedTime)) / 1000);
-        } else if (isDir) {
-            buffer.putInt(SSH_FILEXFER_ATTR_UIDGID | SSH_FILEXFER_ATTR_PERMISSIONS | SSH_FILEXFER_ATTR_ACMODTIME);
-            buffer.putInt((Integer) attributes.get(SshFile.Attribute.Uid));
-            buffer.putInt((Integer) attributes.get(SshFile.Attribute.Gid));
-            buffer.putInt(pf);
-            buffer.putInt(((Long) attributes.get(SshFile.Attribute.LastAccessTime)) / 1000);
-            buffer.putInt(((Long) attributes.get(SshFile.Attribute.LastModifiedTime)) / 1000);
-        } else {
-            buffer.putInt(0);
+        boolean isReg = getBool((Boolean) attributes.get(SshFile.Attribute.IsRegularFile));
+        boolean isDir = getBool((Boolean) attributes.get(SshFile.Attribute.IsDirectory));
+        boolean isLnk = getBool((Boolean) attributes.get(SshFile.Attribute.IsSymbolicLink));
+        int flags = 0;
+        if ((isReg || isLnk) && attributes.containsKey(SshFile.Attribute.Size)) {
+            flags |= SSH_FILEXFER_ATTR_SIZE;
         }
+        if (attributes.containsKey(SshFile.Attribute.Uid) && attributes.containsKey(SshFile.Attribute.Gid)) {
+            flags |= SSH_FILEXFER_ATTR_UIDGID;
+        }
+        if (attributes.containsKey(SshFile.Attribute.Permissions)) {
+            flags |= SSH_FILEXFER_ATTR_PERMISSIONS;
+        }
+        if (attributes.containsKey(SshFile.Attribute.LastAccessTime) && attributes.containsKey(SshFile.Attribute.LastModifiedTime)) {
+            flags |= SSH_FILEXFER_ATTR_ACMODTIME;
+        }
+        buffer.putInt(flags);
+        if ((flags & SSH_FILEXFER_ATTR_SIZE) != 0) {
+            buffer.putLong((Long) attributes.get(SshFile.Attribute.Size));
+        }
+        if ((flags & SSH_FILEXFER_ATTR_UIDGID) != 0) {
+            buffer.putInt((Integer) attributes.get(SshFile.Attribute.Uid));
+            buffer.putInt((Integer) attributes.get(SshFile.Attribute.Gid));
+        }
+        if ((flags & SSH_FILEXFER_ATTR_PERMISSIONS) != 0) {
+            buffer.putInt(getPermissions(attributes));
+        }
+        if ((flags & SSH_FILEXFER_ATTR_ACMODTIME) != 0) {
+            buffer.putInt(((Long) attributes.get(SshFile.Attribute.LastAccessTime)) / 1000);
+            buffer.putInt(((Long) attributes.get(SshFile.Attribute.LastModifiedTime)) / 1000);
+        }
+    }
+
+    protected boolean getBool(Boolean bool) {
+        return bool != null && bool;
     }
 
     protected Map<SshFile.Attribute, Object> readAttrs(Buffer buffer) throws IOException {
