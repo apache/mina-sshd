@@ -335,7 +335,7 @@ public class ServerSession extends AbstractSession {
     }
 
     private void processIdleTimer() throws IOException {
-        disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "User idle has timed out after " + idleTimeout + "ms.");
+        disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "User session has timed out after being idled for " + idleTimeout + "ms.");
     }
 
     private void sendServerIdentification() {

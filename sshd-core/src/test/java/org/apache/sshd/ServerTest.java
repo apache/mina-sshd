@@ -69,7 +69,7 @@ public class ServerTest {
         sshd = SshServer.setUpDefaultServer();
         sshd.setPort(port);
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
-        sshd.setShellFactory(new EchoShellFactory());
+        sshd.setShellFactory(new TestEchoShellFactory());
         sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
         sshd.setSessionFactory(new org.apache.sshd.server.session.SessionFactory());
         sshd.start();
@@ -145,6 +145,7 @@ public class ServerTest {
     @Test
     public void testIdleTimeout() throws Exception {
         final CountDownLatch latch = new CountDownLatch(1);
+        TestEchoShellFactory.TestEchoShell.latch = new CountDownLatch(1);
 
         sshd.getProperties().put(SshServer.IDLE_TIMEOUT, "1000");
         sshd.getSessionFactory().addListener(new SessionListener() {
@@ -173,6 +174,7 @@ public class ServerTest {
         int res = s.waitFor(ClientSession.CLOSED, 5000);
         assertTrue((res & ClientSession.CLOSED) != 0);
         assertTrue(latch.await(1, TimeUnit.SECONDS));
+        assertTrue(TestEchoShellFactory.TestEchoShell.latch.await(1, TimeUnit.SECONDS));
     }
 
     @Test
@@ -197,8 +199,28 @@ public class ServerTest {
         s.close(false);
     }
 
+    public static class TestEchoShellFactory extends EchoShellFactory {
+        @Override
+        public Command create() {
+            return new TestEchoShell();
+        }
+        public static class TestEchoShell extends EchoShell {
+
+            public static CountDownLatch latch = new CountDownLatch(1);
+
+            @Override
+            public void destroy() {
+                if (latch != null) {
+                    latch.countDown();
+                }
+                super.destroy();
+            }
+        }
+    }
+
     public static void main(String[] args) throws Exception {
         SshServer sshd = SshServer.setUpDefaultServer();
+        sshd.getProperties().put(SshServer.IDLE_TIMEOUT, "10000");
         sshd.setPort(8001);
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(new SftpSubsystem.Factory()));

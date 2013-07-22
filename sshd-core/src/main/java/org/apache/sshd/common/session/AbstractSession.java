@@ -910,7 +910,7 @@ public abstract class AbstractSession implements Session {
         WriteFuture f = writePacket(buffer);
         f.addListener(new IoFutureListener() {
             public void operationComplete(IoFuture future) {
-                close(false);
+                close(true);
             }
         });
     }
