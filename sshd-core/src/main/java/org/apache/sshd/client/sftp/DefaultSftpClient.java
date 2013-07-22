@@ -122,6 +122,10 @@ public class DefaultSftpClient implements SftpClient {
         init();
     }
 
+    public void close() throws IOException {
+        this.channel.close(false);
+    }
+
     /**
      * Receive binary data
      */

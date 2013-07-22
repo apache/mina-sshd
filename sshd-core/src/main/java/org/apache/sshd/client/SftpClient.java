@@ -118,6 +118,11 @@ public interface SftpClient {
         }
     }
 
+    /**
+     * Close the client.
+     */
+    void close() throws IOException;
+
     //
     // Low level API
     //

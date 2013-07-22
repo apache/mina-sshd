@@ -177,6 +177,8 @@ public class SftpTest {
 
         sftp.rmdir("target/scp/client/");
 
+        sftp.close();
+
         client.stop();
     }
 
