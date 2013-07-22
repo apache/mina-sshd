@@ -405,6 +405,7 @@ public class DefaultSftpClient implements SftpClient {
             }
         }
         buffer.putInt(mode);
+        buffer.putInt(0);
         return checkHandle(receive(send(SSH_FXP_OPEN, buffer)));
     }
 

@@ -27,9 +27,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.lang.reflect.Method;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
+import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.GroupPrincipal;
 import java.nio.file.attribute.PosixFilePermission;
@@ -38,6 +38,7 @@ import java.nio.file.attribute.UserPrincipalLookupService;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -604,8 +605,11 @@ public class NativeSshFile implements SshFile {
         return fileName;
     }
 
-    public Map<Attribute, Object> getAttributes() throws IOException {
-        Map<String, Object> a = Files.readAttributes(file.toPath(), "unix:size,uid,owner,gid,group,isDirectory,isRegularFile,isSymbolicLink,permissions,creationTime,lastModifiedTime,lastAccessTime", LinkOption.NOFOLLOW_LINKS);
+    public Map<Attribute, Object> getAttributes(boolean followLinks) throws IOException {
+        Map<String, Object> a = Files.readAttributes(
+                file.toPath(),
+                "unix:size,uid,owner,gid,group,isDirectory,isRegularFile,isSymbolicLink,permissions,creationTime,lastModifiedTime,lastAccessTime",
+                followLinks ? new LinkOption[0] : new LinkOption[] { LinkOption.NOFOLLOW_LINKS });
         Map<Attribute, Object> map = new HashMap<Attribute, Object>();
         map.put(Attribute.Size, a.get("size"));
         map.put(Attribute.Uid, a.get("uid"));
@@ -622,19 +626,19 @@ public class NativeSshFile implements SshFile {
         return map;
     }
 
-    private int fromPerms(Set<PosixFilePermission> perms) {
-        int p = 0;
+    private EnumSet<Permission> fromPerms(Set<PosixFilePermission> perms) {
+        EnumSet<Permission> p = EnumSet.noneOf(Permission.class);
         for (PosixFilePermission perm : perms) {
             switch (perm) {
-                case OWNER_READ:     p |= 0000400; break;
-                case OWNER_WRITE:    p |= 0000200; break;
-                case OWNER_EXECUTE:  p |= 0000100; break;
-                case GROUP_READ:     p |= 0000040; break;
-                case GROUP_WRITE:    p |= 0000020; break;
-                case GROUP_EXECUTE:  p |= 0000010; break;
-                case OTHERS_READ:    p |= 0000004; break;
-                case OTHERS_WRITE:   p |= 0000002; break;
-                case OTHERS_EXECUTE: p |= 0000001; break;
+                case OWNER_READ:     p.add(Permission.UserRead); break;
+                case OWNER_WRITE:    p.add(Permission.UserWrite); break;
+                case OWNER_EXECUTE:  p.add(Permission.UserExecute); break;
+                case GROUP_READ:     p.add(Permission.GroupRead); break;
+                case GROUP_WRITE:    p.add(Permission.GroupWrite); break;
+                case GROUP_EXECUTE:  p.add(Permission.GroupExecute); break;
+                case OTHERS_READ:    p.add(Permission.OthersRead); break;
+                case OTHERS_WRITE:   p.add(Permission.OthersWrite); break;
+                case OTHERS_EXECUTE: p.add(Permission.OthersExecute); break;
             }
         }
         return p;
@@ -652,7 +656,7 @@ public class NativeSshFile implements SshFile {
                 case CreationTime:     name = "unix:creationTime"; value = FileTime.fromMillis((Long) value); break;
                 case LastModifiedTime: name = "unix:lastModifiedTime"; value = FileTime.fromMillis((Long) value); break;
                 case LastAccessTime:   name = "unix:lastAccessTime"; value = FileTime.fromMillis((Long) value); break;
-                case Permissions:      name = "unix:permissions"; value = toPerms((Integer) value); break;
+                case Permissions:      name = "unix:permissions"; value = toPerms((EnumSet<Permission>) value); break;
             }
             if (name != null && value != null) {
                 Files.setAttribute(file.toPath(), name, value, LinkOption.NOFOLLOW_LINKS);
@@ -670,45 +674,37 @@ public class NativeSshFile implements SshFile {
         return lookupService.lookupPrincipalByName(name);
     }
 
-    private Set<PosixFilePermission> toPerms(int perms) {
-        Set<PosixFilePermission> p = new HashSet<PosixFilePermission>();
-        if ((perms & 0000400) != 0) {
-            p.add(PosixFilePermission.OWNER_READ);
+    private Set<PosixFilePermission> toPerms(EnumSet<Permission> perms) {
+        Set<PosixFilePermission> set = new HashSet<PosixFilePermission>();
+        for (Permission p : perms) {
+            switch (p) {
+                case UserRead:      set.add(PosixFilePermission.OWNER_READ); break;
+                case UserWrite:     set.add(PosixFilePermission.OWNER_WRITE); break;
+                case UserExecute:   set.add(PosixFilePermission.OWNER_EXECUTE); break;
+                case GroupRead:     set.add(PosixFilePermission.GROUP_READ); break;
+                case GroupWrite:    set.add(PosixFilePermission.GROUP_WRITE); break;
+                case GroupExecute:  set.add(PosixFilePermission.GROUP_EXECUTE); break;
+                case OthersRead:    set.add(PosixFilePermission.OTHERS_READ); break;
+                case OthersWrite:   set.add(PosixFilePermission.OTHERS_WRITE); break;
+                case OthersExecute: set.add(PosixFilePermission.OTHERS_EXECUTE); break;
+            }
         }
-        if ((perms & 0000200) != 0) {
-            p.add(PosixFilePermission.OWNER_WRITE);
-        }
-        if ((perms & 0000100) != 0) {
-            p.add(PosixFilePermission.OWNER_EXECUTE);
-        }
-        if ((perms & 0000040) != 0) {
-            p.add(PosixFilePermission.GROUP_READ);
-        }
-        if ((perms & 0000020) != 0) {
-            p.add(PosixFilePermission.GROUP_WRITE);
-        }
-        if ((perms & 0000010) != 0) {
-            p.add(PosixFilePermission.GROUP_EXECUTE);
-        }
-        if ((perms & 0000004) != 0) {
-            p.add(PosixFilePermission.OTHERS_READ);
-        }
-        if ((perms & 0000002) != 0) {
-            p.add(PosixFilePermission.OTHERS_WRITE);
-        }
-        if ((perms & 0000001) != 0) {
-            p.add(PosixFilePermission.OTHERS_EXECUTE);
-        }
-        return p;
+        return set;
     }
 
-    public Object getAttribute(Attribute attribute) throws IOException {
-        return getAttributes().get(attribute);
+    public Object getAttribute(Attribute attribute, boolean followLinks) throws IOException {
+        return getAttributes(followLinks).get(attribute);
     }
 
     public void setAttribute(Attribute attribute, Object value) throws IOException {
         Map<Attribute, Object> map = new HashMap<Attribute, Object>();
         map.put(attribute, value);
         setAttributes(map);
+    }
+
+    public String readSymbolicLink() throws IOException {
+        Path path = file.toPath();
+        Path link = Files.readSymbolicLink(path);
+        return link.toString();
     }
 }

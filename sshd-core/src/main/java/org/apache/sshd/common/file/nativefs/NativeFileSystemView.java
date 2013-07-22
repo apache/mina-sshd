@@ -113,7 +113,7 @@ public class NativeFileSystemView implements FileSystemView {
 		return System.getProperty("user.dir");
 	}
 
-    public NativeSshFile createNativeSshFile(final String fileName2, final File fileObj,	final String userName2) {
+    public NativeSshFile createNativeSshFile(final String fileName2, final File fileObj, final String userName2) {
 		return new NativeSshFile(this, fileName2, fileObj, userName2);
 	}
 }

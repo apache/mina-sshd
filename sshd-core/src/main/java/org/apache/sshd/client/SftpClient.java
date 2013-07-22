@@ -28,6 +28,9 @@ import java.util.EnumSet;
  */
 public interface SftpClient {
 
+    //
+    // Permission flags
+    //
     int S_IFMT =   0170000;  // bitmask for the file type bitfields
     int S_IFSOCK = 0140000;  // socket
     int S_IFLNK =  0120000;  // symbolic link
@@ -102,21 +105,12 @@ public interface SftpClient {
             this.mtime = mtime;
             return this;
         }
-        public boolean isDirectory() {
-            return (perms & S_IFMT) == S_IFDIR;
-        }
-        public boolean isRegularFile() {
-            return (perms & S_IFMT) == S_IFREG;
-        }
-        public boolean isSymlink() {
-            return (perms & S_IFMT) == S_IFLNK;
-        }
     }
 
     public static class DirEntry {
-        public final String filename;
-        public final String longFilename;
-        public final Attributes attributes;
+        public String filename;
+        public String longFilename;
+        public Attributes attributes;
         public DirEntry(String filename, String longFilename, Attributes attributes) {
             this.filename = filename;
             this.longFilename = longFilename;

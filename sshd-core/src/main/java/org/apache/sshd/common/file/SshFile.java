@@ -33,6 +33,9 @@ import java.util.Set;
  */
 public interface SshFile {
 
+    //
+    // File attributes
+    //
     enum Attribute {
         Size,               // long
         Uid,                // int
@@ -42,11 +45,27 @@ public interface SshFile {
         IsDirectory,        // boolean
         IsRegularFile,      // boolean
         IsSymbolicLink,     // boolean
-        Permissions,        // int
+        Permissions,        // EnumSet<Permission>
         CreationTime,       // long
         LastModifiedTime,   // long
         LastAccessTime      // long
     }
+
+    //
+    // File permissions
+    //
+    enum Permission {
+        UserRead,
+        UserWrite,
+        UserExecute,
+        GroupRead,
+        GroupWrite,
+        GroupExecute,
+        OthersRead,
+        OthersWrite,
+        OthersExecute
+    }
+
 
     /**
      * Get the full path from the base directory of the FileSystemView.
@@ -61,13 +80,15 @@ public interface SshFile {
      */
     String getName();
 
-    Map<Attribute,Object> getAttributes() throws IOException;
+    Map<Attribute,Object> getAttributes(boolean followLinks) throws IOException;
 
     void setAttributes(Map<Attribute, Object> attributes) throws IOException;
 
-    Object getAttribute(Attribute attribute) throws IOException;
+    Object getAttribute(Attribute attribute, boolean followLinks) throws IOException;
 
     void setAttribute(Attribute attribute, Object value) throws IOException;
+
+    String readSymbolicLink() throws IOException;
 
 
     /**
