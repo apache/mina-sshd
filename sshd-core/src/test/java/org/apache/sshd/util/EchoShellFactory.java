@@ -22,6 +22,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.InterruptedIOException;
 import java.io.OutputStream;
 
 import org.apache.sshd.common.Factory;
@@ -105,6 +106,8 @@ public class EchoShellFactory implements Factory<Command> {
                         return;
                     }
                 }
+            } catch (InterruptedIOException e) {
+                // Ignore
             } catch (Exception e) {
                 e.printStackTrace();
             } finally {
