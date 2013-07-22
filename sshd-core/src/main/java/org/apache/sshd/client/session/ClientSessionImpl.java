@@ -31,6 +31,7 @@ import org.apache.sshd.ClientSession;
 import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.ScpClient;
 import org.apache.sshd.client.ServerKeyVerifier;
+import org.apache.sshd.client.SftpClient;
 import org.apache.sshd.client.UserAuth;
 import org.apache.sshd.client.UserInteraction;
 import org.apache.sshd.client.auth.UserAuthAgent;
@@ -45,6 +46,7 @@ import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.DefaultAuthFuture;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.client.scp.DefaultScpClient;
+import org.apache.sshd.client.sftp.DefaultSftpClient;
 import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.KeyExchange;
 import org.apache.sshd.common.KeyPairProvider;
@@ -254,6 +256,10 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
 
     public ScpClient createScpClient() {
         return new DefaultScpClient(this);
+    }
+
+    public SftpClient createSftpClient() throws IOException {
+        return new DefaultSftpClient(this);
     }
 
     public SshdSocketAddress startLocalPortForwarding(SshdSocketAddress local, SshdSocketAddress remote) throws IOException {

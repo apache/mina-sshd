@@ -24,6 +24,7 @@ import java.util.Map;
 
 import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.ScpClient;
+import org.apache.sshd.client.SftpClient;
 import org.apache.sshd.client.channel.ChannelDirectTcpip;
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ChannelShell;
@@ -116,6 +117,11 @@ public interface ClientSession extends Session {
      * Create an SCP client from this session.
      */
     ScpClient createScpClient();
+
+    /**
+     * Create an SFTP client from this session.
+     */
+    SftpClient createSftpClient() throws IOException;
 
     /**
      * Start forwarding the given local address on the client to the given address on the server.

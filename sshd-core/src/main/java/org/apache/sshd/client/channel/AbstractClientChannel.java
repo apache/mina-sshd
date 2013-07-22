@@ -127,7 +127,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     @Override
     protected void doClose() {
         super.doClose();
-        IoUtils.closeQuietly(invertedIn, in, out, err);
+        IoUtils.closeQuietly(invertedIn, invertedOut, invertedErr, in, out, err);
     }
 
     public int waitFor(int mask, long timeout) {

@@ -27,10 +27,22 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.lang.reflect.Method;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.attribute.FileTime;
+import java.nio.file.attribute.GroupPrincipal;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.UserPrincipal;
+import java.nio.file.attribute.UserPrincipalLookupService;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.StringTokenizer;
 
 import org.apache.sshd.common.file.SshFile;
@@ -590,5 +602,113 @@ public class NativeSshFile implements SshFile {
     @Override
     public String toString() {
         return fileName;
+    }
+
+    public Map<Attribute, Object> getAttributes() throws IOException {
+        Map<String, Object> a = Files.readAttributes(file.toPath(), "unix:size,uid,owner,gid,group,isDirectory,isRegularFile,isSymbolicLink,permissions,creationTime,lastModifiedTime,lastAccessTime", LinkOption.NOFOLLOW_LINKS);
+        Map<Attribute, Object> map = new HashMap<Attribute, Object>();
+        map.put(Attribute.Size, a.get("size"));
+        map.put(Attribute.Uid, a.get("uid"));
+        map.put(Attribute.Owner, ((UserPrincipal) a.get("owner")).getName());
+        map.put(Attribute.Gid, a.get("gid"));
+        map.put(Attribute.Group, ((GroupPrincipal) a.get("group")).getName());
+        map.put(Attribute.IsDirectory, a.get("isDirectory"));
+        map.put(Attribute.IsRegularFile, a.get("isRegularFile"));
+        map.put(Attribute.IsSymbolicLink, a.get("isSymbolicLink"));
+        map.put(Attribute.CreationTime, ((FileTime) a.get("creationTime")).toMillis());
+        map.put(Attribute.LastModifiedTime, ((FileTime) a.get("lastModifiedTime")).toMillis());
+        map.put(Attribute.LastAccessTime, ((FileTime) a.get("lastAccessTime")).toMillis());
+        map.put(Attribute.Permissions, fromPerms((Set<PosixFilePermission>) a.get("permissions")));
+        return map;
+    }
+
+    private int fromPerms(Set<PosixFilePermission> perms) {
+        int p = 0;
+        for (PosixFilePermission perm : perms) {
+            switch (perm) {
+                case OWNER_READ:     p |= 0000400; break;
+                case OWNER_WRITE:    p |= 0000200; break;
+                case OWNER_EXECUTE:  p |= 0000100; break;
+                case GROUP_READ:     p |= 0000040; break;
+                case GROUP_WRITE:    p |= 0000020; break;
+                case GROUP_EXECUTE:  p |= 0000010; break;
+                case OTHERS_READ:    p |= 0000004; break;
+                case OTHERS_WRITE:   p |= 0000002; break;
+                case OTHERS_EXECUTE: p |= 0000001; break;
+            }
+        }
+        return p;
+    }
+
+    public void setAttributes(Map<Attribute, Object> attributes) throws IOException {
+        for (Attribute attribute : attributes.keySet()) {
+            String name = null;
+            Object value = attributes.get(attribute);
+            switch (attribute) {    
+                case Uid:              name = "unix:uid"; break;
+                case Owner:            name = "unix:owner"; value = toUser((String) value); break;
+                case Gid:              name = "unix:gid"; break;
+                case Group:            name = "unix:group"; value = toGroup((String) value); break;
+                case CreationTime:     name = "unix:creationTime"; value = FileTime.fromMillis((Long) value); break;
+                case LastModifiedTime: name = "unix:lastModifiedTime"; value = FileTime.fromMillis((Long) value); break;
+                case LastAccessTime:   name = "unix:lastAccessTime"; value = FileTime.fromMillis((Long) value); break;
+                case Permissions:      name = "unix:permissions"; value = toPerms((Integer) value); break;
+            }
+            if (name != null && value != null) {
+                Files.setAttribute(file.toPath(), name, value, LinkOption.NOFOLLOW_LINKS);
+            }
+        }
+    }
+
+    private GroupPrincipal toGroup(String name) throws IOException {
+        UserPrincipalLookupService lookupService = file.toPath().getFileSystem().getUserPrincipalLookupService();
+        return lookupService.lookupPrincipalByGroupName(name);
+    }
+
+    private UserPrincipal toUser(String name) throws IOException {
+        UserPrincipalLookupService lookupService = file.toPath().getFileSystem().getUserPrincipalLookupService();
+        return lookupService.lookupPrincipalByName(name);
+    }
+
+    private Set<PosixFilePermission> toPerms(int perms) {
+        Set<PosixFilePermission> p = new HashSet<PosixFilePermission>();
+        if ((perms & 0000400) != 0) {
+            p.add(PosixFilePermission.OWNER_READ);
+        }
+        if ((perms & 0000200) != 0) {
+            p.add(PosixFilePermission.OWNER_WRITE);
+        }
+        if ((perms & 0000100) != 0) {
+            p.add(PosixFilePermission.OWNER_EXECUTE);
+        }
+        if ((perms & 0000040) != 0) {
+            p.add(PosixFilePermission.GROUP_READ);
+        }
+        if ((perms & 0000020) != 0) {
+            p.add(PosixFilePermission.GROUP_WRITE);
+        }
+        if ((perms & 0000010) != 0) {
+            p.add(PosixFilePermission.GROUP_EXECUTE);
+        }
+        if ((perms & 0000004) != 0) {
+            p.add(PosixFilePermission.OTHERS_READ);
+        }
+        if ((perms & 0000002) != 0) {
+            p.add(PosixFilePermission.OTHERS_WRITE);
+        }
+        if ((perms & 0000001) != 0) {
+            p.add(PosixFilePermission.OTHERS_EXECUTE);
+        }
+        return p;
+    }
+
+    public Object getAttribute(Attribute attribute) throws IOException {
+        return getAttributes().get(attribute);
+    }
+
+    public void setAttribute(Attribute attribute, Object value) throws IOException {
+        Map<Attribute, Object> map = new HashMap<Attribute, Object>();
+        map.put(attribute, value);
+        setAttributes(map);
     }
 }

@@ -20,8 +20,9 @@ package org.apache.sshd.sftp.reply;
 
 import java.io.IOException;
 
-import org.apache.sshd.server.sftp.SftpSubsystem;
 import org.apache.sshd.sftp.subsystem.SftpConstants;
+
+import static org.apache.sshd.sftp.subsystem.SftpConstants.*;
 
 /**
  * Data container for 'SSH_FXP_STATUS' reply.
@@ -67,52 +68,52 @@ public class SshFxpStatusReply extends BaseReply {
 		this.msg = msg;
 
     	switch (substatus) {
-		case SftpSubsystem.SSH_FX_FILE_ALREADY_EXISTS:
+		case SSH_FX_FILE_ALREADY_EXISTS:
 			substatusAsSTR = "SSH_FX_FILE_ALREADY_EXISTS";
 			break;
-		case SftpSubsystem.SSH_FX_DIR_NOT_EMPTY:
+		case SSH_FX_DIR_NOT_EMPTY:
 			substatusAsSTR = "SSH_FX_DIR_NOT_EMPTY";
 			break;
-		case SftpSubsystem.SSH_FX_EOF:
+		case SSH_FX_EOF:
 			substatusAsSTR = "SSH_FX_EOF";
 			break;
-		case SftpSubsystem.SSH_FX_FILE_IS_A_DIRECTORY:
+		case SSH_FX_FILE_IS_A_DIRECTORY:
 			substatusAsSTR = "SSH_FX_FILE_IS_A_DIRECTORY";
 			break;
-		case SftpSubsystem.SSH_FX_INVALID_HANDLE:
+		case SSH_FX_INVALID_HANDLE:
 			substatusAsSTR = "SSH_FX_INVALID_HANDLE";
 			break;
-		case SftpSubsystem.SSH_FX_NO_SUCH_FILE:
+		case SSH_FX_NO_SUCH_FILE:
 			substatusAsSTR = "SSH_FX_NO_SUCH_FILE";
 			break;
-		case SftpSubsystem.SSH_FX_NO_SUCH_PATH:
+		case SSH_FX_NO_SUCH_PATH:
 			substatusAsSTR = "SSH_FX_NO_SUCH_PATH";
 			break;
-		case SftpSubsystem.SSH_FX_NOT_A_DIRECTORY:
+		case SSH_FX_NOT_A_DIRECTORY:
 			substatusAsSTR = "SSH_FX_NOT_A_DIRECTORY";
 			break;
-		case SftpSubsystem.SSH_FX_OK:
+		case SSH_FX_OK:
 			substatusAsSTR = "SSH_FX_OK";
 			break;
-		case SftpSubsystem.SSH_FX_OP_UNSUPPORTED:
+		case SSH_FX_OP_UNSUPPORTED:
 			substatusAsSTR = "SSH_FX_OP_UNSUPPORTED";
 			break;
-		case SftpSubsystem.SSH_FX_FAILURE:
+		case SSH_FX_FAILURE:
 			substatusAsSTR = "SSH_FX_FAILURE";
 			break;
-		case SftpSubsystem.SSH_FX_PERMISSION_DENIED:
+		case SSH_FX_PERMISSION_DENIED:
 			substatusAsSTR = "SSH_FX_PERMISSION_DENIED";
 			break;
-		case SftpSubsystem.SSH_FXP_MKDIR:
+		case SSH_FXP_MKDIR:
 			substatusAsSTR = "SSH_FXP_MKDIR";
 			break;
-		case SftpSubsystem.SSH_FXP_REMOVE:
+		case SSH_FXP_REMOVE:
 			substatusAsSTR = "SSH_FXP_REMOVE";
 			break;
-		case SftpSubsystem.SSH_FXP_RMDIR:
+		case SSH_FXP_RMDIR:
 			substatusAsSTR = "SSH_FXP_RMDIR";
 			break;
-		case SftpSubsystem.SSH_FX_WRITE_PROTECT:
+		case SSH_FX_WRITE_PROTECT:
 			substatusAsSTR = "SSH_FX_WRITE_PROTECT";
 			break;
 		default:

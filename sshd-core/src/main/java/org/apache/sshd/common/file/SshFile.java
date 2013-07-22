@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * This is the file abstraction used by the server.
@@ -30,6 +32,21 @@ import java.util.List;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public interface SshFile {
+
+    enum Attribute {
+        Size,               // long
+        Uid,                // int
+        Owner,              // String
+        Gid,                // int
+        Group,              // String
+        IsDirectory,        // boolean
+        IsRegularFile,      // boolean
+        IsSymbolicLink,     // boolean
+        Permissions,        // int
+        CreationTime,       // long
+        LastModifiedTime,   // long
+        LastAccessTime      // long
+    }
 
     /**
      * Get the full path from the base directory of the FileSystemView.
@@ -43,6 +60,15 @@ public interface SshFile {
      * @return the last part of the file path (the part after the last '/').
      */
     String getName();
+
+    Map<Attribute,Object> getAttributes() throws IOException;
+
+    void setAttributes(Map<Attribute, Object> attributes) throws IOException;
+
+    Object getAttribute(Attribute attribute) throws IOException;
+
+    void setAttribute(Attribute attribute, Object value) throws IOException;
+
 
     /**
      * Get the owner name of the file
