@@ -170,6 +170,7 @@ public class ChannelSession extends AbstractServerChannel {
     protected Command command;
     protected ChannelDataReceiver receiver;
     protected StandardEnvironment env = new StandardEnvironment();
+    protected Buffer tempBuffer;
 
     public ChannelSession() {
     }
@@ -205,12 +206,17 @@ public class ChannelSession extends AbstractServerChannel {
     }
 
     protected void doWriteData(byte[] data, int off, int len) throws IOException {
-        int r = len;
         if (receiver != null) {
-            r = receiver.data(this, data, off, len);
+            int r = receiver.data(this, data, off, len);
+            if (r > 0) {
+                localWindow.consumeAndCheck(r);
+            }
+        } else {
+            if (tempBuffer == null) {
+                tempBuffer = new Buffer(len);
+            }
+            tempBuffer.putRawBytes(data, off, len);
         }
-        if (r > 0)
-            localWindow.consumeAndCheck(r);
     }
 
     protected void doWriteExtendedData(byte[] data, int off, int len) throws IOException {
@@ -462,6 +468,11 @@ public class ChannelSession extends AbstractServerChannel {
             PipeDataReceiver recv = new PipeDataReceiver(localWindow);
             setDataReceiver(recv);
             command.setInputStream(recv.getIn());
+        }
+        if (tempBuffer != null) {
+            Buffer buffer = tempBuffer;
+            tempBuffer = null;
+            doWriteData(buffer.array(), buffer.rpos(), buffer.available());
         }
         command.setExitCallback(new ExitCallback() {
             public void onExit(int exitValue) {
