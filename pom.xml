@@ -77,9 +77,9 @@
     </repositories>
 
     <scm>
-        <connection>scm:svn:http://svn.apache.org/repos/asf/mina/sshd/trunk</connection>
-        <developerConnection>scm:svn:https://svn.apache.org/repos/asf/mina/sshd/trunk</developerConnection>
-        <url>http://svn.apache.org/repos/asf/mina/sshd/trunk</url>
+        <connection>scm:git:http://git-wip-us.apache.org/repos/asf/mina-sshd.git</connection>
+        <developerConnection>scm:git:http://git-wip-us.apache.org/repos/asf/mina-sshd.git</developerConnection>
+        <url>https://git-wip-us.apache.org/repos/asf?p=mina-sshd.git</url>
     </scm>
 
     <dependencyManagement>
