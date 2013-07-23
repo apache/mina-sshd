@@ -35,31 +35,41 @@ import org.apache.sshd.server.ExitCallback;
  */
 public class UnknownCommand implements Command {
 
+    private String command;
+    private InputStream in;
+    private OutputStream out;
+    private OutputStream err;
+    private ExitCallback callback;
+
     public UnknownCommand(String command) {
+        this.command = command;
     }
 
     public void setInputStream(InputStream in) {
-        //To change body of implemented methods use File | Settings | File Templates.
+        this.in = in;
     }
 
     public void setOutputStream(OutputStream out) {
-        //To change body of implemented methods use File | Settings | File Templates.
+        this.out = out;
     }
 
     public void setErrorStream(OutputStream err) {
-        //To change body of implemented methods use File | Settings | File Templates.
+        this.err = err;
     }
 
     public void setExitCallback(ExitCallback callback) {
-        //To change body of implemented methods use File | Settings | File Templates.
+        this.callback = callback;
     }
 
     public void start(Environment env) throws IOException {
-        //To change body of implemented methods use File | Settings | File Templates.
-        // TODO: send back an error ?
+        err.write(("Unknown command: " + command + "\n").getBytes());
+        err.flush();
+        if (callback != null) {
+            callback.onExit(1, "Unknown command: " + command);
+        }
     }
 
     public void destroy() {
-        //To change body of implemented methods use File | Settings | File Templates.
     }
+
 }

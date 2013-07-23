@@ -40,7 +40,7 @@ import org.apache.sshd.common.util.IoUtils;
  */
 public abstract class AbstractClientChannel extends AbstractChannel implements ClientChannel {
 
-    protected boolean opened;
+    protected volatile boolean opened;
     protected final String type;
     protected InputStream in;
     protected OutputStream invertedIn;
@@ -96,29 +96,27 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
 
     @Override
     public CloseFuture close(final boolean immediately) {
-        synchronized (lock) {
-            if (!closeFuture.isDone()) {
-                if (opened) {
+        if (!closeFuture.isDone()) {
+            if (opened) {
+                super.close(immediately);
+            } else if (openFuture != null) {
+                if (immediately) {
+                    openFuture.setException(new SshException("Channel closed"));
                     super.close(immediately);
-                } else if (openFuture != null) {
-                    if (immediately) {
-                        openFuture.setException(new SshException("Channel closed"));
-                        super.close(immediately);
-                    } else {
-                        openFuture.addListener(new SshFutureListener<OpenFuture>() {
-                            public void operationComplete(OpenFuture future) {
-                                if (future.isOpened()) {
-                                    close(immediately);
-                                } else {
-                                    close(true);
-                                }
-                            }
-                        });
-                    }
                 } else {
-                    closeFuture.setClosed();
-                    lock.notifyAll();
+                    openFuture.addListener(new SshFutureListener<OpenFuture>() {
+                        public void operationComplete(OpenFuture future) {
+                            if (future.isOpened()) {
+                                close(immediately);
+                            } else {
+                                close(true);
+                            }
+                        }
+                    });
                 }
+            } else {
+                closeFuture.setClosed();
+                notifyStateChanged();
             }
         }
         return closeFuture;
@@ -200,20 +198,18 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     }
 
     public void handleOpenSuccess(int recipient, int rwsize, int rmpsize, Buffer buffer) {
-        synchronized (lock) {
-            this.recipient = recipient;
-            this.remoteWindow.init(rwsize, rmpsize);
-            try {
-                doOpen();
-                this.opened = true;
-                this.openFuture.setOpened();
-            } catch (Exception e) {
-                this.openFuture.setException(e);
-                this.closeFuture.setClosed();
-                this.doClose();
-            } finally {
-                lock.notifyAll();
-            }
+        this.recipient = recipient;
+        this.remoteWindow.init(rwsize, rmpsize);
+        try {
+            doOpen();
+            this.opened = true;
+            this.openFuture.setOpened();
+        } catch (Exception e) {
+            this.openFuture.setException(e);
+            this.closeFuture.setClosed();
+            this.doClose();
+        } finally {
+            notifyStateChanged();
         }
     }
 
@@ -222,20 +218,20 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     public void handleOpenFailure(Buffer buffer) {
         int reason = buffer.getInt();
         String msg = buffer.getString();
-        synchronized (lock) {
-            this.openFailureReason = reason;
-            this.openFailureMsg = msg;
-            this.openFuture.setException(new SshException(msg));
-            this.closeFuture.setClosed();
-            this.doClose();
-            lock.notifyAll();
-        }
+        this.openFailureReason = reason;
+        this.openFailureMsg = msg;
+        this.openFuture.setException(new SshException(msg));
+        this.closeFuture.setClosed();
+        this.doClose();
+        notifyStateChanged();
     }
 
     protected void doWriteData(byte[] data, int off, int len) throws IOException {
         if (out != null) {
             out.write(data, off, len);
             out.flush();
+        } else {
+            throw new IllegalStateException("No output stream for channel");
         }
         localWindow.consumeAndCheck(len);
     }
@@ -244,6 +240,8 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         if (err != null) {
             err.write(data, off, len);
             err.flush();
+        } else {
+            throw new IllegalStateException("No error stream for channel");
         }
         localWindow.consumeAndCheck(len);
     }
@@ -253,16 +251,12 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         String req = buffer.getString();
         if ("exit-status".equals(req)) {
             buffer.getBoolean();
-            synchronized (lock) {
-                exitStatus = buffer.getInt();
-                lock.notifyAll();
-            }
+            exitStatus = buffer.getInt();
+            notifyStateChanged();
         } else if ("exit-signal".equals(req)) {
             buffer.getBoolean();
-            synchronized (lock) {
-                exitSignal = buffer.getString();
-                lock.notifyAll();
-            }
+            exitSignal = buffer.getString();
+            notifyStateChanged();
         }
         // TODO: handle other channel requests
     }

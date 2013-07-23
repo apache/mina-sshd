@@ -19,7 +19,7 @@
 package org.apache.sshd.common.channel;
 
 import java.io.IOException;
-import java.io.InterruptedIOException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.mina.core.future.IoFutureListener;
 import org.apache.mina.core.future.WriteFuture;
@@ -51,9 +51,9 @@ public abstract class AbstractChannel implements Channel {
     protected Session session;
     protected int id;
     protected int recipient;
-    protected boolean eof;
     protected final CloseFuture closeFuture = new DefaultCloseFuture(lock);
-    protected boolean closing;
+    protected volatile boolean eof;
+    protected final AtomicBoolean closing = new AtomicBoolean();
     protected boolean closedByOtherSide;
 
     public int getId() {
@@ -86,56 +86,56 @@ public abstract class AbstractChannel implements Channel {
         configureWindow();
     }
 
+    protected void notifyStateChanged() {
+        synchronized (lock) {
+            lock.notifyAll();
+        }
+    }
+
     public CloseFuture close(boolean immediately) {
         if (closeFuture.isClosed()) {
             return closeFuture;
         }
-        try {
-            synchronized (lock) {
+        if (closing.compareAndSet(false, true)) {
+            try {
                 if (immediately) {
                     log.debug("Closing channel {} immediately", id);
+                    doClose();
                     closeFuture.setClosed();
-                    lock.notifyAll();
+                    notifyStateChanged();
                     session.unregisterChannel(this);
                 } else {
-                    if (!closing) {
-                        closing = true;
-                        log.debug("Send SSH_MSG_CHANNEL_CLOSE on channel {}", id);
-                        Buffer buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_CLOSE, 0);
-                        buffer.putInt(recipient);
-                        session.writePacket(buffer).addListener(new IoFutureListener<WriteFuture>() {
-                            public void operationComplete(WriteFuture future) {
-                                synchronized (lock) {
-                                    if (closedByOtherSide) {
-                                        log.debug("Message SSH_MSG_CHANNEL_CLOSE written on channel {}", id);
-                                        closeFuture.setClosed();
-                                        doClose();
-                                        lock.notifyAll();
-                                    }
-                                }
+                    log.debug("Closing channel {} gracefully", id);
+                    doClose();
+                    log.debug("Send SSH_MSG_CHANNEL_CLOSE on channel {}", id);
+                    Buffer buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_CLOSE, 0);
+                    buffer.putInt(recipient);
+                    session.writePacket(buffer).addListener(new IoFutureListener<WriteFuture>() {
+                        public void operationComplete(WriteFuture future) {
+                            if (closedByOtherSide) {
+                                log.debug("Message SSH_MSG_CHANNEL_CLOSE written on channel {}", id);
+                                closeFuture.setClosed();
+                                notifyStateChanged();
                             }
-                        });
-                    }
+                        }
+                    });
                 }
+            } catch (IOException e) {
+                session.exceptionCaught(e);
+                closeFuture.setClosed();
             }
-        } catch (IOException e) {
-            session.exceptionCaught(e);
-            closeFuture.setClosed();
         }
         return closeFuture;
     }
 
     public void handleClose() throws IOException {
         log.debug("Received SSH_MSG_CHANNEL_CLOSE on channel {}", id);
-        synchronized (lock) {
-            closedByOtherSide = !closing;
-            if (closedByOtherSide) {
-                close(false);
-            } else {
-                close(false).setClosed();
-                doClose();
-                lock.notifyAll();
-            }
+        closedByOtherSide = !closing.get();
+        if (closedByOtherSide) {
+            close(false);
+        } else {
+            close(false).setClosed();
+            notifyStateChanged();
         }
     }
 
@@ -143,12 +143,10 @@ public abstract class AbstractChannel implements Channel {
     }
 
     protected void writePacket(Buffer buffer) throws IOException {
-        synchronized (lock) {
-            if (!closing) {
-                session.writePacket(buffer);
-            } else {
-                log.debug("Discarding output packet because channel is being closed");
-            }
+        if (!closing.get()) {
+            session.writePacket(buffer);
+        } else {
+            log.debug("Discarding output packet because channel is being closed");
         }
     }
 
@@ -187,10 +185,8 @@ public abstract class AbstractChannel implements Channel {
 
     public void handleEof() throws IOException {
         log.debug("Received SSH_MSG_CHANNEL_EOF on channel {}", id);
-        synchronized (lock) {
-            eof = true;
-            lock.notifyAll();
-        }
+        eof = true;
+        notifyStateChanged();
     }
 
     public void handleWindowAdjust(Buffer buffer) throws IOException {

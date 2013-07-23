@@ -28,6 +28,7 @@ import java.security.KeyPair;
 import java.util.concurrent.CountDownLatch;
 
 import org.apache.mina.core.future.WriteFuture;
+import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.KeyPairProvider;
@@ -37,14 +38,19 @@ import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.BufferUtils;
+import org.apache.sshd.common.util.NoCloseOutputStream;
 import org.apache.sshd.server.Command;
+import org.apache.sshd.server.CommandFactory;
+import org.apache.sshd.server.command.UnknownCommand;
 import org.apache.sshd.util.*;
 import org.junit.After;
 
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -67,6 +73,11 @@ public class ClientTest {
         sshd.setPort(port);
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setShellFactory(new TestEchoShellFactory());
+        sshd.setCommandFactory(new CommandFactory() {
+            public Command createCommand(String command) {
+                return new UnknownCommand(command);
+            }
+        });
         sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
         sshd.setPublickeyAuthenticator(new BogusPublickeyAuthenticator());
         sshd.start();
@@ -78,6 +89,30 @@ public class ClientTest {
             sshd.stop(true);
             Thread.sleep(50);
         }
+    }
+
+    @Test
+    public void testCommandDeadlock() throws Exception {
+        SshClient client = SshClient.setUpDefaultClient();
+        client.start();
+        ClientSession session = client.connect("localhost", port).await().getSession();
+        session.authPassword("smx", "smx").await().isSuccess();
+        ChannelExec channel = session.createExecChannel("test");
+        channel.setOut(new NoCloseOutputStream(System.out));
+        channel.setErr(new NoCloseOutputStream(System.err));
+        channel.open().await();
+        Thread.sleep(100);
+        try {
+            for (int i = 0; i < 100; i++) {
+                channel.getInvertedIn().write("a".getBytes());
+                channel.getInvertedIn().flush();
+            }
+        } catch (SshException e) {
+            // That's ok, the channel is being closed by the other side
+        }
+        assertEquals(ChannelExec.CLOSED, channel.waitFor(ChannelExec.CLOSED, 0) & ChannelExec.CLOSED);
+        session.close(false).await();
+        client.stop();
     }
 
     @Test

@@ -175,23 +175,21 @@ public class ChannelSession extends AbstractServerChannel {
     public ChannelSession() {
     }
 
-    public CloseFuture close(boolean immediately) {
-        return super.close(immediately).addListener(new SshFutureListener() {
-            public void operationComplete(SshFuture sshFuture) {
-                if (command != null) {
-                    command.destroy();
-                    command = null;
-                }
-                remoteWindow.notifyClosed();
-                IoUtils.closeQuietly(out, err, receiver);
-            }
-        });
+    @Override
+    protected void doClose() {
+        if (command != null) {
+            command.destroy();
+            command = null;
+        }
+        remoteWindow.notifyClosed();
+        IoUtils.closeQuietly(out, err, receiver);
+        super.doClose();
     }
 
     @Override
     public void handleEof() throws IOException {
         super.handleEof();
-        receiver.close();
+        IoUtils.closeQuietly(receiver);
     }
 
     public void handleRequest(Buffer buffer) throws IOException {
@@ -206,6 +204,10 @@ public class ChannelSession extends AbstractServerChannel {
     }
 
     protected void doWriteData(byte[] data, int off, int len) throws IOException {
+        // If we're already closing, ignore incoming data
+        if (closing.get()) {
+            return;
+        }
         if (receiver != null) {
             int r = receiver.data(this, data, off, len);
             if (r > 0) {
@@ -563,13 +565,11 @@ public class ChannelSession extends AbstractServerChannel {
     }
 
     protected void closeShell(int exitValue) throws IOException {
-        synchronized (lock) {
-            if (!closing) {
-                sendEof();
-                sendExitStatus(exitValue);
-                // TODO: We should wait for all streams to be consumed before closing the channel
-                close(false);
-            }
+        if (!closing.get()) {
+            sendEof();
+            sendExitStatus(exitValue);
+            // TODO: We should wait for all streams to be consumed before closing the channel
+            close(false);
         }
     }
 
