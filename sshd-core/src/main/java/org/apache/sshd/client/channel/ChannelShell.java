@@ -149,8 +149,6 @@ public class ChannelShell extends ChannelSession {
     }
 
     protected void doOpen() throws IOException {
-        super.doOpen();
-
         Buffer buffer;
 
         if (agentForwarding) {
@@ -203,6 +201,7 @@ public class ChannelShell extends ChannelSession {
         buffer.putBoolean(false);
         writePacket(buffer);
 
+        super.doOpen();
     }
 
 }

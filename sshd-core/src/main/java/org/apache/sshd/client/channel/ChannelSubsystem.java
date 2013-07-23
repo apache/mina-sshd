@@ -40,7 +40,6 @@ public class ChannelSubsystem extends ChannelSession {
     }
 
     protected void doOpen() throws IOException {
-        super.doOpen();
         log.info("Send SSH_MSG_CHANNEL_REQUEST exec");
         Buffer buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_REQUEST, 0);
         buffer.putInt(recipient);
@@ -49,5 +48,6 @@ public class ChannelSubsystem extends ChannelSession {
         buffer.putString(subsystem);
         writePacket(buffer);
 
+        super.doOpen();
     }
 }
