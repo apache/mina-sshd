@@ -20,7 +20,9 @@
 package org.apache.sshd.common.file.nativefs;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
@@ -77,16 +79,22 @@ public class NativeSshFileNio extends NativeSshFile {
         for (Attribute attribute : attributes.keySet()) {
             String name = null;
             Object value = attributes.get(attribute);
-            switch (attribute) {    
+            switch (attribute) {
+                case Size:             {
+                    long newSize = (Long) value;
+                    FileChannel outChan = new FileOutputStream(file, true).getChannel();
+                    outChan.truncate(newSize);
+                    outChan.close();
+                    continue;
+                }
                 case Uid:              name = "unix:uid"; break;
                 case Owner:            name = "unix:owner"; value = toUser((String) value); break;
                 case Gid:              name = "unix:gid"; break;
                 case Group:            name = "unix:group"; value = toGroup((String) value); break;
+                case Permissions:      name = "unix:permissions"; value = toPerms((EnumSet<Permission>) value); break;
                 case CreationTime:     name = "unix:creationTime"; value = FileTime.fromMillis((Long) value); break;
                 case LastModifiedTime: name = "unix:lastModifiedTime"; value = FileTime.fromMillis((Long) value); break;
                 case LastAccessTime:   name = "unix:lastAccessTime"; value = FileTime.fromMillis((Long) value); break;
-                case Permissions:      name = "unix:permissions"; value = toPerms((EnumSet<Permission>) value); break;
-                case Size:             throw new UnsupportedOperationException("Can not set Size attribute");
             }
             if (name != null && value != null) {
                 Files.setAttribute(file.toPath(), name, value, LinkOption.NOFOLLOW_LINKS);

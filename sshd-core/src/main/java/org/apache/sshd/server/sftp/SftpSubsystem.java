@@ -423,7 +423,9 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                     if ((pflags & SSH_FXF_TRUNC) != 0) {
                         file.truncate();
                     }
-                    file.setAttributes(attrs);
+                    if ((pflags & SSH_FXF_CREAT) != 0) {
+                        file.setAttributes(attrs);
+                    }
                     String handle = UUID.randomUUID().toString();
                     handles.put(handle, new FileHandle(file));
                     sendHandle(id, handle);
@@ -460,7 +462,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                         sendStatus(id, SSH_FX_FAILURE, handle);
                     } else {
                         FileHandle fh = (FileHandle) p;
-                        byte[] b = new byte[Math.min(len, 1024 * 32)];
+                        byte[] b = new byte[Math.min(len, Buffer.MAX_LEN)];
                         len = fh.read(b, offset);
                         if (len >= 0) {
                             Buffer buf = new Buffer(len + 5);
@@ -481,7 +483,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                 String handle = buffer.getString();
                 long offset = buffer.getLong();
                 byte[] data = buffer.getBytes();
-                log.debug("Received SSH_FXP_WRITE (handle={}, offset={}, data=...)", handle, offset);
+                log.debug("Received SSH_FXP_WRITE (handle={}, offset={}, data=byte[{}])", new Object[] { handle, offset, data.length });
                 try {
                     Handle p = handles.get(handle);
                     if (!(p instanceof FileHandle)) {
@@ -895,6 +897,49 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         return sb.toString();
     }
 
+    protected Map<SshFile.Attribute, Object> getPermissions(int perms) {
+        Map<SshFile.Attribute, Object> attrs = new HashMap<SshFile.Attribute, Object>();
+        if ((perms & S_IFMT) == S_IFREG) {
+            attrs.put(SshFile.Attribute.IsRegularFile, Boolean.TRUE);
+        }
+        if ((perms & S_IFMT) == S_IFDIR) {
+            attrs.put(SshFile.Attribute.IsDirectory, Boolean.TRUE);
+        }
+        if ((perms & S_IFMT) == S_IFLNK) {
+            attrs.put(SshFile.Attribute.IsSymbolicLink, Boolean.TRUE);
+        }
+        EnumSet<SshFile.Permission> p = EnumSet.noneOf(SshFile.Permission.class);
+        if ((perms & S_IRUSR) != 0) {
+            p.add(SshFile.Permission.UserRead);
+        }
+        if ((perms & S_IWUSR) != 0) {
+            p.add(SshFile.Permission.UserWrite);
+        }
+        if ((perms & S_IXUSR) != 0) {
+            p.add(SshFile.Permission.UserExecute);
+        }
+        if ((perms & S_IRGRP) != 0) {
+            p.add(SshFile.Permission.GroupRead);
+        }
+        if ((perms & S_IWGRP) != 0) {
+            p.add(SshFile.Permission.GroupWrite);
+        }
+        if ((perms & S_IXGRP) != 0) {
+            p.add(SshFile.Permission.GroupExecute);
+        }
+        if ((perms & S_IROTH) != 0) {
+            p.add(SshFile.Permission.OthersRead);
+        }
+        if ((perms & S_IWOTH) != 0) {
+            p.add(SshFile.Permission.OthersWrite);
+        }
+        if ((perms & S_IXOTH) != 0) {
+            p.add(SshFile.Permission.OthersExecute);
+        }
+        attrs.put(SshFile.Attribute.Permissions, p);
+        return attrs;
+    }
+
     protected int getPermissions(Map<SshFile.Attribute, Object> attributes) {
         boolean isReg = (Boolean) attributes.get(SshFile.Attribute.IsRegularFile);
         boolean isDir = (Boolean) attributes.get(SshFile.Attribute.IsDirectory);
@@ -973,7 +1018,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
             attrs.put(SshFile.Attribute.Gid, buffer.getInt());
         }
         if ((flags & SSH_FILEXFER_ATTR_PERMISSIONS) != 0) {
-            attrs.put(SshFile.Attribute.Permissions, buffer.getInt());
+            attrs.putAll(getPermissions(buffer.getInt()));
         }
         if ((flags & SSH_FILEXFER_ATTR_ACMODTIME) != 0) {
             attrs.put(SshFile.Attribute.LastAccessTime, ((long) buffer.getInt()) * 1000);
