@@ -116,7 +116,7 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
             is = new FileInputStream(f);
             return doReadKeyPair(is);
         } catch (Exception e) {
-            log.info("Unable to read key {}: {}", path, e);
+            log.warn("Unable to read key {}: {}", path, e);
         } finally {
             close(is);
         }
@@ -129,7 +129,7 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
             os = new FileOutputStream(f);
             doWriteKeyPair(kp, os);
         } catch (Exception e) {
-            log.info("Unable to write key {}: {}", path, e);
+            log.warn("Unable to write key {}: {}", path, e);
         } finally {
             close(os);
         }
@@ -145,7 +145,7 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
             KeyPair kp = generator.generateKeyPair();
             return kp;
         } catch (Exception e) {
-            log.error("Unable to generate keypair", e);
+            log.warn("Unable to generate keypair", e);
             return null;
         }
     }

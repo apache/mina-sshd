@@ -86,7 +86,7 @@ public class FileKeyPairProvider extends AbstractKeyPairProvider {
                     r.close();
                 }
             } catch (Exception e) {
-                log.info("Unable to read key {}: {}", files[i], e);
+                log.warn("Unable to read key {}: {}", files[i], e);
             }
         }
         return keys.toArray(new KeyPair[keys.size()]);
