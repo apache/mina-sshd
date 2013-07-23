@@ -131,15 +131,16 @@ public class SftpTest {
         ClientSession session = client.connect("localhost", port).await().getSession();
         session.authPassword("x", "x").await();
 
-        new File("target/scp").mkdirs();
-        new File("target/scp/client/test.txt").delete();
-        new File("target/scp/client").delete();
+        Utils.deleteRecursive(new File("target/sftp"));
+        new File("target/sftp").mkdirs();
+        new File("target/sftp/client/test.txt").delete();
+        new File("target/sftp/client").delete();
 
         SftpClient sftp = session.createSftpClient();
 
-        sftp.mkdir("target/scp/client");
+        sftp.mkdir("target/sftp/client");
 
-        SftpClient.Handle h = sftp.open("target/scp/client/test.txt", EnumSet.of(SftpClient.OpenMode.Write));
+        SftpClient.Handle h = sftp.open("target/sftp/client/test.txt", EnumSet.of(SftpClient.OpenMode.Write));
         byte[] d = "0123456789\n".getBytes();
         sftp.write(h, 0, d, 0, d.length);
         sftp.write(h, d.length, d, 0, d.length);
@@ -149,33 +150,33 @@ public class SftpTest {
 
         sftp.close(h);
 
-        h = sftp.openDir("target/scp/client");
+        h = sftp.openDir("target/sftp/client");
         SftpClient.DirEntry[] dir = sftp.readDir(h);
         assertNotNull(dir);
         assertEquals(1, dir.length);
         assertNull(sftp.readDir(h));
         sftp.close(h);
 
-        sftp.remove("target/scp/client/test.txt");
+        sftp.remove("target/sftp/client/test.txt");
 
-        OutputStream os = sftp.write("target/scp/client/test.txt");
+        OutputStream os = sftp.write("target/sftp/client/test.txt");
         os.write(new byte[1024 * 128]);
         os.close();
 
-        InputStream is = sftp.read("target/scp/client/test.txt");
+        InputStream is = sftp.read("target/sftp/client/test.txt");
         is.read(new byte[1024 * 128]);
         int i = is.read();
         is.close();
 
         int nb = 0;
-        for (SftpClient.DirEntry entry : sftp.readDir("target/scp/client")) {
+        for (SftpClient.DirEntry entry : sftp.readDir("target/sftp/client")) {
             nb++;
         }
         assertEquals(1, nb);
 
-        sftp.remove("target/scp/client/test.txt");
+        sftp.remove("target/sftp/client/test.txt");
 
-        sftp.rmdir("target/scp/client/");
+        sftp.rmdir("target/sftp/client/");
 
         sftp.close();
 
@@ -186,8 +187,9 @@ public class SftpTest {
     public void testSftp() throws Exception {
         String d = "0123456789\n";
 
-        File root = new File("target/scp");
-        File target = new File("target/scp/out.txt");
+        File root = new File("target/sftp");
+        File target = new File("target/sftp/out.txt");
+        Utils.deleteRecursive(root);
         root.mkdirs();
         assertTrue(root.exists());
 
@@ -199,7 +201,7 @@ public class SftpTest {
 
             target.delete();
             assertFalse(target.exists());
-            sendFile("target/scp/out.txt", data);
+            sendFile("target/sftp/out.txt", data);
             assertFileLength(target, data.length(), 5000);
 
             target.delete();
@@ -210,9 +212,10 @@ public class SftpTest {
 
     @Test
     public void testReadWriteWithOffset() throws Exception {
-        File root = new File("target/scp");
-        String unixPath = "target/scp/out.txt";
+        File root = new File("target/sftp");
+        String unixPath = "target/sftp/out.txt";
         File target = new File(unixPath);
+        Utils.deleteRecursive(root);
         root.mkdirs();
         assertTrue(root.exists());
 

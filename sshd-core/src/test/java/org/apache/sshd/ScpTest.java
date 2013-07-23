@@ -133,6 +133,7 @@ public class ScpTest {
         String unixPath = unixDir + File.separator + fileName;
         File root = new File(unixDir);
         File target = new File(unixPath);
+        Utils.deleteRecursive(root);
         root.mkdirs();
         assertTrue(root.exists());
 
@@ -171,6 +172,7 @@ public class ScpTest {
         final Properties props = new Properties();
         props.setProperty("test", "test-passed");
         File f = new File("target/scp/gan");
+        Utils.deleteRecursive(f);
         f.mkdirs();
         assertTrue(f.exists());
 
