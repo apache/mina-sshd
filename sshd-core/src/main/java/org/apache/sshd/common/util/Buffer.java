@@ -48,6 +48,7 @@ import org.apache.sshd.common.SshException;
 public final class Buffer {
 
     public static final int DEFAULT_SIZE = 256;
+    public static final int MAX_LEN = 65536;
 
     private byte[] data;
     private int rpos;
@@ -184,7 +185,7 @@ public final class Buffer {
 
     public String getString() {
         int len = getInt();
-        if (len < 0 || len > 32768) {
+        if (len < 0 || len > MAX_LEN) {
             throw new IllegalStateException("Bad item length: " + len);
         }
         ensureAvailable(len);
@@ -207,7 +208,7 @@ public final class Buffer {
 
     public byte[] getBytes() {
         int len = getInt();
-        if (len < 0 || len > 32768) {
+        if (len < 0 || len > MAX_LEN) {
             throw new IllegalStateException("Bad item length: " + len);
         }
         byte[] b = new byte[len];

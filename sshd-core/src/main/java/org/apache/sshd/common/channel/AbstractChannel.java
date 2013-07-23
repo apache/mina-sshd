@@ -152,7 +152,7 @@ public abstract class AbstractChannel implements Channel {
 
     public void handleData(Buffer buffer) throws IOException {
         int len = buffer.getInt();
-        if (len < 0 || len > 32768) {
+        if (len < 0 || len > Buffer.MAX_LEN) {
             throw new IllegalStateException("Bad item length: " + len);
         }
         log.debug("Received SSH_MSG_CHANNEL_DATA on channel {}", id);
@@ -173,7 +173,7 @@ public abstract class AbstractChannel implements Channel {
             return;
         }
         int len = buffer.getInt();
-        if (len < 0 || len > 32768) {
+        if (len < 0 || len > Buffer.MAX_LEN) {
             throw new IllegalStateException("Bad item length: " + len);
         }
         log.debug("Received SSH_MSG_CHANNEL_EXTENDED_DATA on channel {}", id);
