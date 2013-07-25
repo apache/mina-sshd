@@ -16,22 +16,20 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common;
+package org.apache.sshd.common.io;
 
-import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
+import org.apache.sshd.common.util.Readable;
 
 /**
- * A factory for creating NioSocketAcceptor objects for Port & X11 forwarding
  */
-public interface ForwardingAcceptorFactory {
+public interface IoHandler {
 
-    /**
-     * Creates the NioSocketAcceptor to be used for forwards for this
-     * ServerSession.
-     *
-     * @param session the Session the connections are forwarded through
-     * @return the NioSocketAcceptor that will listen for connections
-     */
-    public NioSocketAcceptor createNioSocketAcceptor(Session session);
+    void sessionCreated(IoSession session) throws Exception;
+
+    void sessionClosed(IoSession session) throws Exception;
+
+    void exceptionCaught(IoSession ioSession, Throwable cause) throws Exception;
+
+    void messageReceived(IoSession session, Readable message) throws Exception;
 
 }

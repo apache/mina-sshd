@@ -35,9 +35,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Executors;
 
-import org.apache.mina.core.future.IoFutureListener;
-import org.apache.mina.core.service.IoConnector;
-import org.apache.mina.transport.socket.nio.NioSocketConnector;
 import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.ServerKeyVerifier;
 import org.apache.sshd.client.SessionFactory;
@@ -54,12 +51,11 @@ import org.apache.sshd.common.AbstractFactoryManager;
 import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.Cipher;
 import org.apache.sshd.common.Compression;
-import org.apache.sshd.common.ForwardingAcceptorFactory;
+import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.KeyExchange;
 import org.apache.sshd.common.Mac;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.Signature;
-import org.apache.sshd.common.TcpipForwarderFactory;
 import org.apache.sshd.common.cipher.AES128CBC;
 import org.apache.sshd.common.cipher.AES128CTR;
 import org.apache.sshd.common.cipher.AES192CBC;
@@ -71,9 +67,12 @@ import org.apache.sshd.common.cipher.BlowfishCBC;
 import org.apache.sshd.common.cipher.TripleDESCBC;
 import org.apache.sshd.common.compression.CompressionNone;
 import org.apache.sshd.common.file.nativefs.NativeFileSystemFactory;
-import org.apache.sshd.common.forward.DefaultForwardingAcceptorFactory;
 import org.apache.sshd.common.forward.DefaultTcpipForwarderFactory;
 import org.apache.sshd.common.forward.TcpipServerChannel;
+import org.apache.sshd.common.future.SshFutureListener;
+import org.apache.sshd.common.io.DefaultIoServiceFactory;
+import org.apache.sshd.common.io.IoConnectFuture;
+import org.apache.sshd.common.io.IoConnector;
 import org.apache.sshd.common.mac.HMACMD5;
 import org.apache.sshd.common.mac.HMACMD596;
 import org.apache.sshd.common.mac.HMACSHA1;
@@ -139,6 +138,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     protected IoConnector connector;
     protected SessionFactory sessionFactory;
     protected UserInteraction userInteraction;
+    protected Factory<IoConnector> connectorFactory;
 
     private ServerKeyVerifier serverKeyVerifier;
 
@@ -191,9 +191,6 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         if (getTcpipForwarderFactory() == null) {
             throw new IllegalArgumentException("TcpipForwarderFactory not set");
         }
-        if (getTcpipForwardingAcceptorFactory() == null) {
-            throw new IllegalArgumentException("TcpipForwardingAcceptorFactory not set");
-        }
         if (getServerKeyVerifier() == null) {
             throw new IllegalArgumentException("ServerKeyVerifier not set");
         }
@@ -208,21 +205,18 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             factories.add(getAgentFactory().getChannelForwardingFactory());
             setChannelFactories(factories);
         }
+        if (getIoServiceFactory() == null) {
+            setIoServiceFactory(new DefaultIoServiceFactory());
+        }
     }
 
     public void start() {
         checkConfig();
-        connector = createAcceptor();
-
         if (sessionFactory == null) {
-            sessionFactory = new SessionFactory();
+            sessionFactory = createSessionFactory();
         }
         sessionFactory.setClient(this);
-        connector.setHandler(sessionFactory);
-    }
-
-    protected NioSocketConnector createAcceptor() {
-        return new NioSocketConnector(getNioWorkers());
+        connector = createConnector();
     }
 
     public void stop() {
@@ -244,14 +238,14 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         return connect(address);
     }
 
-    public ConnectFuture connect(SocketAddress address) throws IOException {
+    public ConnectFuture connect(SocketAddress address) {
         assert address != null;
         if (connector == null) {
             throw new IllegalStateException("SshClient not started. Please call start() method before connecting to a server");
         }
         final ConnectFuture connectFuture = new DefaultConnectFuture(null);
-        connector.connect(address).addListener(new IoFutureListener<org.apache.mina.core.future.ConnectFuture>() {
-            public void operationComplete(org.apache.mina.core.future.ConnectFuture future) {
+        connector.connect(address).addListener(new SshFutureListener<IoConnectFuture>() {
+            public void operationComplete(IoConnectFuture future) {
                 if (future.isCanceled()) {
                     connectFuture.cancel();
                 } else if (future.getException() != null) {
@@ -263,6 +257,14 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             }
         });
         return connectFuture;
+    }
+
+    protected IoConnector createConnector() {
+        return getIoServiceFactory().createConnector(this, getSessionFactory());
+    }
+
+    protected SessionFactory createSessionFactory() {
+        return new SessionFactory();
     }
 
     /**
@@ -301,12 +303,9 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                 new SignatureRSA.Factory()));
         client.setChannelFactories(Arrays.<NamedFactory<Channel>>asList(
                 new TcpipServerChannel.ForwardedTcpipFactory()));
-        ForwardingAcceptorFactory faf = new DefaultForwardingAcceptorFactory();
-        client.setTcpipForwardingAcceptorFactory(faf);
-        TcpipForwarderFactory tcpipForwarderFactory = new DefaultTcpipForwarderFactory();
-        client.setTcpipForwarderFactory(tcpipForwarderFactory);
         client.setServerKeyVerifier(AcceptAllServerKeyVerifier.INSTANCE);
         client.setFileSystemFactory(new NativeFileSystemFactory());
+        client.setTcpipForwarderFactory(new DefaultTcpipForwarderFactory());
         return client;
     }
 

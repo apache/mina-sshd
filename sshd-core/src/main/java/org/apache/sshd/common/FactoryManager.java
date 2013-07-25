@@ -24,6 +24,9 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.common.file.FileSystemFactory;
+import org.apache.sshd.common.io.IoAcceptor;
+import org.apache.sshd.common.io.IoConnector;
+import org.apache.sshd.common.io.IoServiceFactory;
 
 /**
  * This interface allows retrieving all the <code>NamedFactory</code> used
@@ -76,6 +79,8 @@ public interface FactoryManager {
      * @return the version of the software
      */
     String getVersion();
+
+    IoServiceFactory getIoServiceFactory();
 
     /**
      * Retrieve the list of named factories for <code>KeyExchange</code>.
@@ -147,14 +152,6 @@ public interface FactoryManager {
      * @return the <code>ScheduledExecutorService</code>, never <code>null</code>
      */
     ScheduledExecutorService getScheduledExecutorService();
-
-    /**
-     * Retrieve the IoAcceptor factory to be used to accept incoming connections
-     * to port forwards.
-     *
-     * @return A <code>ForwardNioAcceptorFactory</code>
-     */
-    ForwardingAcceptorFactory getTcpipForwardingAcceptorFactory();
 
     /**
      * Retrieve the <code>ForwardingFilter</code> to be used by the SSH server.

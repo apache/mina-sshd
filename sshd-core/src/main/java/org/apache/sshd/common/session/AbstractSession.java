@@ -27,11 +27,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.mina.core.buffer.IoBuffer;
-import org.apache.mina.core.future.IoFuture;
-import org.apache.mina.core.future.IoFutureListener;
-import org.apache.mina.core.future.WriteFuture;
-import org.apache.mina.core.session.IoSession;
 import org.apache.sshd.client.channel.AbstractClientChannel;
 import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.Cipher;
@@ -51,8 +46,12 @@ import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.future.SshFutureListener;
+import org.apache.sshd.common.io.IoCloseFuture;
+import org.apache.sshd.common.io.IoWriteFuture;
+import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.BufferUtils;
+import org.apache.sshd.common.util.Readable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -239,7 +238,7 @@ public abstract class AbstractSession implements Session {
      * @param buffer the new buffer received
      * @throws Exception if an error occurs while decoding or handling the data
      */
-    public void messageReceived(IoBuffer buffer) throws Exception {
+    public void messageReceived(Readable buffer) throws Exception {
         synchronized (decodeLock) {
             decoderBuffer.putBuffer(buffer);
             // One of those property will be set by the constructor and the other
@@ -307,8 +306,8 @@ public abstract class AbstractSession implements Session {
      */
     public CloseFuture close(final boolean immediately) {
 	    final AbstractSession s = this;
-        class IoSessionCloser implements IoFutureListener {
-            public void operationComplete(IoFuture future) {
+        class IoSessionCloser implements SshFutureListener<IoCloseFuture> {
+            public void operationComplete(IoCloseFuture future) {
                 synchronized (lock) {
                     log.debug("IoSession closed");
                     closeFuture.setClosed();
@@ -364,14 +363,13 @@ public abstract class AbstractSession implements Session {
      * @return a future that can be used to check when the packet has actually been sent
      * @throws java.io.IOException if an error occured when encoding sending the packet
      */
-    public WriteFuture writePacket(Buffer buffer) throws IOException {
+    public IoWriteFuture writePacket(Buffer buffer) throws IOException {
         // Synchronize all write requests as needed by the encoding algorithm
         // and also queue the write request in this synchronized block to ensure
         // packets are sent in the correct order
         synchronized (encodeLock) {
             encode(buffer);
-            IoBuffer bb = IoBuffer.wrap(buffer.array(), buffer.rpos(), buffer.available());
-            return ioSession.write(bb);
+            return ioSession.write(buffer);
         }
     }
 
@@ -606,11 +604,8 @@ public abstract class AbstractSession implements Session {
      * @param ident our identification to send
      */
     protected void sendIdentification(String ident) {
-        IoBuffer buffer = IoBuffer.allocate(32);
-        buffer.setAutoExpand(true);
-        buffer.put((ident + "\r\n").getBytes());
-        buffer.flip();
-        ioSession.write(buffer);
+        byte[] data = (ident + "\r\n").getBytes();
+        ioSession.write(new Buffer(data));
     }
 
     /**
@@ -907,9 +902,8 @@ public abstract class AbstractSession implements Session {
         buffer.putInt(reason);
         buffer.putString(msg);
         buffer.putString("");
-        WriteFuture f = writePacket(buffer);
-        f.addListener(new IoFutureListener() {
-            public void operationComplete(IoFuture future) {
+        writePacket(buffer).addListener(new SshFutureListener<IoWriteFuture>() {
+            public void operationComplete(IoWriteFuture future) {
                 close(true);
             }
         });

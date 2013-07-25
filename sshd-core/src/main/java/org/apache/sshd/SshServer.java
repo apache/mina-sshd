@@ -21,11 +21,11 @@ package org.apache.sshd;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.security.InvalidKeyException;
 import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -33,16 +33,11 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 
-import org.apache.mina.core.service.IoAcceptor;
-import org.apache.mina.core.session.IoSession;
-import org.apache.mina.core.session.IoSessionConfig;
-import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 import org.apache.sshd.common.AbstractFactoryManager;
 import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.Cipher;
 import org.apache.sshd.common.Compression;
 import org.apache.sshd.common.Factory;
-import org.apache.sshd.common.ForwardingAcceptorFactory;
 import org.apache.sshd.common.ForwardingFilter;
 import org.apache.sshd.common.KeyExchange;
 import org.apache.sshd.common.Mac;
@@ -61,11 +56,13 @@ import org.apache.sshd.common.cipher.BlowfishCBC;
 import org.apache.sshd.common.cipher.TripleDESCBC;
 import org.apache.sshd.common.compression.CompressionNone;
 import org.apache.sshd.common.file.nativefs.NativeFileSystemFactory;
-import org.apache.sshd.common.forward.DefaultForwardingAcceptorFactory;
 import org.apache.sshd.common.forward.DefaultTcpipForwarderFactory;
 import org.apache.sshd.common.forward.TcpipServerChannel;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
+import org.apache.sshd.common.io.DefaultIoServiceFactory;
+import org.apache.sshd.common.io.IoAcceptor;
+import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.mac.HMACMD5;
 import org.apache.sshd.common.mac.HMACMD596;
 import org.apache.sshd.common.mac.HMACSHA1;
@@ -130,9 +127,6 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     protected IoAcceptor acceptor;
     protected String host;
     protected int port;
-    protected int backlog = 50;
-    protected boolean reuseAddress = true;
-    protected IoSessionConfig sessionConfig;
     protected List<NamedFactory<UserAuth>> userAuthFactories;
     protected Factory<Command> shellFactory;
     protected SessionFactory sessionFactory;
@@ -141,7 +135,6 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     protected PasswordAuthenticator passwordAuthenticator;
     protected PublickeyAuthenticator publickeyAuthenticator;
     protected GSSAuthenticator gssAuthenticator;
-    protected ForwardingAcceptorFactory x11ForwardingAcceptorFactory;
 
     public SshServer() {
     }
@@ -165,30 +158,6 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
      */
     public void setPort(int port) {
         this.port = port;
-    }
-
-    public boolean getReuseAddress() {
-        return reuseAddress;
-    }
-
-    public void setReuseAddress(boolean reuseAddress) {
-        this.reuseAddress = reuseAddress;
-    }
-
-    public int getBacklog() {
-        return backlog;
-    }
-
-    public void setBacklog(int backlog) {
-        this.backlog = backlog;
-    }
-
-    public IoSessionConfig getSessionConfig() {
-        return sessionConfig;
-    }
-
-    public void setSessionConfig(IoSessionConfig sessionConfig) {
-        this.sessionConfig = sessionConfig;
     }
 
     public List<NamedFactory<UserAuth>> getUserAuthFactories() {
@@ -255,14 +224,6 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
       this.gssAuthenticator = gssAuthenticator;
     }
 
-    public void setX11ForwardNioSocketAcceptorFactory(ForwardingAcceptorFactory f) {
-        x11ForwardingAcceptorFactory = f;
-    }
-
-    public ForwardingAcceptorFactory getX11ForwardingAcceptorFactory() {
-        return x11ForwardingAcceptorFactory;
-    }
-
     public void setTcpipForwardingFilter(ForwardingFilter forwardingFilter) {
         this.tcpipForwardingFilter = forwardingFilter;
     }
@@ -316,11 +277,8 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         if (getFileSystemFactory() == null) {
             throw new IllegalArgumentException("FileSystemFactory not set");
         }
-        if (getTcpipForwardingAcceptorFactory() == null) {
-            throw new IllegalArgumentException("TcpipForwardingAcceptorFactory not set");
-        }
-        if (getX11ForwardingAcceptorFactory() == null) {
-            throw new IllegalArgumentException("X11ForwardingAcceptorFactory not set");
+        if (getIoServiceFactory() == null) {
+            setIoServiceFactory(new DefaultIoServiceFactory());
         }
     }
 
@@ -331,15 +289,11 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
      */
     public void start() throws IOException {
         checkConfig();
-        acceptor = createAcceptor();
-        configure(acceptor);
-
-        SessionFactory handler = sessionFactory;
-        if (handler == null) {
-            handler = createSessionFactory();
+        if (sessionFactory == null) {
+            sessionFactory = createSessionFactory();
         }
-        handler.setServer(this);
-        acceptor.setHandler(handler);
+        sessionFactory.setServer(this);
+        acceptor = createAcceptor();
 
         if (host != null) {
             String[] hosts = host.split(",");
@@ -356,9 +310,9 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
             }
             acceptor.bind(addresses);
         } else {
-            acceptor.bind(new InetSocketAddress(port));
+            acceptor.bind(Collections.singleton(new InetSocketAddress(port)));
             if (port == 0) {
-                port = ((InetSocketAddress) acceptor.getLocalAddress()).getPort();
+                port = ((InetSocketAddress) acceptor.getBoundAddresses().iterator().next()).getPort();
             }
         }
     }
@@ -373,7 +327,6 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     public void stop(boolean immediately) throws InterruptedException {
         List<AbstractSession> sessions = new ArrayList<AbstractSession>();
         if (acceptor != null) {
-            acceptor.setCloseOnDeactivation(false);
             acceptor.unbind();
             sessions = getActiveSessions();
         }
@@ -390,7 +343,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
             latch.await();
         }
         if (acceptor != null) {
-            acceptor.dispose(true);
+            acceptor.dispose();
         }
         acceptor = null;
         if (shutdownExecutor && executor != null) {
@@ -414,35 +367,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     }
 
     protected IoAcceptor createAcceptor() {
-        return new NioSocketAcceptor(getNioWorkers());
-    }
-
-    protected void configure(IoAcceptor acceptor) {
-        if (acceptor instanceof NioSocketAcceptor) {
-            final NioSocketAcceptor nio = (NioSocketAcceptor) acceptor;
-            nio.setReuseAddress(reuseAddress);
-            nio.setBacklog(backlog);
-
-            // MINA itself forces our socket receive buffer to 1024 bytes
-            // by default, despite what the operating system defaults to.
-            // This limits us to about 3 MB/s incoming data transfer.  By
-            // forcing back to the operating system default we can get a
-            // decent transfer rate again.
-            //
-            final Socket s = new Socket();
-            try {
-              try {
-                  nio.getSessionConfig().setReceiveBufferSize(s.getReceiveBufferSize());
-              } finally {
-                  s.close();
-              }
-            } catch (IOException e) {
-                log.warn("cannot adjust SO_RCVBUF back to system default", e);
-            }
-        }
-        if (sessionConfig != null) {
-            acceptor.getSessionConfig().setAll(sessionConfig);
-        }
+        return getIoServiceFactory().createAcceptor(this, getSessionFactory());
     }
 
     protected SessionFactory createSessionFactory() {
@@ -482,12 +407,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
                 new SignatureDSA.Factory(),
                 new SignatureRSA.Factory()));
         sshd.setFileSystemFactory(new NativeFileSystemFactory());
-
         sshd.setTcpipForwarderFactory(new DefaultTcpipForwarderFactory());
-        ForwardingAcceptorFactory faf = new DefaultForwardingAcceptorFactory();
-        sshd.setTcpipForwardingAcceptorFactory(faf);
-        sshd.setX11ForwardNioSocketAcceptorFactory(faf);
-        
         return sshd;
     }
 

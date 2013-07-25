@@ -110,7 +110,7 @@
                     <instructions>
                         <Bundle-SymbolicName>org.apache.sshd.core</Bundle-SymbolicName>
                         <Import-Package>
-                            org.apache.mina*;version="[2,3)",
+                            org.apache.mina*;version="[2,3)";resolution:=optional,
                             com.jcraft.jzlib*;resolution:=optional,
                             org.bouncycastle*;resolution:=optional,
                             org.apache.tomcat.jni*;resolution:=optional,
@@ -148,7 +148,25 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
+                    <reportsDirectory>${project.build.directory}/surefire-reports-mina</reportsDirectory>
+                    <systemProperties>
+                        <org.apache.sshd.common.io.IoServiceFactory>org.apache.sshd.common.io.mina.MinaServiceFactory</org.apache.sshd.common.io.IoServiceFactory>
+                    </systemProperties>
                 </configuration>
+                <executions>
+                    <execution>
+                        <id>nio2</id>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <reportsDirectory>${project.build.directory}/surefire-reports-nio2</reportsDirectory>
+                            <systemProperties>
+                                <org.apache.sshd.common.io.IoServiceFactory>org.apache.sshd.common.io.nio2.Nio2ServiceFactory</org.apache.sshd.common.io.IoServiceFactory>
+                            </systemProperties>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

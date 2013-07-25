@@ -16,31 +16,15 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.server.session;
-
-import org.apache.sshd.common.io.IoSession;
-import org.apache.sshd.common.session.AbstractSession;
-import org.apache.sshd.common.session.AbstractSessionFactory;
-import org.apache.sshd.server.ServerFactoryManager;
+package org.apache.sshd.common.util;
 
 /**
- * A factory of server sessions.
- * This class can be used as a way to customize the creation of server sessions.
- *
- * @see org.apache.sshd.SshServer#setSessionFactory(SessionFactory)
- *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SessionFactory extends AbstractSessionFactory {
+public interface Readable {
 
-    protected ServerFactoryManager server;
+    int available();
 
-    public void setServer(ServerFactoryManager server) {
-        this.server = server;
-    }
-
-    protected AbstractSession doCreateSession(IoSession ioSession) throws Exception {
-        return new ServerSession(server, ioSession);
-    }
+    void getRawBytes(byte[] data, int offset, int len);
 
 }

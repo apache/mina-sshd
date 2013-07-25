@@ -18,8 +18,8 @@
  */
 package org.apache.sshd.client;
 
-import org.apache.mina.core.session.IoSession;
 import org.apache.sshd.client.session.ClientSessionImpl;
+import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.session.AbstractSessionFactory;
 

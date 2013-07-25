@@ -21,19 +21,11 @@ package org.apache.sshd.common.forward;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.mina.core.buffer.IoBuffer;
-import org.apache.mina.core.service.IoAcceptor;
-import org.apache.mina.core.service.IoHandlerAdapter;
-import org.apache.mina.core.session.IoEventType;
-import org.apache.mina.core.session.IoSession;
-import org.apache.mina.filter.executor.ExecutorFilter;
-import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 import org.apache.sshd.ClientChannel;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.ForwardingFilter;
@@ -43,7 +35,11 @@ import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.TcpipForwarder;
 import org.apache.sshd.common.future.SshFutureListener;
+import org.apache.sshd.common.io.IoAcceptor;
+import org.apache.sshd.common.io.IoHandler;
+import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.Readable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,7 +48,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class DefaultTcpipForwarder extends IoHandlerAdapter implements TcpipForwarder {
+public class DefaultTcpipForwarder implements TcpipForwarder, IoHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultTcpipForwarder.class);
 
@@ -88,7 +84,7 @@ public class DefaultTcpipForwarder extends IoHandlerAdapter implements TcpipForw
     public synchronized void stopLocalPortForwarding(SshdSocketAddress local) throws IOException {
         if (localToRemote.remove(local.getPort()) != null && acceptor != null) {
             acceptor.unbind(local.toInetSocketAddress());
-            if (acceptor.getLocalAddresses().isEmpty()) {
+            if (acceptor.getBoundAddresses().isEmpty()) {
                 close();
             }
         }
@@ -144,7 +140,7 @@ public class DefaultTcpipForwarder extends IoHandlerAdapter implements TcpipForw
     public synchronized void localPortForwardingCancelled(SshdSocketAddress local) throws IOException {
         if (localForwards.remove(local) && acceptor != null) {
             acceptor.unbind(local.toInetSocketAddress());
-            if (acceptor.getLocalAddresses().isEmpty()) {
+            if (acceptor.getBoundAddresses().isEmpty()) {
                 close();
             }
         }
@@ -152,11 +148,8 @@ public class DefaultTcpipForwarder extends IoHandlerAdapter implements TcpipForw
 
     public synchronized void initialize() {
         if (this.acceptor == null) {
-            NioSocketAcceptor acceptor = session.getFactoryManager().getTcpipForwardingAcceptorFactory().createNioSocketAcceptor(session);
-            acceptor.setHandler(this);
-            acceptor.setReuseAddress(true);
-            acceptor.getFilterChain().addLast("executor", new ExecutorFilter(EnumSet.complementOf(EnumSet.of(IoEventType.SESSION_CREATED)).toArray(new IoEventType[0])));
-            this.acceptor = acceptor;
+            this.acceptor = session.getFactoryManager().getIoServiceFactory()
+                    .createAcceptor(session.getFactoryManager(), this);
         }
     }
 
@@ -171,7 +164,6 @@ public class DefaultTcpipForwarder extends IoHandlerAdapter implements TcpipForw
     // IoHandler implementation
     //
 
-    @Override
     public void sessionCreated(final IoSession session) throws Exception {
         final TcpipClientChannel channel;
         int localPort = ((InetSocketAddress) session.getLocalAddress()).getPort();
@@ -194,7 +186,6 @@ public class DefaultTcpipForwarder extends IoHandlerAdapter implements TcpipForw
         });
     }
 
-    @Override
     public void sessionClosed(IoSession session) throws Exception {
         TcpipClientChannel channel = (TcpipClientChannel) session.getAttribute(TcpipClientChannel.class);
         if (channel != null) {
@@ -203,19 +194,15 @@ public class DefaultTcpipForwarder extends IoHandlerAdapter implements TcpipForw
         }
     }
 
-    @Override
-    public void messageReceived(IoSession session, Object message) throws Exception {
+    public void messageReceived(IoSession session, Readable message) throws Exception {
         TcpipClientChannel channel = (TcpipClientChannel) session.getAttribute(TcpipClientChannel.class);
-        IoBuffer ioBuffer = (IoBuffer) message;
-        int r = ioBuffer.remaining();
-        byte[] b = new byte[r];
-        ioBuffer.get(b, 0, r);
+        Buffer buffer = new Buffer();
+        buffer.putBuffer(message);
         channel.waitFor(ClientChannel.OPENED | ClientChannel.CLOSED, Long.MAX_VALUE);
-        channel.getOut().write(b, 0, r);
+        channel.getOut().write(buffer.array(), buffer.rpos(), buffer.available());
         channel.getOut().flush();
     }
 
-    @Override
     public void exceptionCaught(IoSession session, Throwable cause) throws Exception {
         cause.printStackTrace();
         session.close(false);
@@ -227,10 +214,10 @@ public class DefaultTcpipForwarder extends IoHandlerAdapter implements TcpipForw
 
     private SshdSocketAddress doBind(SshdSocketAddress address) throws IOException {
         initialize();
-        Set<SocketAddress> before = acceptor.getLocalAddresses();
+        Set<SocketAddress> before = acceptor.getBoundAddresses();
         try {
             acceptor.bind(address.toInetSocketAddress());
-            Set<SocketAddress> after = acceptor.getLocalAddresses();
+            Set<SocketAddress> after = acceptor.getBoundAddresses();
             after.removeAll(before);
             if (after.isEmpty()) {
                 throw new IOException("Error binding to " + address + ": no local addresses bound");
@@ -241,7 +228,7 @@ public class DefaultTcpipForwarder extends IoHandlerAdapter implements TcpipForw
             InetSocketAddress result = (InetSocketAddress) after.iterator().next();
             return new SshdSocketAddress(address.getHostName(), result.getPort());
         } catch (IOException bindErr) {
-            if (acceptor.getLocalAddresses().isEmpty()) {
+            if (acceptor.getBoundAddresses().isEmpty()) {
                 close();
             }
             throw bindErr;

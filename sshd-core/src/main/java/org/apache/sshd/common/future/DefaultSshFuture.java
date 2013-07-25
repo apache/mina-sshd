@@ -22,7 +22,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.mina.util.ExceptionMonitor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A default implementation of {@link SshFuture}.
@@ -30,6 +31,8 @@ import org.apache.mina.util.ExceptionMonitor;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class DefaultSshFuture<T extends SshFuture> implements SshFuture<T> {
+
+    final Logger logger = LoggerFactory.getLogger(getClass());
 
     /** A default value to indicate the future has been canceled */
     private static final Object CANCELED = new Object();
@@ -339,7 +342,7 @@ public class DefaultSshFuture<T extends SshFuture> implements SshFuture<T> {
         try {
             l.operationComplete((T) this);
         } catch (Throwable t) {
-            ExceptionMonitor.getInstance().exceptionCaught(t);
+            logger.warn("Listener threw an exception", t);
         }
     }
 

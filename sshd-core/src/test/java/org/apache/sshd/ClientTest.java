@@ -35,6 +35,10 @@ import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.CloseFuture;
+import org.apache.sshd.common.io.IoSession;
+import org.apache.sshd.common.io.IoWriteFuture;
+import org.apache.sshd.common.io.mina.MinaSession;
+import org.apache.sshd.common.io.nio2.Nio2Session;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.BufferUtils;
@@ -385,14 +389,21 @@ public class ClientTest {
             buffer.putInt(SshConstants.SSH2_DISCONNECT_BY_APPLICATION);
             buffer.putString("Cancel");
             buffer.putString("");
-            WriteFuture f = cs.writePacket(buffer);
+            IoWriteFuture f = cs.writePacket(buffer);
             f.await();
-            cs.getIoSession().suspendRead();
-            cs.getIoSession().suspendWrite();
+            suspend(cs.getIoSession());
 
             TestEchoShellFactory.TestEchoShell.latch.await();
         } finally {
             TestEchoShellFactory.TestEchoShell.latch = null;
+        }
+    }
+
+    private void suspend(IoSession ioSession) {
+        if (ioSession instanceof MinaSession) {
+            ((MinaSession) ioSession).suspend();
+        } else {
+            ((Nio2Session) ioSession).suspend();
         }
     }
 

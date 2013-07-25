@@ -28,8 +28,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.mina.core.future.WriteFuture;
-import org.apache.mina.core.session.IoSession;
 import org.apache.sshd.SshServer;
 import org.apache.sshd.agent.common.AgentForwardSupport;
 import org.apache.sshd.client.future.OpenFuture;
@@ -41,6 +39,8 @@ import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
+import org.apache.sshd.common.io.IoWriteFuture;
+import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.server.ServerFactoryManager;
@@ -121,12 +121,12 @@ public class ServerSession extends AbstractSession {
     }
 
     @Override
-    public WriteFuture writePacket(Buffer buffer) throws IOException {
+    public IoWriteFuture writePacket(Buffer buffer) throws IOException {
         boolean rescheduleIdleTimer = getState() == State.Running;
         if (rescheduleIdleTimer) {
             unscheduleIdleTimer();
         }
-        WriteFuture future = super.writePacket(buffer);
+        IoWriteFuture future = super.writePacket(buffer);
         if (rescheduleIdleTimer) {
             scheduleIdleTimer();
         }
@@ -662,6 +662,7 @@ public class ServerSession extends AbstractSession {
                     writePacket(buffer);
                 }
             } catch (Exception e) {
+                log.debug("Error starting tcpip forward", e);
                 if (wantReply) {
                     buffer = createBuffer(SshConstants.Message.SSH_MSG_REQUEST_FAILURE, 0);
                     writePacket(buffer);

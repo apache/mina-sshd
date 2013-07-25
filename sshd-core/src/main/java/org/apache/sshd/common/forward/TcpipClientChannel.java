@@ -21,9 +21,6 @@ package org.apache.sshd.common.forward;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 
-import org.apache.mina.core.buffer.IoBuffer;
-import org.apache.mina.core.future.IoFutureListener;
-import org.apache.mina.core.session.IoSession;
 import org.apache.sshd.client.channel.AbstractClientChannel;
 import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
@@ -33,6 +30,9 @@ import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultCloseFuture;
+import org.apache.sshd.common.future.SshFutureListener;
+import org.apache.sshd.common.io.IoCloseFuture;
+import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.util.Buffer;
 
 /**
@@ -101,8 +101,8 @@ public class TcpipClientChannel extends AbstractClientChannel {
     @Override
     protected synchronized CloseFuture preClose(boolean immediately) {
         final CloseFuture future = new DefaultCloseFuture(null);
-        serverSession.close(immediately).addListener(new IoFutureListener<org.apache.mina.core.future.CloseFuture>() {
-            public void operationComplete(org.apache.mina.core.future.CloseFuture f) {
+        serverSession.close(immediately).addListener(new SshFutureListener<IoCloseFuture>() {
+            public void operationComplete(IoCloseFuture f) {
                 future.setClosed();
             }
         });
@@ -110,9 +110,7 @@ public class TcpipClientChannel extends AbstractClientChannel {
     }
 
     protected synchronized void doWriteData(byte[] data, int off, int len) throws IOException {
-        IoBuffer buf = IoBuffer.allocate(len);
-        buf.put(data, off, len);
-        buf.flip();
+        Buffer buf = new Buffer(data, off, len);
         localWindow.consumeAndCheck(len);
         serverSession.write(buf);
     }

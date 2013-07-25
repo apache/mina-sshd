@@ -16,31 +16,27 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.server.session;
+package org.apache.sshd.common.io;
 
-import org.apache.sshd.common.io.IoSession;
-import org.apache.sshd.common.session.AbstractSession;
-import org.apache.sshd.common.session.AbstractSessionFactory;
-import org.apache.sshd.server.ServerFactoryManager;
+import org.apache.sshd.common.future.SshFuture;
 
 /**
- * A factory of server sessions.
- * This class can be used as a way to customize the creation of server sessions.
- *
- * @see org.apache.sshd.SshServer#setSessionFactory(SessionFactory)
+ * An {@link org.apache.sshd.common.future.SshFuture} for asynchronous close requests.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SessionFactory extends AbstractSessionFactory {
+public interface IoCloseFuture extends SshFuture<IoCloseFuture> {
 
-    protected ServerFactoryManager server;
+    /**
+     * Returns <tt>true</tt> if the close request is finished and the target is closed.
+     */
+    boolean isClosed();
 
-    public void setServer(ServerFactoryManager server) {
-        this.server = server;
-    }
-
-    protected AbstractSession doCreateSession(IoSession ioSession) throws Exception {
-        return new ServerSession(server, ioSession);
-    }
+    /**
+     * Marks this future as closed and notifies all threads waiting for this
+     * future.  This method is invoked by SSHD internally.  Please do not call
+     * this method directly.
+     */
+    void setClosed();
 
 }

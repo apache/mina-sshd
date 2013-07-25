@@ -21,16 +21,7 @@ package org.apache.sshd.server.x11;
 import java.io.IOException;
 import java.net.BindException;
 import java.net.InetSocketAddress;
-import java.util.EnumSet;
 
-import org.apache.mina.core.buffer.IoBuffer;
-import org.apache.mina.core.future.IoFutureListener;
-import org.apache.mina.core.service.IoAcceptor;
-import org.apache.mina.core.service.IoHandlerAdapter;
-import org.apache.mina.core.session.IoEventType;
-import org.apache.mina.core.session.IoSession;
-import org.apache.mina.filter.executor.ExecutorFilter;
-import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 import org.apache.sshd.client.channel.AbstractClientChannel;
 import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
@@ -39,7 +30,13 @@ import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultCloseFuture;
+import org.apache.sshd.common.future.SshFutureListener;
+import org.apache.sshd.common.io.IoAcceptor;
+import org.apache.sshd.common.io.IoCloseFuture;
+import org.apache.sshd.common.io.IoHandler;
+import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.Readable;
 import org.apache.sshd.server.session.ServerSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,7 +44,7 @@ import org.slf4j.LoggerFactory;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class X11ForwardSupport extends IoHandlerAdapter {
+public class X11ForwardSupport implements IoHandler {
 
     private static String xauthCommand = System.getProperty("sshd.xauthCommand", "xauth");
 
@@ -71,15 +68,8 @@ public class X11ForwardSupport extends IoHandlerAdapter {
 
     public synchronized void initialize() {
         if (this.acceptor == null) {
-            NioSocketAcceptor acceptor = session.getServerFactoryManager().getX11ForwardingAcceptorFactory().createNioSocketAcceptor(session);
-            acceptor.setHandler(this);
-            acceptor.setReuseAddress(true);
-            acceptor.getFilterChain().addLast(
-                    "executor",
-                    new ExecutorFilter(EnumSet.complementOf(
-                            EnumSet.of(IoEventType.SESSION_CREATED)).toArray(
-                            new IoEventType[0])));
-            this.acceptor = acceptor;
+            this.acceptor = session.getFactoryManager().getIoServiceFactory()
+                    .createAcceptor(session.getFactoryManager(), this);
         }
     }
 
@@ -112,7 +102,7 @@ public class X11ForwardSupport extends IoHandlerAdapter {
 
         if (displayNumber >= MAX_DISPLAYS) {
             log.error("Failed to allocate internet-domain X11 display socket.");
-            if (acceptor.getLocalAddresses().isEmpty()) {
+            if (acceptor.getBoundAddresses().isEmpty()) {
                 close();
             }
             return null;
@@ -139,7 +129,6 @@ public class X11ForwardSupport extends IoHandlerAdapter {
         }
     }
 
-    @Override
     public void sessionCreated(IoSession session) throws Exception {
         ChannelForwardedX11 channel = new ChannelForwardedX11(session);
         session.setAttribute(ChannelForwardedX11.class, channel);
@@ -153,7 +142,6 @@ public class X11ForwardSupport extends IoHandlerAdapter {
         }
     }
 
-    @Override
     public void sessionClosed(IoSession session) throws Exception {
         ChannelForwardedX11 channel = (ChannelForwardedX11) session.getAttribute(ChannelForwardedX11.class);
         if ( channel != null ){
@@ -161,18 +149,14 @@ public class X11ForwardSupport extends IoHandlerAdapter {
         }
     }
 
-    @Override
-    public void messageReceived(IoSession session, Object message) throws Exception {
+    public void messageReceived(IoSession session, Readable message) throws Exception {
         ChannelForwardedX11 channel = (ChannelForwardedX11) session.getAttribute(ChannelForwardedX11.class);
-        IoBuffer ioBuffer = (IoBuffer) message;
-        int r = ioBuffer.remaining();
-        byte[] b = new byte[r];
-        ioBuffer.get(b, 0, r);
-        channel.getOut().write(b, 0, r);
+        Buffer buffer = new Buffer();
+        buffer.putBuffer(message);
+        channel.getOut().write(buffer.array(), buffer.rpos(), buffer.available());
         channel.getOut().flush();
     }
 
-    @Override
     public void exceptionCaught(IoSession session, Throwable cause) throws Exception {
         cause.printStackTrace();
         session.close(false);
@@ -212,8 +196,8 @@ public class X11ForwardSupport extends IoHandlerAdapter {
         @Override
         protected synchronized CloseFuture preClose(boolean immediately) {
             final CloseFuture future = new DefaultCloseFuture(null);
-            serverSession.close(immediately).addListener(new IoFutureListener<org.apache.mina.core.future.CloseFuture>() {
-                public void operationComplete(org.apache.mina.core.future.CloseFuture f) {
+            serverSession.close(immediately).addListener(new SshFutureListener<IoCloseFuture>() {
+                public void operationComplete(IoCloseFuture f) {
                     future.setClosed();
                 }
             });
@@ -221,11 +205,8 @@ public class X11ForwardSupport extends IoHandlerAdapter {
         }
 
         protected synchronized void doWriteData(byte[] data, int off, int len) throws IOException {
-            IoBuffer buf = IoBuffer.allocate(len);
-            buf.put(data, off, len);
-            buf.flip();
             localWindow.consumeAndCheck(len);
-            serverSession.write(buf);
+            serverSession.write(new Buffer(data, off, len));
         }
 
         @Override

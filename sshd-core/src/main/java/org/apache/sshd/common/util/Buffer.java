@@ -35,7 +35,6 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPrivateCrtKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 
-import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
@@ -45,7 +44,7 @@ import org.apache.sshd.common.SshException;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public final class Buffer {
+public final class Buffer implements Readable {
 
     public static final int DEFAULT_SIZE = 256;
     public static final int MAX_LEN = 65536;
@@ -329,17 +328,10 @@ public final class Buffer {
         data[wpos++] = b;
     }
 
-    public void putBuffer(Buffer buffer) {
+    public void putBuffer(Readable buffer) {
         int r = buffer.available();
         ensureCapacity(r);
-        System.arraycopy(buffer.data, buffer.rpos, data, wpos, r);
-        wpos += r;
-    }
-
-    public void putBuffer(IoBuffer buffer) {
-        int r = buffer.remaining();
-        ensureCapacity(r);
-        buffer.get(data, wpos, r);
+        buffer.getRawBytes(data, wpos, r);
         wpos += r;
     }
 

@@ -20,7 +20,7 @@ package org.apache.sshd.common;
 
 import java.io.IOException;
 
-import org.apache.mina.core.future.WriteFuture;
+import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.util.Buffer;
 
 /**
@@ -101,7 +101,7 @@ public interface Session {
      * @return a future that can be used to check when the packet has actually been sent
      * @throws java.io.IOException if an error occured when encoding sending the packet
      */
-    WriteFuture writePacket(Buffer buffer) throws IOException;
+    IoWriteFuture writePacket(Buffer buffer) throws IOException;
 
     /**
      * Send a global request and wait for the response.

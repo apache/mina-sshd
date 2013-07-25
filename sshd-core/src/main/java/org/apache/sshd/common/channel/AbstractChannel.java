@@ -21,17 +21,14 @@ package org.apache.sshd.common.channel;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.apache.mina.core.future.IoFutureListener;
-import org.apache.mina.core.future.WriteFuture;
 import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.Session;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultCloseFuture;
-import org.apache.sshd.common.future.DefaultSshFuture;
-import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.future.SshFutureListener;
+import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.BufferUtils;
 import org.slf4j.Logger;
@@ -115,8 +112,8 @@ public abstract class AbstractChannel implements Channel {
                         Buffer buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_CLOSE, 0);
                         buffer.putInt(recipient);
                         try {
-                            session.writePacket(buffer).addListener(new IoFutureListener<WriteFuture>() {
-                                public void operationComplete(WriteFuture future) {
+                            session.writePacket(buffer).addListener(new SshFutureListener<IoWriteFuture>() {
+                                public void operationComplete(IoWriteFuture future) {
                                     if (closedByOtherSide) {
                                         log.debug("Message SSH_MSG_CHANNEL_CLOSE written on channel {}", id);
                                         postClose();

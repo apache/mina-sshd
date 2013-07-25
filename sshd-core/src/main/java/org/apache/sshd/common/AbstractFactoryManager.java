@@ -27,6 +27,9 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.common.file.FileSystemFactory;
+import org.apache.sshd.common.io.IoAcceptor;
+import org.apache.sshd.common.io.IoConnector;
+import org.apache.sshd.common.io.IoServiceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,6 +43,7 @@ public abstract class AbstractFactoryManager implements FactoryManager {
     private final Logger log = LoggerFactory.getLogger(getClass());
 
     protected Map<String,String> properties = new HashMap<String,String>();
+    protected IoServiceFactory ioServiceFactory;
     protected List<NamedFactory<KeyExchange>> keyExchangeFactories;
     protected List<NamedFactory<Cipher>> cipherFactories;
     protected List<NamedFactory<Compression>> compressionFactories;
@@ -53,12 +57,19 @@ public abstract class AbstractFactoryManager implements FactoryManager {
     protected ScheduledExecutorService executor;
     protected boolean shutdownExecutor;
     protected TcpipForwarderFactory tcpipForwarderFactory;
-    protected ForwardingAcceptorFactory tcpipForwardingAcceptorFactory;
     protected ForwardingFilter tcpipForwardingFilter;
     protected FileSystemFactory fileSystemFactory;
 
     protected AbstractFactoryManager() {
         loadVersion();
+    }
+
+    public IoServiceFactory getIoServiceFactory() {
+        return ioServiceFactory;
+    }
+
+    public void setIoServiceFactory(IoServiceFactory ioServiceFactory) {
+        this.ioServiceFactory = ioServiceFactory;
     }
 
     public List<NamedFactory<KeyExchange>> getKeyExchangeFactories() {
@@ -199,14 +210,6 @@ public abstract class AbstractFactoryManager implements FactoryManager {
 
     public void setTcpipForwarderFactory(TcpipForwarderFactory tcpipForwarderFactory) {
         this.tcpipForwarderFactory = tcpipForwarderFactory;
-    }
-
-    public ForwardingAcceptorFactory getTcpipForwardingAcceptorFactory() {
-        return tcpipForwardingAcceptorFactory;
-    }
-
-    public void setTcpipForwardingAcceptorFactory(ForwardingAcceptorFactory f) {
-        tcpipForwardingAcceptorFactory = f;
     }
 
     public ForwardingFilter getTcpipForwardingFilter() {

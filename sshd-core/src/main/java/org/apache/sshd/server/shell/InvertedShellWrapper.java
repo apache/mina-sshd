@@ -25,7 +25,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.apache.mina.util.NamePreservingRunnable;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
@@ -109,11 +108,11 @@ public class InvertedShellWrapper implements Command, SessionAware {
         shellIn = shell.getInputStream();
         shellOut = shell.getOutputStream();
         shellErr = shell.getErrorStream();
-        executor.execute(new NamePreservingRunnable(new Runnable() {
+        executor.execute(new Runnable() {
             public void run() {
                 pumpStreams();
             }
-        }, "inverted-shell-pump"));
+        });
     }
 
     public void destroy() {

@@ -22,14 +22,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.ConnectException;
 
-import org.apache.mina.core.buffer.IoBuffer;
-import org.apache.mina.core.future.ConnectFuture;
-import org.apache.mina.core.future.IoFutureListener;
-import org.apache.mina.core.service.IoConnector;
-import org.apache.mina.core.service.IoHandler;
-import org.apache.mina.core.service.IoHandlerAdapter;
-import org.apache.mina.core.session.IoSession;
-import org.apache.mina.transport.socket.nio.NioSocketConnector;
 import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.Channel;
@@ -39,9 +31,13 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.future.CloseFuture;
-import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.future.SshFutureListener;
+import org.apache.sshd.common.io.IoConnectFuture;
+import org.apache.sshd.common.io.IoConnector;
+import org.apache.sshd.common.io.IoHandler;
+import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.Readable;
 import org.apache.sshd.server.channel.AbstractServerChannel;
 import org.apache.sshd.server.channel.OpenChannelException;
 
@@ -111,33 +107,32 @@ public class TcpipServerChannel extends AbstractServerChannel {
             return f;
         }
 
-
-        connector = new NioSocketConnector();
         out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.Message.SSH_MSG_CHANNEL_DATA);
-        IoHandler handler = new IoHandlerAdapter() {
-            @Override
-            public void messageReceived(IoSession session, Object message) throws Exception {
+        IoHandler handler = new IoHandler() {
+            public void messageReceived(IoSession session, Readable message) throws Exception {
                 if (closing.get()) {
                     log.debug("Ignoring write to channel {} in CLOSING state", id);
                 } else {
-                    IoBuffer ioBuffer = (IoBuffer) message;
-                    int r = ioBuffer.remaining();
-                    byte[] b = new byte[r];
-                    ioBuffer.get(b, 0, r);
-                    out.write(b, 0, r);
+                    Buffer buffer = new Buffer();
+                    buffer.putBuffer(message);
+                    out.write(buffer.array(), buffer.rpos(), buffer.available());
                     out.flush();
                 }
             }
-
-            @Override
+            public void sessionCreated(IoSession session) throws Exception {
+            }
             public void sessionClosed(IoSession session) throws Exception {
                 close(false);
             }
+            public void exceptionCaught(IoSession ioSession, Throwable cause) throws Exception {
+                close(true);
+            }
         };
-        connector.setHandler(handler);
-        ConnectFuture future = connector.connect(address.toInetSocketAddress());
-        future.addListener(new IoFutureListener<ConnectFuture>() {
-            public void operationComplete(ConnectFuture future) {
+        connector = getSession().getFactoryManager().getIoServiceFactory()
+                .createConnector(getSession().getFactoryManager(), handler);
+        IoConnectFuture future = connector.connect(address.toInetSocketAddress());
+        future.addListener(new SshFutureListener<IoConnectFuture>() {
+            public void operationComplete(IoConnectFuture future) {
                 if (future.isConnected()) {
                     ioSession = future.getSession();
                     f.setOpened();
@@ -188,10 +183,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
     }
 
     protected void doWriteData(byte[] data, int off, int len) throws IOException {
-        IoBuffer buf = IoBuffer.allocate(len);
-        buf.put(data, off, len);
-        buf.flip();
-        ioSession.write(buf);
+        ioSession.write(new Buffer(data, off, len));
     }
 
     protected void doWriteExtendedData(byte[] data, int off, int len) throws IOException {

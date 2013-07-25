@@ -22,9 +22,7 @@ import java.util.List;
 
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.ForwardingAcceptorFactory;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.server.auth.gss.GSSAuthenticator;
 
 /**
@@ -150,13 +148,5 @@ public interface ServerFactoryManager extends FactoryManager {
      *         or <code>null</code> if subsystems are not supported on this server
      */
     List<NamedFactory<Command>> getSubsystemFactories();
-
-    /**
-     * Retrieve the IoAcceptor factory to be used to accept incoming connections
-     * for X11 Forwards.
-     * 
-     * @return A <code>ForwardNioAcceptorFactory</code>
-     */
-    ForwardingAcceptorFactory getX11ForwardingAcceptorFactory();
 
 }

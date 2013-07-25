@@ -1,0 +1,158 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+package org.apache.sshd.common.io.nio2;
+
+import java.io.IOException;
+import java.net.SocketAddress;
+import java.net.StandardSocketOptions;
+import java.nio.channels.AsynchronousServerSocketChannel;
+import java.nio.channels.AsynchronousSocketChannel;
+import java.nio.channels.CompletionHandler;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+
+import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.io.IoAcceptor;
+import org.apache.sshd.common.io.IoHandler;
+import org.apache.sshd.common.io.IoSession;
+
+/**
+ */
+public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
+
+    private final Map<SocketAddress, AsynchronousServerSocketChannel> channels;
+    private final Map<SocketAddress, AsynchronousServerSocketChannel> unbound;
+    private int backlog = 50;
+
+    public Nio2Acceptor(FactoryManager manager, IoHandler handler) {
+        super(manager, handler);
+        channels = new ConcurrentHashMap<SocketAddress, AsynchronousServerSocketChannel>();
+        unbound = new ConcurrentHashMap<SocketAddress, AsynchronousServerSocketChannel>();
+    }
+
+    public void bind(Collection<? extends SocketAddress> addresses) throws IOException {
+        for (SocketAddress address : addresses) {
+            logger.debug("Binding Nio2Acceptor to address {}", address);
+            AsynchronousServerSocketChannel socket = AsynchronousServerSocketChannel.open(group);
+            socket.setOption(StandardSocketOptions.SO_REUSEADDR, Boolean.TRUE);
+            socket.bind(address, backlog);
+            SocketAddress local = socket.getLocalAddress();
+            channels.put(local, socket);
+            socket.accept(local, new AcceptCompletionHandler(socket));
+        }
+    }
+
+    public void bind(SocketAddress address) throws IOException {
+        bind(Collections.singleton(address));
+    }
+
+    public void unbind() {
+        logger.debug("Unbinding");
+        unbind(getBoundAddresses());
+    }
+
+    public void unbind(Collection<? extends SocketAddress> addresses) {
+        for (SocketAddress address : addresses) {
+            AsynchronousServerSocketChannel channel = channels.remove(address);
+            if (channel != null) {
+                unbound.put(address, channel);
+            }
+        }
+    }
+
+    public void unbind(SocketAddress address) {
+        unbind(Collections.singleton(address));
+    }
+
+    public Set<SocketAddress> getBoundAddresses() {
+        return new HashSet<SocketAddress>(channels.keySet());
+    }
+
+    public void doDispose() {
+        unbind();
+        for (IoSession session : sessions.values()) {
+            session.close(true);
+        }
+        for (SocketAddress address : channels.keySet()) {
+            try {
+                channels.get(address).close();
+            } catch (IOException e) {
+                logger.debug("Exception caught while closing channel", e);
+            }
+        }
+        try {
+            group.shutdownNow();
+            group.awaitTermination(5, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            logger.debug("Exception caught while closing channel group", e);
+        }
+        try {
+            executor.shutdownNow();
+            executor.awaitTermination(5, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            logger.debug("Exception caught while closing executor", e);
+        }
+    }
+
+    class AcceptCompletionHandler implements CompletionHandler<AsynchronousSocketChannel, SocketAddress> {
+        private final AsynchronousServerSocketChannel socket;
+        AcceptCompletionHandler(AsynchronousServerSocketChannel socket) {
+            this.socket = socket;
+        }
+        public void completed(AsynchronousSocketChannel result, SocketAddress address) {
+            // Verify that the address has not been unbound
+            if (!channels.containsKey(address)) {
+                try {
+                    result.close();
+                } catch (IOException e) {
+                    logger.debug("Ignoring error closing accepted connection on unbound socket", e);
+                }
+                acceptorStopped(address);
+                return;
+            }
+            try {
+                // Create a session
+                Nio2Session session = new Nio2Session(Nio2Acceptor.this, handler, result);
+                handler.sessionCreated(session);
+                sessions.put(session.getId(), session);
+                session.startReading();
+                // Accept new connections
+                socket.accept(address, this);
+            } catch (Throwable exc) {
+                failed(exc, address);
+            }
+        }
+        public void failed(Throwable exc, SocketAddress address) {
+            if (!channels.containsKey(address)) {
+                acceptorStopped(address);
+            } else if (!disposing.get()) {
+                logger.warn("Caught exception while accepting incoming connection", exc);
+            }
+        }
+        protected void acceptorStopped(SocketAddress address) {
+            // TODO: check remaining sessions on that address
+            // TODO: and eventually close the server socket
+        }
+    }
+}

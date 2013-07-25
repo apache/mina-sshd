@@ -21,8 +21,8 @@ package org.apache.sshd;
 import java.net.ServerSocket;
 import java.security.KeyPair;
 
-import org.apache.mina.core.session.IoSession;
 import org.apache.sshd.common.KeyPairProvider;
+import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.server.ServerFactoryManager;
