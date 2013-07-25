@@ -100,7 +100,7 @@ public abstract class AbstractSession implements Session {
     /** Map of channels keyed by the identifier */
     protected final Map<Integer, Channel> channels = new ConcurrentHashMap<Integer, Channel>();
     /** Next channel identifier */
-    protected int nextChannelId;
+    protected static AtomicInteger nextChannelId = new AtomicInteger(100);
 
     /** Session listener */
     protected final List<SessionListener> listeners = new ArrayList<SessionListener>();
@@ -983,9 +983,7 @@ public abstract class AbstractSession implements Session {
 
 
     protected int getNextChannelId() {
-        synchronized (channels) {
-            return nextChannelId++;
-        }
+        return nextChannelId.incrementAndGet();
     }
 
     public int registerChannel(Channel channel) throws IOException {

@@ -42,6 +42,11 @@ public class ChannelSession extends AbstractClientChannel {
     }
 
     public OpenFuture open() throws IOException {
+        return internalOpen();
+    }
+
+    @Override
+    protected void doOpen() throws IOException {
         invertedIn = new ChannelOutputStream(this, remoteWindow, log, SshConstants.Message.SSH_MSG_CHANNEL_DATA);
         if (out == null) {
             ChannelPipedInputStream pis = new ChannelPipedInputStream(localWindow);
@@ -55,11 +60,6 @@ public class ChannelSession extends AbstractClientChannel {
             err = pos;
             invertedErr = pis;
         }
-        return internalOpen();
-    }
-
-    @Override
-    protected void doOpen() throws IOException {
         if (in != null) {
             streamPumper = new Thread("ClientInputStreamPump") {
                 @Override

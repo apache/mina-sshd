@@ -123,7 +123,7 @@ public class LoadTest {
         ByteArrayOutputStream err = new ByteArrayOutputStream();
         channel.setOut(out);
         channel.setErr(err);
-        channel.open();
+        channel.open().await();
         OutputStream pipedIn = channel.getInvertedIn();
 
         msg += "\nexit\n";
