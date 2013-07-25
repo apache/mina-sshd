@@ -20,11 +20,13 @@ package org.apache.sshd;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 
 import ch.ethz.ssh2.Connection;
 import ch.ethz.ssh2.SCPClient;
@@ -33,6 +35,7 @@ import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Logger;
 import com.jcraft.jsch.UserInfo;
+import org.apache.sshd.client.ScpClient;
 import org.apache.sshd.server.command.ScpCommandFactory;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
@@ -45,6 +48,7 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * Test for SCP support.
@@ -62,6 +66,7 @@ public class ScpTest {
         ServerSocket s = new ServerSocket(0);
         port = s.getLocalPort();
         s.close();
+//        port = 8102;
 
         sshd = SshServer.setUpDefaultServer();
         sshd.setPort(port);
@@ -120,6 +125,264 @@ public class ScpTest {
     public void testExternal() throws Exception {
         System.out.println("Scp available on port " + port);
         Thread.sleep(5 * 60000);
+    }
+
+    @Test
+    public void testScpNativeOnSingleFile() throws Exception {
+        SshClient client = SshClient.setUpDefaultClient();
+        client.start();
+        ClientSession session = client.connect("localhost", port).await().getSession();
+        session.authPassword("test", "test").await();
+
+        ScpClient scp = session.createScpClient();
+
+        String data = "0123456789\n";
+
+        File root = new File("target/scp");
+        Utils.deleteRecursive(root);
+        root.mkdirs();
+        new File(root, "local").mkdirs();
+        assertTrue(root.exists());
+
+
+        writeFile(new File("target/scp/local/out.txt"), data);
+        try {
+            scp.upload("target/scp/local/out.txt", "target/scp/remote/out.txt");
+            fail("Expected IOException");
+        } catch (IOException e) {
+            // ok
+        }
+        new File(root, "remote").mkdirs();
+        scp.upload("target/scp/local/out.txt", "target/scp/remote/out.txt");
+        assertFileLength(new File("target/scp/remote/out.txt"), data.length(), 5000);
+
+        scp.download("target/scp/remote/out.txt", "target/scp/local/out2.txt");
+        assertFileLength(new File("target/scp/local/out2.txt"), data.length(), 5000);
+
+        session.close(false);
+        client.stop();
+    }
+
+    @Test
+    public void testScpNativeOnMultipleFiles() throws Exception {
+        SshClient client = SshClient.setUpDefaultClient();
+        client.start();
+        ClientSession session = client.connect("localhost", port).await().getSession();
+        session.authPassword("test", "test").await();
+
+        ScpClient scp = session.createScpClient();
+
+        String data = "0123456789\n";
+
+        File root = new File("target/scp");
+        Utils.deleteRecursive(root);
+        root.mkdirs();
+        new File(root, "local").mkdirs();
+        new File(root, "remote").mkdirs();
+        assertTrue(root.exists());
+
+
+        writeFile(new File("target/scp/local/out1.txt"), data);
+        writeFile(new File("target/scp/local/out2.txt"), data);
+        try {
+            scp.upload(new String[] { "target/scp/local/out1.txt", "target/scp/local/out2.txt" }, "target/scp/remote/out.txt");
+            fail("Expected IOException");
+        } catch (IOException e) {
+            // Ok
+        }
+        writeFile(new File("target/scp/remote/out.txt"), data);
+        try {
+            scp.upload(new String[] { "target/scp/local/out1.txt", "target/scp/local/out2.txt" }, "target/scp/remote/out.txt");
+            fail("Expected IOException");
+        } catch (IOException e) {
+            // Ok
+        }
+        new File(root, "remote/dir").mkdirs();
+        scp.upload(new String[] { "target/scp/local/out1.txt", "target/scp/local/out2.txt" }, "target/scp/remote/dir");
+        assertFileLength(new File("target/scp/remote/dir/out1.txt"), data.length(), 5000);
+        assertFileLength(new File("target/scp/remote/dir/out2.txt"), data.length(), 5000);
+
+        try {
+            scp.download(new String[] { "target/scp/remote/dir/out1.txt", "target/scp/remote/dir/out2.txt" }, "target/scp/local/out1.txt");
+            fail("Expected IOException");
+        } catch (IOException e) {
+            // Ok
+        }
+        try {
+            scp.download(new String[] { "target/scp/remote/dir/out1.txt", "target/scp/remote/dir/out2.txt" }, "target/scp/local/dir");
+            fail("Expected IOException");
+        } catch (IOException e) {
+            // Ok
+        }
+        new File(root, "local/dir").mkdirs();
+        scp.download(new String[] { "target/scp/remote/dir/out1.txt", "target/scp/remote/dir/out2.txt" }, "target/scp/local/dir");
+        assertFileLength(new File("target/scp/local/dir/out1.txt"), data.length(), 5000);
+        assertFileLength(new File("target/scp/local/dir/out2.txt"), data.length(), 5000);
+
+        session.close(false);
+        client.stop();
+    }
+
+    @Test
+    public void testScpNativeOnRecursiveDirs() throws Exception {
+        SshClient client = SshClient.setUpDefaultClient();
+        client.start();
+        ClientSession session = client.connect("localhost", port).await().getSession();
+        session.authPassword("test", "test").await();
+
+        ScpClient scp = session.createScpClient();
+
+        String data = "0123456789\n";
+
+        File root = new File("target/scp");
+        Utils.deleteRecursive(root);
+        root.mkdirs();
+        new File(root, "local").mkdirs();
+        new File(root, "remote").mkdirs();
+        assertTrue(root.exists());
+
+        new File("target/scp/local/dir").mkdirs();
+        writeFile(new File("target/scp/local/dir/out1.txt"), data);
+        writeFile(new File("target/scp/local/dir/out2.txt"), data);
+        scp.upload("target/scp/local/dir", "target/scp/remote/", ScpClient.Option.Recursive);
+        assertFileLength(new File("target/scp/remote/dir/out1.txt"), data.length(), 5000);
+        assertFileLength(new File("target/scp/remote/dir/out2.txt"), data.length(), 5000);
+
+        Utils.deleteRecursive(new File("target/scp/local/dir"));
+        scp.download("target/scp/remote/dir", "target/scp/local", ScpClient.Option.Recursive);
+        assertFileLength(new File("target/scp/local/dir/out1.txt"), data.length(), 5000);
+        assertFileLength(new File("target/scp/local/dir/out2.txt"), data.length(), 5000);
+
+        session.close(false);
+        client.stop();
+    }
+
+    @Test
+    public void testScpNativeOnDirWithPattern() throws Exception {
+        SshClient client = SshClient.setUpDefaultClient();
+        client.start();
+        ClientSession session = client.connect("localhost", port).await().getSession();
+        session.authPassword("test", "test").await();
+
+        ScpClient scp = session.createScpClient();
+
+        String data = "0123456789\n";
+
+        File root = new File("target/scp");
+        Utils.deleteRecursive(root);
+        root.mkdirs();
+        new File(root, "local").mkdirs();
+        new File(root, "remote").mkdirs();
+        assertTrue(root.exists());
+
+        writeFile(new File("target/scp/local/out1.txt"), data);
+        writeFile(new File("target/scp/local/out2.txt"), data);
+        scp.upload("target/scp/local/*", "target/scp/remote/");
+        assertFileLength(new File("target/scp/remote/out1.txt"), data.length(), 5000);
+        assertFileLength(new File("target/scp/remote/out2.txt"), data.length(), 5000);
+
+        new File("target/scp/local/out1.txt").delete();
+        new File("target/scp/local/out2.txt").delete();
+        scp.download("target/scp/remote/*", "target/scp/local");
+        assertFileLength(new File("target/scp/local/out1.txt"), data.length(), 5000);
+        assertFileLength(new File("target/scp/local/out2.txt"), data.length(), 5000);
+
+        session.close(false);
+        client.stop();
+    }
+
+    @Test
+    public void testScpNativeOnMixedDirAndFiles() throws Exception {
+        SshClient client = SshClient.setUpDefaultClient();
+        client.start();
+        ClientSession session = client.connect("localhost", port).await().getSession();
+        session.authPassword("test", "test").await();
+
+        ScpClient scp = session.createScpClient();
+
+        String data = "0123456789\n";
+
+        File root = new File("target/scp");
+        Utils.deleteRecursive(root);
+        root.mkdirs();
+        new File(root, "local").mkdirs();
+        new File(root, "remote").mkdirs();
+        assertTrue(root.exists());
+
+        new File("target/scp/local/dir").mkdirs();
+        writeFile(new File("target/scp/local/out1.txt"), data);
+        writeFile(new File("target/scp/local/dir/out2.txt"), data);
+        scp.upload("target/scp/local/*", "target/scp/remote/", ScpClient.Option.Recursive);
+        assertFileLength(new File("target/scp/remote/out1.txt"), data.length(), 5000);
+        assertFileLength(new File("target/scp/remote/dir/out2.txt"), data.length(), 5000);
+
+        Utils.deleteRecursive(new File("target/scp/local/out1.txt"));
+        Utils.deleteRecursive(new File("target/scp/local/dir"));
+        scp.download("target/scp/remote/*", "target/scp/local");
+        assertFileLength(new File("target/scp/local/out1.txt"), data.length(), 5000);
+        assertFalse(new File("target/scp/local/dir/out2.txt").exists());
+
+        Utils.deleteRecursive(new File("target/scp/local/out1.txt"));
+        scp.download("target/scp/remote/*", "target/scp/local", ScpClient.Option.Recursive);
+        assertFileLength(new File("target/scp/local/out1.txt"), data.length(), 5000);
+        assertFileLength(new File("target/scp/local/dir/out2.txt"), data.length(), 5000);
+
+        session.close(false);
+        client.stop();
+    }
+
+    @Test
+    public void testScpNativePreserveAttributes() throws Exception {
+        SshClient client = SshClient.setUpDefaultClient();
+        client.start();
+        ClientSession session = client.connect("localhost", port).await().getSession();
+        session.authPassword("test", "test").await();
+
+        ScpClient scp = session.createScpClient();
+
+        String data = "0123456789\n";
+
+        File root = new File("target/scp");
+        Utils.deleteRecursive(root);
+        root.mkdirs();
+        new File(root, "local").mkdirs();
+        new File(root, "remote").mkdirs();
+        assertTrue(root.exists());
+
+        new File("target/scp/local/dir").mkdirs();
+        long lastMod = new File("target/scp/local/dir").lastModified() - TimeUnit.DAYS.toMillis(1);
+
+        writeFile(new File("target/scp/local/out1.txt"), data);
+        writeFile(new File("target/scp/local/dir/out2.txt"), data);
+        new File("target/scp/local/out1.txt").setLastModified(lastMod);
+        new File("target/scp/local/out1.txt").setExecutable(true, true);
+        new File("target/scp/local/out1.txt").setWritable(false, false);
+        new File("target/scp/local/dir/out2.txt").setLastModified(lastMod);
+        scp.upload("target/scp/local/*", "target/scp/remote/", ScpClient.Option.Recursive, ScpClient.Option.PreserveAttributes);
+        assertFileLength(new File("target/scp/remote/out1.txt"), data.length(), 5000);
+        assertEquals(lastMod, new File("target/scp/remote/out1.txt").lastModified());
+        assertFileLength(new File("target/scp/remote/dir/out2.txt"), data.length(), 5000);
+        assertEquals(lastMod, new File("target/scp/remote/dir/out2.txt").lastModified());
+
+        Utils.deleteRecursive(new File("target/scp/local"));
+        new File("target/scp/local").mkdirs();
+        scp.download("target/scp/remote/*", "target/scp/local", ScpClient.Option.Recursive, ScpClient.Option.PreserveAttributes);
+        assertFileLength(new File("target/scp/local/out1.txt"), data.length(), 5000);
+        assertEquals(lastMod, new File("target/scp/local/out1.txt").lastModified());
+        assertFileLength(new File("target/scp/local/dir/out2.txt"), data.length(), 5000);
+        assertEquals(lastMod, new File("target/scp/local/dir/out2.txt").lastModified());
+
+        session.close(false);
+        client.stop();
+    }
+
+    private void writeFile(File file, String data) throws IOException {
+        FileOutputStream fos = new FileOutputStream(file);
+        try {
+            fos.write(data.getBytes());
+        } finally {
+            fos.close();
+        }
     }
 
     @Test

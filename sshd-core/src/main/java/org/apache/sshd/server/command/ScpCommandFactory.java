@@ -55,7 +55,10 @@ public class ScpCommandFactory implements CommandFactory {
      */
     public Command createCommand(String command) {
         try {
-            return new ScpCommand(splitCommandString(command));
+            if (!command.startsWith("scp")) {
+                throw new IllegalArgumentException("Unknown command, does not begin with 'scp'");
+            }
+            return new ScpCommand(command);
         } catch (IllegalArgumentException iae) {
             if (delegate != null) {
                 return delegate.createCommand(command);
@@ -64,31 +67,4 @@ public class ScpCommandFactory implements CommandFactory {
         }
     }
 
-    private String[] splitCommandString(String command) {
-        if (!command.trim().startsWith("scp")) {
-            throw new IllegalArgumentException("Unknown command, does not begin with 'scp'");
-        }
-
-        String[] args = command.split(" ");
-        List<String> parts = new ArrayList<String>();
-        parts.add(args[0]);
-        for (int i = 1; i < args.length; i++) {
-            if (!args[i].trim().startsWith("-")) {
-                parts.add(concatenateWithSpace(args, i));
-                break;
-            } else {
-                parts.add(args[i]);
-            }
-        }
-        return parts.toArray(new String[parts.size()]);
-    }
-
-    private String concatenateWithSpace(String[] args, int from) {
-        StringBuilder sb = new StringBuilder();
-
-        for (int i = from; i < args.length; i++) {
-            sb.append(args[i] + " ");
-        }
-        return sb.toString().trim();
-    }
 }

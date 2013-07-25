@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.sshd.common.file.FileSystemAware;
@@ -52,19 +53,17 @@ public class ScpCommand implements Command, Runnable, FileSystemAware {
     protected boolean optD;
     protected boolean optP; // TODO: handle modification times
     protected FileSystemView root;
-    protected List<String> paths;
+    protected String path;
     protected InputStream in;
     protected OutputStream out;
     protected OutputStream err;
     protected ExitCallback callback;
     protected IOException error;
 
-    public ScpCommand(String[] args) {
-        name = Arrays.asList(args).toString();
-        if (log.isDebugEnabled()) {
-            log.debug("Executing command {}", name);
-        }
-        paths = new ArrayList<String>();
+    public ScpCommand(String command) {
+        this.name = command;
+        log.debug("Executing command {}", command);
+        String[] args = command.split(" ");
         for (int i = 1; i < args.length; i++) {
             if (args[i].charAt(0) == '-') {
                 for (int j = 1; j < args[i].length(); j++) {
@@ -89,15 +88,13 @@ public class ScpCommand implements Command, Runnable, FileSystemAware {
 //                            return;
                     }
                 }
-            } else if (i == args.length - 1) {
-                paths.add(args[args.length - 1]);
+            } else {
+                path = command.substring(command.indexOf(args[i-1]) + args[i-1].length() + 1);
+                break;
             }
         }
         if (!optF && !optT) {
             error = new IOException("Either -f or -t option should be set");
-        }
-        if (optT && paths.size() != 1) {
-            error = new IOException("One and only one path must be given with -t option");
         }
     }
 
@@ -137,9 +134,9 @@ public class ScpCommand implements Command, Runnable, FileSystemAware {
         ScpHelper helper = new ScpHelper(in, out, root);
         try {
             if (optT) {
-                helper.receive(root.getFile(paths.get(0)), optR, optD);
+                helper.receive(root.getFile(path), optR, optD, optP);
             } else if (optF) {
-                helper.send(paths, optR);
+                helper.send(Collections.singletonList(path), optR, optP);
             } else {
                 throw new IOException("Unsupported mode");
             }

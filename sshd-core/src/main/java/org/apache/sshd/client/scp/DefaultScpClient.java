@@ -20,7 +20,11 @@ package org.apache.sshd.client.scp;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
 import org.apache.sshd.ClientSession;
 import org.apache.sshd.client.ScpClient;
@@ -42,39 +46,44 @@ public class DefaultScpClient implements ScpClient {
         this.clientSession = clientSession;
     }
 
-    public void download(String remote, String local) throws IOException {
-        download(new String[] { remote }, local, false, false);
-    }
-
-    public void download(String remote, String local, boolean recursive) throws IOException {
-        download(new String[] { remote }, local, recursive, false);
-    }
-
-    public void download(String[] remote, String local) throws IOException {
-        download(remote, local, false, true);
-    }
-
-    public void download(String[] remote, String local, boolean recursive) throws IOException {
-        download(remote, local, recursive, true);
-    }
-
-    private void download(String[] remote, String local, boolean recursive, boolean shouldBeDir) throws IOException {
+    public void download(String remote, String local, Option... options) throws IOException {
         local = checkNotNullAndNotEmpty(local, "Invalid argument local: {}");
         remote = checkNotNullAndNotEmpty(remote, "Invalid argument remote: {}");
+        download(remote, local, Arrays.asList(options));
+    }
+
+    public void download(String[] remote, String local, Option... options) throws IOException {
+        local = checkNotNullAndNotEmpty(local, "Invalid argument local: {}");
+        remote = checkNotNullAndNotEmpty(remote, "Invalid argument remote: {}");
+        List<Option> opts = options(options);
+        if (remote.length > 1) {
+            opts.add(Option.TargetIsDirectory);
+        }
+        for (String r : remote) {
+            download(r, local, opts);
+        }
+    }
+
+    protected void download(String remote, String local, Collection<Option> options) throws IOException {
+        local = checkNotNullAndNotEmpty(local, "Invalid argument local: {}");
+        remote = checkNotNullAndNotEmpty(remote, "Invalid argument remote: {}");
+
         StringBuilder sb = new StringBuilder("scp");
-        if (recursive) {
+        if (options.contains(Option.Recursive)) {
             sb.append(" -r");
         }
-        sb.append(" -f");
-        for (String r : remote) {
-            r = checkNotNullAndNotEmpty(r, "Invalid argument remote: {}");
-            sb.append(" ").append(r);
+        if (options.contains(Option.PreserveAttributes)) {
+            sb.append(" -p");
         }
+        sb.append(" -f");
+        sb.append(" --");
+        sb.append(" ");
+        sb.append(remote);
 
         FileSystemFactory factory = clientSession.getFactoryManager().getFileSystemFactory();
         FileSystemView fs = factory.createFileSystemView(clientSession);
         SshFile target = fs.getFile(local);
-        if (shouldBeDir) {
+        if (options.contains(Option.TargetIsDirectory)) {
             if (!target.doesExist()) {
                 throw new SshException("Target directory " + target.toString() + " does not exists");
             }
@@ -92,42 +101,47 @@ public class DefaultScpClient implements ScpClient {
 
         ScpHelper helper = new ScpHelper(channel.getInvertedOut(), channel.getInvertedIn(), fs);
 
-        helper.receive(target, recursive, shouldBeDir);
+        helper.receive(target,
+                       options.contains(Option.Recursive),
+                       options.contains(Option.TargetIsDirectory),
+                       options.contains(Option.PreserveAttributes));
 
         channel.close(false);
     }
 
-    public void upload(String remote, String local) throws IOException {
-        upload(new String[] { remote }, local, false, false);
+    public void upload(String local, String remote, Option... options) throws IOException {
+        local = checkNotNullAndNotEmpty(local, "Invalid argument local: {}");
+        remote = checkNotNullAndNotEmpty(remote, "Invalid argument remote: {}");
+        upload(new String[] { local }, remote, options(options));
     }
 
-    public void upload(String remote, String local, boolean recursive) throws IOException {
-        upload(new String[] { remote }, local, recursive, false);
+    public void upload(String[] local, String remote, Option... options) throws IOException {
+        local = checkNotNullAndNotEmpty(local, "Invalid argument local: {}");
+        remote = checkNotNullAndNotEmpty(remote, "Invalid argument remote: {}");
+        List<Option> opts = options(options);
+        if (local.length > 1) {
+            opts.add(Option.TargetIsDirectory);
+        }
+        upload(local, remote, opts);
     }
 
-    public void upload(String[] local, String remote) throws IOException {
-        upload(local, remote, false, true);
-    }
-
-    public void upload(String[] local, String remote, boolean recursive) throws IOException {
-        upload(local, remote, false, true);
-    }
-
-    private void upload(String[] local, String remote, boolean recursive, boolean shouldBeDir) throws IOException {
+    protected void upload(String[] local, String remote, Collection<Option> options) throws IOException {
         local = checkNotNullAndNotEmpty(local, "Invalid argument local: {}");
         remote = checkNotNullAndNotEmpty(remote, "Invalid argument remote: {}");
         StringBuilder sb = new StringBuilder("scp");
-        if (recursive) {
+        if (options.contains(Option.Recursive)) {
             sb.append(" -r");
         }
-        if (shouldBeDir) {
+        if (options.contains(Option.TargetIsDirectory)) {
             sb.append(" -d");
         }
-        sb.append(" -t");
-        for (String r : local) {
-            r = checkNotNullAndNotEmpty(r, "Invalid argument remote: {}");
-            sb.append(" ").append(r);
+        if (options.contains(Option.PreserveAttributes)) {
+            sb.append(" -p");
         }
+        sb.append(" -t");
+        sb.append(" --");
+        sb.append(" ");
+        sb.append(remote);
         ChannelExec channel = clientSession.createExecChannel(sb.toString());
         try {
             channel.open().await();
@@ -138,11 +152,20 @@ public class DefaultScpClient implements ScpClient {
         FileSystemFactory factory = clientSession.getFactoryManager().getFileSystemFactory();
         FileSystemView fs = factory.createFileSystemView(clientSession);
         ScpHelper helper = new ScpHelper(channel.getInvertedOut(), channel.getInvertedIn(), fs);
-        SshFile target = fs.getFile(remote);
 
-        helper.send(Arrays.asList(local), recursive);
+        helper.send(Arrays.asList(local),
+                    options.contains(Option.Recursive),
+                    options.contains(Option.PreserveAttributes));
 
         channel.close(false);
+    }
+
+    private List<Option> options(Option... options) {
+        List<Option> opts = new ArrayList<Option>();
+        if (options != null) {
+            opts.addAll(Arrays.asList(options));
+        }
+        return opts;
     }
 
     private <T> T checkNotNull(T t, String message) {

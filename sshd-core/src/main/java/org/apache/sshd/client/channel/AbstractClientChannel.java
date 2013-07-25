@@ -227,6 +227,10 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     }
 
     protected void doWriteData(byte[] data, int off, int len) throws IOException {
+        // If we're already closing, ignore incoming data
+        if (closing.get()) {
+            return;
+        }
         if (out != null) {
             out.write(data, off, len);
             out.flush();

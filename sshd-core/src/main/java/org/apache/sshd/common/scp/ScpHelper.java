@@ -23,7 +23,10 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.file.FileSystemView;
@@ -43,6 +46,16 @@ public class ScpHelper {
     public static final int WARNING = 1;
     public static final int ERROR = 2;
 
+    public static final int S_IRUSR =  0000400;
+    public static final int S_IWUSR =  0000200;
+    public static final int S_IXUSR =  0000100;
+    public static final int S_IRGRP =  0000040;
+    public static final int S_IWGRP =  0000020;
+    public static final int S_IXGRP =  0000010;
+    public static final int S_IROTH =  0000004;
+    public static final int S_IWOTH =  0000002;
+    public static final int S_IXOTH =  0000001;
+
     protected final FileSystemView root;
     protected final InputStream in;
     protected final OutputStream out;
@@ -53,7 +66,7 @@ public class ScpHelper {
         this.root = root;
     }
 
-    public void receive(SshFile path, boolean recursive, boolean shouldBeDir) throws IOException {
+    public void receive(SshFile path, boolean recursive, boolean shouldBeDir, boolean preserve) throws IOException {
         if (shouldBeDir) {
             if (!path.doesExist()) {
                 throw new SshException("Target directory " + path.toString() + " does not exists");
@@ -63,6 +76,7 @@ public class ScpHelper {
             }
         }
         ack();
+        long[] time = null;
         for (;;)
         {
             String line;
@@ -76,13 +90,17 @@ public class ScpHelper {
                     isDir = true;
                 case 'C':
                     line = ((char) c) + readLine();
+                    log.debug("Received header: " + line);
                     break;
                 case 'T':
-                    readLine();
+                    line = ((char) c) + readLine();
+                    log.debug("Received header: " + line);
+                    time = parseTime(line);
                     ack();
                     continue;
                 case 'E':
-                    readLine();
+                    line = ((char) c) + readLine();
+                    log.debug("Received header: " + line);
                     return;
                 default:
                     //a real ack that has been acted upon already
@@ -91,19 +109,21 @@ public class ScpHelper {
 
             if (recursive && isDir)
             {
-                receiveDir(line, path);
+                receiveDir(line, path, time, preserve);
+                time = null;
             }
             else
             {
-                receiveFile(line, path);
+                receiveFile(line, path, time, preserve);
+                time = null;
             }
         }
     }
 
 
-    public void receiveDir(String header, SshFile path) throws IOException {
+    public void receiveDir(String header, SshFile path, long[] time, boolean preserve) throws IOException {
         if (log.isDebugEnabled()) {
-            log.debug("Writing dir {}", path);
+            log.debug("Receiving directory {}", path);
         }
         if (!header.startsWith("D")) {
             throw new IOException("Expected a D message but got '" + header + "'");
@@ -128,20 +148,34 @@ public class ScpHelper {
             throw new IOException("Could not create directory " + file);
         }
 
+        if (preserve) {
+            Map<SshFile.Attribute, Object> attrs = new HashMap<SshFile.Attribute, Object>();
+            attrs.put(SshFile.Attribute.Permissions, fromOctalPerms(perms));
+            if (time != null) {
+                attrs.put(SshFile.Attribute.LastModifiedTime, time[0]);
+                attrs.put(SshFile.Attribute.LastAccessTime, time[1]);
+            }
+            file.setAttributes(attrs);
+        }
+
         ack();
 
+        time = null;
         for (;;) {
             header = readLine();
+            log.debug("Received header: " + header);
             if (header.startsWith("C")) {
-                receiveFile(header, file);
+                receiveFile(header, file, time, preserve);
+                time = null;
             } else if (header.startsWith("D")) {
-                receiveDir(header, file);
+                receiveDir(header, file, time, preserve);
+                time = null;
             } else if (header.equals("E")) {
                 ack();
                 break;
-            } else if (header.equals("T")) {
+            } else if (header.startsWith("T")) {
+                time = parseTime(header);
                 ack();
-                break;
             } else {
                 throw new IOException("Unexpected message: '" + header + "'");
             }
@@ -149,9 +183,9 @@ public class ScpHelper {
 
     }
 
-    public void receiveFile(String header, SshFile path) throws IOException {
+    public void receiveFile(String header, SshFile path, long[] time, boolean preserve) throws IOException {
         if (log.isDebugEnabled()) {
-            log.debug("Writing file {}", path);
+            log.debug("Receiving file {}", path);
         }
         if (!header.startsWith("C")) {
             throw new IOException("Expected a C message but got '" + header + "'");
@@ -194,6 +228,16 @@ public class ScpHelper {
             os.close();
         }
 
+        if (preserve) {
+            Map<SshFile.Attribute, Object> attrs = new HashMap<SshFile.Attribute, Object>();
+            attrs.put(SshFile.Attribute.Permissions, fromOctalPerms(perms));
+            if (time != null) {
+                attrs.put(SshFile.Attribute.LastModifiedTime, time[0]);
+                attrs.put(SshFile.Attribute.LastAccessTime, time[1]);
+            }
+            file.setAttributes(attrs);
+        }
+
         ack();
         readAck(false);
     }
@@ -219,7 +263,7 @@ public class ScpHelper {
         }
     }
 
-    public void send(List<String> paths, boolean recursive) throws IOException {
+    public void send(List<String> paths, boolean recursive, boolean preserve) throws IOException {
         for (String pattern : paths) {
             int idx = pattern.indexOf('*');
             if (idx >= 0) {
@@ -233,13 +277,13 @@ public class ScpHelper {
                 for (String path : included) {
                     SshFile file = root.getFile(basedir + "/" + path);
                     if (file.isFile()) {
-                        sendFile(file);
+                        sendFile(file, preserve);
                     } else if (file.isDirectory()) {
                         if (!recursive) {
                             out.write(ScpHelper.WARNING);
                             out.write((path + " not a regular file\n").getBytes());
                         } else {
-                            sendDir(file);
+                            sendDir(file, preserve);
                         }
                     } else {
                         out.write(ScpHelper.WARNING);
@@ -258,12 +302,12 @@ public class ScpHelper {
                     throw new IOException(file + ": no such file or directory");
                 }
                 if (file.isFile()) {
-                    sendFile(file);
+                    sendFile(file, preserve);
                 } else if (file.isDirectory()) {
                     if (!recursive) {
                         throw new IOException(file + " not a regular file");
                     } else {
-                        sendDir(file);
+                        sendDir(file, preserve);
                     }
                 } else {
                     throw new IOException(file + ": unknown file type");
@@ -272,15 +316,33 @@ public class ScpHelper {
         }
     }
 
-    public void sendFile(SshFile path) throws IOException {
+    public void sendFile(SshFile path, boolean preserve) throws IOException {
         if (log.isDebugEnabled()) {
-            log.debug("Reading file {}", path);
+            log.debug("Sending file {}", path);
         }
+
+        Map<SshFile.Attribute,Object> attrs =  path.getAttributes(true);
+        if (preserve) {
+            StringBuffer buf = new StringBuffer();
+            buf.append("T");
+            buf.append(attrs.get(SshFile.Attribute.LastModifiedTime));
+            buf.append(" ");
+            buf.append("0");
+            buf.append(" ");
+            buf.append(attrs.get(SshFile.Attribute.LastAccessTime));
+            buf.append(" ");
+            buf.append("0");
+            buf.append("\n");
+            out.write(buf.toString().getBytes());
+            out.flush();
+            readAck(false);
+        }
+
         StringBuffer buf = new StringBuffer();
         buf.append("C");
-        buf.append("0644"); // TODO: what about perms
+        buf.append(preserve ? toOctalPerms((EnumSet<SshFile.Permission>) attrs.get(SshFile.Attribute.Permissions)) : "0644");
         buf.append(" ");
-        buf.append(path.getSize()); // length
+        buf.append(attrs.get(SshFile.Attribute.Size)); // length
         buf.append(" ");
         buf.append(path.getName());
         buf.append("\n");
@@ -305,13 +367,30 @@ public class ScpHelper {
         readAck(false);
     }
 
-    public void sendDir(SshFile path) throws IOException {
+    public void sendDir(SshFile path, boolean preserve) throws IOException {
         if (log.isDebugEnabled()) {
-            log.debug("Reading directory {}", path);
+            log.debug("Sending directory {}", path);
         }
+        Map<SshFile.Attribute,Object> attrs =  path.getAttributes(true);
+        if (preserve) {
+            StringBuffer buf = new StringBuffer();
+            buf.append("T");
+            buf.append(attrs.get(SshFile.Attribute.LastModifiedTime));
+            buf.append(" ");
+            buf.append("0");
+            buf.append(" ");
+            buf.append(attrs.get(SshFile.Attribute.LastAccessTime));
+            buf.append(" ");
+            buf.append("0");
+            buf.append("\n");
+            out.write(buf.toString().getBytes());
+            out.flush();
+            readAck(false);
+        }
+
         StringBuffer buf = new StringBuffer();
         buf.append("D");
-        buf.append("0755"); // what about perms
+        buf.append(preserve ? toOctalPerms((EnumSet<SshFile.Permission>) attrs.get(SshFile.Attribute.Permissions)) : "0755");
         buf.append(" ");
         buf.append("0"); // length
         buf.append(" ");
@@ -323,15 +402,71 @@ public class ScpHelper {
 
         for (SshFile child : path.listSshFiles()) {
             if (child.isFile()) {
-                sendFile(child);
+                sendFile(child, preserve);
             } else if (child.isDirectory()) {
-                sendDir(child);
+                sendDir(child, preserve);
             }
         }
 
         out.write("E\n".getBytes());
         out.flush();
         readAck(false);
+    }
+
+    private long[] parseTime(String line) {
+        String[] numbers = line.substring(1).split(" ");
+        return new long[] { Long.parseLong(numbers[0]), Long.parseLong(numbers[2]) };
+    }
+
+    public static String toOctalPerms(EnumSet<SshFile.Permission> perms) {
+        int pf = 0;
+        for (SshFile.Permission p : perms) {
+            switch (p) {
+                case UserRead:      pf |= S_IRUSR; break;
+                case UserWrite:     pf |= S_IWUSR; break;
+                case UserExecute:   pf |= S_IXUSR; break;
+                case GroupRead:     pf |= S_IRGRP; break;
+                case GroupWrite:    pf |= S_IWGRP; break;
+                case GroupExecute:  pf |= S_IXGRP; break;
+                case OthersRead:    pf |= S_IROTH; break;
+                case OthersWrite:   pf |= S_IWOTH; break;
+                case OthersExecute: pf |= S_IXOTH; break;
+            }
+        }
+        return String.format("%04o", pf);
+    }
+
+    public static EnumSet<SshFile.Permission> fromOctalPerms(String str) {
+        int perms = Integer.parseInt(str, 8);
+        EnumSet<SshFile.Permission> p = EnumSet.noneOf(SshFile.Permission.class);
+        if ((perms & S_IRUSR) != 0) {
+            p.add(SshFile.Permission.UserRead);
+        }
+        if ((perms & S_IWUSR) != 0) {
+            p.add(SshFile.Permission.UserWrite);
+        }
+        if ((perms & S_IXUSR) != 0) {
+            p.add(SshFile.Permission.UserExecute);
+        }
+        if ((perms & S_IRGRP) != 0) {
+            p.add(SshFile.Permission.GroupRead);
+        }
+        if ((perms & S_IWGRP) != 0) {
+            p.add(SshFile.Permission.GroupWrite);
+        }
+        if ((perms & S_IXGRP) != 0) {
+            p.add(SshFile.Permission.GroupExecute);
+        }
+        if ((perms & S_IROTH) != 0) {
+            p.add(SshFile.Permission.OthersRead);
+        }
+        if ((perms & S_IWOTH) != 0) {
+            p.add(SshFile.Permission.OthersWrite);
+        }
+        if ((perms & S_IXOTH) != 0) {
+            p.add(SshFile.Permission.OthersExecute);
+        }
+        return p;
     }
 
     public void ack() throws IOException {

@@ -96,7 +96,7 @@ public class ChannelPipedInputStream extends InputStream {
         lock.lock();
         try {
             for (;;) {
-                if (closed) {
+                if (closed && !writerClosed) {
                     throw new IOException("Pipe closed");
                 }
                 if (buffer.available() > 0) {
