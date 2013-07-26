@@ -62,7 +62,10 @@ import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.DefaultIoServiceFactory;
 import org.apache.sshd.common.io.IoAcceptor;
+import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.io.IoSession;
+import org.apache.sshd.common.io.mina.MinaServiceFactory;
+import org.apache.sshd.common.io.nio2.Nio2ServiceFactory;
 import org.apache.sshd.common.mac.HMACMD5;
 import org.apache.sshd.common.mac.HMACMD596;
 import org.apache.sshd.common.mac.HMACSHA1;
@@ -87,12 +90,14 @@ import org.apache.sshd.server.auth.UserAuthPublicKey;
 import org.apache.sshd.server.auth.gss.GSSAuthenticator;
 import org.apache.sshd.server.auth.gss.UserAuthGSS;
 import org.apache.sshd.server.channel.ChannelSession;
+import org.apache.sshd.server.command.ScpCommandFactory;
 import org.apache.sshd.server.kex.DHG1;
 import org.apache.sshd.server.kex.DHG14;
 import org.apache.sshd.server.keyprovider.PEMGeneratorHostKeyProvider;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.session.SessionFactory;
+import org.apache.sshd.server.sftp.SftpSubsystem;
 import org.apache.sshd.server.shell.ProcessShellFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -445,6 +450,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
 
     public static void main(String[] args) throws Exception {
         int port = 8000;
+        String provider;
         boolean error = false;
 
         for (int i = 0; i < args.length; i++) {
@@ -454,6 +460,20 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
                     break;
                 }
                 port = Integer.parseInt(args[++i]);
+            } else if ("-io".equals(args[i])) {
+                if (i + 1 >= args.length) {
+                    System.err.println("option requires an argument: " + args[i]);
+                    break;
+                }
+                provider = args[++i];
+                if ("mina".equals(provider)) {
+                    System.setProperty(IoServiceFactory.class.getName(), MinaServiceFactory.class.getName());
+                } else if ("nio2".endsWith(provider)) {
+                    System.setProperty(IoServiceFactory.class.getName(), Nio2ServiceFactory.class.getName());
+                } else {
+                    System.err.println("provider should be mina or nio2: " + args[i]);
+                    break;
+                }
             } else if (args[i].startsWith("-")) {
                 System.err.println("illegal option: " + args[i]);
                 error = true;
@@ -465,7 +485,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
             }
         }
         if (error) {
-            System.err.println("usage: sshd [-p port]");
+            System.err.println("usage: sshd [-p port] [-io mina|nio2]");
             System.exit(-1);
         }
 
@@ -514,7 +534,13 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
                 return true;
             }
         });
+        sshd.setCommandFactory(new ScpCommandFactory());
+        sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(
+                new SftpSubsystem.Factory()
+        ));
         sshd.start();
+
+        Thread.sleep(Long.MAX_VALUE);
     }
 
 }
