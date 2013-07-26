@@ -26,12 +26,20 @@ This distribution provides a simple demonstration of a SSH
 server that you can launched using the shell scripts in the
 bin folder.  By default, the port used is 8000 and the authentication
 will succeed if the username and password are the same.
+SCP and SFTP support are both enabled in this configuration.
 
 The lib folder contains the sshd-core jar which is the main jar
 and its required dependencies (slf4j-api and mina-core).
+Note that if you're running on JDK 7, mina-core becomes an optional
+dependency as a native IO layer built on top of NIO2 is provided
+and selected by default if available.
+
 The sshd-pam module is an experimental module for leveraging the
 Unix PAM authentication mechanism which is not really usable at the
 moment.
+The sshf-sftp module is an experimental module which provides an
+object model for the SFTP subsystem to ease writing custom SFTP
+servers.
 
 Please send feedback to users@mina.apache.org.
 
