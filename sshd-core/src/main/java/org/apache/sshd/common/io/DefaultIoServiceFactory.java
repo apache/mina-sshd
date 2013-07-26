@@ -57,7 +57,7 @@ public class DefaultIoServiceFactory implements IoServiceFactory {
                 return t;
             }
         }
-        throw new IllegalStateException("Cound not find a valid sshd io provider");
+        throw new IllegalStateException("Could not find a valid sshd io provider");
     }
 
     private static <T> T tryLoad(ServiceLoader<T> loader) {
