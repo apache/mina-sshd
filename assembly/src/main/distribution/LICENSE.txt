@@ -207,7 +207,7 @@
 
 Bouncy Castle
 =============
-Copyright (c) 2000 - 2006 The Legion Of The Bouncy Castle (http://www.bouncycastle.org)
+Copyright (c) 2000 - 2008 The Legion Of The Bouncy Castle (http://www.bouncycastle.org)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in the
@@ -228,7 +228,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 SLF4J
 =============
-Copyright (c) 2004-2008 QOS.ch
+Copyright (c) 2004-2011 QOS.ch
 All rights reserved.
 
 Permission is hereby granted, free  of charge, to any person obtaining
