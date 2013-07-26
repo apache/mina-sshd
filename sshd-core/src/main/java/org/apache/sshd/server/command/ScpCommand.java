@@ -90,6 +90,9 @@ public class ScpCommand implements Command, Runnable, FileSystemAware {
                 }
             } else {
                 path = command.substring(command.indexOf(args[i-1]) + args[i-1].length() + 1);
+                if (path.startsWith("\"") && path.endsWith("\"") || path.startsWith("'") && path.endsWith("'")) {
+                    path = path.substring(1, path.length() - 1);
+                }
                 break;
             }
         }
