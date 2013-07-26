@@ -24,6 +24,7 @@ import java.net.InetSocketAddress;
 import java.util.EnumSet;
 
 import org.apache.mina.core.buffer.IoBuffer;
+import org.apache.mina.core.future.IoFutureListener;
 import org.apache.mina.core.service.IoAcceptor;
 import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IoEventType;
@@ -36,6 +37,8 @@ import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.ChannelOutputStream;
+import org.apache.sshd.common.future.CloseFuture;
+import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.server.session.ServerSession;
 import org.slf4j.Logger;
@@ -207,9 +210,14 @@ public class X11ForwardSupport extends IoHandlerAdapter {
         }
 
         @Override
-        protected synchronized void doClose() {
-            serverSession.close(false);
-            super.doClose();
+        protected synchronized CloseFuture preClose(boolean immediately) {
+            final CloseFuture future = new DefaultCloseFuture(null);
+            serverSession.close(immediately).addListener(new IoFutureListener<org.apache.mina.core.future.CloseFuture>() {
+                public void operationComplete(org.apache.mina.core.future.CloseFuture f) {
+                    future.setClosed();
+                }
+            });
+            return future;
         }
 
         protected synchronized void doWriteData(byte[] data, int off, int len) throws IOException {

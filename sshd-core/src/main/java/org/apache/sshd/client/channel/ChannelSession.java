@@ -26,6 +26,7 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.channel.ChannelPipedInputStream;
 import org.apache.sshd.common.channel.ChannelPipedOutputStream;
+import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.util.Buffer;
 
 /**
@@ -76,12 +77,12 @@ public class ChannelSession extends AbstractClientChannel {
     }
 
     @Override
-    protected void doClose() {
-        super.doClose();
+    protected void postClose() {
         if (streamPumper != null) {
             streamPumper.interrupt();
             streamPumper = null;
         }
+        super.postClose();
     }
 
     protected void pumpInputStream() {

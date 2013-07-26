@@ -83,6 +83,13 @@ public interface ServerFactoryManager extends FactoryManager {
     public static final String AUTH_METHODS = "auth-methods";
 
     /**
+     * Key used to configure the timeout used when receiving a close request
+     * on a channel to wait until the command cleanly exits after setting
+     * an EOF on the input stream. In milliseconds.
+     */
+    public static final String COMMAND_EXIT_TIMEOUT = "command-exit-timeout";
+
+    /**
      * Retrieve the list of named factories for <code>UserAuth<code> objects.
      *
      * @return a list of named <code>UserAuth</code> factories, never <code>null</code>

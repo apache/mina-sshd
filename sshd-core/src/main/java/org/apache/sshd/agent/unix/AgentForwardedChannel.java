@@ -66,9 +66,9 @@ public class AgentForwardedChannel extends AbstractClientChannel implements Runn
     }
 
     @Override
-    protected synchronized void doClose() {
+    protected synchronized void postClose() {
         Socket.close(socket);
-        super.doClose();
+        super.postClose();
     }
 
     protected synchronized void doWriteData(byte[] data, int off, int len) throws IOException {

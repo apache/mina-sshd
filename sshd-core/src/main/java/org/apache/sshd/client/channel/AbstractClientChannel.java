@@ -123,9 +123,9 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     }
 
     @Override
-    protected void doClose() {
-        super.doClose();
+    protected void postClose() {
         IoUtils.closeQuietly(invertedIn, invertedOut, invertedErr, in, out, err);
+        super.postClose();
     }
 
     public int waitFor(int mask, long timeout) {
@@ -207,7 +207,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         } catch (Exception e) {
             this.openFuture.setException(e);
             this.closeFuture.setClosed();
-            this.doClose();
+            this.postClose();
         } finally {
             notifyStateChanged();
         }
@@ -222,7 +222,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         this.openFailureMsg = msg;
         this.openFuture.setException(new SshException(msg));
         this.closeFuture.setClosed();
-        this.doClose();
+        this.postClose();
         notifyStateChanged();
     }
 

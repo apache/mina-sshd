@@ -25,8 +25,10 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.SshAgentFactory;
@@ -37,6 +39,7 @@ import org.apache.sshd.common.PtyMode;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.future.CloseFuture;
+import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.util.Buffer;
@@ -48,6 +51,7 @@ import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
 import org.apache.sshd.common.file.FileSystemAware;
 import org.apache.sshd.common.file.FileSystemFactory;
+import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.SessionAware;
 import org.apache.sshd.server.Signal;
 import org.apache.sshd.server.SignalListener;
@@ -60,6 +64,8 @@ import org.apache.sshd.server.x11.X11ForwardSupport;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ChannelSession extends AbstractServerChannel {
+
+    public static final long DEFAULT_COMMAND_EXIT_TIMEOUT = 5000;
 
     public static class Factory implements NamedFactory<Channel> {
 
@@ -171,19 +177,52 @@ public class ChannelSession extends AbstractServerChannel {
     protected ChannelDataReceiver receiver;
     protected StandardEnvironment env = new StandardEnvironment();
     protected Buffer tempBuffer;
+    protected final CloseFuture commandExitFuture = new DefaultCloseFuture(lock);
 
     public ChannelSession() {
     }
 
     @Override
-    protected void doClose() {
+    protected CloseFuture preClose(boolean immediately) {
+        if (immediately) {
+            commandExitFuture.setClosed();
+        } else if (!commandExitFuture.isClosed()) {
+            log.debug("Wait 5s for shell to exit cleanly");
+            IoUtils.closeQuietly(receiver);
+            final TimerTask task = new TimerTask() {
+                @Override
+                public void run() {
+                    commandExitFuture.setClosed();
+                }
+            };
+            long timeout = DEFAULT_COMMAND_EXIT_TIMEOUT;
+            String val = getSession().getFactoryManager().getProperties().get(ServerFactoryManager.COMMAND_EXIT_TIMEOUT);
+            if (val != null) {
+                try {
+                   timeout = Long.parseLong(val);
+                } catch (NumberFormatException e) {
+                    // Ignore
+                }
+            }
+            getSession().getFactoryManager().getScheduledExecutorService().schedule(task, timeout, TimeUnit.MILLISECONDS);
+            commandExitFuture.addListener(new SshFutureListener<CloseFuture>() {
+                public void operationComplete(CloseFuture future) {
+                    task.cancel();
+                }
+            });
+        }
+        return commandExitFuture;
+    }
+
+    @Override
+    protected void postClose() {
         if (command != null) {
             command.destroy();
             command = null;
         }
         remoteWindow.notifyClosed();
         IoUtils.closeQuietly(out, err, receiver);
-        super.doClose();
+        super.postClose();
     }
 
     @Override
@@ -568,9 +607,9 @@ public class ChannelSession extends AbstractServerChannel {
         if (!closing.get()) {
             sendEof();
             sendExitStatus(exitValue);
-            // TODO: We should wait for all streams to be consumed before closing the channel
             close(false);
         }
+        commandExitFuture.setClosed();
     }
 
 }

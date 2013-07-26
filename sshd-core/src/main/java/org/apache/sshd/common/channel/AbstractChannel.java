@@ -29,6 +29,9 @@ import org.apache.sshd.common.Session;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultCloseFuture;
+import org.apache.sshd.common.future.DefaultSshFuture;
+import org.apache.sshd.common.future.SshFuture;
+import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.BufferUtils;
 import org.slf4j.Logger;
@@ -93,36 +96,43 @@ public abstract class AbstractChannel implements Channel {
     }
 
     public CloseFuture close(boolean immediately) {
-        if (closeFuture.isClosed()) {
-            return closeFuture;
-        }
         if (closing.compareAndSet(false, true)) {
-            try {
-                if (immediately) {
-                    log.debug("Closing channel {} immediately", id);
-                    doClose();
-                    closeFuture.setClosed();
-                    notifyStateChanged();
-                    session.unregisterChannel(this);
-                } else {
-                    log.debug("Closing channel {} gracefully", id);
-                    doClose();
-                    log.debug("Send SSH_MSG_CHANNEL_CLOSE on channel {}", id);
-                    Buffer buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_CLOSE, 0);
-                    buffer.putInt(recipient);
-                    session.writePacket(buffer).addListener(new IoFutureListener<WriteFuture>() {
-                        public void operationComplete(WriteFuture future) {
-                            if (closedByOtherSide) {
-                                log.debug("Message SSH_MSG_CHANNEL_CLOSE written on channel {}", id);
-                                closeFuture.setClosed();
-                                notifyStateChanged();
-                            }
+            if (immediately) {
+                log.debug("Closing channel {} immediately", id);
+                preClose(immediately).addListener(new SshFutureListener<CloseFuture>() {
+                    public void operationComplete(CloseFuture future) {
+                        postClose();
+                        closeFuture.setClosed();
+                        notifyStateChanged();
+                        session.unregisterChannel(AbstractChannel.this);
+                    }
+                });
+            } else {
+                log.debug("Closing channel {} gracefully", id);
+                preClose(immediately).addListener(new SshFutureListener<CloseFuture>() {
+                    public void operationComplete(CloseFuture future) {
+                        log.debug("Send SSH_MSG_CHANNEL_CLOSE on channel {}", id);
+                        Buffer buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_CLOSE, 0);
+                        buffer.putInt(recipient);
+                        try {
+                            session.writePacket(buffer).addListener(new IoFutureListener<WriteFuture>() {
+                                public void operationComplete(WriteFuture future) {
+                                    if (closedByOtherSide) {
+                                        log.debug("Message SSH_MSG_CHANNEL_CLOSE written on channel {}", id);
+                                        postClose();
+                                        closeFuture.setClosed();
+                                        notifyStateChanged();
+                                    }
+                                }
+                            });
+                        } catch (IOException e) {
+                            log.debug("Exception caught while writing SSH_MSG_CHANNEL_CLOSE packet on channel " + id, e);
+                            postClose();
+                            closeFuture.setClosed();
+                            notifyStateChanged();
                         }
-                    });
-                }
-            } catch (IOException e) {
-                session.exceptionCaught(e);
-                closeFuture.setClosed();
+                    }
+                });
             }
         }
         return closeFuture;
@@ -134,12 +144,19 @@ public abstract class AbstractChannel implements Channel {
         if (closedByOtherSide) {
             close(false);
         } else {
-            close(false).setClosed();
+            postClose();
+            closeFuture.setClosed();
             notifyStateChanged();
         }
     }
 
-    protected void doClose() {
+    protected CloseFuture preClose(boolean immediately) {
+        CloseFuture future = new DefaultCloseFuture(lock);
+        future.setClosed();
+        return future;
+    }
+
+    protected void postClose() {
     }
 
     protected void writePacket(Buffer buffer) throws IOException {

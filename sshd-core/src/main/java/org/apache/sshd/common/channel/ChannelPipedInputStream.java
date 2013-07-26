@@ -40,6 +40,7 @@ public class ChannelPipedInputStream extends InputStream {
     private final Buffer buffer = new Buffer();
     private final byte[] b = new byte[1];
     private boolean closed;
+    private boolean eofSent;
 
     private final Lock lock = new ReentrantLock();
     private final Condition dataAvailable = lock.newCondition();
@@ -96,13 +97,14 @@ public class ChannelPipedInputStream extends InputStream {
         lock.lock();
         try {
             for (;;) {
-                if (closed && !writerClosed) {
+                if (closed && writerClosed && eofSent || closed && !writerClosed) {
                     throw new IOException("Pipe closed");
                 }
                 if (buffer.available() > 0) {
                     break;
                 }
                 if (writerClosed) {
+                    eofSent = true;
                     return -1; // no more data to read
                 }
                 try {

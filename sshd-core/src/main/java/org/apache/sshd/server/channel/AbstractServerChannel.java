@@ -66,6 +66,7 @@ public abstract class AbstractServerChannel extends AbstractChannel {
             buffer.putByte((byte) 0);
             buffer.putInt(v);
             writePacket(buffer);
+            notifyStateChanged();
         }
     }
 
