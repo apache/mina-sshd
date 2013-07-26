@@ -277,6 +277,9 @@ public class ChannelSession extends AbstractServerChannel {
         if ("signal".equals(type)) {
             return handleSignal(buffer);
         }
+        if ("break".equals(type)) {
+            return handleBreak(buffer);
+        }
         if ("shell".equals(type)) {
             if (this.type == null && handleShell(buffer)) {
                 this.type = type;
@@ -392,6 +395,20 @@ public class ChannelSession extends AbstractServerChannel {
             log.warn("Unknown signal received: " + name);
         }
 
+        if (wantReply) {
+            buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS, 0);
+            buffer.putInt(recipient);
+            writePacket(buffer);
+        }
+        return true;
+    }
+
+    protected boolean handleBreak(Buffer buffer) throws IOException {
+        boolean wantReply = buffer.getBoolean();
+        String name = buffer.getString();
+        log.debug("Break received on channel {}: {}", id, name);
+
+        getEnvironment().signal(Signal.INT);
 
         if (wantReply) {
             buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS, 0);
