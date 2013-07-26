@@ -18,6 +18,8 @@
  */
 package org.apache.sshd.common.io.nio2;
 
+import java.nio.channels.AsynchronousChannel;
+
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoConnector;
@@ -27,6 +29,11 @@ import org.apache.sshd.common.io.IoServiceFactory;
 /**
  */
 public class Nio2ServiceFactory implements IoServiceFactory {
+
+    public Nio2ServiceFactory() {
+        // Make sure NIO2 is available
+        Class clazz = AsynchronousChannel.class;
+    }
 
     public IoConnector createConnector(FactoryManager manager, IoHandler handler) {
         return new Nio2Connector(manager, handler);
