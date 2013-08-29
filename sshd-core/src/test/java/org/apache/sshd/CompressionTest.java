@@ -121,18 +121,21 @@ public class CompressionTest {
         });
         s.connect();
         com.jcraft.jsch.Channel c = s.openChannel("shell");
-        c.connect();
-        OutputStream os = c.getOutputStream();
-        InputStream is = c.getInputStream();
-        for (int i = 0; i < 10; i++) {
-            os.write("this is my command\n".getBytes());
-            os.flush();
-            byte[] data = new byte[512];
-            int len = is.read(data);
-            String str = new String(data, 0, len);
-            assertEquals("this is my command\n", str);
+        try {
+            c.connect();
+            OutputStream os = c.getOutputStream();
+            InputStream is = c.getInputStream();
+            for (int i = 0; i < 10; i++) {
+                os.write("this is my command\n".getBytes());
+                os.flush();
+                byte[] data = new byte[512];
+                int len = is.read(data);
+                String str = new String(data, 0, len);
+                assertEquals("this is my command\n", str);
+            }
+        } finally {
+            c.disconnect();
+            s.disconnect();
         }
-        c.disconnect();
-        s.disconnect();
     }
 }

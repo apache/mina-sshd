@@ -18,17 +18,64 @@
  */
 package org.apache.sshd;
 
+import org.apache.sshd.util.BogusPasswordAuthenticator;
+import org.apache.sshd.util.EchoShellFactory;
+import org.apache.sshd.util.Utils;
 import org.junit.Test;
+
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Kohsuke Kawaguchi
+ * @author Michael Heemskerk
  */
 public class SshServerTest {
+
     @Test
     public void stopMethodShouldBeIdempotent() throws Exception {
         SshServer sshd = new SshServer();
         sshd.stop();
         sshd.stop();
         sshd.stop();
+    }
+
+    @Test
+    public void testExecutorShutdownFalse() throws Exception {
+        ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+
+        SshServer sshd = createTestServer();
+        sshd.setScheduledExecutorService(executorService);
+
+        sshd.start();
+        sshd.stop();
+
+        assertFalse(executorService.isShutdown());
+    }
+
+    @Test
+    public void testExecutorShutdownTrue() throws Exception {
+        ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+
+        SshServer sshd = createTestServer();
+        sshd.setScheduledExecutorService(executorService, true);
+
+        sshd.start();
+        sshd.stop();
+
+        assertTrue(executorService.isShutdown());
+    }
+
+
+    private SshServer createTestServer() {
+        SshServer sshd = SshServer.setUpDefaultServer();
+        sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
+        sshd.setShellFactory(new EchoShellFactory());
+        sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
+
+        return sshd;
     }
 }
