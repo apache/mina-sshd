@@ -142,7 +142,7 @@ public abstract class AbstractSession implements Session {
     protected final Map<AttributeKey<?>, Object> attributes = new ConcurrentHashMap<AttributeKey<?>, Object>();
     protected String username;
 
-    private State state = State.ReceiveKexInit;
+    private volatile State state = State.ReceiveKexInit;
 
     /**
      * Create a new session.

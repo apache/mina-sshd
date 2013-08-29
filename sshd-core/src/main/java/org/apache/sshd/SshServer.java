@@ -32,6 +32,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.AbstractFactoryManager;
 import org.apache.sshd.common.Channel;
@@ -98,6 +100,7 @@ import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.session.SessionFactory;
 import org.apache.sshd.server.sftp.SftpSubsystem;
+import org.apache.sshd.server.session.ServerSessionTimeoutListener;
 import org.apache.sshd.server.shell.ProcessShellFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -140,6 +143,8 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     protected PasswordAuthenticator passwordAuthenticator;
     protected PublickeyAuthenticator publickeyAuthenticator;
     protected GSSAuthenticator gssAuthenticator;
+    protected ServerSessionTimeoutListener sessionTimeoutListener;
+    protected ScheduledFuture<?> timeoutListenerFuture;
 
     public SshServer() {
     }
@@ -300,6 +305,13 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         sessionFactory.setServer(this);
         acceptor = createAcceptor();
 
+        // set up the the session timeout listener and schedule it
+        sessionTimeoutListener = createSessionTimeoutListener();
+        sessionFactory.addListener(sessionTimeoutListener);
+
+        timeoutListenerFuture = getScheduledExecutorService()
+                .scheduleAtFixedRate(sessionTimeoutListener, 1, 1, TimeUnit.SECONDS);
+
         if (host != null) {
             String[] hosts = host.split(",");
             LinkedList<InetSocketAddress> addresses = new LinkedList<InetSocketAddress>();
@@ -344,6 +356,9 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         for (AbstractSession session : sessions) {
             session.close(immediately).addListener(listener);
         }
+
+        stopSessionTimeoutListener();
+
         if (!immediately) {
             latch.await();
         }
@@ -377,6 +392,25 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
 
     protected SessionFactory createSessionFactory() {
         return new SessionFactory();
+    }
+
+    protected ServerSessionTimeoutListener createSessionTimeoutListener() {
+        return new ServerSessionTimeoutListener();
+    }
+
+    protected void stopSessionTimeoutListener() {
+        // cancel the timeout monitoring task
+        if (timeoutListenerFuture != null) {
+            timeoutListenerFuture.cancel(true);
+            timeoutListenerFuture = null;
+        }
+
+        // remove the sessionTimeoutListener completely; should the SSH server be restarted, a new one
+        // will be created.
+        if (sessionFactory != null && sessionTimeoutListener != null) {
+            sessionFactory.removeListener(sessionTimeoutListener);
+        }
+        sessionTimeoutListener = null;
     }
 
     public static SshServer setUpDefaultServer() {
