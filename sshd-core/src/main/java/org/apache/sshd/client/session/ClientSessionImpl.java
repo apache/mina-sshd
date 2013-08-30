@@ -323,7 +323,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
                 switch (getState()) {
                     case ReceiveKexInit:
                         if (cmd != SshConstants.Message.SSH_MSG_KEXINIT) {
-                            log.error("Ignoring command " + cmd + " while waiting for " + SshConstants.Message.SSH_MSG_KEXINIT);
+                            log.error("Ignoring command {} while waiting for {}", cmd, SshConstants.Message.SSH_MSG_KEXINIT);
                             break;
                         }
                         log.info("Received SSH_MSG_KEXINIT");
@@ -369,8 +369,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
                         }
                         if (cmd == SshConstants.Message.SSH_MSG_USERAUTH_BANNER) {
                             String welcome = buffer.getString();
-                            String lang = buffer.getString();
-                            log.debug("Welcome banner: " + welcome);
+                            log.debug("Welcome banner: {}", welcome);
                             UserInteraction ui = getClientFactoryManager().getUserInteraction();
                             if (ui != null) {
                                 ui.welcome(welcome);

@@ -24,9 +24,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.SshServer;
 import org.apache.sshd.agent.common.AgentForwardSupport;
@@ -39,8 +37,8 @@ import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
-import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.io.IoSession;
+import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.server.ServerFactoryManager;
@@ -62,12 +60,13 @@ import org.apache.sshd.server.x11.X11ForwardSupport;
  */
 public class ServerSession extends AbstractSession {
 
-    private Future authTimerFuture;
-    private Future idleTimerFuture;
+    private long authTimeoutTimestamp = 0L;
+    private long idleTimeoutTimestamp = 0L;
+    private volatile State state = State.ReceiveKexInit;
     private int maxAuthRequests = 20;
     private int nbAuthRequests;
-    private int authTimeout = 10 * 60 * 1000; // 10 minutes in milliseconds
-    private int idleTimeout = 10 * 60 * 1000; // 10 minutes in milliseconds
+    private int authTimeoutMs = 10 * 60 * 1000; // 10 minutes in milliseconds
+    private int idleTimeoutMs = 10 * 60 * 1000; // 10 minutes in milliseconds
     private boolean allowMoreSessions = true;
     private final AgentForwardSupport agentForward;
     private final X11ForwardSupport x11Forward;
@@ -82,8 +81,8 @@ public class ServerSession extends AbstractSession {
     public ServerSession(ServerFactoryManager server, IoSession ioSession) throws Exception {
         super(server, ioSession);
         maxAuthRequests = getIntProperty(ServerFactoryManager.MAX_AUTH_REQUESTS, maxAuthRequests);
-        authTimeout = getIntProperty(ServerFactoryManager.AUTH_TIMEOUT, authTimeout);
-        idleTimeout = getIntProperty(ServerFactoryManager.IDLE_TIMEOUT, idleTimeout);
+        authTimeoutMs = getIntProperty(ServerFactoryManager.AUTH_TIMEOUT, authTimeoutMs);
+        idleTimeoutMs = getIntProperty(ServerFactoryManager.IDLE_TIMEOUT, idleTimeoutMs);
         agentForward = new AgentForwardSupport(this);
         x11Forward = new X11ForwardSupport(this);
         log.info("Session created from {}", ioSession.getRemoteAddress());
@@ -93,8 +92,6 @@ public class ServerSession extends AbstractSession {
 
     @Override
     public CloseFuture close(boolean immediately) {
-        unscheduleAuthTimer();
-        unscheduleIdleTimer();
         agentForward.close();
         x11Forward.close();
         return super.close(immediately);
@@ -124,11 +121,11 @@ public class ServerSession extends AbstractSession {
     public IoWriteFuture writePacket(Buffer buffer) throws IOException {
         boolean rescheduleIdleTimer = getState() == State.Running;
         if (rescheduleIdleTimer) {
-            unscheduleIdleTimer();
+            resetIdleTimeout();
         }
         IoWriteFuture future = super.writePacket(buffer);
         if (rescheduleIdleTimer) {
-            scheduleIdleTimer();
+            resetIdleTimeout();
         }
         return future;
     }
@@ -187,7 +184,7 @@ public class ServerSession extends AbstractSession {
                         log.debug("Received SSH_MSG_NEWKEYS");
                         receiveNewKeys(true);
                         setState(State.WaitForAuth);
-                        scheduleAuthTimer();
+                        resetAuthTimeout();
                         break;
                     case WaitForAuth:
                         if (cmd != SshConstants.Message.SSH_MSG_SERVICE_REQUEST) {
@@ -212,9 +209,8 @@ public class ServerSession extends AbstractSession {
                         userAuth(buffer, cmd);
                         break;
                     case Running:
-                        unscheduleIdleTimer();
                         running(cmd, buffer);
-                        scheduleIdleTimer();
+                        resetIdleTimeout();
                         break;
                     default:
                         throw new IllegalStateException("Unsupported state: " + getState());
@@ -278,64 +274,31 @@ public class ServerSession extends AbstractSession {
         }
     }
 
-    private void scheduleAuthTimer() {
-        Runnable authTimerTask = new Runnable() {
-            public void run() {
-                try {
-                    processAuthTimer();
-                } catch (IOException e) {
-                    // Ignore
-                }
+    /**
+     * Checks whether the server session has timed out (both auth and idle timeouts are checked). If the session has
+     * timed out, a DISCONNECT message will be sent to the client.
+     *
+     * @throws IOException
+     */
+    protected void checkForTimeouts() throws IOException {
+        if (state != State.Closed) {
+            long now = System.currentTimeMillis();
+            if (!authed && authTimeoutTimestamp > 0 && now > authTimeoutTimestamp) {
+                disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "User authentication has timed out after " + authTimeoutMs + " ms.");
             }
-        };
-        authTimerFuture = getScheduledExecutorService().schedule(authTimerTask, authTimeout, TimeUnit.MILLISECONDS);
-    }
 
-    private void unscheduleAuthTimer() {
-        if (authTimerFuture != null) {
-            authTimerFuture.cancel(false);
-            authTimerFuture = null;
-        }
-    }
-
-    private void scheduleIdleTimer() {
-        if (idleTimeout < 1) {
-            // A timeout less than one means there is no timeout.
-            return;
-        }
-        synchronized (this) {
-            unscheduleIdleTimer();
-            Runnable idleTimerTask = new Runnable() {
-                public void run() {
-                    try {
-                        processIdleTimer();
-                    } catch (IOException e) {
-                        // Ignore
-                    }
-                }
-            };
-            idleTimerFuture = getScheduledExecutorService().schedule(idleTimerTask, idleTimeout, TimeUnit.MILLISECONDS);
-        }
-    }
-
-    private void unscheduleIdleTimer() {
-        synchronized (this) {
-            if (idleTimerFuture != null) {
-                idleTimerFuture.cancel(false);
-                idleTimerFuture = null;
+            if (idleTimeoutTimestamp > 0 && now > idleTimeoutTimestamp) {
+                disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "User session has timed out after " + idleTimeoutMs + " ms.");
             }
         }
     }
 
-    private void processAuthTimer() throws IOException {
-        if (!authed) {
-            disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
-                       "User authentication has timed out");
-        }
+    private void resetAuthTimeout() {
+        this.authTimeoutTimestamp = System.currentTimeMillis() + authTimeoutMs;
     }
 
-    private void processIdleTimer() throws IOException {
-        disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "User session has timed out after being idled for " + idleTimeout + "ms.");
+    private void resetIdleTimeout() {
+        this.idleTimeoutTimestamp = System.currentTimeMillis() + idleTimeoutMs;
     }
 
     private void sendServerIdentification() {
@@ -498,9 +461,8 @@ public class ServerSession extends AbstractSession {
                     buffer = createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_SUCCESS, 0);
                     writePacket(buffer);
                     this.authed = true;
-                    unscheduleAuthTimer();
                     setState(State.Running);
-                    scheduleIdleTimer();
+                    resetIdleTimeout();
                     log.info("Session {}@{} authenticated", getUsername(), getIoSession().getRemoteAddress());
 
                 } else {
