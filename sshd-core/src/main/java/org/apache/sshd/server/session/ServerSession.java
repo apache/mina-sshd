@@ -499,7 +499,7 @@ public class ServerSession extends AbstractSession {
                     }
                 }
                 buffer.putString(sb.toString());
-                buffer.putByte((byte) 1);
+                buffer.putByte((byte) 0);
                 writePacket(buffer);
 
                 if (currentAuth != null) {
