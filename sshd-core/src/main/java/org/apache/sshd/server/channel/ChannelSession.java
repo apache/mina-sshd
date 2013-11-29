@@ -313,6 +313,12 @@ public class ChannelSession extends AbstractServerChannel {
         if (type != null && type.endsWith("@putty.projects.tartarus.org")) {
             // Ignore but accept, more doc at
             // http://tartarus.org/~simon/putty-snapshots/htmldoc/AppendixF.html
+            boolean wantReply = buffer.getBoolean();
+            if (wantReply) {
+                buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_FAILURE, 0);
+                buffer.putInt(recipient);
+                writePacket(buffer);
+            }
             return true;
         }
         return false;
