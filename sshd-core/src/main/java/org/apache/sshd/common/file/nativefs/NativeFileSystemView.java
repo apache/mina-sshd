@@ -114,7 +114,9 @@ public class NativeFileSystemView implements FileSystemView {
 	}
 
     static boolean isJava7;
+    static boolean isWindows;
     static {
+        // Check java 7
         boolean j7 = false;
         try {
             ClassLoader.getSystemClassLoader().loadClass("java.nio.file.Files");
@@ -123,10 +125,18 @@ public class NativeFileSystemView implements FileSystemView {
             // Ignore
         }
         isJava7 = j7;
+        // Check windows
+        boolean win = false;
+        try {
+            win = System.getProperty("os.name").toLowerCase().contains("win");
+        } catch (Throwable t) {
+            // Ignore
+        }
+        isWindows = win;
     }
 
     public NativeSshFile createNativeSshFile(final String fileName2, final File fileObj, final String userName2) {
-        if (isJava7) {
+        if (isJava7 && !isWindows) {
             return new NativeSshFileNio(this, fileName2, fileObj, userName2);
         } else {
 		    return new NativeSshFile(this, fileName2, fileObj, userName2);
