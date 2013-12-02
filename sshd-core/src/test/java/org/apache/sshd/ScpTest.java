@@ -333,6 +333,11 @@ public class ScpTest {
 
     @Test
     public void testScpNativePreserveAttributes() throws Exception {
+        // Ignore this test if running a Windows system
+        if (System.getProperty("os.name").toLowerCase().contains("win")) {
+            return;
+        }
+
         SshClient client = SshClient.setUpDefaultClient();
         client.start();
         ClientSession session = client.connect("localhost", port).await().getSession();
