@@ -72,6 +72,10 @@ public class NativeFileSystemView implements FileSystemView {
         LOG.debug("Native filesystem view created for user \"{}\" with root \"{}\"", userName, currDir);
     }
 
+    public String getUserName() {
+        return userName;
+    }
+
     /**
      * Get file object.
      */

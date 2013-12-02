@@ -87,6 +87,10 @@ public class NativeSshFile implements SshFile {
         this.userName = userName;
     }
 
+    public File getNativeFile() {
+        return file;
+    }
+
     /**
      * Get full name.
      */
