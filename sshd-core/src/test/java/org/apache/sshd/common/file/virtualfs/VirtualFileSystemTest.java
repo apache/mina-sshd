@@ -44,11 +44,11 @@ public class VirtualFileSystemTest {
 
         SshFile file = view.getFile("foo");
         String physicalName = ((NativeSshFile) file).getNativeFile().getAbsolutePath();
-        assertEquals(homeDir + "/foo", physicalName);
+        assertEquals(homeDir + File.separator + "foo", physicalName);
 
         file = view.getFile(view.getFile("foo"), "../bar");
         physicalName = ((NativeSshFile) file).getNativeFile().getAbsolutePath();
-        assertEquals(homeDir + "/bar", physicalName);
+        assertEquals(homeDir + File.separator + "bar", physicalName);
 
         file = view.getFile("../bar");
         physicalName = ((NativeSshFile) file).getNativeFile().getAbsolutePath();
@@ -64,15 +64,15 @@ public class VirtualFileSystemTest {
 
         SshFile file = view.getFile("foo");
         String physicalName = ((NativeSshFile) file).getNativeFile().getAbsolutePath();
-        assertEquals(homeDir + "/foo", physicalName);
+        assertEquals(homeDir + File.separator + "foo", physicalName);
 
         file = view.getFile(view.getFile("foo"), "../bar");
         physicalName = ((NativeSshFile) file).getNativeFile().getAbsolutePath();
-        assertEquals(homeDir + "/bar", physicalName);
+        assertEquals(homeDir + File.separator + "bar", physicalName);
 
         file = view.getFile("../bar");
         physicalName = ((NativeSshFile) file).getNativeFile().getAbsolutePath();
-        assertEquals(homeDir + "/bar", physicalName);
+        assertEquals(homeDir + File.separator + "bar", physicalName);
     }
 
     static class TestSession extends AbstractSession {
