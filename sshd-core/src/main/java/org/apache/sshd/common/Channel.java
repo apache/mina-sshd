@@ -34,6 +34,8 @@ public interface Channel {
 
     int getId();
 
+    int getRecipient();
+
     Window getLocalWindow();
 
     Window getRemoteWindow();
@@ -44,7 +46,7 @@ public interface Channel {
 
     void handleWindowAdjust(Buffer buffer) throws IOException;
 
-    void handleRequest(Buffer buffer) throws IOException;
+    boolean handleRequest(String type, Buffer buffer) throws IOException;
 
     void handleData(Buffer buffer) throws IOException;
 

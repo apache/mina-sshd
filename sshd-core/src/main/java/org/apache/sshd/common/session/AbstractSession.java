@@ -1079,7 +1079,16 @@ public abstract class AbstractSession implements Session {
      */
     protected void channelRequest(Buffer buffer) throws IOException {
         Channel channel = getChannel(buffer);
-        channel.handleRequest(buffer);
+        String type = buffer.getString();
+        boolean wantReply = buffer.getBoolean();
+        boolean success = channel.handleRequest(type, buffer);
+        if (wantReply) {
+            Buffer replyBuffer = createBuffer(
+                    success ? SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS
+                            : SshConstants.Message.SSH_MSG_CHANNEL_FAILURE, 0);
+            replyBuffer.putInt(channel.getRecipient());
+            writePacket(replyBuffer);
+        }
     }
 
     /**

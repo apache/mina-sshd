@@ -137,13 +137,10 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
         throw new UnsupportedOperationException("AgentForward channel does not support extended data");
     }
 
-    public void handleRequest(Buffer buffer) throws IOException {
+    public boolean handleRequest(String type, Buffer buffer) throws IOException {
         log.info("Received SSH_MSG_CHANNEL_REQUEST on channel {}", id);
-        String type = buffer.getString();
         log.info("Received channel request: {}", type);
-        buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_FAILURE, 0);
-        buffer.putInt(recipient);
-        writePacket(buffer);
+        return false;
     }
 
     /**

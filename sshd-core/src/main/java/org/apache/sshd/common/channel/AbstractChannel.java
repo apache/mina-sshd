@@ -76,7 +76,7 @@ public abstract class AbstractChannel implements Channel {
         return session;
     }
 
-    public void handleRequest(Buffer buffer) throws IOException {
+    public boolean handleRequest(String type, Buffer buffer) throws IOException {
         throw new IllegalStateException();
     }
 

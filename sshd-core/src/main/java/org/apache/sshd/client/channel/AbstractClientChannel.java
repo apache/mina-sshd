@@ -250,19 +250,19 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         localWindow.consumeAndCheck(len);
     }
 
-    public void handleRequest(Buffer buffer) throws IOException {
+    public boolean handleRequest(String req, Buffer buffer) throws IOException {
         log.info("Received SSH_MSG_CHANNEL_REQUEST on channel {}", id);
-        String req = buffer.getString();
         if ("exit-status".equals(req)) {
-            buffer.getBoolean();
             exitStatus = buffer.getInt();
             notifyStateChanged();
+            return true;
         } else if ("exit-signal".equals(req)) {
-            buffer.getBoolean();
             exitSignal = buffer.getString();
             notifyStateChanged();
+            return true;
         }
         // TODO: handle other channel requests
+        return false;
     }
 
     public Integer getExitStatus() {

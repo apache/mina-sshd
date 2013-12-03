@@ -231,17 +231,6 @@ public class ChannelSession extends AbstractServerChannel {
         IoUtils.closeQuietly(receiver);
     }
 
-    public void handleRequest(Buffer buffer) throws IOException {
-        log.debug("Received SSH_MSG_CHANNEL_REQUEST on channel {}", id);
-        String type = buffer.getString();
-        log.debug("Received channel request: {}", type);
-        if (!handleRequest(type, buffer)) {
-            buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_FAILURE, 0);
-            buffer.putInt(recipient);
-            writePacket(buffer);
-        }
-    }
-
     protected void doWriteData(byte[] data, int off, int len) throws IOException {
         // If we're already closing, ignore incoming data
         if (closing.get()) {
@@ -264,7 +253,9 @@ public class ChannelSession extends AbstractServerChannel {
         throw new UnsupportedOperationException("Server channel does not support extended data");
     }
 
-    protected boolean handleRequest(String type, Buffer buffer) throws IOException {
+    public boolean handleRequest(String type, Buffer buffer) throws IOException {
+        log.debug("Received SSH_MSG_CHANNEL_REQUEST on channel {}", id);
+        log.debug("Received channel request: {}", type);
         if ("env".equals(type)) {
             return handleEnv(buffer);
         }
@@ -310,36 +301,18 @@ public class ChannelSession extends AbstractServerChannel {
         if ("x11-req".equals(type)) {
             return handleX11Forwarding(buffer);
         }
-        if (type != null && type.endsWith("@putty.projects.tartarus.org")) {
-            // Ignore but accept, more doc at
-            // http://tartarus.org/~simon/putty-snapshots/htmldoc/AppendixF.html
-            boolean wantReply = buffer.getBoolean();
-            if (wantReply) {
-                buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_FAILURE, 0);
-                buffer.putInt(recipient);
-                writePacket(buffer);
-            }
-            return true;
-        }
         return false;
     }
 
     protected boolean handleEnv(Buffer buffer) throws IOException {
-        boolean wantReply = buffer.getBoolean();
         String name = buffer.getString();
         String value = buffer.getString();
         addEnvVariable(name, value);
         log.debug("env for channel {}: {} = {}", new Object[] { id, name, value });
-        if (wantReply) {
-            buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS, 0);
-            buffer.putInt(recipient);
-            writePacket(buffer);
-        }
         return true;
     }
 
     protected boolean handlePtyReq(Buffer buffer) throws IOException {
-        boolean wantReply = buffer.getBoolean();
         String term = buffer.getString();
         int tColumns = buffer.getInt();
         int tRows = buffer.getInt();
@@ -360,16 +333,10 @@ public class ChannelSession extends AbstractServerChannel {
         addEnvVariable(Environment.ENV_TERM, term);
         addEnvVariable(Environment.ENV_COLUMNS, Integer.toString(tColumns));
         addEnvVariable(Environment.ENV_LINES, Integer.toString(tRows));
-        if (wantReply) {
-            buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS, 0);
-            buffer.putInt(recipient);
-            writePacket(buffer);
-        }
         return true;
     }
 
     protected boolean handleWindowChange(Buffer buffer) throws IOException {
-        boolean wantReply = buffer.getBoolean();
         int tColumns = buffer.getInt();
         int tRows = buffer.getInt();
         int tWidth = buffer.getInt();
@@ -380,17 +347,10 @@ public class ChannelSession extends AbstractServerChannel {
         e.set(Environment.ENV_COLUMNS, Integer.toString(tColumns));
         e.set(Environment.ENV_LINES, Integer.toString(tRows));
         e.signal(Signal.WINCH);
-
-        if (wantReply) {
-            buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS, 0);
-            buffer.putInt(recipient);
-            writePacket(buffer);
-        }
         return true;
     }
 
     protected boolean handleSignal(Buffer buffer) throws IOException {
-        boolean wantReply = buffer.getBoolean();
         String name = buffer.getString();
         log.debug("Signal received on channel {}: {}", id, name);
 
@@ -400,48 +360,28 @@ public class ChannelSession extends AbstractServerChannel {
         } else {
             log.warn("Unknown signal received: " + name);
         }
-
-        if (wantReply) {
-            buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS, 0);
-            buffer.putInt(recipient);
-            writePacket(buffer);
-        }
         return true;
     }
 
     protected boolean handleBreak(Buffer buffer) throws IOException {
-        boolean wantReply = buffer.getBoolean();
         String name = buffer.getString();
         log.debug("Break received on channel {}: {}", id, name);
 
         getEnvironment().signal(Signal.INT);
-
-        if (wantReply) {
-            buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS, 0);
-            buffer.putInt(recipient);
-            writePacket(buffer);
-        }
         return true;
     }
 
     protected boolean handleShell(Buffer buffer) throws IOException {
-        boolean wantReply = buffer.getBoolean();
         if (((ServerSession) session).getServerFactoryManager().getShellFactory() == null) {
             return false;
         }
         command = ((ServerSession) session).getServerFactoryManager().getShellFactory().create();
         prepareCommand();
-        if (wantReply) {
-            buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS, 0);
-            buffer.putInt(recipient);
-            writePacket(buffer);
-        }
         command.start(getEnvironment());
         return true;
     }
 
     protected boolean handleExec(Buffer buffer) throws IOException {
-        boolean wantReply = buffer.getBoolean();
         String commandLine = buffer.getString();
         if (((ServerSession) session).getServerFactoryManager().getCommandFactory() == null) {
             log.warn("Unsupported command: {}", commandLine);
@@ -457,18 +397,12 @@ public class ChannelSession extends AbstractServerChannel {
             return false;
         }
         prepareCommand();
-        if (wantReply) {
-            buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS, 0);
-            buffer.putInt(recipient);
-            writePacket(buffer);
-        }
         // Launch command
         command.start(getEnvironment());
         return true;
     }
 
     protected boolean handleSubsystem(Buffer buffer) throws IOException {
-        boolean wantReply = buffer.getBoolean();
         String subsystem = buffer.getString();
         List<NamedFactory<Command>> factories = ((ServerSession) session).getServerFactoryManager().getSubsystemFactories();
         if (factories == null) {
@@ -481,11 +415,6 @@ public class ChannelSession extends AbstractServerChannel {
             return false;
         }
         prepareCommand();
-        if (wantReply) {
-            buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS, 0);
-            buffer.putInt(recipient);
-            writePacket(buffer);
-        }
         // Launch command
         command.start(getEnvironment());
         return true;
@@ -558,63 +487,32 @@ public class ChannelSession extends AbstractServerChannel {
     }
 
     protected boolean handleAgentForwarding(Buffer buffer) throws IOException {
-        boolean wantReply = buffer.getBoolean();
-
         final ServerSession server = (ServerSession) session;
         final ForwardingFilter filter = server.getServerFactoryManager().getTcpipForwardingFilter();
         final SshAgentFactory factory = server.getServerFactoryManager().getAgentFactory();
         if (factory == null || (filter != null && !filter.canForwardAgent(server))) {
-            if (wantReply) {
-                buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_FAILURE, 0);
-                buffer.putInt(recipient);
-                writePacket(buffer);
-            }
-            return true;
+            return false;
         }
 
         String authSocket = ((ServerSession) session).initAgentForward();
         addEnvVariable(SshAgent.SSH_AUTHSOCKET_ENV_NAME, authSocket);
-
-        if (wantReply) {
-            buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS, 0);
-            buffer.putInt(recipient);
-            writePacket(buffer);
-        }
         return true;
     }
 
     protected boolean handleX11Forwarding(Buffer buffer) throws IOException {
-        boolean wantReply = buffer.getBoolean();
-
         final ServerSession server = (ServerSession) session;
         final ForwardingFilter filter = server.getServerFactoryManager().getTcpipForwardingFilter();
         if (filter == null || !filter.canForwardX11(server)) {
-            if (wantReply) {
-                buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_FAILURE, 0);
-                buffer.putInt(recipient);
-                writePacket(buffer);
-            }
-            return true;
+            return false;
         }
 
         String display = ((ServerSession) session).createX11Display(buffer.getBoolean(), buffer.getString(),
                                                                     buffer.getString(), buffer.getInt());
         if (display == null) {
-            if (wantReply) {
-                buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_FAILURE, 0);
-                buffer.putInt(recipient);
-                writePacket(buffer);
-            }
-            return true;
+            return false;
         }
 
         addEnvVariable(X11ForwardSupport.ENV_DISPLAY, display);
-
-        if (wantReply) {
-            buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS, 0);
-            buffer.putInt(recipient);
-            writePacket(buffer);
-        }
         return true;
     }
 
