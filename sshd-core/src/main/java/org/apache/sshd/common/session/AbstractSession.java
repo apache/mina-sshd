@@ -328,9 +328,9 @@ public abstract class AbstractSession implements Session {
                 try {
                     closing = true;
                     log.debug("Closing session");
-                    Channel[] channelToClose = channels.values().toArray(new Channel[channels.values().size()]);
-                    if (channelToClose.length > 0) {
-                        final AtomicInteger latch = new AtomicInteger(channelToClose.length);
+                    List<Channel> channelToClose = new ArrayList<Channel>(channels.values());
+                    if (channelToClose.size() > 0) {
+                        final AtomicInteger latch = new AtomicInteger(channelToClose.size());
                         for (Channel channel : channelToClose) {
                             log.debug("Closing channel {}", channel.getId());
                             channel.close(immediately).addListener(new SshFutureListener() {
