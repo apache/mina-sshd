@@ -534,7 +534,7 @@ public abstract class AbstractSession implements Session {
                     // need more data
                     break;
                 }
-            // We have received the beinning of the packet
+            // We have received the beginning of the packet
             } else if (decoderState == 1) {
                 // The read position should always be 4 at this point
                 assert decoderBuffer.rpos() == 4;
@@ -556,8 +556,7 @@ public abstract class AbstractSession implements Session {
                         inMac.doFinal(inMacResult, 0);
                         // Check the computed result with the received mac (just after the packet data)
                         if (!BufferUtils.equals(inMacResult, 0, data, decoderLength + 4, macSize)) {
-                            throw new SshException(SshConstants.SSH2_DISCONNECT_MAC_ERROR,
-                                                   "MAC Error");
+                            throw new SshException(SshConstants.SSH2_DISCONNECT_MAC_ERROR, "MAC Error");
                         }
                     }
                     // Increment incoming packet sequence number
