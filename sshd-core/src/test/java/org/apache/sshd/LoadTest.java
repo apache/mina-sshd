@@ -73,6 +73,15 @@ public class LoadTest {
     }
 
     @Test
+    public void testHighLoad() throws Exception {
+        final StringBuilder response = new StringBuilder(1000000);
+        for (int i = 0; i < 100000; i++) {
+            response.append("0123456789");
+        }
+        test(response.toString(), 1, 100);
+    }
+
+    @Test
     public void testBigResponse() throws Exception {
         final StringBuilder response = new StringBuilder(1000000);
         for (int i = 0; i < 100000; i++) {

@@ -142,8 +142,12 @@ public class Nio2Session implements IoSession {
             if (currentWrite.compareAndSet(null, future)) {
                 socket.write(future.buffer, null, new CompletionHandler<Integer, Object>() {
                     public void completed(Integer result, Object attachment) {
-                        future.setWritten();
-                        finishWrite();
+                        if (future.buffer.hasRemaining()) {
+                            socket.write(future.buffer, null, this);
+                        } else {
+                            future.setWritten();
+                            finishWrite();
+                        }
                     }
                     public void failed(Throwable exc, Object attachment) {
                         future.setException(exc);
