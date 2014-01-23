@@ -100,7 +100,7 @@ public class DefaultTcpipForwarder implements TcpipForwarder, IoHandler {
         if (result == null) {
             throw new SshException("Tcpip forwarding request denied by server");
         }
-        int port = result.getInt();
+        int port = remote.getPort() == 0 ? result.getInt() : remote.getPort();
         // TODO: Is it really safe to only store the local address after the request ?
         remoteToLocal.put(port, local);
         return new SshdSocketAddress(remote.getHostName(), port);
