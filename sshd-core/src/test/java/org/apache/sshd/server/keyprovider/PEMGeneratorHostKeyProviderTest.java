@@ -18,12 +18,14 @@
  */
 package org.apache.sshd.server.keyprovider;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
 import java.io.File;
+import java.security.spec.ECGenParameterSpec;
 
-import org.junit.Test;
 import org.apache.sshd.common.KeyPairProvider;
-
-import static org.junit.Assert.*;
+import org.junit.Test;
 
 /**
  * TODO Add javadoc
@@ -78,5 +80,77 @@ public class PEMGeneratorHostKeyProviderTest {
         provider.setPath(path.getPath());
         assertEquals(KeyPairProvider.SSH_RSA, provider.getKeyTypes());
         assertNotNull(provider.loadKey(KeyPairProvider.SSH_RSA));
+    }
+
+    @Test
+    public void testEC_NISTP256() {
+        File path = new File("target/keys");
+        path.mkdirs();
+        path = new File(path, "simple.key");
+        path.delete();
+
+        // Generate
+        PEMGeneratorHostKeyProvider provider = new PEMGeneratorHostKeyProvider();
+        provider.setAlgorithm("EC");
+        provider.setKeySpec(new ECGenParameterSpec("prime256v1"));
+        provider.setPath(path.getPath());
+        assertEquals(KeyPairProvider.ECDSA_SHA2_NISTP256, provider.getKeyTypes());
+        assertNotNull(provider.loadKey(KeyPairProvider.ECDSA_SHA2_NISTP256));
+
+        // Read existing
+        provider = new PEMGeneratorHostKeyProvider();
+        provider.setAlgorithm("EC");
+        provider.setKeySpec(new ECGenParameterSpec("prime256v1"));
+        provider.setPath(path.getPath());
+        assertEquals(KeyPairProvider.ECDSA_SHA2_NISTP256, provider.getKeyTypes());
+        assertNotNull(provider.loadKey(KeyPairProvider.ECDSA_SHA2_NISTP256));
+    }
+
+    @Test
+    public void testEC_NISTP384() {
+        File path = new File("target/keys");
+        path.mkdirs();
+        path = new File(path, "simple.key");
+        path.delete();
+
+        // Generate
+        PEMGeneratorHostKeyProvider provider = new PEMGeneratorHostKeyProvider();
+        provider.setAlgorithm("EC");
+        provider.setKeySpec(new ECGenParameterSpec("P-384"));
+        provider.setPath(path.getPath());
+        assertEquals(KeyPairProvider.ECDSA_SHA2_NISTP384, provider.getKeyTypes());
+        assertNotNull(provider.loadKey(KeyPairProvider.ECDSA_SHA2_NISTP384));
+
+        // Read existing
+        provider = new PEMGeneratorHostKeyProvider();
+        provider.setAlgorithm("EC");
+        provider.setKeySpec(new ECGenParameterSpec("P-384"));
+        provider.setPath(path.getPath());
+        assertEquals(KeyPairProvider.ECDSA_SHA2_NISTP384, provider.getKeyTypes());
+        assertNotNull(provider.loadKey(KeyPairProvider.ECDSA_SHA2_NISTP384));
+    }
+
+    @Test
+    public void testEC_NISTP521() {
+        File path = new File("target/keys");
+        path.mkdirs();
+        path = new File(path, "simple.key");
+        path.delete();
+
+        // Generate
+        PEMGeneratorHostKeyProvider provider = new PEMGeneratorHostKeyProvider();
+        provider.setAlgorithm("EC");
+        provider.setKeySpec(new ECGenParameterSpec("P-521"));
+        provider.setPath(path.getPath());
+        assertEquals(KeyPairProvider.ECDSA_SHA2_NISTP521, provider.getKeyTypes());
+        assertNotNull(provider.loadKey(KeyPairProvider.ECDSA_SHA2_NISTP521));
+
+        // Read existing
+        provider = new PEMGeneratorHostKeyProvider();
+        provider.setAlgorithm("EC");
+        provider.setKeySpec(new ECGenParameterSpec("P-521"));
+        provider.setPath(path.getPath());
+        assertEquals(KeyPairProvider.ECDSA_SHA2_NISTP521, provider.getKeyTypes());
+        assertNotNull(provider.loadKey(KeyPairProvider.ECDSA_SHA2_NISTP521));
     }
 }

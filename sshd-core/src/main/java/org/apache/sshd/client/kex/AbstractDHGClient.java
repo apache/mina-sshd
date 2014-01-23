@@ -19,6 +19,8 @@
 package org.apache.sshd.client.kex;
 
 import java.security.PublicKey;
+import java.security.interfaces.DSAPublicKey;
+import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPublicKey;
 
 import org.apache.sshd.client.session.ClientSessionImpl;
@@ -29,7 +31,8 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.Signature;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.digest.SHA1;
+import org.apache.sshd.common.cipher.ECCurves;
+import org.apache.sshd.common.kex.AbstractDH;
 import org.apache.sshd.common.kex.DH;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.Buffer;
@@ -52,8 +55,8 @@ public abstract class AbstractDHGClient implements KeyExchange {
     private byte[] V_C;
     private byte[] I_S;
     private byte[] I_C;
-    private Digest sha;
-    private DH dh;
+    private Digest hash;
+    private AbstractDH dh;
     private byte[] e;
     private byte[] f;
     private byte[] K;
@@ -69,10 +72,9 @@ public abstract class AbstractDHGClient implements KeyExchange {
         this.V_C = V_C;
         this.I_S = I_S;
         this.I_C = I_C;
-        sha = new SHA1();
-        sha.init();
-        dh = new DH();
-        initDH(dh);
+        dh = getDH();
+        hash =  dh.getHash();
+        hash.init();
         e = dh.getE();
 
         log.info("Send SSH_MSG_KEXDH_INIT");
@@ -81,7 +83,7 @@ public abstract class AbstractDHGClient implements KeyExchange {
         session.writePacket(buffer);
     }
 
-    protected abstract void initDH(DH dh);
+    protected abstract AbstractDH getDH() throws Exception;
 
     public boolean next(Buffer buffer) throws Exception {
         SshConstants.Message cmd = buffer.getCommand();
@@ -100,7 +102,16 @@ public abstract class AbstractDHGClient implements KeyExchange {
 
         buffer = new Buffer(K_S);
         serverKey = buffer.getRawPublicKey();
-        String keyAlg = (serverKey instanceof RSAPublicKey) ? KeyPairProvider.SSH_RSA : KeyPairProvider.SSH_DSS;
+        final String keyAlg;
+        if (serverKey instanceof RSAPublicKey) {
+            keyAlg = KeyPairProvider.SSH_RSA;
+        } else if (serverKey instanceof DSAPublicKey) {
+            keyAlg = KeyPairProvider.SSH_DSS;
+        } else if (serverKey instanceof ECPublicKey) {
+            keyAlg = ECCurves.ECDSA_SHA2_PREFIX + ECCurves.getCurveName(((ECPublicKey) serverKey).getParams());
+        } else {
+            throw new SshException("Unsupported server key type");
+        }
 
         buffer = new Buffer();
         buffer.putString(V_C);
@@ -111,8 +122,8 @@ public abstract class AbstractDHGClient implements KeyExchange {
         buffer.putMPInt(e);
         buffer.putMPInt(f);
         buffer.putMPInt(K);
-        sha.update(buffer.array(), 0, buffer.available());
-        H = sha.digest();
+        hash.update(buffer.array(), 0, buffer.available());
+        H = hash.digest();
 
         Signature verif = NamedFactory.Utils.create(session.getFactoryManager().getSignatureFactories(), keyAlg);
         verif.init(serverKey, null);
@@ -125,7 +136,7 @@ public abstract class AbstractDHGClient implements KeyExchange {
     }
 
     public Digest getHash() {
-        return sha;
+        return hash;
     }
 
     public byte[] getH() {

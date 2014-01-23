@@ -18,7 +18,9 @@
  */
 package org.apache.sshd.util;
 
+import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
+import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 
 import java.io.File;
 import java.net.ServerSocket;
@@ -27,7 +29,8 @@ import java.net.URL;
 
 public class Utils {
 
-    public static FileKeyPairProvider createTestHostKeyProvider() {
+    public static KeyPairProvider createTestHostKeyProvider() {
+//        return new SimpleGeneratorHostKeyProvider(null, "RSA");
         return createTestKeyPairProvider("hostkey.pem");
     }
 

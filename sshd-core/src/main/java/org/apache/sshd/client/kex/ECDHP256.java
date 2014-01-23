@@ -16,34 +16,38 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.signature;
+package org.apache.sshd.client.kex;
 
-import org.apache.sshd.common.KeyPairProvider;
+import org.apache.sshd.common.KeyExchange;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.Signature;
+import org.apache.sshd.common.cipher.ECCurves;
+import org.apache.sshd.common.kex.AbstractDH;
+import org.apache.sshd.common.kex.ECDH;
 
 /**
- * TODO Add javadoc
+ * Elliptic Curve Diffie-Hellman with NIST P-256 curve.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SignatureDSA extends AbstractSignatureDSA {
-    /**
-     * A named factory for DSA signature
-     */
-    public static class Factory implements NamedFactory<Signature> {
+public class ECDHP256 extends AbstractDHGClient {
+
+    public static class Factory implements NamedFactory<KeyExchange> {
 
         public String getName() {
-            return KeyPairProvider.SSH_DSS;
+            return "ecdh-sha2-nistp256";
         }
 
-        public Signature create() {
-            return new SignatureDSA();
+        public KeyExchange create() {
+            return new ECDHP256();
         }
 
     }
 
-    public SignatureDSA() {
-        super("SHA1withDSA");
+    @Override
+    protected AbstractDH getDH() throws Exception {
+        ECDH ecdh = new ECDH();
+        ecdh.setCurveParameters(ECCurves.EllipticCurves.nistp256);
+        return ecdh;
     }
+
 }

@@ -66,13 +66,13 @@ public class AgentTest {
         assertNotNull(keys);
         assertEquals(0, keys.size());
 
-        KeyPair[] k = Utils.createTestHostKeyProvider().loadKeys();
-        client.addIdentity(k[0], "");
+        KeyPair k = Utils.createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
+        client.addIdentity(k, "");
         keys = client.getIdentities();
         assertNotNull(keys);
         assertEquals(1, keys.size());
 
-        client.removeIdentity(k[0].getPublic());
+        client.removeIdentity(k.getPublic());
         keys = client.getIdentities();
         assertNotNull(keys);
         assertEquals(0, keys.size());

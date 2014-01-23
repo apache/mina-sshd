@@ -23,7 +23,9 @@ import java.security.KeyPair;
 import java.security.PublicKey;
 import java.security.interfaces.DSAParams;
 import java.security.interfaces.DSAPublicKey;
+import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPublicKey;
+import java.security.spec.ECParameterSpec;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,6 +33,7 @@ import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.common.Signature;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.signature.SignatureDSA;
+import org.apache.sshd.common.signature.SignatureECDSA;
 import org.apache.sshd.common.signature.SignatureRSA;
 
 /**
@@ -62,10 +65,15 @@ public class AgentImpl implements SshAgent {
         }
         try {
             Signature verif;
-            if (kp.getFirst().getPublic() instanceof RSAPublicKey) {
+            if (kp.getFirst().getPublic() instanceof DSAPublicKey) {
+                verif = new SignatureDSA();
+            } else if (kp.getFirst().getPublic() instanceof ECPublicKey) {
+                ECPublicKey pubKey = (ECPublicKey) kp.getFirst().getPublic();
+                verif = SignatureECDSA.getByCurveSize(pubKey.getParams());
+            } else if (kp.getFirst().getPublic() instanceof RSAPublicKey) {
                 verif = new SignatureRSA();
             } else {
-                verif = new SignatureDSA();
+                throw new SshException("Unsupported key type");
             }
             verif.init(kp.getFirst().getPublic(), kp.getFirst().getPrivate());
             verif.update(data, 0, data.length);
@@ -128,6 +136,16 @@ public class AgentImpl implements SshAgent {
                         && p1.getG().equals(p2.getG())
                         && p1.getP().equals(p2.getP())
                         && p1.getQ().equals(p2.getQ());
+        } else if (k1 instanceof ECPublicKey && k2 instanceof ECPublicKey) {
+            ECPublicKey e1 = (ECPublicKey) k1;
+            ECPublicKey e2 = (ECPublicKey) k2;
+            ECParameterSpec p1 = e1.getParams();
+            ECParameterSpec p2 = e2.getParams();
+            return p1.getCofactor() == p2.getCofactor()
+                        && p1.getOrder().equals(p2.getOrder())
+                        && e1.getW().equals(e2.getW())
+                        && p1.getGenerator().equals(p2.getGenerator())
+                        && p1.getCurve().equals(p2.getCurve());
         } else if (k1 instanceof RSAPublicKey && k2 instanceof RSAPublicKey) {
             RSAPublicKey r1 = (RSAPublicKey) k1;
             RSAPublicKey r2 = (RSAPublicKey) k2;

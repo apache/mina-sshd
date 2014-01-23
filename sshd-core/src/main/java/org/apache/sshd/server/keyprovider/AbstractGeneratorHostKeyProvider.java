@@ -27,6 +27,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.security.spec.AlgorithmParameterSpec;
 
 import org.apache.sshd.common.keyprovider.AbstractKeyPairProvider;
 import org.apache.sshd.common.util.SecurityUtils;
@@ -41,6 +42,7 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
     private String path;
     private String algorithm = "DSA";
     private int keySize;
+    private AlgorithmParameterSpec keySpec;
     private KeyPair keyPair;
 
     protected AbstractGeneratorHostKeyProvider() {
@@ -83,6 +85,14 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
 
     public void setKeySize(int keySize) {
         this.keySize = keySize;
+    }
+
+    public AlgorithmParameterSpec getKeySpec() {
+        return keySpec;
+    }
+
+    public void setKeySpec(AlgorithmParameterSpec keySpec) {
+        this.keySpec = keySpec;
     }
 
     protected abstract KeyPair doReadKeyPair(InputStream is) throws Exception;
@@ -138,7 +148,9 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
     private KeyPair generateKeyPair(String algorithm) {
         try {
             KeyPairGenerator generator = SecurityUtils.getKeyPairGenerator(algorithm);
-            if (keySize != 0) {
+            if (keySpec != null) {
+                generator.initialize(keySpec);
+            } else if (keySize != 0) {
                 generator.initialize(keySize);
             }
             log.info("Generating host key...");

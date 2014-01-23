@@ -20,7 +20,9 @@ package org.apache.sshd.common.keyprovider;
 
 import java.security.KeyPair;
 import java.security.interfaces.DSAKey;
+import java.security.interfaces.ECKey;
 import java.security.interfaces.RSAKey;
+import java.security.spec.ECParameterSpec;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -73,6 +75,21 @@ public abstract class AbstractKeyPairProvider implements KeyPairProvider {
             return SSH_DSS;
         } else if (key instanceof RSAKey) {
             return SSH_RSA;
+        } else if (key instanceof ECKey) {
+            ECKey ecKey = (ECKey) key;
+            ECParameterSpec ecSpec = ecKey.getParams();
+            /*
+             * TODO make this more robust by checking the actual parameters instead of
+             * just the field size.
+             */
+            switch (ecSpec.getCurve().getField().getFieldSize()) {
+            case 256:
+                return ECDSA_SHA2_NISTP256;
+            case 384:
+                return ECDSA_SHA2_NISTP384;
+            case 521:
+                return ECDSA_SHA2_NISTP521;
+            }
         }
         return null;
     }

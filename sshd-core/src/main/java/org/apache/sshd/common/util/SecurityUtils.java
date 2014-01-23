@@ -48,6 +48,19 @@ public class SecurityUtils {
     private static String securityProvider = null;
     private static Boolean registerBouncyCastle;
     private static boolean registrationDone;
+    private static Boolean hasEcc;
+
+    public static boolean hasEcc() {
+        if (hasEcc == null) {
+            try {
+                getKeyPairGenerator("EC");
+                hasEcc = true;
+            } catch (Throwable t) {
+                hasEcc = false;
+            }
+        }
+        return hasEcc;
+    }
 
     public static synchronized void setSecurityProvider(String securityProvider) {
         SecurityUtils.securityProvider = securityProvider;

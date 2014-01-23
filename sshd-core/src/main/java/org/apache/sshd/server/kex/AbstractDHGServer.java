@@ -27,8 +27,7 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.Signature;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.digest.SHA1;
-import org.apache.sshd.common.kex.DH;
+import org.apache.sshd.common.kex.AbstractDH;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.BufferUtils;
@@ -50,8 +49,8 @@ public abstract class AbstractDHGServer implements KeyExchange {
     private byte[] V_C;
     private byte[] I_S;
     private byte[] I_C;
-    private Digest sha;
-    private DH dh;
+    private Digest hash;
+    private AbstractDH dh;
     private byte[] e;
     private byte[] f;
     private byte[] K;
@@ -66,14 +65,13 @@ public abstract class AbstractDHGServer implements KeyExchange {
         this.V_C = V_C;
         this.I_S = I_S;
         this.I_C = I_C;
-        sha = new SHA1();
-        sha.init();
-        dh = new DH();
-        initDH(dh);
+        dh = getDH();
+        hash = dh.getHash();
+        hash.init();
         f = dh.getE();
     }
 
-    protected abstract void initDH(DH dh);
+    protected abstract AbstractDH getDH() throws Exception;
 
     public boolean next(Buffer buffer) throws Exception {
         SshConstants.Message cmd = buffer.getCommand();
@@ -105,8 +103,8 @@ public abstract class AbstractDHGServer implements KeyExchange {
         buffer.putMPInt(e);
         buffer.putMPInt(f);
         buffer.putMPInt(K);
-        sha.update(buffer.array(), 0, buffer.available());
-        H = sha.digest();
+        hash.update(buffer.array(), 0, buffer.available());
+        H = hash.digest();
 
         byte[] sigH;
         buffer.clear();
@@ -135,7 +133,7 @@ public abstract class AbstractDHGServer implements KeyExchange {
     }
 
     public Digest getHash() {
-        return sha;
+        return hash;
     }
 
     public byte[] getH() {

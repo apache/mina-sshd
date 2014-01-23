@@ -20,6 +20,7 @@ package org.apache.sshd.server.kex;
 
 import org.apache.sshd.common.KeyExchange;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.kex.AbstractDH;
 import org.apache.sshd.common.kex.DH;
 import org.apache.sshd.common.kex.DHGroupData;
 
@@ -42,9 +43,12 @@ public class DHG1 extends AbstractDHGServer {
 
     }
 
-    protected void initDH(DH dh) {
+    @Override
+    protected AbstractDH getDH() throws Exception {
+        DH dh = new DH();
         dh.setG(DHGroupData.getG());
         dh.setP(DHGroupData.getP1());
+        return dh;
     }
 
 }

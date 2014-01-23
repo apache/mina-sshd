@@ -79,6 +79,7 @@ import org.apache.sshd.common.random.JceRandom;
 import org.apache.sshd.common.random.SingletonRandomFactory;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.signature.SignatureDSA;
+import org.apache.sshd.common.signature.SignatureECDSA;
 import org.apache.sshd.common.signature.SignatureRSA;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.SecurityUtils;
@@ -97,6 +98,9 @@ import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.ScpCommandFactory;
 import org.apache.sshd.server.kex.DHG1;
 import org.apache.sshd.server.kex.DHG14;
+import org.apache.sshd.server.kex.ECDHP256;
+import org.apache.sshd.server.kex.ECDHP384;
+import org.apache.sshd.server.kex.ECDHP521;
 import org.apache.sshd.server.keyprovider.PEMGeneratorHostKeyProvider;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.server.session.ServerSession;
@@ -418,14 +422,41 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     public static SshServer setUpDefaultServer() {
         SshServer sshd = new SshServer();
         // DHG14 uses 2048 bits key which are not supported by the default JCE provider
+        // EC keys are not supported until OpenJDK 8
         if (SecurityUtils.isBouncyCastleRegistered()) {
             sshd.setKeyExchangeFactories(Arrays.<NamedFactory<KeyExchange>>asList(
+                    new ECDHP256.Factory(),
+                    new ECDHP384.Factory(),
+                    new ECDHP521.Factory(),
                     new DHG14.Factory(),
                     new DHG1.Factory()));
+            sshd.setSignatureFactories(Arrays.<NamedFactory<Signature>>asList(
+                    new SignatureECDSA.NISTP256Factory(),
+                    new SignatureECDSA.NISTP384Factory(),
+                    new SignatureECDSA.NISTP521Factory(),
+                    new SignatureDSA.Factory(),
+                    new SignatureRSA.Factory()));
             sshd.setRandomFactory(new SingletonRandomFactory(new BouncyCastleRandom.Factory()));
+        // EC keys are not supported until OpenJDK 7
+        } else if (SecurityUtils.hasEcc()) {
+            sshd.setKeyExchangeFactories(Arrays.<NamedFactory<KeyExchange>>asList(
+                    new ECDHP256.Factory(),
+                    new ECDHP384.Factory(),
+                    new ECDHP521.Factory(),
+                    new DHG1.Factory()));
+            sshd.setSignatureFactories(Arrays.<NamedFactory<Signature>>asList(
+                    new SignatureECDSA.NISTP256Factory(),
+                    new SignatureECDSA.NISTP384Factory(),
+                    new SignatureECDSA.NISTP521Factory(),
+                    new SignatureDSA.Factory(),
+                    new SignatureRSA.Factory()));
+            sshd.setRandomFactory(new SingletonRandomFactory(new JceRandom.Factory()));
         } else {
             sshd.setKeyExchangeFactories(Arrays.<NamedFactory<KeyExchange>>asList(
                     new DHG1.Factory()));
+            sshd.setSignatureFactories(Arrays.<NamedFactory<Signature>>asList(
+                    new SignatureDSA.Factory(),
+                    new SignatureRSA.Factory()));
             sshd.setRandomFactory(new SingletonRandomFactory(new JceRandom.Factory()));
         }
         setUpDefaultCiphers(sshd);
@@ -446,9 +477,6 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         sshd.setChannelFactories(Arrays.<NamedFactory<Channel>>asList(
                 new ChannelSession.Factory(),
                 new TcpipServerChannel.DirectTcpipFactory()));
-        sshd.setSignatureFactories(Arrays.<NamedFactory<Signature>>asList(
-                new SignatureDSA.Factory(),
-                new SignatureRSA.Factory()));
         sshd.setFileSystemFactory(new NativeFileSystemFactory());
         sshd.setTcpipForwarderFactory(new DefaultTcpipForwarderFactory());
         return sshd;

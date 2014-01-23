@@ -45,9 +45,11 @@ public class DHG1 extends AbstractDHGClient {
 
     }
 
-    protected void initDH(DH dh) {
+    protected DH getDH() throws Exception {
+        DH dh = new DH();
         dh.setG(DHGroupData.getG());
         dh.setP(DHGroupData.getP1());
+        return dh;
     }
 
 }

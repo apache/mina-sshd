@@ -16,34 +16,37 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.signature;
+package org.apache.sshd.common.digest;
 
-import org.apache.sshd.common.KeyPairProvider;
+import org.apache.sshd.common.Digest;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.Signature;
 
 /**
- * TODO Add javadoc
+ * SHA-256 Digest.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SignatureDSA extends AbstractSignatureDSA {
+public class SHA256 extends BaseDigest {
+
     /**
-     * A named factory for DSA signature
+     * Named factory for SHA1 digest
      */
-    public static class Factory implements NamedFactory<Signature> {
+    public static class Factory implements NamedFactory<Digest> {
 
         public String getName() {
-            return KeyPairProvider.SSH_DSS;
+            return "sha256";
         }
 
-        public Signature create() {
-            return new SignatureDSA();
+        public Digest create() {
+            return new SHA256();
         }
-
     }
 
-    public SignatureDSA() {
-        super("SHA1withDSA");
+    /**
+     * Create a new instance of a SHA-256 digest
+     */
+    public SHA256() {
+        super("SHA-256", 32);
     }
+
 }

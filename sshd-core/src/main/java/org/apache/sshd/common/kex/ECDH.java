@@ -18,86 +18,72 @@
  */
 package org.apache.sshd.common.kex;
 
-import java.math.BigInteger;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.PublicKey;
+import java.security.interfaces.ECPublicKey;
+import java.security.spec.ECParameterSpec;
+import java.security.spec.ECPoint;
+import java.security.spec.ECPublicKeySpec;
 
 import javax.crypto.KeyAgreement;
-import javax.crypto.spec.DHParameterSpec;
-import javax.crypto.spec.DHPublicKeySpec;
 
 import org.apache.sshd.common.Digest;
-import org.apache.sshd.common.digest.SHA1;
+import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.util.SecurityUtils;
 
 /**
- * Diffie-Hellman key generator.
+ * Elliptic Curve Diffie-Hellman key agreement.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class DH extends AbstractDH {
+public class ECDH extends AbstractDH {
 
-    private BigInteger p;
-    private BigInteger g;
-    private BigInteger e;  // my public key
+    private ECParameterSpec params;
+    private ECPoint e;
     private byte[] e_array;
-    private BigInteger f;  // your public key
+    private ECPoint f;
     private KeyPairGenerator myKpairGen;
     private KeyAgreement myKeyAgree;
 
-    public DH() throws Exception {
-        myKpairGen = SecurityUtils.getKeyPairGenerator("DH");
-        myKeyAgree = SecurityUtils.getKeyAgreement("DH");
+    public ECDH() throws Exception {
+        myKpairGen = SecurityUtils.getKeyPairGenerator("EC");
+        myKeyAgree = SecurityUtils.getKeyAgreement("ECDH");
     }
 
+    @Override
     public byte[] getE() throws Exception {
         if (e == null) {
-            DHParameterSpec dhSkipParamSpec = new DHParameterSpec(p, g);
-            myKpairGen.initialize(dhSkipParamSpec);
+            myKpairGen.initialize(params);
             KeyPair myKpair = myKpairGen.generateKeyPair();
             myKeyAgree.init(myKpair.getPrivate());
-            e = ((javax.crypto.interfaces.DHPublicKey) (myKpair.getPublic())).getY();
-            e_array = e.toByteArray();
+            e = ((ECPublicKey) myKpair.getPublic()).getW();
+            e_array = ECCurves.encodeECPoint(e, params.getCurve());
         }
         return e_array;
     }
 
+    @Override
     protected byte[] calculateK() throws Exception {
-        KeyFactory myKeyFac = SecurityUtils.getKeyFactory("DH");
-        DHPublicKeySpec keySpec = new DHPublicKeySpec(f, p, g);
+        KeyFactory myKeyFac = SecurityUtils.getKeyFactory("EC");
+        ECPublicKeySpec keySpec = new ECPublicKeySpec(f, params);
         PublicKey yourPubKey = myKeyFac.generatePublic(keySpec);
         myKeyAgree.doPhase(yourPubKey, true);
         return myKeyAgree.generateSecret();
     }
 
-    public void setP(byte[] p) {
-        setP(new BigInteger(p));
+    public void setCurveParameters(ECParameterSpec params) {
+        this.params = params;
     }
 
-    public void setG(byte[] g) {
-        setG(new BigInteger(g));
-    }
-
+    @Override
     public void setF(byte[] f) {
-        setF(new BigInteger(f));
-    }
-
-    void setP(BigInteger p) {
-        this.p = p;
-    }
-
-    void setG(BigInteger g) {
-        this.g = g;
-    }
-
-    void setF(BigInteger f) {
-        this.f = f;
+        this.f = ECCurves.decodeECPoint(f, params.getCurve());
     }
 
     @Override
     public Digest getHash() throws Exception {
-        return new SHA1();
+        return ECCurves.getDigestForParams(params);
     }
 }

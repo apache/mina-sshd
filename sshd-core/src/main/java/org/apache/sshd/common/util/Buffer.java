@@ -27,10 +27,16 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.interfaces.DSAPrivateKey;
 import java.security.interfaces.DSAPublicKey;
+import java.security.interfaces.ECPrivateKey;
+import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPrivateCrtKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.DSAPrivateKeySpec;
 import java.security.spec.DSAPublicKeySpec;
+import java.security.spec.ECParameterSpec;
+import java.security.spec.ECPoint;
+import java.security.spec.ECPrivateKeySpec;
+import java.security.spec.ECPublicKeySpec;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPrivateCrtKeySpec;
 import java.security.spec.RSAPublicKeySpec;
@@ -38,6 +44,7 @@ import java.security.spec.RSAPublicKeySpec;
 import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.cipher.ECCurves;
 
 /**
  * TODO Add javadoc
@@ -252,6 +259,12 @@ public final class Buffer implements Readable {
                 BigInteger y = getMPInt();
                 KeyFactory keyFactory = SecurityUtils.getKeyFactory("DSA");
                 key = keyFactory.generatePublic(new DSAPublicKeySpec(y, p, q, g));
+            } else if (KeyPairProvider.ECDSA_SHA2_NISTP256.equals(keyAlg)) {
+                key = getRawECKey("nistp256", ECCurves.EllipticCurves.nistp256);
+            } else if (KeyPairProvider.ECDSA_SHA2_NISTP384.equals(keyAlg)) {
+                key = getRawECKey("nistp384", ECCurves.EllipticCurves.nistp384);
+            } else if (KeyPairProvider.ECDSA_SHA2_NISTP521.equals(keyAlg)) {
+                key = getRawECKey("nistp521", ECCurves.EllipticCurves.nistp521);
             } else {
                 throw new IllegalStateException("Unsupported algorithm: " + keyAlg);
             }
@@ -263,6 +276,18 @@ public final class Buffer implements Readable {
         } catch (NoSuchProviderException e) {
             throw new SshException(e);
         }
+    }
+
+    private PublicKey getRawECKey(String expectedCurve, ECParameterSpec spec) throws InvalidKeySpecException,
+            SshException, NoSuchAlgorithmException, NoSuchProviderException {
+        String curveName = getString();
+        if (!expectedCurve.equals(curveName)) {
+            throw new InvalidKeySpecException("Curve name does not match expected: " + curveName + " vs "
+                    + expectedCurve);
+        }
+        ECPoint w = ECCurves.decodeECPoint(getStringAsBytes(), spec.getCurve());
+        KeyFactory keyFactory = SecurityUtils.getKeyFactory("EC");
+        return keyFactory.generatePublic(new ECPublicKeySpec(w, spec));
     }
 
     public KeyPair getKeyPair() throws SshException {
@@ -291,6 +316,12 @@ public final class Buffer implements Readable {
                 KeyFactory keyFactory = SecurityUtils.getKeyFactory("DSA");
                 pub = keyFactory.generatePublic(new DSAPublicKeySpec(y, p, q, g));
                 prv = keyFactory.generatePrivate(new DSAPrivateKeySpec(x, p, q, g));
+            } else if (KeyPairProvider.ECDSA_SHA2_NISTP256.equals(keyAlg)) {
+                return extractEC("nistp256", ECCurves.EllipticCurves.nistp256);
+            } else if (KeyPairProvider.ECDSA_SHA2_NISTP384.equals(keyAlg)) {
+                return extractEC("nistp384", ECCurves.EllipticCurves.nistp384);
+            } else if (KeyPairProvider.ECDSA_SHA2_NISTP521.equals(keyAlg)) {
+                return extractEC("nistp521", ECCurves.EllipticCurves.nistp521);
             } else {
                 throw new IllegalStateException("Unsupported algorithm: " + keyAlg);
             }
@@ -302,6 +333,27 @@ public final class Buffer implements Readable {
         } catch (NoSuchProviderException e) {
             throw new SshException(e);
         }
+    }
+
+    private KeyPair extractEC(String expectedCurveName, ECParameterSpec spec) throws NoSuchAlgorithmException,
+            NoSuchProviderException, InvalidKeySpecException, SshException {
+        String curveName = getString();
+        byte[] groupBytes = getStringAsBytes();
+        BigInteger exponent = getMPInt();
+
+        if (!expectedCurveName.equals(curveName)) {
+            throw new SshException("Expected curve " + expectedCurveName + " but was " + curveName);
+        }
+
+        ECPoint group = ECCurves.decodeECPoint(groupBytes, spec.getCurve());
+        if (group == null) {
+            throw new InvalidKeySpecException("Couldn't decode EC group");
+        }
+
+        KeyFactory keyFactory = SecurityUtils.getKeyFactory("EC");
+        PublicKey pubKey = keyFactory.generatePublic(new ECPublicKeySpec(group, spec));
+        PrivateKey privKey = keyFactory.generatePrivate(new ECPrivateKeySpec(exponent, spec));
+        return new KeyPair(pubKey, privKey);
     }
 
     public SshConstants.Message getCommand() {
@@ -435,6 +487,13 @@ public final class Buffer implements Readable {
             putMPInt(((DSAPublicKey) key).getParams().getQ());
             putMPInt(((DSAPublicKey) key).getParams().getG());
             putMPInt(((DSAPublicKey) key).getY());
+        } else if (key instanceof ECPublicKey) {
+            ECPublicKey ecKey = (ECPublicKey) key;
+            ECParameterSpec ecParams = ecKey.getParams();
+            String curveName = ECCurves.getCurveName(ecParams);
+            putString(ECCurves.ECDSA_SHA2_PREFIX + curveName);
+            putString(curveName);
+            putBytes(ECCurves.encodeECPoint(ecKey.getW(), ecParams.getCurve()));
         } else {
             throw new IllegalStateException("Unsupported algorithm: " + key.getAlgorithm());
         }
@@ -456,6 +515,16 @@ public final class Buffer implements Readable {
             putMPInt(((DSAPublicKey) key.getPublic()).getParams().getG());
             putMPInt(((DSAPublicKey) key.getPublic()).getY());
             putMPInt(((DSAPrivateKey) key.getPrivate()).getX());
+        } else if (key.getPublic() instanceof ECPublicKey) {
+            ECPublicKey ecPub = (ECPublicKey) key.getPublic();
+            ECPrivateKey ecPriv = (ECPrivateKey) key.getPrivate();
+            ECParameterSpec ecParams = ecPub.getParams();
+            String curveName = ECCurves.getCurveName(ecParams);
+
+            putString(ECCurves.ECDSA_SHA2_PREFIX + curveName);
+            putString(curveName);
+            putString(ECCurves.encodeECPoint(ecPub.getW(), ecParams.getCurve()));
+            putMPInt(ecPriv.getS());
         } else {
             throw new IllegalStateException("Unsupported algorithm: " + key.getPublic().getAlgorithm());
         }

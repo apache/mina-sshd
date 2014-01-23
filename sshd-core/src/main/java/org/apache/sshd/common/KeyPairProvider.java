@@ -39,10 +39,27 @@ public interface KeyPairProvider {
     String SSH_DSS = "ssh-dss";
 
     /**
-     * Load a key of the specified type which can be "ssh-rsa" or "ssh-dss".
-     * If there is no key of this type, return <code>null</code>
+     * SSH identifier for EC keys in NIST curve P-256
+     */
+    String ECDSA_SHA2_NISTP256 = "ecdsa-sha2-nistp256";
+
+    /**
+     * SSH identifier for EC keys in NIST curve P-384
+     */
+    String ECDSA_SHA2_NISTP384 = "ecdsa-sha2-nistp384";
+
+    /**
+     * SSH identifier for EC keys in NIST curve P-521
+     */
+    String ECDSA_SHA2_NISTP521 = "ecdsa-sha2-nistp521";
+
+    /**
+     * Load a key of the specified type which can be "ssh-rsa", "ssh-dss", or
+     * "ecdsa-sha2-nistp{256,384,521}". If there is no key of this type, return
+     * <code>null</code>
      *
-     * @param type the type of key to load
+     * @param type
+     *            the type of key to load
      * @return a valid key pair or <code>null</code>
      */
     KeyPair loadKey(String type);
