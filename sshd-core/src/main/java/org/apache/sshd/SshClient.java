@@ -77,6 +77,8 @@ import org.apache.sshd.common.mac.HMACMD5;
 import org.apache.sshd.common.mac.HMACMD596;
 import org.apache.sshd.common.mac.HMACSHA1;
 import org.apache.sshd.common.mac.HMACSHA196;
+import org.apache.sshd.common.mac.HMACSHA256;
+import org.apache.sshd.common.mac.HMACSHA512;
 import org.apache.sshd.common.random.BouncyCastleRandom;
 import org.apache.sshd.common.random.JceRandom;
 import org.apache.sshd.common.random.SingletonRandomFactory;
@@ -294,10 +296,12 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         client.setCompressionFactories(Arrays.<NamedFactory<Compression>>asList(
                 new CompressionNone.Factory()));
         client.setMacFactories(Arrays.<NamedFactory<Mac>>asList(
-                new HMACMD5.Factory(),
+                new HMACSHA256.Factory(),
+                new HMACSHA512.Factory(),
                 new HMACSHA1.Factory(),
-                new HMACMD596.Factory(),
-                new HMACSHA196.Factory()));
+                new HMACMD5.Factory(),
+                new HMACSHA196.Factory(),
+                new HMACMD596.Factory()));
         client.setSignatureFactories(Arrays.<NamedFactory<Signature>>asList(
                 new SignatureDSA.Factory(),
                 new SignatureRSA.Factory()));
