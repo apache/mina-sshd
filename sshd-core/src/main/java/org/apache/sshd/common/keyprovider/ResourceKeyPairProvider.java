@@ -26,8 +26,13 @@ import java.util.List;
 
 import org.apache.sshd.common.util.IoUtils;
 import org.apache.sshd.common.util.SecurityUtils;
-import org.bouncycastle.openssl.PEMReader;
+import org.bouncycastle.openssl.PEMDecryptorProvider;
+import org.bouncycastle.openssl.PEMEncryptedKeyPair;
+import org.bouncycastle.openssl.PEMKeyPair;
+import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.openssl.PasswordFinder;
+import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
+import org.bouncycastle.openssl.jcajce.JcePEMDecryptorProviderBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -149,17 +154,28 @@ public class ResourceKeyPairProvider extends AbstractKeyPairProvider {
                 new ArrayList<KeyPair>(this.resources.length);
 
         for (String resource : resources) {
-            PEMReader r = null;
+            PEMParser r = null;
             InputStreamReader isr = null;
             InputStream is = null;
             try {
                 is = this.cloader.getResourceAsStream(resource);
                 isr = new InputStreamReader(is);
-                r = new PEMReader(isr, passwordFinder);
+                r = new PEMParser(isr);
 
                 Object o = r.readObject();
 
-                if (o instanceof KeyPair) {
+                JcaPEMKeyConverter pemConverter = new JcaPEMKeyConverter();
+                pemConverter.setProvider("BC");
+                if (passwordFinder != null && o instanceof PEMEncryptedKeyPair) {
+                    JcePEMDecryptorProviderBuilder decryptorBuilder = new JcePEMDecryptorProviderBuilder();
+                    PEMDecryptorProvider pemDecryptor = decryptorBuilder.build(passwordFinder.getPassword());
+                    o = pemConverter.getKeyPair(((PEMEncryptedKeyPair) o).decryptKeyPair(pemDecryptor));
+                }
+
+                if (o instanceof PEMKeyPair) {
+                    o = pemConverter.getKeyPair((PEMKeyPair)o);
+                    keys.add((KeyPair) o);
+                } else if (o instanceof KeyPair) {
                     keys.add((KeyPair) o);
                 } // end of if
             } catch (Exception e) {

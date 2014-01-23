@@ -24,7 +24,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.security.KeyPair;
 
-import org.bouncycastle.openssl.PEMReader;
+import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.openssl.PEMWriter;
 
 /**
@@ -50,7 +50,7 @@ public class PEMGeneratorHostKeyProvider extends AbstractGeneratorHostKeyProvide
     }
 
     protected KeyPair doReadKeyPair(InputStream is) throws Exception {
-        PEMReader r = new PEMReader(new InputStreamReader(is));
+        PEMParser r = new PEMParser(new InputStreamReader(is));
         return (KeyPair) r.readObject();
     }
 

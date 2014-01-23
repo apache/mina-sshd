@@ -25,8 +25,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.sshd.common.util.SecurityUtils;
-import org.bouncycastle.openssl.PEMReader;
+import org.bouncycastle.openssl.PEMDecryptorProvider;
+import org.bouncycastle.openssl.PEMEncryptedKeyPair;
+import org.bouncycastle.openssl.PEMKeyPair;
+import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.openssl.PasswordFinder;
+import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
+import org.bouncycastle.openssl.jcajce.JcePEMDecryptorProviderBuilder;
 
 /**
  * This host key provider loads private keys from the specified files.
@@ -76,10 +81,22 @@ public class FileKeyPairProvider extends AbstractKeyPairProvider {
         List<KeyPair> keys = new ArrayList<KeyPair>();
         for (int i = 0; i < files.length; i++) {
             try {
-                PEMReader r = new PEMReader(new InputStreamReader(new FileInputStream(files[i])), passwordFinder);
+                PEMParser r = new PEMParser(new InputStreamReader(new FileInputStream(files[i])));
                 try {
                     Object o = r.readObject();
-                    if (o instanceof KeyPair) {
+
+                    JcaPEMKeyConverter pemConverter = new JcaPEMKeyConverter();
+                    pemConverter.setProvider("BC");
+                    if (passwordFinder != null && o instanceof PEMEncryptedKeyPair) {
+                        JcePEMDecryptorProviderBuilder decryptorBuilder = new JcePEMDecryptorProviderBuilder();
+                        PEMDecryptorProvider pemDecryptor = decryptorBuilder.build(passwordFinder.getPassword());
+                        o = pemConverter.getKeyPair(((PEMEncryptedKeyPair) o).decryptKeyPair(pemDecryptor));
+                    }
+
+                    if (o instanceof PEMKeyPair) {
+                        o = pemConverter.getKeyPair((PEMKeyPair)o);
+                        keys.add((KeyPair) o);
+                    } else if (o instanceof KeyPair) {
                         keys.add((KeyPair) o);
                     }
                 } finally {
