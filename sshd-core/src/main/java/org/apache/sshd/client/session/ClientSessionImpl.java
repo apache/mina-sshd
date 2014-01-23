@@ -94,10 +94,6 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         return (ClientFactoryManager) factoryManager;
     }
 
-    public KeyExchange getKex() {
-        return kex;
-    }
-
     /**
      * return true if/when ready for auth; false if never ready.
      * @return server is ready and waiting for auth

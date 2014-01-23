@@ -210,6 +210,23 @@ public abstract class AbstractSession implements Session {
         }
     }
 
+    public String getServerVersion() {
+        return serverVersion;
+    }
+
+    public String getClientVersion() {
+        return clientVersion;
+    }
+
+    public KeyExchange getKex() {
+        return kex;
+    }
+
+    public byte [] getSessionId() {
+        return sessionId;
+    }
+
+
     /**
      * Retrieve the mina session
      *  

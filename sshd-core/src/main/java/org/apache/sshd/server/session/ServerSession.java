@@ -100,14 +100,6 @@ public class ServerSession extends AbstractSession {
         return negociated[index];
     }
 
-    public KeyExchange getKex() {
-        return kex;
-    }
-
-    public byte [] getSessionId() {
-      return sessionId;
-    }
-
     public ServerFactoryManager getServerFactoryManager() {
         return (ServerFactoryManager) factoryManager;
     }

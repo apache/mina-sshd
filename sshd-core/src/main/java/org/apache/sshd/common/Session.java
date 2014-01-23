@@ -67,6 +67,20 @@ public interface Session {
     String getUsername();
 
     /**
+     * Retrieve the client version for this session.
+     *
+     * @return the client version.
+     */
+    String getClientVersion();
+
+    /**
+     * Retrieve the server version for this session.
+     *
+     * @return the server version.
+     */
+    String getServerVersion();
+
+    /**
      * Retrieve the FactoryManager that has created this session
      *
      * @return the factory manager, can not be <tt>null</tt>.
