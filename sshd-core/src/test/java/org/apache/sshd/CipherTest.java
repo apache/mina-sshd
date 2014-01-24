@@ -39,6 +39,7 @@ import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.common.random.BouncyCastleRandom;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
+import org.apache.sshd.util.Utils;
 import org.junit.After;
 import static org.junit.Assert.assertEquals;
 import org.junit.Ignore;
@@ -114,9 +115,7 @@ public class CipherTest {
 
 
     protected void setUp(NamedFactory<org.apache.sshd.common.Cipher> cipher) throws Exception {
-        ServerSocket s = new ServerSocket(0);
-        port = s.getLocalPort();
-        s.close();
+        port = Utils.getFreePort();
 
         sshd = SshServer.setUpDefaultServer();
         sshd.setPort(port);

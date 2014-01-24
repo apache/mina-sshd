@@ -63,9 +63,7 @@ public class ScpTest {
 
     @Before
     public void setUp() throws Exception {
-        ServerSocket s = new ServerSocket(0);
-        port = s.getLocalPort();
-        s.close();
+        port = Utils.getFreePort();
 //        port = 8102;
 
         sshd = SshServer.setUpDefaultServer();

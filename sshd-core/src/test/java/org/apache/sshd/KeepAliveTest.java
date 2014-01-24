@@ -46,9 +46,7 @@ public class KeepAliveTest {
 
     @Before
     public void setUp() throws Exception {
-        ServerSocket s = new ServerSocket(0);
-        port = s.getLocalPort();
-        s.close();
+        port = Utils.getFreePort();
 
         sshd = SshServer.setUpDefaultServer();
         sshd.getProperties().put(ServerFactoryManager.IDLE_TIMEOUT, "1000");

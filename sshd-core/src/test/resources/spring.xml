@@ -23,7 +23,7 @@
   http://www.springframework.org/schema/beans/spring-beans.xsd">
 
     <bean name="sshServer" class="org.apache.sshd.SshServer" factory-method="setUpDefaultServer" init-method="start" destroy-method="stop">
-        <property name="port" value="8000" />
+        <!--property name="port" value="8000" /-->
         <property name="shellFactory">
             <bean class="org.apache.sshd.server.shell.ProcessShellFactory">
                 <property name="command">

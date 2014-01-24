@@ -52,6 +52,8 @@ public class TestSpringConfig {
 
     @Test
     public void testSpringConfig() throws Exception {
+        int port = ((SshServer) context.getBean("sshServer")).getPort();
+
         JSch sch = new JSch();
         sch.setLogger(new Logger() {
             public boolean isEnabled(int i) {
@@ -62,7 +64,7 @@ public class TestSpringConfig {
                 System.out.println("Log(jsch," + i + "): " + s);
             }
         });
-        com.jcraft.jsch.Session s = sch.getSession("smx", "localhost", 8000);
+        com.jcraft.jsch.Session s = sch.getSession("smx", "localhost", port);
         s.setUserInfo(new UserInfo() {
             public String getPassphrase() {
                 return null;  //To change body of implemented methods use File | Settings | File Templates.

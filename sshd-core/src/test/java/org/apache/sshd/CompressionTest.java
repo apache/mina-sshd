@@ -20,6 +20,7 @@ package org.apache.sshd;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.ServerSocket;
 import java.util.Arrays;
 
 import com.jcraft.jsch.JSch;
@@ -67,7 +68,6 @@ public class CompressionTest {
 
     protected void setUp(NamedFactory<org.apache.sshd.common.Compression> compression) throws Exception {
         sshd = SshServer.setUpDefaultServer();
-        sshd.setPort(8000);
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setCompressionFactories(Arrays.<NamedFactory<org.apache.sshd.common.Compression>>asList(compression));
         sshd.setShellFactory(new EchoShellFactory());
@@ -99,7 +99,7 @@ public class CompressionTest {
                 System.out.println("Log(jsch," + i + "): " + s);
             }
         });
-        com.jcraft.jsch.Session s = sch.getSession("smx", "localhost", 8000);
+        com.jcraft.jsch.Session s = sch.getSession("smx", "localhost", sshd.getPort());
         s.setUserInfo(new UserInfo() {
             public String getPassphrase() {
                 return null;
