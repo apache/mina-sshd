@@ -16,35 +16,40 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.client.keyverifier;
+package org.apache.sshd.common.util;
 
-import java.net.SocketAddress;
 import java.security.PublicKey;
 
-import org.apache.sshd.ClientSession;
-import org.apache.sshd.client.ServerKeyVerifier;
-import org.apache.sshd.common.util.KeyUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.sshd.common.digest.MD5;
 
 /**
- * A ServerKeyVerifier that accepts all server keys.
+ * Utility class for keys
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class AcceptAllServerKeyVerifier implements ServerKeyVerifier {
+public class KeyUtils {
 
-	protected final Logger log = LoggerFactory.getLogger(getClass());
+    /**
+     * Retrieve the public key fingerprint
+     *
+     * @param key the public key
+     * @return the fingerprint
+     */
+    public static String getFingerPrint(PublicKey key) {
+        try {
+            Buffer buffer = new Buffer();
+            buffer.putRawPublicKey(key);
+            MD5 md5 = new MD5();
+            md5.init();
+            md5.update(buffer.array(), 0, buffer.wpos());
+            byte[] data = md5.digest();
+            return BufferUtils.printHex(data, 0, data.length, ':');
+        } catch (Exception e) {
+            return "Unable to compute fingerprint";
+        }
+    }
 
-	public static final ServerKeyVerifier INSTANCE = new AcceptAllServerKeyVerifier();
-
-	private AcceptAllServerKeyVerifier() {
-	}
-
-	public boolean verifyServerKey(ClientSession sshClientSession, SocketAddress remoteAddress, PublicKey serverKey) {
-        log.warn("Server at {} presented unverified {} key: {}",
-                new Object[] { remoteAddress, serverKey.getAlgorithm(), KeyUtils.getFingerPrint(serverKey) });
-		return true;
-	}
+    private KeyUtils() {
+    }
 
 }

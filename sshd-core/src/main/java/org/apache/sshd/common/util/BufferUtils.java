@@ -30,11 +30,15 @@ public class BufferUtils {
     }
 
     public static String printHex(byte[] array, int offset, int len) {
+        return printHex(array, offset, len, ' ');
+    }
+
+    public static String printHex(byte[] array, int offset, int len, char sep) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < len; i++) {
             byte b = array[offset + i];
             if (sb.length() > 0) {
-                sb.append(' ');
+                sb.append(sep);
             }
             sb.append(digits[(b >> 4) & 0x0F]);
             sb.append(digits[b & 0x0F]);

@@ -977,6 +977,14 @@ public abstract class AbstractSession implements Session {
             }
         }
         negociated = guess;
+        log.info("Kex: server->client {} {} {}",
+                new Object[] { negociated[SshConstants.PROPOSAL_ENC_ALGS_STOC],
+                               negociated[SshConstants.PROPOSAL_MAC_ALGS_STOC],
+                               negociated[SshConstants.PROPOSAL_COMP_ALGS_STOC]});
+        log.info("Kex: client->server {} {} {}",
+                new Object[] { negociated[SshConstants.PROPOSAL_ENC_ALGS_CTOS],
+                               negociated[SshConstants.PROPOSAL_MAC_ALGS_CTOS],
+                               negociated[SshConstants.PROPOSAL_COMP_ALGS_CTOS]});
     }
 
     protected void requestSuccess(Buffer buffer) throws Exception{

@@ -251,7 +251,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     }
 
     public boolean handleRequest(String req, Buffer buffer) throws IOException {
-        log.info("Received SSH_MSG_CHANNEL_REQUEST on channel {}", id);
+        log.info("Received SSH_MSG_CHANNEL_REQUEST {} on channel {}", req, id);
         if ("exit-status".equals(req)) {
             exitStatus = buffer.getInt();
             notifyStateChanged();
