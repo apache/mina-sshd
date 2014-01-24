@@ -75,8 +75,8 @@ public class CompressionTest {
         sshd.start();
         JSch.setConfig("compression.s2c",  "zlib@openssh.com,zlib,none");
         JSch.setConfig("compression.c2s",  "zlib@openssh.com,zlib,none");
-        JSch.setConfig("zlib",             org.apache.sshd.util.Compression.class.getName());
-        JSch.setConfig("zlib@openssh.com", org.apache.sshd.util.Compression.class.getName());
+        JSch.setConfig("zlib",             com.jcraft.jsch.jcraft.Compression.class.getName());
+        JSch.setConfig("zlib@openssh.com", com.jcraft.jsch.jcraft.Compression.class.getName());
     }
 
     @After
