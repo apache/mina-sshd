@@ -838,6 +838,7 @@ public abstract class AbstractSession implements Session {
         s2ccipher.init(isServer ? Cipher.Mode.Encrypt : Cipher.Mode.Decrypt, Es2c, IVs2c);
 
         s2cmac = NamedFactory.Utils.create(factoryManager.getMacFactories(), negociated[SshConstants.PROPOSAL_MAC_ALGS_STOC]);
+        MACs2c = resizeKey(MACs2c, s2cmac.getBlockSize(), hash, K, H);
         s2cmac.init(MACs2c);
 
         c2scipher = NamedFactory.Utils.create(factoryManager.getCipherFactories(), negociated[SshConstants.PROPOSAL_ENC_ALGS_CTOS]);
@@ -845,6 +846,7 @@ public abstract class AbstractSession implements Session {
         c2scipher.init(isServer ? Cipher.Mode.Decrypt : Cipher.Mode.Encrypt, Ec2s, IVc2s);
 
         c2smac = NamedFactory.Utils.create(factoryManager.getMacFactories(), negociated[SshConstants.PROPOSAL_MAC_ALGS_CTOS]);
+        MACc2s = resizeKey(MACc2s, c2smac.getBlockSize(), hash, K, H);
         c2smac.init(MACc2s);
 
         s2ccomp = NamedFactory.Utils.create(factoryManager.getCompressionFactories(), negociated[SshConstants.PROPOSAL_COMP_ALGS_STOC]);
