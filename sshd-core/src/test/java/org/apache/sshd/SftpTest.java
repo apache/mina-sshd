@@ -31,6 +31,7 @@ import java.util.Vector;
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.Logger;
+import com.jcraft.jsch.UIKeyboardInteractive;
 import com.jcraft.jsch.UserInfo;
 import org.apache.sshd.client.SftpClient;
 import org.apache.sshd.common.NamedFactory;
@@ -82,30 +83,7 @@ public class SftpTest {
             }
         });
         session = sch.getSession("sshd", "localhost", port);
-        session.setUserInfo(new UserInfo() {
-            public String getPassphrase() {
-                return null;
-            }
-
-            public String getPassword() {
-                return "sshd";
-            }
-
-            public boolean promptPassword(String message) {
-                return true;
-            }
-
-            public boolean promptPassphrase(String message) {
-                return false;
-            }
-
-            public boolean promptYesNo(String message) {
-                return true;
-            }
-
-            public void showMessage(String message) {
-            }
-        });
+        session.setUserInfo(new SimpleUserInfo("sshd"));
         session.connect();
     }
 
@@ -290,6 +268,41 @@ public class SftpTest {
         c.connect();
         c.put(new ByteArrayInputStream(data.getBytes()), path);
         c.disconnect();
+    }
+
+    protected static class SimpleUserInfo implements UserInfo, UIKeyboardInteractive {
+        private final String password;
+
+        public SimpleUserInfo(String password) {
+            this.password = password;
+        }
+
+        public String getPassphrase() {
+            return null;
+        }
+
+        public String getPassword() {
+            return password;
+        }
+
+        public boolean promptPassword(String message) {
+            return true;
+        }
+
+        public boolean promptPassphrase(String message) {
+            return false;
+        }
+
+        public boolean promptYesNo(String message) {
+            return true;
+        }
+
+        public void showMessage(String message) {
+        }
+
+        public String[] promptKeyboardInteractive(String destination, String name, String instruction, String[] prompt, boolean[] echo) {
+            return new String[] { password };
+        }
     }
 
 }

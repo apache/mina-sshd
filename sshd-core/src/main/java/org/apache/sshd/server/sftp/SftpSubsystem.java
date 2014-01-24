@@ -651,6 +651,8 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
             }
             case SSH_FXP_MKDIR: {
                 String path = buffer.getString();
+                Map<SshFile.Attribute, Object> attrs = readAttrs(buffer);
+
                 log.debug("Received SSH_FXP_MKDIR (path={})", path);
                 // attrs
                 try {
@@ -666,6 +668,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                     } else if (!p.mkdir()) {
                         throw new IOException("Error creating dir " + path);
                     } else {
+                        p.setAttributes(attrs);
                         sendStatus(id, SSH_FX_OK, "");
                     }
                 } catch (IOException e) {

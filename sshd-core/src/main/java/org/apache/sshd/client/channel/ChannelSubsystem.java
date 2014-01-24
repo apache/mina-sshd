@@ -21,6 +21,8 @@ package org.apache.sshd.client.channel;
 import java.io.IOException;
 
 import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.future.CloseFuture;
+import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.util.Buffer;
 
 /**
@@ -49,5 +51,13 @@ public class ChannelSubsystem extends ChannelSession {
         writePacket(buffer);
 
         super.doOpen();
+    }
+
+    public void onClose(final Runnable run) {
+        closeFuture.addListener(new SshFutureListener<CloseFuture>() {
+            public void operationComplete(CloseFuture future) {
+                run.run();
+            }
+        });
     }
 }

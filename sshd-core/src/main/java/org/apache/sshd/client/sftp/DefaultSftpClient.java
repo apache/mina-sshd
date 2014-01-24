@@ -98,6 +98,7 @@ public class DefaultSftpClient implements SftpClient {
     private final Map<Integer, Buffer> messages;
     private final AtomicInteger cmdId = new AtomicInteger(100);
     private final Buffer receiveBuffer = new Buffer();
+    private boolean closing;
 
     public DefaultSftpClient(ClientSession clientSession) throws IOException {
         this.clientSession = clientSession;
@@ -119,6 +120,14 @@ public class DefaultSftpClient implements SftpClient {
         } catch (InterruptedException e) {
             throw (IOException) new InterruptedIOException().initCause(e);
         }
+        this.channel.onClose(new Runnable() {
+            public void run() {
+                synchronized (messages) {
+                    closing = true;
+                    messages.notifyAll();
+                }
+            }
+        });
         init();
     }
 
@@ -202,6 +211,9 @@ public class DefaultSftpClient implements SftpClient {
     protected Buffer receive(int id) throws IOException {
         synchronized (messages) {
             while (true) {
+                if (closing) {
+                    throw new SshException("Channel has been closed");
+                }
                 Buffer buffer = messages.get(id);
                 if (buffer != null) {
                     return buffer;
@@ -469,6 +481,7 @@ public class DefaultSftpClient implements SftpClient {
     public void mkdir(String path) throws IOException {
         Buffer buffer = new Buffer();
         buffer.putString(path);
+        buffer.putInt(0);
         checkStatus(receive(send(SSH_FXP_MKDIR, buffer)));
     }
 
