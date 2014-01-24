@@ -111,7 +111,7 @@ import org.apache.sshd.common.util.SecurityUtils;
  *    SshClient client = SshClient.setUpDefaultClient();
  *    client.start();
  *    try {
- *        ClientSession session = client.connect(host, port);
+ *        ClientSession session = client.connect(host, port).await().getSession();
  *
  *        int ret = ClientSession.WAIT_AUTH;
  *        while ((ret & ClientSession.WAIT_AUTH) != 0) {
@@ -131,7 +131,7 @@ import org.apache.sshd.common.util.SecurityUtils;
  *        channel.setErr(new NoCloseOutputStream(System.err));
  *        channel.open();
  *        channel.waitFor(ClientChannel.CLOSED, 0);
- *        session.close();
+ *        session.close(false);
  *    } finally {
  *        client.stop();
  *    }
