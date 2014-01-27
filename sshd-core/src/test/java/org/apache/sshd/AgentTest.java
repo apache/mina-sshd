@@ -34,6 +34,7 @@ import org.apache.sshd.agent.unix.AgentClient;
 import org.apache.sshd.agent.unix.AgentServer;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.common.KeyPairProvider;
+import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.util.*;
@@ -51,6 +52,11 @@ public class AgentTest {
 
     @Test
     public void testAgent() throws Exception {
+        // TODO: revisit this test to work without BC
+        if (!SecurityUtils.isBouncyCastleRegistered()) {
+            return;
+        }
+
         AgentServer agent = new AgentServer();
         String authSocket;
         try {
@@ -86,6 +92,10 @@ public class AgentTest {
 
     @Test
     public void testAgentForwarding() throws Exception {
+        // TODO: revisit this test to work without BC
+        if (!SecurityUtils.isBouncyCastleRegistered()) {
+            return;
+        }
 
         int port1 = getFreePort();
         int port2 = getFreePort();

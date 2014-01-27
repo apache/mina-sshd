@@ -25,6 +25,7 @@ import java.io.File;
 import java.security.spec.ECGenParameterSpec;
 
 import org.apache.sshd.common.KeyPairProvider;
+import org.apache.sshd.common.util.SecurityUtils;
 import org.junit.Test;
 
 /**
@@ -68,7 +69,7 @@ public class PEMGeneratorHostKeyProviderTest {
         // Generate
         PEMGeneratorHostKeyProvider provider = new PEMGeneratorHostKeyProvider();
         provider.setAlgorithm("RSA");
-        provider.setKeySize(32);
+        provider.setKeySize(512);
         provider.setPath(path.getPath());
         assertEquals(KeyPairProvider.SSH_RSA, provider.getKeyTypes());
         assertNotNull(provider.loadKey(KeyPairProvider.SSH_RSA));
@@ -76,7 +77,7 @@ public class PEMGeneratorHostKeyProviderTest {
         // Read existing
         provider = new PEMGeneratorHostKeyProvider();
         provider.setAlgorithm("RSA");
-        provider.setKeySize(32);
+        provider.setKeySize(512);
         provider.setPath(path.getPath());
         assertEquals(KeyPairProvider.SSH_RSA, provider.getKeyTypes());
         assertNotNull(provider.loadKey(KeyPairProvider.SSH_RSA));
@@ -84,6 +85,10 @@ public class PEMGeneratorHostKeyProviderTest {
 
     @Test
     public void testEC_NISTP256() {
+        if (!SecurityUtils.isBouncyCastleRegistered()) {
+            return;
+        }
+
         File path = new File("target/keys");
         path.mkdirs();
         path = new File(path, "simple.key");
@@ -108,6 +113,10 @@ public class PEMGeneratorHostKeyProviderTest {
 
     @Test
     public void testEC_NISTP384() {
+        if (!SecurityUtils.isBouncyCastleRegistered()) {
+            return;
+        }
+
         File path = new File("target/keys");
         path.mkdirs();
         path = new File(path, "simple.key");
@@ -132,6 +141,10 @@ public class PEMGeneratorHostKeyProviderTest {
 
     @Test
     public void testEC_NISTP521() {
+        if (!SecurityUtils.isBouncyCastleRegistered()) {
+            return;
+        }
+
         File path = new File("target/keys");
         path.mkdirs();
         path = new File(path, "simple.key");

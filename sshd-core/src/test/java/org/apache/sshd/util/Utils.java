@@ -30,8 +30,8 @@ import java.net.URL;
 public class Utils {
 
     public static KeyPairProvider createTestHostKeyProvider() {
-//        return new SimpleGeneratorHostKeyProvider(null, "RSA");
-        return createTestKeyPairProvider("hostkey.pem");
+        return new SimpleGeneratorHostKeyProvider(null, "RSA");
+//        return createTestKeyPairProvider("hostkey.pem");
     }
 
     public static FileKeyPairProvider createTestKeyPairProvider(String resource) {

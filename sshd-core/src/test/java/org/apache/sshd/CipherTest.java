@@ -37,6 +37,8 @@ import org.apache.sshd.common.cipher.TripleDESCBC;
 import org.apache.sshd.common.cipher.CipherNone;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.common.random.BouncyCastleRandom;
+import org.apache.sshd.common.util.SecurityUtils;
+import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.Utils;
@@ -62,17 +64,19 @@ public class CipherTest {
     }
 
     @Test
-    @Ignore("AES192CBC is not always available by default")
     public void testAES192CBC() throws Exception {
-        setUp(new AES192CBC.Factory());
-        runTest();
+        if (SecurityUtils.isBouncyCastleRegistered()) {
+            setUp(new AES192CBC.Factory());
+            runTest();
+        }
     }
 
     @Test
-    @Ignore("AES256CBC is not always available by default")
     public void testAES256CBC() throws Exception {
-        setUp(new AES256CBC.Factory());
-        runTest();
+        if (SecurityUtils.isBouncyCastleRegistered()) {
+            setUp(new AES256CBC.Factory());
+            runTest();
+        }
     }
 
     @Test
@@ -119,7 +123,7 @@ public class CipherTest {
 
         sshd = SshServer.setUpDefaultServer();
         sshd.setPort(port);
-        sshd.setKeyPairProvider(new FileKeyPairProvider(new String[] { "src/test/resources/hostkey.pem" }));
+        sshd.setKeyPairProvider(new SimpleGeneratorHostKeyProvider());
         sshd.setCipherFactories(Arrays.<NamedFactory<org.apache.sshd.common.Cipher>>asList(cipher));
         sshd.setShellFactory(new EchoShellFactory());
         sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());

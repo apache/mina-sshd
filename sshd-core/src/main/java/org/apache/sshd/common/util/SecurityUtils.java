@@ -84,6 +84,12 @@ public class SecurityUtils {
 
     private static void register() {
         if (!registrationDone) {
+            if (registerBouncyCastle == null) {
+                String prop = System.getProperty("org.apache.sshd.registerBouncyCastle");
+                if (prop != null) {
+                    registerBouncyCastle = Boolean.parseBoolean(prop);
+                }
+            }
             if (securityProvider == null && (registerBouncyCastle == null || registerBouncyCastle)) {
                 // Use an inner class to avoid a strong dependency from SshServer on BouncyCastle
                 try {

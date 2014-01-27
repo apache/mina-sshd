@@ -171,6 +171,18 @@
                             </systemProperties>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>jce</id>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <reportsDirectory>${project.build.directory}/surefire-reports-jce</reportsDirectory>
+                            <systemProperties>
+                                <org.apache.sshd.registerBouncyCastle>false</org.apache.sshd.registerBouncyCastle>
+                            </systemProperties>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
         </plugins>

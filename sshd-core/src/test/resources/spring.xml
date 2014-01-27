@@ -35,13 +35,7 @@
             </bean>
         </property>
         <property name="keyPairProvider">
-            <bean class="org.apache.sshd.common.keyprovider.FileKeyPairProvider">
-                <constructor-arg>
-                    <list>
-                        <value>src/test/resources/hostkey.pem</value>
-                    </list>
-                </constructor-arg>
-            </bean>
+            <bean class="org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider" />
         </property>
         <property name="passwordAuthenticator">
             <bean class="org.apache.sshd.util.BogusPasswordAuthenticator" />
