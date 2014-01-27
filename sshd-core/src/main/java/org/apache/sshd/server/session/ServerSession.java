@@ -385,7 +385,7 @@ public class ServerSession extends AbstractSession {
                 }
                 this.authMethod = method;
                 if (nbAuthRequests++ > maxAuthRequests) {
-                    disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "Too may authentication failures");
+                    disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "Too many authentication failures");
                     return;
                 }
 
