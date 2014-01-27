@@ -41,6 +41,10 @@ public class SingletonRandomFactory implements Random, NamedFactory<Random> {
         random.fill(bytes, start, len);
     }
 
+    public int random(int max) {
+        return random.random(max);
+    }
+
     public String getName() {
         return factory.getName();
     }

@@ -98,6 +98,8 @@ import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.ScpCommandFactory;
 import org.apache.sshd.server.kex.DHG1;
 import org.apache.sshd.server.kex.DHG14;
+import org.apache.sshd.server.kex.DHGEX;
+import org.apache.sshd.server.kex.DHGEX256;
 import org.apache.sshd.server.kex.ECDHP256;
 import org.apache.sshd.server.kex.ECDHP384;
 import org.apache.sshd.server.kex.ECDHP521;
@@ -425,6 +427,8 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         // EC keys are not supported until OpenJDK 8
         if (SecurityUtils.isBouncyCastleRegistered()) {
             sshd.setKeyExchangeFactories(Arrays.<NamedFactory<KeyExchange>>asList(
+                    new DHGEX256.Factory(),
+                    new DHGEX.Factory(),
                     new ECDHP256.Factory(),
                     new ECDHP384.Factory(),
                     new ECDHP521.Factory(),
@@ -440,6 +444,8 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         // EC keys are not supported until OpenJDK 7
         } else if (SecurityUtils.hasEcc()) {
             sshd.setKeyExchangeFactories(Arrays.<NamedFactory<KeyExchange>>asList(
+                    new DHGEX256.Factory(),
+                    new DHGEX.Factory(),
                     new ECDHP256.Factory(),
                     new ECDHP384.Factory(),
                     new ECDHP521.Factory(),
@@ -453,6 +459,8 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
             sshd.setRandomFactory(new SingletonRandomFactory(new JceRandom.Factory()));
         } else {
             sshd.setKeyExchangeFactories(Arrays.<NamedFactory<KeyExchange>>asList(
+                    new DHGEX256.Factory(),
+                    new DHGEX.Factory(),
                     new DHG1.Factory()));
             sshd.setSignatureFactories(Arrays.<NamedFactory<Signature>>asList(
                     new SignatureDSA.Factory(),

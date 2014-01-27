@@ -45,6 +45,8 @@ import org.apache.sshd.client.future.ConnectFuture;
 import org.apache.sshd.client.future.DefaultConnectFuture;
 import org.apache.sshd.client.kex.DHG1;
 import org.apache.sshd.client.kex.DHG14;
+import org.apache.sshd.client.kex.DHGEX;
+import org.apache.sshd.client.kex.DHGEX256;
 import org.apache.sshd.client.kex.ECDHP256;
 import org.apache.sshd.client.kex.ECDHP384;
 import org.apache.sshd.client.kex.ECDHP521;
@@ -283,6 +285,8 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         // DHG14 uses 2048 bits key which are not supported by the default JCE provider
         if (SecurityUtils.isBouncyCastleRegistered()) {
             client.setKeyExchangeFactories(Arrays.<NamedFactory<KeyExchange>>asList(
+                    new DHGEX256.Factory(),
+                    new DHGEX.Factory(),
                     new ECDHP256.Factory(),
                     new ECDHP384.Factory(),
                     new ECDHP521.Factory(),

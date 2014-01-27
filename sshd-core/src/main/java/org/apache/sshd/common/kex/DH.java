@@ -29,6 +29,7 @@ import javax.crypto.spec.DHParameterSpec;
 import javax.crypto.spec.DHPublicKeySpec;
 
 import org.apache.sshd.common.Digest;
+import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.digest.SHA1;
 import org.apache.sshd.common.util.SecurityUtils;
 
@@ -46,10 +47,16 @@ public class DH extends AbstractDH {
     private BigInteger f;  // your public key
     private KeyPairGenerator myKpairGen;
     private KeyAgreement myKeyAgree;
+    private Factory<Digest> factory;
 
     public DH() throws Exception {
+        this(new SHA1.Factory());
+    }
+
+    public DH(Factory<Digest> factory) throws Exception {
         myKpairGen = SecurityUtils.getKeyPairGenerator("DH");
         myKeyAgree = SecurityUtils.getKeyAgreement("DH");
+        this.factory = factory;
     }
 
     public byte[] getE() throws Exception {
@@ -84,20 +91,28 @@ public class DH extends AbstractDH {
         setF(new BigInteger(f));
     }
 
-    void setP(BigInteger p) {
+    public BigInteger getP() {
+        return p;
+    }
+
+    public void setP(BigInteger p) {
         this.p = p;
     }
 
-    void setG(BigInteger g) {
+    public BigInteger getG() {
+        return g;
+    }
+
+    public void setG(BigInteger g) {
         this.g = g;
     }
 
-    void setF(BigInteger f) {
+    public void setF(BigInteger f) {
         this.f = f;
     }
 
     @Override
     public Digest getHash() throws Exception {
-        return new SHA1();
+        return factory.create();
     }
 }

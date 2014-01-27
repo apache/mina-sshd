@@ -66,4 +66,8 @@ public class JceRandom implements Random {
         }
     }
 
+    public synchronized int random(int n) {
+        return random.nextInt(n);
+    }
+
 }
