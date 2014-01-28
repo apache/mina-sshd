@@ -20,12 +20,9 @@ package org.apache.sshd;
 
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.ServerSocket;
 import java.util.Arrays;
 
 import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.Logger;
-import com.jcraft.jsch.UserInfo;
 import org.apache.sshd.common.Cipher;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.Random;
@@ -34,18 +31,17 @@ import org.apache.sshd.common.cipher.AES192CBC;
 import org.apache.sshd.common.cipher.AES256CBC;
 import org.apache.sshd.common.cipher.BlowfishCBC;
 import org.apache.sshd.common.cipher.TripleDESCBC;
-import org.apache.sshd.common.cipher.CipherNone;
-import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.common.random.BouncyCastleRandom;
 import org.apache.sshd.common.util.SecurityUtils;
-import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
+import org.apache.sshd.util.JSchLogger;
+import org.apache.sshd.util.SimpleUserInfo;
 import org.apache.sshd.util.Utils;
 import org.junit.After;
-import static org.junit.Assert.assertEquals;
-import org.junit.Ignore;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Test Cipher algorithms.
@@ -123,7 +119,7 @@ public class CipherTest {
 
         sshd = SshServer.setUpDefaultServer();
         sshd.setPort(port);
-        sshd.setKeyPairProvider(new SimpleGeneratorHostKeyProvider());
+        sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setCipherFactories(Arrays.<NamedFactory<org.apache.sshd.common.Cipher>>asList(cipher));
         sshd.setShellFactory(new EchoShellFactory());
         sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
@@ -138,37 +134,12 @@ public class CipherTest {
     }
 
     protected void runTest() throws Exception {
+        JSchLogger.init();
         JSch sch = new JSch();
         JSch.setConfig("cipher.s2c", "aes128-cbc,3des-cbc,blowfish-cbc,aes192-cbc,aes256-cbc,none");
         JSch.setConfig("cipher.c2s", "aes128-cbc,3des-cbc,blowfish-cbc,aes192-cbc,aes256-cbc,none");
-        sch.setLogger(new Logger() {
-            public boolean isEnabled(int i) {
-                return true;
-            }
-            public void log(int i, String s) {
-                System.out.println("Log(jsch," + i + "): " + s);
-            }
-        });
         com.jcraft.jsch.Session s = sch.getSession("smx", "localhost", port);
-        s.setUserInfo(new UserInfo() {
-            public String getPassphrase() {
-                return null;
-            }
-            public String getPassword() {
-                return "smx";
-            }
-            public boolean promptPassword(String message) {
-                return true;
-            }
-            public boolean promptPassphrase(String message) {
-                return false;
-            }
-            public boolean promptYesNo(String message) {
-                return true;
-            }
-            public void showMessage(String message) {
-            }
-        });
+        s.setUserInfo(new SimpleUserInfo("smx"));
         s.connect();
         com.jcraft.jsch.Channel c = s.openChannel("shell");
         c.connect();

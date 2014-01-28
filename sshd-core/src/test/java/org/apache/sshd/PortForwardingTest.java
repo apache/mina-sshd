@@ -18,49 +18,40 @@
  */
 package org.apache.sshd;
 
-import java.io.IOException;
 import java.lang.reflect.Field;
-import java.net.*;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Logger;
 import com.jcraft.jsch.Session;
 import com.jcraft.jsch.UserInfo;
-import org.apache.commons.httpclient.HostConfiguration;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.HttpVersion;
-import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
-import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.service.IoAcceptor;
 import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
-import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.client.channel.ChannelDirectTcpip;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.ConnectFuture;
+import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.util.BogusForwardingFilter;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
+import org.apache.sshd.util.JSchLogger;
+import org.apache.sshd.util.SimpleUserInfo;
 import org.apache.sshd.util.Utils;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.sshd.util.Utils.getFreePort;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Port forwarding tests
@@ -279,81 +270,6 @@ public class PortForwardingTest {
         session.delPortForwardingR(forwardedPort);
     }
 
-    @Test
-    @Ignore
-    public void testRemoteForwardingPayload() throws Exception {
-        final int NUM_ITERATIONS = 100;
-        final String PAYLOAD = "This is significantly longer Test Data. This is significantly "+
-                "longer Test Data. This is significantly longer Test Data. This is significantly "+
-                "longer Test Data. This is significantly longer Test Data. This is significantly "+
-                "longer Test Data. This is significantly longer Test Data. This is significantly "+
-                "longer Test Data. This is significantly longer Test Data. This is significantly "+
-                "longer Test Data. ";
-        Session session = createSession();
-        final ServerSocket ss = new ServerSocket(0);
-        int forwardedPort = ss.getLocalPort();
-        int sinkPort = getFreePort();
-        session.setPortForwardingR(sinkPort, "localhost", forwardedPort);
-        final boolean started[] = new boolean[1];
-        started[0] = false;
-        final AtomicInteger conCount = new AtomicInteger(0);
-
-        new Thread() {
-            public void run() {
-                started[0] = true;
-                try {
-                    for (int i = 0; i < NUM_ITERATIONS; ++i) {
-                        Socket s = ss.accept();
-                        conCount.incrementAndGet();
-                        s.getOutputStream().write(PAYLOAD.getBytes());
-                        s.getOutputStream().flush();
-                        s.close();
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }.start();
-        Thread.sleep(50);
-        Assert.assertTrue("Server not started", started[0]);
-
-        final boolean lenOK[] = new boolean[NUM_ITERATIONS];
-        final boolean dataOK[] = new boolean[NUM_ITERATIONS];
-        for ( int i = 0; i < NUM_ITERATIONS; i++) {
-            final int ii = i;
-            Socket s = null;
-            try {
-                s = new Socket("localhost", sinkPort);
-                byte b1[] = new byte[PAYLOAD.length() / 2];
-                byte b2[] = new byte[PAYLOAD.length()];
-                int read1 = s.getInputStream().read(b1);
-                Thread.sleep(50);
-                int read2 = s.getInputStream().read(b2);
-                lenOK[ii] = PAYLOAD.length() == read1 + read2;
-                dataOK[ii] = PAYLOAD.equals(new String(b1, 0, read1) + new String(b2, 0, read2));
-                if (!lenOK[ii] || !dataOK[ii] ) {
-                    throw new Exception("Bad data");
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            } finally {
-                if (s != null) {
-                    s.close();
-                }
-            }
-        }
-        int ok = 0;
-        for (int i = 0; i < NUM_ITERATIONS; i++) {
-            ok += lenOK[i] ? 1 : 0;
-        }
-        Thread.sleep(50);
-        for (int i = 0; i < NUM_ITERATIONS; i++) {
-            Assert.assertTrue(lenOK[i]);
-            Assert.assertTrue(dataOK[i]);
-        }
-        session.delPortForwardingR(forwardedPort);
-    }
-
     /**
      * Close the socket inside this JSCH session. Use reflection to find it and
      * just close it.
@@ -429,41 +345,10 @@ public class PortForwardingTest {
     }
 
     protected Session createSession() throws JSchException {
+        JSchLogger.init();
         JSch sch = new JSch();
-        sch.setLogger(new Logger() {
-            public boolean isEnabled(int i) {
-                return true;
-            }
-
-            public void log(int i, String s) {
-                System.out.println("Log(jsch," + i + "): " + s);
-            }
-        });
         Session session = sch.getSession("sshd", "localhost", sshPort);
-        session.setUserInfo(new UserInfo() {
-            public String getPassphrase() {
-                return null;
-            }
-
-            public String getPassword() {
-                return "sshd";
-            }
-
-            public boolean promptPassword(String message) {
-                return true;
-            }
-
-            public boolean promptPassphrase(String message) {
-                return false;
-            }
-
-            public boolean promptYesNo(String message) {
-                return true;
-            }
-
-            public void showMessage(String message) {
-            }
-        });
+        session.setUserInfo(new SimpleUserInfo("sshd"));
         session.connect();
         return session;
     }
@@ -480,120 +365,6 @@ public class PortForwardingTest {
         authPassword.await();
 
         return session;
-    }
-
-    @Test
-    @Ignore
-    public void testForwardingOnLoad() throws Exception {
-//        final String path = "/history/recent/troubles/";
-//        final String host = "www.bbc.co.uk";
-//        final String path = "";
-//        final String host = "www.bahn.de";
-        final String path = "";
-        final String host = "localhost";
-        final int nbThread = 2;
-        final int nbDownloads = 2;
-        final int nbLoops = 2;
-
-        final int port = getFreePort();
-        StringBuilder resp = new StringBuilder();
-        resp.append("<html><body>\n");
-        for (int i = 0; i < 1000; i++) {
-            resp.append("0123456789\n");
-        }
-        resp.append("</body></html>\n");
-        final StringBuilder sb = new StringBuilder();
-        sb.append("HTTP/1.1 200 OK").append('\n');
-        sb.append("Content-Type: text/HTML").append('\n');
-        sb.append("Content-Length: ").append(resp.length()).append('\n');
-        sb.append('\n');
-        sb.append(resp);
-        NioSocketAcceptor acceptor = new NioSocketAcceptor();
-        acceptor.setHandler(new IoHandlerAdapter() {
-            @Override
-            public void messageReceived(IoSession session, Object message) throws Exception {
-                session.write(IoBuffer.wrap(sb.toString().getBytes()));
-            }
-        });
-        acceptor.setReuseAddress(true);
-        acceptor.bind(new InetSocketAddress(port));
-
-
-        Session session = createSession();
-
-        final int forwardedPort1 = getFreePort();
-        final int forwardedPort2 = getFreePort();
-        System.err.println("URL: http://localhost:" + forwardedPort2);
-
-        session.setPortForwardingL(forwardedPort1, host, port);
-        session.setPortForwardingR(forwardedPort2, "localhost", forwardedPort1);
-
-
-        final CountDownLatch latch = new CountDownLatch(nbThread * nbDownloads * nbLoops);
-
-        final Thread[] threads = new Thread[nbThread];
-        final List<Throwable> errors = new CopyOnWriteArrayList<Throwable>();
-        for (int i = 0; i < threads.length; i++) {
-            threads[i] = new Thread() {
-                public void run() {
-                    for (int j = 0; j < nbLoops; j++)  {
-                        final MultiThreadedHttpConnectionManager mgr = new MultiThreadedHttpConnectionManager();
-                        final HttpClient client = new HttpClient(mgr);
-                        client.getHttpConnectionManager().getParams().setDefaultMaxConnectionsPerHost(100);
-                        client.getHttpConnectionManager().getParams().setMaxTotalConnections(1000);
-                        for (int i = 0; i < nbDownloads; i++) {
-                            try {
-                                checkHtmlPage(client, new URL("http://localhost:" + forwardedPort2 + path));
-                            } catch (Throwable e) {
-                                errors.add(e);
-                            } finally {
-                                latch.countDown();
-                                System.err.println("Remaining: " + latch.getCount());
-                            }
-                        }
-                        mgr.shutdown();
-                    }
-                }
-            };
-        }
-        for (int i = 0; i < threads.length; i++) {
-            threads[i].start();
-        }
-        latch.await();
-        for (Throwable t : errors) {
-            t.printStackTrace();
-        }
-        assertEquals(0, errors.size());
-    }
-
-    protected void checkHtmlPage(HttpClient client, URL url) throws IOException {
-        client.setHostConfiguration(new HostConfiguration());
-        client.getHostConfiguration().setHost(url.getHost(), url.getPort());
-        GetMethod get = new GetMethod("");
-        get.getParams().setVersion(HttpVersion.HTTP_1_1);
-        client.executeMethod(get);
-        String str = get.getResponseBodyAsString();
-        if (str.indexOf("</html>") <= 0) {
-            System.err.println(str);
-        }
-        assertTrue((str.indexOf("</html>") > 0));
-        get.releaseConnection();
-//        url.openConnection().setDefaultUseCaches(false);
-//        Reader reader = new BufferedReader(new InputStreamReader(url.openStream()));
-//        try {
-//            StringWriter sw = new StringWriter();
-//            char[] buf = new char[8192];
-//            while (true) {
-//                int len = reader.read(buf);
-//                if (len < 0) {
-//                    break;
-//                }
-//                sw.write(buf, 0, len);
-//            }
-//            assertTrue(sw.toString().indexOf("</html>") > 0);
-//        } finally {
-//            reader.close();
-//        }
     }
 
 

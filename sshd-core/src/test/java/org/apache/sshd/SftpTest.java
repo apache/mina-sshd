@@ -23,7 +23,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.ServerSocket;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Vector;
@@ -31,8 +30,6 @@ import java.util.Vector;
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.Logger;
-import com.jcraft.jsch.UIKeyboardInteractive;
-import com.jcraft.jsch.UserInfo;
 import org.apache.sshd.client.SftpClient;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.server.Command;
@@ -40,6 +37,8 @@ import org.apache.sshd.server.command.ScpCommandFactory;
 import org.apache.sshd.server.sftp.SftpSubsystem;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
+import org.apache.sshd.util.JSchLogger;
+import org.apache.sshd.util.SimpleUserInfo;
 import org.apache.sshd.util.Utils;
 import org.junit.After;
 import org.junit.Assert;
@@ -72,16 +71,8 @@ public class SftpTest {
         sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
         sshd.start();
 
+        JSchLogger.init();
         JSch sch = new JSch();
-        sch.setLogger(new Logger() {
-            public boolean isEnabled(int i) {
-                return true;
-            }
-
-            public void log(int i, String s) {
-                System.out.println("Log(jsch," + i + "): " + s);
-            }
-        });
         session = sch.getSession("sshd", "localhost", port);
         session.setUserInfo(new SimpleUserInfo("sshd"));
         session.connect();
@@ -268,41 +259,6 @@ public class SftpTest {
         c.connect();
         c.put(new ByteArrayInputStream(data.getBytes()), path);
         c.disconnect();
-    }
-
-    protected static class SimpleUserInfo implements UserInfo, UIKeyboardInteractive {
-        private final String password;
-
-        public SimpleUserInfo(String password) {
-            this.password = password;
-        }
-
-        public String getPassphrase() {
-            return null;
-        }
-
-        public String getPassword() {
-            return password;
-        }
-
-        public boolean promptPassword(String message) {
-            return true;
-        }
-
-        public boolean promptPassphrase(String message) {
-            return false;
-        }
-
-        public boolean promptYesNo(String message) {
-            return true;
-        }
-
-        public void showMessage(String message) {
-        }
-
-        public String[] promptKeyboardInteractive(String destination, String name, String instruction, String[] prompt, boolean[] echo) {
-            return new String[] { password };
-        }
     }
 
 }

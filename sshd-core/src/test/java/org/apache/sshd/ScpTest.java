@@ -39,6 +39,8 @@ import org.apache.sshd.client.ScpClient;
 import org.apache.sshd.server.command.ScpCommandFactory;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
+import org.apache.sshd.util.JSchLogger;
+import org.apache.sshd.util.SimpleUserInfo;
 import org.apache.sshd.util.Utils;
 import org.junit.After;
 import org.junit.Before;
@@ -76,36 +78,10 @@ public class ScpTest {
     }
 
     protected com.jcraft.jsch.Session getJschSession() throws JSchException {
+        JSchLogger.init();
         JSch sch = new JSch();
-        sch.setLogger(new Logger() {
-            public boolean isEnabled(int i) {
-                return true;
-            }
-
-            public void log(int i, String s) {
-                System.out.println("Log(jsch," + i + "): " + s);
-            }
-        });
         session = sch.getSession("sshd", "localhost", port);
-        session.setUserInfo(new UserInfo() {
-            public String getPassphrase() {
-                return null;
-            }
-            public String getPassword() {
-                return "sshd";
-            }
-            public boolean promptPassword(String message) {
-                return true;
-            }
-            public boolean promptPassphrase(String message) {
-                return false;
-            }
-            public boolean promptYesNo(String message) {
-                return true;
-            }
-            public void showMessage(String message) {
-            }
-        });
+        session.setUserInfo(new SimpleUserInfo("sshd"));
         session.connect();
         return session;
     }

@@ -23,25 +23,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.ServerSocket;
-import java.nio.file.Files;
-import java.nio.file.LinkOption;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.attribute.GroupPrincipal;
-import java.nio.file.attribute.PosixFileAttributeView;
-import java.nio.file.attribute.PosixFileAttributes;
-import java.nio.file.attribute.PosixFilePermission;
-import java.nio.file.attribute.UserPrincipal;
 import java.util.Arrays;
-import java.util.Map;
-import java.util.Set;
 import java.util.Vector;
 
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.Logger;
-import com.jcraft.jsch.UserInfo;
 import org.apache.sshd.SshServer;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.server.Command;
@@ -49,6 +36,8 @@ import org.apache.sshd.server.command.ScpCommandFactory;
 import org.apache.sshd.sftp.subsystem.SftpSubsystem;
 import org.apache.sshd.sftp.util.BogusPasswordAuthenticator;
 import org.apache.sshd.sftp.util.EchoShellFactory;
+import org.apache.sshd.sftp.util.JSchLogger;
+import org.apache.sshd.sftp.util.SimpleUserInfo;
 import org.apache.sshd.sftp.util.Utils;
 import org.junit.After;
 import org.junit.Before;
@@ -78,41 +67,10 @@ public class SftpTest {
         sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
         sshd.start();
 
+        JSchLogger.init();
         JSch sch = new JSch();
-        sch.setLogger(new Logger() {
-            public boolean isEnabled(int i) {
-                return true;
-            }
-
-            public void log(int i, String s) {
-                System.out.println("Log(jsch," + i + "): " + s);
-            }
-        });
         session = sch.getSession("sshd", "localhost", port);
-        session.setUserInfo(new UserInfo() {
-            public String getPassphrase() {
-                return null;
-            }
-
-            public String getPassword() {
-                return "sshd";
-            }
-
-            public boolean promptPassword(String message) {
-                return true;
-            }
-
-            public boolean promptPassphrase(String message) {
-                return false;
-            }
-
-            public boolean promptYesNo(String message) {
-                return true;
-            }
-
-            public void showMessage(String message) {
-            }
-        });
+        session.setUserInfo(new SimpleUserInfo("sshd"));
         session.connect();
     }
 

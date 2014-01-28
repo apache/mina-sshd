@@ -44,12 +44,16 @@ public class KeepAliveTest {
     private SshServer sshd;
     private int port;
 
+    private int heartbeat = 500;
+    private int timeout = 1000;
+    private int wait = 2000;
+
     @Before
     public void setUp() throws Exception {
         port = Utils.getFreePort();
 
         sshd = SshServer.setUpDefaultServer();
-        sshd.getProperties().put(ServerFactoryManager.IDLE_TIMEOUT, "1000");
+        sshd.getProperties().put(ServerFactoryManager.IDLE_TIMEOUT, Integer.toString(timeout));
         sshd.setPort(port);
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setShellFactory(new TestEchoShellFactory());
@@ -74,7 +78,7 @@ public class KeepAliveTest {
         session.authPassword("smx", "smx").await().isSuccess();
         ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
 
-        int state = channel.waitFor(ClientChannel.CLOSED, 2000);
+        int state = channel.waitFor(ClientChannel.CLOSED, wait);
         assertTrue((state & ClientChannel.CLOSED) != 0);
 
         channel.close(false);
@@ -84,13 +88,13 @@ public class KeepAliveTest {
     @Test
     public void testClientWithHeartBeat() throws Exception {
         SshClient client = SshClient.setUpDefaultClient();
-        client.getProperties().put(ClientFactoryManager.HEARTBEAT_INTERVAL, "500");
+        client.getProperties().put(ClientFactoryManager.HEARTBEAT_INTERVAL, Integer.toString(heartbeat));
         client.start();
         ClientSession session = client.connect("localhost", port).await().getSession();
         session.authPassword("smx", "smx").await().isSuccess();
         ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
 
-        int state = channel.waitFor(ClientChannel.CLOSED, 2000);
+        int state = channel.waitFor(ClientChannel.CLOSED, wait);
         assertTrue((state & ClientChannel.CLOSED) == 0);
 
         channel.close(false);
@@ -114,7 +118,7 @@ public class KeepAliveTest {
 
 
         TestEchoShellFactory.TestEchoShell.latch.await();
-        int state = channel.waitFor(ClientChannel.CLOSED, 2000);
+        int state = channel.waitFor(ClientChannel.CLOSED, wait);
         assertTrue((state & ClientChannel.CLOSED) != 0);
 
         channel.close(false);

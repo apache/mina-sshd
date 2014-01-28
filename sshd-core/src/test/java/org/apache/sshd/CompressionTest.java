@@ -32,6 +32,8 @@ import org.apache.sshd.common.compression.CompressionNone;
 import org.apache.sshd.common.compression.CompressionZlib;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
+import org.apache.sshd.util.JSchLogger;
+import org.apache.sshd.util.SimpleUserInfo;
 import org.apache.sshd.util.Utils;
 import org.junit.After;
 
@@ -90,35 +92,10 @@ public class CompressionTest {
     }
 
     protected void runTest() throws Exception {
+        JSchLogger.init();
         JSch sch = new JSch();
-        sch.setLogger(new Logger() {
-            public boolean isEnabled(int i) {
-                return true;
-            }
-            public void log(int i, String s) {
-                System.out.println("Log(jsch," + i + "): " + s);
-            }
-        });
         com.jcraft.jsch.Session s = sch.getSession("smx", "localhost", sshd.getPort());
-        s.setUserInfo(new UserInfo() {
-            public String getPassphrase() {
-                return null;
-            }
-            public String getPassword() {
-                return "smx";
-            }
-            public boolean promptPassword(String message) {
-                return true;
-            }
-            public boolean promptPassphrase(String message) {
-                return false;
-            }
-            public boolean promptYesNo(String message) {
-                return true;
-            }
-            public void showMessage(String message) {
-            }
-        });
+        s.setUserInfo(new SimpleUserInfo("smx"));
         s.connect();
         com.jcraft.jsch.Channel c = s.openChannel("shell");
         try {

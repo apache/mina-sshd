@@ -24,6 +24,8 @@ import com.jcraft.jsch.Channel;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.Logger;
 import com.jcraft.jsch.UserInfo;
+import org.apache.sshd.util.JSchLogger;
+import org.apache.sshd.util.SimpleUserInfo;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -34,7 +36,7 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class TestSpringConfig {
+public class SpringConfigTest {
 
     private ClassPathXmlApplicationContext context;
 
@@ -54,37 +56,10 @@ public class TestSpringConfig {
     public void testSpringConfig() throws Exception {
         int port = ((SshServer) context.getBean("sshServer")).getPort();
 
+        JSchLogger.init();
         JSch sch = new JSch();
-        sch.setLogger(new Logger() {
-            public boolean isEnabled(int i) {
-                return true;
-            }
-
-            public void log(int i, String s) {
-                System.out.println("Log(jsch," + i + "): " + s);
-            }
-        });
         com.jcraft.jsch.Session s = sch.getSession("smx", "localhost", port);
-        s.setUserInfo(new UserInfo() {
-            public String getPassphrase() {
-                return null;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-            public String getPassword() {
-                return "smx";
-            }
-            public boolean promptPassword(String message) {
-                return true;
-            }
-            public boolean promptPassphrase(String message) {
-                return false;  //To change body of implemented methods use File | Settings | File Templates.
-            }
-            public boolean promptYesNo(String message) {
-                return true;
-            }
-            public void showMessage(String message) {
-                //To change body of implemented methods use File | Settings | File Templates.
-            }
-        });
+        s.setUserInfo(new SimpleUserInfo("smx"));
         s.connect();
         Channel c = s.openChannel("shell");
         c.connect();

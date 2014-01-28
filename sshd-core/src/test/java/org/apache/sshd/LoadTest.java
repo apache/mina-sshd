@@ -28,6 +28,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
+import org.apache.sshd.ClientChannel;
+import org.apache.sshd.ClientSession;
+import org.apache.sshd.SshClient;
+import org.apache.sshd.SshServer;
 import org.apache.sshd.client.kex.DHG1;
 import org.apache.sshd.common.Cipher;
 import org.apache.sshd.common.KeyExchange;
