@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Base class for DHG key exchange algorithms.
  * Implementations will only have to configure the required data on the
- * {@link DH} class in the {@link #initDH(org.apache.sshd.common.kex.DH)} method.
+ * {@link DH} class in the {@link #getDH()} method.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
