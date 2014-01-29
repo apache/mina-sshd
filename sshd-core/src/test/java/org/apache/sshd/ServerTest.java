@@ -150,8 +150,8 @@ public class ServerTest {
             public void sessionCreated(Session session) {
                 System.out.println("Session created");
             }
-            public void sessionChanged(Session session) {
-                System.out.println("Session changed");
+            public void sessionEvent(Session sesssion, Event event) {
+                System.out.println("Session event: " + event);
             }
             public void sessionClosed(Session session) {
                 System.out.println("Session closed");

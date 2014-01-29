@@ -44,8 +44,7 @@ public class ServerSessionTimeoutListener implements SessionListener, Runnable {
         }
     }
 
-    public void sessionChanged(Session session) {
-        // ignore
+    public void sessionEvent(Session sesssion, Event event) {
     }
 
     public void sessionClosed(Session s) {

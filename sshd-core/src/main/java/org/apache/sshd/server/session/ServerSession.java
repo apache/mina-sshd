@@ -20,33 +20,16 @@ package org.apache.sshd.server.session;
 
 import java.io.IOException;
 import java.security.KeyPair;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.ScheduledExecutorService;
 
-import org.apache.sshd.SshServer;
-import org.apache.sshd.agent.common.AgentForwardSupport;
-import org.apache.sshd.agent.local.ChannelAgentForwarding;
-import org.apache.sshd.client.future.OpenFuture;
-import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.Service;
 import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.SshdSocketAddress;
-import org.apache.sshd.common.future.CloseFuture;
-import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.server.ServerFactoryManager;
-import org.apache.sshd.server.UserAuth;
-import org.apache.sshd.server.channel.OpenChannelException;
-import org.apache.sshd.server.x11.X11ForwardSupport;
 
 /**
  *
@@ -68,12 +51,13 @@ public class ServerSession extends AbstractSession {
     private int idleTimeoutMs = 10 * 60 * 1000; // 10 minutes in milliseconds
 
     public ServerSession(ServerFactoryManager server, IoSession ioSession) throws Exception {
-        super(server, ioSession);
+        super(true, server, ioSession);
         authTimeoutMs = getIntProperty(ServerFactoryManager.AUTH_TIMEOUT, authTimeoutMs);
         authTimeoutTimestamp = System.currentTimeMillis() + authTimeoutMs;
         idleTimeoutMs = getIntProperty(ServerFactoryManager.IDLE_TIMEOUT, idleTimeoutMs);
         log.info("Session created from {}", ioSession.getRemoteAddress());
         sendServerIdentification();
+        kexState = KEX_STATE_INIT;
         sendKexInit();
     }
 
@@ -85,135 +69,17 @@ public class ServerSession extends AbstractSession {
         return (ServerFactoryManager) factoryManager;
     }
 
-    protected ScheduledExecutorService getScheduledExecutorService() {
-        return getServerFactoryManager().getScheduledExecutorService();
-    }
-
-    @Override
-    public IoWriteFuture writePacket(Buffer buffer) throws IOException {
-        boolean rescheduleIdleTimer = getState() == State.Running;
-        if (rescheduleIdleTimer) {
-            resetIdleTimeout();
-        }
-        IoWriteFuture future = super.writePacket(buffer);
-        if (rescheduleIdleTimer) {
-            resetIdleTimeout();
-        }
-        return future;
-    }
-
-    protected void handleMessage(Buffer buffer) throws Exception {
-        SshConstants.Message cmd = buffer.getCommand();
-        log.debug("Received packet {}", cmd);
-        switch (cmd) {
-            case SSH_MSG_DISCONNECT: {
-                int code = buffer.getInt();
-                String msg = buffer.getString();
-                log.debug("Received SSH_MSG_DISCONNECT (reason={}, msg={})", code, msg);
-                close(true);
-                break;
-            }
-            case SSH_MSG_UNIMPLEMENTED: {
-                int code = buffer.getInt();
-                log.debug("Received SSH_MSG_UNIMPLEMENTED #{}", code);
-                break;
-            }
-            case SSH_MSG_DEBUG: {
-                boolean display = buffer.getBoolean();
-                String msg = buffer.getString();
-                log.debug("Received SSH_MSG_DEBUG (display={}) '{}'", display, msg);
-                break;
-            }
-            case SSH_MSG_IGNORE:
-                log.debug("Received SSH_MSG_IGNORE");
-                break;
-            default:
-                switch (getState()) {
-                    case ReceiveKexInit:
-                        if (cmd != SshConstants.Message.SSH_MSG_KEXINIT) {
-                            log.warn("Ignoring command " + cmd + " while waiting for " + SshConstants.Message.SSH_MSG_KEXINIT);
-                            break;
-                        }
-                        log.debug("Received SSH_MSG_KEXINIT");
-                        receiveKexInit(buffer);
-                        negociate();
-                        kex = NamedFactory.Utils.create(factoryManager.getKeyExchangeFactories(), negociated[SshConstants.PROPOSAL_KEX_ALGS]);
-                        kex.init(this, serverVersion.getBytes(), clientVersion.getBytes(), I_S, I_C);
-                        setState(State.Kex);
-                        break;
-                    case Kex:
-                        buffer.rpos(buffer.rpos() - 1);
-                        if (kex.next(buffer)) {
-                            sendNewKeys();
-                            setState(State.ReceiveNewKeys);
-                        }
-                        break;
-                    case ReceiveNewKeys:
-                        if (cmd != SshConstants.Message.SSH_MSG_NEWKEYS) {
-                            disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "Protocol error: expected packet " + SshConstants.Message.SSH_MSG_NEWKEYS + ", got " + cmd);
-                            return;
-                        }
-                        log.debug("Received SSH_MSG_NEWKEYS");
-                        receiveNewKeys(true);
-                        setState(State.WaitForServiceRequest);
-                        break;
-                    case WaitForServiceRequest:
-                        if (cmd != SshConstants.Message.SSH_MSG_SERVICE_REQUEST) {
-                            log.debug("Expecting a {}, but received {}", SshConstants.Message.SSH_MSG_SERVICE_REQUEST, cmd);
-                            notImplemented();
-                        } else {
-                            String service = buffer.getString();
-                            log.debug("Received SSH_MSG_SERVICE_REQUEST '{}'", service);
-                            try {
-                                startService(service);
-                            } catch (Exception e) {
-                                log.debug("Service " + service + " rejected", e);
-                                disconnect(SshConstants.SSH2_DISCONNECT_SERVICE_NOT_AVAILABLE, "Bad service request: " + service);
-                                break;
-                            }
-                            log.debug("Accepted service {}", service);
-                            Buffer response = createBuffer(SshConstants.Message.SSH_MSG_SERVICE_ACCEPT, 0);
-                            response.putString(service);
-                            writePacket(response);
-                            setState(State.Running);
-                        }
-                        break;
-                    case Running:
-                        running(cmd, buffer);
-                        resetIdleTimeout();
-                        break;
-                    default:
-                        throw new IllegalStateException("Unsupported state: " + getState());
-                }
-        }
+    protected void checkKeys() {
     }
 
     public void startService(String name) throws Exception {
         currentService = ServiceFactory.Utils.create(getFactoryManager().getServiceFactories(), name, this);
     }
 
-    private void running(SshConstants.Message cmd, Buffer buffer) throws Exception {
-        switch (cmd) {
-            case SSH_MSG_KEXINIT:
-                receiveKexInit(buffer);
-                sendKexInit();
-                negociate();
-                kex = NamedFactory.Utils.create(factoryManager.getKeyExchangeFactories(), negociated[SshConstants.PROPOSAL_KEX_ALGS]);
-                kex.init(this, serverVersion.getBytes(), clientVersion.getBytes(), I_S, I_C);
-                break;
-            case SSH_MSG_KEXDH_INIT:
-                buffer.rpos(buffer.rpos() - 1);
-                if (kex.next(buffer)) {
-                    sendNewKeys();
-                }
-                break;
-            case SSH_MSG_NEWKEYS:
-                receiveNewKeys(true);
-                break;
-            default:
-                currentService.process(cmd, buffer);
-                break;
-        }
+    @Override
+    protected void serviceAccept() throws IOException {
+        // TODO: can services be initiated by the server-side ?
+        disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "Unsupported packet: SSH_MSG_SERVICE_ACCEPT");
     }
 
     /**
@@ -223,7 +89,7 @@ public class ServerSession extends AbstractSession {
      * @throws IOException
      */
     protected void checkForTimeouts() throws IOException {
-        if (getState() != State.Closed) {
+        if (!closing) {
             long now = System.currentTimeMillis();
             if (!authed && now > authTimeoutTimestamp) {
                 disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "Session has timed out waiting for authentication after " + authTimeoutMs + " ms.");
@@ -247,7 +113,7 @@ public class ServerSession extends AbstractSession {
         sendIdentification(serverVersion);
     }
 
-    private void sendKexInit() throws IOException {
+    protected void sendKexInit() throws IOException {
         serverProposal = createProposal(factoryManager.getKeyPairProvider().getKeyTypes());
         I_S = sendKexInit(serverProposal);
     }
@@ -265,7 +131,7 @@ public class ServerSession extends AbstractSession {
         return true;
     }
 
-    private void receiveKexInit(Buffer buffer) throws IOException {
+    protected void receiveKexInit(Buffer buffer) throws IOException {
         clientProposal = new String[SshConstants.PROPOSAL_MAX];
         I_C = receiveKexInit(buffer, clientProposal);
     }

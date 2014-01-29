@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.Cipher;
@@ -41,6 +42,8 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultCloseFuture;
+import org.apache.sshd.common.future.DefaultSshFuture;
+import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoCloseFuture;
 import org.apache.sshd.common.io.IoSession;
@@ -72,6 +75,14 @@ public abstract class AbstractSession implements Session {
      * and {@link #attachSession(IoSession, AbstractSession)}.
      */
     public static final String SESSION = "org.apache.sshd.session";
+
+    protected static final int KEX_STATE_INIT = 1;
+    protected static final int KEX_STATE_RUN =  2;
+    protected static final int KEX_STATE_KEYS = 3;
+    protected static final int KEX_STATE_DONE = 4;
+
+    /** Client or server side */
+    protected final boolean isServer;
     /** Our logger */
     protected final Logger log = LoggerFactory.getLogger(getClass());
     /** The factory manager used to retrieve factories of Ciphers, Macs and other objects */
@@ -94,7 +105,7 @@ public abstract class AbstractSession implements Session {
     protected String username;
 
     /** Session listener */
-    protected final List<SessionListener> listeners = new ArrayList<SessionListener>();
+    protected final List<SessionListener> listeners = new CopyOnWriteArrayList<SessionListener>();
 
     //
     // Key exchange support
@@ -108,6 +119,8 @@ public abstract class AbstractSession implements Session {
     protected byte[] I_C; // the payload of the client's SSH_MSG_KEXINIT
     protected byte[] I_S; // the payload of the factoryManager's SSH_MSG_KEXINIT
     protected KeyExchange kex;
+    protected int kexState;
+    protected DefaultSshFuture reexchangeFuture;
 
     //
     // SSH packets encoding / decoding support
@@ -135,15 +148,14 @@ public abstract class AbstractSession implements Session {
 
     protected Service currentService;
 
-    private volatile State state = State.ReceiveKexInit;
-
     /**
      * Create a new session.
      *
      * @param factoryManager the factory manager
      * @param ioSession the underlying MINA session
      */
-    public AbstractSession(FactoryManager factoryManager, IoSession ioSession) {
+    public AbstractSession(boolean isServer, FactoryManager factoryManager, IoSession ioSession) {
+        this.isServer = isServer;
         this.factoryManager = factoryManager;
         this.ioSession = ioSession;
         this.random = factoryManager.getRandomFactory().create();
@@ -191,18 +203,6 @@ public abstract class AbstractSession implements Session {
         ioSession.setAttribute(SESSION, session);
     }
 
-    public State getState() {
-        return state;
-    }
-
-    protected void setState(State state) {
-        this.state = state;
-        final ArrayList<SessionListener> l = new ArrayList<SessionListener>(listeners);
-        for (SessionListener sl : l) {
-            sl.sessionChanged(this);
-        }
-    }
-
     public String getServerVersion() {
         return serverVersion;
     }
@@ -242,9 +242,10 @@ public abstract class AbstractSession implements Session {
         return authed;
     }
 
-    public void setAuthenticated(String username) {
+    public void setAuthenticated(String username) throws IOException {
         this.authed = true;
         this.username = username;
+        sendEvent(SessionListener.Event.Authenticated);
     }
 
     /**
@@ -285,7 +286,102 @@ public abstract class AbstractSession implements Session {
      * @param buffer the buffer containing the packet
      * @throws Exception if an exeption occurs while handling this packet.
      */
-    protected abstract void handleMessage(Buffer buffer) throws Exception;
+    protected void handleMessage(Buffer buffer) throws Exception {
+        SshConstants.Message cmd = buffer.getCommand();
+        switch (cmd) {
+            case SSH_MSG_DISCONNECT: {
+                int code = buffer.getInt();
+                String msg = buffer.getString();
+                log.debug("Received SSH_MSG_DISCONNECT (reason={}, msg={})", code, msg);
+                close(true);
+                break;
+            }
+            case SSH_MSG_IGNORE: {
+                log.debug("Received SSH_MSG_IGNORE");
+                break;
+            }
+            case SSH_MSG_UNIMPLEMENTED: {
+                int code = buffer.getInt();
+                log.debug("Received SSH_MSG_UNIMPLEMENTED #{}", code);
+                break;
+            }
+            case SSH_MSG_DEBUG: {
+                boolean display = buffer.getBoolean();
+                String msg = buffer.getString();
+                log.debug("Received SSH_MSG_DEBUG (display={}) '{}'", display, msg);
+                break;
+            }
+            case SSH_MSG_SERVICE_REQUEST:
+                String service = buffer.getString();
+                log.debug("Received SSH_MSG_SERVICE_REQUEST '{}'", service);
+                if (kexState != KEX_STATE_DONE) {
+                    throw new IllegalStateException("Received command " + cmd + " before key exchange is finished");
+                }
+                try {
+                    startService(service);
+                } catch (Exception e) {
+                    log.debug("Service " + service + " rejected", e);
+                    disconnect(SshConstants.SSH2_DISCONNECT_SERVICE_NOT_AVAILABLE, "Bad service request: " + service);
+                    break;
+                }
+                log.debug("Accepted service {}", service);
+                Buffer response = createBuffer(SshConstants.Message.SSH_MSG_SERVICE_ACCEPT, 0);
+                response.putString(service);
+                writePacket(response);
+                break;
+            case SSH_MSG_SERVICE_ACCEPT:
+                log.debug("Received SSH_MSG_SERVICE_ACCEPT");
+                if (kexState != KEX_STATE_DONE) {
+                    throw new IllegalStateException("Received command " + cmd + " before key exchange is finished");
+                }
+                serviceAccept();
+                break;
+            case SSH_MSG_KEXINIT:
+                log.debug("Received SSH_MSG_KEXINIT");
+                receiveKexInit(buffer);
+                if (kexState == KEX_STATE_DONE) {
+                    sendKexInit();
+                } else if (kexState != KEX_STATE_INIT) {
+                    throw new IllegalStateException("Received SSH_MSG_KEXINIT while key exchange is running");
+                }
+                kexState = KEX_STATE_RUN;
+                negociate();
+                kex = NamedFactory.Utils.create(factoryManager.getKeyExchangeFactories(), negociated[SshConstants.PROPOSAL_KEX_ALGS]);
+                kex.init(this, serverVersion.getBytes(), clientVersion.getBytes(), I_S, I_C);
+                break;
+            case SSH_MSG_NEWKEYS:
+                log.debug("Received SSH_MSG_NEWKEYS");
+                if (kexState != KEX_STATE_KEYS) {
+                    throw new IllegalStateException("Received command " + cmd + " before key exchange is finished");
+                }
+                receiveNewKeys();
+                kexState = KEX_STATE_DONE;
+                if (reexchangeFuture != null) {
+                    reexchangeFuture.setValue(true);
+                }
+                sendEvent(SessionListener.Event.KeyEstablished);
+                break;
+            default:
+                log.debug("Received {}", cmd);
+                if (cmd.toByte() >= SshConstants.SSH_MSG_KEX_FIRST && cmd.toByte() <= SshConstants.SSH_MSG_KEX_LAST) {
+                    if (kexState != KEX_STATE_RUN) {
+                        throw new IllegalStateException("Received kex command " + cmd.toByte() + " while not in key exchange");
+                    }
+                    buffer.rpos(buffer.rpos() - 1);
+                    if (kex.next(buffer)) {
+                        checkKeys();
+                        sendNewKeys();
+                        kexState = KEX_STATE_KEYS;
+                    }
+                } else if (currentService != null) {
+                    currentService.process(cmd, buffer);
+                    resetIdleTimeout();
+                } else {
+                    throw new IllegalStateException("Unsupported command " + cmd);
+                }
+                break;
+        }
+    }
 
     /**
      * Handle any exceptions that occured on this session.
@@ -331,8 +427,7 @@ public abstract class AbstractSession implements Session {
                     closeFuture.setClosed();
                     lock.notifyAll();
                 }
-                state = State.Closed;
-                log.info("SMessession {}@{} closed", s.getUsername(), s.getIoSession().getRemoteAddress());
+                log.info("Session {}@{} closed", s.getUsername(), s.getIoSession().getRemoteAddress());
                 // Fire 'close' event
                 final ArrayList<SessionListener> l = new ArrayList<SessionListener>(listeners);
                 for (SessionListener sl : l) {
@@ -373,12 +468,16 @@ public abstract class AbstractSession implements Session {
      * @throws java.io.IOException if an error occured when encoding sending the packet
      */
     public IoWriteFuture writePacket(Buffer buffer) throws IOException {
-        // Synchronize all write requests as needed by the encoding algorithm
-        // and also queue the write request in this synchronized block to ensure
-        // packets are sent in the correct order
-        synchronized (encodeLock) {
-            encode(buffer);
-            return ioSession.write(buffer);
+        try {
+            // Synchronize all write requests as needed by the encoding algorithm
+            // and also queue the write request in this synchronized block to ensure
+            // packets are sent in the correct order
+            synchronized (encodeLock) {
+                encode(buffer);
+                return ioSession.write(buffer);
+            }
+        } finally {
+            resetIdleTimeout();
         }
     }
 
@@ -768,10 +867,9 @@ public abstract class AbstractSession implements Session {
      * This method will intialize the ciphers, digests, macs and compression
      * according to the negociated server and client proposals.
      *
-     * @param isServer boolean indicating if this session is on the server or the client side
      * @throws Exception if an error occurs
      */
-    protected void receiveNewKeys(boolean isServer) throws Exception {
+    protected void receiveNewKeys() throws Exception {
         byte[] IVc2s;
         byte[] IVs2c;
         byte[] Ec2s;
@@ -1050,19 +1148,47 @@ public abstract class AbstractSession implements Session {
         if (listener == null) {
             throw new IllegalArgumentException();
         }
-
-        synchronized (this.listeners) {
-            this.listeners.add(listener);
-        }
+        this.listeners.add(listener);
     }
 
     /**
      * {@inheritDoc}
      */
     public void removeListener(SessionListener listener) {
-        synchronized (this.listeners) {
-            this.listeners.remove(listener);
+        this.listeners.remove(listener);
+    }
+
+    protected void sendEvent(SessionListener.Event event) throws IOException {
+        for (SessionListener sl : listeners) {
+            sl.sessionEvent(this, event);
         }
     }
+
+
+    /**
+     * {@inheritDoc}
+     */
+    public SshFuture reExchangeKeys() throws IOException {
+        if (kexState != KEX_STATE_DONE) {
+            throw new IllegalStateException("Can not perform key re-exchange while key exchange is already running");
+        }
+        kexState = KEX_STATE_INIT;
+        sendKexInit();
+        reexchangeFuture = new DefaultSshFuture(null);
+        return reexchangeFuture;
+    }
+
+    protected abstract void sendKexInit() throws IOException;
+
+    protected abstract void checkKeys() throws IOException;
+
+    protected abstract void receiveKexInit(Buffer buffer) throws IOException;
+
+    protected void serviceAccept() throws IOException {
+    }
+
+    public abstract void startService(String name) throws Exception;
+
+    public abstract void resetIdleTimeout();
 
 }

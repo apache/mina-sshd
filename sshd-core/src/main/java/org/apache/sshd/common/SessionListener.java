@@ -25,6 +25,10 @@ package org.apache.sshd.common;
  */
 public interface SessionListener {
 
+    enum Event {
+        KeyEstablished, Authenticated
+    }
+
     /**
      * A new session just been created
      * @param session
@@ -32,11 +36,11 @@ public interface SessionListener {
     void sessionCreated(Session session);
 
     /**
-     * A session state has changed
-     * @param session
-     * @see org.apache.sshd.common.Session#getState()
+     * An event has been triggered
+     * @param sesssion
+     * @param event
      */
-    void sessionChanged(Session session);
+    void sessionEvent(Session sesssion, Event event);
 
     /**
      * A session has been closed

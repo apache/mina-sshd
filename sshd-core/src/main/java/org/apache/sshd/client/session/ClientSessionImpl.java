@@ -24,7 +24,6 @@ import java.security.KeyPair;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.ClientChannel;
 import org.apache.sshd.ClientSession;
@@ -46,9 +45,9 @@ import org.apache.sshd.client.future.DefaultAuthFuture;
 import org.apache.sshd.client.scp.DefaultScpClient;
 import org.apache.sshd.client.sftp.DefaultSftpClient;
 import org.apache.sshd.common.KeyPairProvider;
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.ServiceFactory;
+import org.apache.sshd.common.SessionListener;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.SshdSocketAddress;
@@ -69,15 +68,16 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
      */
     private Map<Object, Object> metadataMap = new HashMap<Object, Object>();
 
+    // TODO: clean service support a bit
+    private boolean initialServiceRequestSent;
     private ServiceFactory currentServiceFactory;
-
     private Service nextService;
     private ServiceFactory nextServiceFactory;
 
     protected AuthFuture authFuture;
 
     public ClientSessionImpl(ClientFactoryManager client, IoSession session) throws Exception {
-        super(client, session);
+        super(false, client, session);
         log.info("Session created...");
         // Need to set the initial service early as calling code likes to start trying to
         // manipulate it before the connection has even been established.  For instance, to
@@ -97,6 +97,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         authFuture = new DefaultAuthFuture(lock);
         authFuture.setAuthed(false);
         sendClientIdentification();
+        kexState = KEX_STATE_INIT;
         sendKexInit();
     }
 
@@ -225,99 +226,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
 
     protected void handleMessage(Buffer buffer) throws Exception {
         synchronized (lock) {
-            doHandleMessage(buffer);
-        }
-    }
-
-    protected void doHandleMessage(Buffer buffer) throws Exception {
-        SshConstants.Message cmd = buffer.getCommand();
-        log.debug("Received packet {}", cmd);
-        switch (cmd) {
-            case SSH_MSG_DISCONNECT: {
-                int code = buffer.getInt();
-                String msg = buffer.getString();
-                log.info("Received SSH_MSG_DISCONNECT (reason={}, msg={})", code, msg);
-                close(true);
-                break;
-            }
-            case SSH_MSG_UNIMPLEMENTED: {
-                int code = buffer.getInt();
-                log.info("Received SSH_MSG_UNIMPLEMENTED #{}", code);
-                break;
-            }
-            case SSH_MSG_DEBUG: {
-                boolean display = buffer.getBoolean();
-                String msg = buffer.getString();
-                log.info("Received SSH_MSG_DEBUG (display={}) '{}'", display, msg);
-                break;
-            }
-            case SSH_MSG_IGNORE:
-                log.info("Received SSH_MSG_IGNORE");
-                break;
-            default:
-                switch (getState()) {
-                    case ReceiveKexInit:
-                        if (cmd != SshConstants.Message.SSH_MSG_KEXINIT) {
-                            log.error("Ignoring command {} while waiting for {}", cmd, SshConstants.Message.SSH_MSG_KEXINIT);
-                            break;
-                        }
-                        log.info("Received SSH_MSG_KEXINIT");
-                        receiveKexInit(buffer);
-                        negociate();
-                        kex = NamedFactory.Utils.create(factoryManager.getKeyExchangeFactories(), negociated[SshConstants.PROPOSAL_KEX_ALGS]);
-                        kex.init(this, serverVersion.getBytes(), clientVersion.getBytes(), I_S, I_C);
-                        setState(State.Kex);
-                        break;
-                    case Kex:
-                        buffer.rpos(buffer.rpos() - 1);
-                        if (kex.next(buffer)) {
-                            checkHost();
-                            sendNewKeys();
-                            setState(State.ReceiveNewKeys);
-                        }
-                        break;
-                    case ReceiveNewKeys:
-                        if (cmd != SshConstants.Message.SSH_MSG_NEWKEYS) {
-                            disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "Protocol error: expected packet SSH_MSG_NEWKEYS, got " + cmd);
-                            return;
-                        }
-                        log.info("Received SSH_MSG_NEWKEYS");
-                        receiveNewKeys(false);
-                        log.info("Send SSH_MSG_SERVICE_REQUEST for {}", currentServiceFactory.getName());
-                        Buffer request = createBuffer(SshConstants.Message.SSH_MSG_SERVICE_REQUEST, 0);
-                        request.putString(currentServiceFactory.getName());
-                        writePacket(request);
-                        setState(State.ServiceRequestSent);
-                        // Assuming that MINA-SSHD only implements "explicit server authentication" it is permissible
-                        // for the client's service to start sending data before the service-accept has been received.
-                        // If "implicit authentication" were to ever be supported, then this would need to be
-                        // called after service-accept comes back.  See SSH-TRANSPORT.
-                        currentService.start();
-                        break;
-                    case ServiceRequestSent:
-                        if (cmd != SshConstants.Message.SSH_MSG_SERVICE_ACCEPT) {
-                            disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "Protocol error: expected packet SSH_MSG_SERVICE_ACCEPT, got " + cmd);
-                            return;
-                        }
-                        log.info("Received SSH_MSG_SERVICE_ACCEPT");
-                        setState(State.Running);
-                        break;
-                    case Running:
-                        switch (cmd) {
-                            case SSH_MSG_REQUEST_SUCCESS:
-                                requestSuccess(buffer);
-                                break;
-                            case SSH_MSG_REQUEST_FAILURE:
-                                requestFailure(buffer);
-                                break;
-                            default:
-                                currentService.process(cmd, buffer);
-                                break;
-                        }
-                        break;
-                    default:
-                        throw new IllegalStateException("Unsupported state: " + getState());
-                }
+            super.handleMessage(buffer);
         }
     }
 
@@ -362,13 +271,6 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         }
     }
 
-    public void setState(State newState) {
-        synchronized (lock) {
-            super.setState(newState);
-            lock.notifyAll();
-        }
-    }
-
     protected boolean readIdentification(Buffer buffer) throws IOException {
         serverVersion = doReadIdentification(buffer);
         if (serverVersion == null) {
@@ -387,17 +289,18 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         sendIdentification(clientVersion);
     }
 
-    private void sendKexInit() throws Exception {
+    protected void sendKexInit() throws IOException {
         clientProposal = createProposal(KeyPairProvider.SSH_RSA + "," + KeyPairProvider.SSH_DSS);
         I_C = sendKexInit(clientProposal);
     }
 
-    private void receiveKexInit(Buffer buffer) throws Exception {
+    protected void receiveKexInit(Buffer buffer) throws IOException {
         serverProposal = new String[SshConstants.PROPOSAL_MAX];
         I_S = receiveKexInit(buffer, serverProposal);
     }
 
-    private void checkHost() throws SshException {
+    @Override
+    protected void checkKeys() throws SshException {
         ServerKeyVerifier serverKeyVerifier = getClientFactoryManager().getServerKeyVerifier();
         SocketAddress remoteAddress = ioSession.getRemoteAddress();
 
@@ -406,7 +309,44 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         }
     }
 
-	public Map<Object, Object> getMetadataMap() {
+    @Override
+    protected void sendEvent(SessionListener.Event event) throws IOException {
+        if (event == SessionListener.Event.KeyEstablished) {
+            sendInitialServiceRequest();
+        }
+        synchronized (lock) {
+            lock.notifyAll();
+        }
+        super.sendEvent(event);
+    }
+
+    protected void sendInitialServiceRequest() throws IOException {
+        if (initialServiceRequestSent) {
+            return;
+        }
+        initialServiceRequestSent = true;
+        log.info("Send SSH_MSG_SERVICE_REQUEST for {}", currentServiceFactory.getName());
+        Buffer request = createBuffer(SshConstants.Message.SSH_MSG_SERVICE_REQUEST, 0);
+        request.putString(currentServiceFactory.getName());
+        writePacket(request);
+        // Assuming that MINA-SSHD only implements "explicit server authentication" it is permissible
+        // for the client's service to start sending data before the service-accept has been received.
+        // If "implicit authentication" were to ever be supported, then this would need to be
+        // called after service-accept comes back.  See SSH-TRANSPORT.
+        currentService.start();
+    }
+
+    @Override
+    public void startService(String name) throws Exception {
+        throw new IllegalStateException("Starting services is not supported on the client side");
+    }
+
+    @Override
+    public void resetIdleTimeout() {
+
+    }
+
+    public Map<Object, Object> getMetadataMap() {
 		return metadataMap;
 	}
 

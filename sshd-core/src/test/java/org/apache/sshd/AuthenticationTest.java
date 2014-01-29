@@ -136,9 +136,6 @@ public class AuthenticationTest {
         public TestSession(ServerFactoryManager server, IoSession ioSession) throws Exception {
             super(server, ioSession);
         }
-        public void setState(State state) {
-            super.setState(state);
-        }
         public void handleMessage(Buffer buffer) throws Exception {
             super.handleMessage(buffer);
         }

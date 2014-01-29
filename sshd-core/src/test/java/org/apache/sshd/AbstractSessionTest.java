@@ -18,6 +18,8 @@
  */
 package org.apache.sshd;
 
+import java.io.IOException;
+
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.Buffer;
@@ -102,9 +104,7 @@ public class AbstractSessionTest {
 
     public static class MySession extends AbstractSession {
         public MySession() {
-            super(SshServer.setUpDefaultServer(), null);
-        }
-        public void messageReceived(IoBuffer byteBuffer) throws Exception {
+            super(true, SshServer.setUpDefaultServer(), null);
         }
         protected void handleMessage(Buffer buffer) throws Exception {
         }
@@ -113,6 +113,21 @@ public class AbstractSessionTest {
         }
         public String doReadIdentification(Buffer buffer) {
             return super.doReadIdentification(buffer);
+        }
+        @Override
+        protected void sendKexInit() throws IOException {
+        }
+        @Override
+        protected void checkKeys() {
+        }
+        @Override
+        protected void receiveKexInit(Buffer buffer) throws IOException {
+        }
+        @Override
+        public void startService(String name) throws Exception {
+        }
+        @Override
+        public void resetIdleTimeout() {
         }
     }
 }

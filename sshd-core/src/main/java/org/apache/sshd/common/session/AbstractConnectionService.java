@@ -182,6 +182,12 @@ public abstract class AbstractConnectionService implements ConnectionService {
             case SSH_MSG_GLOBAL_REQUEST:
                 globalRequest(buffer);
                 break;
+            case SSH_MSG_REQUEST_SUCCESS:
+                requestSuccess(buffer);
+                break;
+            case SSH_MSG_REQUEST_FAILURE:
+                requestFailure(buffer);
+                break;
             default:
                 throw new IllegalStateException("Unsupported command: " + cmd);
         }
@@ -356,18 +362,21 @@ public abstract class AbstractConnectionService implements ConnectionService {
                         buf.putInt(channel.getLocalWindow().getSize());
                         buf.putInt(channel.getLocalWindow().getPacketSize());
                         session.writePacket(buf);
-                    } else if (future.getException() != null) {
-                        Buffer buf = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_FAILURE, 0);
-                        buf.putInt(id);
-                        if (future.getException() instanceof OpenChannelException) {
-                            buf.putInt(((OpenChannelException) future.getException()).getReasonCode());
-                            buf.putString(future.getException().getMessage());
-                        } else {
-                            buf.putInt(0);
-                            buf.putString("Error opening channel: " + future.getException().getMessage());
+                    } else {
+                        Throwable exception = future.getException();
+                        if (exception != null) {
+                            Buffer buf = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_FAILURE, 0);
+                            buf.putInt(id);
+                            if (exception instanceof OpenChannelException) {
+                                buf.putInt(((OpenChannelException) exception).getReasonCode());
+                                buf.putString(exception.getMessage());
+                            } else {
+                                buf.putInt(0);
+                                buf.putString("Error opening channel: " + exception.getMessage());
+                            }
+                            buf.putString("");
+                            session.writePacket(buf);
                         }
-                        buf.putString("");
-                        session.writePacket(buf);
                     }
                 } catch (IOException e) {
                     session.exceptionCaught(e);
@@ -419,6 +428,14 @@ public abstract class AbstractConnectionService implements ConnectionService {
             buffer = session.createBuffer(SshConstants.Message.SSH_MSG_REQUEST_FAILURE, 0);
             session.writePacket(buffer);
         }
+    }
+
+    protected void requestSuccess(Buffer buffer) throws Exception {
+        ((AbstractSession) session).requestSuccess(buffer);
+    }
+
+    protected void requestFailure(Buffer buffer) throws Exception {
+        ((AbstractSession) session).requestFailure(buffer);
     }
 
 }

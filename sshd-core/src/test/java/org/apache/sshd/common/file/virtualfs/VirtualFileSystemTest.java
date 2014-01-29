@@ -77,7 +77,7 @@ public class VirtualFileSystemTest {
 
     static class TestSession extends AbstractSession {
         TestSession() {
-            super(SshServer.setUpDefaultServer(), null);
+            super(true, SshServer.setUpDefaultServer(), null);
             this.username = "userName";
         }
         @Override
@@ -86,6 +86,21 @@ public class VirtualFileSystemTest {
         @Override
         protected boolean readIdentification(Buffer buffer) throws IOException {
             return false;
+        }
+        @Override
+        protected void sendKexInit() throws IOException {
+        }
+        @Override
+        protected void checkKeys() {
+        }
+        @Override
+        protected void receiveKexInit(Buffer buffer) throws IOException {
+        }
+        @Override
+        public void startService(String name) throws Exception {
+        }
+        @Override
+        public void resetIdleTimeout() {
         }
     }
 

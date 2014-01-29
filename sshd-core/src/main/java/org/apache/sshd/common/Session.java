@@ -20,6 +20,7 @@ package org.apache.sshd.common;
 
 import java.io.IOException;
 
+import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.util.Buffer;
 
@@ -29,17 +30,6 @@ import org.apache.sshd.common.util.Buffer;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface Session {
-
-    public enum State {
-        ReceiveKexInit, Kex, ReceiveNewKeys, ServiceRequestSent, WaitForServiceRequest, Running, Closed
-    }
-
-    /**
-     * Retrieve the state of this session.
-     * @return the session's state
-     * @see SessionListener
-     */
-    State getState();
 
     /**
      * Returns the value of the user-defined attribute of this session.
@@ -151,6 +141,11 @@ public interface Session {
      * @param listener the session listener to remove
      */
     void removeListener(SessionListener listener);
+
+    /**
+     * Initiate a new key exchange.
+     */
+    SshFuture reExchangeKeys() throws IOException;
 
     /**
      * Type safe key for storage within the user attributes of {@link org.apache.sshd.common.session.AbstractSession}.
