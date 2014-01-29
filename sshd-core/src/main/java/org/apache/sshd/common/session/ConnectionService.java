@@ -60,4 +60,7 @@ public interface ConnectionService extends Service {
 
     // TODO: remove from interface, it's server side only
     String createX11Display(boolean singleConnection, String authenticationProtocol, String authenticationCookie, int screen) throws IOException;
+
+    void setAllowMoreSessions(boolean allow);
+
 }

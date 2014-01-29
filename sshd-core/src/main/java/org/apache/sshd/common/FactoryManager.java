@@ -184,4 +184,11 @@ public interface FactoryManager {
      */
     List<ServiceFactory> getServiceFactories();
 
+    /**
+     * Retrieve the list of global request handlers.
+     *
+     * @return a list of named <code>GlobalRequestHandler</code>
+     */
+    List<GlobalRequestHandler> getGlobalRequestHandlers();
+
 }

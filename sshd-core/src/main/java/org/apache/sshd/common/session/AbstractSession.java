@@ -24,11 +24,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.sshd.client.channel.AbstractClientChannel;
-import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.Cipher;
 import org.apache.sshd.common.Compression;
 import org.apache.sshd.common.Digest;
@@ -42,14 +39,12 @@ import org.apache.sshd.common.Session;
 import org.apache.sshd.common.SessionListener;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.TcpipForwarder;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultCloseFuture;
-import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoCloseFuture;
-import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.io.IoSession;
+import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.BufferUtils;
 import org.apache.sshd.common.util.Readable;
@@ -337,7 +332,7 @@ public abstract class AbstractSession implements Session {
                     lock.notifyAll();
                 }
                 state = State.Closed;
-                log.info("Session {}@{} closed", s.getUsername(), s.getIoSession().getRemoteAddress());
+                log.info("SMessession {}@{} closed", s.getUsername(), s.getIoSession().getRemoteAddress());
                 // Fire 'close' event
                 final ArrayList<SessionListener> l = new ArrayList<SessionListener>(listeners);
                 for (SessionListener sl : l) {
@@ -997,100 +992,6 @@ public abstract class AbstractSession implements Session {
             requestResult.notify();
         }
     }
-
-
-    /*
-    protected int getNextChannelId() {
-        return nextChannelId.incrementAndGet();
-    }
-
-    public int registerChannel(Channel channel) throws IOException {
-        int channelId = getNextChannelId();
-        channel.init(this, session, channelId);
-        channels.put(channelId, channel);
-        return channelId;
-    }
-
-    public void channelOpenConfirmation(Buffer buffer) throws IOException {
-        Channel channel = getChannel(buffer);
-        log.debug("Received SSH_MSG_CHANNEL_OPEN_CONFIRMATION on channel {}", channel.getId());
-        int recipient = buffer.getInt();
-        int rwsize = buffer.getInt();
-        int rmpsize = buffer.getInt();
-        channel.handleOpenSuccess(recipient, rwsize, rmpsize, buffer);
-    }
-
-    public void channelOpenFailure(Buffer buffer) throws IOException {
-        AbstractClientChannel channel = (AbstractClientChannel) getChannel(buffer);
-        log.debug("Received SSH_MSG_CHANNEL_OPEN_FAILURE on channel {}", channel.getId());
-        channels.remove(channel.getId());
-        channel.handleOpenFailure(buffer);
-    }
-
-    public void channelData(Buffer buffer) throws IOException {
-        Channel channel = getChannel(buffer);
-        channel.handleData(buffer);
-    }
-
-    public void channelExtendedData(Buffer buffer) throws IOException {
-        Channel channel = getChannel(buffer);
-        channel.handleExtendedData(buffer);
-    }
-
-    public void channelWindowAdjust(Buffer buffer) throws IOException {
-        try {
-            Channel channel = getChannel(buffer);
-            channel.handleWindowAdjust(buffer);
-        } catch (SshException e) {
-            log.info(e.getMessage());
-        }
-    }
-
-    public void channelEof(Buffer buffer) throws IOException {
-        Channel channel = getChannel(buffer);
-        channel.handleEof();
-    }
-
-    public void channelClose(Buffer buffer) throws IOException {
-        Channel channel = getChannel(buffer);
-        channel.handleClose();
-        unregisterChannel(channel);
-    }
-
-    public void unregisterChannel(Channel channel) {
-        channels.remove(channel.getId());
-    }
-
-    public void channelRequest(Buffer buffer) throws IOException {
-        Channel channel = getChannel(buffer);
-        String type = buffer.getString();
-        boolean wantReply = buffer.getBoolean();
-        boolean success = channel.handleRequest(type, buffer);
-        if (wantReply) {
-            Buffer replyBuffer = createBuffer(
-                    success ? SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS
-                            : SshConstants.Message.SSH_MSG_CHANNEL_FAILURE, 0);
-            replyBuffer.putInt(channel.getRecipient());
-            writePacket(replyBuffer);
-        }
-    }
-
-    public void channelFailure(Buffer buffer) throws IOException {
-        Channel channel = getChannel(buffer);
-        channel.handleFailure();
-    }
-
-    protected Channel getChannel(Buffer buffer) throws IOException {
-        int recipient = buffer.getInt();
-        Channel channel = channels.get(recipient);
-        if (channel == null) {
-            buffer.rpos(buffer.rpos() - 5);
-            SshConstants.Message cmd = buffer.getCommand();
-            throw new SshException("Received " + cmd + " on unknown channel " + recipient);
-        }
-        return channel;
-    }
-    */
 
     /**
      * Retrieve a configuration property as an integer

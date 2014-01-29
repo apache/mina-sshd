@@ -60,6 +60,7 @@ public abstract class AbstractFactoryManager implements FactoryManager {
     protected ForwardingFilter tcpipForwardingFilter;
     protected FileSystemFactory fileSystemFactory;
     protected List<ServiceFactory> serviceFactories;
+    protected List<GlobalRequestHandler> globalRequestHandlers;
 
     protected AbstractFactoryManager() {
         loadVersion();
@@ -235,5 +236,13 @@ public abstract class AbstractFactoryManager implements FactoryManager {
 
     public void setServiceFactories(List<ServiceFactory> serviceFactories) {
         this.serviceFactories = serviceFactories;
+    }
+
+    public List<GlobalRequestHandler> getGlobalRequestHandlers() {
+        return globalRequestHandlers;
+    }
+
+    public void setGlobalRequestHandlers(List<GlobalRequestHandler> globalRequestHandlers) {
+        this.globalRequestHandlers = globalRequestHandlers;
     }
 }

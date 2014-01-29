@@ -27,16 +27,19 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.agent.common.AgentForwardSupport;
 import org.apache.sshd.client.channel.AbstractClientChannel;
+import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.Channel;
+import org.apache.sshd.common.GlobalRequestHandler;
+import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.Session;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.TcpipForwarder;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultCloseFuture;
-import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.server.channel.OpenChannelException;
 import org.apache.sshd.server.x11.X11ForwardSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,6 +66,7 @@ public abstract class AbstractConnectionService implements ConnectionService {
     protected final X11ForwardSupport x11Forward;
     protected final CloseFuture closeFuture;
     protected volatile boolean closing;
+    protected boolean allowMoreSessions = true;
 
     protected AbstractConnectionService(Session session) {
         this.session = session;
@@ -97,8 +101,8 @@ public abstract class AbstractConnectionService implements ConnectionService {
                         final AtomicInteger latch = new AtomicInteger(channelToClose.size());
                         for (Channel channel : channelToClose) {
                             log.debug("Closing channel {}", channel.getId());
-                            channel.close(immediately).addListener(new SshFutureListener() {
-                                public void operationComplete(SshFuture sshFuture) {
+                            channel.close(immediately).addListener(new SshFutureListener<CloseFuture>() {
+                                public void operationComplete(CloseFuture future) {
                                     if (latch.decrementAndGet() == 0) {
                                         closeFuture.setClosed();
                                     }
@@ -125,7 +129,7 @@ public abstract class AbstractConnectionService implements ConnectionService {
      *
      * @param channel the channel to register
      * @return the id of this channel
-     * @throws Exception
+     * @throws IOException
      */
     public int registerChannel(Channel channel) throws IOException {
         int channelId = getNextChannelId();
@@ -141,6 +145,50 @@ public abstract class AbstractConnectionService implements ConnectionService {
      */
     public void unregisterChannel(Channel channel) {
         channels.remove(channel.getId());
+    }
+
+    public void process(SshConstants.Message cmd, Buffer buffer) throws Exception {
+        switch (cmd) {
+            case SSH_MSG_CHANNEL_OPEN:
+                channelOpen(buffer);
+                break;
+            case SSH_MSG_CHANNEL_OPEN_CONFIRMATION:
+                channelOpenConfirmation(buffer);
+                break;
+            case SSH_MSG_CHANNEL_OPEN_FAILURE:
+                channelOpenFailure(buffer);
+                break;
+            case SSH_MSG_CHANNEL_REQUEST:
+                channelRequest(buffer);
+                break;
+            case SSH_MSG_CHANNEL_DATA:
+                channelData(buffer);
+                break;
+            case SSH_MSG_CHANNEL_EXTENDED_DATA:
+                channelExtendedData(buffer);
+                break;
+            case SSH_MSG_CHANNEL_FAILURE:
+                channelFailure(buffer);
+                break;
+            case SSH_MSG_CHANNEL_WINDOW_ADJUST:
+                channelWindowAdjust(buffer);
+                break;
+            case SSH_MSG_CHANNEL_EOF:
+                channelEof(buffer);
+                break;
+            case SSH_MSG_CHANNEL_CLOSE:
+                channelClose(buffer);
+                break;
+            case SSH_MSG_GLOBAL_REQUEST:
+                globalRequest(buffer);
+                break;
+            default:
+                throw new IllegalStateException("Unsupported command: " + cmd);
+        }
+    }
+
+    public void setAllowMoreSessions(boolean allow) {
+        allowMoreSessions = allow;
     }
 
     public void channelOpenConfirmation(Buffer buffer) throws IOException {
@@ -266,6 +314,109 @@ public abstract class AbstractConnectionService implements ConnectionService {
             throw new SshException("Received " + cmd + " on unknown channel " + recipient);
         }
         return channel;
+    }
+
+    protected void channelOpen(Buffer buffer) throws Exception {
+        String type = buffer.getString();
+        final int id = buffer.getInt();
+        final int rwsize = buffer.getInt();
+        final int rmpsize = buffer.getInt();
+
+        log.debug("Received SSH_MSG_CHANNEL_OPEN {}", type);
+
+        if (closing) {
+            Buffer buf = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_FAILURE, 0);
+            buf.putInt(id);
+            buf.putInt(SshConstants.SSH_OPEN_CONNECT_FAILED);
+            buf.putString("SSH server is shutting down: " + type);
+            buf.putString("");
+            session.writePacket(buf);
+            return;
+        }
+        if (!allowMoreSessions) {
+            Buffer buf = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_FAILURE, 0);
+            buf.putInt(id);
+            buf.putInt(SshConstants.SSH_OPEN_CONNECT_FAILED);
+            buf.putString("additional sessions disabled");
+            buf.putString("");
+            session.writePacket(buf);
+            return;
+        }
+
+        final Channel channel = NamedFactory.Utils.create(session.getFactoryManager().getChannelFactories(), type);
+        if (channel == null) {
+            Buffer buf = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_FAILURE, 0);
+            buf.putInt(id);
+            buf.putInt(SshConstants.SSH_OPEN_UNKNOWN_CHANNEL_TYPE);
+            buf.putString("Unsupported channel type: " + type);
+            buf.putString("");
+            session.writePacket(buf);
+            return;
+        }
+
+        final int channelId = registerChannel(channel);
+        channel.open(id, rwsize, rmpsize, buffer).addListener(new SshFutureListener<OpenFuture>() {
+            public void operationComplete(OpenFuture future) {
+                try {
+                    if (future.isOpened()) {
+                        Buffer buf = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_CONFIRMATION, 0);
+                        buf.putInt(id);
+                        buf.putInt(channelId);
+                        buf.putInt(channel.getLocalWindow().getSize());
+                        buf.putInt(channel.getLocalWindow().getPacketSize());
+                        session.writePacket(buf);
+                    } else if (future.getException() != null) {
+                        Buffer buf = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_FAILURE, 0);
+                        buf.putInt(id);
+                        if (future.getException() instanceof OpenChannelException) {
+                            buf.putInt(((OpenChannelException) future.getException()).getReasonCode());
+                            buf.putString(future.getException().getMessage());
+                        } else {
+                            buf.putInt(0);
+                            buf.putString("Error opening channel: " + future.getException().getMessage());
+                        }
+                        buf.putString("");
+                        session.writePacket(buf);
+                    }
+                } catch (IOException e) {
+                    session.exceptionCaught(e);
+                }
+            }
+        });
+    }
+
+    /**
+     * Process global requests
+     *
+     * @param buffer the request
+     * @throws Exception
+     */
+    protected void globalRequest(Buffer buffer) throws Exception {
+        String req = buffer.getString();
+        boolean wantReply = buffer.getBoolean();
+        log.debug("Received SSH_MSG_GLOBAL_REQUEST {}", req);
+        List<GlobalRequestHandler> handlers = session.getFactoryManager().getGlobalRequestHandlers();
+        if (handlers != null) {
+            for (GlobalRequestHandler handler : handlers) {
+                try {
+                    if (handler.process(this, req, wantReply, buffer)) {
+                        return;
+                    }
+                } catch (Exception e) {
+                    log.warn("Error processing global request " + req, e);
+                    if (wantReply) {
+                        buffer = session.createBuffer(SshConstants.Message.SSH_MSG_REQUEST_FAILURE, 0);
+                        session.writePacket(buffer);
+                    }
+                    return;
+                }
+            }
+        }
+        log.warn("Unknown global request: {}", req);
+        if (wantReply) {
+            buffer = session.createBuffer(SshConstants.Message.SSH_MSG_REQUEST_FAILURE, 0);
+            session.writePacket(buffer);
+        }
     }
 
 }
