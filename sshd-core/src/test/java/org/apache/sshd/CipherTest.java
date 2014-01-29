@@ -61,7 +61,7 @@ public class CipherTest {
 
     @Test
     public void testAES192CBC() throws Exception {
-        if (SecurityUtils.isBouncyCastleRegistered()) {
+        if (SecurityUtils.isBouncyCastleRegistered() && checkCipher(com.jcraft.jsch.jce.AES192CBC.class.getName())) {
             setUp(new AES192CBC.Factory());
             runTest();
         }
@@ -69,7 +69,7 @@ public class CipherTest {
 
     @Test
     public void testAES256CBC() throws Exception {
-        if (SecurityUtils.isBouncyCastleRegistered()) {
+        if (SecurityUtils.isBouncyCastleRegistered() && checkCipher(com.jcraft.jsch.jce.AES256CBC.class.getName())) {
             setUp(new AES256CBC.Factory());
             runTest();
         }
@@ -155,5 +155,19 @@ public class CipherTest {
         }
         c.disconnect();
         s.disconnect();
+    }
+
+    static boolean checkCipher(String cipher){
+        try{
+            Class c=Class.forName(cipher);
+            com.jcraft.jsch.Cipher _c = (com.jcraft.jsch.Cipher)(c.newInstance());
+            _c.init(com.jcraft.jsch.Cipher.ENCRYPT_MODE,
+                    new byte[_c.getBlockSize()],
+                    new byte[_c.getIVSize()]);
+            return true;
+        }
+        catch(Exception e){
+            return false;
+        }
     }
 }
