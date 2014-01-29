@@ -49,7 +49,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
         }
         if (init) {
             // Prompt for password
-            buffer = session.createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_INFO_REQUEST, 0);
+            buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_INFO_REQUEST, 0);
             buffer.putString("Password authentication");
             buffer.putString("");
             buffer.putString("en-US");
@@ -59,8 +59,8 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
             session.writePacket(buffer);
             return null;
         } else {
-            SshConstants.Message cmd = buffer.getCommand();
-            if (cmd != SshConstants.Message.SSH_MSG_USERAUTH_INFO_RESPONSE) {
+            byte cmd = buffer.getByte();
+            if (cmd != SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE) {
                 throw new SshException("Received unexepected message: " + cmd);
             }
             int num = buffer.getInt();

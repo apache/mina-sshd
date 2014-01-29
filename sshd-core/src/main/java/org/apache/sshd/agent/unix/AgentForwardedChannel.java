@@ -62,7 +62,7 @@ public class AgentForwardedChannel extends AbstractClientChannel implements Runn
 
     @Override
     protected synchronized void doOpen() throws IOException {
-        out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.Message.SSH_MSG_CHANNEL_DATA);
+        out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA);
     }
 
     @Override

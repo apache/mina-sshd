@@ -41,7 +41,7 @@ public interface Service {
      * @param buffer
      * @throws Exception
      */
-    void process(SshConstants.Message cmd, Buffer buffer) throws Exception;
+    void process(byte cmd, Buffer buffer) throws Exception;
 
     /**
      * Close the service.

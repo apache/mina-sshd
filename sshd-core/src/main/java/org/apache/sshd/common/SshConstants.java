@@ -25,112 +25,54 @@ package org.apache.sshd.common;
  */
 public interface SshConstants {
 
-    /**
-     * SSH message identifiers
-     */
-    public enum Message {
+    //
+    // SSH message identifiers
+    //
 
-        SSH_MSG_DISCONNECT(1),
-        SSH_MSG_IGNORE(2),
-        SSH_MSG_UNIMPLEMENTED(3),
-        SSH_MSG_DEBUG(4),
-        SSH_MSG_SERVICE_REQUEST(5),
-        SSH_MSG_SERVICE_ACCEPT(6),
-        SSH_MSG_KEXINIT(20),
-        SSH_MSG_NEWKEYS(21),
+    static final byte SSH_MSG_DISCONNECT=                      1;
+    static final byte SSH_MSG_IGNORE=                          2;
+    static final byte SSH_MSG_UNIMPLEMENTED=                   3;
+    static final byte SSH_MSG_DEBUG=                           4;
+    static final byte SSH_MSG_SERVICE_REQUEST=                 5;
+    static final byte SSH_MSG_SERVICE_ACCEPT=                  6;
+    static final byte SSH_MSG_KEXINIT=                        20;
+    static final byte SSH_MSG_NEWKEYS=                        21;
 
-        SSH_MSG_KEXDH_INIT(30),
+    static final byte SSH_MSG_KEX_FIRST=                      30;
+    static final byte SSH_MSG_KEX_LAST=                       49;
 
-        // KEXDH_REPLY and KEX_DH_GEX_GROUP have the same command ID
-        SSH_MSG_KEXDH_REPLY_KEX_DH_GEX_GROUP(31),
+    static final byte SSH_MSG_KEXDH_INIT=                     30;
+    static final byte SSH_MSG_KEXDH_REPLY=                    31;
 
-        SSH_MSG_KEX_DH_GEX_INIT(32),
-        SSH_MSG_KEX_DH_GEX_REPLY(33),
-        SSH_MSG_KEX_DH_GEX_REQUEST(34),
+    static final byte SSH_MSG_KEX_DH_GEX_GROUP=               31;
+    static final byte SSH_MSG_KEX_DH_GEX_INIT=                32;
+    static final byte SSH_MSG_KEX_DH_GEX_REPLY=               33;
+    static final byte SSH_MSG_KEX_DH_GEX_REQUEST=             34;
 
-        SSH_MSG_USERAUTH_REQUEST(50),
-        SSH_MSG_USERAUTH_FAILURE(51),
-        SSH_MSG_USERAUTH_SUCCESS(52),
-        SSH_MSG_USERAUTH_BANNER(53),
-        SSH_MSG_USERAUTH_INFO_REQUEST(60),
-        SSH_MSG_USERAUTH_INFO_RESPONSE(61),
-        SSH_MSG_USERAUTH_PK_OK(60),
+    static final byte SSH_MSG_USERAUTH_REQUEST=               50;
+    static final byte SSH_MSG_USERAUTH_FAILURE=               51;
+    static final byte SSH_MSG_USERAUTH_SUCCESS=               52;
+    static final byte SSH_MSG_USERAUTH_BANNER=                53;
+    static final byte SSH_MSG_USERAUTH_INFO_REQUEST=          60;
+    static final byte SSH_MSG_USERAUTH_INFO_RESPONSE=         61;
+    static final byte SSH_MSG_USERAUTH_PK_OK=                 60;
 
-        SSH_MSG_GLOBAL_REQUEST(80),
-        SSH_MSG_REQUEST_SUCCESS(81),
-        SSH_MSG_REQUEST_FAILURE(82),
-        
-        SSH_MSG_USERAUTH_GSSAPI_MIC(66),        
+    static final byte SSH_MSG_USERAUTH_GSSAPI_MIC=            66;
 
-        SSH_MSG_CHANNEL_OPEN(90),
-        SSH_MSG_CHANNEL_OPEN_CONFIRMATION(91),
-        SSH_MSG_CHANNEL_OPEN_FAILURE(92),
-        SSH_MSG_CHANNEL_WINDOW_ADJUST(93),
-        SSH_MSG_CHANNEL_DATA(94),
-        SSH_MSG_CHANNEL_EXTENDED_DATA(95),
-        SSH_MSG_CHANNEL_EOF(96),
-        SSH_MSG_CHANNEL_CLOSE(97),
-        SSH_MSG_CHANNEL_REQUEST(98),
-        SSH_MSG_CHANNEL_SUCCESS(99),
-        SSH_MSG_CHANNEL_FAILURE(100);
-
-        private byte b;
-        private Message(int b) {
-            this.b = (byte) b;
-        }
-
-        public byte toByte() {
-            return b;
-        }
-
-        static Message[] commands;
-        static {
-            commands = new Message[256];
-            for (Message c : Message.values()) {
-                if (commands[c.toByte()] == null) {
-                    commands[c.toByte()] = c;
-                }
-            }
-        }
-        public static Message fromByte(byte b) {
-            return commands[b];
-        }
-    }
-
-    static final int SSH_MSG_DISCONNECT=                      1;
-    static final int SSH_MSG_IGNORE=                          2;
-    static final int SSH_MSG_UNIMPLEMENTED=                   3;
-    static final int SSH_MSG_DEBUG=                           4;
-    static final int SSH_MSG_SERVICE_REQUEST=                 5;
-    static final int SSH_MSG_SERVICE_ACCEPT=                  6;
-    static final int SSH_MSG_KEXINIT=                        20;
-    static final int SSH_MSG_NEWKEYS=                        21;
-
-    static final int SSH_MSG_KEX_FIRST=                      30;
-    static final int SSH_MSG_KEX_LAST=                       49;
-
-    static final int SSH_MSG_KEXDH_INIT=                     30;
-    static final int SSH_MSG_KEXDH_REPLY=                    31;
-
-    static final int SSH_MSG_KEX_DH_GEX_GROUP=               31;
-    static final int SSH_MSG_KEX_DH_GEX_INIT=                32;
-    static final int SSH_MSG_KEX_DH_GEX_REPLY=               33;
-    static final int SSH_MSG_KEX_DH_GEX_REQUEST=             34;
-
-    static final int SSH_MSG_GLOBAL_REQUEST=                 80;
-    static final int SSH_MSG_REQUEST_SUCCESS=                81;
-    static final int SSH_MSG_REQUEST_FAILURE=                82;
-    static final int SSH_MSG_CHANNEL_OPEN=                   90;
-    static final int SSH_MSG_CHANNEL_OPEN_CONFIRMATION=      91;
-    static final int SSH_MSG_CHANNEL_OPEN_FAILURE=           92;
-    static final int SSH_MSG_CHANNEL_WINDOW_ADJUST=          93;
-    static final int SSH_MSG_CHANNEL_DATA=                   94;
-    static final int SSH_MSG_CHANNEL_EXTENDED_DATA=          95;
-    static final int SSH_MSG_CHANNEL_EOF=                    96;
-    static final int SSH_MSG_CHANNEL_CLOSE=                  97;
-    static final int SSH_MSG_CHANNEL_REQUEST=                98;
-    static final int SSH_MSG_CHANNEL_SUCCESS=                99;
-    static final int SSH_MSG_CHANNEL_FAILURE=               100;
+    static final byte SSH_MSG_GLOBAL_REQUEST=                 80;
+    static final byte SSH_MSG_REQUEST_SUCCESS=                81;
+    static final byte SSH_MSG_REQUEST_FAILURE=                82;
+    static final byte SSH_MSG_CHANNEL_OPEN=                   90;
+    static final byte SSH_MSG_CHANNEL_OPEN_CONFIRMATION=      91;
+    static final byte SSH_MSG_CHANNEL_OPEN_FAILURE=           92;
+    static final byte SSH_MSG_CHANNEL_WINDOW_ADJUST=          93;
+    static final byte SSH_MSG_CHANNEL_DATA=                   94;
+    static final byte SSH_MSG_CHANNEL_EXTENDED_DATA=          95;
+    static final byte SSH_MSG_CHANNEL_EOF=                    96;
+    static final byte SSH_MSG_CHANNEL_CLOSE=                  97;
+    static final byte SSH_MSG_CHANNEL_REQUEST=                98;
+    static final byte SSH_MSG_CHANNEL_SUCCESS=                99;
+    static final byte SSH_MSG_CHANNEL_FAILURE=               100;
 
     //
     // Values for the algorithms negociation 

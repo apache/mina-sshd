@@ -356,15 +356,6 @@ public final class Buffer implements Readable {
         return new KeyPair(pubKey, privKey);
     }
 
-    public SshConstants.Message getCommand() {
-        byte b = getByte();
-        SshConstants.Message cmd = SshConstants.Message.fromByte(b);
-        if (cmd == null) {
-            throw new IllegalStateException("Unknown command code: " + b);
-        }
-        return cmd;
-    }
-
     private void ensureAvailable(int a) {
         if (available() < a) {
             throw new BufferException("Underflow");
@@ -528,10 +519,6 @@ public final class Buffer implements Readable {
         } else {
             throw new IllegalStateException("Unsupported algorithm: " + key.getPublic().getAlgorithm());
         }
-    }
-
-    public void putCommand(SshConstants.Message cmd) {
-        putByte(cmd.toByte());
     }
 
     private void ensureCapacity(int capacity) {

@@ -153,7 +153,7 @@ public class ChannelShell extends ChannelSession {
 
         if (agentForwarding) {
             log.info("Send agent forwarding request");
-            buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_REQUEST, 0);
+            buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST, 0);
             buffer.putInt(recipient);
             buffer.putString("auth-agent-req@openssh.com");
             buffer.putBoolean(false);
@@ -162,7 +162,7 @@ public class ChannelShell extends ChannelSession {
 
         if (usePty) {
             log.info("Send SSH_MSG_CHANNEL_REQUEST pty-req");
-            buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_REQUEST, 0);
+            buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST, 0);
             buffer.putInt(recipient);
             buffer.putString("pty-req");
             buffer.putBoolean(false);
@@ -184,7 +184,7 @@ public class ChannelShell extends ChannelSession {
         if (!env.isEmpty()) {
             log.info("Send SSH_MSG_CHANNEL_REQUEST env");
             for (Map.Entry<String, String> entry : env.entrySet()) {
-                buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_REQUEST, 0);
+                buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST, 0);
                 buffer.putInt(recipient);
                 buffer.putString("env");
                 buffer.putBoolean(false);
@@ -195,7 +195,7 @@ public class ChannelShell extends ChannelSession {
         }
 
         log.info("Send SSH_MSG_CHANNEL_REQUEST shell");
-        buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_REQUEST, 0);
+        buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST, 0);
         buffer.putInt(recipient);
         buffer.putString("shell");
         buffer.putBoolean(false);

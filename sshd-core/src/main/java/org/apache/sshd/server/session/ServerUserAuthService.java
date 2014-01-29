@@ -109,10 +109,10 @@ public class ServerUserAuthService implements Service {
         return session;
     }
 
-    public void process(SshConstants.Message cmd, Buffer buffer) throws Exception {
+    public void process(byte cmd, Buffer buffer) throws Exception {
         Boolean authed = Boolean.FALSE;
 
-        if (cmd == SshConstants.Message.SSH_MSG_USERAUTH_REQUEST) {
+        if (cmd == SshConstants.SSH_MSG_USERAUTH_REQUEST) {
             if (this.currentAuth != null) {
                 this.currentAuth.destroy();
                 this.currentAuth = null;
@@ -190,13 +190,13 @@ public class ServerUserAuthService implements Service {
 
                 String welcomeBanner = getFactoryManager().getProperties().get(ServerFactoryManager.WELCOME_BANNER);
                 if (welcomeBanner != null) {
-                    buffer = session.createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_BANNER, 0);
+                    buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_BANNER, 0);
                     buffer.putString(welcomeBanner);
                     buffer.putString("en");
                     session.writePacket(buffer);
                 }
 
-                buffer = session.createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_SUCCESS, 0);
+                buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_SUCCESS, 0);
                 session.writePacket(buffer);
                 session.setAuthenticated(username);
                 session.startService(authService);
@@ -204,7 +204,7 @@ public class ServerUserAuthService implements Service {
                 log.info("Session {}@{} authenticated", username, session.getIoSession().getRemoteAddress());
 
             } else {
-                buffer = session.createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_FAILURE, 0);
+                buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_FAILURE, 0);
                 StringBuilder sb = new StringBuilder();
                 for (List<String> l : authMethods) {
                     if (!l.isEmpty()) {
@@ -224,7 +224,7 @@ public class ServerUserAuthService implements Service {
         } else {
             log.debug("Authentication failed");
 
-            buffer = session.createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_FAILURE, 0);
+            buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_FAILURE, 0);
             StringBuilder sb = new StringBuilder();
             for (List<String> l : authMethods) {
                 if (!l.isEmpty()) {

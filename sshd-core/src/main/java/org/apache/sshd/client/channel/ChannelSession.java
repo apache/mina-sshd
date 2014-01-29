@@ -48,7 +48,7 @@ public class ChannelSession extends AbstractClientChannel {
 
     @Override
     protected void doOpen() throws IOException {
-        invertedIn = new ChannelOutputStream(this, remoteWindow, log, SshConstants.Message.SSH_MSG_CHANNEL_DATA);
+        invertedIn = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA);
         if (out == null) {
             ChannelPipedInputStream pis = new ChannelPipedInputStream(localWindow);
             ChannelPipedOutputStream pos = new ChannelPipedOutputStream(pis);

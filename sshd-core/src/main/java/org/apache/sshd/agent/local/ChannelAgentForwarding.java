@@ -65,7 +65,7 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
     protected OpenFuture doInit(Buffer buffer) {
         final OpenFuture f = new DefaultOpenFuture(this);
         try {
-            out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.Message.SSH_MSG_CHANNEL_DATA);
+            out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA);
             agent = session.getFactoryManager().getAgentFactory().createClient(session.getFactoryManager());
             client = new AgentClient();
             f.setOpened();

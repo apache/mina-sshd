@@ -44,6 +44,8 @@ import org.apache.sshd.server.x11.X11ForwardSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.sshd.common.SshConstants.*;
+
 /**
  * Base implementation of ConnectionService.
  *
@@ -147,7 +149,7 @@ public abstract class AbstractConnectionService implements ConnectionService {
         channels.remove(channel.getId());
     }
 
-    public void process(SshConstants.Message cmd, Buffer buffer) throws Exception {
+    public void process(byte cmd, Buffer buffer) throws Exception {
         switch (cmd) {
             case SSH_MSG_CHANNEL_OPEN:
                 channelOpen(buffer);
@@ -307,7 +309,7 @@ public abstract class AbstractConnectionService implements ConnectionService {
         Channel channel = channels.get(recipient);
         if (channel == null) {
             buffer.rpos(buffer.rpos() - 5);
-            SshConstants.Message cmd = buffer.getCommand();
+            byte cmd = buffer.getByte();
             throw new SshException("Received " + cmd + " on unknown channel " + recipient);
         }
         return channel;
@@ -322,7 +324,7 @@ public abstract class AbstractConnectionService implements ConnectionService {
         log.debug("Received SSH_MSG_CHANNEL_OPEN {}", type);
 
         if (closing) {
-            Buffer buf = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_FAILURE, 0);
+            Buffer buf = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_FAILURE, 0);
             buf.putInt(id);
             buf.putInt(SshConstants.SSH_OPEN_CONNECT_FAILED);
             buf.putString("SSH server is shutting down: " + type);
@@ -331,7 +333,7 @@ public abstract class AbstractConnectionService implements ConnectionService {
             return;
         }
         if (!allowMoreSessions) {
-            Buffer buf = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_FAILURE, 0);
+            Buffer buf = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_FAILURE, 0);
             buf.putInt(id);
             buf.putInt(SshConstants.SSH_OPEN_CONNECT_FAILED);
             buf.putString("additional sessions disabled");
@@ -342,7 +344,7 @@ public abstract class AbstractConnectionService implements ConnectionService {
 
         final Channel channel = NamedFactory.Utils.create(session.getFactoryManager().getChannelFactories(), type);
         if (channel == null) {
-            Buffer buf = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_FAILURE, 0);
+            Buffer buf = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_FAILURE, 0);
             buf.putInt(id);
             buf.putInt(SshConstants.SSH_OPEN_UNKNOWN_CHANNEL_TYPE);
             buf.putString("Unsupported channel type: " + type);
@@ -356,7 +358,7 @@ public abstract class AbstractConnectionService implements ConnectionService {
             public void operationComplete(OpenFuture future) {
                 try {
                     if (future.isOpened()) {
-                        Buffer buf = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_CONFIRMATION, 0);
+                        Buffer buf = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_CONFIRMATION, 0);
                         buf.putInt(id);
                         buf.putInt(channelId);
                         buf.putInt(channel.getLocalWindow().getSize());
@@ -365,7 +367,7 @@ public abstract class AbstractConnectionService implements ConnectionService {
                     } else {
                         Throwable exception = future.getException();
                         if (exception != null) {
-                            Buffer buf = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_FAILURE, 0);
+                            Buffer buf = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_FAILURE, 0);
                             buf.putInt(id);
                             if (exception instanceof OpenChannelException) {
                                 buf.putInt(((OpenChannelException) exception).getReasonCode());
@@ -410,13 +412,13 @@ public abstract class AbstractConnectionService implements ConnectionService {
                         return;
                     case ReplySuccess:
                         if (wantReply) {
-                            buffer = session.createBuffer(SshConstants.Message.SSH_MSG_REQUEST_SUCCESS, 0);
+                            buffer = session.createBuffer(SshConstants.SSH_MSG_REQUEST_SUCCESS, 0);
                             session.writePacket(buffer);
                         }
                         return;
                     case ReplyFailure:
                         if (wantReply) {
-                            buffer = session.createBuffer(SshConstants.Message.SSH_MSG_REQUEST_FAILURE, 0);
+                            buffer = session.createBuffer(SshConstants.SSH_MSG_REQUEST_FAILURE, 0);
                             session.writePacket(buffer);
                         }
                         return;
@@ -425,7 +427,7 @@ public abstract class AbstractConnectionService implements ConnectionService {
         }
         log.warn("Unknown global request: {}", req);
         if (wantReply) {
-            buffer = session.createBuffer(SshConstants.Message.SSH_MSG_REQUEST_FAILURE, 0);
+            buffer = session.createBuffer(SshConstants.SSH_MSG_REQUEST_FAILURE, 0);
             session.writePacket(buffer);
         }
     }

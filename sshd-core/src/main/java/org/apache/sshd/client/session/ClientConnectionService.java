@@ -86,7 +86,7 @@ public class ClientConnectionService extends AbstractConnectionService {
 
     protected void sendHeartBeat() {
         try {
-            Buffer buf = session.createBuffer(SshConstants.Message.SSH_MSG_GLOBAL_REQUEST, 0);
+            Buffer buf = session.createBuffer(SshConstants.SSH_MSG_GLOBAL_REQUEST, 0);
             String request = session.getFactoryManager().getProperties().get(ClientFactoryManager.HEARTBEAT_REQUEST);
             if (request == null) {
                 request = "keepalive@sshd.apache.org";

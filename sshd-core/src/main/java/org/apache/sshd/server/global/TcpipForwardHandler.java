@@ -38,7 +38,7 @@ public class TcpipForwardHandler implements RequestHandler<ConnectionService> {
             SshdSocketAddress bound = connectionService.getTcpipForwarder().localPortForwardingRequested(new SshdSocketAddress(address, port));
             port = bound.getPort();
             if (wantReply){
-                buffer = connectionService.getSession().createBuffer(SshConstants.Message.SSH_MSG_REQUEST_SUCCESS, 0);
+                buffer = connectionService.getSession().createBuffer(SshConstants.SSH_MSG_REQUEST_SUCCESS, 0);
                 buffer.putInt(port);
                 connectionService.getSession().writePacket(buffer);
             }

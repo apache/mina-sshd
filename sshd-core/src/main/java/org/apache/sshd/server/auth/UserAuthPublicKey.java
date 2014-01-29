@@ -79,7 +79,7 @@ public class UserAuthPublicKey extends AbstractUserAuth {
             return false;
         }
         if (!hasSig) {
-            Buffer buf = session.createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_PK_OK, 0);
+            Buffer buf = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_PK_OK, 0);
             buf.putString(alg);
             buf.putRawBytes(buffer.array(), oldPos, 4 + len);
             session.writePacket(buf);
@@ -87,7 +87,7 @@ public class UserAuthPublicKey extends AbstractUserAuth {
         } else {
             Buffer buf = new Buffer();
             buf.putString(session.getKex().getH());
-            buf.putCommand(SshConstants.Message.SSH_MSG_USERAUTH_REQUEST);
+            buf.putByte(SshConstants.SSH_MSG_USERAUTH_REQUEST);
             buf.putString(username);
             buf.putString("ssh-connection");
             buf.putString("publickey");

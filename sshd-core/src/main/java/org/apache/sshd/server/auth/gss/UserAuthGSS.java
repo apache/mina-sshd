@@ -85,7 +85,7 @@ public class UserAuthGSS extends AbstractUserAuth {
 
                     // Send the matching mechanism back to the client
 
-                    Buffer b = session.createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_INFO_REQUEST, 0);
+                    Buffer b = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_INFO_REQUEST, 0);
                     byte[] out = oid.getDER();
 
                     b.putBytes(out);
@@ -101,9 +101,9 @@ public class UserAuthGSS extends AbstractUserAuth {
         }
         else
         {
-            SshConstants.Message msg = buffer.getCommand();
-            if (!(msg == SshConstants.Message.SSH_MSG_USERAUTH_INFO_RESPONSE ||
-                    msg == SshConstants.Message.SSH_MSG_USERAUTH_GSSAPI_MIC && context.isEstablished())) {
+            byte msg = buffer.getByte();
+            if (!(msg == SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE ||
+                    msg == SshConstants.SSH_MSG_USERAUTH_GSSAPI_MIC && context.isEstablished())) {
                 throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
                         "Packet not supported by user authentication method");
             }
@@ -114,7 +114,7 @@ public class UserAuthGSS extends AbstractUserAuth {
 
             if (context.isEstablished()) {
 
-                if (msg != SshConstants.Message.SSH_MSG_USERAUTH_GSSAPI_MIC) {
+                if (msg != SshConstants.SSH_MSG_USERAUTH_GSSAPI_MIC) {
                     return Boolean.FALSE;
                 }
 
@@ -123,7 +123,7 @@ public class UserAuthGSS extends AbstractUserAuth {
                 Buffer msgbuf = new Buffer();
 
                 msgbuf.putString(session.getSessionId());
-                msgbuf.putByte(SshConstants.Message.SSH_MSG_USERAUTH_REQUEST.toByte());
+                msgbuf.putByte(SshConstants.SSH_MSG_USERAUTH_REQUEST);
                 msgbuf.putString(username.getBytes("UTF-8"));
                 msgbuf.putString(service);
                 msgbuf.putString("gssapi-with-mic");
@@ -162,7 +162,7 @@ public class UserAuthGSS extends AbstractUserAuth {
                 // Send return token if necessary
 
                 if (out != null && out.length > 0) {
-                    Buffer b = session.createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_INFO_RESPONSE, 0);
+                    Buffer b = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE, 0);
 
                     b.putBytes(out);
                     session.writePacket(b);

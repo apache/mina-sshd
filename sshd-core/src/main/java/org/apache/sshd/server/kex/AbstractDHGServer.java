@@ -74,10 +74,10 @@ public abstract class AbstractDHGServer implements KeyExchange {
     protected abstract AbstractDH getDH() throws Exception;
 
     public boolean next(Buffer buffer) throws Exception {
-        SshConstants.Message cmd = buffer.getCommand();
-        if (cmd != SshConstants.Message.SSH_MSG_KEXDH_INIT) {
+        byte cmd = buffer.getByte();
+        if (cmd != SshConstants.SSH_MSG_KEXDH_INIT) {
             throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED, 
-                                   "Protocol error: expected packet " + SshConstants.Message.SSH_MSG_KEXDH_INIT + ", got " + cmd);
+                                   "Protocol error: expected packet " + SshConstants.SSH_MSG_KEXDH_INIT + ", got " + cmd);
         }
         log.debug("Received SSH_MSG_KEXDH_INIT");
         e = buffer.getMPIntAsBytes();
@@ -124,7 +124,7 @@ public abstract class AbstractDHGServer implements KeyExchange {
         buffer.clear();
         buffer.rpos(5);
         buffer.wpos(5);
-        buffer.putCommand(SshConstants.Message.SSH_MSG_KEXDH_REPLY_KEX_DH_GEX_GROUP);
+        buffer.putByte(SshConstants.SSH_MSG_KEXDH_REPLY);
         buffer.putString(K_S);
         buffer.putString(f);
         buffer.putString(sigH);

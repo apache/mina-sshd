@@ -383,7 +383,7 @@ public class ClientTest {
 
 //            ((AbstractSession) session).disconnect(SshConstants.SSH2_DISCONNECT_BY_APPLICATION, "Cancel");
             AbstractSession cs = (AbstractSession) session;
-            Buffer buffer = cs.createBuffer(SshConstants.Message.SSH_MSG_DISCONNECT, 0);
+            Buffer buffer = cs.createBuffer(SshConstants.SSH_MSG_DISCONNECT, 0);
             buffer.putInt(SshConstants.SSH2_DISCONNECT_BY_APPLICATION);
             buffer.putString("Cancel");
             buffer.putString("");

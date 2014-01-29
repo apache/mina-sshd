@@ -75,7 +75,7 @@ public class AgentForwardedChannel extends AbstractClientChannel {
 
     @Override
     protected void doOpen() throws IOException {
-        invertedIn = new ChannelOutputStream(this, remoteWindow, log, SshConstants.Message.SSH_MSG_CHANNEL_DATA);
+        invertedIn = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA);
     }
 
     protected void doWriteData(byte[] data, int off, int len) throws IOException {

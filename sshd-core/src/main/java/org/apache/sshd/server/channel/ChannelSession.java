@@ -446,8 +446,8 @@ public class ChannelSession extends AbstractServerChannel {
             FileSystemFactory factory = ((ServerSession) session).getServerFactoryManager().getFileSystemFactory();
             ((FileSystemAware) command).setFileSystemView(factory.createFileSystemView(session));
         }
-        out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.Message.SSH_MSG_CHANNEL_DATA);
-        err = new ChannelOutputStream(this, remoteWindow, log, SshConstants.Message.SSH_MSG_CHANNEL_EXTENDED_DATA);
+        out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA);
+        err = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA);
         if (log != null && log.isTraceEnabled()) {
             // Wrap in logging filters
             out = new LoggingFilterOutputStream(out, "OUT:", log);

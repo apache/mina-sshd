@@ -80,7 +80,7 @@ public class TcpipClientChannel extends AbstractClientChannel {
         }
         openFuture = new DefaultOpenFuture(lock);
         log.info("Send SSH_MSG_CHANNEL_OPEN on channel {}", id);
-        Buffer buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN, 0);
+        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN, 0);
         buffer.putString(type);
         buffer.putInt(id);
         buffer.putInt(localWindow.getSize());
@@ -95,7 +95,7 @@ public class TcpipClientChannel extends AbstractClientChannel {
 
     @Override
     protected synchronized void doOpen() throws IOException {
-        out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.Message.SSH_MSG_CHANNEL_DATA);
+        out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA);
     }
 
     @Override

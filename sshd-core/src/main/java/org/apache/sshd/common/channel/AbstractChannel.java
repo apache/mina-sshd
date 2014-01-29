@@ -103,14 +103,14 @@ public abstract class AbstractChannel implements Channel {
                     return;
                 case ReplySuccess:
                     if (wantReply) {
-                        buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS, 0);
+                        buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_SUCCESS, 0);
                         buffer.putInt(recipient);
                         session.writePacket(buffer);
                     }
                     return;
                 case ReplyFailure:
                     if (wantReply) {
-                        buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_FAILURE, 0);
+                        buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_FAILURE, 0);
                         buffer.putInt(recipient);
                         session.writePacket(buffer);
                     }
@@ -119,7 +119,7 @@ public abstract class AbstractChannel implements Channel {
         }
         log.warn("Unknown channel request: {}", req);
         if (wantReply) {
-            buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_FAILURE, 0);
+            buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_FAILURE, 0);
             buffer.putInt(recipient);
             session.writePacket(buffer);
         }
@@ -155,7 +155,7 @@ public abstract class AbstractChannel implements Channel {
                 preClose(immediately).addListener(new SshFutureListener<CloseFuture>() {
                     public void operationComplete(CloseFuture future) {
                         log.debug("Send SSH_MSG_CHANNEL_CLOSE on channel {}", id);
-                        Buffer buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_CLOSE, 0);
+                        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_CLOSE, 0);
                         buffer.putInt(recipient);
                         try {
                             session.writePacket(buffer).addListener(new SshFutureListener<IoWriteFuture>() {
@@ -227,7 +227,7 @@ public abstract class AbstractChannel implements Channel {
         // Only accept extended data for stderr
         if (ex != 1) {
             log.debug("Send SSH_MSG_CHANNEL_FAILURE on channel {}", id);
-            buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_FAILURE, 0);
+            buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_FAILURE, 0);
             buffer.putInt(recipient);
             writePacket(buffer);
             return;
@@ -266,7 +266,7 @@ public abstract class AbstractChannel implements Channel {
 
     protected void sendEof() throws IOException {
         log.debug("Send SSH_MSG_CHANNEL_EOF on channel {}", id);
-        Buffer buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_EOF, 0);
+        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_EOF, 0);
         buffer.putInt(recipient);
         writePacket(buffer);
     }
@@ -279,7 +279,7 @@ public abstract class AbstractChannel implements Channel {
 
     protected void sendWindowAdjust(int len) throws IOException {
         log.debug("Send SSH_MSG_CHANNEL_WINDOW_ADJUST on channel {}", id);
-        Buffer buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_WINDOW_ADJUST, 0);
+        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_WINDOW_ADJUST, 0);
         buffer.putInt(recipient);
         buffer.putInt(len);
         writePacket(buffer);

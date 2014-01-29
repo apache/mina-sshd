@@ -92,13 +92,13 @@ public class ClientUserAuthService implements Service {
         }
     }
 
-    public void process(SshConstants.Message cmd, Buffer buffer) throws Exception {
+    public void process(byte cmd, Buffer buffer) throws Exception {
         if (this.authFuture.isSuccess()) {
             throw new IllegalStateException("UserAuth message delivered to authenticated client");
         } else if (this.authFuture.isDone()) {
             log.debug("Ignoring random message");
             // ignore for now; TODO: random packets
-        } else if (cmd == SshConstants.Message.SSH_MSG_USERAUTH_BANNER) {
+        } else if (cmd == SshConstants.SSH_MSG_USERAUTH_BANNER) {
             String welcome = buffer.getString();
             String lang = buffer.getString();
             log.debug("Welcome banner: {}", welcome);

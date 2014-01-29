@@ -23,8 +23,9 @@ import java.io.IOException;
 import org.apache.sshd.client.UserInteraction;
 import org.apache.sshd.client.session.ClientSessionImpl;
 import org.apache.sshd.common.SshConstants;
-import org.apache.sshd.common.SshConstants.Message;
 import org.apache.sshd.common.util.Buffer;
+
+import static org.apache.sshd.common.SshConstants.*;
 
 /**
  * Userauth with keyboard-interactive method.
@@ -44,7 +45,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
     public Result next(Buffer buffer) throws IOException {
         if (buffer == null) {
             log.info("Send SSH_MSG_USERAUTH_REQUEST for password");
-            buffer = session.createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_REQUEST, 0);
+            buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST, 0);
             buffer.putString(username);
             buffer.putString(service);
             buffer.putString("keyboard-interactive");
@@ -53,10 +54,10 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
             session.writePacket(buffer);
             return Result.Continued;
         } else {
-            SshConstants.Message cmd = buffer.getCommand();
-            log.info("Received {}", cmd);
+            byte cmd = buffer.getByte();
             switch (cmd) {
                 case SSH_MSG_USERAUTH_INFO_REQUEST:
+                    log.info("Received SSH_MSG_USERAUTH_INFO_REQUEST");
                     String name = buffer.getString();
                     String instruction = buffer.getString();
                     String language_tag = buffer.getString();
@@ -87,7 +88,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
                         return Result.Failure;
                     }
 
-                    buffer = session.createBuffer(Message.SSH_MSG_USERAUTH_INFO_RESPONSE, 0);
+                    buffer = session.createBuffer(SSH_MSG_USERAUTH_INFO_RESPONSE, 0);
                     buffer.putInt(rep.length);
                     for (String r : rep) {
                         buffer.putString(r);
@@ -95,10 +96,13 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
                     session.writePacket(buffer);
                     return Result.Continued;
                 case SSH_MSG_USERAUTH_SUCCESS:
+                    log.info("Received SSH_MSG_USERAUTH_SUCCESS");
                     return Result.Success;
                 case SSH_MSG_USERAUTH_FAILURE:
+                    log.info("Received SSH_MSG_USERAUTH_FAILURE");
                     return Result.Failure;
                 default:
+                    log.info("Received unknown packet {}", cmd);
                     return Result.Continued;
             }
         }

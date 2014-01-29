@@ -78,7 +78,7 @@ public class DHGEX implements KeyExchange {
     int min;
     int prf;
     int max;
-    private SshConstants.Message expected;
+    private byte expected;
 
     public void init(AbstractSession s, byte[] V_S, byte[] V_C, byte[] I_S, byte[] I_C) throws Exception {
         if (!(s instanceof ServerSession)) {
@@ -90,18 +90,18 @@ public class DHGEX implements KeyExchange {
         this.I_S = I_S;
         this.I_C = I_C;
 
-        expected = SshConstants.Message.SSH_MSG_KEX_DH_GEX_REQUEST;
+        expected = SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST;
     }
 
     public boolean next(Buffer buffer) throws Exception {
-        SshConstants.Message cmd = buffer.getCommand();
-        log.info("Received " + cmd);
+        byte cmd = buffer.getByte();
         if (cmd != expected) {
             throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
                     "Protocol error: expected packet " + expected + ", got " + cmd);
         }
 
-        if (cmd == SshConstants.Message.SSH_MSG_KEX_DH_GEX_REQUEST) {
+        if (cmd == SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST) {
+            log.info("Received SSH_MSG_KEX_DH_GEX_REQUEST");
             min = buffer.getInt();
             prf = buffer.getInt();
             max = buffer.getInt();
@@ -114,17 +114,18 @@ public class DHGEX implements KeyExchange {
             hash = dh.getHash();
             hash.init();
 
-            log.info("Send SSH_MSG_KEXDH_REPLY_KEX_DH_GEX_GROUP");
-            buffer = session.createBuffer(SshConstants.Message.SSH_MSG_KEXDH_REPLY_KEX_DH_GEX_GROUP, 0);
+            log.info("Send SSH_MSG_KEX_DH_GEX_GROUP");
+            buffer = session.createBuffer(SshConstants.SSH_MSG_KEX_DH_GEX_GROUP, 0);
             buffer.putMPInt(dh.getP());
             buffer.putMPInt(dh.getG());
             session.writePacket(buffer);
 
-            expected = SshConstants.Message.SSH_MSG_KEX_DH_GEX_INIT;
+            expected = SshConstants.SSH_MSG_KEX_DH_GEX_INIT;
             return false;
         }
 
-        if (cmd == SshConstants.Message.SSH_MSG_KEX_DH_GEX_INIT) {
+        if (cmd == SshConstants.SSH_MSG_KEX_DH_GEX_INIT) {
+            log.info("Received SSH_MSG_KEX_DH_GEX_INIT");
             e = buffer.getMPIntAsBytes();
             dh.setF(e);
             K = dh.getK();
@@ -175,7 +176,7 @@ public class DHGEX implements KeyExchange {
             buffer.clear();
             buffer.rpos(5);
             buffer.wpos(5);
-            buffer.putCommand(SshConstants.Message.SSH_MSG_KEX_DH_GEX_REPLY);
+            buffer.putByte(SshConstants.SSH_MSG_KEX_DH_GEX_REPLY);
             buffer.putString(K_S);
             buffer.putString(f);
             buffer.putString(sigH);

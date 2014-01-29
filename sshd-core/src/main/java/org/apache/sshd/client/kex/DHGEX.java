@@ -78,7 +78,7 @@ public class DHGEX implements KeyExchange {
     private byte[] K;
     private byte[] H;
     private PublicKey serverKey;
-    private SshConstants.Message expected;
+    private byte expected;
 
     int min = 1024;
     int prf = 4096;
@@ -95,24 +95,24 @@ public class DHGEX implements KeyExchange {
         this.I_C = I_C;
 
         log.info("Send SSH_MSG_KEX_DH_GEX_REQUEST");
-        Buffer buffer = session.createBuffer(SshConstants.Message.SSH_MSG_KEX_DH_GEX_REQUEST, 0);
+        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST, 0);
         buffer.putInt(min);
         buffer.putInt(prf);
         buffer.putInt(max);
         session.writePacket(buffer);
 
-        expected = SshConstants.Message.SSH_MSG_KEXDH_REPLY_KEX_DH_GEX_GROUP;
+        expected = SshConstants.SSH_MSG_KEX_DH_GEX_GROUP;
     }
 
     public boolean next(Buffer buffer) throws Exception {
-        SshConstants.Message cmd = buffer.getCommand();
-        log.info("Received " + cmd);
+        byte cmd = buffer.getByte();
         if (cmd != expected) {
             throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
                     "Protocol error: expected packet " + expected + ", got " + cmd);
         }
 
-        if (cmd == SshConstants.Message.SSH_MSG_KEXDH_REPLY_KEX_DH_GEX_GROUP) {
+        if (cmd == SshConstants.SSH_MSG_KEX_DH_GEX_GROUP) {
+            log.info("Received SSH_MSG_KEX_DH_GEX_GROUP");
             p = buffer.getMPIntAsBytes();
             g = buffer.getMPIntAsBytes();
 
@@ -122,14 +122,15 @@ public class DHGEX implements KeyExchange {
             e = dh.getE();
 
             log.info("Send SSH_MSG_KEX_DH_GEX_INIT");
-            buffer = session.createBuffer(SshConstants.Message.SSH_MSG_KEX_DH_GEX_INIT, 0);
+            buffer = session.createBuffer(SshConstants.SSH_MSG_KEX_DH_GEX_INIT, 0);
             buffer.putMPInt(e);
             session.writePacket(buffer);
-            expected = SshConstants.Message.SSH_MSG_KEX_DH_GEX_REPLY;
+            expected = SshConstants.SSH_MSG_KEX_DH_GEX_REPLY;
             return false;
         }
 
-        if (cmd == SshConstants.Message.SSH_MSG_KEX_DH_GEX_REPLY) {
+        if (cmd == SshConstants.SSH_MSG_KEX_DH_GEX_REPLY) {
+            log.info("Received SSH_MSG_KEX_DH_GEX_REPLY");
             byte[] K_S = buffer.getBytes();
             f = buffer.getMPIntAsBytes();
             byte[] sig = buffer.getBytes();

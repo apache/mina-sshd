@@ -94,7 +94,7 @@ public class DefaultTcpipForwarder implements TcpipForwarder, IoHandler {
     }
 
     public synchronized SshdSocketAddress startRemotePortForwarding(SshdSocketAddress remote, SshdSocketAddress local) throws IOException {
-        Buffer buffer = session.createBuffer(SshConstants.Message.SSH_MSG_GLOBAL_REQUEST, 0);
+        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_GLOBAL_REQUEST, 0);
         buffer.putString("tcpip-forward");
         buffer.putBoolean(true);
         buffer.putString(remote.getHostName());
@@ -111,7 +111,7 @@ public class DefaultTcpipForwarder implements TcpipForwarder, IoHandler {
 
     public synchronized void stopRemotePortForwarding(SshdSocketAddress remote) throws IOException {
         if (remoteToLocal.remove(remote.getPort()) != null) {
-            Buffer buffer = session.createBuffer(SshConstants.Message.SSH_MSG_GLOBAL_REQUEST, 0);
+            Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_GLOBAL_REQUEST, 0);
             buffer.putString("cancel-tcpip-forward");
             buffer.putBoolean(false);
             buffer.putString(remote.getHostName());

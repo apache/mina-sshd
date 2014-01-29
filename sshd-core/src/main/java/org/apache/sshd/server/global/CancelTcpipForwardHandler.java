@@ -37,7 +37,7 @@ public class CancelTcpipForwardHandler implements RequestHandler<ConnectionServi
             int port = buffer.getInt();
             connectionService.getTcpipForwarder().localPortForwardingCancelled(new SshdSocketAddress(address, port));
             if (wantReply){
-                buffer = connectionService.getSession().createBuffer(SshConstants.Message.SSH_MSG_REQUEST_SUCCESS, 0);
+                buffer = connectionService.getSession().createBuffer(SshConstants.SSH_MSG_REQUEST_SUCCESS, 0);
                 buffer.putInt(port);
                 connectionService.getSession().writePacket(buffer);
             }

@@ -107,7 +107,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
             return f;
         }
 
-        out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.Message.SSH_MSG_CHANNEL_DATA);
+        out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA);
         IoHandler handler = new IoHandler() {
             public void messageReceived(IoSession session, Readable message) throws Exception {
                 if (closing.get()) {

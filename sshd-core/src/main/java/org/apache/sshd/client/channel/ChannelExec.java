@@ -41,7 +41,7 @@ public class ChannelExec extends ChannelSession {
 
     protected void doOpen() throws IOException {
         log.info("Send SSH_MSG_CHANNEL_REQUEST exec");
-        Buffer buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_REQUEST, 0);
+        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST, 0);
         buffer.putInt(recipient);
         buffer.putString("exec");
         buffer.putBoolean(false);

@@ -94,7 +94,7 @@ public interface Session {
      * @param estimatedSize estimated number of bytes the buffer will hold, 0 if unknown.
      * @return a new buffer ready for write
      */
-    Buffer createBuffer(SshConstants.Message cmd, int estimatedSize);
+    Buffer createBuffer(byte cmd, int estimatedSize);
 
     /**
      * Encode and send the given buffer.

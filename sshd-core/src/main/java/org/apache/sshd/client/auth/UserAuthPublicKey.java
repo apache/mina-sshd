@@ -52,7 +52,7 @@ public class UserAuthPublicKey extends AbstractUserAuth {
         if (buffer == null) {
             try {
                 log.info("Send SSH_MSG_USERAUTH_REQUEST for publickey");
-                buffer = session.createBuffer(SshConstants.Message.SSH_MSG_USERAUTH_REQUEST, 0);
+                buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST, 0);
                 int pos1 = buffer.wpos() - 1;
                 buffer.putString(username);
                 buffer.putString(service);
@@ -67,7 +67,7 @@ public class UserAuthPublicKey extends AbstractUserAuth {
 
                 Buffer bs = new Buffer();
                 bs.putString(session.getKex().getH());
-                bs.putCommand(SshConstants.Message.SSH_MSG_USERAUTH_REQUEST);
+                bs.putByte(SshConstants.SSH_MSG_USERAUTH_REQUEST);
                 bs.putString(username);
                 bs.putString(service);
                 bs.putString("publickey");
@@ -89,13 +89,15 @@ public class UserAuthPublicKey extends AbstractUserAuth {
                 throw (IOException) new IOException("Error performing public key authentication").initCause(e);
             }
         } else {
-            SshConstants.Message cmd = buffer.getCommand();
-            log.info("Received {}", cmd);
-            if (cmd == SshConstants.Message.SSH_MSG_USERAUTH_SUCCESS) {
+            byte cmd = buffer.getByte();
+            if (cmd == SshConstants.SSH_MSG_USERAUTH_SUCCESS) {
+                log.info("Received SSH_MSG_USERAUTH_SUCCESS");
                 return Result.Success;
-            } if (cmd == SshConstants.Message.SSH_MSG_USERAUTH_FAILURE) {
+            } if (cmd == SshConstants.SSH_MSG_USERAUTH_FAILURE) {
+                log.info("Received SSH_MSG_USERAUTH_FAILURE");
                 return Result.Failure;
             } else {
+                log.info("Received unknown packet {}", cmd);
                 // TODO: check packets
                 return Result.Continued;
             }
