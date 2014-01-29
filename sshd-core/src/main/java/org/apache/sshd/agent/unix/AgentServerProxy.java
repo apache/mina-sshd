@@ -23,6 +23,7 @@ import java.io.IOException;
 import org.apache.sshd.agent.SshAgentServer;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.tomcat.jni.Local;
 import org.apache.tomcat.jni.Pool;
@@ -38,15 +39,15 @@ public class AgentServerProxy implements SshAgentServer {
 
     private static final Logger LOG = LoggerFactory.getLogger(AgentServerProxy.class);
 
-    private final ServerSession session;
+    private final ConnectionService service;
     private String authSocket;
     private long pool;
     private long handle;
     private Thread thread;
     private boolean closed;
 
-    public AgentServerProxy(ServerSession session) throws IOException {
-        this.session = session;
+    public AgentServerProxy(ConnectionService service) throws IOException {
+        this.service = service;
         try {
             String authSocket = AprLibrary.createLocalSocketAddress();
             pool = Pool.create(AprLibrary.getInstance().getRootPool());
@@ -70,7 +71,7 @@ public class AgentServerProxy implements SshAgentServer {
                             }
                             Socket.timeoutSet(clientSock, 10000000);
                             AgentForwardedChannel channel = new AgentForwardedChannel(clientSock);
-                            AgentServerProxy.this.session.registerChannel(channel);
+                            AgentServerProxy.this.service.registerChannel(channel);
                             OpenFuture future = channel.open().await();
                             Throwable t = future.getException();
                             if (t instanceof Exception) {

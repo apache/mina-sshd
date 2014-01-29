@@ -21,8 +21,10 @@ package org.apache.sshd.agent;
 import java.io.IOException;
 
 import org.apache.sshd.common.Channel;
+import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.Session;
+import org.apache.sshd.common.session.ConnectionService;
 
 /**
  * The <code>SshAgentFactory</code> is used to communicate with an SshAgent.
@@ -41,19 +43,20 @@ public interface SshAgentFactory {
     /**
      * Create an SshAgent that can be used on the client side by the authentication
      * process to send possible keys.
-     * @param session
+     *
+     * @param manager
      * @return
      */
-    SshAgent createClient(Session session) throws IOException;
+    SshAgent createClient(FactoryManager manager) throws IOException;
 
     /**
      * Create the server side that will be used by other SSH clients.
      * It will usually create a channel that will forward the requests
      * to the original client.
      *
-     * @param session
+     * @param service
      * @return
      */
-    SshAgentServer createServer(Session session) throws IOException;
+    SshAgentServer createServer(ConnectionService service) throws IOException;
 
 }

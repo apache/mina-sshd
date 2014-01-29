@@ -51,7 +51,9 @@ import org.apache.sshd.client.kex.ECDHP256;
 import org.apache.sshd.client.kex.ECDHP384;
 import org.apache.sshd.client.kex.ECDHP521;
 import org.apache.sshd.client.keyverifier.AcceptAllServerKeyVerifier;
+import org.apache.sshd.client.session.ClientConnectionService;
 import org.apache.sshd.client.session.ClientSessionImpl;
+import org.apache.sshd.client.session.ClientUserAuthService;
 import org.apache.sshd.common.AbstractFactoryManager;
 import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.Cipher;
@@ -215,6 +217,12 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         }
         if (getIoServiceFactory() == null) {
             setIoServiceFactory(new DefaultIoServiceFactory());
+        }
+        if (getServiceFactories() == null) {
+            setServiceFactories(Arrays.asList(
+                    new ClientUserAuthService.Factory(),
+                    new ClientConnectionService.Factory()
+            ));
         }
     }
 

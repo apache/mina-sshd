@@ -98,7 +98,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
         SshdSocketAddress address = null;
         switch (type) {
             case Direct:    address = new SshdSocketAddress(hostToConnect, portToConnect); break;
-            case Forwarded: address = getSession().getTcpipForwarder().getForwardedPort(portToConnect); break;
+            case Forwarded: address = service.getTcpipForwarder().getForwardedPort(portToConnect); break;
         }
         final ForwardingFilter filter = getSession().getFactoryManager().getTcpipForwardingFilter();
         if (address == null || filter == null || !filter.canConnect(address, getSession())) {

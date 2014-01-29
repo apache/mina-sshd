@@ -18,20 +18,36 @@
  */
 package org.apache.sshd.common;
 
-import org.apache.sshd.common.session.ConnectionService;
+import java.io.IOException;
+
+import org.apache.sshd.common.future.CloseFuture;
+import org.apache.sshd.common.util.Buffer;
 
 /**
- * A factory for creating TcpipForwarder objects for client Port forwarding
+ * See RFC 4253 [SSH-TRANS] and the SSH_MSG_SERVICE_REQUEST packet.  Examples include ssh-userauth
+ * and ssh-connection but developers are also free to implement their own custom service.
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface TcpipForwarderFactory {
+public interface Service {
+
+    Session getSession();
+
+    // TODO: this is specific to clients
+    void start();
 
     /**
-     * Creates the TcpipForwarder to be used for TCP/IP port forwards for
-     * this ClientSession.
-     *
-     * @param service the service the connections are forwarded through
-     * @return the TcpipForwarder that will listen for connections and set up forwarding
+     * Service the request.
+     * @param buffer
+     * @throws Exception
      */
-    public TcpipForwarder create(ConnectionService service);
+    void process(SshConstants.Message cmd, Buffer buffer) throws Exception;
+
+    /**
+     * Close the service.
+     * @param immediately
+     *
+     */
+    CloseFuture close(boolean immediately);
 
 }

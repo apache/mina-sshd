@@ -105,7 +105,9 @@ import org.apache.sshd.server.kex.ECDHP384;
 import org.apache.sshd.server.kex.ECDHP521;
 import org.apache.sshd.server.keyprovider.PEMGeneratorHostKeyProvider;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
+import org.apache.sshd.server.session.ServerConnectionService;
 import org.apache.sshd.server.session.ServerSession;
+import org.apache.sshd.server.session.ServerUserAuthService;
 import org.apache.sshd.server.session.SessionFactory;
 import org.apache.sshd.server.sftp.SftpSubsystem;
 import org.apache.sshd.server.session.ServerSessionTimeoutListener;
@@ -297,6 +299,12 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         }
         if (getIoServiceFactory() == null) {
             setIoServiceFactory(new DefaultIoServiceFactory());
+        }
+        if (getServiceFactories() == null) {
+            setServiceFactories(Arrays.asList(
+                    new ServerUserAuthService.Factory(),
+                    new ServerConnectionService.Factory()
+            ));
         }
     }
 

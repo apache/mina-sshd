@@ -38,6 +38,7 @@ import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoSession;
+import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.Readable;
 import org.slf4j.Logger;
@@ -52,14 +53,16 @@ public class DefaultTcpipForwarder implements TcpipForwarder, IoHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultTcpipForwarder.class);
 
+    private final ConnectionService service;
     private final Session session;
     private final Map<Integer, SshdSocketAddress> localToRemote = new HashMap<Integer, SshdSocketAddress>();
     private final Map<Integer, SshdSocketAddress> remoteToLocal = new HashMap<Integer, SshdSocketAddress>();
     private final Set<SshdSocketAddress> localForwards = new HashSet<SshdSocketAddress>();
     protected IoAcceptor acceptor;
 
-    public DefaultTcpipForwarder(Session session) {
-        this.session = session;
+    public DefaultTcpipForwarder(ConnectionService service) {
+        this.service = service;
+        this.session = service.getSession();
     }
 
     //
@@ -174,12 +177,12 @@ public class DefaultTcpipForwarder implements TcpipForwarder, IoHandler {
             channel = new TcpipClientChannel(TcpipClientChannel.Type.Forwarded, session, null);
         }
         session.setAttribute(TcpipClientChannel.class, channel);
-        this.session.registerChannel(channel);
+        this.service.registerChannel(channel);
         channel.open().addListener(new SshFutureListener<OpenFuture>() {
             public void operationComplete(OpenFuture future) {
                 Throwable t = future.getException();
                 if (t != null) {
-                    DefaultTcpipForwarder.this.session.unregisterChannel(channel);
+                    DefaultTcpipForwarder.this.service.unregisterChannel(channel);
                     channel.close(false);
                 }
             }

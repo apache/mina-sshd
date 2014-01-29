@@ -35,6 +35,7 @@ import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoCloseFuture;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoSession;
+import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.Readable;
 import org.apache.sshd.server.session.ServerSession;
@@ -58,18 +59,18 @@ public class X11ForwardSupport implements IoHandler {
 
     protected final Logger log = LoggerFactory.getLogger(getClass());
 
-    private final ServerSession session;
+    private final ConnectionService service;
     private IoAcceptor acceptor;
 
-    public X11ForwardSupport(ServerSession session) {
+    public X11ForwardSupport(ConnectionService service) {
         super();
-        this.session = session;
+        this.service = service;
     }
 
     public synchronized void initialize() {
         if (this.acceptor == null) {
-            this.acceptor = session.getFactoryManager().getIoServiceFactory()
-                    .createAcceptor(session.getFactoryManager(), this);
+            this.acceptor = service.getSession().getFactoryManager().getIoServiceFactory()
+                    .createAcceptor(service.getSession().getFactoryManager(), this);
         }
     }
 
@@ -132,7 +133,7 @@ public class X11ForwardSupport implements IoHandler {
     public void sessionCreated(IoSession session) throws Exception {
         ChannelForwardedX11 channel = new ChannelForwardedX11(session);
         session.setAttribute(ChannelForwardedX11.class, channel);
-        this.session.registerChannel(channel);
+        this.service.registerChannel(channel);
         OpenFuture future = channel.open().await();
         Throwable t = future.getException();
         if (t instanceof Exception) {

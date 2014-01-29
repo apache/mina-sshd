@@ -21,6 +21,7 @@ package org.apache.sshd.common.forward;
 import org.apache.sshd.common.Session;
 import org.apache.sshd.common.TcpipForwarder;
 import org.apache.sshd.common.TcpipForwarderFactory;
+import org.apache.sshd.common.session.ConnectionService;
 
 /**
  * The default {link TcpipForwarderFactory} implementation.
@@ -30,8 +31,8 @@ import org.apache.sshd.common.TcpipForwarderFactory;
  */
 public class DefaultTcpipForwarderFactory implements TcpipForwarderFactory
 {
-   public TcpipForwarder create( Session session )
+   public TcpipForwarder create( ConnectionService service )
    {
-      return new DefaultTcpipForwarder( session );
+      return new DefaultTcpipForwarder( service );
    }
 }

@@ -29,6 +29,7 @@ import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoWriteFuture;
+import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.BufferUtils;
 import org.slf4j.Logger;
@@ -48,6 +49,7 @@ public abstract class AbstractChannel implements Channel {
     protected final Object lock = new Object();
     protected final Window localWindow = new Window(this, null, getClass().getName().contains(".client."), true);
     protected final Window remoteWindow = new Window(this, null, getClass().getName().contains(".client."), false);
+    protected ConnectionService service;
     protected Session session;
     protected int id;
     protected int recipient;
@@ -80,7 +82,8 @@ public abstract class AbstractChannel implements Channel {
         throw new IllegalStateException();
     }
 
-    public void init(Session session, int id) {
+    public void init(ConnectionService service, Session session, int id) {
+        this.service = service;
         this.session = session;
         this.id = id;
         configureWindow();
@@ -101,7 +104,7 @@ public abstract class AbstractChannel implements Channel {
                         postClose();
                         closeFuture.setClosed();
                         notifyStateChanged();
-                        session.unregisterChannel(AbstractChannel.this);
+                        service.unregisterChannel(AbstractChannel.this);
                     }
                 });
             } else {

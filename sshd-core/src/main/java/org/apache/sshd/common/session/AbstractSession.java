@@ -37,6 +37,7 @@ import org.apache.sshd.common.KeyExchange;
 import org.apache.sshd.common.Mac;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.Random;
+import org.apache.sshd.common.Service;
 import org.apache.sshd.common.Session;
 import org.apache.sshd.common.SessionListener;
 import org.apache.sshd.common.SshConstants;
@@ -84,8 +85,6 @@ public abstract class AbstractSession implements Session {
     protected final IoSession ioSession;
     /** The pseudo random generator */
     protected final Random random;
-    /** The tcpip forwarder */
-    protected final TcpipForwarder tcpipForwarder;
     /** Lock object for this session state */
     protected final Object lock = new Object();
     /**
@@ -96,10 +95,8 @@ public abstract class AbstractSession implements Session {
     protected volatile boolean closing;
     /** Boolean indicating if this session has been authenticated or not */
     protected boolean authed;
-    /** Map of channels keyed by the identifier */
-    protected final Map<Integer, Channel> channels = new ConcurrentHashMap<Integer, Channel>();
-    /** Next channel identifier */
-    protected static AtomicInteger nextChannelId = new AtomicInteger(100);
+    /** The name of the authenticated useer */
+    protected String username;
 
     /** Session listener */
     protected final List<SessionListener> listeners = new ArrayList<SessionListener>();
@@ -140,7 +137,8 @@ public abstract class AbstractSession implements Session {
     protected final Object requestLock = new Object();
     protected final AtomicReference<Buffer> requestResult = new AtomicReference<Buffer>();
     protected final Map<AttributeKey<?>, Object> attributes = new ConcurrentHashMap<AttributeKey<?>, Object>();
-    protected String username;
+
+    protected Service currentService;
 
     private volatile State state = State.ReceiveKexInit;
 
@@ -154,7 +152,7 @@ public abstract class AbstractSession implements Session {
         this.factoryManager = factoryManager;
         this.ioSession = ioSession;
         this.random = factoryManager.getRandomFactory().create();
-        this.tcpipForwarder = factoryManager.getTcpipForwarderFactory().create(this);
+//        this.tcpipForwarder = factoryManager.getTcpipForwarderFactory().create(this);
     }
 
     /**
@@ -245,6 +243,15 @@ public abstract class AbstractSession implements Session {
         return factoryManager;
     }
 
+    public boolean isAuthenticated() {
+        return authed;
+    }
+
+    public void setAuthenticated(String username) {
+        this.authed = true;
+        this.username = username;
+    }
+
     /**
      * Main input point for the MINA framework.
      *
@@ -292,7 +299,6 @@ public abstract class AbstractSession implements Session {
      * {@link org.apache.sshd.common.SshException}.
      * 
      * @param t the exception to process
-     * @throws IOException
      */
     public void exceptionCaught(Throwable t) {
         // Ignore exceptions that happen while closing
@@ -339,26 +345,17 @@ public abstract class AbstractSession implements Session {
                 }
             }
         }
-        tcpipForwarder.close();
         synchronized (lock) {
             if (!closing) {
                 try {
                     closing = true;
-                    log.debug("Closing session");
-                    List<Channel> channelToClose = new ArrayList<Channel>(channels.values());
-                    if (channelToClose.size() > 0) {
-                        final AtomicInteger latch = new AtomicInteger(channelToClose.size());
-                        for (Channel channel : channelToClose) {
-                            log.debug("Closing channel {}", channel.getId());
-                            channel.close(immediately).addListener(new SshFutureListener() {
-                                public void operationComplete(SshFuture sshFuture) {
-                                    if (latch.decrementAndGet() == 0) {
-                                        log.debug("Closing IoSession");
-                                        ioSession.close(true).addListener(new IoSessionCloser());
-                                    }
-                                }
-                            });
-                        }
+                    if (currentService != null) {
+                        currentService.close(immediately).addListener(new SshFutureListener<CloseFuture>() {
+                            public void operationComplete(CloseFuture future) {
+                                log.debug("Closing IoSession");
+                                ioSession.close(immediately).addListener(new IoSessionCloser());
+                            }
+                        });
                     } else {
                         log.debug("Closing IoSession");
                         ioSession.close(immediately).addListener(new IoSessionCloser());
@@ -1002,18 +999,19 @@ public abstract class AbstractSession implements Session {
     }
 
 
+    /*
     protected int getNextChannelId() {
         return nextChannelId.incrementAndGet();
     }
 
     public int registerChannel(Channel channel) throws IOException {
         int channelId = getNextChannelId();
-        channel.init(this, channelId);
+        channel.init(this, session, channelId);
         channels.put(channelId, channel);
         return channelId;
     }
 
-    protected void channelOpenConfirmation(Buffer buffer) throws IOException {
+    public void channelOpenConfirmation(Buffer buffer) throws IOException {
         Channel channel = getChannel(buffer);
         log.debug("Received SSH_MSG_CHANNEL_OPEN_CONFIRMATION on channel {}", channel.getId());
         int recipient = buffer.getInt();
@@ -1022,42 +1020,24 @@ public abstract class AbstractSession implements Session {
         channel.handleOpenSuccess(recipient, rwsize, rmpsize, buffer);
     }
 
-    protected void channelOpenFailure(Buffer buffer) throws IOException {
+    public void channelOpenFailure(Buffer buffer) throws IOException {
         AbstractClientChannel channel = (AbstractClientChannel) getChannel(buffer);
         log.debug("Received SSH_MSG_CHANNEL_OPEN_FAILURE on channel {}", channel.getId());
         channels.remove(channel.getId());
         channel.handleOpenFailure(buffer);
     }
 
-    /**
-     * Process incoming data on a channel
-     *
-     * @param buffer the buffer containing the data
-     * @throws Exception if an error occurs
-     */
-    protected void channelData(Buffer buffer) throws IOException {
+    public void channelData(Buffer buffer) throws IOException {
         Channel channel = getChannel(buffer);
         channel.handleData(buffer);
     }
 
-    /**
-     * Process incoming extended data on a channel
-     *
-     * @param buffer the buffer containing the data
-     * @throws Exception if an error occurs
-     */
-    protected void channelExtendedData(Buffer buffer) throws IOException {
+    public void channelExtendedData(Buffer buffer) throws IOException {
         Channel channel = getChannel(buffer);
         channel.handleExtendedData(buffer);
     }
 
-    /**
-     * Process a window adjust packet on a channel
-     *
-     * @param buffer the buffer containing the window adjustement parameters
-     * @throws Exception if an error occurs
-     */
-    protected void channelWindowAdjust(Buffer buffer) throws IOException {
+    public void channelWindowAdjust(Buffer buffer) throws IOException {
         try {
             Channel channel = getChannel(buffer);
             channel.handleWindowAdjust(buffer);
@@ -1066,45 +1046,22 @@ public abstract class AbstractSession implements Session {
         }
     }
 
-    /**
-     * Process end of file on a channel
-     *
-     * @param buffer the buffer containing the packet
-     * @throws Exception if an error occurs
-     */
-    protected void channelEof(Buffer buffer) throws IOException {
+    public void channelEof(Buffer buffer) throws IOException {
         Channel channel = getChannel(buffer);
         channel.handleEof();
     }
 
-    /**
-     * Close a channel due to a close packet received
-     *
-     * @param buffer the buffer containing the packet
-     * @throws Exception if an error occurs
-     */
-    protected void channelClose(Buffer buffer) throws IOException {
+    public void channelClose(Buffer buffer) throws IOException {
         Channel channel = getChannel(buffer);
         channel.handleClose();
         unregisterChannel(channel);
     }
 
-    /**
-     * Remove this channel from the list of managed channels
-     *
-     * @param channel the channel
-     */
     public void unregisterChannel(Channel channel) {
         channels.remove(channel.getId());
     }
 
-    /**
-     * Service a request on a channel
-     *
-     * @param buffer the buffer containing the request
-     * @throws Exception if an error occurs
-     */
-    protected void channelRequest(Buffer buffer) throws IOException {
+    public void channelRequest(Buffer buffer) throws IOException {
         Channel channel = getChannel(buffer);
         String type = buffer.getString();
         boolean wantReply = buffer.getBoolean();
@@ -1118,24 +1075,11 @@ public abstract class AbstractSession implements Session {
         }
     }
 
-    /**
-     * Process a failure on a channel
-     *
-     * @param buffer the buffer containing the packet
-     * @throws Exception if an error occurs
-     */
-    protected void channelFailure(Buffer buffer) throws IOException {
+    public void channelFailure(Buffer buffer) throws IOException {
         Channel channel = getChannel(buffer);
         channel.handleFailure();
     }
 
-    /**
-     * Retrieve the channel designated by the given packet
-     *
-     * @param buffer the incoming packet
-     * @return the target channel
-     * @throws IOException if the channel does not exists
-     */
     protected Channel getChannel(Buffer buffer) throws IOException {
         int recipient = buffer.getInt();
         Channel channel = channels.get(recipient);
@@ -1146,6 +1090,7 @@ public abstract class AbstractSession implements Session {
         }
         return channel;
     }
+    */
 
     /**
      * Retrieve a configuration property as an integer
@@ -1193,6 +1138,10 @@ public abstract class AbstractSession implements Session {
         return username;
     }
 
+    public Object getLock() {
+        return lock;
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -1215,10 +1164,4 @@ public abstract class AbstractSession implements Session {
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    public TcpipForwarder getTcpipForwarder() {
-        return this.tcpipForwarder;
-    }
 }

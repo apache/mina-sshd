@@ -31,7 +31,7 @@ import org.apache.sshd.common.util.Buffer;
 public interface Session {
 
     public enum State {
-        ReceiveKexInit, Kex, ReceiveNewKeys, AuthRequestSent, WaitForAuth, UserAuth, Running, Closed
+        ReceiveKexInit, Kex, ReceiveNewKeys, ServiceRequestSent, WaitForServiceRequest, Running, Closed
     }
 
     /**
@@ -135,25 +135,8 @@ public interface Session {
      * {@link org.apache.sshd.common.SshException}.
      *
      * @param t the exception to process
-     * @throws IOException
      */
     void exceptionCaught(Throwable t);
-
-    /**
-     * Register a newly created channel with a new unique identifier
-     *
-     * @param channel the channel to register
-     * @return the id of this channel
-     * @throws Exception
-     */
-    int registerChannel(Channel channel) throws Exception;
-
-    /**
-     * Remove this channel from the list of managed channels
-     *
-     * @param channel the channel
-     */
-    void unregisterChannel(Channel channel);
 
     /**
      * Add a session |listener|.
@@ -168,12 +151,6 @@ public interface Session {
      * @param listener the session listener to remove
      */
     void removeListener(SessionListener listener);
-
-    /**
-     * Retrieve the tcpip forwarder
-     * @return
-     */
-    TcpipForwarder getTcpipForwarder();
 
     /**
      * Type safe key for storage within the user attributes of {@link org.apache.sshd.common.session.AbstractSession}.
@@ -191,7 +168,7 @@ public interface Session {
      *   s.setAttribute(MY_KEY, value);
      * }
      *
-     * @param T type of value stored in the attribute.
+     * @param <T> type of value stored in the attribute.
      *
      * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
      */

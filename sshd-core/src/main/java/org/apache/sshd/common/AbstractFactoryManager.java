@@ -59,6 +59,7 @@ public abstract class AbstractFactoryManager implements FactoryManager {
     protected TcpipForwarderFactory tcpipForwarderFactory;
     protected ForwardingFilter tcpipForwardingFilter;
     protected FileSystemFactory fileSystemFactory;
+    protected List<ServiceFactory> serviceFactories;
 
     protected AbstractFactoryManager() {
         loadVersion();
@@ -228,4 +229,11 @@ public abstract class AbstractFactoryManager implements FactoryManager {
         this.fileSystemFactory = fileSystemFactory;
     }
 
+    public List<ServiceFactory> getServiceFactories() {
+        return serviceFactories;
+    }
+
+    public void setServiceFactories(List<ServiceFactory> serviceFactories) {
+        this.serviceFactories = serviceFactories;
+    }
 }

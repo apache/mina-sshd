@@ -494,7 +494,7 @@ public class ChannelSession extends AbstractServerChannel {
             return false;
         }
 
-        String authSocket = ((ServerSession) session).initAgentForward();
+        String authSocket = service.initAgentForward();
         addEnvVariable(SshAgent.SSH_AUTHSOCKET_ENV_NAME, authSocket);
         return true;
     }
@@ -506,7 +506,7 @@ public class ChannelSession extends AbstractServerChannel {
             return false;
         }
 
-        String display = ((ServerSession) session).createX11Display(buffer.getBoolean(), buffer.getString(),
+        String display = service.createX11Display(buffer.getBoolean(), buffer.getString(),
                                                                     buffer.getString(), buffer.getInt());
         if (display == null) {
             return false;

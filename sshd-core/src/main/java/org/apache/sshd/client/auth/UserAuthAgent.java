@@ -39,7 +39,10 @@ public class UserAuthAgent extends AbstractUserAuth {
 
     public UserAuthAgent(ClientSessionImpl session, String service, String username) throws IOException {
         super(session, service, username);
-        this.agent = session.getFactoryManager().getAgentFactory().createClient(session);
+        if (session.getFactoryManager().getAgentFactory() == null) {
+            throw new IllegalStateException("No ssh agent factory has been configured");
+        }
+        this.agent = session.getFactoryManager().getAgentFactory().createClient(session.getFactoryManager());
         this.keys = agent.getIdentities().iterator();
     }
 

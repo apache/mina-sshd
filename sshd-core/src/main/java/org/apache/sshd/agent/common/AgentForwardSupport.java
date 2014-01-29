@@ -22,6 +22,7 @@ import java.io.IOException;
 
 import org.apache.sshd.agent.SshAgentServer;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.server.session.ServerSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,18 +34,18 @@ public class AgentForwardSupport {
 
     private static final Logger log = LoggerFactory.getLogger(AgentForwardSupport.class);
 
-    private final ServerSession session;
+    private final ConnectionService service;
     private String agentId;
     private SshAgentServer agentServer;
 
-    public AgentForwardSupport(ServerSession session) {
-        this.session = session;
+    public AgentForwardSupport(ConnectionService service) {
+        this.service = service;
     }
 
     public String initialize() throws IOException {
         try {
             if (agentId == null) {
-                agentServer = session.getFactoryManager().getAgentFactory().createServer(session);
+                agentServer = service.getSession().getFactoryManager().getAgentFactory().createServer(service);
                 agentId = agentServer.getId();
             }
             return agentId;

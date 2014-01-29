@@ -24,8 +24,10 @@ import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.agent.SshAgentServer;
 import org.apache.sshd.common.Channel;
+import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.Session;
+import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.server.session.ServerSession;
 
 public class UnixAgentFactory implements SshAgentFactory {
@@ -34,16 +36,17 @@ public class UnixAgentFactory implements SshAgentFactory {
         return new ChannelAgentForwarding.Factory();
     }
 
-    public SshAgent createClient(Session session) throws IOException {
-        String authSocket = session.getFactoryManager().getProperties().get(SshAgent.SSH_AUTHSOCKET_ENV_NAME);
+    public SshAgent createClient(FactoryManager manager) throws IOException {
+        String authSocket = manager.getProperties().get(SshAgent.SSH_AUTHSOCKET_ENV_NAME);
         SshAgent agent = new AgentClient(authSocket);
         return agent;
     }
 
-    public SshAgentServer createServer(Session session) throws IOException {
+    public SshAgentServer createServer(ConnectionService service) throws IOException {
+        Session session = service.getSession();
         if (!(session instanceof ServerSession)) {
             throw new IllegalStateException("The session used to create an agent server proxy must be a server session");
         }
-        return new AgentServerProxy((ServerSession) session);
+        return new AgentServerProxy(service);
     }
 }

@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.security.KeyPair;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -32,7 +33,6 @@ import org.apache.sshd.client.ScpClient;
 import org.apache.sshd.client.ServerKeyVerifier;
 import org.apache.sshd.client.SftpClient;
 import org.apache.sshd.client.UserAuth;
-import org.apache.sshd.client.UserInteraction;
 import org.apache.sshd.client.auth.UserAuthAgent;
 import org.apache.sshd.client.auth.UserAuthKeyboardInteractive;
 import org.apache.sshd.client.auth.UserAuthPassword;
@@ -43,22 +43,19 @@ import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.ChannelSubsystem;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.DefaultAuthFuture;
-import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.client.scp.DefaultScpClient;
 import org.apache.sshd.client.sftp.DefaultSftpClient;
-import org.apache.sshd.common.Channel;
-import org.apache.sshd.common.KeyExchange;
 import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.Service;
+import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.SshdSocketAddress;
-import org.apache.sshd.common.future.CloseFuture;
-import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.session.AbstractSession;
+import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.util.Buffer;
-import org.apache.sshd.server.channel.OpenChannelException;
 
 /**
  * TODO Add javadoc
@@ -67,147 +64,81 @@ import org.apache.sshd.server.channel.OpenChannelException;
  */
 public class ClientSessionImpl extends AbstractSession implements ClientSession {
 
-    private static final String AUTHENTICATION_SERVICE = "ssh-connection";
-
-    private UserAuth userAuth;
-    /**
-     * The AuthFuture that is being used by the current auth request.  This encodes the state.
-     * isSuccess -> authenticated, else if isDone -> server waiting for user auth, else authenticating.
-     */
-    private volatile AuthFuture authFuture;
-
     /**
      * For clients to store their own metadata
      */
     private Map<Object, Object> metadataMap = new HashMap<Object, Object>();
 
+    private ServiceFactory currentServiceFactory;
+
+    private Service nextService;
+    private ServiceFactory nextServiceFactory;
+
+    protected AuthFuture authFuture;
+
     public ClientSessionImpl(ClientFactoryManager client, IoSession session) throws Exception {
         super(client, session);
         log.info("Session created...");
+        // Need to set the initial service early as calling code likes to start trying to
+        // manipulate it before the connection has even been established.  For instance, to
+        // set the authPassword.
+        List<ServiceFactory> factories = client.getServiceFactories();
+        if (factories == null || factories.isEmpty() || factories.size() > 2) {
+            throw new IllegalArgumentException("One or two services must be configured");
+        }
+        currentServiceFactory = factories.get(0);
+        currentService = currentServiceFactory.create(this);
+        if (factories.size() > 1) {
+            nextServiceFactory = factories.get(1);
+            nextService = nextServiceFactory.create(this);
+        } else {
+            nextServiceFactory = null;
+        }
+        authFuture = new DefaultAuthFuture(lock);
+        authFuture.setAuthed(false);
         sendClientIdentification();
         sendKexInit();
-        // Maintain the current auth status in the authFuture.
-        authFuture = new DefaultAuthFuture(lock);
     }
 
     public ClientFactoryManager getClientFactoryManager() {
         return (ClientFactoryManager) factoryManager;
     }
 
-    /**
-     * return true if/when ready for auth; false if never ready.
-     * @return server is ready and waiting for auth
-     */
-    private boolean readyForAuth() {
-        // isDone indicates that the last auth finished and a new one can commence.
-        while (!this.authFuture.isDone()) {
-            log.debug("waiting to send authentication");
-            try {
-                this.authFuture.await();
-            } catch (InterruptedException e) {
-                log.debug("Unexpected interrupt", e);
-                throw new RuntimeException(e);
-            }
-        }
-        if (this.authFuture.isSuccess()) {
-            log.debug("already authenticated");
-            throw new IllegalStateException("Already authenticated");
-        }
-        if (this.authFuture.getException() != null) {
-            log.debug("probably closed", this.authFuture.getException());
-            return false;
-        }
-        if (!this.authFuture.isFailure()) {
-            log.debug("unexpected state");
-            throw new IllegalStateException("Unexpected authentication state");
-        }
-        if (this.userAuth != null) {
-            log.debug("authentication already in progress");
-            throw new IllegalStateException("Authentication already in progress?");
-        }
-        log.debug("ready to try authentication with new lock");
-        // The new future !isDone() - i.e., in progress blocking out other waits.
-        this.authFuture = new DefaultAuthFuture(lock);
-        return true;
-    }
-
-    /**
-     * execute one step in user authentication.
-     * @param buffer
-     * @throws IOException
-     */
-    private void processUserAuth(Buffer buffer) throws IOException {
-        log.debug("processing {}", userAuth);
-        switch (userAuth.next(buffer)) {
-            case Success:
-                log.debug("succeeded with {}", userAuth);
-                this.authed = true;
-                this.username = userAuth.getUsername();
-                setState(State.Running);
-                // Will wake up anyone sitting in waitFor
-                authFuture.setAuthed(true);
-                startHeartBeat();
-                break;
-            case Failure:
-                log.debug("failed with {}", userAuth);
-                this.userAuth = null;
-                setState(State.WaitForAuth);
-                // Will wake up anyone sitting in waitFor
-                this.authFuture.setAuthed(false);
-                break;
-            case Continued:
-                // Will wake up anyone sitting in waitFor
-                setState(State.UserAuth);
-                log.debug("continuing with {}", userAuth);
-                break;
-        }
-    }
-
     public AuthFuture authAgent(String user) throws IOException {
-        log.debug("Trying agent authentication");
-        if (getFactoryManager().getAgentFactory() == null) {
-            throw new IllegalStateException("No ssh agent factory has been configured");
-        }
-        synchronized (lock) {
-            if (readyForAuth()) {
-                userAuth = new UserAuthAgent(this, AUTHENTICATION_SERVICE, user);
-                processUserAuth(null);
-            }
-            return authFuture;
-        }
+        return tryAuth(new UserAuthAgent(this, nextServiceName(), user));
     }
 
     public AuthFuture authPassword(String user, String password) throws IOException {
-        log.debug("Trying password authentication");
-        synchronized (lock) {
-            if (readyForAuth()) {
-                userAuth = new UserAuthPassword(this, AUTHENTICATION_SERVICE, user, password);
-                processUserAuth(null);
-            }
-            return authFuture;
-        }
+        return tryAuth(new UserAuthPassword(this, nextServiceName(), user, password));
     }
 
     public AuthFuture authInteractive(String user, String password) throws IOException {
-        log.debug("Trying keyboard-interactive authentication");
-        synchronized (lock) {
-            if (readyForAuth()) {
-                userAuth = new UserAuthKeyboardInteractive(this, AUTHENTICATION_SERVICE, user, password);
-                processUserAuth(null);
-            }
-            return authFuture;
-        }
+        return tryAuth(new UserAuthKeyboardInteractive(this, nextServiceName(), user, password));
    }
 
     public AuthFuture authPublicKey(String user, KeyPair key) throws IOException {
-        log.debug("Trying publickey authentication");
+        return tryAuth(new UserAuthPublicKey(this, nextServiceName(), user, key));
+    }
+
+    private AuthFuture tryAuth(UserAuth auth) throws IOException {
         synchronized (lock) {
-            if (readyForAuth()) {
-                userAuth = new UserAuthPublicKey(this, AUTHENTICATION_SERVICE, user, key);
-                processUserAuth(null);
-            }
-            return authFuture;
+            return authFuture = getUserAuthService().auth(auth);
         }
+    }
+
+    private String nextServiceName() {
+        return nextServiceFactory.getName();
+    }
+
+    protected void switchToNextService() throws IOException {
+        if (nextService == null) {
+            throw new IllegalStateException("No service available");
+        }
+        currentServiceFactory = nextServiceFactory;
+        currentService = nextService;
+        nextServiceFactory = null;
+        nextService = null;
+        currentService.start();
     }
 
     public ClientChannel createChannel(String type) throws IOException {
@@ -228,26 +159,44 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
 
     public ChannelShell createShellChannel() throws IOException {
         ChannelShell channel = new ChannelShell();
-        registerChannel(channel);
+        getConnectionService().registerChannel(channel);
         return channel;
     }
 
     public ChannelExec createExecChannel(String command) throws IOException {
         ChannelExec channel = new ChannelExec(command);
-        registerChannel(channel);
+        getConnectionService().registerChannel(channel);
         return channel;
     }
 
     public ChannelSubsystem createSubsystemChannel(String subsystem) throws IOException {
         ChannelSubsystem channel = new ChannelSubsystem(subsystem);
-        registerChannel(channel);
+        getConnectionService().registerChannel(channel);
         return channel;
     }
 
     public ChannelDirectTcpip createDirectTcpipChannel(SshdSocketAddress local, SshdSocketAddress remote) throws IOException {
         ChannelDirectTcpip channel = new ChannelDirectTcpip(local, remote);
-        registerChannel(channel);
+        getConnectionService().registerChannel(channel);
         return channel;
+    }
+
+    private ClientUserAuthService getUserAuthService() {
+        return findService(ClientUserAuthService.class);
+    }
+
+    private ConnectionService getConnectionService() {
+        return findService(ConnectionService.class);
+    }
+
+    private <T> T findService(Class<T> clazz) {
+        if (clazz.isInstance(currentService)) {
+            return clazz.cast(currentService);
+        }
+        if (clazz.isInstance(nextService)) {
+            return clazz.cast(nextService);
+        }
+        throw new IllegalStateException("Attempted to access unknown service " + clazz.getSimpleName());
     }
 
     public ScpClient createScpClient() {
@@ -259,29 +208,19 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
     }
 
     public SshdSocketAddress startLocalPortForwarding(SshdSocketAddress local, SshdSocketAddress remote) throws IOException {
-        return getTcpipForwarder().startLocalPortForwarding(local, remote);
+        return getConnectionService().getTcpipForwarder().startLocalPortForwarding(local, remote);
     }
 
     public void stopLocalPortForwarding(SshdSocketAddress local) throws IOException {
-        getTcpipForwarder().stopLocalPortForwarding(local);
+        getConnectionService().getTcpipForwarder().stopLocalPortForwarding(local);
     }
 
     public SshdSocketAddress startRemotePortForwarding(SshdSocketAddress remote, SshdSocketAddress local) throws IOException {
-        return getTcpipForwarder().startRemotePortForwarding(remote, local);
+        return getConnectionService().getTcpipForwarder().startRemotePortForwarding(remote, local);
     }
 
     public void stopRemotePortForwarding(SshdSocketAddress remote) throws IOException {
-        getTcpipForwarder().stopRemotePortForwarding(remote);
-    }
-
-    @Override
-    public CloseFuture close(boolean immediately) {
-        synchronized (lock) {
-            if (!authFuture.isDone()) {
-                authFuture.setException(new SshException("Session is closed"));
-            }
-            return super.close(immediately);
-        }
+        getConnectionService().getTcpipForwarder().stopRemotePortForwarding(remote);
     }
 
     protected void handleMessage(Buffer buffer) throws Exception {
@@ -344,37 +283,24 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
                         }
                         log.info("Received SSH_MSG_NEWKEYS");
                         receiveNewKeys(false);
-                        sendAuthRequest();
-                        setState(State.AuthRequestSent);
+                        log.info("Send SSH_MSG_SERVICE_REQUEST for {}", currentServiceFactory.getName());
+                        Buffer request = createBuffer(SshConstants.Message.SSH_MSG_SERVICE_REQUEST, 0);
+                        request.putString(currentServiceFactory.getName());
+                        writePacket(request);
+                        setState(State.ServiceRequestSent);
+                        // Assuming that MINA-SSHD only implements "explicit server authentication" it is permissible
+                        // for the client's service to start sending data before the service-accept has been received.
+                        // If "implicit authentication" were to ever be supported, then this would need to be
+                        // called after service-accept comes back.  See SSH-TRANSPORT.
+                        currentService.start();
                         break;
-                    case AuthRequestSent:
+                    case ServiceRequestSent:
                         if (cmd != SshConstants.Message.SSH_MSG_SERVICE_ACCEPT) {
                             disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "Protocol error: expected packet SSH_MSG_SERVICE_ACCEPT, got " + cmd);
                             return;
                         }
-                        authFuture.setAuthed(false);
-                        setState(State.WaitForAuth);
-                        break;
-                    case WaitForAuth:
-                        // We're waiting for the client to send an authentication request
-                        // TODO: handle unexpected incoming packets
-                        break;
-                    case UserAuth:
-                        if (userAuth == null) {
-                            throw new IllegalStateException("State is userAuth, but no user auth pending!!!");
-                        }
-                        if (cmd == SshConstants.Message.SSH_MSG_USERAUTH_BANNER) {
-                            String welcome = buffer.getString();
-                            String lang = buffer.getString();
-                            log.debug("Welcome banner: {}", welcome);
-                            UserInteraction ui = getClientFactoryManager().getUserInteraction();
-                            if (ui != null) {
-                                ui.welcome(welcome);
-                            }
-                        } else {
-                            buffer.rpos(buffer.rpos() - 1);
-                            processUserAuth(buffer);
-                        }
+                        log.info("Received SSH_MSG_SERVICE_ACCEPT");
+                        setState(State.Running);
                         break;
                     case Running:
                         switch (cmd) {
@@ -384,38 +310,9 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
                             case SSH_MSG_REQUEST_FAILURE:
                                 requestFailure(buffer);
                                 break;
-                            case SSH_MSG_CHANNEL_OPEN:
-                                channelOpen(buffer);
-                                break;
-                            case SSH_MSG_CHANNEL_OPEN_CONFIRMATION:
-                                channelOpenConfirmation(buffer);
-                                break;
-                            case SSH_MSG_CHANNEL_OPEN_FAILURE:
-                                channelOpenFailure(buffer);
-                                break;
-                            case SSH_MSG_CHANNEL_REQUEST:
-                                channelRequest(buffer);
-                                break;
-                            case SSH_MSG_CHANNEL_DATA:
-                                channelData(buffer);
-                                break;
-                            case SSH_MSG_CHANNEL_EXTENDED_DATA:
-                                channelExtendedData(buffer);
-                                break;
-                            case SSH_MSG_CHANNEL_FAILURE:
-                                channelFailure(buffer);
-                                break;
-                            case SSH_MSG_CHANNEL_WINDOW_ADJUST:
-                                channelWindowAdjust(buffer);
-                                break;
-                            case SSH_MSG_CHANNEL_EOF:
-                                channelEof(buffer);
-                                break;
-                            case SSH_MSG_CHANNEL_CLOSE:
-                                channelClose(buffer);
-                                break;
                             default:
-                                throw new IllegalStateException("Unsupported command: " + cmd);
+                                currentService.process(cmd, buffer);
+                                break;
                         }
                         break;
                     default:
@@ -472,37 +369,6 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         }
     }
 
-    protected void startHeartBeat() {
-        String intervalStr = getClientFactoryManager().getProperties().get(ClientFactoryManager.HEARTBEAT_INTERVAL);
-        try {
-            int interval = intervalStr != null ? Integer.parseInt(intervalStr) : 0;
-            if (interval > 0) {
-                getClientFactoryManager().getScheduledExecutorService().scheduleAtFixedRate(new Runnable() {
-                    public void run() {
-                        sendHeartBeat();
-                    }
-                }, interval, interval, TimeUnit.MILLISECONDS);
-            }
-        } catch (NumberFormatException e) {
-            log.warn("Ignoring bad heartbeat interval: {}", intervalStr);
-        }
-    }
-
-    protected void sendHeartBeat() {
-        try {
-            Buffer buf = createBuffer(SshConstants.Message.SSH_MSG_GLOBAL_REQUEST, 0);
-            String request = getClientFactoryManager().getProperties().get(ClientFactoryManager.HEARTBEAT_REQUEST);
-            if (request == null) {
-                request = "keepalive@sshd.apache.org";
-            }
-            buf.putString(request);
-            buf.putBoolean(false);
-            writePacket(buf);
-        } catch (IOException e) {
-            log.info("Error sending keepalive message", e);
-        }
-    }
-
     protected boolean readIdentification(Buffer buffer) throws IOException {
         serverVersion = doReadIdentification(buffer);
         if (serverVersion == null) {
@@ -538,75 +404,6 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         if (!serverKeyVerifier.verifyServerKey(this, remoteAddress, kex.getServerKey())) {
             throw new SshException("Server key did not validate");
         }
-    }
-
-    private void sendAuthRequest() throws Exception {
-        log.info("Send SSH_MSG_SERVICE_REQUEST for ssh-userauth");
-        Buffer buffer = createBuffer(SshConstants.Message.SSH_MSG_SERVICE_REQUEST, 0);
-        buffer.putString("ssh-userauth");
-        writePacket(buffer);
-    }
-
-    private void channelOpen(Buffer buffer) throws Exception {
-        String type = buffer.getString();
-        final int id = buffer.getInt();
-        final int rwsize = buffer.getInt();
-        final int rmpsize = buffer.getInt();
-
-        log.info("Received SSH_MSG_CHANNEL_OPEN {}", type);
-
-        if (closing) {
-            Buffer buf = createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_FAILURE, 0);
-            buf.putInt(id);
-            buf.putInt(SshConstants.SSH_OPEN_CONNECT_FAILED);
-            buf.putString("SSH server is shutting down: " + type);
-            buf.putString("");
-            writePacket(buf);
-            return;
-        }
-
-        final Channel channel = NamedFactory.Utils.create(getFactoryManager().getChannelFactories(), type);
-        if (channel == null) {
-            Buffer buf = createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_FAILURE, 0);
-            buf.putInt(id);
-            buf.putInt(SshConstants.SSH_OPEN_UNKNOWN_CHANNEL_TYPE);
-            buf.putString("Unsupported channel type: " + type);
-            buf.putString("");
-            writePacket(buf);
-            return;
-        }
-
-        final int channelId = getNextChannelId();
-        channels.put(channelId, channel);
-        channel.init(this, channelId);
-        channel.open(id, rwsize, rmpsize, buffer).addListener(new SshFutureListener<OpenFuture>() {
-            public void operationComplete(OpenFuture future) {
-                try {
-                    if (future.isOpened()) {
-                        Buffer buf = createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_CONFIRMATION, 0);
-                        buf.putInt(id);
-                        buf.putInt(channelId);
-                        buf.putInt(channel.getLocalWindow().getSize());
-                        buf.putInt(channel.getLocalWindow().getPacketSize());
-                        writePacket(buf);
-                    } else if (future.getException() != null) {
-                        Buffer buf = createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_OPEN_FAILURE, 0);
-                        buf.putInt(id);
-                        if (future.getException() instanceof OpenChannelException) {
-                            buf.putInt(((OpenChannelException)future.getException()).getReasonCode());
-                            buf.putString(future.getException().getMessage());
-                        } else {
-                            buf.putInt(0);
-                            buf.putString("Error opening channel: " + future.getException().getMessage());
-                        }
-                        buf.putString("");
-                        writePacket(buf);
-                    }
-                } catch (IOException e) {
-                    exceptionCaught(e);
-                }
-            }
-        });
     }
 
 	public Map<Object, Object> getMetadataMap() {

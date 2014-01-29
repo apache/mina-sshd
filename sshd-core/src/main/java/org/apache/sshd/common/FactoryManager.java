@@ -177,4 +177,11 @@ public interface FactoryManager {
      */
     FileSystemFactory getFileSystemFactory();
 
+    /**
+     * Retrieve the list of SSH <code>Service</code> factories.
+     *
+     * @return a list of named <code>Service</code> factories, never <code>null</code>
+     */
+    List<ServiceFactory> getServiceFactories();
+
 }
