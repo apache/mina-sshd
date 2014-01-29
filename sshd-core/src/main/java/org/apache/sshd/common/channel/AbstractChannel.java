@@ -19,10 +19,13 @@
 package org.apache.sshd.common.channel;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.RequestHandler;
 import org.apache.sshd.common.Session;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.future.CloseFuture;
@@ -57,6 +60,11 @@ public abstract class AbstractChannel implements Channel {
     protected volatile boolean eof;
     protected final AtomicBoolean closing = new AtomicBoolean();
     protected boolean closedByOtherSide;
+    protected final List<RequestHandler<Channel>> handlers = new ArrayList<RequestHandler<Channel>>();
+
+    public void addRequestHandler(RequestHandler<Channel> handler) {
+        handlers.add(handler);
+    }
 
     public int getId() {
         return id;
@@ -78,8 +86,43 @@ public abstract class AbstractChannel implements Channel {
         return session;
     }
 
-    public boolean handleRequest(String type, Buffer buffer) throws IOException {
-        throw new IllegalStateException();
+    public void handleRequest(Buffer buffer) throws IOException {
+        String req = buffer.getString();
+        boolean wantReply = buffer.getBoolean();
+        log.debug("Received SSH_MSG_CHANNEL_REQUEST {} on channel {} (wantReply {})", new Object[] { req, id, wantReply });
+        for (RequestHandler<Channel> handler : handlers) {
+            RequestHandler.Result result;
+            try {
+                result = handler.process(this, req, wantReply, buffer);
+            } catch (Exception e) {
+                log.warn("Error processing channel request " + req, e);
+                result = RequestHandler.Result.ReplyFailure;
+            }
+            switch (result) {
+                case Replied:
+                    return;
+                case ReplySuccess:
+                    if (wantReply) {
+                        buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS, 0);
+                        buffer.putInt(recipient);
+                        session.writePacket(buffer);
+                    }
+                    return;
+                case ReplyFailure:
+                    if (wantReply) {
+                        buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_FAILURE, 0);
+                        buffer.putInt(recipient);
+                        session.writePacket(buffer);
+                    }
+                    return;
+            }
+        }
+        log.warn("Unknown channel request: {}", req);
+        if (wantReply) {
+            buffer = session.createBuffer(SshConstants.Message.SSH_MSG_CHANNEL_FAILURE, 0);
+            buffer.putInt(recipient);
+            session.writePacket(buffer);
+        }
     }
 
     public void init(ConnectionService service, Session session, int id) {

@@ -20,20 +20,11 @@ package org.apache.sshd.server.session;
 
 import java.io.IOException;
 
-import org.apache.sshd.client.future.OpenFuture;
-import org.apache.sshd.common.Channel;
-import org.apache.sshd.common.GlobalRequestHandler;
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.Session;
-import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.SshdSocketAddress;
-import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.session.AbstractConnectionService;
-import org.apache.sshd.common.util.Buffer;
-import org.apache.sshd.server.channel.OpenChannelException;
 
 /**
  * Server side <code>ssh-connection</code> service.

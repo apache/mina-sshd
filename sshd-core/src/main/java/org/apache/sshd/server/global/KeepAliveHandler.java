@@ -18,7 +18,7 @@
  */
 package org.apache.sshd.server.global;
 
-import org.apache.sshd.common.GlobalRequestHandler;
+import org.apache.sshd.common.RequestHandler;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.util.Buffer;
@@ -28,17 +28,13 @@ import org.apache.sshd.common.util.Buffer;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class KeepAliveHandler implements GlobalRequestHandler {
+public class KeepAliveHandler implements RequestHandler<ConnectionService> {
 
-    public boolean process(ConnectionService connectionService, String request, boolean wantReply, Buffer buffer) throws Exception {
+    public Result process(ConnectionService connectionService, String request, boolean wantReply, Buffer buffer) throws Exception {
         if (request.startsWith("keepalive@")) {
-            if (wantReply) {
-                buffer = connectionService.getSession().createBuffer(SshConstants.Message.SSH_MSG_REQUEST_FAILURE, 0);
-                connectionService.getSession().writePacket(buffer);
-            }
-            return true;
+            return Result.ReplyFailure;
         }
-        return false;
+        return Result.Unsupported;
     }
 
 }

@@ -41,7 +41,7 @@ import org.apache.sshd.common.Cipher;
 import org.apache.sshd.common.Compression;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.ForwardingFilter;
-import org.apache.sshd.common.GlobalRequestHandler;
+import org.apache.sshd.common.RequestHandler;
 import org.apache.sshd.common.KeyExchange;
 import org.apache.sshd.common.Mac;
 import org.apache.sshd.common.NamedFactory;
@@ -79,6 +79,7 @@ import org.apache.sshd.common.random.BouncyCastleRandom;
 import org.apache.sshd.common.random.JceRandom;
 import org.apache.sshd.common.random.SingletonRandomFactory;
 import org.apache.sshd.common.session.AbstractSession;
+import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.signature.SignatureDSA;
 import org.apache.sshd.common.signature.SignatureECDSA;
 import org.apache.sshd.common.signature.SignatureRSA;
@@ -500,7 +501,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
                 new TcpipServerChannel.DirectTcpipFactory()));
         sshd.setFileSystemFactory(new NativeFileSystemFactory());
         sshd.setTcpipForwarderFactory(new DefaultTcpipForwarderFactory());
-        sshd.setGlobalRequestHandlers(Arrays.<GlobalRequestHandler>asList(
+        sshd.setGlobalRequestHandlers(Arrays.<RequestHandler<ConnectionService>>asList(
                 new KeepAliveHandler(),
                 new NoMoreSessionsHandler(),
                 new TcpipForwardHandler(),

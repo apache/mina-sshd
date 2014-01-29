@@ -36,6 +36,7 @@ import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.ForwardingFilter;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.PtyMode;
+import org.apache.sshd.common.RequestHandler;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.future.CloseFuture;
@@ -180,6 +181,7 @@ public class ChannelSession extends AbstractServerChannel {
     protected final CloseFuture commandExitFuture = new DefaultCloseFuture(lock);
 
     public ChannelSession() {
+        addRequestHandler(new ChannelSessionRequestHandler());
     }
 
     @Override
@@ -253,9 +255,7 @@ public class ChannelSession extends AbstractServerChannel {
         throw new UnsupportedOperationException("Server channel does not support extended data");
     }
 
-    public boolean handleRequest(String type, Buffer buffer) throws IOException {
-        log.debug("Received SSH_MSG_CHANNEL_REQUEST on channel {}", id);
-        log.debug("Received channel request: {}", type);
+    public Boolean handleRequest(String type, Buffer buffer) throws IOException {
         if ("env".equals(type)) {
             return handleEnv(buffer);
         }
@@ -301,7 +301,7 @@ public class ChannelSession extends AbstractServerChannel {
         if ("x11-req".equals(type)) {
             return handleX11Forwarding(buffer);
         }
-        return false;
+        return null;
     }
 
     protected boolean handleEnv(Buffer buffer) throws IOException {
@@ -533,4 +533,14 @@ public class ChannelSession extends AbstractServerChannel {
         commandExitFuture.setClosed();
     }
 
+    private class ChannelSessionRequestHandler implements RequestHandler<Channel> {
+        public Result process(Channel channel, String request, boolean wantReply, Buffer buffer) throws Exception {
+            Boolean r = handleRequest(request, buffer);
+            if (r == null) {
+                return Result.Unsupported;
+            } else {
+                return r ? Result.ReplySuccess : Result.ReplyFailure;
+            }
+        }
+    }
 }

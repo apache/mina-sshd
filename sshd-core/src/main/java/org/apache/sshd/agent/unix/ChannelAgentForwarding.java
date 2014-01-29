@@ -137,12 +137,6 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
         throw new UnsupportedOperationException("AgentForward channel does not support extended data");
     }
 
-    public boolean handleRequest(String type, Buffer buffer) throws IOException {
-        log.info("Received SSH_MSG_CHANNEL_REQUEST on channel {}", id);
-        log.info("Received channel request: {}", type);
-        return false;
-    }
-
     /**
      * transform an APR error number in a more fancy exception
      * @param code APR error code

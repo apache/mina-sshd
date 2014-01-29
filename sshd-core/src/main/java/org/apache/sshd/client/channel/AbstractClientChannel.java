@@ -25,6 +25,8 @@ import java.io.OutputStream;
 import org.apache.sshd.ClientChannel;
 import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
+import org.apache.sshd.common.Channel;
+import org.apache.sshd.common.RequestHandler;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.AbstractChannel;
@@ -56,6 +58,8 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
 
     protected AbstractClientChannel(String type) {
         this.type = type;
+        addRequestHandler(new ExitStatusChannelRequestHandler());
+        addRequestHandler(new ExitSignalChannelRequestHandler());
     }
 
     public OutputStream getInvertedIn() {
@@ -250,22 +254,30 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         localWindow.consumeAndCheck(len);
     }
 
-    public boolean handleRequest(String req, Buffer buffer) throws IOException {
-        log.info("Received SSH_MSG_CHANNEL_REQUEST {} on channel {}", req, id);
-        if ("exit-status".equals(req)) {
-            exitStatus = buffer.getInt();
-            notifyStateChanged();
-            return true;
-        } else if ("exit-signal".equals(req)) {
-            exitSignal = buffer.getString();
-            notifyStateChanged();
-            return true;
-        }
-        // TODO: handle other channel requests
-        return false;
-    }
-
     public Integer getExitStatus() {
         return exitStatus;
     }
+
+    private class ExitStatusChannelRequestHandler implements RequestHandler<Channel> {
+        public Result process(Channel channel, String request, boolean wantReply, Buffer buffer) throws Exception {
+            if (request.equals("exit-status")) {
+                exitStatus = buffer.getInt();
+                notifyStateChanged();
+                return Result.ReplySuccess;
+            }
+            return Result.Unsupported;
+        }
+    }
+
+    private class ExitSignalChannelRequestHandler implements RequestHandler<Channel> {
+        public Result process(Channel channel, String request, boolean wantReply, Buffer buffer) throws Exception {
+            if (request.equals("exit-signal")) {
+                exitSignal = buffer.getString();
+                notifyStateChanged();
+                return Result.ReplySuccess;
+            }
+            return Result.Unsupported;
+        }
+    }
+
 }

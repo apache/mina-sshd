@@ -24,9 +24,8 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.common.file.FileSystemFactory;
-import org.apache.sshd.common.io.IoAcceptor;
-import org.apache.sshd.common.io.IoConnector;
 import org.apache.sshd.common.io.IoServiceFactory;
+import org.apache.sshd.common.session.ConnectionService;
 
 /**
  * This interface allows retrieving all the <code>NamedFactory</code> used
@@ -189,6 +188,6 @@ public interface FactoryManager {
      *
      * @return a list of named <code>GlobalRequestHandler</code>
      */
-    List<GlobalRequestHandler> getGlobalRequestHandlers();
+    List<RequestHandler<ConnectionService>> getGlobalRequestHandlers();
 
 }

@@ -29,7 +29,7 @@ import org.apache.sshd.agent.common.AgentForwardSupport;
 import org.apache.sshd.client.channel.AbstractClientChannel;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.Channel;
-import org.apache.sshd.common.GlobalRequestHandler;
+import org.apache.sshd.common.RequestHandler;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.Session;
 import org.apache.sshd.common.SshConstants;
@@ -275,16 +275,7 @@ public abstract class AbstractConnectionService implements ConnectionService {
      */
     public void channelRequest(Buffer buffer) throws IOException {
         Channel channel = getChannel(buffer);
-        String type = buffer.getString();
-        boolean wantReply = buffer.getBoolean();
-        boolean success = channel.handleRequest(type, buffer);
-        if (wantReply) {
-            Buffer replyBuffer = session.createBuffer(
-                    success ? SshConstants.Message.SSH_MSG_CHANNEL_SUCCESS
-                            : SshConstants.Message.SSH_MSG_CHANNEL_FAILURE, 0);
-            replyBuffer.putInt(channel.getRecipient());
-            session.writePacket(replyBuffer);
-        }
+        channel.handleRequest(buffer);
     }
 
     /**
@@ -395,20 +386,31 @@ public abstract class AbstractConnectionService implements ConnectionService {
         String req = buffer.getString();
         boolean wantReply = buffer.getBoolean();
         log.debug("Received SSH_MSG_GLOBAL_REQUEST {}", req);
-        List<GlobalRequestHandler> handlers = session.getFactoryManager().getGlobalRequestHandlers();
+        List<RequestHandler<ConnectionService>> handlers = session.getFactoryManager().getGlobalRequestHandlers();
         if (handlers != null) {
-            for (GlobalRequestHandler handler : handlers) {
+            for (RequestHandler<ConnectionService> handler : handlers) {
+                RequestHandler.Result result;
                 try {
-                    if (handler.process(this, req, wantReply, buffer)) {
-                        return;
-                    }
+                    result = handler.process(this, req, wantReply, buffer);
                 } catch (Exception e) {
                     log.warn("Error processing global request " + req, e);
-                    if (wantReply) {
-                        buffer = session.createBuffer(SshConstants.Message.SSH_MSG_REQUEST_FAILURE, 0);
-                        session.writePacket(buffer);
-                    }
-                    return;
+                    result = RequestHandler.Result.ReplyFailure;
+                }
+                switch (result) {
+                    case Replied:
+                        return;
+                    case ReplySuccess:
+                        if (wantReply) {
+                            buffer = session.createBuffer(SshConstants.Message.SSH_MSG_REQUEST_SUCCESS, 0);
+                            session.writePacket(buffer);
+                        }
+                        return;
+                    case ReplyFailure:
+                        if (wantReply) {
+                            buffer = session.createBuffer(SshConstants.Message.SSH_MSG_REQUEST_FAILURE, 0);
+                            session.writePacket(buffer);
+                        }
+                        return;
                 }
             }
         }

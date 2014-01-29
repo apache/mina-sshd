@@ -18,7 +18,7 @@
  */
 package org.apache.sshd.server.global;
 
-import org.apache.sshd.common.GlobalRequestHandler;
+import org.apache.sshd.common.RequestHandler;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.session.ConnectionService;
@@ -29,9 +29,9 @@ import org.apache.sshd.common.util.Buffer;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class TcpipForwardHandler implements GlobalRequestHandler {
+public class TcpipForwardHandler implements RequestHandler<ConnectionService> {
 
-    public boolean process(ConnectionService connectionService, String request, boolean wantReply, Buffer buffer) throws Exception {
+    public Result process(ConnectionService connectionService, String request, boolean wantReply, Buffer buffer) throws Exception {
         if (request.equals("tcpip-forward")) {
             String address = buffer.getString();
             int port = buffer.getInt();
@@ -42,9 +42,9 @@ public class TcpipForwardHandler implements GlobalRequestHandler {
                 buffer.putInt(port);
                 connectionService.getSession().writePacket(buffer);
             }
-            return true;
+            return Result.Replied;
         }
-        return false;
+        return Result.Unsupported;
     }
 
 }

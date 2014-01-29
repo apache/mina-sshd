@@ -27,9 +27,8 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.common.file.FileSystemFactory;
-import org.apache.sshd.common.io.IoAcceptor;
-import org.apache.sshd.common.io.IoConnector;
 import org.apache.sshd.common.io.IoServiceFactory;
+import org.apache.sshd.common.session.ConnectionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,7 +59,7 @@ public abstract class AbstractFactoryManager implements FactoryManager {
     protected ForwardingFilter tcpipForwardingFilter;
     protected FileSystemFactory fileSystemFactory;
     protected List<ServiceFactory> serviceFactories;
-    protected List<GlobalRequestHandler> globalRequestHandlers;
+    protected List<RequestHandler<ConnectionService>> globalRequestHandlers;
 
     protected AbstractFactoryManager() {
         loadVersion();
@@ -238,11 +237,11 @@ public abstract class AbstractFactoryManager implements FactoryManager {
         this.serviceFactories = serviceFactories;
     }
 
-    public List<GlobalRequestHandler> getGlobalRequestHandlers() {
+    public List<RequestHandler<ConnectionService>> getGlobalRequestHandlers() {
         return globalRequestHandlers;
     }
 
-    public void setGlobalRequestHandlers(List<GlobalRequestHandler> globalRequestHandlers) {
+    public void setGlobalRequestHandlers(List<RequestHandler<ConnectionService>> globalRequestHandlers) {
         this.globalRequestHandlers = globalRequestHandlers;
     }
 }

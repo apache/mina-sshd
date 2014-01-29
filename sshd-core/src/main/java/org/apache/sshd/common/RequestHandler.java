@@ -26,20 +26,27 @@ import org.apache.sshd.common.util.Buffer;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface GlobalRequestHandler {
+public interface RequestHandler<T> {
+
+    enum Result {
+        Unsupported,
+        Replied,
+        ReplySuccess,
+        ReplyFailure
+    }
 
     /**
      * Process the ssh-connection global request.
      * If an exception is thrown, the ConnectionService will send a failure message if needed
      * and the request will be considered handled.
      *
-     * @param connectionService
+     * @param t
      * @param request
      * @param wantReply
      * @param buffer
-     * @return <code>true</code> if the request was handled
+     * @return
      * @throws Exception
      */
-    boolean process(ConnectionService connectionService, String request, boolean wantReply, Buffer buffer) throws Exception;
+    Result process(T t, String request, boolean wantReply, Buffer buffer) throws Exception;
 
 }
