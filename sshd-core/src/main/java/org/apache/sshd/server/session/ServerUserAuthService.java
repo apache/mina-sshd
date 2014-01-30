@@ -25,7 +25,6 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.sshd.SshServer;
-import org.apache.sshd.client.session.ClientSessionImpl;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.ServiceFactory;

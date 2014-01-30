@@ -29,7 +29,6 @@ import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.server.PublickeyAuthenticator;
 import org.apache.sshd.server.UserAuth;
-import org.apache.sshd.server.session.ServerSession;
 
 /**
  * TODO Add javadoc

@@ -41,7 +41,6 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultCloseFuture;
-import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.IoUtils;
@@ -372,10 +371,10 @@ public class ChannelSession extends AbstractServerChannel {
     }
 
     protected boolean handleShell(Buffer buffer) throws IOException {
-        if (((ServerSession) session).getServerFactoryManager().getShellFactory() == null) {
+        if (((ServerSession) session).getFactoryManager().getShellFactory() == null) {
             return false;
         }
-        command = ((ServerSession) session).getServerFactoryManager().getShellFactory().create();
+        command = ((ServerSession) session).getFactoryManager().getShellFactory().create();
         prepareCommand();
         command.start(getEnvironment());
         return true;
@@ -383,7 +382,7 @@ public class ChannelSession extends AbstractServerChannel {
 
     protected boolean handleExec(Buffer buffer) throws IOException {
         String commandLine = buffer.getString();
-        if (((ServerSession) session).getServerFactoryManager().getCommandFactory() == null) {
+        if (((ServerSession) session).getFactoryManager().getCommandFactory() == null) {
             log.warn("Unsupported command: {}", commandLine);
             return false;
         }
@@ -391,7 +390,7 @@ public class ChannelSession extends AbstractServerChannel {
             log.info("Executing command: {}", commandLine);
         }
         try {
-            command = ((ServerSession) session).getServerFactoryManager().getCommandFactory().createCommand(commandLine);
+            command = ((ServerSession) session).getFactoryManager().getCommandFactory().createCommand(commandLine);
         } catch (IllegalArgumentException iae) {
             // TODO: Shouldn't we log errors on the server side?
             return false;
@@ -404,7 +403,7 @@ public class ChannelSession extends AbstractServerChannel {
 
     protected boolean handleSubsystem(Buffer buffer) throws IOException {
         String subsystem = buffer.getString();
-        List<NamedFactory<Command>> factories = ((ServerSession) session).getServerFactoryManager().getSubsystemFactories();
+        List<NamedFactory<Command>> factories = ((ServerSession) session).getFactoryManager().getSubsystemFactories();
         if (factories == null) {
             log.warn("Unsupported subsystem: {}", subsystem);
             return false;
@@ -443,7 +442,7 @@ public class ChannelSession extends AbstractServerChannel {
         }
         // If the shell wants to be aware of the file system, let's do that too
         if (command instanceof FileSystemAware) {
-            FileSystemFactory factory = ((ServerSession) session).getServerFactoryManager().getFileSystemFactory();
+            FileSystemFactory factory = ((ServerSession) session).getFactoryManager().getFileSystemFactory();
             ((FileSystemAware) command).setFileSystemView(factory.createFileSystemView(session));
         }
         out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA);
@@ -488,8 +487,8 @@ public class ChannelSession extends AbstractServerChannel {
 
     protected boolean handleAgentForwarding(Buffer buffer) throws IOException {
         final ServerSession server = (ServerSession) session;
-        final ForwardingFilter filter = server.getServerFactoryManager().getTcpipForwardingFilter();
-        final SshAgentFactory factory = server.getServerFactoryManager().getAgentFactory();
+        final ForwardingFilter filter = server.getFactoryManager().getTcpipForwardingFilter();
+        final SshAgentFactory factory = server.getFactoryManager().getAgentFactory();
         if (factory == null || (filter != null && !filter.canForwardAgent(server))) {
             return false;
         }
@@ -501,7 +500,7 @@ public class ChannelSession extends AbstractServerChannel {
 
     protected boolean handleX11Forwarding(Buffer buffer) throws IOException {
         final ServerSession server = (ServerSession) session;
-        final ForwardingFilter filter = server.getServerFactoryManager().getTcpipForwardingFilter();
+        final ForwardingFilter filter = server.getFactoryManager().getTcpipForwardingFilter();
         if (filter == null || !filter.canForwardX11(server)) {
             return false;
         }

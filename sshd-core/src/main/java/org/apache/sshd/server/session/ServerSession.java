@@ -21,12 +21,10 @@ package org.apache.sshd.server.session;
 import java.io.IOException;
 import java.security.KeyPair;
 
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.io.IoSession;
-import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.server.ServerFactoryManager;
@@ -61,8 +59,8 @@ public class ServerSession extends AbstractSession {
         sendKexInit();
     }
 
-    public String getNegociated(int index) {
-        return negociated[index];
+    public String getNegotiated(int index) {
+        return negotiated[index];
     }
 
     public ServerFactoryManager getFactoryManager() {
@@ -137,7 +135,7 @@ public class ServerSession extends AbstractSession {
     }
 
     public KeyPair getHostKey() {
-        return factoryManager.getKeyPairProvider().loadKey(negociated[SshConstants.PROPOSAL_SERVER_HOST_KEY_ALGS]);
+        return factoryManager.getKeyPairProvider().loadKey(negotiated[SshConstants.PROPOSAL_SERVER_HOST_KEY_ALGS]);
     }
 
     /**

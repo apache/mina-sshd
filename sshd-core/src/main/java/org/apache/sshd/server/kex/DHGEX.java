@@ -133,7 +133,7 @@ public class DHGEX implements KeyExchange {
 
             byte[] K_S;
             KeyPair kp = session.getHostKey();
-            String algo = session.getNegociated(SshConstants.PROPOSAL_SERVER_HOST_KEY_ALGS);
+            String algo = session.getNegotiated(SshConstants.PROPOSAL_SERVER_HOST_KEY_ALGS);
             Signature sig = NamedFactory.Utils.create(session.getFactoryManager().getSignatureFactories(), algo);
             sig.init(kp.getPublic(), kp.getPrivate());
 

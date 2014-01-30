@@ -117,7 +117,7 @@ public abstract class AbstractSession implements Session {
     protected String clientVersion;
     protected String[] serverProposal;
     protected String[] clientProposal;
-    protected String[] negociated;
+    protected String[] negotiated;
     protected byte[] I_C; // the payload of the client's SSH_MSG_KEXINIT
     protected byte[] I_S; // the payload of the factoryManager's SSH_MSG_KEXINIT
     protected KeyExchange kex;
@@ -161,7 +161,6 @@ public abstract class AbstractSession implements Session {
         this.factoryManager = factoryManager;
         this.ioSession = ioSession;
         this.random = factoryManager.getRandomFactory().create();
-//        this.tcpipForwarder = factoryManager.getTcpipForwarderFactory().create(this);
     }
 
     /**
@@ -172,7 +171,7 @@ public abstract class AbstractSession implements Session {
      * @param ioSession the MINA session
      * @return the session attached to the MINA session
      */
-    public static final AbstractSession getSession(IoSession ioSession) {
+    public static AbstractSession getSession(IoSession ioSession) {
         return getSession(ioSession, false);
     }
 
@@ -187,7 +186,7 @@ public abstract class AbstractSession implements Session {
      *        returned if no session is attached
      * @return the session attached to the MINA session or <code>null</code>
      */
-    public static final AbstractSession getSession(IoSession ioSession, boolean allowNull) {
+    public static AbstractSession getSession(IoSession ioSession, boolean allowNull) {
         AbstractSession session = (AbstractSession) ioSession.getAttribute(SESSION);
         if (!allowNull && session == null) {
             throw new IllegalStateException("No session available");
@@ -201,7 +200,7 @@ public abstract class AbstractSession implements Session {
      * @param ioSession the MINA session
      * @param session the session to attach
      */
-    public static final void attachSession(IoSession ioSession, AbstractSession session) {
+    public static void attachSession(IoSession ioSession, AbstractSession session) {
         ioSession.setAttribute(SESSION, session);
     }
 
@@ -347,8 +346,8 @@ public abstract class AbstractSession implements Session {
                     throw new IllegalStateException("Received SSH_MSG_KEXINIT while key exchange is running");
                 }
                 kexState = KEX_STATE_RUN;
-                negociate();
-                kex = NamedFactory.Utils.create(factoryManager.getKeyExchangeFactories(), negociated[SshConstants.PROPOSAL_KEX_ALGS]);
+                negotiate();
+                kex = NamedFactory.Utils.create(factoryManager.getKeyExchangeFactories(), negotiated[SshConstants.PROPOSAL_KEX_ALGS]);
                 kex.init(this, serverVersion.getBytes(), clientVersion.getBytes(), I_S, I_C);
                 break;
             case SSH_MSG_NEWKEYS:
@@ -523,7 +522,6 @@ public abstract class AbstractSession implements Session {
             // they actually send exactly this amount.
             //
             int bsize = outCipherSize;
-            int oldLen = len;
             len += 5;
             int pad = (-len) & (bsize - 1);
             if (pad < bsize) {
@@ -777,7 +775,7 @@ public abstract class AbstractSession implements Session {
     }
 
     /**
-     * Create our proposal for SSH negociation
+     * Create our proposal for SSH negotiation
      *
      * @param hostKeyTypes the list of supported host key types
      * @return an array of 10 strings holding this proposal
@@ -801,9 +799,9 @@ public abstract class AbstractSession implements Session {
      * Send the key exchange initialization packet.
      * This packet contains random data along with our proposal.
      *
-     * @param proposal our proposal for key exchange negociation
+     * @param proposal our proposal for key exchange negotiation
      * @return the sent packet which must be kept for later use
-     * @throws IOException if an error occured sending the packet
+     * @throws IOException if an error occurred sending the packet
      */
     protected byte[] sendKexInit(String[] proposal) throws IOException {
         Buffer buffer = createBuffer(SshConstants.SSH_MSG_KEXINIT, 0);
@@ -865,8 +863,8 @@ public abstract class AbstractSession implements Session {
 
     /**
      * Put new keys into use.
-     * This method will intialize the ciphers, digests, macs and compression
-     * according to the negociated server and client proposals.
+     * This method will initialize the ciphers, digests, macs and compression
+     * according to the negotiated server and client proposals.
      *
      * @throws Exception if an error occurs
      */
@@ -924,24 +922,24 @@ public abstract class AbstractSession implements Session {
         hash.update(buf, 0, pos);
         MACs2c = hash.digest();
 
-        s2ccipher = NamedFactory.Utils.create(factoryManager.getCipherFactories(), negociated[SshConstants.PROPOSAL_ENC_ALGS_STOC]);
+        s2ccipher = NamedFactory.Utils.create(factoryManager.getCipherFactories(), negotiated[SshConstants.PROPOSAL_ENC_ALGS_STOC]);
         Es2c = resizeKey(Es2c, s2ccipher.getBlockSize(), hash, K, H);
         s2ccipher.init(isServer ? Cipher.Mode.Encrypt : Cipher.Mode.Decrypt, Es2c, IVs2c);
 
-        s2cmac = NamedFactory.Utils.create(factoryManager.getMacFactories(), negociated[SshConstants.PROPOSAL_MAC_ALGS_STOC]);
+        s2cmac = NamedFactory.Utils.create(factoryManager.getMacFactories(), negotiated[SshConstants.PROPOSAL_MAC_ALGS_STOC]);
         MACs2c = resizeKey(MACs2c, s2cmac.getBlockSize(), hash, K, H);
         s2cmac.init(MACs2c);
 
-        c2scipher = NamedFactory.Utils.create(factoryManager.getCipherFactories(), negociated[SshConstants.PROPOSAL_ENC_ALGS_CTOS]);
+        c2scipher = NamedFactory.Utils.create(factoryManager.getCipherFactories(), negotiated[SshConstants.PROPOSAL_ENC_ALGS_CTOS]);
         Ec2s = resizeKey(Ec2s, c2scipher.getBlockSize(), hash, K, H);
         c2scipher.init(isServer ? Cipher.Mode.Decrypt : Cipher.Mode.Encrypt, Ec2s, IVc2s);
 
-        c2smac = NamedFactory.Utils.create(factoryManager.getMacFactories(), negociated[SshConstants.PROPOSAL_MAC_ALGS_CTOS]);
+        c2smac = NamedFactory.Utils.create(factoryManager.getMacFactories(), negotiated[SshConstants.PROPOSAL_MAC_ALGS_CTOS]);
         MACc2s = resizeKey(MACc2s, c2smac.getBlockSize(), hash, K, H);
         c2smac.init(MACc2s);
 
-        s2ccomp = NamedFactory.Utils.create(factoryManager.getCompressionFactories(), negociated[SshConstants.PROPOSAL_COMP_ALGS_STOC]);
-        c2scomp = NamedFactory.Utils.create(factoryManager.getCompressionFactories(), negociated[SshConstants.PROPOSAL_COMP_ALGS_CTOS]);
+        s2ccomp = NamedFactory.Utils.create(factoryManager.getCompressionFactories(), negotiated[SshConstants.PROPOSAL_COMP_ALGS_STOC]);
+        c2scomp = NamedFactory.Utils.create(factoryManager.getCompressionFactories(), negotiated[SshConstants.PROPOSAL_COMP_ALGS_CTOS]);
 
         if (isServer) {
             outCipher = s2ccipher;
@@ -1020,10 +1018,10 @@ public abstract class AbstractSession implements Session {
 
     /**
      * Send an unimplemented packet.  This packet should contain the
-     * sequence id of the usupported packet: this number is assumed to
+     * sequence id of the unsupported packet: this number is assumed to
      * be the last packet received.
      *
-     * @throws IOException if an error occured sending the packet
+     * @throws IOException if an error occurred sending the packet
      */
     protected void notImplemented() throws IOException {
         Buffer buffer = createBuffer(SshConstants.SSH_MSG_UNIMPLEMENTED, 0);
@@ -1032,11 +1030,11 @@ public abstract class AbstractSession implements Session {
     }
 
     /**
-     * Compute the negociated proposals by merging the client and
-     * server proposal.  The negocatiated proposal will be stored in
-     * the {@link #negociated} property.
+     * Compute the negotiated proposals by merging the client and
+     * server proposal.  The negotiated proposal will be stored in
+     * the {@link #negotiated} property.
      */
-    protected void negociate() {
+    protected void negotiate() {
         String[] guess = new String[SshConstants.PROPOSAL_MAX];
         for (int i = 0; i < SshConstants.PROPOSAL_MAX; i++) {
             String[] c = clientProposal[i].split(",");
@@ -1063,19 +1061,19 @@ public abstract class AbstractSession implements Session {
                     "compression algorithms (client to server)",
                     "compression algorithms (server to client)"
                 };
-                throw new IllegalStateException("Unable to negociate key exchange for " + items[i] +
+                throw new IllegalStateException("Unable to negotiate key exchange for " + items[i] +
                         " (client: " + clientProposal[i] + " / server: " + serverProposal[i] + ")");
             }
         }
-        negociated = guess;
+        negotiated = guess;
         log.info("Kex: server->client {} {} {}",
-                new Object[] { negociated[SshConstants.PROPOSAL_ENC_ALGS_STOC],
-                               negociated[SshConstants.PROPOSAL_MAC_ALGS_STOC],
-                               negociated[SshConstants.PROPOSAL_COMP_ALGS_STOC]});
+                new Object[] { negotiated[SshConstants.PROPOSAL_ENC_ALGS_STOC],
+                               negotiated[SshConstants.PROPOSAL_MAC_ALGS_STOC],
+                               negotiated[SshConstants.PROPOSAL_COMP_ALGS_STOC]});
         log.info("Kex: client->server {} {} {}",
-                new Object[] { negociated[SshConstants.PROPOSAL_ENC_ALGS_CTOS],
-                               negociated[SshConstants.PROPOSAL_MAC_ALGS_CTOS],
-                               negociated[SshConstants.PROPOSAL_COMP_ALGS_CTOS]});
+                new Object[] { negotiated[SshConstants.PROPOSAL_ENC_ALGS_CTOS],
+                               negotiated[SshConstants.PROPOSAL_MAC_ALGS_CTOS],
+                               negotiated[SshConstants.PROPOSAL_COMP_ALGS_CTOS]});
     }
 
     protected void requestSuccess(Buffer buffer) throws Exception{

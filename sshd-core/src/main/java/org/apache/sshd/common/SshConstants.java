@@ -75,7 +75,7 @@ public interface SshConstants {
     static final byte SSH_MSG_CHANNEL_FAILURE=               100;
 
     //
-    // Values for the algorithms negociation 
+    // Values for the algorithms negotiation
     //
 
     static final int PROPOSAL_KEX_ALGS = 0;

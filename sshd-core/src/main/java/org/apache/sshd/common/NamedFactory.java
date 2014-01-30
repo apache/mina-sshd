@@ -22,7 +22,7 @@ import java.util.List;
 
 /**
  * A named factory is a factory identified by a name.
- * Such names are used mainly in the algorithm negociation at the beginning of the SSH connection.
+ * Such names are used mainly in the algorithm negotiation at the beginning of the SSH connection.
  *
  * @param <T>
  *
