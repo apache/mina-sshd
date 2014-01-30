@@ -58,7 +58,7 @@ public class UserAuthPassword extends AbstractUserAuth {
     }
 
     private boolean checkPassword(ServerSession session, String username, String password) throws Exception {
-        PasswordAuthenticator auth = session.getServerFactoryManager().getPasswordAuthenticator();
+        PasswordAuthenticator auth = session.getFactoryManager().getPasswordAuthenticator();
         if (auth != null) {
             return auth.authenticate(username, password, session);
         }

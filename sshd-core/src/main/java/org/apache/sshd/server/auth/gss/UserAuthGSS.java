@@ -207,7 +207,7 @@ public class UserAuthGSS extends AbstractUserAuth {
      * @throws Exception If no GSS authenticator is defined
      */
     private GSSAuthenticator getAuthenticator(ServerSession session) throws Exception {
-        GSSAuthenticator ga = session.getServerFactoryManager().getGSSAuthenticator();
+        GSSAuthenticator ga = session.getFactoryManager().getGSSAuthenticator();
 
         if (ga == null) {
             throw new Exception("No GSSAuthenticator configured");

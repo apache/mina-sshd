@@ -65,7 +65,7 @@ public class ServerSession extends AbstractSession {
         return negociated[index];
     }
 
-    public ServerFactoryManager getServerFactoryManager() {
+    public ServerFactoryManager getFactoryManager() {
         return (ServerFactoryManager) factoryManager;
     }
 

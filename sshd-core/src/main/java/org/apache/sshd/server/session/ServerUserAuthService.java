@@ -255,7 +255,7 @@ public class ServerUserAuthService implements Service {
     }
 
     private ServerFactoryManager getFactoryManager() {
-        return session.getServerFactoryManager();
+        return session.getFactoryManager();
     }
 
 }

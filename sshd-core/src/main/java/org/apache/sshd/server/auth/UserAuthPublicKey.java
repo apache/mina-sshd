@@ -70,7 +70,7 @@ public class UserAuthPublicKey extends AbstractUserAuth {
 
         byte[] sig = hasSig ? buffer.getBytes() : null;
 
-        PublickeyAuthenticator authenticator = session.getServerFactoryManager().getPublickeyAuthenticator();
+        PublickeyAuthenticator authenticator = session.getFactoryManager().getPublickeyAuthenticator();
         if (authenticator == null) {
             throw new Exception("No PublickeyAuthenticator configured");
         }

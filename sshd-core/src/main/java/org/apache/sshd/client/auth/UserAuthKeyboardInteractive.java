@@ -78,7 +78,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
                     } else if (num == 1 && password != null && !echo[0] && prompt[0].toLowerCase().startsWith("password:")) {
                         rep = new String[] { password };
                     } else {
-                        UserInteraction ui = session.getClientFactoryManager().getUserInteraction();
+                        UserInteraction ui = session.getFactoryManager().getUserInteraction();
                         if (ui != null) {
                             String dest = username + "@" + session.getIoSession().getRemoteAddress().toString();
                             rep = ui.interactive(dest, name, instruction, prompt, echo);

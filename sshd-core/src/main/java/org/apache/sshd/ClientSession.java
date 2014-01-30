@@ -175,6 +175,6 @@ public interface ClientSession extends Session {
     /**
      * Return ClientFactoryManager for this session.
      */
-    ClientFactoryManager getClientFactoryManager();
+    ClientFactoryManager getFactoryManager();
 
 }

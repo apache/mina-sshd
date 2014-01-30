@@ -101,7 +101,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         sendKexInit();
     }
 
-    public ClientFactoryManager getClientFactoryManager() {
+    public ClientFactoryManager getFactoryManager() {
         return (ClientFactoryManager) factoryManager;
     }
 
@@ -301,7 +301,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
 
     @Override
     protected void checkKeys() throws SshException {
-        ServerKeyVerifier serverKeyVerifier = getClientFactoryManager().getServerKeyVerifier();
+        ServerKeyVerifier serverKeyVerifier = getFactoryManager().getServerKeyVerifier();
         SocketAddress remoteAddress = ioSession.getRemoteAddress();
 
         if (!serverKeyVerifier.verifyServerKey(this, remoteAddress, kex.getServerKey())) {

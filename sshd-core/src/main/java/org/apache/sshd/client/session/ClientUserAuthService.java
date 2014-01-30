@@ -102,7 +102,7 @@ public class ClientUserAuthService implements Service {
             String welcome = buffer.getString();
             String lang = buffer.getString();
             log.debug("Welcome banner: {}", welcome);
-            UserInteraction ui = session.getClientFactoryManager().getUserInteraction();
+            UserInteraction ui = session.getFactoryManager().getUserInteraction();
             if (ui != null) {
                 ui.welcome(welcome);
             }
