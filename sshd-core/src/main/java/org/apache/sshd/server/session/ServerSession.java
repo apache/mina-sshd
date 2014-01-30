@@ -43,16 +43,23 @@ import org.apache.sshd.server.ServerFactoryManager;
  */
 public class ServerSession extends AbstractSession {
 
+    protected static final long MAX_PACKETS = (1l << 31);
+
     private long authTimeoutTimestamp;
     private long idleTimeoutTimestamp = 0L;
-    private int authTimeoutMs = 2 * 60 * 1000; // 2 minutes in milliseconds
-    private int idleTimeoutMs = 10 * 60 * 1000; // 10 minutes in milliseconds
+    private int authTimeoutMs = 2 * 60 * 1000;    // 2 minutes in milliseconds
+    private int idleTimeoutMs = 10 * 60 * 1000;   // 10 minutes in milliseconds
+    private long maxBytes = 1024 * 1024;          // 1 GB
+    private long maxKeyInterval = 60 * 60 * 1000; // 1 hour
+
 
     public ServerSession(ServerFactoryManager server, IoSession ioSession) throws Exception {
         super(true, server, ioSession);
         authTimeoutMs = getIntProperty(ServerFactoryManager.AUTH_TIMEOUT, authTimeoutMs);
         authTimeoutTimestamp = System.currentTimeMillis() + authTimeoutMs;
         idleTimeoutMs = getIntProperty(ServerFactoryManager.IDLE_TIMEOUT, idleTimeoutMs);
+        maxBytes = Math.max(32, getLongProperty(ServerFactoryManager.REKEY_BYTES_LIMIT, maxBytes));
+        maxKeyInterval = getLongProperty(ServerFactoryManager.REKEY_TIME_LIMIT, maxKeyInterval);
         log.info("Session created from {}", ioSession.getRemoteAddress());
         sendServerIdentification();
         kexState = KEX_STATE_INIT;
@@ -98,6 +105,16 @@ public class ServerSession extends AbstractSession {
         }
     }
 
+    protected void checkRekey() throws IOException {
+        if (kexState == KEX_STATE_DONE) {
+            if (   inPackets > MAX_PACKETS || outPackets > MAX_PACKETS
+                || inBytes > maxBytes || outBytes > maxBytes
+                || maxKeyInterval > 0 && System.currentTimeMillis() - lastKeyTime > maxKeyInterval)
+            {
+                reExchangeKeys();
+            }
+        }
+    }
     public void resetIdleTimeout() {
         this.idleTimeoutTimestamp = System.currentTimeMillis() + idleTimeoutMs;
     }

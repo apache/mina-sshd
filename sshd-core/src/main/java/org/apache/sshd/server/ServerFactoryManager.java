@@ -88,6 +88,20 @@ public interface ServerFactoryManager extends FactoryManager {
     public static final String COMMAND_EXIT_TIMEOUT = "command-exit-timeout";
 
     /**
+     * Key re-exchange will be automatically performed after the session
+     * has sent or received the given amount of bytes.
+     * The default value is 1 gigabyte.
+     */
+    public static final String REKEY_BYTES_LIMIT = "rekey-bytes-limit";
+
+    /**
+     * Key re-exchange will be automatically performed after the specified
+     * amount of time has elapsed since the last key exchange. In milliseconds.
+     * The default value is 1 hour.
+     */
+    public static final String REKEY_TIME_LIMIT = "rekey-time-limit";
+
+    /**
      * Retrieve the list of named factories for <code>UserAuth<code> objects.
      *
      * @return a list of named <code>UserAuth</code> factories, never <code>null</code>

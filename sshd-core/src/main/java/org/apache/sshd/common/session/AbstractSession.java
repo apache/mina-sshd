@@ -21,8 +21,10 @@ package org.apache.sshd.common.session;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
@@ -147,6 +149,16 @@ public abstract class AbstractSession implements Session {
     protected final Object requestLock = new Object();
     protected final AtomicReference<Buffer> requestResult = new AtomicReference<Buffer>();
     protected final Map<AttributeKey<?>, Object> attributes = new ConcurrentHashMap<AttributeKey<?>, Object>();
+
+    //
+    // Rekeying
+    //
+    protected long inPackets;
+    protected long outPackets;
+    protected long inBytes;
+    protected long outBytes;
+    protected long lastKeyTime;
+    protected final Queue<PendingWriteFuture> pendingPackets = new LinkedList<PendingWriteFuture>();
 
     protected Service currentService;
 
@@ -288,6 +300,12 @@ public abstract class AbstractSession implements Session {
      * @throws Exception if an exeption occurs while handling this packet.
      */
     protected void handleMessage(Buffer buffer) throws Exception {
+        synchronized (lock) {
+            doHandleMessage(buffer);
+        }
+    }
+
+    protected void doHandleMessage(Buffer buffer) throws Exception {
         byte cmd = buffer.getByte();
         switch (cmd) {
             case SSH_MSG_DISCONNECT: {
@@ -361,6 +379,12 @@ public abstract class AbstractSession implements Session {
                     reexchangeFuture.setValue(true);
                 }
                 sendEvent(SessionListener.Event.KeyEstablished);
+                synchronized (pendingPackets) {
+                    PendingWriteFuture future;
+                    while ((future = pendingPackets.poll()) != null) {
+                        doWritePacket(future.getBuffer()).addListener(future);
+                    }
+                }
                 break;
             default:
                 if (cmd >= SshConstants.SSH_MSG_KEX_FIRST && cmd <= SshConstants.SSH_MSG_KEX_LAST) {
@@ -381,6 +405,7 @@ public abstract class AbstractSession implements Session {
                 }
                 break;
         }
+        checkRekey();
     }
 
     /**
@@ -468,16 +493,35 @@ public abstract class AbstractSession implements Session {
      * @throws java.io.IOException if an error occured when encoding sending the packet
      */
     public IoWriteFuture writePacket(Buffer buffer) throws IOException {
-        try {
-            // Synchronize all write requests as needed by the encoding algorithm
-            // and also queue the write request in this synchronized block to ensure
-            // packets are sent in the correct order
-            synchronized (encodeLock) {
-                encode(buffer);
-                return ioSession.write(buffer);
+        // While exchanging key, queue high level packets
+        if (kexState != KEX_STATE_DONE) {
+            byte cmd = buffer.array()[buffer.rpos()];
+            if (cmd > SshConstants.SSH_MSG_KEX_LAST) {
+                synchronized (pendingPackets) {
+                    if (kexState != KEX_STATE_DONE) {
+                        log.info("Flag packet {} as pending until key exchange is done", cmd);
+                        PendingWriteFuture future = new PendingWriteFuture(buffer);
+                        pendingPackets.add(future);
+                        return future;
+                    }
+                }
             }
+        }
+        try {
+            return doWritePacket(buffer);
         } finally {
             resetIdleTimeout();
+            checkRekey();
+        }
+    }
+
+    protected IoWriteFuture doWritePacket(Buffer buffer) throws IOException {
+        // Synchronize all write requests as needed by the encoding algorithm
+        // and also queue the write request in this synchronized block to ensure
+        // packets are sent in the correct order
+        synchronized (encodeLock) {
+            encode(buffer);
+            return ioSession.write(buffer);
         }
     }
 
@@ -600,6 +644,9 @@ public abstract class AbstractSession implements Session {
             }
             // Increment packet id
             seqo = (seqo + 1) & 0xffffffffL;
+            // Update stats
+            outPackets ++;
+            outBytes += len;
             // Make buffer ready to be read
             buffer.rpos(off);
         } catch (SshException e) {
@@ -689,6 +736,9 @@ public abstract class AbstractSession implements Session {
                     if (log.isTraceEnabled()) {
                         log.trace("Received packet #{}: {}", seqi, buf.printHex());
                     }
+                    // Update stats
+                    inPackets ++;
+                    inBytes += buf.available();
                     // Process decoded packet
                     handleMessage(buf);
                     // Set ready to handle next packet
@@ -965,6 +1015,11 @@ public abstract class AbstractSession implements Session {
         if (inCompression != null) {
             inCompression.init(Compression.Type.Inflater, -1);
         }
+        inBytes = 0;
+        outBytes = 0;
+        inPackets = 0;
+        outPackets = 0;
+        lastKeyTime = System.currentTimeMillis();
     }
 
     /**
@@ -1067,13 +1122,13 @@ public abstract class AbstractSession implements Session {
         }
         negotiated = guess;
         log.info("Kex: server->client {} {} {}",
-                new Object[] { negotiated[SshConstants.PROPOSAL_ENC_ALGS_STOC],
-                               negotiated[SshConstants.PROPOSAL_MAC_ALGS_STOC],
-                               negotiated[SshConstants.PROPOSAL_COMP_ALGS_STOC]});
+                new Object[]{negotiated[SshConstants.PROPOSAL_ENC_ALGS_STOC],
+                        negotiated[SshConstants.PROPOSAL_MAC_ALGS_STOC],
+                        negotiated[SshConstants.PROPOSAL_COMP_ALGS_STOC]});
         log.info("Kex: client->server {} {} {}",
-                new Object[] { negotiated[SshConstants.PROPOSAL_ENC_ALGS_CTOS],
-                               negotiated[SshConstants.PROPOSAL_MAC_ALGS_CTOS],
-                               negotiated[SshConstants.PROPOSAL_COMP_ALGS_CTOS]});
+                new Object[]{negotiated[SshConstants.PROPOSAL_ENC_ALGS_CTOS],
+                        negotiated[SshConstants.PROPOSAL_MAC_ALGS_CTOS],
+                        negotiated[SshConstants.PROPOSAL_COMP_ALGS_CTOS]});
     }
 
     protected void requestSuccess(Buffer buffer) throws Exception{
@@ -1102,6 +1157,18 @@ public abstract class AbstractSession implements Session {
             String v = factoryManager.getProperties().get(name);
             if (v != null) {
                 return Integer.parseInt(v);
+            }
+        } catch (Exception e) {
+            // Ignore
+        }
+        return defaultValue;
+    }
+
+    public long getLongProperty(String name, long defaultValue) {
+        try {
+            String v = factoryManager.getProperties().get(name);
+            if (v != null) {
+                return Long.parseLong(v);
             }
         } catch (Exception e) {
             // Ignore
@@ -1168,13 +1235,18 @@ public abstract class AbstractSession implements Session {
      * {@inheritDoc}
      */
     public SshFuture reExchangeKeys() throws IOException {
-        if (kexState != KEX_STATE_DONE) {
-            throw new IllegalStateException("Can not perform key re-exchange while key exchange is already running");
+        synchronized (lock) {
+            if (kexState == KEX_STATE_DONE) {
+                log.info("Initiating key re-exchange");
+                kexState = KEX_STATE_INIT;
+                sendKexInit();
+                reexchangeFuture = new DefaultSshFuture(null);
+            }
+            return reexchangeFuture;
         }
-        kexState = KEX_STATE_INIT;
-        sendKexInit();
-        reexchangeFuture = new DefaultSshFuture(null);
-        return reexchangeFuture;
+    }
+
+    protected void checkRekey() throws IOException {
     }
 
     protected abstract void sendKexInit() throws IOException;
@@ -1189,5 +1261,51 @@ public abstract class AbstractSession implements Session {
     public abstract void startService(String name) throws Exception;
 
     public abstract void resetIdleTimeout();
+
+    /**
+     * Future holding a packet pending key exchange termination.
+     */
+    protected static class PendingWriteFuture extends DefaultSshFuture<IoWriteFuture>
+            implements IoWriteFuture, SshFutureListener<IoWriteFuture> {
+
+        private final Buffer buffer;
+
+        protected PendingWriteFuture(Buffer buffer) {
+            super(null);
+            this.buffer = buffer;
+        }
+
+        public Buffer getBuffer() {
+            return buffer;
+        }
+
+        public boolean isWritten() {
+            return getValue() instanceof Boolean;
+        }
+
+        public Throwable getException() {
+            Object v = getValue();
+            return v instanceof Throwable ? (Throwable) v : null;
+        }
+
+        public void setWritten() {
+            setValue(Boolean.TRUE);
+        }
+
+        public void setException(Throwable cause) {
+            if (cause == null) {
+                throw new IllegalArgumentException();
+            }
+            setValue(cause);
+        }
+
+        public void operationComplete(IoWriteFuture future) {
+            if (future.isWritten()) {
+                setWritten();
+            } else {
+                future.setException(future.getException());
+            }
+        }
+    }
 
 }
