@@ -101,7 +101,7 @@ public class DHGEX implements KeyExchange {
         }
 
         if (cmd == SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST) {
-            log.info("Received SSH_MSG_KEX_DH_GEX_REQUEST");
+            log.debug("Received SSH_MSG_KEX_DH_GEX_REQUEST");
             min = buffer.getInt();
             prf = buffer.getInt();
             max = buffer.getInt();
@@ -114,7 +114,7 @@ public class DHGEX implements KeyExchange {
             hash = dh.getHash();
             hash.init();
 
-            log.info("Send SSH_MSG_KEX_DH_GEX_GROUP");
+            log.debug("Send SSH_MSG_KEX_DH_GEX_GROUP");
             buffer = session.createBuffer(SshConstants.SSH_MSG_KEX_DH_GEX_GROUP, 0);
             buffer.putMPInt(dh.getP());
             buffer.putMPInt(dh.getG());
@@ -125,7 +125,7 @@ public class DHGEX implements KeyExchange {
         }
 
         if (cmd == SshConstants.SSH_MSG_KEX_DH_GEX_INIT) {
-            log.info("Received SSH_MSG_KEX_DH_GEX_INIT");
+            log.debug("Received SSH_MSG_KEX_DH_GEX_INIT");
             e = buffer.getMPIntAsBytes();
             dh.setF(e);
             K = dh.getK();
