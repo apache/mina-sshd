@@ -183,7 +183,10 @@ public class TcpipServerChannel extends AbstractServerChannel {
     }
 
     protected void doWriteData(byte[] data, int off, int len) throws IOException {
-        ioSession.write(new Buffer(data, off, len));
+        // Make sure we copy the data as the incoming buffer may be reused
+        Buffer buf = new Buffer(data, off, len);
+        buf = new Buffer(buf.getCompactData());
+        ioSession.write(buf);
     }
 
     protected void doWriteExtendedData(byte[] data, int off, int len) throws IOException {

@@ -110,7 +110,9 @@ public class TcpipClientChannel extends AbstractClientChannel {
     }
 
     protected synchronized void doWriteData(byte[] data, int off, int len) throws IOException {
+        // Make sure we copy the data as the incoming buffer may be reused
         Buffer buf = new Buffer(data, off, len);
+        buf = new Buffer(buf.getCompactData());
         localWindow.consumeAndCheck(len);
         serverSession.write(buf);
     }

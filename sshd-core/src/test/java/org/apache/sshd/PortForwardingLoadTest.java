@@ -18,7 +18,11 @@
  */
 package org.apache.sshd;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -111,6 +115,82 @@ public class PortForwardingLoadTest {
         if (acceptor != null) {
             acceptor.dispose();
         }
+    }
+
+    @Test
+    public void testLocalForwardingPayload() throws Exception {
+        final int NUM_ITERATIONS = 100;
+        final String PAYLOAD_TMP = "This is significantly longer Test Data. This is significantly "+
+                "longer Test Data. This is significantly longer Test Data. This is significantly "+
+                "longer Test Data. This is significantly longer Test Data. This is significantly "+
+                "longer Test Data. This is significantly longer Test Data. This is significantly "+
+                "longer Test Data. This is significantly longer Test Data. This is significantly "+
+                "longer Test Data. ";
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < 1000; i++) {
+            sb.append(PAYLOAD_TMP);
+        }
+        final String PAYLOAD = sb.toString();
+        Session session = createSession();
+        final ServerSocket ss = new ServerSocket(0);
+        int forwardedPort = ss.getLocalPort();
+        int sinkPort = getFreePort();
+        session.setPortForwardingL(sinkPort, "localhost", forwardedPort);
+        final AtomicInteger conCount = new AtomicInteger(0);
+
+        new Thread() {
+            public void run() {
+                try {
+                    for (int i = 0; i < NUM_ITERATIONS; ++i) {
+                        Socket s = ss.accept();
+                        conCount.incrementAndGet();
+                        InputStream is = s.getInputStream();
+                        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                        byte[] buf = new byte[8192];
+                        int l;
+                        while (baos.size() < PAYLOAD.length() && (l = is.read(buf)) > 0) {
+                            baos.write(buf, 0, l);
+                        }
+                        if (!PAYLOAD.equals(baos.toString())) {
+                            assertEquals(PAYLOAD, baos.toString());
+                        }
+                        is = new ByteArrayInputStream(baos.toByteArray());
+                        OutputStream os = s.getOutputStream();
+                        while ((l = is.read(buf)) > 0) {
+                            os.write(buf, 0, l);
+                        }
+                        s.close();
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }.start();
+        Thread.sleep(50);
+
+        for ( int i = 0; i < NUM_ITERATIONS; i++) {
+            Socket s = null;
+            try {
+                LoggerFactory.getLogger(getClass()).info("Iteration {}", i);
+                s = new Socket("localhost", sinkPort);
+                s.getOutputStream().write(PAYLOAD.getBytes());
+                s.getOutputStream().flush();
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                byte[] buf = new byte[8192];
+                int l;
+                while (baos.size() < PAYLOAD.length() && (l = s.getInputStream().read(buf)) > 0) {
+                    baos.write(buf, 0, l);
+                }
+                assertEquals(PAYLOAD, baos.toString());
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                if (s != null) {
+                    s.close();
+                }
+            }
+        }
+        session.delPortForwardingL(sinkPort);
     }
 
     @Test
