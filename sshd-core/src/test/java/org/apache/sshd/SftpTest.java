@@ -23,6 +23,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URI;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Vector;
@@ -210,7 +212,12 @@ public class SftpTest {
     public void testReadDir() throws Exception {
         ChannelSftp c = (ChannelSftp) session.openChannel("sftp");
         c.connect();
-        Vector res = c.ls("target/classes/org/apache/sshd/");
+
+        URI url = getClass().getClassLoader().getResource(SshClient.class.getName().replace('.', '/') + ".class").toURI();
+        URI base = new File(System.getProperty("user.dir")).getAbsoluteFile().toURI();
+        String path = new File(base.relativize(url).getPath()).getParent() + "/";
+//        String path = "target/classes/org/apache/sshd/";
+        Vector res = c.ls(path);
         for (Object f : res) {
             System.out.println(f.toString());
         }
