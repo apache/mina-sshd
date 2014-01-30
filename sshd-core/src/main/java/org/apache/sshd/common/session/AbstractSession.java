@@ -364,7 +364,6 @@ public abstract class AbstractSession implements Session {
                 sendEvent(SessionListener.Event.KeyEstablished);
                 break;
             default:
-                log.debug("Received {}", cmd);
                 if (cmd >= SshConstants.SSH_MSG_KEX_FIRST && cmd <= SshConstants.SSH_MSG_KEX_LAST) {
                     if (kexState != KEX_STATE_RUN) {
                         throw new IllegalStateException("Received kex command " + cmd + " while not in key exchange");
