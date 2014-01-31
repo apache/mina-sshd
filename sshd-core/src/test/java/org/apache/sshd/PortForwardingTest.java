@@ -26,9 +26,7 @@ import java.util.Set;
 
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
-import com.jcraft.jsch.Logger;
 import com.jcraft.jsch.Session;
-import com.jcraft.jsch.UserInfo;
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.service.IoAcceptor;
 import org.apache.mina.core.service.IoHandlerAdapter;
@@ -64,6 +62,7 @@ public class PortForwardingTest {
     private int sshPort;
     private int echoPort;
     private IoAcceptor acceptor;
+    private SshClient client;
 
     @Before
     public void setUp() throws Exception {
@@ -104,6 +103,9 @@ public class PortForwardingTest {
         if (acceptor != null) {
             acceptor.dispose();
         }
+        if (client != null) {
+            client.stop();
+        }
     }
 
     @Test
@@ -124,6 +126,7 @@ public class PortForwardingTest {
         s.close();
 
         session.delPortForwardingR(forwardedPort);
+        session.disconnect();
     }
 
     @Test
@@ -146,6 +149,7 @@ public class PortForwardingTest {
         s.close();
 
         session.stopRemotePortForwarding(remote);
+        session.close(false).await();
     }
 
     @Test
@@ -167,6 +171,7 @@ public class PortForwardingTest {
         s.close();
 
         session.stopRemotePortForwarding(bound);
+        session.close(false).await();
     }
 
     @Test
@@ -186,6 +191,7 @@ public class PortForwardingTest {
         s.close();
 
         session.delPortForwardingL(forwardedPort);
+        session.disconnect();
     }
 
     @Test
@@ -207,6 +213,7 @@ public class PortForwardingTest {
         s.close();
 
         session.stopLocalPortForwarding(bound);
+        session.close(false).await();
     }
 
     @Test
@@ -227,6 +234,8 @@ public class PortForwardingTest {
         String res = new String(buf, 0, n);
         assertEquals("Hello", res);
         channel.close(false);
+
+        session.close(false).await();
     }
 
     @Test(timeout = 20000)
@@ -268,6 +277,7 @@ public class PortForwardingTest {
         }
 
         session.delPortForwardingR(forwardedPort);
+        session.disconnect();
     }
 
     /**
@@ -354,7 +364,7 @@ public class PortForwardingTest {
     }
 
     protected ClientSession createNativeSession() throws Exception {
-        SshClient client = SshClient.setUpDefaultClient();
+        client = SshClient.setUpDefaultClient();
         client.setTcpipForwardingFilter(new BogusForwardingFilter());
         client.start();
         ConnectFuture sessionFuture = client.connect("localhost", sshPort);
