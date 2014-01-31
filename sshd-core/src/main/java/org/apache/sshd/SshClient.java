@@ -38,7 +38,11 @@ import java.util.concurrent.Executors;
 import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.ServerKeyVerifier;
 import org.apache.sshd.client.SessionFactory;
+import org.apache.sshd.client.UserAuth;
 import org.apache.sshd.client.UserInteraction;
+import org.apache.sshd.client.auth.UserAuthKeyboardInteractive;
+import org.apache.sshd.client.auth.UserAuthPassword;
+import org.apache.sshd.client.auth.UserAuthPublicKey;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.ConnectFuture;
@@ -149,6 +153,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     protected SessionFactory sessionFactory;
     protected UserInteraction userInteraction;
     protected Factory<IoConnector> connectorFactory;
+    protected List<NamedFactory<UserAuth>> userAuthFactories;
 
     private ServerKeyVerifier serverKeyVerifier;
 
@@ -177,6 +182,14 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
     public void setUserInteraction(UserInteraction userInteraction) {
         this.userInteraction = userInteraction;
+    }
+
+    public List<NamedFactory<UserAuth>> getUserAuthFactories() {
+        return userAuthFactories;
+    }
+
+    public void setUserAuthFactories(List<NamedFactory<UserAuth>> userAuthFactories) {
+        this.userAuthFactories = userAuthFactories;
     }
 
     protected void checkConfig() {
@@ -224,6 +237,13 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                     new ClientConnectionService.Factory()
             ));
         }
+        if (getUserAuthFactories() == null) {
+            setUserAuthFactories(Arrays.asList(
+                    new UserAuthPublicKey.Factory(),
+                    new UserAuthKeyboardInteractive.Factory(),
+                    new UserAuthPassword.Factory()
+            ));
+        }
     }
 
     public void start() {
@@ -244,17 +264,27 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         }
     }
 
+    @Deprecated
     public ConnectFuture connect(String host, int port) throws IOException {
+        return connect(null, host, port);
+    }
+
+    public ConnectFuture connect(String username, String host, int port) throws IOException {
         assert host != null;
         assert port >= 0;
         if (connector == null) {
             throw new IllegalStateException("SshClient not started. Please call start() method before connecting to a server");
         }
         SocketAddress address = new InetSocketAddress(host, port);
-        return connect(address);
+        return connect(username, address);
     }
 
+    @Deprecated
     public ConnectFuture connect(SocketAddress address) {
+        return connect(null, address);
+    }
+
+    public ConnectFuture connect(final String username, SocketAddress address) {
         assert address != null;
         if (connector == null) {
             throw new IllegalStateException("SshClient not started. Please call start() method before connecting to a server");
@@ -268,6 +298,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                     connectFuture.setException(future.getException());
                 } else {
                     ClientSessionImpl session = (ClientSessionImpl) AbstractSession.getSession(future.getSession());
+                    session.setUsername(username);
                     connectFuture.setSession(session);
                 }
             }

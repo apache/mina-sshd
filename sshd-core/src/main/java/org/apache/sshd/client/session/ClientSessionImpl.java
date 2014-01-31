@@ -21,6 +21,7 @@ package org.apache.sshd.client.session;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.security.KeyPair;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,11 +32,11 @@ import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.ScpClient;
 import org.apache.sshd.client.ServerKeyVerifier;
 import org.apache.sshd.client.SftpClient;
-import org.apache.sshd.client.UserAuth;
-import org.apache.sshd.client.auth.UserAuthAgent;
-import org.apache.sshd.client.auth.UserAuthKeyboardInteractive;
-import org.apache.sshd.client.auth.UserAuthPassword;
-import org.apache.sshd.client.auth.UserAuthPublicKey;
+import org.apache.sshd.client.auth.deprecated.UserAuth;
+import org.apache.sshd.client.auth.deprecated.UserAuthAgent;
+import org.apache.sshd.client.auth.deprecated.UserAuthKeyboardInteractive;
+import org.apache.sshd.client.auth.deprecated.UserAuthPassword;
+import org.apache.sshd.client.auth.deprecated.UserAuthPublicKey;
 import org.apache.sshd.client.channel.ChannelDirectTcpip;
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ChannelShell;
@@ -105,23 +106,43 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         return (ClientFactoryManager) factoryManager;
     }
 
+    private final List<Object> identities = new ArrayList<Object>();
+
+    public void addPasswordIdentity(String password) {
+        identities.add(password);
+    }
+
+    public void addPublicKeyIdentity(KeyPair key) {
+        identities.add(key);
+    }
+
+    public AuthFuture auth() throws IOException {
+        if (username == null) {
+            throw new IllegalStateException("No username specified when the session was created");
+        }
+        synchronized (lock) {
+            return authFuture = getUserAuthService().auth(identities, nextServiceName());
+        }
+    }
+
     public AuthFuture authAgent(String user) throws IOException {
-        return tryAuth(new UserAuthAgent(this, nextServiceName(), user));
+        return tryAuth(user, new UserAuthAgent(this, nextServiceName()));
     }
 
     public AuthFuture authPassword(String user, String password) throws IOException {
-        return tryAuth(new UserAuthPassword(this, nextServiceName(), user, password));
+        return tryAuth(user, new UserAuthPassword(this, nextServiceName(), password));
     }
 
     public AuthFuture authInteractive(String user, String password) throws IOException {
-        return tryAuth(new UserAuthKeyboardInteractive(this, nextServiceName(), user, password));
+        return tryAuth(user, new UserAuthKeyboardInteractive(this, nextServiceName(), password));
    }
 
     public AuthFuture authPublicKey(String user, KeyPair key) throws IOException {
-        return tryAuth(new UserAuthPublicKey(this, nextServiceName(), user, key));
+        return tryAuth(user, new UserAuthPublicKey(this, nextServiceName(), key));
     }
 
-    private AuthFuture tryAuth(UserAuth auth) throws IOException {
+    private AuthFuture tryAuth(String user, UserAuth auth) throws IOException {
+        this.username = user;
         synchronized (lock) {
             return authFuture = getUserAuthService().auth(auth);
         }

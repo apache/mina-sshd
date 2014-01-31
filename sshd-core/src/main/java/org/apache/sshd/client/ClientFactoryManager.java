@@ -18,7 +18,10 @@
  */
 package org.apache.sshd.client;
 
+import java.util.List;
+
 import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.TcpipForwarderFactory;
 
 /**
@@ -38,6 +41,12 @@ public interface ClientFactoryManager extends FactoryManager {
      * Key used to check the hearbeat request that should be sent to the server (default is keepalive@sshd.apache.org).
      */
     public static final String HEARTBEAT_REQUEST = "heartbeat-request";
+
+    /**
+     * Ordered comma separated list of authentications methods.
+     * Authentications methods accepted by the server will be tried in the given order.
+     */
+    public static final String PREFERRED_AUTHS = "preferred-auths";
 
     /**
      * Retrieve the server key verifier to be used to check the key when connecting
@@ -61,4 +70,12 @@ public interface ClientFactoryManager extends FactoryManager {
      * @return A <code>UserInteraction</code> or <code>null</code>
      */
     UserInteraction getUserInteraction();
+
+    /**
+     * Retrieve a list of UserAuth factories.
+     *
+     * @return a list of named <code>UserAuth</code> factories, never <code>null</code>
+     */
+    List<NamedFactory<UserAuth>> getUserAuthFactories();
+
 }

@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.client.auth;
+package org.apache.sshd.client.auth.deprecated;
 
 import java.io.IOException;
 import java.security.PublicKey;
@@ -37,8 +37,8 @@ public class UserAuthAgent extends AbstractUserAuth {
     private final SshAgent agent;
     private final Iterator<SshAgent.Pair<PublicKey, String>> keys;
 
-    public UserAuthAgent(ClientSessionImpl session, String service, String username) throws IOException {
-        super(session, service, username);
+    public UserAuthAgent(ClientSessionImpl session, String service) throws IOException {
+        super(session, service);
         if (session.getFactoryManager().getAgentFactory() == null) {
             throw new IllegalStateException("No ssh agent factory has been configured");
         }
@@ -51,7 +51,7 @@ public class UserAuthAgent extends AbstractUserAuth {
             log.info("Send SSH_MSG_USERAUTH_REQUEST for publickey");
             Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST, 0);
             int pos1 = buffer.wpos() - 1;
-            buffer.putString(username);
+            buffer.putString(session.getUsername());
             buffer.putString(service);
             buffer.putString("publickey");
             buffer.putByte((byte) 1);
@@ -63,7 +63,7 @@ public class UserAuthAgent extends AbstractUserAuth {
             Buffer bs = new Buffer();
             bs.putString(session.getKex().getH());
             bs.putByte(SshConstants.SSH_MSG_USERAUTH_REQUEST);
-            bs.putString(username);
+            bs.putString(session.getUsername());
             bs.putString(service);
             bs.putString("publickey");
             bs.putByte((byte) 1);

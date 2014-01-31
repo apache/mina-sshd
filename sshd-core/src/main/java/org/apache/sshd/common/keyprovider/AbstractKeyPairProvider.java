@@ -19,16 +19,14 @@
 package org.apache.sshd.common.keyprovider;
 
 import java.security.KeyPair;
-import java.security.interfaces.DSAKey;
-import java.security.interfaces.ECKey;
-import java.security.interfaces.RSAKey;
-import java.security.spec.ECParameterSpec;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.sshd.common.KeyPairProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.sshd.common.util.KeyUtils.getKeyType;
 
 /**
  * TODO Add javadoc
@@ -69,30 +67,5 @@ public abstract class AbstractKeyPairProvider implements KeyPairProvider {
         return sb.toString();
     }
 
-    protected String getKeyType(KeyPair kp) {
-        Object key = kp.getPrivate() != null ? kp.getPrivate() : kp.getPublic();
-        if (key instanceof DSAKey) {
-            return SSH_DSS;
-        } else if (key instanceof RSAKey) {
-            return SSH_RSA;
-        } else if (key instanceof ECKey) {
-            ECKey ecKey = (ECKey) key;
-            ECParameterSpec ecSpec = ecKey.getParams();
-            /*
-             * TODO make this more robust by checking the actual parameters instead of
-             * just the field size.
-             */
-            switch (ecSpec.getCurve().getField().getFieldSize()) {
-            case 256:
-                return ECDSA_SHA2_NISTP256;
-            case 384:
-                return ECDSA_SHA2_NISTP384;
-            case 521:
-                return ECDSA_SHA2_NISTP521;
-            }
-        }
-        return null;
-    }
-
-    protected abstract KeyPair[] loadKeys();
+    public abstract KeyPair[] loadKeys();
 }

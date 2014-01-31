@@ -18,94 +18,110 @@
  */
 package org.apache.sshd.client.auth;
 
-import java.io.IOException;
+import java.util.List;
 
+import org.apache.sshd.ClientSession;
+import org.apache.sshd.client.UserAuth;
 import org.apache.sshd.client.UserInteraction;
-import org.apache.sshd.client.session.ClientSessionImpl;
+import org.apache.sshd.client.session.ClientUserAuthServiceNew;
+import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.Buffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import static org.apache.sshd.common.SshConstants.*;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_USERAUTH_INFO_REQUEST;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE;
 
 /**
- * Userauth with keyboard-interactive method.
+ * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @author <a href="mailto:j.kapitza@schwarze-allianz.de">Jens Kapitza</a>
  */
-public class UserAuthKeyboardInteractive extends AbstractUserAuth {
+public class UserAuthKeyboardInteractive implements UserAuth {
 
-    private final String password;
-
-    public UserAuthKeyboardInteractive(ClientSessionImpl session, String service, String username, String password) {
-        super(session, service, username);
-        this.password = password;
+    public static class Factory implements NamedFactory<UserAuth> {
+        public String getName() {
+            return "keyboard-interactive";
+        }
+        public UserAuth create() {
+            return new UserAuthKeyboardInteractive();
+        }
     }
 
-    public Result next(Buffer buffer) throws IOException {
+    protected final Logger log = LoggerFactory.getLogger(getClass());
+    private ClientSession session;
+    private String service;
+    private String password;
+
+    public void init(ClientSession session, String service, List<Object> identities) throws Exception {
+        this.session = session;
+        this.service = service;
+        for (Object o : identities) {
+            if (o instanceof String) {
+                password = (String) o;
+                break;
+            }
+        }
+    }
+
+    public boolean process(Buffer buffer) throws Exception {
         if (buffer == null) {
             log.info("Send SSH_MSG_USERAUTH_REQUEST for password");
             buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST, 0);
-            buffer.putString(username);
+            buffer.putString(session.getUsername());
             buffer.putString(service);
             buffer.putString("keyboard-interactive");
             buffer.putString("");
             buffer.putString("");
             session.writePacket(buffer);
-            return Result.Continued;
-        } else {
-            byte cmd = buffer.getByte();
-            switch (cmd) {
-                case SSH_MSG_USERAUTH_INFO_REQUEST:
-                    log.info("Received SSH_MSG_USERAUTH_INFO_REQUEST");
-                    String name = buffer.getString();
-                    String instruction = buffer.getString();
-                    String language_tag = buffer.getString();
-                    log.info("Received {} {} {}", new Object[]{name, instruction, language_tag});
-                    int num = buffer.getInt();
-                    String[] prompt = new String[num];
-                    boolean[] echo = new boolean[num];
-                    for (int i = 0; i < num; i++) {
-                        prompt[i] = buffer.getString();
-                        echo[i] = (buffer.getByte() != 0);
-                    }
-                    log.info("Promt: {}", prompt);
-                    log.info("Echo: {}", echo);
-
-                    String[] rep = null;
-                    if (num == 0) {
-                        rep = new String[0];
-                    } else if (num == 1 && password != null && !echo[0] && prompt[0].toLowerCase().startsWith("password:")) {
-                        rep = new String[] { password };
-                    } else {
-                        UserInteraction ui = session.getFactoryManager().getUserInteraction();
-                        if (ui != null) {
-                            String dest = username + "@" + session.getIoSession().getRemoteAddress().toString();
-                            rep = ui.interactive(dest, name, instruction, prompt, echo);
-                        }
-                    }
-                    if (rep == null) {
-                        return Result.Failure;
-                    }
-
-                    buffer = session.createBuffer(SSH_MSG_USERAUTH_INFO_RESPONSE, 0);
-                    buffer.putInt(rep.length);
-                    for (String r : rep) {
-                        buffer.putString(r);
-                    }
-                    session.writePacket(buffer);
-                    return Result.Continued;
-                case SSH_MSG_USERAUTH_SUCCESS:
-                    log.info("Received SSH_MSG_USERAUTH_SUCCESS");
-                    return Result.Success;
-                case SSH_MSG_USERAUTH_FAILURE:
-                    log.info("Received SSH_MSG_USERAUTH_FAILURE");
-                    return Result.Failure;
-                default:
-                    log.info("Received unknown packet {}", cmd);
-                    return Result.Continued;
-            }
+            return true;
         }
+        byte cmd = buffer.getByte();
+        if (cmd == SSH_MSG_USERAUTH_INFO_REQUEST) {
+            log.info("Received SSH_MSG_USERAUTH_INFO_REQUEST");
+            String name = buffer.getString();
+            String instruction = buffer.getString();
+            String language_tag = buffer.getString();
+            log.info("Received {} {} {}", new Object[]{name, instruction, language_tag});
+            int num = buffer.getInt();
+            String[] prompt = new String[num];
+            boolean[] echo = new boolean[num];
+            for (int i = 0; i < num; i++) {
+                prompt[i] = buffer.getString();
+                echo[i] = (buffer.getByte() != 0);
+            }
+            log.info("Promt: {}", prompt);
+            log.info("Echo: {}", echo);
+
+            String[] rep = null;
+            if (num == 0) {
+                rep = new String[0];
+            } else if (num == 1 && password != null && !echo[0] && prompt[0].toLowerCase().startsWith("password:")) {
+                rep = new String[] { password };
+            } else {
+                UserInteraction ui = session.getFactoryManager().getUserInteraction();
+                if (ui != null) {
+                    String dest = session.getUsername() + "@" + ((AbstractSession) session).getIoSession().getRemoteAddress().toString();
+                    rep = ui.interactive(dest, name, instruction, prompt, echo);
+                }
+            }
+            if (rep == null) {
+                return false;
+            }
+
+            buffer = session.createBuffer(SSH_MSG_USERAUTH_INFO_RESPONSE, 0);
+            buffer.putInt(rep.length);
+            for (String r : rep) {
+                buffer.putString(r);
+            }
+            session.writePacket(buffer);
+            return true;
+        }
+        throw new IllegalStateException("Received unknown packet");
     }
 
+    public void destroy() {
+    }
 }

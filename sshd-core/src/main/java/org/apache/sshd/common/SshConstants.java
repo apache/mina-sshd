@@ -53,9 +53,13 @@ public interface SshConstants {
     static final byte SSH_MSG_USERAUTH_FAILURE=               51;
     static final byte SSH_MSG_USERAUTH_SUCCESS=               52;
     static final byte SSH_MSG_USERAUTH_BANNER=                53;
+
     static final byte SSH_MSG_USERAUTH_INFO_REQUEST=          60;
     static final byte SSH_MSG_USERAUTH_INFO_RESPONSE=         61;
+
     static final byte SSH_MSG_USERAUTH_PK_OK=                 60;
+
+    static final byte SSH_MSG_USERAUTH_PASSWD_CHANGEREQ=      60;
 
     static final byte SSH_MSG_USERAUTH_GSSAPI_MIC=            66;
 

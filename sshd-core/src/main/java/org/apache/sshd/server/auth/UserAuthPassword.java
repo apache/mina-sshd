@@ -46,9 +46,6 @@ public class UserAuthPassword extends AbstractUserAuth {
         if (!init) {
             throw new IllegalStateException();
         }
-        if (!"ssh-connection".equals(service)) {
-            throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "Unsupported service '" + service + "'");
-        }
         boolean newPassword = buffer.getBoolean();
         if (newPassword) {
             throw new IllegalStateException("Password changes are not supported");

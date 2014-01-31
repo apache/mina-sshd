@@ -18,89 +18,182 @@
  */
 package org.apache.sshd.client.auth;
 
-import java.io.IOException;
 import java.security.KeyPair;
-import java.security.interfaces.RSAPublicKey;
+import java.security.PublicKey;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
+import org.apache.sshd.ClientSession;
+import org.apache.sshd.agent.SshAgent;
+import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.client.UserAuth;
-import org.apache.sshd.client.session.ClientSessionImpl;
+import org.apache.sshd.client.session.ClientUserAuthServiceNew;
+import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.Signature;
 import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.Buffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.sshd.common.util.KeyUtils.getKeyType;
 
 /**
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class UserAuthPublicKey extends AbstractUserAuth {
+public class UserAuthPublicKey implements UserAuth {
 
-    protected final Logger log = LoggerFactory.getLogger(getClass());
-
-    private final KeyPair key;
-
-    public UserAuthPublicKey(ClientSessionImpl session, String service, String username, KeyPair key) {
-        super(session, service, username);
-        this.key = key;
+    public static class Factory implements NamedFactory<UserAuth> {
+        public String getName() {
+            return "publickey";
+        }
+        public UserAuth create() {
+            return new UserAuthPublicKey();
+        }
     }
 
-    public Result next(Buffer buffer) throws IOException {
-        if (buffer == null) {
-            try {
-                log.info("Send SSH_MSG_USERAUTH_REQUEST for publickey");
-                buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST, 0);
-                int pos1 = buffer.wpos() - 1;
-                buffer.putString(username);
-                buffer.putString(service);
-                buffer.putString("publickey");
-                buffer.putByte((byte) 1);
-                buffer.putString((key.getPublic() instanceof RSAPublicKey) ? KeyPairProvider.SSH_RSA : KeyPairProvider.SSH_DSS);
-                int pos2 = buffer.wpos();
-                buffer.putPublicKey(key.getPublic());
+    protected final Logger log = LoggerFactory.getLogger(getClass());
+    private ClientSession session;
+    private String service;
+    private SshAgent agent;
+    private Iterator<PublicKeyIdentity> keys;
+    private PublicKeyIdentity current;
 
-                Signature verif = NamedFactory.Utils.create(session.getFactoryManager().getSignatureFactories(), (key.getPublic() instanceof RSAPublicKey) ? KeyPairProvider.SSH_RSA : KeyPairProvider.SSH_DSS);
-                verif.init(key.getPublic(), key.getPrivate());
-
-                Buffer bs = new Buffer();
-                bs.putString(session.getKex().getH());
-                bs.putByte(SshConstants.SSH_MSG_USERAUTH_REQUEST);
-                bs.putString(username);
-                bs.putString(service);
-                bs.putString("publickey");
-                bs.putByte((byte) 1);
-                bs.putString((key.getPublic() instanceof RSAPublicKey) ? KeyPairProvider.SSH_RSA : KeyPairProvider.SSH_DSS);
-                bs.putPublicKey(key.getPublic());
-                verif.update(bs.array(), bs.rpos(), bs.available());
-
-                bs = new Buffer();
-                bs.putString((key.getPublic() instanceof RSAPublicKey) ? KeyPairProvider.SSH_RSA : KeyPairProvider.SSH_DSS);
-                bs.putBytes(verif.sign());
-                buffer.putBytes(bs.array(), bs.rpos(), bs.available());
-
-                session.writePacket(buffer);
-                return Result.Continued;
-            } catch (IOException e) {
-                throw e;
-            } catch (Exception e) {
-                throw (IOException) new IOException("Error performing public key authentication").initCause(e);
+    public void init(ClientSession session, String service, List<Object> identities) throws Exception {
+        this.session = session;
+        this.service = service;
+        List<PublicKeyIdentity> ids = new ArrayList<PublicKeyIdentity>();
+        for (Object o : identities) {
+            if (o instanceof KeyPair) {
+                ids.add(new KeyPairIdentity(session.getFactoryManager(), (KeyPair) o));
+            }
+        }
+        KeyPairProvider provider = session.getFactoryManager().getKeyPairProvider();
+        if (provider != null) {
+            for (KeyPair pair : provider.loadKeys()) {
+                ids.add(new KeyPairIdentity(session.getFactoryManager(), pair));
+            }
+        }
+        SshAgentFactory factory = session.getFactoryManager().getAgentFactory();
+        if (factory != null) {
+            this.agent = factory.createClient(session.getFactoryManager());
+            for (SshAgent.Pair<PublicKey, String> pair : agent.getIdentities()) {
+                ids.add(new KeyAgentIdentity(agent, pair.getFirst()));
             }
         } else {
-            byte cmd = buffer.getByte();
-            if (cmd == SshConstants.SSH_MSG_USERAUTH_SUCCESS) {
-                log.info("Received SSH_MSG_USERAUTH_SUCCESS");
-                return Result.Success;
-            } if (cmd == SshConstants.SSH_MSG_USERAUTH_FAILURE) {
-                log.info("Received SSH_MSG_USERAUTH_FAILURE");
-                return Result.Failure;
-            } else {
-                log.info("Received unknown packet {}", cmd);
-                // TODO: check packets
-                return Result.Continued;
+            this.agent = null;
+        }
+        this.keys = ids.iterator();
+    }
+
+    public boolean process(Buffer buffer) throws Exception {
+        // Send next key
+        if (buffer == null) {
+            if (keys.hasNext()) {
+                current = keys.next();
+                PublicKey key = current.getPublicKey();
+                String algo = getKeyType(key);
+                log.info("Send SSH_MSG_USERAUTH_REQUEST for publickey");
+                buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST, 0);
+                buffer.putString(session.getUsername());
+                buffer.putString(service);
+                buffer.putString("publickey");
+                buffer.putByte((byte) 0);
+                buffer.putString(algo);
+                buffer.putPublicKey(key);
+                session.writePacket(buffer);
+                return true;
             }
+            return false;
+        }
+        byte cmd = buffer.getByte();
+        if (cmd == SshConstants.SSH_MSG_USERAUTH_PK_OK) {
+            PublicKey key = current.getPublicKey();
+            String algo = getKeyType(key);
+            log.info("Send SSH_MSG_USERAUTH_REQUEST for publickey");
+            buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST, 0);
+            buffer.putString(session.getUsername());
+            buffer.putString(service);
+            buffer.putString("publickey");
+            buffer.putByte((byte) 1);
+            buffer.putString(algo);
+            buffer.putPublicKey(key);
+
+            Buffer bs = new Buffer();
+            bs.putString(((AbstractSession) session).getKex().getH());
+            bs.putByte(SshConstants.SSH_MSG_USERAUTH_REQUEST);
+            bs.putString(session.getUsername());
+            bs.putString(service);
+            bs.putString("publickey");
+            bs.putByte((byte) 1);
+            bs.putString(algo);
+            bs.putPublicKey(key);
+            byte[] sig = current.sign(bs.getCompactData());
+
+            bs = new Buffer();
+            bs.putString(algo);
+            bs.putBytes(sig);
+            buffer.putBytes(bs.array(), bs.rpos(), bs.available());
+
+            session.writePacket(buffer);
+            return true;
+        }
+
+        throw new IllegalStateException("Received unknown packet");
+    }
+
+    public void destroy() {
+        if (agent != null) {
+            agent.close();
+        }
+    }
+
+    interface PublicKeyIdentity {
+        PublicKey getPublicKey();
+        byte[] sign(byte[] data) throws Exception;
+    }
+
+    static class KeyAgentIdentity implements PublicKeyIdentity {
+        private final SshAgent agent;
+        private final PublicKey key;
+
+        KeyAgentIdentity(SshAgent agent, PublicKey key) {
+            this.agent = agent;
+            this.key = key;
+        }
+
+        public PublicKey getPublicKey() {
+            return key;
+        }
+
+        public byte[] sign(byte[] data) throws Exception {
+            return agent.sign(key, data);
+        }
+    }
+
+    static class KeyPairIdentity implements PublicKeyIdentity {
+        private final KeyPair pair;
+        private final FactoryManager manager;
+
+        KeyPairIdentity(FactoryManager manager, KeyPair pair) {
+            this.manager = manager;
+            this.pair = pair;
+        }
+
+        public PublicKey getPublicKey() {
+            return pair.getPublic();
+        }
+
+        public byte[] sign(byte[] data) throws Exception {
+            Signature verif = NamedFactory.Utils.create(manager.getSignatureFactories(), getKeyType(pair));
+            verif.init(pair.getPublic(), pair.getPrivate());
+            verif.update(data, 0, data.length);
+            return verif.sign();
         }
     }
 

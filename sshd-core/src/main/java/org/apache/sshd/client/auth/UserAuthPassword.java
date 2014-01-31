@@ -18,10 +18,14 @@
  */
 package org.apache.sshd.client.auth;
 
-import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
+import org.apache.sshd.ClientSession;
 import org.apache.sshd.client.UserAuth;
-import org.apache.sshd.client.session.ClientSessionImpl;
+import org.apache.sshd.client.session.ClientUserAuthServiceNew;
+import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.util.Buffer;
 import org.slf4j.Logger;
@@ -32,42 +36,63 @@ import org.slf4j.LoggerFactory;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class UserAuthPassword extends AbstractUserAuth {
+public class UserAuthPassword implements UserAuth {
 
-    protected final Logger log = LoggerFactory.getLogger(getClass());
-
-    private final String password;
-
-    public UserAuthPassword(ClientSessionImpl session, String service, String username, String password) {
-        super(session, service, username);
-        this.password = password;
-    }
-
-    public Result next(Buffer buffer) throws IOException {
-        if (buffer == null) {
-            log.info("Send SSH_MSG_USERAUTH_REQUEST for password");
-            buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST, 0);
-            buffer.putString(username);
-            buffer.putString(service);
-            buffer.putString("password");
-            buffer.putByte((byte) 0);
-            buffer.putString(password);
-            session.writePacket(buffer);
-            return Result.Continued;
-        } else {
-            byte cmd = buffer.getByte();
-            if (cmd == SshConstants.SSH_MSG_USERAUTH_SUCCESS) {
-                log.info("Received SSH_MSG_USERAUTH_SUCCESS");
-                return Result.Success;
-            } if (cmd == SshConstants.SSH_MSG_USERAUTH_FAILURE) {
-                log.info("Received SSH_MSG_USERAUTH_FAILURE");
-                return Result.Failure;
-            } else {
-                log.info("Received unkown packet {}", cmd);
-                // TODO: check packets
-                return Result.Continued;
-            }
+    public static class Factory implements NamedFactory<UserAuth> {
+        public String getName() {
+            return "password";
+        }
+        public UserAuth create() {
+            return new UserAuthPassword();
         }
     }
 
+    protected final Logger log = LoggerFactory.getLogger(getClass());
+    private ClientSession session;
+    private String service;
+    private Iterator<String> passwords;
+    private String current;
+
+    public void init(ClientSession session, String service, List<Object> identities) throws Exception {
+        this.session = session;
+        this.service = service;
+        List<String> pwds = new ArrayList<String>();
+        for (Object o : identities) {
+            if (o instanceof String) {
+                pwds.add((String) o);
+            }
+        }
+        this.passwords = pwds.iterator();
+    }
+
+    public boolean process(Buffer buffer) throws Exception {
+        // Send next key
+        if (buffer == null) {
+            if (passwords.hasNext()) {
+                current = passwords.next();
+                log.info("Send SSH_MSG_USERAUTH_REQUEST for password");
+                buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST, 0);
+                buffer.putString(session.getUsername());
+                buffer.putString(service);
+                buffer.putString("password");
+                buffer.putByte((byte) 0);
+                buffer.putString(current);
+                session.writePacket(buffer);
+                return true;
+            }
+            return false;
+        }
+        byte cmd = buffer.getByte();
+        if (cmd == SshConstants.SSH_MSG_USERAUTH_PASSWD_CHANGEREQ) {
+            String prompt = buffer.getString();
+            String lang = buffer.getString();
+            // TODO: prompt user for password change
+            log.warn("Password change requested, but not supported");
+            return false;
+        }
+        throw new IllegalStateException("Received unknown packet");
+    }
+
+    public void destroy() {
+    }
 }

@@ -255,9 +255,12 @@ public abstract class AbstractSession implements Session {
         return authed;
     }
 
-    public void setAuthenticated(String username) throws IOException {
-        this.authed = true;
+    public void setUsername(String username) {
         this.username = username;
+    }
+
+    public void setAuthenticated() throws IOException {
+        this.authed = true;
         sendEvent(SessionListener.Event.Authenticated);
     }
 

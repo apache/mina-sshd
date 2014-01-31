@@ -50,9 +50,6 @@ public class UserAuthPublicKey extends AbstractUserAuth {
         if (!init) {
             throw new IllegalStateException();
         }
-        if (!"ssh-connection".equals(service)) {
-            throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "Unsupported service '" + service + "'");
-        }
         boolean hasSig = buffer.getBoolean();
         String alg = buffer.getString();
 
@@ -88,7 +85,7 @@ public class UserAuthPublicKey extends AbstractUserAuth {
             buf.putString(session.getKex().getH());
             buf.putByte(SshConstants.SSH_MSG_USERAUTH_REQUEST);
             buf.putString(username);
-            buf.putString("ssh-connection");
+            buf.putString(service);
             buf.putString("publickey");
             buf.putByte((byte) 1);
             buf.putString(keyAlg);

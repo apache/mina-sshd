@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.client.future;
 
+import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.DefaultSshFuture;
 
 
@@ -30,6 +31,18 @@ public class DefaultAuthFuture extends DefaultSshFuture<AuthFuture> implements A
 
     public DefaultAuthFuture( Object lock) {
         super(lock);
+    }
+
+    public void verify() throws SshException {
+        try {
+            await();
+        }
+        catch (InterruptedException e) {
+            throw new SshException("Authentication interrupted", e);
+        }
+        if (!isSuccess()) {
+            throw new SshException("Authentication failed", getException());
+        }
     }
 
     public Throwable getException() {

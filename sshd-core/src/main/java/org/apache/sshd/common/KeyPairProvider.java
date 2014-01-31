@@ -54,6 +54,13 @@ public interface KeyPairProvider {
     String ECDSA_SHA2_NISTP521 = "ecdsa-sha2-nistp521";
 
     /**
+     * Load available keys.
+     *
+     * @return an array of available keys, never <code>null</code>
+     */
+    KeyPair[] loadKeys();
+
+    /**
      * Load a key of the specified type which can be "ssh-rsa", "ssh-dss", or
      * "ecdsa-sha2-nistp{256,384,521}". If there is no key of this type, return
      * <code>null</code>

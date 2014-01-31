@@ -44,9 +44,6 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
 
     @Override
     protected Boolean doAuth(Buffer buffer, boolean init) throws Exception {
-        if (!"ssh-connection".equals(service)) {
-            throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "Unsupported service '" + service + "'");
-        }
         if (init) {
             // Prompt for password
             buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_INFO_REQUEST, 0);

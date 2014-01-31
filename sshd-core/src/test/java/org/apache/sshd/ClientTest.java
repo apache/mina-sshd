@@ -364,6 +364,26 @@ public class ClientTest {
     }
 
     @Test
+    public void testPublicKeyAuthNew() throws Exception {
+        SshClient client = SshClient.setUpDefaultClient();
+        client.start();
+        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
+        KeyPair pair = Utils.createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
+        session.addPublicKeyIdentity(pair);
+        session.auth().verify();
+    }
+
+    @Test
+    public void testPasswordAuthNew() throws Exception {
+        SshClient client = SshClient.setUpDefaultClient();
+        client.start();
+        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
+        KeyPair pair = Utils.createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
+        session.addPasswordIdentity("smx");
+        session.auth().verify();
+    }
+
+    @Test
     public void testClientDisconnect() throws Exception {
         TestEchoShellFactory.TestEchoShell.latch = new CountDownLatch(1);
         try

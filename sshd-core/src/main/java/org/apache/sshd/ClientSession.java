@@ -31,6 +31,7 @@ import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.ChannelSubsystem;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.common.Session;
+import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.future.CloseFuture;
 
@@ -62,24 +63,33 @@ public interface ClientSession extends Session {
     int WAIT_AUTH =   0x0004;
     int AUTHED =      0x0008;
 
+    void addPasswordIdentity(String password);
+    void addPublicKeyIdentity(KeyPair key);
+
+    AuthFuture auth() throws IOException;
+
     /**
      * Authenticate the session with the given username using an ssh agent.
      */
+    @Deprecated
     AuthFuture authAgent(String username) throws IOException;
 
     /**
      * Authenticate the session with the given username and password.
      */
+    @Deprecated
     AuthFuture authPassword(String username, String password) throws IOException;
 
     /**
      * Authenticate the session with the given username and password.
      */
+    @Deprecated
     AuthFuture authInteractive(String username, String password) throws IOException;
 
     /**
      * Authenticate the session with the given username and public key.
      */
+    @Deprecated
     AuthFuture authPublicKey(String username, KeyPair key) throws IOException;
 
     /**

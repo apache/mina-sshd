@@ -129,6 +129,7 @@ public class ServerUserAuthService implements Service {
                                 + username + ", " + service + ")");
                 return;
             }
+            // TODO: verify that the service is supported
             this.authMethod = method;
             if (nbAuthRequests++ > maxAuthRequests) {
                 session.disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "Too many authentication failures");
@@ -197,7 +198,8 @@ public class ServerUserAuthService implements Service {
 
                 buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_SUCCESS, 0);
                 session.writePacket(buffer);
-                session.setAuthenticated(username);
+                session.setUsername(username);
+                session.setAuthenticated();
                 session.startService(authService);
                 session.resetIdleTimeout();
                 log.info("Session {}@{} authenticated", username, session.getIoSession().getRemoteAddress());

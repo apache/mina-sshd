@@ -18,8 +18,15 @@
  */
 package org.apache.sshd.common.util;
 
+import java.security.Key;
+import java.security.KeyPair;
 import java.security.PublicKey;
+import java.security.interfaces.DSAKey;
+import java.security.interfaces.ECKey;
+import java.security.interfaces.RSAKey;
+import java.security.spec.ECParameterSpec;
 
+import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.digest.MD5;
 
 /**
@@ -47,6 +54,46 @@ public class KeyUtils {
         } catch (Exception e) {
             return "Unable to compute fingerprint";
         }
+    }
+
+    /**
+     * Retrieve the key type
+     *
+     * @param kp a key pair
+     * @return the key type
+     */
+    public static String getKeyType(KeyPair kp) {
+        return getKeyType(kp.getPrivate() != null ? kp.getPrivate() : kp.getPublic());
+    }
+
+    /**
+     * Retrieve the key type
+     *
+     * @param key a public or private key
+     * @return the key type
+     */
+    public static String getKeyType(Key key) {
+        if (key instanceof DSAKey) {
+            return KeyPairProvider.SSH_DSS;
+        } else if (key instanceof RSAKey) {
+            return KeyPairProvider.SSH_RSA;
+        } else if (key instanceof ECKey) {
+            ECKey ecKey = (ECKey) key;
+            ECParameterSpec ecSpec = ecKey.getParams();
+            /*
+             * TODO make this more robust by checking the actual parameters instead of
+             * just the field size.
+             */
+            switch (ecSpec.getCurve().getField().getFieldSize()) {
+                case 256:
+                    return KeyPairProvider.ECDSA_SHA2_NISTP256;
+                case 384:
+                    return KeyPairProvider.ECDSA_SHA2_NISTP384;
+                case 521:
+                    return KeyPairProvider.ECDSA_SHA2_NISTP521;
+            }
+        }
+        return null;
     }
 
     private KeyUtils() {
