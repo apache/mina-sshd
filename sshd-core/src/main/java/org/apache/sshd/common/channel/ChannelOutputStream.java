@@ -128,7 +128,7 @@ public class ChannelOutputStream extends OutputStream {
                 }
                 lastSize = length;
                 remoteWindow.waitAndConsume(length);
-                log.debug("Send {} on channel {}", cmd, channel.getId());
+                log.debug("Send {} on channel {}", cmd == SshConstants.SSH_MSG_CHANNEL_DATA ? "SSH_MSG_CHANNEL_DATA" : "SSH_MSG_CHANNEL_EXTENDED_DATA", channel.getId());
                 channel.writePacket(buf);
             }
         } catch (WindowClosedException e) {
