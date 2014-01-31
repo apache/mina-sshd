@@ -68,7 +68,7 @@ public class UserAuthKeyboardInteractive implements UserAuth {
 
     public boolean process(Buffer buffer) throws Exception {
         if (buffer == null) {
-            log.info("Send SSH_MSG_USERAUTH_REQUEST for password");
+            log.debug("Send SSH_MSG_USERAUTH_REQUEST for password");
             buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST, 0);
             buffer.putString(session.getUsername());
             buffer.putString(service);
@@ -80,7 +80,7 @@ public class UserAuthKeyboardInteractive implements UserAuth {
         }
         byte cmd = buffer.getByte();
         if (cmd == SSH_MSG_USERAUTH_INFO_REQUEST) {
-            log.info("Received SSH_MSG_USERAUTH_INFO_REQUEST");
+            log.debug("Received SSH_MSG_USERAUTH_INFO_REQUEST");
             String name = buffer.getString();
             String instruction = buffer.getString();
             String language_tag = buffer.getString();
@@ -92,8 +92,8 @@ public class UserAuthKeyboardInteractive implements UserAuth {
                 prompt[i] = buffer.getString();
                 echo[i] = (buffer.getByte() != 0);
             }
-            log.info("Promt: {}", prompt);
-            log.info("Echo: {}", echo);
+            log.debug("Promt: {}", prompt);
+            log.debug("Echo: {}", echo);
 
             String[] rep = null;
             if (num == 0) {

@@ -44,7 +44,7 @@ public class UserAuthPassword extends AbstractUserAuth {
 
     public Result next(Buffer buffer) throws IOException {
         if (buffer == null) {
-            log.info("Send SSH_MSG_USERAUTH_REQUEST for password");
+            log.debug("Send SSH_MSG_USERAUTH_REQUEST for password");
             buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST, 0);
             buffer.putString(session.getUsername());
             buffer.putString(service);
@@ -56,13 +56,13 @@ public class UserAuthPassword extends AbstractUserAuth {
         } else {
             byte cmd = buffer.getByte();
             if (cmd == SshConstants.SSH_MSG_USERAUTH_SUCCESS) {
-                log.info("Received SSH_MSG_USERAUTH_SUCCESS");
+                log.debug("Received SSH_MSG_USERAUTH_SUCCESS");
                 return Result.Success;
             } if (cmd == SshConstants.SSH_MSG_USERAUTH_FAILURE) {
-                log.info("Received SSH_MSG_USERAUTH_FAILURE");
+                log.debug("Received SSH_MSG_USERAUTH_FAILURE");
                 return Result.Failure;
             } else {
-                log.info("Received unkown packet {}", cmd);
+                log.debug("Received unkown packet {}", cmd);
                 // TODO: check packets
                 return Result.Continued;
             }

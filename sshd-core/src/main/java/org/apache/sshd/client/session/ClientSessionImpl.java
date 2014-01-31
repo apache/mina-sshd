@@ -79,7 +79,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
 
     public ClientSessionImpl(ClientFactoryManager client, IoSession session) throws Exception {
         super(false, client, session);
-        log.info("Session created...");
+        log.info("Client session created");
         // Need to set the initial service early as calling code likes to start trying to
         // manipulate it before the connection has even been established.  For instance, to
         // set the authPassword.
@@ -346,7 +346,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
             return;
         }
         initialServiceRequestSent = true;
-        log.info("Send SSH_MSG_SERVICE_REQUEST for {}", currentServiceFactory.getName());
+        log.debug("Send SSH_MSG_SERVICE_REQUEST for {}", currentServiceFactory.getName());
         Buffer request = createBuffer(SshConstants.SSH_MSG_SERVICE_REQUEST, 0);
         request.putString(currentServiceFactory.getName());
         writePacket(request);

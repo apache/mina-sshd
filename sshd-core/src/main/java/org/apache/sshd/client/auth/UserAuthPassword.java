@@ -70,7 +70,7 @@ public class UserAuthPassword implements UserAuth {
         if (buffer == null) {
             if (passwords.hasNext()) {
                 current = passwords.next();
-                log.info("Send SSH_MSG_USERAUTH_REQUEST for password");
+                log.debug("Send SSH_MSG_USERAUTH_REQUEST for password");
                 buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST, 0);
                 buffer.putString(session.getUsername());
                 buffer.putString(service);

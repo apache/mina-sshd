@@ -50,7 +50,7 @@ public class UserAuthPublicKey extends AbstractUserAuth {
     public Result next(Buffer buffer) throws IOException {
         if (buffer == null) {
             try {
-                log.info("Send SSH_MSG_USERAUTH_REQUEST for publickey");
+                log.debug("Send SSH_MSG_USERAUTH_REQUEST for publickey");
                 buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST, 0);
                 int pos1 = buffer.wpos() - 1;
                 buffer.putString(session.getUsername());
@@ -91,13 +91,13 @@ public class UserAuthPublicKey extends AbstractUserAuth {
         } else {
             byte cmd = buffer.getByte();
             if (cmd == SshConstants.SSH_MSG_USERAUTH_SUCCESS) {
-                log.info("Received SSH_MSG_USERAUTH_SUCCESS");
+                log.debug("Received SSH_MSG_USERAUTH_SUCCESS");
                 return Result.Success;
             } if (cmd == SshConstants.SSH_MSG_USERAUTH_FAILURE) {
-                log.info("Received SSH_MSG_USERAUTH_FAILURE");
+                log.debug("Received SSH_MSG_USERAUTH_FAILURE");
                 return Result.Failure;
             } else {
-                log.info("Received unknown packet {}", cmd);
+                log.debug("Received unknown packet {}", cmd);
                 // TODO: check packets
                 return Result.Continued;
             }

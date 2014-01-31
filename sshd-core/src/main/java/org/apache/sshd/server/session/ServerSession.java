@@ -60,7 +60,7 @@ public class ServerSession extends AbstractSession {
         idleTimeoutMs = getIntProperty(ServerFactoryManager.IDLE_TIMEOUT, idleTimeoutMs);
         maxBytes = Math.max(32, getLongProperty(ServerFactoryManager.REKEY_BYTES_LIMIT, maxBytes));
         maxKeyInterval = getLongProperty(ServerFactoryManager.REKEY_TIME_LIMIT, maxKeyInterval);
-        log.info("Session created from {}", ioSession.getRemoteAddress());
+        log.info("Server session created from {}", ioSession.getRemoteAddress());
         sendServerIdentification();
         kexState = KEX_STATE_INIT;
         sendKexInit();

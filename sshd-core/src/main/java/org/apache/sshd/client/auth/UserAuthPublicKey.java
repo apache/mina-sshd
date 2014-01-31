@@ -98,7 +98,7 @@ public class UserAuthPublicKey implements UserAuth {
                 current = keys.next();
                 PublicKey key = current.getPublicKey();
                 String algo = getKeyType(key);
-                log.info("Send SSH_MSG_USERAUTH_REQUEST for publickey");
+                log.debug("Send SSH_MSG_USERAUTH_REQUEST for publickey");
                 buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST, 0);
                 buffer.putString(session.getUsername());
                 buffer.putString(service);
@@ -115,7 +115,7 @@ public class UserAuthPublicKey implements UserAuth {
         if (cmd == SshConstants.SSH_MSG_USERAUTH_PK_OK) {
             PublicKey key = current.getPublicKey();
             String algo = getKeyType(key);
-            log.info("Send SSH_MSG_USERAUTH_REQUEST for publickey");
+            log.debug("Send SSH_MSG_USERAUTH_REQUEST for publickey");
             buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST, 0);
             buffer.putString(session.getUsername());
             buffer.putString(service);

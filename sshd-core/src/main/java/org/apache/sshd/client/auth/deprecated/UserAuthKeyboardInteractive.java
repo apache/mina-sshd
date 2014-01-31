@@ -44,7 +44,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
 
     public Result next(Buffer buffer) throws IOException {
         if (buffer == null) {
-            log.info("Send SSH_MSG_USERAUTH_REQUEST for password");
+            log.debug("Send SSH_MSG_USERAUTH_REQUEST for password");
             buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST, 0);
             buffer.putString(session.getUsername());
             buffer.putString(service);
@@ -57,7 +57,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
             byte cmd = buffer.getByte();
             switch (cmd) {
                 case SSH_MSG_USERAUTH_INFO_REQUEST:
-                    log.info("Received SSH_MSG_USERAUTH_INFO_REQUEST");
+                    log.debug("Received SSH_MSG_USERAUTH_INFO_REQUEST");
                     String name = buffer.getString();
                     String instruction = buffer.getString();
                     String language_tag = buffer.getString();
@@ -69,8 +69,8 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
                         prompt[i] = buffer.getString();
                         echo[i] = (buffer.getByte() != 0);
                     }
-                    log.info("Promt: {}", prompt);
-                    log.info("Echo: {}", echo);
+                    log.debug("Promt: {}", prompt);
+                    log.debug("Echo: {}", echo);
 
                     String[] rep = null;
                     if (num == 0) {
@@ -96,13 +96,13 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
                     session.writePacket(buffer);
                     return Result.Continued;
                 case SSH_MSG_USERAUTH_SUCCESS:
-                    log.info("Received SSH_MSG_USERAUTH_SUCCESS");
+                    log.debug("Received SSH_MSG_USERAUTH_SUCCESS");
                     return Result.Success;
                 case SSH_MSG_USERAUTH_FAILURE:
-                    log.info("Received SSH_MSG_USERAUTH_FAILURE");
+                    log.debug("Received SSH_MSG_USERAUTH_FAILURE");
                     return Result.Failure;
                 default:
-                    log.info("Received unknown packet {}", cmd);
+                    log.debug("Received unknown packet {}", cmd);
                     return Result.Continued;
             }
         }
