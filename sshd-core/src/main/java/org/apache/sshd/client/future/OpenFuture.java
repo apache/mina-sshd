@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.client.future;
 
+import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.SshFuture;
 
 /**
@@ -26,6 +27,13 @@ import org.apache.sshd.common.future.SshFuture;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface OpenFuture extends SshFuture<OpenFuture> {
+
+    /**
+     * Wait and verify that the channel has been successfuly opened.
+     *
+     * @throws org.apache.sshd.common.SshException if the authentication failed for any reason
+     */
+    void verify() throws SshException;
 
     /**
      * Returns the cause of the connection failure.

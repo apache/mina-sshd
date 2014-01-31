@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.client.future;
 
+import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.DefaultSshFuture;
 
 /**
@@ -29,6 +30,18 @@ public class DefaultOpenFuture extends DefaultSshFuture<OpenFuture> implements O
 
     public DefaultOpenFuture(Object lock) {
         super(lock);
+    }
+
+    public void verify() throws SshException {
+        try {
+            await();
+        }
+        catch (InterruptedException e) {
+            throw new SshException("Channel opening interrupted", e);
+        }
+        if (!isOpened()) {
+            throw new SshException("Channel opening failed", getException());
+        }
     }
 
     public Throwable getException() {
