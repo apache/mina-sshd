@@ -347,7 +347,7 @@ public abstract class AbstractSession implements Session {
                     break;
                 }
                 log.debug("Accepted service {}", service);
-                Buffer response = createBuffer(SshConstants.SSH_MSG_SERVICE_ACCEPT, 0);
+                Buffer response = createBuffer(SshConstants.SSH_MSG_SERVICE_ACCEPT);
                 response.putString(service);
                 writePacket(response);
                 break;
@@ -549,6 +549,10 @@ public abstract class AbstractSession implements Session {
                 throw (InterruptedIOException) new InterruptedIOException().initCause(e);
             }
         }
+    }
+
+    public Buffer createBuffer(byte cmd) {
+        return createBuffer(cmd, 0);
     }
 
     /**
@@ -857,7 +861,7 @@ public abstract class AbstractSession implements Session {
      * @throws IOException if an error occurred sending the packet
      */
     protected byte[] sendKexInit(String[] proposal) throws IOException {
-        Buffer buffer = createBuffer(SshConstants.SSH_MSG_KEXINIT, 0);
+        Buffer buffer = createBuffer(SshConstants.SSH_MSG_KEXINIT);
         int p = buffer.wpos();
         buffer.wpos(p + 16);
         random.fill(buffer.array(), p, 16);
@@ -910,7 +914,7 @@ public abstract class AbstractSession implements Session {
      */
     protected void sendNewKeys() throws IOException {
         log.debug("Send SSH_MSG_NEWKEYS");
-        Buffer buffer = createBuffer(SshConstants.SSH_MSG_NEWKEYS, 0);
+        Buffer buffer = createBuffer(SshConstants.SSH_MSG_NEWKEYS);
         writePacket(buffer);
     }
 
@@ -1063,7 +1067,7 @@ public abstract class AbstractSession implements Session {
      * @throws IOException if an error occured sending the packet
      */
     public void disconnect(int reason, String msg) throws IOException {
-        Buffer buffer = createBuffer(SshConstants.SSH_MSG_DISCONNECT, 0);
+        Buffer buffer = createBuffer(SshConstants.SSH_MSG_DISCONNECT);
         buffer.putInt(reason);
         buffer.putString(msg);
         buffer.putString("");
@@ -1082,7 +1086,7 @@ public abstract class AbstractSession implements Session {
      * @throws IOException if an error occurred sending the packet
      */
     protected void notImplemented() throws IOException {
-        Buffer buffer = createBuffer(SshConstants.SSH_MSG_UNIMPLEMENTED, 0);
+        Buffer buffer = createBuffer(SshConstants.SSH_MSG_UNIMPLEMENTED);
         buffer.putInt(seqi - 1);
         writePacket(buffer);
     }

@@ -105,7 +105,7 @@ public class ClientUserAuthServiceNew implements Service {
         this.service = service;
 
         log.debug("Send SSH_MSG_USERAUTH_REQUEST for none");
-        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST, 0);
+        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST);
         buffer.putString(session.getUsername());
         buffer.putString(service);
         buffer.putString("none");

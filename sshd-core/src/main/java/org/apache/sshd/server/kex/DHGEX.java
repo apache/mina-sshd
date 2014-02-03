@@ -115,7 +115,7 @@ public class DHGEX implements KeyExchange {
             hash.init();
 
             log.debug("Send SSH_MSG_KEX_DH_GEX_GROUP");
-            buffer = session.createBuffer(SshConstants.SSH_MSG_KEX_DH_GEX_GROUP, 0);
+            buffer = session.createBuffer(SshConstants.SSH_MSG_KEX_DH_GEX_GROUP);
             buffer.putMPInt(dh.getP());
             buffer.putMPInt(dh.getG());
             session.writePacket(buffer);

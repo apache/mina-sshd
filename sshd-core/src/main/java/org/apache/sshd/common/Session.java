@@ -91,6 +91,15 @@ public interface Session {
      * (5 bytes) for the packet header.
      *
      * @param cmd the SSH command
+     * @return a new buffer ready for write
+     */
+    Buffer createBuffer(byte cmd);
+
+    /**
+     * Create a new buffer for the specified SSH packet and reserve the needed space
+     * (5 bytes) for the packet header.
+     *
+     * @param cmd the SSH command
      * @param estimatedSize estimated number of bytes the buffer will hold, 0 if unknown.
      * @return a new buffer ready for write
      */

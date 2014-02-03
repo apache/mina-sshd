@@ -69,7 +69,7 @@ public class UserAuthKeyboardInteractive implements UserAuth {
     public boolean process(Buffer buffer) throws Exception {
         if (buffer == null) {
             log.debug("Send SSH_MSG_USERAUTH_REQUEST for password");
-            buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST, 0);
+            buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST);
             buffer.putString(session.getUsername());
             buffer.putString(service);
             buffer.putString("keyboard-interactive");
@@ -111,7 +111,7 @@ public class UserAuthKeyboardInteractive implements UserAuth {
                 return false;
             }
 
-            buffer = session.createBuffer(SSH_MSG_USERAUTH_INFO_RESPONSE, 0);
+            buffer = session.createBuffer(SSH_MSG_USERAUTH_INFO_RESPONSE);
             buffer.putInt(rep.length);
             for (String r : rep) {
                 buffer.putString(r);

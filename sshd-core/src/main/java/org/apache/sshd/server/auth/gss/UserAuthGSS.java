@@ -85,7 +85,7 @@ public class UserAuthGSS extends AbstractUserAuth {
 
                     // Send the matching mechanism back to the client
 
-                    Buffer b = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_INFO_REQUEST, 0);
+                    Buffer b = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_INFO_REQUEST);
                     byte[] out = oid.getDER();
 
                     b.putBytes(out);
@@ -162,7 +162,7 @@ public class UserAuthGSS extends AbstractUserAuth {
                 // Send return token if necessary
 
                 if (out != null && out.length > 0) {
-                    Buffer b = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE, 0);
+                    Buffer b = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE);
 
                     b.putBytes(out);
                     session.writePacket(b);

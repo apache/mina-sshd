@@ -324,7 +324,7 @@ public abstract class AbstractConnectionService implements ConnectionService {
         log.debug("Received SSH_MSG_CHANNEL_OPEN {}", type);
 
         if (closing) {
-            Buffer buf = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_FAILURE, 0);
+            Buffer buf = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_FAILURE);
             buf.putInt(id);
             buf.putInt(SshConstants.SSH_OPEN_CONNECT_FAILED);
             buf.putString("SSH server is shutting down: " + type);
@@ -333,7 +333,7 @@ public abstract class AbstractConnectionService implements ConnectionService {
             return;
         }
         if (!allowMoreSessions) {
-            Buffer buf = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_FAILURE, 0);
+            Buffer buf = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_FAILURE);
             buf.putInt(id);
             buf.putInt(SshConstants.SSH_OPEN_CONNECT_FAILED);
             buf.putString("additional sessions disabled");
@@ -344,7 +344,7 @@ public abstract class AbstractConnectionService implements ConnectionService {
 
         final Channel channel = NamedFactory.Utils.create(session.getFactoryManager().getChannelFactories(), type);
         if (channel == null) {
-            Buffer buf = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_FAILURE, 0);
+            Buffer buf = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_FAILURE);
             buf.putInt(id);
             buf.putInt(SshConstants.SSH_OPEN_UNKNOWN_CHANNEL_TYPE);
             buf.putString("Unsupported channel type: " + type);
@@ -358,7 +358,7 @@ public abstract class AbstractConnectionService implements ConnectionService {
             public void operationComplete(OpenFuture future) {
                 try {
                     if (future.isOpened()) {
-                        Buffer buf = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_CONFIRMATION, 0);
+                        Buffer buf = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_CONFIRMATION);
                         buf.putInt(id);
                         buf.putInt(channelId);
                         buf.putInt(channel.getLocalWindow().getSize());
@@ -367,7 +367,7 @@ public abstract class AbstractConnectionService implements ConnectionService {
                     } else {
                         Throwable exception = future.getException();
                         if (exception != null) {
-                            Buffer buf = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_FAILURE, 0);
+                            Buffer buf = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_FAILURE);
                             buf.putInt(id);
                             if (exception instanceof OpenChannelException) {
                                 buf.putInt(((OpenChannelException) exception).getReasonCode());
@@ -412,13 +412,13 @@ public abstract class AbstractConnectionService implements ConnectionService {
                         return;
                     case ReplySuccess:
                         if (wantReply) {
-                            buffer = session.createBuffer(SshConstants.SSH_MSG_REQUEST_SUCCESS, 0);
+                            buffer = session.createBuffer(SshConstants.SSH_MSG_REQUEST_SUCCESS);
                             session.writePacket(buffer);
                         }
                         return;
                     case ReplyFailure:
                         if (wantReply) {
-                            buffer = session.createBuffer(SshConstants.SSH_MSG_REQUEST_FAILURE, 0);
+                            buffer = session.createBuffer(SshConstants.SSH_MSG_REQUEST_FAILURE);
                             session.writePacket(buffer);
                         }
                         return;
@@ -427,7 +427,7 @@ public abstract class AbstractConnectionService implements ConnectionService {
         }
         log.warn("Unknown global request: {}", req);
         if (wantReply) {
-            buffer = session.createBuffer(SshConstants.SSH_MSG_REQUEST_FAILURE, 0);
+            buffer = session.createBuffer(SshConstants.SSH_MSG_REQUEST_FAILURE);
             session.writePacket(buffer);
         }
     }

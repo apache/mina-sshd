@@ -43,7 +43,7 @@ public class ChannelSubsystem extends ChannelSession {
 
     protected void doOpen() throws IOException {
         log.debug("Send SSH_MSG_CHANNEL_REQUEST exec");
-        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST, 0);
+        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST);
         buffer.putInt(recipient);
         buffer.putString("subsystem");
         buffer.putBoolean(false);

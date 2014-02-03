@@ -347,7 +347,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         }
         initialServiceRequestSent = true;
         log.debug("Send SSH_MSG_SERVICE_REQUEST for {}", currentServiceFactory.getName());
-        Buffer request = createBuffer(SshConstants.SSH_MSG_SERVICE_REQUEST, 0);
+        Buffer request = createBuffer(SshConstants.SSH_MSG_SERVICE_REQUEST);
         request.putString(currentServiceFactory.getName());
         writePacket(request);
         // Assuming that MINA-SSHD only implements "explicit server authentication" it is permissible

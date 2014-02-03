@@ -95,7 +95,7 @@ public class DHGEX implements KeyExchange {
         this.I_C = I_C;
 
         log.debug("Send SSH_MSG_KEX_DH_GEX_REQUEST");
-        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST, 0);
+        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST);
         buffer.putInt(min);
         buffer.putInt(prf);
         buffer.putInt(max);
@@ -122,7 +122,7 @@ public class DHGEX implements KeyExchange {
             e = dh.getE();
 
             log.debug("Send SSH_MSG_KEX_DH_GEX_INIT");
-            buffer = session.createBuffer(SshConstants.SSH_MSG_KEX_DH_GEX_INIT, 0);
+            buffer = session.createBuffer(SshConstants.SSH_MSG_KEX_DH_GEX_INIT);
             buffer.putMPInt(e);
             session.writePacket(buffer);
             expected = SshConstants.SSH_MSG_KEX_DH_GEX_REPLY;

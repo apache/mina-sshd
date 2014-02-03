@@ -75,7 +75,7 @@ public class UserAuthPublicKey extends AbstractUserAuth {
             return false;
         }
         if (!hasSig) {
-            Buffer buf = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_PK_OK, 0);
+            Buffer buf = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_PK_OK);
             buf.putString(alg);
             buf.putRawBytes(buffer.array(), oldPos, 4 + len);
             session.writePacket(buf);

@@ -51,7 +51,7 @@ public class UserAuthPublicKey extends AbstractUserAuth {
         if (buffer == null) {
             try {
                 log.debug("Send SSH_MSG_USERAUTH_REQUEST for publickey");
-                buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST, 0);
+                buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST);
                 int pos1 = buffer.wpos() - 1;
                 buffer.putString(session.getUsername());
                 buffer.putString(service);

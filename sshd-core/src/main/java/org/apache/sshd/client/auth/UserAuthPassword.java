@@ -71,7 +71,7 @@ public class UserAuthPassword implements UserAuth {
             if (passwords.hasNext()) {
                 current = passwords.next();
                 log.debug("Send SSH_MSG_USERAUTH_REQUEST for password");
-                buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST, 0);
+                buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST);
                 buffer.putString(session.getUsername());
                 buffer.putString(service);
                 buffer.putString("password");

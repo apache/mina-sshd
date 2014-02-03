@@ -45,7 +45,7 @@ public class UserAuthPassword extends AbstractUserAuth {
     public Result next(Buffer buffer) throws IOException {
         if (buffer == null) {
             log.debug("Send SSH_MSG_USERAUTH_REQUEST for password");
-            buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST, 0);
+            buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST);
             buffer.putString(session.getUsername());
             buffer.putString(service);
             buffer.putString("password");
