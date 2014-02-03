@@ -18,6 +18,8 @@
  */
 package org.apache.sshd;
 
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.apache.sshd.client.UserInteraction;
 import org.apache.sshd.util.BaseTest;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
@@ -26,9 +28,6 @@ import org.apache.sshd.util.Utils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.net.ServerSocket;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static junit.framework.Assert.assertEquals;
 

@@ -18,12 +18,12 @@
  */
 package org.apache.sshd.util;
 
+import java.io.IOException;
+
 import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.channel.AbstractChannel;
 import org.apache.sshd.common.util.Buffer;
-
-import java.io.IOException;
 
 public class BogusChannel extends AbstractChannel {
 

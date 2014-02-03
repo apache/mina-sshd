@@ -21,7 +21,6 @@ package org.apache.sshd.common.file.virtualfs;
 import java.io.File;
 import java.io.IOException;
 
-import org.apache.sshd.util.BaseTest;
 import org.apache.sshd.SshServer;
 import org.apache.sshd.common.AbstractFactoryManager;
 import org.apache.sshd.common.file.FileSystemView;
@@ -30,6 +29,7 @@ import org.apache.sshd.common.file.nativefs.NativeFileSystemFactory;
 import org.apache.sshd.common.file.nativefs.NativeSshFile;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.util.BaseTest;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;

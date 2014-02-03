@@ -18,7 +18,6 @@
  */
 package org.apache.sshd;
 
-import java.net.ServerSocket;
 import java.security.KeyPair;
 
 import org.apache.sshd.common.KeyPairProvider;

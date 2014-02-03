@@ -18,9 +18,9 @@
  */
 package org.apache.sshd.util;
 
-import org.apache.sshd.common.SshdSocketAddress;
-import org.apache.sshd.common.Session;
 import org.apache.sshd.common.ForwardingFilter;
+import org.apache.sshd.common.Session;
+import org.apache.sshd.common.SshdSocketAddress;
 
 /**
  * TODO Add javadoc

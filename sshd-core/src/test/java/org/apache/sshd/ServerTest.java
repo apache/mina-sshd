@@ -19,7 +19,6 @@
 package org.apache.sshd;
 
 import java.io.ByteArrayOutputStream;
-import java.net.ServerSocket;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;

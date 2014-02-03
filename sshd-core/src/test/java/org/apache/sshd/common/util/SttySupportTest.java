@@ -18,13 +18,13 @@
  */
 package org.apache.sshd.common.util;
 
-import org.apache.sshd.util.BaseTest;
-import org.apache.sshd.common.PtyMode;
-import org.junit.Test;
-
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.util.Map;
+
+import org.apache.sshd.common.PtyMode;
+import org.apache.sshd.util.BaseTest;
+import org.junit.Test;
 
 /**
  * TODO Add javadoc

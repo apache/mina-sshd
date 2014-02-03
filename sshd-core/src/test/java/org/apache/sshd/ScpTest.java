@@ -24,7 +24,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.ServerSocket;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
@@ -33,8 +32,6 @@ import ch.ethz.ssh2.SCPClient;
 import com.jcraft.jsch.ChannelExec;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
-import com.jcraft.jsch.Logger;
-import com.jcraft.jsch.UserInfo;
 import org.apache.sshd.client.ScpClient;
 import org.apache.sshd.server.command.ScpCommandFactory;
 import org.apache.sshd.util.BaseTest;

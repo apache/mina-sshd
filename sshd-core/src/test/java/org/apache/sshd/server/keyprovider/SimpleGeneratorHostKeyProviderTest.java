@@ -18,16 +18,16 @@
  */
 package org.apache.sshd.server.keyprovider;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-
 import java.io.File;
 import java.security.spec.ECGenParameterSpec;
 
-import org.apache.sshd.util.BaseTest;
 import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.util.SecurityUtils;
+import org.apache.sshd.util.BaseTest;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 /**
  * TODO Add javadoc

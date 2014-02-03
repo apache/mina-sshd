@@ -20,18 +20,11 @@ package org.apache.sshd;
 
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
-import java.net.ServerSocket;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
-import org.apache.sshd.ClientChannel;
-import org.apache.sshd.ClientSession;
-import org.apache.sshd.SshClient;
-import org.apache.sshd.SshServer;
 import org.apache.sshd.client.kex.DHG1;
 import org.apache.sshd.common.Cipher;
 import org.apache.sshd.common.KeyExchange;
@@ -40,13 +33,12 @@ import org.apache.sshd.common.cipher.BlowfishCBC;
 import org.apache.sshd.util.BaseTest;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
-import org.apache.sshd.util.TeeOutputStream;
 import org.apache.sshd.util.Utils;
 import org.junit.After;
-
-import static org.junit.Assert.assertArrayEquals;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.assertArrayEquals;
 
 public class LoadTest extends BaseTest {
 

@@ -19,15 +19,16 @@
 package org.apache.sshd;
 
 import java.io.ByteArrayOutputStream;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
-import java.net.ServerSocket;
 import java.util.concurrent.CountDownLatch;
 
 import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.ServerFactoryManager;
-import org.apache.sshd.util.*;
+import org.apache.sshd.util.BaseTest;
+import org.apache.sshd.util.BogusPasswordAuthenticator;
+import org.apache.sshd.util.BogusPublickeyAuthenticator;
+import org.apache.sshd.util.EchoShellFactory;
+import org.apache.sshd.util.Utils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

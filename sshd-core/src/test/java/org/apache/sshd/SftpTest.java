@@ -24,14 +24,12 @@ import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
-import java.net.URL;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Vector;
 
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.Logger;
 import org.apache.sshd.client.SftpClient;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.server.Command;

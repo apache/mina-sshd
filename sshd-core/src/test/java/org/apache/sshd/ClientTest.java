@@ -23,11 +23,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
-import java.net.ServerSocket;
 import java.security.KeyPair;
 import java.util.concurrent.CountDownLatch;
 
-import org.apache.mina.core.future.WriteFuture;
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.OpenFuture;
@@ -46,16 +44,20 @@ import org.apache.sshd.common.util.NoCloseOutputStream;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.CommandFactory;
 import org.apache.sshd.server.command.UnknownCommand;
-import org.apache.sshd.util.*;
+import org.apache.sshd.util.BaseTest;
+import org.apache.sshd.util.BogusPasswordAuthenticator;
+import org.apache.sshd.util.BogusPublickeyAuthenticator;
+import org.apache.sshd.util.EchoShellFactory;
+import org.apache.sshd.util.TeeOutputStream;
+import org.apache.sshd.util.Utils;
 import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
 
 /**
  * TODO Add javadoc
