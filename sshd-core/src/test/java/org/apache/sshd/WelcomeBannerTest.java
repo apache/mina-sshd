@@ -19,6 +19,7 @@
 package org.apache.sshd;
 
 import org.apache.sshd.client.UserInteraction;
+import org.apache.sshd.util.BaseTest;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.BogusPublickeyAuthenticator;
 import org.apache.sshd.util.Utils;
@@ -31,7 +32,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static junit.framework.Assert.assertEquals;
 
-public class WelcomeBannerTest {
+public class WelcomeBannerTest extends BaseTest {
 
     private static final String WELCOME = "Welcome to SSHD";
 

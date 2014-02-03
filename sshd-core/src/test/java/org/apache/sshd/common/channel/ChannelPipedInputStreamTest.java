@@ -20,6 +20,7 @@ package org.apache.sshd.common.channel;
 
 import java.util.Arrays;
 
+import org.apache.sshd.util.BaseTest;
 import org.apache.sshd.util.BogusChannel;
 import org.junit.Test;
 
@@ -27,7 +28,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-public class ChannelPipedInputStreamTest {
+public class ChannelPipedInputStreamTest extends BaseTest {
 
     @Test
     public void testAvailable() throws Exception {

@@ -48,7 +48,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeThat;
 
-public class AgentTest {
+public class AgentTest extends BaseTest {
 
     @Test
     public void testAgent() throws Exception {

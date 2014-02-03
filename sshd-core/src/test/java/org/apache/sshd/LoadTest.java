@@ -37,6 +37,7 @@ import org.apache.sshd.common.Cipher;
 import org.apache.sshd.common.KeyExchange;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.cipher.BlowfishCBC;
+import org.apache.sshd.util.BaseTest;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.TeeOutputStream;
@@ -47,7 +48,7 @@ import static org.junit.Assert.assertArrayEquals;
 import org.junit.Before;
 import org.junit.Test;
 
-public class LoadTest {
+public class LoadTest extends BaseTest {
 
     private SshServer sshd;
     private int port;

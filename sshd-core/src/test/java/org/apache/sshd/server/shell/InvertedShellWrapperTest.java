@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.server.shell;
 
+import org.apache.sshd.util.BaseTest;
 import org.apache.sshd.util.BogusEnvironment;
 import org.apache.sshd.util.BogusExitCallback;
 import org.apache.sshd.util.BogusInvertedShell;
@@ -28,7 +29,7 @@ import java.io.ByteArrayOutputStream;
 
 import static junit.framework.Assert.assertEquals;
 
-public class InvertedShellWrapperTest {
+public class InvertedShellWrapperTest extends BaseTest {
 
     @Test
     public void testStreamsAreFlushedBeforeClosing() throws Exception {

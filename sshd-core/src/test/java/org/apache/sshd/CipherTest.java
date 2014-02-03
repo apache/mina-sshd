@@ -33,6 +33,7 @@ import org.apache.sshd.common.cipher.BlowfishCBC;
 import org.apache.sshd.common.cipher.TripleDESCBC;
 import org.apache.sshd.common.random.BouncyCastleRandom;
 import org.apache.sshd.common.util.SecurityUtils;
+import org.apache.sshd.util.BaseTest;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.JSchLogger;
@@ -48,7 +49,7 @@ import static org.junit.Assert.assertEquals;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class CipherTest {
+public class CipherTest extends BaseTest {
 
     private SshServer sshd;
     private int port;

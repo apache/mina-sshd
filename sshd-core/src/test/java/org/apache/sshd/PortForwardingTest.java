@@ -36,6 +36,7 @@ import org.apache.sshd.client.channel.ChannelDirectTcpip;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.ConnectFuture;
 import org.apache.sshd.common.SshdSocketAddress;
+import org.apache.sshd.util.BaseTest;
 import org.apache.sshd.util.BogusForwardingFilter;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
@@ -54,7 +55,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Port forwarding tests
  */
-public class PortForwardingTest {
+public class PortForwardingTest extends BaseTest {
 
     private final org.slf4j.Logger log = LoggerFactory.getLogger(getClass());
 

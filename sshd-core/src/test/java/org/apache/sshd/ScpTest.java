@@ -37,6 +37,7 @@ import com.jcraft.jsch.Logger;
 import com.jcraft.jsch.UserInfo;
 import org.apache.sshd.client.ScpClient;
 import org.apache.sshd.server.command.ScpCommandFactory;
+import org.apache.sshd.util.BaseTest;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.JSchLogger;
@@ -57,7 +58,7 @@ import static org.junit.Assert.fail;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ScpTest {
+public class ScpTest extends BaseTest {
 
     private SshServer sshd;
     private int port;

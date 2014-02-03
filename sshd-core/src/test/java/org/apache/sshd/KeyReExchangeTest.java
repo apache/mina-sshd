@@ -30,6 +30,7 @@ import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.common.Session;
 import org.apache.sshd.common.SessionListener;
 import org.apache.sshd.server.ServerFactoryManager;
+import org.apache.sshd.util.BaseTest;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.JSchLogger;
@@ -48,7 +49,7 @@ import static org.junit.Assert.assertTrue;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class KeyReExchangeTest {
+public class KeyReExchangeTest extends BaseTest {
 
     private SshServer sshd;
     private int port;

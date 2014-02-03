@@ -24,6 +24,7 @@ import static org.junit.Assert.assertNotNull;
 import java.io.File;
 import java.security.spec.ECGenParameterSpec;
 
+import org.apache.sshd.util.BaseTest;
 import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.junit.Test;
@@ -33,7 +34,7 @@ import org.junit.Test;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SimpleGeneratorHostKeyProviderTest {
+public class SimpleGeneratorHostKeyProviderTest extends BaseTest {
 
     @Test
     public void testDSA() {

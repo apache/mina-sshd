@@ -28,6 +28,7 @@ import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.session.SessionFactory;
+import org.apache.sshd.util.BaseTest;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.BogusPublickeyAuthenticator;
 import org.apache.sshd.util.Utils;
@@ -39,7 +40,7 @@ import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class AuthenticationTest {
+public class AuthenticationTest extends BaseTest {
 
     private static final String WELCOME = "Welcome to SSHD";
 

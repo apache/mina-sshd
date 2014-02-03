@@ -48,6 +48,7 @@ import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 import org.apache.sshd.SshServer;
+import org.apache.sshd.util.BaseTest;
 import org.apache.sshd.util.BogusForwardingFilter;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
@@ -67,7 +68,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Port forwarding tests
  */
-public class PortForwardingLoadTest {
+public class PortForwardingLoadTest extends BaseTest {
 
     private final org.slf4j.Logger log = LoggerFactory.getLogger(getClass());
 

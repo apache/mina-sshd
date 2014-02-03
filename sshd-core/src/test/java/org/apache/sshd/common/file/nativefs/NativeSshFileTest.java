@@ -18,11 +18,12 @@
  */
 package org.apache.sshd.common.file.nativefs;
 
+import org.apache.sshd.util.BaseTest;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-public class NativeSshFileTest {
+public class NativeSshFileTest extends BaseTest {
 
     @Test
     public void testResolve() {

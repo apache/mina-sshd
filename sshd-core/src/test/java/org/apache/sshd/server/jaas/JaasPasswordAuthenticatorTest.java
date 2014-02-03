@@ -33,6 +33,7 @@ import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.callback.UnsupportedCallbackException;
 
+import org.apache.sshd.util.BaseTest;
 import org.junit.Test;
 import org.junit.Before;
 import org.junit.After;
@@ -44,7 +45,7 @@ import static org.junit.Assert.*;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class JaasPasswordAuthenticatorTest {
+public class JaasPasswordAuthenticatorTest extends BaseTest {
 
     @Before
     public void setUp() {

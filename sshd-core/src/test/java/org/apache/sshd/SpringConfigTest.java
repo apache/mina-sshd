@@ -24,6 +24,7 @@ import com.jcraft.jsch.Channel;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.Logger;
 import com.jcraft.jsch.UserInfo;
+import org.apache.sshd.util.BaseTest;
 import org.apache.sshd.util.JSchLogger;
 import org.apache.sshd.util.SimpleUserInfo;
 import org.junit.After;
@@ -36,7 +37,7 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SpringConfigTest {
+public class SpringConfigTest extends BaseTest {
 
     private ClassPathXmlApplicationContext context;
 

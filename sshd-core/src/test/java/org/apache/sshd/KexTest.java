@@ -34,6 +34,7 @@ import org.apache.sshd.client.kex.ECDHP521;
 import org.apache.sshd.common.KeyExchange;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.util.SecurityUtils;
+import org.apache.sshd.util.BaseTest;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.TeeOutputStream;
@@ -50,7 +51,7 @@ import static org.junit.Assert.assertTrue;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class KexTest {
+public class KexTest extends BaseTest {
 
     private SshServer sshd;
     private int port;

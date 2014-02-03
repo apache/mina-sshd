@@ -39,7 +39,7 @@ import static org.junit.Assert.assertTrue;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class KeepAliveTest {
+public class KeepAliveTest extends BaseTest {
 
     private SshServer sshd;
     private int port;

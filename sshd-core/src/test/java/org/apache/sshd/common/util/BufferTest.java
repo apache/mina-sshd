@@ -23,9 +23,10 @@ import static org.junit.Assert.assertEquals;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 
+import org.apache.sshd.util.BaseTest;
 import org.junit.Test;
 
-public class BufferTest {
+public class BufferTest extends BaseTest {
 
     @Test
     public void testGetLong() throws Exception {

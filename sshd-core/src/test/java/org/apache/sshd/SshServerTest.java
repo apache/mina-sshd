@@ -18,6 +18,7 @@
  */
 package org.apache.sshd;
 
+import org.apache.sshd.util.BaseTest;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.Utils;
@@ -33,7 +34,7 @@ import static org.junit.Assert.assertTrue;
  * @author Kohsuke Kawaguchi
  * @author Michael Heemskerk
  */
-public class SshServerTest {
+public class SshServerTest extends BaseTest {
 
     @Test
     public void stopMethodShouldBeIdempotent() throws Exception {

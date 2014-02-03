@@ -30,6 +30,7 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.compression.CompressionDelayedZlib;
 import org.apache.sshd.common.compression.CompressionNone;
 import org.apache.sshd.common.compression.CompressionZlib;
+import org.apache.sshd.util.BaseTest;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.JSchLogger;
@@ -45,7 +46,7 @@ import org.junit.Test;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class CompressionTest {
+public class CompressionTest extends BaseTest {
 
     private SshServer sshd;
 

@@ -16,40 +16,33 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd;
+package org.apache.sshd.util;
 
-import org.apache.sshd.common.Random;
-import org.apache.sshd.common.random.BouncyCastleRandom;
-import org.apache.sshd.common.random.JceRandom;
-import org.apache.sshd.util.BaseTest;
-import org.junit.Test;
+import org.junit.Rule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 
 /**
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class RandomTest extends BaseTest {
+public abstract class BaseTest extends TestWatcher {
 
-    @Test
-    public void testJce() {
-        long t = test(new JceRandom());
-        System.out.println("JCE: " + t + " micro");
+    @Rule
+    public TestWatcher rule = this;
+
+    private long startTime;
+
+    @Override
+    protected void starting(Description description) {
+        System.out.println("\nStarting " + description.getClassName() + ":" + description.getMethodName() + "...\n");
+        startTime = System.currentTimeMillis();
     }
 
-    @Test
-    public void testBc() {
-        long t = test(new BouncyCastleRandom());
-        System.out.println("BC:  " + t + " micro");
-    }
-
-    protected long test(Random random) {
-        byte[] bytes = new byte[32];
-        long l0 = System.nanoTime();
-        for (int i = 0; i < 1000; i++) {
-            random.fill(bytes, 8, 16);
-        }
-        long l1 = System.nanoTime();
-        return (l1 - l0) / 1000;
+    @Override
+    protected void finished(Description description) {
+        long duration = System.currentTimeMillis() - startTime;
+        System.out.println("\nFinished " + description.getClassName() + ":" + description.getMethodName() + " in " + duration + " ms\n");
     }
 }

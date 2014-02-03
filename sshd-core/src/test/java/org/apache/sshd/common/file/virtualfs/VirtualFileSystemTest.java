@@ -21,6 +21,7 @@ package org.apache.sshd.common.file.virtualfs;
 import java.io.File;
 import java.io.IOException;
 
+import org.apache.sshd.util.BaseTest;
 import org.apache.sshd.SshServer;
 import org.apache.sshd.common.AbstractFactoryManager;
 import org.apache.sshd.common.file.FileSystemView;
@@ -33,7 +34,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-public class VirtualFileSystemTest {
+public class VirtualFileSystemTest extends BaseTest {
 
     @Test
     public void testNativeFileSystem() throws IOException {

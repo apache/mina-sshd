@@ -18,13 +18,14 @@
  */
 package org.apache.sshd.common.future;
 
+import org.apache.sshd.util.BaseTest;
 import org.junit.Test;
 
 import static junit.framework.Assert.assertNotNull;
 
 /**
  */
-public class FutureTest {
+public class FutureTest extends BaseTest {
 
     @Test
     public void testAwaitUnint() {

@@ -18,8 +18,8 @@
  */
 package org.apache.sshd.common.util;
 
+import org.apache.sshd.util.BaseTest;
 import org.apache.sshd.common.PtyMode;
-import org.apache.sshd.common.util.SttySupport;
 import org.junit.Test;
 
 import java.io.InputStreamReader;
@@ -31,7 +31,7 @@ import java.util.Map;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SttySupportTest {
+public class SttySupportTest extends BaseTest {
 
     @Test
     public void parseOutput1() throws Exception {
