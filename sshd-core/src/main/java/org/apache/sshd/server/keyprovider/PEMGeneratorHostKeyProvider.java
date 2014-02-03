@@ -24,8 +24,13 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.security.KeyPair;
 
+import org.bouncycastle.openssl.PEMDecryptorProvider;
+import org.bouncycastle.openssl.PEMEncryptedKeyPair;
+import org.bouncycastle.openssl.PEMKeyPair;
 import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.openssl.PEMWriter;
+import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
+import org.bouncycastle.openssl.jcajce.JcePEMDecryptorProviderBuilder;
 
 /**
  * TODO Add javadoc
@@ -51,7 +56,16 @@ public class PEMGeneratorHostKeyProvider extends AbstractGeneratorHostKeyProvide
 
     protected KeyPair doReadKeyPair(InputStream is) throws Exception {
         PEMParser r = new PEMParser(new InputStreamReader(is));
-        return (KeyPair) r.readObject();
+        Object o = r.readObject();
+        JcaPEMKeyConverter pemConverter = new JcaPEMKeyConverter();
+        pemConverter.setProvider("BC");
+        if (o instanceof PEMKeyPair) {
+            o = pemConverter.getKeyPair((PEMKeyPair)o);
+            return (KeyPair) o;
+        } else if (o instanceof KeyPair) {
+            return (KeyPair) o;
+        }
+        return null;
     }
 
     protected void doWriteKeyPair(KeyPair kp, OutputStream os) throws Exception {

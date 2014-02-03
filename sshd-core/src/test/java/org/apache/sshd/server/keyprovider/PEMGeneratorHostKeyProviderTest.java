@@ -22,6 +22,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 import java.io.File;
+import java.security.KeyPair;
 import java.security.spec.ECGenParameterSpec;
 
 import org.apache.sshd.common.KeyPairProvider;
@@ -48,7 +49,8 @@ public class PEMGeneratorHostKeyProviderTest {
         provider.setKeySize(512);
         provider.setPath(path.getPath());
         assertEquals(KeyPairProvider.SSH_DSS, provider.getKeyTypes());
-        assertNotNull(provider.loadKey(KeyPairProvider.SSH_DSS));
+        KeyPair pk1 = provider.loadKey(KeyPairProvider.SSH_DSS);
+        assertNotNull(pk1);
 
         // Read existing
         provider = new PEMGeneratorHostKeyProvider();
@@ -56,7 +58,10 @@ public class PEMGeneratorHostKeyProviderTest {
         provider.setKeySize(512);
         provider.setPath(path.getPath());
         assertEquals(KeyPairProvider.SSH_DSS, provider.getKeyTypes());
-        assertNotNull(provider.loadKey(KeyPairProvider.SSH_DSS));
+        KeyPair pk2 = provider.loadKey(KeyPairProvider.SSH_DSS);
+        assertNotNull(pk2);
+
+        assertEquals(pk2.getPublic(), pk1.getPublic());
     }
 
     @Test
@@ -72,7 +77,8 @@ public class PEMGeneratorHostKeyProviderTest {
         provider.setKeySize(512);
         provider.setPath(path.getPath());
         assertEquals(KeyPairProvider.SSH_RSA, provider.getKeyTypes());
-        assertNotNull(provider.loadKey(KeyPairProvider.SSH_RSA));
+        KeyPair pk1 = provider.loadKey(KeyPairProvider.SSH_RSA);
+        assertNotNull(pk1);
 
         // Read existing
         provider = new PEMGeneratorHostKeyProvider();
@@ -80,7 +86,10 @@ public class PEMGeneratorHostKeyProviderTest {
         provider.setKeySize(512);
         provider.setPath(path.getPath());
         assertEquals(KeyPairProvider.SSH_RSA, provider.getKeyTypes());
-        assertNotNull(provider.loadKey(KeyPairProvider.SSH_RSA));
+        KeyPair pk2 = provider.loadKey(KeyPairProvider.SSH_RSA);
+        assertNotNull(pk2);
+
+        assertEquals(pk2.getPublic(), pk1.getPublic());
     }
 
     @Test
@@ -100,7 +109,8 @@ public class PEMGeneratorHostKeyProviderTest {
         provider.setKeySpec(new ECGenParameterSpec("prime256v1"));
         provider.setPath(path.getPath());
         assertEquals(KeyPairProvider.ECDSA_SHA2_NISTP256, provider.getKeyTypes());
-        assertNotNull(provider.loadKey(KeyPairProvider.ECDSA_SHA2_NISTP256));
+        KeyPair pk1 = provider.loadKey(KeyPairProvider.ECDSA_SHA2_NISTP256);
+        assertNotNull(pk1);
 
         // Read existing
         provider = new PEMGeneratorHostKeyProvider();
@@ -108,7 +118,10 @@ public class PEMGeneratorHostKeyProviderTest {
         provider.setKeySpec(new ECGenParameterSpec("prime256v1"));
         provider.setPath(path.getPath());
         assertEquals(KeyPairProvider.ECDSA_SHA2_NISTP256, provider.getKeyTypes());
-        assertNotNull(provider.loadKey(KeyPairProvider.ECDSA_SHA2_NISTP256));
+        KeyPair pk2 = provider.loadKey(KeyPairProvider.ECDSA_SHA2_NISTP256);
+        assertNotNull(pk2);
+
+        assertEquals(pk2.getPublic(), pk1.getPublic());
     }
 
     @Test
@@ -128,7 +141,8 @@ public class PEMGeneratorHostKeyProviderTest {
         provider.setKeySpec(new ECGenParameterSpec("P-384"));
         provider.setPath(path.getPath());
         assertEquals(KeyPairProvider.ECDSA_SHA2_NISTP384, provider.getKeyTypes());
-        assertNotNull(provider.loadKey(KeyPairProvider.ECDSA_SHA2_NISTP384));
+        KeyPair pk1 = provider.loadKey(KeyPairProvider.ECDSA_SHA2_NISTP384);
+        assertNotNull(pk1);
 
         // Read existing
         provider = new PEMGeneratorHostKeyProvider();
@@ -136,7 +150,10 @@ public class PEMGeneratorHostKeyProviderTest {
         provider.setKeySpec(new ECGenParameterSpec("P-384"));
         provider.setPath(path.getPath());
         assertEquals(KeyPairProvider.ECDSA_SHA2_NISTP384, provider.getKeyTypes());
-        assertNotNull(provider.loadKey(KeyPairProvider.ECDSA_SHA2_NISTP384));
+        KeyPair pk2 = provider.loadKey(KeyPairProvider.ECDSA_SHA2_NISTP384);
+        assertNotNull(pk2);
+
+        assertEquals(pk2.getPublic(), pk1.getPublic());
     }
 
     @Test
@@ -156,7 +173,8 @@ public class PEMGeneratorHostKeyProviderTest {
         provider.setKeySpec(new ECGenParameterSpec("P-521"));
         provider.setPath(path.getPath());
         assertEquals(KeyPairProvider.ECDSA_SHA2_NISTP521, provider.getKeyTypes());
-        assertNotNull(provider.loadKey(KeyPairProvider.ECDSA_SHA2_NISTP521));
+        KeyPair pk1 = provider.loadKey(KeyPairProvider.ECDSA_SHA2_NISTP521);
+        assertNotNull(pk1);
 
         // Read existing
         provider = new PEMGeneratorHostKeyProvider();
@@ -164,6 +182,9 @@ public class PEMGeneratorHostKeyProviderTest {
         provider.setKeySpec(new ECGenParameterSpec("P-521"));
         provider.setPath(path.getPath());
         assertEquals(KeyPairProvider.ECDSA_SHA2_NISTP521, provider.getKeyTypes());
-        assertNotNull(provider.loadKey(KeyPairProvider.ECDSA_SHA2_NISTP521));
+        KeyPair pk2 = provider.loadKey(KeyPairProvider.ECDSA_SHA2_NISTP521);
+        assertNotNull(pk2);
+
+        assertEquals(pk2.getPublic(), pk1.getPublic());
     }
 }
