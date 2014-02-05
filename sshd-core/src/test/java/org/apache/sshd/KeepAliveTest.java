@@ -33,7 +33,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 
 /**
  * TODO Add javadoc
@@ -45,9 +45,9 @@ public class KeepAliveTest extends BaseTest {
     private SshServer sshd;
     private int port;
 
-    private int heartbeat = 500;
-    private int timeout = 1000;
-    private int wait = 2000;
+    private int heartbeat = 1000;
+    private int timeout = 2000;
+    private int wait = 4000;
 
     @Before
     public void setUp() throws Exception {
@@ -80,7 +80,23 @@ public class KeepAliveTest extends BaseTest {
         ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
 
         int state = channel.waitFor(ClientChannel.CLOSED, wait);
-        assertTrue((state & ClientChannel.CLOSED) != 0);
+        assertEquals("Wrong channel state", ClientChannel.CLOSED | ClientChannel.EOF, state);
+
+        channel.close(false);
+        client.stop();
+    }
+
+    @Test
+    public void testClientNew() throws Exception {
+        SshClient client = SshClient.setUpDefaultClient();
+        client.start();
+        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
+        session.addPasswordIdentity("smx");
+        session.auth().verify();
+        ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
+
+        int state = channel.waitFor(ClientChannel.CLOSED, wait);
+        assertEquals("Wrong channel state", ClientChannel.CLOSED | ClientChannel.EOF, state);
 
         channel.close(false);
         client.stop();
@@ -96,7 +112,24 @@ public class KeepAliveTest extends BaseTest {
         ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
 
         int state = channel.waitFor(ClientChannel.CLOSED, wait);
-        assertTrue((state & ClientChannel.CLOSED) == 0);
+        assertEquals("Wrong channel state", ClientChannel.TIMEOUT, state);
+
+        channel.close(false);
+        client.stop();
+    }
+
+    @Test
+    public void testClientWithHeartBeatNew() throws Exception {
+        SshClient client = SshClient.setUpDefaultClient();
+        client.getProperties().put(ClientFactoryManager.HEARTBEAT_INTERVAL, Integer.toString(heartbeat));
+        client.start();
+        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
+        session.addPasswordIdentity("smx");
+        session.auth().verify();
+        ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
+
+        int state = channel.waitFor(ClientChannel.CLOSED, wait);
+        assertEquals("Wrong channel state", ClientChannel.TIMEOUT, state);
 
         channel.close(false);
         client.stop();
@@ -120,7 +153,32 @@ public class KeepAliveTest extends BaseTest {
 
         TestEchoShellFactory.TestEchoShell.latch.await();
         int state = channel.waitFor(ClientChannel.CLOSED, wait);
-        assertTrue((state & ClientChannel.CLOSED) != 0);
+        assertEquals("Wrong channel state", ClientChannel.CLOSED | ClientChannel.EOF | ClientChannel.OPENED, state);
+
+        channel.close(false);
+        client.stop();
+    }
+
+    @Test
+    public void testShellClosedOnClientTimeoutNew() throws Exception {
+        TestEchoShellFactory.TestEchoShell.latch = new CountDownLatch(1);
+
+        SshClient client = SshClient.setUpDefaultClient();
+        client.start();
+        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
+        session.addPasswordIdentity("smx");
+        session.auth().verify();
+        ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ByteArrayOutputStream err = new ByteArrayOutputStream();
+        channel.setOut(out);
+        channel.setErr(err);
+        channel.open().await();
+
+
+        TestEchoShellFactory.TestEchoShell.latch.await();
+        int state = channel.waitFor(ClientChannel.CLOSED, wait);
+        assertEquals("Wrong channel state", ClientChannel.CLOSED | ClientChannel.EOF | ClientChannel.OPENED, state);
 
         channel.close(false);
         client.stop();

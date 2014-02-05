@@ -131,7 +131,7 @@ public class ScpTest extends BaseTest {
         scp.download("target/scp/remote/out.txt", "target/scp/local/out2.txt");
         assertFileLength(new File("target/scp/local/out2.txt"), data.length(), 5000);
 
-        session.close(false);
+        session.close(false).await();
         client.stop();
     }
 
@@ -191,7 +191,7 @@ public class ScpTest extends BaseTest {
         assertFileLength(new File("target/scp/local/dir/out1.txt"), data.length(), 5000);
         assertFileLength(new File("target/scp/local/dir/out2.txt"), data.length(), 5000);
 
-        session.close(false);
+        session.close(false).await();
         client.stop();
     }
 
@@ -225,7 +225,7 @@ public class ScpTest extends BaseTest {
         assertFileLength(new File("target/scp/local/dir/out1.txt"), data.length(), 5000);
         assertFileLength(new File("target/scp/local/dir/out2.txt"), data.length(), 5000);
 
-        session.close(false);
+        session.close(false).await();
         client.stop();
     }
 
@@ -259,7 +259,7 @@ public class ScpTest extends BaseTest {
         assertFileLength(new File("target/scp/local/out1.txt"), data.length(), 5000);
         assertFileLength(new File("target/scp/local/out2.txt"), data.length(), 5000);
 
-        session.close(false);
+        session.close(false).await();
         client.stop();
     }
 
@@ -299,7 +299,7 @@ public class ScpTest extends BaseTest {
         assertFileLength(new File("target/scp/local/out1.txt"), data.length(), 5000);
         assertFileLength(new File("target/scp/local/dir/out2.txt"), data.length(), 5000);
 
-        session.close(false);
+        session.close(false).await();
         client.stop();
     }
 
@@ -349,7 +349,7 @@ public class ScpTest extends BaseTest {
         assertFileLength(new File("target/scp/local/dir/out2.txt"), data.length(), 5000);
         assertEquals(lastMod, new File("target/scp/local/dir/out2.txt").lastModified());
 
-        session.close(false);
+        session.close(false).await();
         client.stop();
     }
 
@@ -506,6 +506,8 @@ public class ScpTest extends BaseTest {
         os.flush();
         header = readLine(is);
         assertEquals("E", header);
+        os.write(0);
+        os.flush();
 
         c.disconnect();
         return new String(buffer);

@@ -39,6 +39,10 @@ public class PEMGeneratorHostKeyProviderTest extends BaseTest {
 
     @Test
     public void testDSA() {
+        if (!SecurityUtils.isBouncyCastleRegistered()) {
+            return;
+        }
+
         File path = new File("target/keys");
         path.mkdirs();
         path = new File(path, "simple.key");
@@ -67,6 +71,10 @@ public class PEMGeneratorHostKeyProviderTest extends BaseTest {
 
     @Test
     public void testRSA() {
+        if (!SecurityUtils.isBouncyCastleRegistered()) {
+            return;
+        }
+
         File path = new File("target/keys");
         path.mkdirs();
         path = new File(path, "simple.key");

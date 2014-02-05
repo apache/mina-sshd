@@ -215,7 +215,7 @@ public class SftpTest extends BaseTest {
         URI url = getClass().getClassLoader().getResource(SshClient.class.getName().replace('.', '/') + ".class").toURI();
         URI base = new File(System.getProperty("user.dir")).getAbsoluteFile().toURI();
         String path = new File(base.relativize(url).getPath()).getParent() + "/";
-//        String path = "target/classes/org/apache/sshd/";
+        path = path.replace('\\', '/');
         Vector res = c.ls(path);
         for (Object f : res) {
             System.out.println(f.toString());

@@ -45,6 +45,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -137,7 +138,7 @@ public class ServerTest extends BaseTest {
         client.start();
         ClientSession s = client.connect("localhost", port).await().getSession();
         int res = s.waitFor(ClientSession.CLOSED, 5000);
-        assertTrue((res & ClientSession.CLOSED) != 0);
+        assertEquals("Session should be closed", ClientSession.CLOSED | ClientSession.WAIT_AUTH, res);
     }
 
     @Test
@@ -145,7 +146,7 @@ public class ServerTest extends BaseTest {
         final CountDownLatch latch = new CountDownLatch(1);
         TestEchoShellFactory.TestEchoShell.latch = new CountDownLatch(1);
 
-        sshd.getProperties().put(SshServer.IDLE_TIMEOUT, "1000");
+        sshd.getProperties().put(SshServer.IDLE_TIMEOUT, "2500");
         sshd.getSessionFactory().addListener(new SessionListener() {
             public void sessionCreated(Session session) {
                 System.out.println("Session created");
@@ -170,7 +171,7 @@ public class ServerTest extends BaseTest {
         shell.setErr(err);
         shell.open().await();
         int res = s.waitFor(ClientSession.CLOSED, 5000);
-        assertTrue((res & ClientSession.CLOSED) != 0);
+        assertEquals("Session should be closed", ClientSession.CLOSED | ClientSession.AUTHED, res);
         assertTrue(latch.await(1, TimeUnit.SECONDS));
         assertTrue(TestEchoShellFactory.TestEchoShell.latch.await(1, TimeUnit.SECONDS));
     }
