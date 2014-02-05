@@ -29,7 +29,7 @@ import org.apache.sshd.common.util.Buffer;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface Session {
+public interface Session extends Closeable {
 
     /**
      * Returns the value of the user-defined attribute of this session.

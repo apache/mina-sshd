@@ -30,6 +30,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.Cipher;
+import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.Compression;
 import org.apache.sshd.common.Digest;
 import org.apache.sshd.common.FactoryManager;
@@ -42,19 +43,15 @@ import org.apache.sshd.common.Session;
 import org.apache.sshd.common.SessionListener;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.future.CloseFuture;
-import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.future.DefaultSshFuture;
 import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.future.SshFutureListener;
-import org.apache.sshd.common.io.IoCloseFuture;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.BufferUtils;
+import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.Readable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.apache.sshd.common.SshConstants.*;
 
@@ -71,7 +68,7 @@ import static org.apache.sshd.common.SshConstants.*;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractSession implements Session {
+public abstract class AbstractSession extends CloseableUtils.AbstractInnerCloseable implements Session {
 
     /**
      * Name of the property where this session is stored in the attributes of the
@@ -87,22 +84,12 @@ public abstract class AbstractSession implements Session {
 
     /** Client or server side */
     protected final boolean isServer;
-    /** Our logger */
-    protected final Logger log = LoggerFactory.getLogger(getClass());
     /** The factory manager used to retrieve factories of Ciphers, Macs and other objects */
     protected final FactoryManager factoryManager;
     /** The underlying MINA session */
     protected final IoSession ioSession;
     /** The pseudo random generator */
     protected final Random random;
-    /** Lock object for this session state */
-    protected final Object lock = new Object();
-    /**
-     * A future that will be set 'closed' when the connection is closed.
-     */
-    protected final CloseFuture closeFuture = new DefaultCloseFuture(lock);
-    /** The session is being closed */
-    protected volatile boolean closing;
     /** Boolean indicating if this session has been authenticated or not */
     protected boolean authed;
     /** The name of the authenticated useer */
@@ -422,7 +409,7 @@ public abstract class AbstractSession implements Session {
     public void exceptionCaught(Throwable t) {
         // Ignore exceptions that happen while closing
         synchronized (lock) {
-            if (closing) {
+            if (state.get() == OPENED) {
                 return;
             }
         }
@@ -441,49 +428,22 @@ public abstract class AbstractSession implements Session {
         close(true);
     }
 
-    /**
-     * Close this session.
-     * This method will close all channels, then close the underlying MINA session.
-     * The call will not block until the mina session is actually closed.
-     */
-    public CloseFuture close(final boolean immediately) {
-	    final AbstractSession s = this;
-        class IoSessionCloser implements SshFutureListener<IoCloseFuture> {
-            public void operationComplete(IoCloseFuture future) {
-                synchronized (lock) {
-                    log.debug("IoSession closed");
-                    closeFuture.setClosed();
-                    lock.notifyAll();
-                }
-                log.info("Session {}@{} closed", s.getUsername(), s.getIoSession().getRemoteAddress());
-                // Fire 'close' event
-                final ArrayList<SessionListener> l = new ArrayList<SessionListener>(listeners);
-                for (SessionListener sl : l) {
-                    sl.sessionClosed(s);
-                }
-            }
+    protected Closeable getInnerCloseable() {
+        return CloseableUtils.sequential(lock,
+                CloseableUtils.parallel(lock, getServices()), ioSession);
+    }
+
+    protected void postClose() {
+        super.postClose();
+        // Fire 'close' event
+        final ArrayList<SessionListener> l = new ArrayList<SessionListener>(listeners);
+        for (SessionListener sl : l) {
+            sl.sessionClosed(this);
         }
-        synchronized (lock) {
-            if (!closing) {
-                try {
-                    closing = true;
-                    if (currentService != null) {
-                        currentService.close(immediately).addListener(new SshFutureListener<CloseFuture>() {
-                            public void operationComplete(CloseFuture future) {
-                                log.debug("Closing IoSession");
-                                ioSession.close(immediately).addListener(new IoSessionCloser());
-                            }
-                        });
-                    } else {
-                        log.debug("Closing IoSession");
-                        ioSession.close(immediately).addListener(new IoSessionCloser());
-                    }
-                } catch (Throwable t) {
-                    log.warn("Error closing session", t);
-                }
-            }
-            return closeFuture;
-        }
+    }
+
+    protected Service[] getServices() {
+        return currentService != null ? new Service[] { currentService } : new Service[0];
     }
 
     /**
@@ -1067,6 +1027,7 @@ public abstract class AbstractSession implements Session {
      * @throws IOException if an error occured sending the packet
      */
     public void disconnect(int reason, String msg) throws IOException {
+        log.info("Disconnecting: {}", msg);
         Buffer buffer = createBuffer(SshConstants.SSH_MSG_DISCONNECT);
         buffer.putInt(reason);
         buffer.putString(msg);
@@ -1313,6 +1274,10 @@ public abstract class AbstractSession implements Session {
                 future.setException(future.getException());
             }
         }
+    }
+
+    public String toString() {
+        return getClass().getSimpleName() + "[" + getUsername() + "@" + getIoSession().getRemoteAddress() + "]";
     }
 
 }

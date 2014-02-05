@@ -192,7 +192,7 @@ public class DefaultTcpipForwarder implements TcpipForwarder, IoHandler {
     public void sessionClosed(IoSession session) throws Exception {
         TcpipClientChannel channel = (TcpipClientChannel) session.getAttribute(TcpipClientChannel.class);
         if (channel != null) {
-            LOGGER.debug("Session closed, will now close the channel");
+            LOGGER.debug("IoSession {} closed, will now close the channel", session);
             channel.close(false);
         }
     }

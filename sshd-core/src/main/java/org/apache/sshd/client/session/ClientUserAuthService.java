@@ -29,6 +29,7 @@ import org.apache.sshd.common.Session;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.CloseableUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -94,9 +95,7 @@ public class ClientUserAuthService implements Service {
         } else if (delegateOld != null) {
             return delegateOld.close(immediately);
         } else {
-            CloseFuture future = new DefaultCloseFuture(session.getLock());
-            future.setClosed();
-            return future;
+            return CloseableUtils.closed();
         }
     }
 

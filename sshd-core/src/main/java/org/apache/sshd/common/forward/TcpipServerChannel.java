@@ -110,7 +110,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
         out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA);
         IoHandler handler = new IoHandler() {
             public void messageReceived(IoSession session, Readable message) throws Exception {
-                if (closing.get()) {
+                if (state.get() != OPENED) {
                     log.debug("Ignoring write to channel {} in CLOSING state", id);
                 } else {
                     Buffer buffer = new Buffer();

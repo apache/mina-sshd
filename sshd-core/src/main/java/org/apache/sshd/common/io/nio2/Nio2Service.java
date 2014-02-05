@@ -25,13 +25,16 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.RuntimeSshException;
+import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoService;
 import org.apache.sshd.common.io.IoSession;
+import org.apache.sshd.common.util.CloseableUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,8 +82,11 @@ public abstract class Nio2Service implements IoService {
     }
 
     protected void doDispose() {
-        for (IoSession session : sessions.values()) {
-            session.close(true);
+        try {
+            CloseFuture future = CloseableUtils.parallel(sessions.values()).close(true);
+            future.await(5, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            logger.debug("Exception caught while closing session", e);
         }
         group.shutdown();
     }

@@ -24,6 +24,7 @@ import java.net.InetSocketAddress;
 import org.apache.sshd.client.channel.AbstractClientChannel;
 import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
+import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.SshdSocketAddress;
@@ -31,9 +32,9 @@ import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
-import org.apache.sshd.common.io.IoCloseFuture;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.CloseableUtils;
 
 /**
  * TODO Add javadoc
@@ -79,7 +80,7 @@ public class TcpipClientChannel extends AbstractClientChannel {
             throw new SshException("Session has been closed");
         }
         openFuture = new DefaultOpenFuture(lock);
-        log.info("Send SSH_MSG_CHANNEL_OPEN on channel {}", id);
+        log.info("Send SSH_MSG_CHANNEL_OPEN on channel {}", this);
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN);
         buffer.putString(type);
         buffer.putInt(id);
@@ -99,14 +100,8 @@ public class TcpipClientChannel extends AbstractClientChannel {
     }
 
     @Override
-    protected synchronized CloseFuture preClose(boolean immediately) {
-        final CloseFuture future = new DefaultCloseFuture(null);
-        serverSession.close(immediately).addListener(new SshFutureListener<IoCloseFuture>() {
-            public void operationComplete(IoCloseFuture f) {
-                future.setClosed();
-            }
-        });
-        return future;
+    protected Closeable getInnerCloseable() {
+        return CloseableUtils.sequential(serverSession, super.getInnerCloseable());
     }
 
     protected synchronized void doWriteData(byte[] data, int off, int len) throws IOException {

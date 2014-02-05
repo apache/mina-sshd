@@ -20,10 +20,11 @@ package org.apache.sshd.common.io;
 
 import java.net.SocketAddress;
 
+import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.util.Buffer;
 
-public interface IoSession {
+public interface IoSession extends Closeable {
 
     /**
      * Returns a unique identifier for this session.  Every session has its own
@@ -75,7 +76,7 @@ public interface IoSession {
      *                    {@code false} to close this session after all queued
      *                    write requests are flushed.
      */
-    IoCloseFuture close(boolean immediately);
+    CloseFuture close(boolean immediately);
 
     /**
      * Returns the IoService that created this session.

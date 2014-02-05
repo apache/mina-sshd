@@ -28,26 +28,23 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.LinkedTransferQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.future.DefaultSshFuture;
-import org.apache.sshd.common.io.IoCloseFuture;
+import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoService;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.Readable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  */
-public class Nio2Session implements IoSession {
+public class Nio2Session extends CloseableUtils.AbstractCloseable implements IoSession {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(Nio2Session.class);
     private static final AtomicLong sessionIdGenerator = new AtomicLong(100);
 
     private final long id = sessionIdGenerator.incrementAndGet();
@@ -58,8 +55,6 @@ public class Nio2Session implements IoSession {
     private final SocketAddress localAddress;
     private final SocketAddress remoteAddress;
 
-    private final AtomicBoolean closing = new AtomicBoolean();
-    private final IoCloseFuture closeFuture = new DefaultIoCloseFuture(null);
     private final Queue<DefaultIoWriteFuture> writes = new LinkedTransferQueue<DefaultIoWriteFuture>();
     private final AtomicReference<DefaultIoWriteFuture> currentWrite = new AtomicReference<DefaultIoWriteFuture>();
 
@@ -69,7 +64,7 @@ public class Nio2Session implements IoSession {
         this.socket = socket;
         this.localAddress = socket.getLocalAddress();
         this.remoteAddress = socket.getRemoteAddress();
-        LOGGER.debug("Creating Nio2Session on {} from {}", localAddress, remoteAddress);
+        log.debug("Creating IoSession on {} from {}", localAddress, remoteAddress);
     }
 
     public long getId() {
@@ -106,10 +101,10 @@ public class Nio2Session implements IoSession {
     }
 
     public IoWriteFuture write(Buffer buffer) {
-        LOGGER.debug("Writing {} bytes", buffer.available());
+        log.debug("Writing {} bytes", buffer.available());
         ByteBuffer buf = ByteBuffer.wrap(buffer.array(), buffer.rpos(), buffer.available());
         final DefaultIoWriteFuture future = new DefaultIoWriteFuture(null, buf);
-        if (closing.get()) {
+        if (state.get() != OPENED) {
             Throwable exc = new ClosedChannelException();
             future.setException(exc);
             exceptionCaught(exc);
@@ -121,15 +116,15 @@ public class Nio2Session implements IoSession {
     }
 
     private void exceptionCaught(Throwable exc) {
-        if (!closing.get()) {
-            if (!socket.isOpen()) {
+        if (!closeFuture.isClosed()) {
+            if (state.get() != OPENED || !socket.isOpen()) {
                 close(true);
             } else {
                 try {
-                    LOGGER.debug("Caught exception, now calling handler");
+                    log.debug("Caught exception, now calling handler");
                     handler.exceptionCaught(this, exc);
                 } catch (Throwable t) {
-                    LOGGER.info("Exception handler threw exception, closing the session", t);
+                    log.info("Exception handler threw exception, closing the session", t);
                     close(true);
                 }
             }
@@ -145,6 +140,7 @@ public class Nio2Session implements IoSession {
                         if (future.buffer.hasRemaining()) {
                             socket.write(future.buffer, null, this);
                         } else {
+                            log.debug("Finished writing");
                             future.setWritten();
                             finishWrite();
                         }
@@ -167,49 +163,38 @@ public class Nio2Session implements IoSession {
         }
     }
 
-    public IoCloseFuture close(boolean immediately) {
-        if (closing.compareAndSet(false, true)) {
-            LOGGER.debug("Closing Nio2Session");
-            if (!immediately) {
-                try {
-                    boolean logged = false;
-                    synchronized (writes) {
-                        while (!writes.isEmpty()) {
-                            if (!logged) {
-                                LOGGER.debug("Waiting for writes to finish");
-                                logged = true;
-                            }
-                            writes.wait();
-                        }
-                    }
-                } catch (InterruptedException e) {
-                    // Wait has been interrupted, just close the socket
-                }
-            }
-            for (;;) {
-                DefaultIoWriteFuture future = writes.poll();
-                if (future != null) {
-                    future.setException(new ClosedChannelException());
-                } else {
-                    break;
-                }
-            }
-            try {
-                LOGGER.debug("Closing socket");
-                socket.close();
-            } catch (IOException e) {
-                LOGGER.info("Exception caught while closing session", e);
-            }
-            service.sessionClosed(this);
-            closeFuture.setClosed();
-            try {
-                handler.sessionClosed(this);
-            } catch (Exception e) {
-                // Ignore
-                LOGGER.debug("Exception caught while calling IoHandler#sessionClosed", e);
+    @Override
+    protected SshFuture doCloseGracefully() {
+        synchronized (writes) {
+            return CloseableUtils.parallel(writes.toArray(new SshFuture[writes.size()]));
+        }
+    }
+
+    @Override
+    protected void doCloseImmediately() {
+        for (;;) {
+            DefaultIoWriteFuture future = writes.poll();
+            if (future != null) {
+                future.setException(new ClosedChannelException());
+            } else {
+                break;
             }
         }
-        return closeFuture;
+        try {
+            socket.close();
+        } catch (IOException e) {
+            log.info("Exception caught while closing socket", e);
+        }
+        service.sessionClosed(this);
+        closeFuture.setClosed();
+        state.set(CLOSED);
+        try {
+            handler.sessionClosed(this);
+        } catch (Exception e) {
+            // Ignore
+            log.debug("Exception caught while calling IoHandler#sessionClosed", e);
+        }
+        log.debug("{} closed", this);
     }
 
     public IoService getService() {
@@ -222,7 +207,7 @@ public class Nio2Session implements IoSession {
             public void completed(Integer result, Object attachment) {
                 try {
                     if (result >= 0) {
-                        LOGGER.debug("Read {} bytes", result);
+                        log.debug("Read {} bytes", result);
                         buffer.flip();
                         Readable buf = new Readable() {
                             public int available() {
@@ -235,7 +220,7 @@ public class Nio2Session implements IoSession {
                         handler.messageReceived(Nio2Session.this, buf);
                         startReading();
                     } else {
-                        LOGGER.debug("Socket has been disconnected, closing IoSession now");
+                        log.debug("Socket has been disconnected, closing IoSession now");
                         Nio2Session.this.close(true);
                     }
                 } catch (Throwable exc) {
@@ -246,18 +231,6 @@ public class Nio2Session implements IoSession {
                 exceptionCaught(exc);
             }
         });
-    }
-
-    static class DefaultIoCloseFuture extends DefaultSshFuture<IoCloseFuture> implements IoCloseFuture {
-        DefaultIoCloseFuture(Object lock) {
-            super(lock);
-        }
-        public boolean isClosed() {
-            return getValue() instanceof Boolean;
-        }
-        public void setClosed() {
-            setValue(Boolean.TRUE);
-        }
     }
 
     static class DefaultIoWriteFuture extends DefaultSshFuture<IoWriteFuture> implements IoWriteFuture {
@@ -282,5 +255,9 @@ public class Nio2Session implements IoSession {
             }
             setValue(exception);
         }
+    }
+
+    public String toString() {
+        return getClass().getSimpleName() + "[local=" + localAddress + ", remote=" + remoteAddress + "]";
     }
 }

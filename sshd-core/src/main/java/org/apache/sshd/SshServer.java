@@ -30,7 +30,6 @@ import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -62,7 +61,6 @@ import org.apache.sshd.common.file.nativefs.NativeFileSystemFactory;
 import org.apache.sshd.common.forward.DefaultTcpipForwarderFactory;
 import org.apache.sshd.common.forward.TcpipServerChannel;
 import org.apache.sshd.common.future.CloseFuture;
-import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.DefaultIoServiceFactory;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoServiceFactory;
@@ -83,6 +81,7 @@ import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.signature.SignatureDSA;
 import org.apache.sshd.common.signature.SignatureECDSA;
 import org.apache.sshd.common.signature.SignatureRSA;
+import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.server.Command;
@@ -364,25 +363,19 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     }
 
     public void stop(boolean immediately) throws InterruptedException {
-        List<AbstractSession> sessions = new ArrayList<AbstractSession>();
+        List<AbstractSession> sessions;
         if (acceptor != null) {
             acceptor.unbind();
             sessions = getActiveSessions();
+        } else {
+            sessions = Collections.emptyList();
         }
-        final CountDownLatch latch = new CountDownLatch(sessions.size());
-        SshFutureListener<CloseFuture> listener = new SshFutureListener<CloseFuture>() {
-            public void operationComplete(CloseFuture future) {
-                latch.countDown();
-            }
-        };
-        for (AbstractSession session : sessions) {
-            session.close(immediately).addListener(listener);
-        }
+        CloseFuture future = CloseableUtils.parallel(sessions).close(immediately);
 
         stopSessionTimeoutListener();
 
         if (!immediately) {
-            latch.await();
+            future.await();
         }
         if (acceptor != null) {
             acceptor.dispose();

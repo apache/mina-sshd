@@ -28,6 +28,7 @@ import org.apache.sshd.common.channel.ChannelPipedInputStream;
 import org.apache.sshd.common.channel.ChannelPipedOutputStream;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.CloseableUtils;
 
 /**
  * TODO Add javadoc
@@ -99,7 +100,7 @@ public class ChannelSession extends AbstractClientChannel {
                 }
             }
         } catch (Exception e) {
-            if (!closing.get()) {
+            if (state.get() == CloseableUtils.AbstractCloseable.OPENED) {
                 log.info("Caught exception", e);
                 close(false);
             }

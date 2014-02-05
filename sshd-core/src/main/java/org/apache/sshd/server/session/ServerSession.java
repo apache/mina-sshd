@@ -94,7 +94,7 @@ public class ServerSession extends AbstractSession {
      * @throws IOException
      */
     protected void checkForTimeouts() throws IOException {
-        if (!closing) {
+        if (state.get() == OPENED) {
             long now = System.currentTimeMillis();
             if (!authed && now > authTimeoutTimestamp) {
                 disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "Session has timed out waiting for authentication after " + authTimeoutMs + " ms.");

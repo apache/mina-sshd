@@ -31,7 +31,7 @@ import org.apache.sshd.common.util.Buffer;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface Channel {
+public interface Channel extends Closeable {
 
     int getId();
 

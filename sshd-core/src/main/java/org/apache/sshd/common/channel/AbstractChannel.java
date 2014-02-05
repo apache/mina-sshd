@@ -21,9 +21,10 @@ package org.apache.sshd.common.channel;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.common.Channel;
+import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.RequestHandler;
 import org.apache.sshd.common.Session;
@@ -35,31 +36,30 @@ import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.BufferUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.sshd.common.util.CloseableUtils;
 
 /**
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractChannel implements Channel {
+public abstract class AbstractChannel extends CloseableUtils.AbstractInnerCloseable implements Channel {
 
     public static final int DEFAULT_WINDOW_SIZE = 0x200000;
     public static final int DEFAULT_PACKET_SIZE = 0x8000;
 
-    protected final Logger log = LoggerFactory.getLogger(getClass());
-    protected final Object lock = new Object();
+    protected static final int CLOSE_SENT = 0x01;
+    protected static final int CLOSE_RECV = 0x02;
+
     protected final Window localWindow = new Window(this, null, getClass().getName().contains(".client."), true);
     protected final Window remoteWindow = new Window(this, null, getClass().getName().contains(".client."), false);
     protected ConnectionService service;
     protected Session session;
     protected int id;
     protected int recipient;
-    protected final CloseFuture closeFuture = new DefaultCloseFuture(lock);
     protected volatile boolean eof;
-    protected final AtomicBoolean closing = new AtomicBoolean();
-    protected boolean closedByOtherSide;
+    protected AtomicInteger gracefulState = new AtomicInteger();
+    private DefaultCloseFuture gracefulFuture = new DefaultCloseFuture(lock);
     protected final List<RequestHandler<Channel>> handlers = new ArrayList<RequestHandler<Channel>>();
 
     public void addRequestHandler(RequestHandler<Channel> handler) {
@@ -89,7 +89,7 @@ public abstract class AbstractChannel implements Channel {
     public void handleRequest(Buffer buffer) throws IOException {
         String req = buffer.getString();
         boolean wantReply = buffer.getBoolean();
-        log.debug("Received SSH_MSG_CHANNEL_REQUEST {} on channel {} (wantReply {})", new Object[] { req, id, wantReply });
+        log.debug("Received SSH_MSG_CHANNEL_REQUEST {} on channel {} (wantReply {})", new Object[] { req, this, wantReply });
         for (RequestHandler<Channel> handler : handlers) {
             RequestHandler.Result result;
             try {
@@ -138,72 +138,56 @@ public abstract class AbstractChannel implements Channel {
         }
     }
 
-    public CloseFuture close(boolean immediately) {
-        if (closing.compareAndSet(false, true)) {
-            if (immediately) {
-                log.debug("Closing channel {} immediately", id);
-                preClose(immediately).addListener(new SshFutureListener<CloseFuture>() {
-                    public void operationComplete(CloseFuture future) {
-                        postClose();
-                        closeFuture.setClosed();
-                        notifyStateChanged();
-                        service.unregisterChannel(AbstractChannel.this);
-                    }
-                });
-            } else {
-                log.debug("Closing channel {} gracefully", id);
-                preClose(immediately).addListener(new SshFutureListener<CloseFuture>() {
-                    public void operationComplete(CloseFuture future) {
-                        log.debug("Send SSH_MSG_CHANNEL_CLOSE on channel {}", id);
-                        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_CLOSE);
-                        buffer.putInt(recipient);
-                        try {
-                            session.writePacket(buffer).addListener(new SshFutureListener<IoWriteFuture>() {
-                                public void operationComplete(IoWriteFuture future) {
-                                    if (closedByOtherSide) {
-                                        log.debug("Message SSH_MSG_CHANNEL_CLOSE written on channel {}", id);
-                                        postClose();
-                                        closeFuture.setClosed();
-                                        notifyStateChanged();
-                                    }
-                                }
-                            });
-                        } catch (IOException e) {
-                            log.debug("Exception caught while writing SSH_MSG_CHANNEL_CLOSE packet on channel " + id, e);
-                            postClose();
-                            closeFuture.setClosed();
-                            notifyStateChanged();
-                        }
-                    }
-                });
-            }
-        }
-        return closeFuture;
-    }
-
     public void handleClose() throws IOException {
-        log.debug("Received SSH_MSG_CHANNEL_CLOSE on channel {}", id);
-        closedByOtherSide = !closing.get();
-        if (closedByOtherSide) {
+            log.debug("Received SSH_MSG_CHANNEL_CLOSE on channel {}", this);
+        if (gracefulState.compareAndSet(0, CLOSE_RECV)) {
             close(false);
-        } else {
-            postClose();
-            closeFuture.setClosed();
-            notifyStateChanged();
+        } else if (gracefulState.compareAndSet(CLOSE_SENT, CLOSE_SENT | CLOSE_RECV)) {
+            gracefulFuture.setClosed();
         }
     }
 
-    protected CloseFuture preClose(boolean immediately) {
-        CloseFuture future = new DefaultCloseFuture(lock);
-        future.setClosed();
-        return future;
+    protected Closeable getGracefulCloseable() {
+        return new Closeable() {
+            public CloseFuture close(boolean immediately) {
+                if (!immediately) {
+                    log.debug("Send SSH_MSG_CHANNEL_CLOSE on channel {}", AbstractChannel.this);
+                    Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_CLOSE);
+                    buffer.putInt(recipient);
+                    try {
+                        session.writePacket(buffer).addListener(new SshFutureListener<IoWriteFuture>() {
+                            public void operationComplete(IoWriteFuture future) {
+                                log.debug("Message SSH_MSG_CHANNEL_CLOSE written on channel {}", AbstractChannel.this);
+                                if (gracefulState.compareAndSet(0, CLOSE_SENT)) {
+                                    // Waiting for CLOSE message to come back from the remote side
+                                } else if (gracefulState.compareAndSet(CLOSE_RECV, CLOSE_SENT | CLOSE_RECV)) {
+                                    gracefulFuture.setValue(true);
+                                }
+                            }
+                        });
+                    } catch (IOException e) {
+                        log.debug("Exception caught while writing SSH_MSG_CHANNEL_CLOSE packet on channel " + AbstractChannel.this, e);
+                        close(true);
+                    }
+                } else {
+                    gracefulFuture.setClosed();
+                }
+                return gracefulFuture;
+            }
+        };
+    }
+
+    protected Closeable getInnerCloseable() {
+        return getGracefulCloseable();
     }
 
     protected void postClose() {
+        super.postClose();
+        service.unregisterChannel(AbstractChannel.this);
     }
 
     protected void writePacket(Buffer buffer) throws IOException {
-        if (!closing.get()) {
+        if (state.get() == OPENED) {
             session.writePacket(buffer);
         } else {
             log.debug("Discarding output packet because channel is being closed");
@@ -215,7 +199,7 @@ public abstract class AbstractChannel implements Channel {
         if (len < 0 || len > Buffer.MAX_LEN) {
             throw new IllegalStateException("Bad item length: " + len);
         }
-        log.debug("Received SSH_MSG_CHANNEL_DATA on channel {}", id);
+        log.debug("Received SSH_MSG_CHANNEL_DATA on channel {}", this);
         if (log.isTraceEnabled()) {
             log.trace("Received channel data: {}", BufferUtils.printHex(buffer.array(), buffer.rpos(), len));
         }
@@ -226,7 +210,7 @@ public abstract class AbstractChannel implements Channel {
         int ex = buffer.getInt();
         // Only accept extended data for stderr
         if (ex != 1) {
-            log.debug("Send SSH_MSG_CHANNEL_FAILURE on channel {}", id);
+            log.debug("Send SSH_MSG_CHANNEL_FAILURE on channel {}", this);
             buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_FAILURE);
             buffer.putInt(recipient);
             writePacket(buffer);
@@ -236,7 +220,7 @@ public abstract class AbstractChannel implements Channel {
         if (len < 0 || len > Buffer.MAX_LEN) {
             throw new IllegalStateException("Bad item length: " + len);
         }
-        log.debug("Received SSH_MSG_CHANNEL_EXTENDED_DATA on channel {}", id);
+        log.debug("Received SSH_MSG_CHANNEL_EXTENDED_DATA on channel {}", this);
         if (log.isTraceEnabled()) {
             log.trace("Received channel extended data: {}", BufferUtils.printHex(buffer.array(), buffer.rpos(), len));
         }
@@ -244,19 +228,19 @@ public abstract class AbstractChannel implements Channel {
     }
 
     public void handleEof() throws IOException {
-        log.debug("Received SSH_MSG_CHANNEL_EOF on channel {}", id);
+        log.debug("Received SSH_MSG_CHANNEL_EOF on channel {}", this);
         eof = true;
         notifyStateChanged();
     }
 
     public void handleWindowAdjust(Buffer buffer) throws IOException {
-        log.debug("Received SSH_MSG_CHANNEL_WINDOW_ADJUST on channel {}", id);
+        log.debug("Received SSH_MSG_CHANNEL_WINDOW_ADJUST on channel {}", this);
         int window = buffer.getInt();
         remoteWindow.expand(window);
     }
 
     public void handleFailure() throws IOException {
-        log.debug("Received SSH_MSG_CHANNEL_FAILURE on channel {}", id);
+        log.debug("Received SSH_MSG_CHANNEL_FAILURE on channel {}", this);
         // TODO: do something to report failed requests?
     }
 
@@ -265,7 +249,7 @@ public abstract class AbstractChannel implements Channel {
     protected abstract void doWriteExtendedData(byte[] data, int off, int len) throws IOException;
 
     protected void sendEof() throws IOException {
-        log.debug("Send SSH_MSG_CHANNEL_EOF on channel {}", id);
+        log.debug("Send SSH_MSG_CHANNEL_EOF on channel {}", this);
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_EOF);
         buffer.putInt(recipient);
         writePacket(buffer);
@@ -283,5 +267,9 @@ public abstract class AbstractChannel implements Channel {
         buffer.putInt(recipient);
         buffer.putInt(len);
         writePacket(buffer);
+    }
+
+    public String toString() {
+        return getClass().getSimpleName() + "[id=" + id + ", recipient=" + recipient + "]";
     }
 }

@@ -34,6 +34,7 @@ import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.UserAuth;
 import org.slf4j.Logger;
@@ -112,6 +113,7 @@ public class ServerUserAuthService implements Service {
         Boolean authed = Boolean.FALSE;
 
         if (cmd == SshConstants.SSH_MSG_USERAUTH_REQUEST) {
+            log.debug("Received SSH_MSG_USERAUTH_REQUEST");
             if (this.currentAuth != null) {
                 this.currentAuth.destroy();
                 this.currentAuth = null;
@@ -152,6 +154,7 @@ public class ServerUserAuthService implements Service {
                 // This should not happen
                 throw new IllegalStateException();
             }
+            log.debug("Received authentication message {}", cmd);
             buffer.rpos(buffer.rpos() - 1);
             try {
                 authed = currentAuth.next(buffer);
@@ -250,9 +253,8 @@ public class ServerUserAuthService implements Service {
     }
 
     public CloseFuture close(boolean immediately) {
-        CloseFuture future = new DefaultCloseFuture(this);
-        future.setClosed();
-        return future;
+        log.debug("Closing authentication service");
+        return CloseableUtils.closed();
     }
 
     private ServerFactoryManager getFactoryManager() {

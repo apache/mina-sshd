@@ -21,19 +21,21 @@ package org.apache.sshd.common.io.mina;
 import java.net.SocketAddress;
 
 import org.apache.mina.core.buffer.IoBuffer;
-import org.apache.mina.core.future.CloseFuture;
+import org.apache.mina.core.future.IoFuture;
 import org.apache.mina.core.future.IoFutureListener;
 import org.apache.mina.core.future.WriteFuture;
+import org.apache.sshd.common.Closeable;
+import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.future.DefaultSshFuture;
-import org.apache.sshd.common.io.IoCloseFuture;
 import org.apache.sshd.common.io.IoService;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.CloseableUtils;
 
 /**
  */
-public class MinaSession implements IoSession {
+public class MinaSession extends CloseableUtils.AbstractInnerCloseable implements IoSession {
 
     private final MinaService service;
     private final org.apache.mina.core.session.IoSession session;
@@ -77,27 +79,19 @@ public class MinaSession implements IoSession {
         return session.write(buffer);
     }
 
-    public IoCloseFuture close(boolean immediately) {
-        class Future extends DefaultSshFuture<IoCloseFuture> implements IoCloseFuture {
-            Future(Object lock) {
-                super(lock);
+    @Override
+    protected Closeable getInnerCloseable() {
+        return new Closeable() {
+            public org.apache.sshd.common.future.CloseFuture close(boolean immediately) {
+                final DefaultCloseFuture future = new DefaultCloseFuture(lock);
+                session.close(false).addListener(new IoFutureListener<IoFuture>() {
+                    public void operationComplete(IoFuture f) {
+                        future.setValue(true);
+                    }
+                });
+                return future;
             }
-
-            public boolean isClosed() {
-                return getValue() instanceof Boolean;
-            }
-
-            public void setClosed() {
-                setValue(Boolean.TRUE);
-            }
-        }
-        final IoCloseFuture future = new Future(null);
-        session.close(immediately).addListener(new IoFutureListener<CloseFuture>() {
-            public void operationComplete(CloseFuture cf) {
-                future.setClosed();
-            }
-        });
-        return future;
+        };
     }
 
     public IoWriteFuture write(Buffer buffer) {
@@ -143,4 +137,7 @@ public class MinaSession implements IoSession {
         return service;
     }
 
+    public String toString() {
+        return getClass().getSimpleName() + "[local=" + session.getLocalAddress() + ", remote=" + session.getRemoteAddress() + "]";
+    }
 }

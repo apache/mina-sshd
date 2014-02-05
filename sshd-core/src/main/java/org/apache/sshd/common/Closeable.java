@@ -16,27 +16,29 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.io;
+package org.apache.sshd.common;
 
-import org.apache.sshd.common.future.SshFuture;
+import org.apache.sshd.common.future.CloseFuture;
 
 /**
- * An {@link org.apache.sshd.common.future.SshFuture} for asynchronous close requests.
+ * A {@code Closeable} is a resource that can be closed.
+ * The close method is invoked to release resources that the object is
+ * holding.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface IoCloseFuture extends SshFuture<IoCloseFuture> {
+public interface Closeable {
 
     /**
-     * Returns <tt>true</tt> if the close request is finished and the target is closed.
+     * Close this resource asynchronously and return a future.
+     * Resources support two closing modes: a graceful mode
+     * which will cleanly close the resource and an immediate mode
+     * which will close the resources abruptly.
+     *
+     * @param immediately <code>true</code> if the resource should be shut down abruptly,
+     *                    <code>false</code> for a graceful close
+     * @return a future
      */
-    boolean isClosed();
-
-    /**
-     * Marks this future as closed and notifies all threads waiting for this
-     * future.  This method is invoked by SSHD internally.  Please do not call
-     * this method directly.
-     */
-    void setClosed();
+    CloseFuture close(boolean immediately);
 
 }

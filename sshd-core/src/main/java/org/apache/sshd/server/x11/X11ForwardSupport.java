@@ -25,20 +25,17 @@ import java.net.InetSocketAddress;
 import org.apache.sshd.client.channel.AbstractClientChannel;
 import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
+import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.ChannelOutputStream;
-import org.apache.sshd.common.future.CloseFuture;
-import org.apache.sshd.common.future.DefaultCloseFuture;
-import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoAcceptor;
-import org.apache.sshd.common.io.IoCloseFuture;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.Readable;
-import org.apache.sshd.server.session.ServerSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -195,14 +192,8 @@ public class X11ForwardSupport implements IoHandler {
         }
 
         @Override
-        protected synchronized CloseFuture preClose(boolean immediately) {
-            final CloseFuture future = new DefaultCloseFuture(null);
-            serverSession.close(immediately).addListener(new SshFutureListener<IoCloseFuture>() {
-                public void operationComplete(IoCloseFuture f) {
-                    future.setClosed();
-                }
-            });
-            return future;
+        protected Closeable getInnerCloseable() {
+            return CloseableUtils.sequential(serverSession, super.getInnerCloseable());
         }
 
         protected synchronized void doWriteData(byte[] data, int off, int len) throws IOException {

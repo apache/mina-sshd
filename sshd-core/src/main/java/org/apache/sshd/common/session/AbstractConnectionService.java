@@ -29,6 +29,7 @@ import org.apache.sshd.agent.common.AgentForwardSupport;
 import org.apache.sshd.client.channel.AbstractClientChannel;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.Channel;
+import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.RequestHandler;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.Session;
@@ -39,6 +40,7 @@ import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.server.channel.OpenChannelException;
 import org.apache.sshd.server.x11.X11ForwardSupport;
 import org.slf4j.Logger;
@@ -51,9 +53,7 @@ import static org.apache.sshd.common.SshConstants.*;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractConnectionService implements ConnectionService {
-
-    protected final Logger log = LoggerFactory.getLogger(getClass());
+public abstract class AbstractConnectionService extends CloseableUtils.AbstractInnerCloseable implements ConnectionService {
 
     /** Map of channels keyed by the identifier */
     protected final Map<Integer, Channel> channels = new ConcurrentHashMap<Integer, Channel>();
@@ -66,8 +66,6 @@ public abstract class AbstractConnectionService implements ConnectionService {
     protected final TcpipForwarder tcpipForwarder;
     protected final AgentForwardSupport agentForward;
     protected final X11ForwardSupport x11Forward;
-    protected final CloseFuture closeFuture;
-    protected volatile boolean closing;
     protected boolean allowMoreSessions = true;
 
     protected AbstractConnectionService(Session session) {
@@ -75,7 +73,6 @@ public abstract class AbstractConnectionService implements ConnectionService {
         agentForward = new AgentForwardSupport(this);
         x11Forward = new X11ForwardSupport(this);
         tcpipForwarder = session.getFactoryManager().getTcpipForwarderFactory().create(this);
-        closeFuture = new DefaultCloseFuture(getSession().getLock());
     }
 
     public AbstractSession getSession() {
@@ -89,37 +86,19 @@ public abstract class AbstractConnectionService implements ConnectionService {
         return tcpipForwarder;
     }
 
-    public CloseFuture close(boolean immediately) {
-        tcpipForwarder.close();
-        agentForward.close();
-        x11Forward.close();
-        synchronized (getSession().getLock()) {
-            if (!closing) {
-                try {
-                    closing = true;
-                    log.debug("Closing session");
-                    List<Channel> channelToClose = new ArrayList<Channel>(channels.values());
-                    if (channelToClose.size() > 0) {
-                        final AtomicInteger latch = new AtomicInteger(channelToClose.size());
-                        for (Channel channel : channelToClose) {
-                            log.debug("Closing channel {}", channel.getId());
-                            channel.close(immediately).addListener(new SshFutureListener<CloseFuture>() {
-                                public void operationComplete(CloseFuture future) {
-                                    if (latch.decrementAndGet() == 0) {
-                                        closeFuture.setClosed();
-                                    }
-                                }
-                            });
-                        }
-                    } else {
-                        closeFuture.setClosed();
+    @Override
+    protected Closeable getInnerCloseable() {
+        return CloseableUtils.sequential(
+                new Closeable() {
+                    public CloseFuture close(boolean immediately) {
+                        tcpipForwarder.close();
+                        agentForward.close();
+                        x11Forward.close();
+                        return CloseableUtils.closed();
                     }
-                } catch (Throwable t) {
-                    log.warn("Error closing session", t);
-                }
-            }
-            return closeFuture;
-        }
+                },
+                CloseableUtils.parallel(channels.values())
+        );
     }
 
     protected int getNextChannelId() {
@@ -134,6 +113,9 @@ public abstract class AbstractConnectionService implements ConnectionService {
      * @throws IOException
      */
     public int registerChannel(Channel channel) throws IOException {
+        if (state.get() != OPENED) {
+            throw new IllegalStateException("Session is being closed");
+        }
         int channelId = getNextChannelId();
         channel.init(this, session, channelId);
         channels.put(channelId, channel);
@@ -323,7 +305,7 @@ public abstract class AbstractConnectionService implements ConnectionService {
 
         log.debug("Received SSH_MSG_CHANNEL_OPEN {}", type);
 
-        if (closing) {
+        if (state.get() != OPENED) {
             Buffer buf = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_FAILURE);
             buf.putInt(id);
             buf.putInt(SshConstants.SSH_OPEN_CONNECT_FAILED);
@@ -440,4 +422,7 @@ public abstract class AbstractConnectionService implements ConnectionService {
         ((AbstractSession) session).requestFailure(buffer);
     }
 
+    public String toString() {
+        return getClass().getSimpleName();
+    }
 }

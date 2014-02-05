@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.common.Channel;
+import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.ForwardingFilter;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.PtyMode;
@@ -43,6 +44,7 @@ import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.IoUtils;
 import org.apache.sshd.common.util.LoggingFilterOutputStream;
 import org.apache.sshd.server.ChannelSessionAware;
@@ -184,37 +186,44 @@ public class ChannelSession extends AbstractServerChannel {
     }
 
     @Override
-    protected CloseFuture preClose(boolean immediately) {
-        if (immediately) {
-            commandExitFuture.setClosed();
-        } else if (!commandExitFuture.isClosed()) {
-            log.debug("Wait 5s for shell to exit cleanly");
-            IoUtils.closeQuietly(receiver);
-            final TimerTask task = new TimerTask() {
-                @Override
-                public void run() {
-                    commandExitFuture.setClosed();
-                }
-            };
-            long timeout = DEFAULT_COMMAND_EXIT_TIMEOUT;
-            String val = getSession().getFactoryManager().getProperties().get(ServerFactoryManager.COMMAND_EXIT_TIMEOUT);
-            if (val != null) {
-                try {
-                   timeout = Long.parseLong(val);
-                } catch (NumberFormatException e) {
-                    // Ignore
-                }
-            }
-            getSession().getFactoryManager().getScheduledExecutorService().schedule(task, timeout, TimeUnit.MILLISECONDS);
-            commandExitFuture.addListener(new SshFutureListener<CloseFuture>() {
-                public void operationComplete(CloseFuture future) {
-                    task.cancel();
-                }
-            });
-        }
-        return commandExitFuture;
+    protected Closeable getInnerCloseable() {
+        return CloseableUtils.sequential(getCommandCloseable(), super.getInnerCloseable());
     }
 
+    protected Closeable getCommandCloseable() {
+        return new Closeable() {
+            public CloseFuture close(boolean immediately) {
+                if (immediately) {
+                    commandExitFuture.setClosed();
+                } else if (!commandExitFuture.isClosed()) {
+                    IoUtils.closeQuietly(receiver);
+                    final TimerTask task = new TimerTask() {
+                        @Override
+                        public void run() {
+                            commandExitFuture.setClosed();
+                        }
+                    };
+                    long timeout = DEFAULT_COMMAND_EXIT_TIMEOUT;
+                    String val = getSession().getFactoryManager().getProperties().get(ServerFactoryManager.COMMAND_EXIT_TIMEOUT);
+                    if (val != null) {
+                        try {
+                            timeout = Long.parseLong(val);
+                        } catch (NumberFormatException e) {
+                            // Ignore
+                        }
+                    }
+                    log.debug("Wait {} ms for shell to exit cleanly", timeout);
+                    getSession().getFactoryManager().getScheduledExecutorService().schedule(task, timeout, TimeUnit.MILLISECONDS);
+                    commandExitFuture.addListener(new SshFutureListener<CloseFuture>() {
+                        public void operationComplete(CloseFuture future) {
+                            task.cancel();
+                        }
+                    });
+                }
+                return commandExitFuture;
+            }
+        };
+    }
     @Override
     protected void postClose() {
         if (command != null) {
@@ -234,7 +243,7 @@ public class ChannelSession extends AbstractServerChannel {
 
     protected void doWriteData(byte[] data, int off, int len) throws IOException {
         // If we're already closing, ignore incoming data
-        if (closing.get()) {
+        if (state.get() != OPENED) {
             return;
         }
         if (receiver != null) {
@@ -524,12 +533,14 @@ public class ChannelSession extends AbstractServerChannel {
     }
 
     protected void closeShell(int exitValue) throws IOException {
-        if (!closing.get()) {
+        if (state.get() == OPENED) {
             sendEof();
             sendExitStatus(exitValue);
+            commandExitFuture.setClosed();
             close(false);
+        } else {
+            commandExitFuture.setClosed();
         }
-        commandExitFuture.setClosed();
     }
 
     private class ChannelSessionRequestHandler implements RequestHandler<Channel> {

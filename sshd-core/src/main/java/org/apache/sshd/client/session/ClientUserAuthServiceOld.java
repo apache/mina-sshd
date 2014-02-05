@@ -31,6 +31,7 @@ import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.CloseableUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -168,12 +169,11 @@ public class ClientUserAuthServiceOld implements Service {
     }
 
     public CloseFuture close(boolean immediately) {
+        log.debug("Closing authentication service");
         if (!authFuture.isDone()) {
             authFuture.setException(new SshException("Session is closed"));
         }
-        CloseFuture future = new DefaultCloseFuture(lock);
-        future.setClosed();
-        return future;
+        return CloseableUtils.closed();
     }
 
     public AuthFuture auth(UserAuth userAuth) throws IOException {

@@ -102,6 +102,18 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         sendKexInit();
     }
 
+    protected Service[] getServices() {
+        Service[] services;
+        if (nextService != null) {
+            services = new Service[] { currentService, nextService };
+        } else if (currentService != null) {
+            services = new Service[] { currentService };
+        } else {
+            services = new Service[0];
+        }
+        return services;
+    }
+
     public ClientFactoryManager getFactoryManager() {
         return (ClientFactoryManager) factoryManager;
     }
@@ -257,7 +269,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
             for (;;) {
                 int cond = 0;
                 if (closeFuture.isClosed()) {
-                    cond |= CLOSED;
+                    cond |= ClientSession.CLOSED;
                 }
                 if (authed) { // authFuture.isSuccess()
                     cond |= AUTHED;
@@ -364,7 +376,6 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
 
     @Override
     public void resetIdleTimeout() {
-
     }
 
     public Map<Object, Object> getMetadataMap() {

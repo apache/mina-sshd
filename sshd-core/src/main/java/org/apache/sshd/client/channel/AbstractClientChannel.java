@@ -33,6 +33,7 @@ import org.apache.sshd.common.channel.AbstractChannel;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.IoUtils;
 
 /**
@@ -138,22 +139,22 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
             for (;;) {
                 int cond = 0;
                 if (openFuture != null && openFuture.isOpened()) {
-                    cond |= OPENED;
+                    cond |= ClientChannel.OPENED;
                 }
                 if (closeFuture.isClosed()) {
-                    cond |= CLOSED | EOF;
+                    cond |= ClientChannel.CLOSED | ClientChannel.EOF;
                 }
                 if (eof) {
-                    cond |= EOF;
+                    cond |= ClientChannel.EOF;
                 }
                 if (exitStatus != null) {
-                    cond |= EXIT_STATUS;
+                    cond |= ClientChannel.EXIT_STATUS;
                 }
                 if (exitSignal != null) {
-                    cond |= EXIT_SIGNAL;
+                    cond |= ClientChannel.EXIT_SIGNAL;
                 }
                 if ((cond & mask) != 0) {
-                    log.trace("WaitFor call returning on channel {}, mask={}, cond={}", new Object[] { id, mask, cond });
+                    log.trace("WaitFor call returning on channel {}, mask={}, cond={}", new Object[] { this, mask, cond });
                     return cond;
                 }
                 if (timeout > 0) {
@@ -162,19 +163,19 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
                     } else {
                         timeout = t - System.currentTimeMillis();
                         if (timeout <= 0) {
-                            cond |= TIMEOUT;
+                            cond |= ClientChannel.TIMEOUT;
                             return cond;
                         }
                     }
                 }
                 try {
-                    log.trace("Waiting for lock on channel {}, mask={}, cond={}", new Object[] { id, mask, cond });
+                    log.trace("Waiting for lock on channel {}, mask={}, cond={}", new Object[] { this, mask, cond });
                     if (timeout > 0) {
                         lock.wait(timeout);
                     } else {
                         lock.wait();
                     }
-                    log.trace("Lock notified on channel {}", id);
+                    log.trace("Lock notified on channel {}", this);
                 } catch (InterruptedException e) {
                     // Ignore
                 }
@@ -187,7 +188,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
             throw new SshException("Session has been closed");
         }
         openFuture = new DefaultOpenFuture(lock);
-        log.debug("Send SSH_MSG_CHANNEL_OPEN on channel {}", id);
+        log.debug("Send SSH_MSG_CHANNEL_OPEN on channel {}", this);
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN);
         buffer.putString(type);
         buffer.putInt(id);
@@ -232,7 +233,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
 
     protected void doWriteData(byte[] data, int off, int len) throws IOException {
         // If we're already closing, ignore incoming data
-        if (closing.get()) {
+        if (state.get() != CloseableUtils.AbstractCloseable.OPENED) {
             return;
         }
         if (out != null) {
