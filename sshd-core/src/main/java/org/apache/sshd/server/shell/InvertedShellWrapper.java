@@ -102,7 +102,7 @@ public class InvertedShellWrapper implements Command, SessionAware {
         }
     }
 
-    public void start(Environment env) throws IOException {
+    public synchronized void start(Environment env) throws IOException {
         // TODO propagate the Environment itself and support signal sending.
         shell.start(env.getEnv());
         shellIn = shell.getInputStream();
@@ -115,7 +115,7 @@ public class InvertedShellWrapper implements Command, SessionAware {
         });
     }
 
-    public void destroy() {
+    public synchronized void destroy() {
         shell.destroy();
         if (shutdownExecutor && executor instanceof ExecutorService) {
             ((ExecutorService) executor).shutdown();

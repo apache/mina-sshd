@@ -161,18 +161,22 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
     }
 
     private String nextServiceName() {
-        return nextServiceFactory.getName();
+        synchronized (lock) {
+            return nextServiceFactory.getName();
+        }
     }
 
     protected void switchToNextService() throws IOException {
-        if (nextService == null) {
-            throw new IllegalStateException("No service available");
+        synchronized (lock) {
+            if (nextService == null) {
+                throw new IllegalStateException("No service available");
+            }
+            currentServiceFactory = nextServiceFactory;
+            currentService = nextService;
+            nextServiceFactory = null;
+            nextService = null;
+            currentService.start();
         }
-        currentServiceFactory = nextServiceFactory;
-        currentService = nextService;
-        nextServiceFactory = null;
-        nextService = null;
-        currentService.start();
     }
 
     public ClientChannel createChannel(String type) throws IOException {
