@@ -26,13 +26,16 @@ import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.service.IoService;
 import org.apache.mina.core.session.IdleStatus;
 import org.apache.mina.core.session.IoSession;
+import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.future.CloseFuture;
+import org.apache.sshd.common.util.CloseableUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  */
-public abstract class MinaService implements org.apache.sshd.common.io.IoService, IoHandler {
+public abstract class MinaService implements org.apache.sshd.common.io.IoService, IoHandler, Closeable {
 
     protected final Logger log = LoggerFactory.getLogger(getClass());
 
@@ -59,6 +62,11 @@ public abstract class MinaService implements org.apache.sshd.common.io.IoService
 
     public void dispose() {
         getIoService().dispose();
+    }
+
+    public CloseFuture close(boolean immediately) {
+        dispose();
+        return CloseableUtils.closed();
     }
 
     public Map<Long, org.apache.sshd.common.io.IoSession> getManagedSessions() {

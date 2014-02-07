@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class AbstractFactoryManager implements FactoryManager {
 
-    private final Logger log = LoggerFactory.getLogger(getClass());
+    protected final Logger log = LoggerFactory.getLogger(getClass());
 
     protected Map<String,String> properties = new HashMap<String,String>();
     protected IoServiceFactory ioServiceFactory;

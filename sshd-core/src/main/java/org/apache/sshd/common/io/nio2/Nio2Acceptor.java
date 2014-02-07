@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.io.IoAcceptor;
@@ -91,14 +92,13 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
         return new HashSet<SocketAddress>(channels.keySet());
     }
 
-    public void doDispose() {
+    @Override
+    public CloseFuture close(boolean immediately) {
         unbind();
-        try {
-            CloseFuture future = CloseableUtils.parallel(sessions.values()).close(true);
-            future.await(5, TimeUnit.SECONDS);
-        } catch (Exception e) {
-            logger.debug("Exception caught while closing session", e);
-        }
+        return super.close(immediately);
+    }
+
+    public void doDispose() {
         for (SocketAddress address : channels.keySet()) {
             try {
                 channels.get(address).close();
@@ -106,12 +106,7 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
                 logger.debug("Exception caught while closing channel", e);
             }
         }
-        try {
-            group.shutdownNow();
-            group.awaitTermination(5, TimeUnit.SECONDS);
-        } catch (Exception e) {
-            logger.debug("Exception caught while closing channel group", e);
-        }
+        super.doDispose();
         try {
             executor.shutdownNow();
             executor.awaitTermination(5, TimeUnit.SECONDS);

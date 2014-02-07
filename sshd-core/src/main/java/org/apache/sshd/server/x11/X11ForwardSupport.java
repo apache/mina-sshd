@@ -29,6 +29,7 @@ import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.ChannelOutputStream;
+import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoSession;
@@ -42,7 +43,7 @@ import org.slf4j.LoggerFactory;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class X11ForwardSupport implements IoHandler {
+public class X11ForwardSupport implements IoHandler, Closeable {
 
     private static String xauthCommand = System.getProperty("sshd.xauthCommand", "xauth");
 
@@ -75,6 +76,19 @@ public class X11ForwardSupport implements IoHandler {
         if (acceptor != null) {
             acceptor.dispose();
             acceptor = null;
+        }
+    }
+
+    public CloseFuture close(boolean immediately) {
+        IoAcceptor a;
+        synchronized (this) {
+            a = acceptor;
+            acceptor = null;
+        }
+        if (a != null) {
+            return a.close(immediately);
+        } else {
+            return CloseableUtils.closed();
         }
     }
 

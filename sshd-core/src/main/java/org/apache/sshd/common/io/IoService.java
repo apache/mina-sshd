@@ -20,10 +20,13 @@ package org.apache.sshd.common.io;
 
 import java.util.Map;
 
+import org.apache.sshd.common.Closeable;
+
 /**
  */
-public interface IoService {
+public interface IoService extends Closeable {
 
+    @Deprecated
     void dispose();
 
     /**

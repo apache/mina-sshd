@@ -20,7 +20,9 @@ package org.apache.sshd.common.io.nio2;
 
 import java.io.IOException;
 import java.nio.channels.AsynchronousChannelGroup;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -28,9 +30,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.future.CloseFuture;
+import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoService;
 import org.apache.sshd.common.io.IoSession;
@@ -75,20 +79,31 @@ public abstract class Nio2Service implements IoService {
     }
 
     public void dispose() {
-        if (disposing.compareAndSet(false, true)) {
-            logger.debug("Disposing {}", getClass().getSimpleName());
-            doDispose();
+        try {
+            close(true).await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
     }
 
     protected void doDispose() {
         try {
-            CloseFuture future = CloseableUtils.parallel(sessions.values()).close(true);
-            future.await(5, TimeUnit.SECONDS);
+            group.shutdownNow();
+            group.awaitTermination(5, TimeUnit.SECONDS);
         } catch (Exception e) {
-            logger.debug("Exception caught while closing session", e);
+            logger.debug("Exception caught while closing channel group", e);
         }
-        group.shutdown();
+    }
+
+    public CloseFuture close(boolean immediately) {
+        List<IoSession> s = new ArrayList<IoSession>(sessions.values());
+        CloseFuture future = CloseableUtils.parallel(s).close(immediately);
+        future.addListener(new SshFutureListener<CloseFuture>() {
+            public void operationComplete(CloseFuture future) {
+                doDispose();
+            }
+        });
+        return future;
     }
 
     public Map<Long, IoSession> getManagedSessions() {

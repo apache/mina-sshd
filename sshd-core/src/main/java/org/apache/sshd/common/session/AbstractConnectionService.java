@@ -89,14 +89,7 @@ public abstract class AbstractConnectionService extends CloseableUtils.AbstractI
     @Override
     protected Closeable getInnerCloseable() {
         return CloseableUtils.sequential(
-                new Closeable() {
-                    public CloseFuture close(boolean immediately) {
-                        tcpipForwarder.close();
-                        agentForward.close();
-                        x11Forward.close();
-                        return CloseableUtils.closed();
-                    }
-                },
+                tcpipForwarder, agentForward, x11Forward,
                 CloseableUtils.parallel(channels.values())
         );
     }

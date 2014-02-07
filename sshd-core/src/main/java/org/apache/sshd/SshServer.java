@@ -37,6 +37,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.sshd.common.AbstractFactoryManager;
 import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.Cipher;
+import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.Compression;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.ForwardingFilter;
@@ -61,6 +62,7 @@ import org.apache.sshd.common.file.nativefs.NativeFileSystemFactory;
 import org.apache.sshd.common.forward.DefaultTcpipForwarderFactory;
 import org.apache.sshd.common.forward.TcpipServerChannel;
 import org.apache.sshd.common.future.CloseFuture;
+import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.DefaultIoServiceFactory;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoServiceFactory;
@@ -117,8 +119,6 @@ import org.apache.sshd.server.session.SessionFactory;
 import org.apache.sshd.server.sftp.SftpSubsystem;
 import org.apache.sshd.server.session.ServerSessionTimeoutListener;
 import org.apache.sshd.server.shell.ProcessShellFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * The SshServer class is the main entry point for the server side of the SSH protocol.
@@ -143,9 +143,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SshServer extends AbstractFactoryManager implements ServerFactoryManager {
-
-    private final Logger log = LoggerFactory.getLogger(getClass());
+public class SshServer extends AbstractFactoryManager implements ServerFactoryManager, Closeable {
 
     protected IoAcceptor acceptor;
     protected String host;
@@ -363,27 +361,28 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     }
 
     public void stop(boolean immediately) throws InterruptedException {
-        List<AbstractSession> sessions;
-        if (acceptor != null) {
-            acceptor.unbind();
-            sessions = getActiveSessions();
-        } else {
-            sessions = Collections.emptyList();
-        }
-        CloseFuture future = CloseableUtils.parallel(sessions).close(immediately);
+        close(immediately).await();
+    }
 
+    public void open() throws IOException {
+        start();
+    }
+
+    public CloseFuture close(boolean immediately) {
         stopSessionTimeoutListener();
-
-        if (!immediately) {
-            future.await();
-        }
         if (acceptor != null) {
-            acceptor.dispose();
-        }
-        acceptor = null;
-        if (shutdownExecutor && executor != null) {
-            executor.shutdown();
-            executor = null;
+            CloseFuture future = acceptor.close(immediately);
+            future.addListener(new SshFutureListener<CloseFuture>() {
+                public void operationComplete(CloseFuture future) {
+                    if (shutdownExecutor && executor != null) {
+                        executor.shutdown();
+                        executor = null;
+                    }
+                }
+            });
+            return future;
+        } else {
+            return CloseableUtils.closed();
         }
     }
 

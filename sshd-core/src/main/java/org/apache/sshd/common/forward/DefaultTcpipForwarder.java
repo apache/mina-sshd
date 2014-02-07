@@ -34,12 +34,14 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.TcpipForwarder;
+import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.Readable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -160,6 +162,19 @@ public class DefaultTcpipForwarder implements TcpipForwarder, IoHandler {
         if (acceptor != null) {
             acceptor.dispose();
             acceptor = null;
+        }
+    }
+
+    public CloseFuture close(boolean immediately) {
+        IoAcceptor a;
+        synchronized (this) {
+            a = acceptor;
+            acceptor = null;
+        }
+        if (a != null) {
+            return a.close(immediately);
+        } else {
+            return CloseableUtils.closed();
         }
     }
 

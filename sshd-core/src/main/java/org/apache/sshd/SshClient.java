@@ -61,6 +61,7 @@ import org.apache.sshd.client.session.ClientUserAuthService;
 import org.apache.sshd.common.AbstractFactoryManager;
 import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.Cipher;
+import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.Compression;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.KeyExchange;
@@ -80,6 +81,7 @@ import org.apache.sshd.common.compression.CompressionNone;
 import org.apache.sshd.common.file.nativefs.NativeFileSystemFactory;
 import org.apache.sshd.common.forward.DefaultTcpipForwarderFactory;
 import org.apache.sshd.common.forward.TcpipServerChannel;
+import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.DefaultIoServiceFactory;
 import org.apache.sshd.common.io.IoConnectFuture;
@@ -97,6 +99,7 @@ import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.signature.SignatureDSA;
 import org.apache.sshd.common.signature.SignatureECDSA;
 import org.apache.sshd.common.signature.SignatureRSA;
+import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.NoCloseInputStream;
 import org.apache.sshd.common.util.NoCloseOutputStream;
 import org.apache.sshd.common.util.SecurityUtils;
@@ -147,7 +150,7 @@ import org.apache.sshd.common.util.SecurityUtils;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SshClient extends AbstractFactoryManager implements ClientFactoryManager {
+public class SshClient extends AbstractFactoryManager implements ClientFactoryManager, Closeable {
 
     protected IoConnector connector;
     protected SessionFactory sessionFactory;
@@ -256,12 +259,29 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     }
 
     public void stop() {
-        connector.dispose();
-        connector = null;
-        if (shutdownExecutor && executor != null) {
-            executor.shutdown();
-            executor = null;
+        try {
+            close(true).await();
+        } catch (InterruptedException e) {
+            log.debug("Exception caught while stopping client", e);
         }
+    }
+
+    public void open() throws IOException {
+        start();
+    }
+
+    public CloseFuture close(boolean immediately) {
+        CloseFuture future = connector.close(immediately);
+        future.addListener(new SshFutureListener<CloseFuture>() {
+            public void operationComplete(CloseFuture future) {
+                connector = null;
+                if (shutdownExecutor && executor != null) {
+                    executor.shutdown();
+                    executor = null;
+                }
+            }
+        });
+        return future;
     }
 
     @Deprecated

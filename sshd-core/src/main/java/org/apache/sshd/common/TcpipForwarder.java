@@ -21,7 +21,7 @@ package org.apache.sshd.common;
 
 import java.io.IOException;
 
-public interface TcpipForwarder {
+public interface TcpipForwarder extends Closeable {
 
     /**
      * Start forwarding the given local address on the client to the given address on the server.
@@ -82,5 +82,6 @@ public interface TcpipForwarder {
     /**
      * Close the forwarder
      */
+    @Deprecated
     void close();
 }
