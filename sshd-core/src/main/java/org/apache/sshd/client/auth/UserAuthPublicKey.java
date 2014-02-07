@@ -73,12 +73,6 @@ public class UserAuthPublicKey implements UserAuth {
                 ids.add(new KeyPairIdentity(session.getFactoryManager(), (KeyPair) o));
             }
         }
-        KeyPairProvider provider = session.getFactoryManager().getKeyPairProvider();
-        if (provider != null) {
-            for (KeyPair pair : provider.loadKeys()) {
-                ids.add(new KeyPairIdentity(session.getFactoryManager(), pair));
-            }
-        }
         SshAgentFactory factory = session.getFactoryManager().getAgentFactory();
         if (factory != null) {
             this.agent = factory.createClient(session.getFactoryManager());
@@ -87,6 +81,12 @@ public class UserAuthPublicKey implements UserAuth {
             }
         } else {
             this.agent = null;
+        }
+        KeyPairProvider provider = session.getFactoryManager().getKeyPairProvider();
+        if (provider != null) {
+            for (KeyPair pair : provider.loadKeys()) {
+                ids.add(new KeyPairIdentity(session.getFactoryManager(), pair));
+            }
         }
         this.keys = ids.iterator();
     }
