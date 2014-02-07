@@ -85,6 +85,7 @@ public class AuthenticationTest extends BaseTest {
         assertFalse(s.authPassword("user2", "the-password").await().isSuccess());
 
         assertEquals(ClientSession.CLOSED, s.waitFor(ClientSession.CLOSED, 1000));
+        client.stop();
     }
 
     @Test

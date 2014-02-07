@@ -409,7 +409,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     public void exceptionCaught(Throwable t) {
         // Ignore exceptions that happen while closing
         synchronized (lock) {
-            if (state.get() == OPENED) {
+            if (state.get() != OPENED) {
                 return;
             }
         }

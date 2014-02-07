@@ -157,11 +157,15 @@ public abstract class AbstractChannel extends CloseableUtils.AbstractInnerClosea
                     try {
                         session.writePacket(buffer).addListener(new SshFutureListener<IoWriteFuture>() {
                             public void operationComplete(IoWriteFuture future) {
-                                log.debug("Message SSH_MSG_CHANNEL_CLOSE written on channel {}", AbstractChannel.this);
-                                if (gracefulState.compareAndSet(0, CLOSE_SENT)) {
-                                    // Waiting for CLOSE message to come back from the remote side
-                                } else if (gracefulState.compareAndSet(CLOSE_RECV, CLOSE_SENT | CLOSE_RECV)) {
-                                    gracefulFuture.setValue(true);
+                                if (future.isWritten()) {
+                                    log.debug("Message SSH_MSG_CHANNEL_CLOSE written on channel {}", AbstractChannel.this);
+                                    if (gracefulState.compareAndSet(0, CLOSE_SENT)) {
+                                        // Waiting for CLOSE message to come back from the remote side
+                                    } else if (gracefulState.compareAndSet(CLOSE_RECV, CLOSE_SENT | CLOSE_RECV)) {
+                                        gracefulFuture.setValue(true);
+                                    }
+                                } else {
+                                    close(true);
                                 }
                             }
                         });

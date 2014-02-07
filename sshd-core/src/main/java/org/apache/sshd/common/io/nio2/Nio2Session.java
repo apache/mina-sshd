@@ -28,9 +28,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.LinkedTransferQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.future.DefaultSshFuture;
 import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.io.IoHandler;
@@ -131,38 +133,6 @@ public class Nio2Session extends CloseableUtils.AbstractCloseable implements IoS
         }
     }
 
-    private void startWriting() {
-        final DefaultIoWriteFuture future = writes.peek();
-        if (future != null) {
-            if (currentWrite.compareAndSet(null, future)) {
-                socket.write(future.buffer, null, new CompletionHandler<Integer, Object>() {
-                    public void completed(Integer result, Object attachment) {
-                        if (future.buffer.hasRemaining()) {
-                            socket.write(future.buffer, null, this);
-                        } else {
-                            log.debug("Finished writing");
-                            future.setWritten();
-                            finishWrite();
-                        }
-                    }
-                    public void failed(Throwable exc, Object attachment) {
-                        future.setException(exc);
-                        exceptionCaught(exc);
-                        finishWrite();
-                    }
-                    private void finishWrite() {
-                        synchronized (writes) {
-                            writes.remove(future);
-                            writes.notifyAll();
-                        }
-                        currentWrite.compareAndSet(future, null);
-                        startWriting();
-                    }
-                });
-            }
-        }
-    }
-
     @Override
     protected SshFuture doCloseGracefully() {
         synchronized (writes) {
@@ -218,7 +188,11 @@ public class Nio2Session extends CloseableUtils.AbstractCloseable implements IoS
                             }
                         };
                         handler.messageReceived(Nio2Session.this, buf);
-                        startReading();
+                        if (!closeFuture.isClosed()) {
+                            startReading();
+                        } else {
+                            log.debug("IoSession has been closed, stop reading");
+                        }
                     } else {
                         log.debug("Socket has been disconnected, closing IoSession now");
                         Nio2Session.this.close(true);
@@ -231,6 +205,49 @@ public class Nio2Session extends CloseableUtils.AbstractCloseable implements IoS
                 exceptionCaught(exc);
             }
         });
+    }
+
+    private void startWriting() {
+        final DefaultIoWriteFuture future = writes.peek();
+        if (future != null) {
+            if (currentWrite.compareAndSet(null, future)) {
+                try {
+                    socket.write(future.buffer, null, new CompletionHandler<Integer, Object>() {
+                        public void completed(Integer result, Object attachment) {
+                            if (future.buffer.hasRemaining()) {
+                                try {
+                                    socket.write(future.buffer, null, this);
+                                } catch (Throwable t) {
+                                    log.debug("Exception caught while writing", t);
+                                    future.setWritten();
+                                    finishWrite();
+                                }
+                            } else {
+                                log.debug("Finished writing");
+                                future.setWritten();
+                                finishWrite();
+                            }
+                        }
+                        public void failed(Throwable exc, Object attachment) {
+                            future.setException(exc);
+                            exceptionCaught(exc);
+                            finishWrite();
+                        }
+                        private void finishWrite() {
+                            synchronized (writes) {
+                                writes.remove(future);
+                                writes.notifyAll();
+                            }
+                            currentWrite.compareAndSet(future, null);
+                            startWriting();
+                        }
+                    });
+                } catch (RuntimeException e) {
+                    future.setWritten();
+                    throw e;
+                }
+            }
+        }
     }
 
     static class DefaultIoWriteFuture extends DefaultSshFuture<IoWriteFuture> implements IoWriteFuture {

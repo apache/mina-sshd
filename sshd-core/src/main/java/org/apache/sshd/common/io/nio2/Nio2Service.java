@@ -82,7 +82,7 @@ public abstract class Nio2Service implements IoService {
         try {
             close(true).await();
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            logger.debug("Exception caught while closing", e);
         }
     }
 

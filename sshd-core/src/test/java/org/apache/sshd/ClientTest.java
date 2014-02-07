@@ -20,18 +20,26 @@ package org.apache.sshd;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.security.KeyPair;
+import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.OpenFuture;
+import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.KeyPairProvider;
+import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.RuntimeSshException;
+import org.apache.sshd.common.Service;
+import org.apache.sshd.common.Session;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.forward.TcpipServerChannel;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
@@ -43,7 +51,10 @@ import org.apache.sshd.common.util.BufferUtils;
 import org.apache.sshd.common.util.NoCloseOutputStream;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.CommandFactory;
+import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.UnknownCommand;
+import org.apache.sshd.server.session.ServerConnectionService;
+import org.apache.sshd.server.session.ServerUserAuthService;
 import org.apache.sshd.util.BaseTest;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.BogusPublickeyAuthenticator;
@@ -56,6 +67,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -68,10 +80,14 @@ public class ClientTest extends BaseTest {
 
     private SshServer sshd;
     private int port;
+    private CountDownLatch authLatch;
+    private CountDownLatch channelLatch;
 
     @Before
     public void setUp() throws Exception {
         port = Utils.getFreePort();
+        authLatch = new CountDownLatch(0);
+        channelLatch = new CountDownLatch(0);
 
         sshd = SshServer.setUpDefaultServer();
         sshd.setPort(port);
@@ -84,6 +100,39 @@ public class ClientTest extends BaseTest {
         });
         sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
         sshd.setPublickeyAuthenticator(new BogusPublickeyAuthenticator());
+        sshd.setServiceFactories(Arrays.asList(
+                new ServerUserAuthService.Factory() {
+                    @Override
+                    public Service create(Session session) throws IOException {
+                        return new ServerUserAuthService(session) {
+                            @Override
+                            public void process(byte cmd, Buffer buffer) throws Exception {
+                                authLatch.await();
+                                super.process(cmd, buffer);
+                            }
+                        };
+                    }
+                },
+                new ServerConnectionService.Factory()
+        ));
+        sshd.setChannelFactories(Arrays.<NamedFactory<Channel>>asList(
+                new ChannelSession.Factory() {
+                    @Override
+                    public Channel create() {
+                        return new ChannelSession() {
+                            @Override
+                            public OpenFuture open(int recipient, int rwsize, int rmpsize, Buffer buffer) {
+                                try {
+                                    channelLatch.await();
+                                } catch (InterruptedException e) {
+                                    throw new RuntimeSshException(e);
+                                }
+                                return super.open(recipient, rwsize, rmpsize, buffer);
+                            }
+                        };
+                    }
+                },
+                new TcpipServerChannel.DirectTcpipFactory()));
         sshd.start();
     }
 
@@ -307,11 +356,13 @@ public class ClientTest extends BaseTest {
 
     @Test
     public void testCloseBeforeAuthSucceed() throws Exception {
+        authLatch = new CountDownLatch(1);
         SshClient client = SshClient.setUpDefaultClient();
         client.start();
         ClientSession session = client.connect("localhost", port).await().getSession();
         AuthFuture authFuture = session.authPassword("smx", "smx");
         CloseFuture closeFuture = session.close(false);
+        authLatch.countDown();
         authFuture.await();
         closeFuture.await();
         assertNotNull(authFuture.getException());
@@ -332,12 +383,13 @@ public class ClientTest extends BaseTest {
         CloseFuture closeFuture = session.close(false);
         openFuture.await();
         closeFuture.await();
-        assertNotNull(openFuture.isOpened());
+        assertTrue(openFuture.isOpened());
         assertTrue(closeFuture.isClosed());
     }
 
     @Test
     public void testCloseImmediateBeforeChannelOpened() throws Exception {
+        channelLatch = new CountDownLatch(1);
         SshClient client = SshClient.setUpDefaultClient();
         client.start();
         ClientSession session = client.connect("localhost", port).await().getSession();
@@ -348,6 +400,7 @@ public class ClientTest extends BaseTest {
         channel.setErr(new ByteArrayOutputStream());
         OpenFuture openFuture = channel.open();
         CloseFuture closeFuture = session.close(true);
+        channelLatch.countDown();
         openFuture.await();
         closeFuture.await();
         assertNotNull(openFuture.getException());
