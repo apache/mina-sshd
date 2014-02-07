@@ -21,19 +21,29 @@ package org.apache.sshd;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.io.Writer;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.security.InvalidKeyException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Executors;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.Formatter;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
 
 import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.ServerKeyVerifier;
@@ -44,7 +54,6 @@ import org.apache.sshd.client.auth.UserAuthKeyboardInteractive;
 import org.apache.sshd.client.auth.UserAuthPassword;
 import org.apache.sshd.client.auth.UserAuthPublicKey;
 import org.apache.sshd.client.channel.ChannelShell;
-import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.ConnectFuture;
 import org.apache.sshd.client.future.DefaultConnectFuture;
 import org.apache.sshd.client.kex.DHG1;
@@ -65,6 +74,7 @@ import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.Compression;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.KeyExchange;
+import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.Mac;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.Signature;
@@ -86,6 +96,7 @@ import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.DefaultIoServiceFactory;
 import org.apache.sshd.common.io.IoConnectFuture;
 import org.apache.sshd.common.io.IoConnector;
+import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.common.mac.HMACMD5;
 import org.apache.sshd.common.mac.HMACMD596;
 import org.apache.sshd.common.mac.HMACSHA1;
@@ -99,10 +110,10 @@ import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.signature.SignatureDSA;
 import org.apache.sshd.common.signature.SignatureECDSA;
 import org.apache.sshd.common.signature.SignatureRSA;
-import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.NoCloseInputStream;
 import org.apache.sshd.common.util.NoCloseOutputStream;
 import org.apache.sshd.common.util.SecurityUtils;
+import org.bouncycastle.openssl.PasswordFinder;
 
 /**
  * Entry point for the client side of the SSH protocol.
@@ -436,6 +447,35 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
      *=================================*/
 
     public static void main(String[] args) throws Exception {
+        Handler fh = new ConsoleHandler();
+        fh.setLevel(Level.FINEST);
+        fh.setFormatter(new Formatter() {
+            @Override
+            public String format(LogRecord record) {
+                String message = formatMessage(record);
+                String throwable = "";
+                if (record.getThrown() != null) {
+                    StringWriter sw = new StringWriter();
+                    PrintWriter pw = new PrintWriter(sw);
+                    pw.println();
+                    record.getThrown().printStackTrace(pw);
+                    pw.close();
+                    throwable = sw.toString();
+                }
+                return String.format("%1$tY-%1$tm-%1$td: %2$-7.7s: %3$-32.32s: %4$s%5$s%n",
+                        new Date(record.getMillis()),
+                        record.getLevel().getName(),
+                        record.getLoggerName(),
+                        message,
+                        throwable);
+            }
+        });
+        Logger root = Logger.getLogger("");
+        for (Handler handler : root.getHandlers()) {
+            root.removeHandler(handler);
+        }
+        root.addHandler(fh);
+
         int port = 22;
         String host = null;
         String login = System.getProperty("user.name");
@@ -443,6 +483,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         List<String> command = null;
         int logLevel = 0;
         boolean error = false;
+        List<String> identities = new ArrayList<String>();
 
         for (int i = 0; i < args.length; i++) {
             if (command == null && "-p".equals(args[i])) {
@@ -460,15 +501,22 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                 }
                 login = args[++i];
             } else if (command == null && "-v".equals(args[i])) {
-                logLevel = 1;
+                logLevel += 1;
             } else if (command == null && "-vv".equals(args[i])) {
-                logLevel = 2;
+                logLevel += 2;
             } else if (command == null && "-vvv".equals(args[i])) {
-                logLevel = 3;
+                logLevel += 3;
             } else if ("-A".equals(args[i])) {
                 agentForward = true;
             } else if ("-a".equals(args[i])) {
                 agentForward = false;
+            } else if ("-i".equals(args[i])) {
+                if (i + 1 >= args.length) {
+                    System.err.println("option requires and argument: " + args[i]);
+                    error = true;
+                    break;
+                }
+                identities.add(args[++i]);
             } else if (command == null && args[i].startsWith("-")) {
                 System.err.println("illegal option: " + args[i]);
                 error = true;
@@ -492,103 +540,104 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             System.err.println("usage: ssh [-A|-a] [-v[v][v]] [-l login] [-p port] hostname [command]");
             System.exit(-1);
         }
+        if (logLevel <= 0) {
+            root.setLevel(Level.WARNING);
+        } else if (logLevel == 1) {
+            root.setLevel(Level.INFO);
+        } else if (logLevel == 2) {
+            root.setLevel(Level.FINE);
+        } else {
+            root.setLevel(Level.FINEST);
+        }
 
         // TODO: handle log level
 
+        KeyPairProvider provider = null;
+        List<String> files = new ArrayList<String>();
+        File f = new File(System.getProperty("user.home"), ".ssh/id_dsa");
+        if (f.exists() && f.isFile() && f.canRead()) {
+            files.add(f.getAbsolutePath());
+        }
+        f = new File(System.getProperty("user.home"), ".ssh/id_rsa");
+        if (f.exists() && f.isFile() && f.canRead()) {
+            files.add(f.getAbsolutePath());
+        }
+        if (files.size() > 0) {
+            provider = new FileKeyPairProvider(files.toArray(new String[files.size()]), new PasswordFinder() {
+                public char[] getPassword() {
+                    try {
+                        System.out.println("Enter password for private key: ");
+                        BufferedReader r = new BufferedReader(new InputStreamReader(System.in));
+                        String password = r.readLine();
+                        return password.toCharArray();
+                    } catch (IOException e) {
+                        return null;
+                    }
+                }
+            });
+        }
+
         SshClient client = SshClient.setUpDefaultClient();
         client.start();
-
-        try {
-            boolean hasKeys = false;
-
-            /*
-            String authSock = System.getenv(SshAgent.SSH_AUTHSOCKET_ENV_NAME);
-            if (authSock == null) {
-                KeyPair[] keys = null;
-                AgentServer server = new AgentServer();
-                authSock = server.start();
-                List<String> files = new ArrayList<String>();
-                File f = new File(System.getProperty("user.home"), ".ssh/id_dsa");
-                if (f.exists() && f.isFile() && f.canRead()) {
-                    files.add(f.getAbsolutePath());
-                }
-                f = new File(System.getProperty("user.home"), ".ssh/id_rsa");
-                if (f.exists() && f.isFile() && f.canRead()) {
-                    files.add(f.getAbsolutePath());
-                }
+        client.setKeyPairProvider(provider);
+        client.setUserInteraction(new UserInteraction() {
+            public void welcome(String banner) {
+                System.out.println(banner);
+            }
+            public String[] interactive(String destination, String name, String instruction, String[] prompt, boolean[] echo) {
+                String[] answers = new String[prompt.length];
                 try {
-                    if (files.size() > 0) {
-                        keys = new FileKeyPairProvider(files.toArray(new String[0]), new PasswordFinder() {
-                            public char[] getPassword() {
-                                try {
-                                    System.out.println("Enter password for private key: ");
-                                    BufferedReader r = new BufferedReader(new InputStreamReader(System.in));
-                                    String password = r.readLine();
-                                    return password.toCharArray();
-                                } catch (IOException e) {
-                                    return null;
-                                }
-                            }
-                        }).loadKeys();
+                    for (int i = 0; i < prompt.length; i++) {
+                        BufferedReader r = new BufferedReader(new InputStreamReader(System.in));
+                        System.out.print(prompt[i] + " ");
+                        answers[i] = r.readLine();
                     }
-                } catch (Exception e) {
+                } catch (IOException e) {
                 }
-                SshAgent agent = new AgentClient(authSock);
-                for (KeyPair key : keys) {
-                    agent.addIdentity(key, "");
-                }
-                agent.close();
+                return answers;
             }
-            if (authSock != null) {
-                SshAgent agent = new AgentClient(authSock);
-                hasKeys = agent.getIdentities().size() > 0;
+        });
+
+        /*
+        String authSock = System.getenv(SshAgent.SSH_AUTHSOCKET_ENV_NAME);
+        if (authSock == null && provider != null) {
+            Iterable<KeyPair> keys = provider.loadKeys();
+            AgentServer server = new AgentServer();
+            authSock = server.start();
+            SshAgent agent = new AgentClient(authSock);
+            for (KeyPair key : keys) {
+                agent.addIdentity(key, "");
             }
+            agent.close();
             client.getProperties().put(SshAgent.SSH_AUTHSOCKET_ENV_NAME, authSock);
-            */
-
-            ClientSession session = client.connect(host, port).await().getSession();
-            int ret = ClientSession.WAIT_AUTH;
-
-            AuthFuture authFuture;
-            do {
-                if (hasKeys) {
-                    authFuture = session.authAgent(login);
-                } else {
-                    System.out.print("Password:");
-                    BufferedReader r = new BufferedReader(new InputStreamReader(System.in));
-                    String password = r.readLine();
-                    authFuture = session.authPassword(login, password);
-                }
-                authFuture.await();
-            } while (authFuture.isFailure());
-            if (!authFuture.isSuccess()) {
-                System.err.println("error");
-                System.exit(-1);
-            }
-            ClientChannel channel;
-            if (command == null) {
-                channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
-                ((ChannelShell) channel).setAgentForwarding(agentForward);
-                channel.setIn(new NoCloseInputStream(System.in));
-            } else {
-                channel = session.createChannel(ClientChannel.CHANNEL_EXEC);
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                Writer w = new OutputStreamWriter(baos);
-                for (String cmd : command) {
-                    w.append(cmd).append(" ");
-                }
-                w.append("\n");
-                w.close();
-                channel.setIn(new ByteArrayInputStream(baos.toByteArray()));
-            }
-            channel.setOut(new NoCloseOutputStream(System.out));
-            channel.setErr(new NoCloseOutputStream(System.err));
-            channel.open().await();
-            channel.waitFor(ClientChannel.CLOSED, 0);
-            session.close(false);
-        } finally {
-            client.stop();
         }
+        */
+
+        ClientSession session = client.connect(login, host, port).await().getSession();
+        session.auth().verify();
+
+        ClientChannel channel;
+        if (command == null) {
+            channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
+            ((ChannelShell) channel).setAgentForwarding(agentForward);
+            channel.setIn(new NoCloseInputStream(System.in));
+        } else {
+            channel = session.createChannel(ClientChannel.CHANNEL_EXEC);
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            Writer w = new OutputStreamWriter(baos);
+            for (String cmd : command) {
+                w.append(cmd).append(" ");
+            }
+            w.append("\n");
+            w.close();
+            channel.setIn(new ByteArrayInputStream(baos.toByteArray()));
+        }
+        channel.setOut(new NoCloseOutputStream(System.out));
+        channel.setErr(new NoCloseOutputStream(System.err));
+        channel.open().await();
+        channel.waitFor(ClientChannel.CLOSED, 0);
+        session.close(false);
+        client.stop();
     }
 
 }
