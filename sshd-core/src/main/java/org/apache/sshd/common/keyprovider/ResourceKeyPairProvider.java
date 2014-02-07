@@ -22,7 +22,10 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.security.KeyPair;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 import org.apache.sshd.common.util.IoUtils;
 import org.apache.sshd.common.util.SecurityUtils;
@@ -143,48 +146,79 @@ public class ResourceKeyPairProvider extends AbstractKeyPairProvider {
     /**
      * {@inheritDoc}
      */
-    public KeyPair[] loadKeys() {
+    public Iterable<KeyPair> loadKeys() {
         if (!SecurityUtils.isBouncyCastleRegistered()) {
             throw new IllegalStateException("BouncyCastle must be registered as a JCE provider");
         } // end of if
+        return new Iterable<KeyPair>() {
+            public Iterator<KeyPair> iterator() {
+                return new Iterator<KeyPair>() {
+                    private final Iterator<String> iterator = Arrays.asList(resources).iterator();
+                    private KeyPair nextKeyPair;
+                    private boolean nextKeyPairSet = false;
+                    public boolean hasNext() {
+                        return nextKeyPairSet || setNextObject();
+                    }
+                    public KeyPair next() {
+                        if (!nextKeyPairSet) {
+                            if (!setNextObject()) {
+                                throw new NoSuchElementException();
+                            }
+                        }
+                        nextKeyPairSet = false;
+                        return nextKeyPair;
+                    }
+                    public void remove() {
+                        throw new UnsupportedOperationException();
+                    }
+                    private boolean setNextObject() {
+                        while (iterator.hasNext()) {
+                            String file = iterator.next();
+                            nextKeyPair = doLoadKey(file);
+                            if (nextKeyPair != null) {
+                                nextKeyPairSet = true;
+                                return true;
+                            }
+                        }
+                        return false;
+                    }
 
-        // ---
+                };
+            }
+        };
+    }
 
-        final List<KeyPair> keys =
-                new ArrayList<KeyPair>(this.resources.length);
+    protected KeyPair doLoadKey(String resource) {
+        PEMParser r = null;
+        InputStreamReader isr = null;
+        InputStream is = null;
+        try {
+            is = this.cloader.getResourceAsStream(resource);
+            isr = new InputStreamReader(is);
+            r = new PEMParser(isr);
 
-        for (String resource : resources) {
-            PEMParser r = null;
-            InputStreamReader isr = null;
-            InputStream is = null;
-            try {
-                is = this.cloader.getResourceAsStream(resource);
-                isr = new InputStreamReader(is);
-                r = new PEMParser(isr);
+            Object o = r.readObject();
 
-                Object o = r.readObject();
+            JcaPEMKeyConverter pemConverter = new JcaPEMKeyConverter();
+            pemConverter.setProvider("BC");
+            if (passwordFinder != null && o instanceof PEMEncryptedKeyPair) {
+                JcePEMDecryptorProviderBuilder decryptorBuilder = new JcePEMDecryptorProviderBuilder();
+                PEMDecryptorProvider pemDecryptor = decryptorBuilder.build(passwordFinder.getPassword());
+                o = pemConverter.getKeyPair(((PEMEncryptedKeyPair) o).decryptKeyPair(pemDecryptor));
+            }
 
-                JcaPEMKeyConverter pemConverter = new JcaPEMKeyConverter();
-                pemConverter.setProvider("BC");
-                if (passwordFinder != null && o instanceof PEMEncryptedKeyPair) {
-                    JcePEMDecryptorProviderBuilder decryptorBuilder = new JcePEMDecryptorProviderBuilder();
-                    PEMDecryptorProvider pemDecryptor = decryptorBuilder.build(passwordFinder.getPassword());
-                    o = pemConverter.getKeyPair(((PEMEncryptedKeyPair) o).decryptKeyPair(pemDecryptor));
-                }
+            if (o instanceof PEMKeyPair) {
+                o = pemConverter.getKeyPair((PEMKeyPair)o);
+                return (KeyPair) o;
+            } else if (o instanceof KeyPair) {
+                return (KeyPair) o;
+            } // end of if
+        } catch (Exception e) {
+            log.warn("Unable to read key " + resource, e);
+        } finally {
+            IoUtils.closeQuietly(r, is, isr);
+        } // end of finally
+        return null;
+    } // end of doLoadKey
 
-                if (o instanceof PEMKeyPair) {
-                    o = pemConverter.getKeyPair((PEMKeyPair)o);
-                    keys.add((KeyPair) o);
-                } else if (o instanceof KeyPair) {
-                    keys.add((KeyPair) o);
-                } // end of if
-            } catch (Exception e) {
-                log.warn("Unable to read key", e);
-            } finally {
-                IoUtils.closeQuietly(r, is, isr);
-            } // end of finally
-        } // end of for
-
-        return keys.toArray(new KeyPair[keys.size()]);
-    } // end of loadKeys
 } // end of class ResourceKeyPairProvider

@@ -58,7 +58,7 @@ public interface KeyPairProvider {
      *
      * @return an array of available keys, never <code>null</code>
      */
-    KeyPair[] loadKeys();
+    Iterable<KeyPair> loadKeys();
 
     /**
      * Load a key of the specified type which can be "ssh-rsa", "ssh-dss", or

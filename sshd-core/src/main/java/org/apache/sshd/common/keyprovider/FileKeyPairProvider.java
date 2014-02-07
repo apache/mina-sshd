@@ -21,8 +21,9 @@ package org.apache.sshd.common.keyprovider;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.security.KeyPair;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 import org.apache.sshd.common.util.SecurityUtils;
 import org.bouncycastle.openssl.PEMDecryptorProvider;
@@ -74,39 +75,75 @@ public class FileKeyPairProvider extends AbstractKeyPairProvider {
         this.passwordFinder = passwordFinder;
     }
 
-    public KeyPair[] loadKeys() {
+    public Iterable<KeyPair> loadKeys() {
         if (!SecurityUtils.isBouncyCastleRegistered()) {
             throw new IllegalStateException("BouncyCastle must be registered as a JCE provider");
         }
-        List<KeyPair> keys = new ArrayList<KeyPair>();
-        for (int i = 0; i < files.length; i++) {
-            try {
-                PEMParser r = new PEMParser(new InputStreamReader(new FileInputStream(files[i])));
-                try {
-                    Object o = r.readObject();
-
-                    JcaPEMKeyConverter pemConverter = new JcaPEMKeyConverter();
-                    pemConverter.setProvider("BC");
-                    if (passwordFinder != null && o instanceof PEMEncryptedKeyPair) {
-                        JcePEMDecryptorProviderBuilder decryptorBuilder = new JcePEMDecryptorProviderBuilder();
-                        PEMDecryptorProvider pemDecryptor = decryptorBuilder.build(passwordFinder.getPassword());
-                        o = pemConverter.getKeyPair(((PEMEncryptedKeyPair) o).decryptKeyPair(pemDecryptor));
+        return new Iterable<KeyPair>() {
+            public Iterator<KeyPair> iterator() {
+                return new Iterator<KeyPair>() {
+                    private final Iterator<String> iterator = Arrays.asList(files).iterator();
+                    private KeyPair nextKeyPair;
+                    private boolean nextKeyPairSet = false;
+                    public boolean hasNext() {
+                        return nextKeyPairSet || setNextObject();
+                    }
+                    public KeyPair next() {
+                        if (!nextKeyPairSet) {
+                            if (!setNextObject()) {
+                                throw new NoSuchElementException();
+                            }
+                        }
+                        nextKeyPairSet = false;
+                        return nextKeyPair;
+                    }
+                    public void remove() {
+                        throw new UnsupportedOperationException();
+                    }
+                    private boolean setNextObject() {
+                        while (iterator.hasNext()) {
+                            String file = iterator.next();
+                            nextKeyPair = doLoadKey(file);
+                            if (nextKeyPair != null) {
+                                nextKeyPairSet = true;
+                                return true;
+                            }
+                        }
+                        return false;
                     }
 
-                    if (o instanceof PEMKeyPair) {
-                        o = pemConverter.getKeyPair((PEMKeyPair)o);
-                        keys.add((KeyPair) o);
-                    } else if (o instanceof KeyPair) {
-                        keys.add((KeyPair) o);
-                    }
-                } finally {
-                    r.close();
-                }
-            } catch (Exception e) {
-                log.warn("Unable to read key {}: {}", files[i], e);
+                };
             }
+        };
+    }
+
+    protected KeyPair doLoadKey(String file) {
+        try {
+            PEMParser r = new PEMParser(new InputStreamReader(new FileInputStream(file)));
+            try {
+                Object o = r.readObject();
+
+                JcaPEMKeyConverter pemConverter = new JcaPEMKeyConverter();
+                pemConverter.setProvider("BC");
+                if (passwordFinder != null && o instanceof PEMEncryptedKeyPair) {
+                    JcePEMDecryptorProviderBuilder decryptorBuilder = new JcePEMDecryptorProviderBuilder();
+                    PEMDecryptorProvider pemDecryptor = decryptorBuilder.build(passwordFinder.getPassword());
+                    o = pemConverter.getKeyPair(((PEMEncryptedKeyPair) o).decryptKeyPair(pemDecryptor));
+                }
+
+                if (o instanceof PEMKeyPair) {
+                    o = pemConverter.getKeyPair((PEMKeyPair)o);
+                    return (KeyPair) o;
+                } else if (o instanceof KeyPair) {
+                    return (KeyPair) o;
+                }
+            } finally {
+                r.close();
+            }
+        } catch (Exception e) {
+            log.warn("Unable to read key " + file, e);
         }
-        return keys.toArray(new KeyPair[keys.size()]);
+        return null;
     }
 
 }

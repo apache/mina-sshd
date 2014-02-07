@@ -28,6 +28,7 @@ import java.io.OutputStream;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.spec.AlgorithmParameterSpec;
+import java.util.Collections;
 
 import org.apache.sshd.common.keyprovider.AbstractKeyPairProvider;
 import org.apache.sshd.common.util.SecurityUtils;
@@ -99,7 +100,7 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
 
     protected abstract void doWriteKeyPair(KeyPair kp, OutputStream os) throws Exception;
 
-    public synchronized KeyPair[] loadKeys() {
+    public synchronized Iterable<KeyPair> loadKeys() {
         if (keyPair == null) {
             if (path != null) {
                 File f = new File(path);
@@ -114,10 +115,10 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
                 }
             }
             if (keyPair == null) {
-                return new KeyPair[0];
+                return Collections.emptyList();
             }
         }
-        return new KeyPair[] { keyPair };
+        return Collections.singleton(keyPair);
     }
 
     private KeyPair readKeyPair(File f) {

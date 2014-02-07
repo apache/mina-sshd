@@ -39,7 +39,7 @@ public abstract class AbstractKeyPairProvider implements KeyPairProvider {
 
     public KeyPair loadKey(String type) {
         assert type != null;
-        KeyPair[] keys = loadKeys();
+        Iterable<KeyPair> keys = loadKeys();
         for (KeyPair key : keys) {
             if (type.equals(getKeyType(key))) {
                 return key;
@@ -50,7 +50,7 @@ public abstract class AbstractKeyPairProvider implements KeyPairProvider {
 
     public String getKeyTypes() {
         List<String> types = new ArrayList<String>();
-        KeyPair[] keys = loadKeys();
+        Iterable<KeyPair> keys = loadKeys();
         for (KeyPair key : keys) {
             String type = getKeyType(key);
             if (type != null && !types.contains(type)) {
@@ -67,5 +67,5 @@ public abstract class AbstractKeyPairProvider implements KeyPairProvider {
         return sb.toString();
     }
 
-    public abstract KeyPair[] loadKeys();
+    public abstract Iterable<KeyPair> loadKeys();
 }
