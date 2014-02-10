@@ -21,6 +21,7 @@ package org.apache.sshd.common.io.nio2;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.net.StandardSocketOptions;
+import java.nio.channels.AsynchronousChannelGroup;
 import java.nio.channels.AsynchronousServerSocketChannel;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
@@ -30,15 +31,11 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 
-import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoHandler;
-import org.apache.sshd.common.io.IoSession;
-import org.apache.sshd.common.util.CloseableUtils;
 
 /**
  */
@@ -48,8 +45,8 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
     private final Map<SocketAddress, AsynchronousServerSocketChannel> unbound;
     private int backlog = 50;
 
-    public Nio2Acceptor(FactoryManager manager, IoHandler handler) {
-        super(manager, handler);
+    public Nio2Acceptor(FactoryManager manager, IoHandler handler, AsynchronousChannelGroup group) {
+        super(manager, handler, group);
         channels = new ConcurrentHashMap<SocketAddress, AsynchronousServerSocketChannel>();
         unbound = new ConcurrentHashMap<SocketAddress, AsynchronousServerSocketChannel>();
     }
@@ -107,12 +104,6 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
             }
         }
         super.doDispose();
-        try {
-            executor.shutdownNow();
-            executor.awaitTermination(5, TimeUnit.SECONDS);
-        } catch (Exception e) {
-            logger.debug("Exception caught while closing executor", e);
-        }
     }
 
     class AcceptCompletionHandler implements CompletionHandler<AsynchronousSocketChannel, SocketAddress> {

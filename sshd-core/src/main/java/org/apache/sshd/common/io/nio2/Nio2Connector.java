@@ -20,6 +20,7 @@ package org.apache.sshd.common.io.nio2;
 
 import java.io.IOException;
 import java.net.SocketAddress;
+import java.nio.channels.AsynchronousChannelGroup;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
 
@@ -34,8 +35,8 @@ import org.apache.sshd.common.io.IoSession;
  */
 public class Nio2Connector extends Nio2Service implements IoConnector {
 
-    public Nio2Connector(FactoryManager manager, IoHandler handler) {
-        super(manager, handler);
+    public Nio2Connector(FactoryManager manager, IoHandler handler, AsynchronousChannelGroup group) {
+        super(manager, handler, group);
     }
 
     public IoConnectFuture connect(SocketAddress address) {

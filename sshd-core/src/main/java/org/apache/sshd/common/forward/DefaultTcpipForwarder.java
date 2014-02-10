@@ -154,7 +154,7 @@ public class DefaultTcpipForwarder implements TcpipForwarder, IoHandler {
     public synchronized void initialize() {
         if (this.acceptor == null) {
             this.acceptor = session.getFactoryManager().getIoServiceFactory()
-                    .createAcceptor(session.getFactoryManager(), this);
+                    .createAcceptor(this);
         }
     }
 

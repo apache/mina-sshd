@@ -17,5 +17,5 @@
 ## under the License.
 ##
 
-org.apache.sshd.common.io.nio2.Nio2ServiceFactory
-org.apache.sshd.common.io.mina.MinaServiceFactory
+org.apache.sshd.common.io.nio2.Nio2ServiceFactoryFactory
+org.apache.sshd.common.io.mina.MinaServiceFactoryFactory

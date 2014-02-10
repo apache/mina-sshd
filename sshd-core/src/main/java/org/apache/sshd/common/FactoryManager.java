@@ -25,6 +25,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.io.IoServiceFactory;
+import org.apache.sshd.common.io.IoServiceFactoryFactory;
 import org.apache.sshd.common.session.ConnectionService;
 
 /**

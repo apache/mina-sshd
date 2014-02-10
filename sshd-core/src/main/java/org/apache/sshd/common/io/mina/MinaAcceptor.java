@@ -26,8 +26,10 @@ import java.util.Set;
 
 import org.apache.mina.core.service.IoAcceptor;
 import org.apache.mina.core.service.IoHandler;
+import org.apache.mina.core.service.IoProcessor;
 import org.apache.mina.core.service.IoService;
 import org.apache.mina.core.session.IoSessionConfig;
+import org.apache.mina.transport.socket.nio.NioSession;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 import org.apache.sshd.common.FactoryManager;
 
@@ -41,12 +43,12 @@ public class MinaAcceptor extends MinaService implements org.apache.sshd.common.
     protected boolean reuseAddress = true;
     protected IoSessionConfig sessionConfig;
 
-    public MinaAcceptor(FactoryManager manager, org.apache.sshd.common.io.IoHandler handler) {
-        super(manager, handler);
+    public MinaAcceptor(FactoryManager manager, org.apache.sshd.common.io.IoHandler handler, IoProcessor<NioSession> ioProcessor) {
+        super(manager, handler, ioProcessor);
     }
 
     protected IoAcceptor createAcceptor() {
-        NioSocketAcceptor acceptor = new NioSocketAcceptor(getNioWorkers());
+        NioSocketAcceptor acceptor = new NioSocketAcceptor(ioProcessor);
         acceptor.setCloseOnDeactivation(false);
         acceptor.setReuseAddress(reuseAddress);
         acceptor.setBacklog(backlog);

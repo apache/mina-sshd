@@ -68,7 +68,7 @@ public class X11ForwardSupport implements IoHandler, Closeable {
     public synchronized void initialize() {
         if (this.acceptor == null) {
             this.acceptor = service.getSession().getFactoryManager().getIoServiceFactory()
-                    .createAcceptor(service.getSession().getFactoryManager(), this);
+                    .createAcceptor(this);
         }
     }
 

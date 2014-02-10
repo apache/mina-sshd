@@ -63,7 +63,7 @@ import org.apache.sshd.common.forward.DefaultTcpipForwarderFactory;
 import org.apache.sshd.common.forward.TcpipServerChannel;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
-import org.apache.sshd.common.io.DefaultIoServiceFactory;
+import org.apache.sshd.common.io.DefaultIoServiceFactoryFactory;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.io.IoSession;
@@ -300,8 +300,8 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         if (getFileSystemFactory() == null) {
             throw new IllegalArgumentException("FileSystemFactory not set");
         }
-        if (getIoServiceFactory() == null) {
-            setIoServiceFactory(new DefaultIoServiceFactory());
+        if (getIoServiceFactoryFactory() == null) {
+            setIoServiceFactoryFactory(new DefaultIoServiceFactoryFactory());
         }
         if (getServiceFactories() == null) {
             setServiceFactories(Arrays.asList(
@@ -368,22 +368,27 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         start();
     }
 
-    public CloseFuture close(boolean immediately) {
+    public CloseFuture close(final boolean immediately) {
         stopSessionTimeoutListener();
+        CloseFuture future;
         if (acceptor != null) {
-            CloseFuture future = acceptor.close(immediately);
-            future.addListener(new SshFutureListener<CloseFuture>() {
-                public void operationComplete(CloseFuture future) {
-                    if (shutdownExecutor && executor != null) {
-                        executor.shutdown();
-                        executor = null;
-                    }
-                }
-            });
-            return future;
+            future = CloseableUtils.sequential(acceptor, ioServiceFactory).close(immediately);
+        } else if (ioServiceFactory != null) {
+            future = ioServiceFactory.close(immediately);
         } else {
-            return CloseableUtils.closed();
+            future = CloseableUtils.closed();
         }
+        future.addListener(new SshFutureListener<CloseFuture>() {
+            public void operationComplete(CloseFuture future) {
+                acceptor = null;
+                ioServiceFactory = null;
+                if (shutdownExecutor && executor != null) {
+                    executor.shutdown();
+                    executor = null;
+                }
+            }
+        });
+        return future;
     }
 
     /**
@@ -401,7 +406,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     }
 
     protected IoAcceptor createAcceptor() {
-        return getIoServiceFactory().createAcceptor(this, getSessionFactory());
+        return getIoServiceFactory().createAcceptor(getSessionFactory());
     }
 
     protected SessionFactory createSessionFactory() {

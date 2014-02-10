@@ -22,8 +22,8 @@ import org.apache.sshd.common.FactoryManager;
 
 /**
  */
-public interface IoAcceptorFactory {
+public interface IoServiceFactoryFactory {
 
-    IoAcceptor create(FactoryManager manager);
+    IoServiceFactory create(FactoryManager manager);
 
 }

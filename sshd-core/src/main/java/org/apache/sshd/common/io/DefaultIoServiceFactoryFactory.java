@@ -27,16 +27,23 @@ import org.slf4j.LoggerFactory;
 
 /**
  */
-public class DefaultIoServiceFactory implements IoServiceFactory {
+public class DefaultIoServiceFactoryFactory implements IoServiceFactoryFactory {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultIoServiceFactory.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultIoServiceFactoryFactory.class);
 
-    public IoConnector createConnector(FactoryManager manager, IoHandler handler) {
-        return newInstance(IoServiceFactory.class).createConnector(manager, handler);
+    private IoServiceFactoryFactory factory;
+
+    public IoServiceFactory create(FactoryManager manager) {
+        return getFactory().create(manager);
     }
 
-    public IoAcceptor createAcceptor(FactoryManager manager, IoHandler handler) {
-        return newInstance(IoServiceFactory.class).createAcceptor(manager, handler);
+    private IoServiceFactoryFactory getFactory() {
+        synchronized (this) {
+            if (factory == null) {
+                factory = newInstance(IoServiceFactoryFactory.class);
+            }
+        }
+        return factory;
     }
 
     private static <T> T newInstance(Class<T> clazz) {
@@ -51,8 +58,8 @@ public class DefaultIoServiceFactory implements IoServiceFactory {
                 return t;
             }
         }
-        if (cl != DefaultIoServiceFactory.class.getClassLoader()) {
-            T t = tryLoad(ServiceLoader.load(clazz, DefaultIoServiceFactory.class.getClassLoader()));
+        if (cl != DefaultIoServiceFactoryFactory.class.getClassLoader()) {
+            T t = tryLoad(ServiceLoader.load(clazz, DefaultIoServiceFactoryFactory.class.getClassLoader()));
             if (t != null) {
                 return t;
             }
@@ -81,9 +88,9 @@ public class DefaultIoServiceFactory implements IoServiceFactory {
                 LOGGER.trace("Exception while loading factory " + factory, t);
             }
         }
-        if (cl != DefaultIoServiceFactory.class.getClassLoader()) {
+        if (cl != DefaultIoServiceFactoryFactory.class.getClassLoader()) {
             try {
-                return clazz.cast(DefaultIoServiceFactory.class.getClassLoader().loadClass(factory).newInstance());
+                return clazz.cast(DefaultIoServiceFactoryFactory.class.getClassLoader().loadClass(factory).newInstance());
             } catch (Throwable t) {
                 LOGGER.trace("Exception while loading factory " + factory, t);
             }

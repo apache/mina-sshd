@@ -18,21 +18,15 @@
  */
 package org.apache.sshd.common.io.nio2;
 
-import java.io.IOException;
 import java.nio.channels.AsynchronousChannelGroup;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoHandler;
@@ -49,33 +43,16 @@ public abstract class Nio2Service implements IoService {
     protected final Logger logger = LoggerFactory.getLogger(getClass());
     protected final FactoryManager manager;
     protected final IoHandler handler;
-    protected final ExecutorService executor;
-    protected final AsynchronousChannelGroup group;
     protected final Map<Long, IoSession> sessions;
     protected final AtomicBoolean disposing = new AtomicBoolean();
+    protected final AsynchronousChannelGroup group;
 
-    protected Nio2Service(FactoryManager manager, IoHandler handler) {
+    protected Nio2Service(FactoryManager manager, IoHandler handler, AsynchronousChannelGroup group) {
         logger.debug("Creating {}", getClass().getSimpleName());
-        try {
-            this.manager = manager;
-            this.handler = handler;
-            executor = Executors.newFixedThreadPool(getNioWorkers());
-            group = AsynchronousChannelGroup.withThreadPool(executor);
-            sessions = new ConcurrentHashMap<Long, IoSession>();
-        } catch (IOException e) {
-            throw new RuntimeSshException(e);
-        }
-    }
-
-    public int getNioWorkers() {
-        String nioWorkers = manager.getProperties().get(FactoryManager.NIO_WORKERS);
-        if (nioWorkers != null && nioWorkers.length() > 0) {
-            int nb = Integer.parseInt(nioWorkers);
-            if (nb > 0) {
-                return nb;
-            }
-        }
-        return FactoryManager.DEFAULT_NIO_WORKERS;
+        this.manager = manager;
+        this.handler = handler;
+        this.sessions = new ConcurrentHashMap<Long, IoSession>();
+        this.group = group;
     }
 
     public void dispose() {
@@ -87,12 +64,6 @@ public abstract class Nio2Service implements IoService {
     }
 
     protected void doDispose() {
-        try {
-            group.shutdownNow();
-            group.awaitTermination(5, TimeUnit.SECONDS);
-        } catch (Exception e) {
-            logger.debug("Exception caught while closing channel group", e);
-        }
     }
 
     public CloseFuture close(boolean immediately) {

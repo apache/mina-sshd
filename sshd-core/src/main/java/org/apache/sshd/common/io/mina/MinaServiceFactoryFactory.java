@@ -16,16 +16,21 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.io;
+package org.apache.sshd.common.io.mina;
 
-import org.apache.sshd.common.Closeable;
+import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.io.IoServiceFactory;
+import org.apache.sshd.common.io.IoServiceFactoryFactory;
 
 /**
  */
-public interface IoServiceFactory extends Closeable {
+public class MinaServiceFactoryFactory implements IoServiceFactoryFactory {
 
-    IoConnector createConnector(IoHandler handler);
+    public MinaServiceFactoryFactory() {
+    }
 
-    IoAcceptor createAcceptor(IoHandler handler);
+    public IoServiceFactory create(FactoryManager manager) {
+        return new MinaServiceFactory(manager);
+    }
 
 }

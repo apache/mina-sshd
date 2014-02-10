@@ -129,7 +129,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
             }
         };
         connector = getSession().getFactoryManager().getIoServiceFactory()
-                .createConnector(getSession().getFactoryManager(), handler);
+                .createConnector(handler);
         IoConnectFuture future = connector.connect(address.toInetSocketAddress());
         future.addListener(new SshFutureListener<IoConnectFuture>() {
             public void operationComplete(IoConnectFuture future) {

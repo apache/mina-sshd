@@ -18,22 +18,69 @@
  */
 package org.apache.sshd.common.io.mina;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
+import org.apache.mina.core.service.IoProcessor;
+import org.apache.mina.core.service.SimpleIoProcessorPool;
+import org.apache.mina.transport.socket.nio.NioProcessor;
+import org.apache.mina.transport.socket.nio.NioSession;
 import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoConnector;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoServiceFactory;
+import org.apache.sshd.common.util.CloseableUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  */
 public class MinaServiceFactory implements IoServiceFactory {
 
-    public IoConnector createConnector(FactoryManager manager, IoHandler handler) {
-        return new MinaConnector(manager, handler);
+    private final Logger logger = LoggerFactory.getLogger(MinaServiceFactory.class);
+    private final FactoryManager manager;
+    private final ExecutorService executor;
+    private final IoProcessor<NioSession> ioProcessor;
+
+    public MinaServiceFactory(FactoryManager manager) {
+        this.manager = manager;
+        this.executor = Executors.newCachedThreadPool();
+        // Set a default reject handler
+        ((ThreadPoolExecutor) this.executor).setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        this.ioProcessor = new SimpleIoProcessorPool<NioSession>(NioProcessor.class, getNioWorkers());
     }
 
-    public IoAcceptor createAcceptor(FactoryManager manager, IoHandler handler) {
-        return new MinaAcceptor(manager, handler);
+    public IoConnector createConnector(IoHandler handler) {
+        return new MinaConnector(manager, handler, ioProcessor);
+    }
+
+    public IoAcceptor createAcceptor(IoHandler handler) {
+        return new MinaAcceptor(manager, handler, ioProcessor);
+    }
+
+    public CloseFuture close(boolean immediately) {
+        try {
+            executor.shutdownNow();
+            executor.awaitTermination(5, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            logger.debug("Exception caught while closing executor", e);
+        }
+        return CloseableUtils.closed();
+    }
+
+    public int getNioWorkers() {
+        String nioWorkers = manager.getProperties().get(FactoryManager.NIO_WORKERS);
+        if (nioWorkers != null && nioWorkers.length() > 0) {
+            int nb = Integer.parseInt(nioWorkers);
+            if (nb > 0) {
+                return nb;
+            }
+        }
+        return FactoryManager.DEFAULT_NIO_WORKERS;
     }
 
 }

@@ -93,7 +93,7 @@ import org.apache.sshd.common.forward.DefaultTcpipForwarderFactory;
 import org.apache.sshd.common.forward.TcpipServerChannel;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
-import org.apache.sshd.common.io.DefaultIoServiceFactory;
+import org.apache.sshd.common.io.DefaultIoServiceFactoryFactory;
 import org.apache.sshd.common.io.IoConnectFuture;
 import org.apache.sshd.common.io.IoConnector;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
@@ -110,6 +110,7 @@ import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.signature.SignatureDSA;
 import org.apache.sshd.common.signature.SignatureECDSA;
 import org.apache.sshd.common.signature.SignatureRSA;
+import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.NoCloseInputStream;
 import org.apache.sshd.common.util.NoCloseOutputStream;
 import org.apache.sshd.common.util.SecurityUtils;
@@ -242,8 +243,8 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             factories.add(getAgentFactory().getChannelForwardingFactory());
             setChannelFactories(factories);
         }
-        if (getIoServiceFactory() == null) {
-            setIoServiceFactory(new DefaultIoServiceFactory());
+        if (getIoServiceFactoryFactory() == null) {
+            setIoServiceFactoryFactory(new DefaultIoServiceFactoryFactory());
         }
         if (getServiceFactories() == null) {
             setServiceFactories(Arrays.asList(
@@ -282,10 +283,18 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     }
 
     public CloseFuture close(boolean immediately) {
-        CloseFuture future = connector.close(immediately);
+        CloseFuture future;
+        if (connector != null) {
+            future = CloseableUtils.sequential(connector, ioServiceFactory).close(immediately);
+        } else if (ioServiceFactory != null) {
+            future = ioServiceFactory.close(immediately);
+        } else {
+            future = CloseableUtils.closed();
+        }
         future.addListener(new SshFutureListener<CloseFuture>() {
             public void operationComplete(CloseFuture future) {
                 connector = null;
+                ioServiceFactory = null;
                 if (shutdownExecutor && executor != null) {
                     executor.shutdown();
                     executor = null;
@@ -338,7 +347,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     }
 
     protected IoConnector createConnector() {
-        return getIoServiceFactory().createConnector(this, getSessionFactory());
+        return getIoServiceFactory().createConnector(getSessionFactory());
     }
 
     protected SessionFactory createSessionFactory() {

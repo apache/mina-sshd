@@ -28,6 +28,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.io.IoServiceFactory;
+import org.apache.sshd.common.io.IoServiceFactoryFactory;
 import org.apache.sshd.common.session.ConnectionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +43,7 @@ public abstract class AbstractFactoryManager implements FactoryManager {
     protected final Logger log = LoggerFactory.getLogger(getClass());
 
     protected Map<String,String> properties = new HashMap<String,String>();
+    protected IoServiceFactoryFactory ioServiceFactoryFactory;
     protected IoServiceFactory ioServiceFactory;
     protected List<NamedFactory<KeyExchange>> keyExchangeFactories;
     protected List<NamedFactory<Cipher>> cipherFactories;
@@ -66,11 +68,20 @@ public abstract class AbstractFactoryManager implements FactoryManager {
     }
 
     public IoServiceFactory getIoServiceFactory() {
+        synchronized (ioServiceFactoryFactory) {
+            if (ioServiceFactory == null) {
+                ioServiceFactory = ioServiceFactoryFactory.create(this);
+            }
+        }
         return ioServiceFactory;
     }
 
-    public void setIoServiceFactory(IoServiceFactory ioServiceFactory) {
-        this.ioServiceFactory = ioServiceFactory;
+    public IoServiceFactoryFactory getIoServiceFactoryFactory() {
+        return ioServiceFactoryFactory;
+    }
+
+    public void setIoServiceFactoryFactory(IoServiceFactoryFactory ioServiceFactory) {
+        this.ioServiceFactoryFactory = ioServiceFactory;
     }
 
     public List<NamedFactory<KeyExchange>> getKeyExchangeFactories() {
