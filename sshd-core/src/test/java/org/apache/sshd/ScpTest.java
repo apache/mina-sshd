@@ -466,6 +466,8 @@ public class ScpTest extends BaseTest {
         InputStream is = c.getInputStream();
         c.setCommand("scp -f " + path);
         c.connect();
+        os.write(0);
+        os.flush();
         String header = readLine(is);
         assertEquals("C0644 11 out.txt", header);
         int length = Integer.parseInt(header.substring(6, header.indexOf(' ', 6)));
@@ -489,6 +491,8 @@ public class ScpTest extends BaseTest {
         InputStream is = c.getInputStream();
         c.setCommand("scp -r -f " + path);
         c.connect();
+        os.write(0);
+        os.flush();
         String header = readLine(is);
         assertTrue(header.startsWith("D0755 0 "));
         os.write(0);
@@ -519,6 +523,8 @@ public class ScpTest extends BaseTest {
         InputStream is = c.getInputStream();
         c.setCommand("scp -f " + path);
         c.connect();
+        os.write(0);
+        os.flush();
         assertEquals(2, is.read());
         c.disconnect();
         return null;

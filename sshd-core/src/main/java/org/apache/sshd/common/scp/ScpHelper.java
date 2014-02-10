@@ -101,6 +101,7 @@ public class ScpHelper {
                 case 'E':
                     line = ((char) c) + readLine();
                     log.debug("Received header: " + line);
+                    ack();
                     return;
                 default:
                     //a real ack that has been acted upon already
@@ -264,6 +265,7 @@ public class ScpHelper {
     }
 
     public void send(List<String> paths, boolean recursive, boolean preserve) throws IOException {
+        readAck(false);
         for (String pattern : paths) {
             int idx = pattern.indexOf('*');
             if (idx >= 0) {
