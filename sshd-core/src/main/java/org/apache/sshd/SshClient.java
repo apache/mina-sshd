@@ -559,8 +559,6 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             root.setLevel(Level.FINEST);
         }
 
-        // TODO: handle log level
-
         KeyPairProvider provider = null;
         List<String> files = new ArrayList<String>();
         File f = new File(System.getProperty("user.home"), ".ssh/id_dsa");

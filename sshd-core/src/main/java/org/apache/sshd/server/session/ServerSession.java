@@ -31,12 +31,6 @@ import org.apache.sshd.server.ServerFactoryManager;
 
 /**
  *
- * TODO: handle key re-exchange
- *          key re-exchange should be performed after each gigabyte of transferred data
- *          or one hour time connection (see RFC4253, section 9)
- *
- * TODO: better use of SSH_MSG_DISCONNECT and disconnect error codes
- *
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
