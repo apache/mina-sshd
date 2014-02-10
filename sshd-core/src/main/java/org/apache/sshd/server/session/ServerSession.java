@@ -43,7 +43,7 @@ public class ServerSession extends AbstractSession {
     private long idleTimeoutTimestamp = 0L;
     private int authTimeoutMs = 2 * 60 * 1000;    // 2 minutes in milliseconds
     private int idleTimeoutMs = 10 * 60 * 1000;   // 10 minutes in milliseconds
-    private long maxBytes = 1024 * 1024;          // 1 GB
+    private long maxBytes = 1024 * 1024 * 1024;   // 1 GB
     private long maxKeyInterval = 60 * 60 * 1000; // 1 hour
 
 
