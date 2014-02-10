@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.channels.AsynchronousChannelGroup;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.FactoryManager;
@@ -47,6 +48,7 @@ public class Nio2ServiceFactory implements IoServiceFactory {
         this.manager = manager;
         try {
             ExecutorService executor = Executors.newFixedThreadPool(getNioWorkers());
+            ((ThreadPoolExecutor) executor).setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
             group = AsynchronousChannelGroup.withThreadPool(executor);
         } catch (IOException e) {
             throw new RuntimeSshException(e);
