@@ -58,7 +58,7 @@ public abstract class AbstractConnectionService extends CloseableUtils.AbstractI
     /** Map of channels keyed by the identifier */
     protected final Map<Integer, Channel> channels = new ConcurrentHashMap<Integer, Channel>();
     /** Next channel identifier */
-    protected static final AtomicInteger nextChannelId = new AtomicInteger(100);
+    protected final AtomicInteger nextChannelId = new AtomicInteger(0);
 
     protected final Session session;
 
@@ -95,7 +95,7 @@ public abstract class AbstractConnectionService extends CloseableUtils.AbstractI
     }
 
     protected int getNextChannelId() {
-        return nextChannelId.incrementAndGet();
+        return nextChannelId.getAndIncrement();
     }
 
     /**
