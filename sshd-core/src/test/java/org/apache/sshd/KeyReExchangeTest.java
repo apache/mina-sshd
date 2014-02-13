@@ -202,6 +202,7 @@ public class KeyReExchangeTest extends BaseTest {
         client.stop();
 
         assertTrue("Expected rekeying", exchanges.get() > 0);
+        assertEquals(sent.toByteArray().length, out.toByteArray().length);
         assertArrayEquals(sent.toByteArray(), out.toByteArray());
     }
 }

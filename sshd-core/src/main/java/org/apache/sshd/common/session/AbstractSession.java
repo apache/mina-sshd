@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.Cipher;
@@ -110,7 +111,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     protected byte[] I_C; // the payload of the client's SSH_MSG_KEXINIT
     protected byte[] I_S; // the payload of the factoryManager's SSH_MSG_KEXINIT
     protected KeyExchange kex;
-    protected int kexState;
+    protected final AtomicInteger kexState = new AtomicInteger();
     protected DefaultSshFuture reexchangeFuture;
 
     //
@@ -140,11 +141,11 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     //
     // Rekeying
     //
-    protected long inPackets;
-    protected long outPackets;
-    protected long inBytes;
-    protected long outBytes;
-    protected long lastKeyTime;
+    protected volatile long inPackets;
+    protected volatile long outPackets;
+    protected volatile long inBytes;
+    protected volatile long outBytes;
+    protected volatile long lastKeyTime;
     protected final Queue<PendingWriteFuture> pendingPackets = new LinkedList<PendingWriteFuture>();
 
     protected Service currentService;
@@ -323,7 +324,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
             case SSH_MSG_SERVICE_REQUEST:
                 String service = buffer.getString();
                 log.debug("Received SSH_MSG_SERVICE_REQUEST '{}'", service);
-                if (kexState != KEX_STATE_DONE) {
+                if (kexState.get() != KEX_STATE_DONE) {
                     throw new IllegalStateException("Received command " + cmd + " before key exchange is finished");
                 }
                 try {
@@ -340,7 +341,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
                 break;
             case SSH_MSG_SERVICE_ACCEPT:
                 log.debug("Received SSH_MSG_SERVICE_ACCEPT");
-                if (kexState != KEX_STATE_DONE) {
+                if (kexState.get() != KEX_STATE_DONE) {
                     throw new IllegalStateException("Received command " + cmd + " before key exchange is finished");
                 }
                 serviceAccept();
@@ -348,44 +349,48 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
             case SSH_MSG_KEXINIT:
                 log.debug("Received SSH_MSG_KEXINIT");
                 receiveKexInit(buffer);
-                if (kexState == KEX_STATE_DONE) {
+                if (kexState.compareAndSet(KEX_STATE_DONE, KEX_STATE_RUN)) {
                     sendKexInit();
-                } else if (kexState != KEX_STATE_INIT) {
+                } else if (!kexState.compareAndSet(KEX_STATE_INIT, KEX_STATE_RUN)) {
                     throw new IllegalStateException("Received SSH_MSG_KEXINIT while key exchange is running");
                 }
-                kexState = KEX_STATE_RUN;
                 negotiate();
                 kex = NamedFactory.Utils.create(factoryManager.getKeyExchangeFactories(), negotiated[SshConstants.PROPOSAL_KEX_ALGS]);
                 kex.init(this, serverVersion.getBytes(), clientVersion.getBytes(), I_S, I_C);
                 break;
             case SSH_MSG_NEWKEYS:
                 log.debug("Received SSH_MSG_NEWKEYS");
-                if (kexState != KEX_STATE_KEYS) {
+                if (kexState.get() != KEX_STATE_KEYS) {
                     throw new IllegalStateException("Received command " + cmd + " before key exchange is finished");
                 }
                 receiveNewKeys();
-                kexState = KEX_STATE_DONE;
                 if (reexchangeFuture != null) {
                     reexchangeFuture.setValue(true);
                 }
                 sendEvent(SessionListener.Event.KeyEstablished);
                 synchronized (pendingPackets) {
-                    PendingWriteFuture future;
-                    while ((future = pendingPackets.poll()) != null) {
-                        doWritePacket(future.getBuffer()).addListener(future);
+                    if (!pendingPackets.isEmpty()) {
+                        log.info("Dequeing pending packets");
+                        synchronized (encodeLock) {
+                            PendingWriteFuture future;
+                            while ((future = pendingPackets.poll()) != null) {
+                                doWritePacket(future.getBuffer()).addListener(future);
+                            }
+                        }
                     }
+                    kexState.set(KEX_STATE_DONE);
                 }
                 break;
             default:
                 if (cmd >= SshConstants.SSH_MSG_KEX_FIRST && cmd <= SshConstants.SSH_MSG_KEX_LAST) {
-                    if (kexState != KEX_STATE_RUN) {
+                    if (kexState.get() != KEX_STATE_RUN) {
                         throw new IllegalStateException("Received kex command " + cmd + " while not in key exchange");
                     }
                     buffer.rpos(buffer.rpos() - 1);
                     if (kex.next(buffer)) {
                         checkKeys();
                         sendNewKeys();
-                        kexState = KEX_STATE_KEYS;
+                        kexState.set(KEX_STATE_KEYS);
                     }
                 } else if (currentService != null) {
                     currentService.process(cmd, buffer);
@@ -457,12 +462,14 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
      */
     public IoWriteFuture writePacket(Buffer buffer) throws IOException {
         // While exchanging key, queue high level packets
-        if (kexState != KEX_STATE_DONE) {
+        if (kexState.get() != KEX_STATE_DONE) {
             byte cmd = buffer.array()[buffer.rpos()];
             if (cmd > SshConstants.SSH_MSG_KEX_LAST) {
                 synchronized (pendingPackets) {
-                    if (kexState != KEX_STATE_DONE) {
-                        log.info("Flag packet {} as pending until key exchange is done", cmd);
+                    if (kexState.get() != KEX_STATE_DONE) {
+                        if (pendingPackets.isEmpty()) {
+                            log.info("Start flagging packets as pending until key exchange is done");
+                        }
                         PendingWriteFuture future = new PendingWriteFuture(buffer);
                         pendingPackets.add(future);
                         return future;
@@ -821,6 +828,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
      * @throws IOException if an error occurred sending the packet
      */
     protected byte[] sendKexInit(String[] proposal) throws IOException {
+        log.debug("Send SSH_MSG_KEXINIT");
         Buffer buffer = createBuffer(SshConstants.SSH_MSG_KEXINIT);
         int p = buffer.wpos();
         buffer.wpos(p + 16);
@@ -1203,15 +1211,12 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
      * {@inheritDoc}
      */
     public SshFuture reExchangeKeys() throws IOException {
-        synchronized (lock) {
-            if (kexState == KEX_STATE_DONE) {
-                log.info("Initiating key re-exchange");
-                kexState = KEX_STATE_INIT;
-                sendKexInit();
-                reexchangeFuture = new DefaultSshFuture(null);
-            }
-            return reexchangeFuture;
+        if (kexState.compareAndSet(KEX_STATE_DONE, KEX_STATE_INIT)) {
+            log.info("Initiating key re-exchange");
+            sendKexInit();
+            reexchangeFuture = new DefaultSshFuture(null);
         }
+        return reexchangeFuture;
     }
 
     protected void checkRekey() throws IOException {

@@ -56,7 +56,7 @@ public class ServerSession extends AbstractSession {
         maxKeyInterval = getLongProperty(ServerFactoryManager.REKEY_TIME_LIMIT, maxKeyInterval);
         log.info("Server session created from {}", ioSession.getRemoteAddress());
         sendServerIdentification();
-        kexState = KEX_STATE_INIT;
+        kexState.set(KEX_STATE_INIT);
         sendKexInit();
     }
 
@@ -100,7 +100,7 @@ public class ServerSession extends AbstractSession {
     }
 
     protected void checkRekey() throws IOException {
-        if (kexState == KEX_STATE_DONE) {
+        if (kexState.get() == KEX_STATE_DONE) {
             if (   inPackets > MAX_PACKETS || outPackets > MAX_PACKETS
                 || inBytes > maxBytes || outBytes > maxBytes
                 || maxKeyInterval > 0 && System.currentTimeMillis() - lastKeyTime > maxKeyInterval)
@@ -109,6 +109,7 @@ public class ServerSession extends AbstractSession {
             }
         }
     }
+
     public void resetIdleTimeout() {
         this.idleTimeoutTimestamp = System.currentTimeMillis() + idleTimeoutMs;
     }

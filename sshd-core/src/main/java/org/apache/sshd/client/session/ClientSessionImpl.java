@@ -98,7 +98,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         authFuture = new DefaultAuthFuture(lock);
         authFuture.setAuthed(false);
         sendClientIdentification();
-        kexState = KEX_STATE_INIT;
+        kexState.set(KEX_STATE_INIT);
         sendKexInit();
     }
 
