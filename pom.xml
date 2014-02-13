@@ -216,10 +216,6 @@
                 </configuration>
             </plugin>
             <plugin>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <version>2.2-beta-4</version>
-            </plugin>
-            <plugin>
                 <artifactId>maven-remote-resources-plugin</artifactId>
                 <executions>
                     <execution>
@@ -262,7 +258,9 @@
                 </executions>
             </plugin>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
+                <version>2.2-beta-4</version>
                 <executions>
                     <execution>
                         <id>source-release-assembly</id>
