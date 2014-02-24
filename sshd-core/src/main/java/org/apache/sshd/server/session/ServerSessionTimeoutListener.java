@@ -18,13 +18,13 @@
  */
 package org.apache.sshd.server.session;
 
-import org.apache.mina.util.ConcurrentHashSet;
 import org.apache.sshd.common.Session;
 import org.apache.sshd.common.SessionListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
  * Task that iterates over all currently open {@link ServerSession}s and checks each of them for timeouts. If 
@@ -36,7 +36,7 @@ public class ServerSessionTimeoutListener implements SessionListener, Runnable {
 
     private final Logger log = LoggerFactory.getLogger(ServerSessionTimeoutListener.class);
     
-    private final Set<ServerSession> sessions = new ConcurrentHashSet<ServerSession>();
+    private final Set<ServerSession> sessions = new CopyOnWriteArraySet<ServerSession>();
 
     public void sessionCreated(Session session) {
         if (session instanceof ServerSession) {
