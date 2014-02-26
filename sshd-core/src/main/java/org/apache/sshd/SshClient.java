@@ -37,6 +37,7 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Formatter;
@@ -560,7 +561,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         }
 
         KeyPairProvider provider = null;
-        List<String> files = new ArrayList<String>();
+        final List<String> files = new ArrayList<String>();
         File f = new File(System.getProperty("user.home"), ".ssh/id_dsa");
         if (f.exists() && f.isFile() && f.canRead()) {
             files.add(f.getAbsolutePath());
@@ -570,18 +571,31 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             files.add(f.getAbsolutePath());
         }
         if (files.size() > 0) {
-            provider = new FileKeyPairProvider(files.toArray(new String[files.size()]), new PasswordFinder() {
-                public char[] getPassword() {
-                    try {
-                        System.out.println("Enter password for private key: ");
-                        BufferedReader r = new BufferedReader(new InputStreamReader(System.in));
-                        String password = r.readLine();
-                        return password.toCharArray();
-                    } catch (IOException e) {
-                        return null;
-                    }
+            // SSHD-292: we need to use a different class to load the FileKeyPairProvider
+            //  in order to break the link between SshClient and BouncyCastle
+            try {
+                if (SecurityUtils.isBouncyCastleRegistered()) {
+                    class KeyPairProviderLoader implements Callable<KeyPairProvider> {
+                        public KeyPairProvider call() throws Exception {
+                            return new FileKeyPairProvider(files.toArray(new String[files.size()]), new PasswordFinder() {
+                                public char[] getPassword() {
+                                    try {
+                                        System.out.println("Enter password for private key: ");
+                                        BufferedReader r = new BufferedReader(new InputStreamReader(System.in));
+                                        String password = r.readLine();
+                                        return password.toCharArray();
+                                    } catch (IOException e) {
+                                        return null;
+                                    }
+                                }
+                            });
+                        }
+                    };
+                    provider = new KeyPairProviderLoader().call();
                 }
-            });
+            } catch (Throwable t) {
+                System.out.println("Error loading user keys: " + t.getMessage());
+            }
         }
 
         SshClient client = SshClient.setUpDefaultClient();
