@@ -49,6 +49,12 @@ public interface ClientFactoryManager extends FactoryManager {
     public static final String PREFERRED_AUTHS = "preferred-auths";
 
     /**
+     * Specifies the number of password prompts before giving up.
+     * The argument to this keyword must be an integer.  The default is 3.
+     */
+    public static final String PASSWORD_PROMPTS = "password-prompts";
+
+    /**
      * Retrieve the server key verifier to be used to check the key when connecting
      * to an ssh server.
      *

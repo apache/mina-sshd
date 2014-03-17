@@ -25,9 +25,17 @@ import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.security.KeyPair;
+import java.security.PublicKey;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.sshd.client.ClientFactoryManager;
+import org.apache.sshd.client.UserAuth;
+import org.apache.sshd.client.UserInteraction;
+import org.apache.sshd.client.auth.UserAuthKeyboardInteractive;
+import org.apache.sshd.client.auth.UserAuthPassword;
+import org.apache.sshd.client.auth.UserAuthPublicKey;
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.OpenFuture;
@@ -51,9 +59,12 @@ import org.apache.sshd.common.util.BufferUtils;
 import org.apache.sshd.common.util.NoCloseOutputStream;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.CommandFactory;
+import org.apache.sshd.server.PublickeyAuthenticator;
 import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.UnknownCommand;
+import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.server.session.ServerConnectionService;
+import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.session.ServerUserAuthService;
 import org.apache.sshd.util.BaseTest;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
@@ -421,9 +432,26 @@ public class ClientTest extends BaseTest {
     @Test
     public void testPublicKeyAuthNew() throws Exception {
         SshClient client = SshClient.setUpDefaultClient();
+        client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthPublicKey.Factory()));
         client.start();
         ClientSession session = client.connect("smx", "localhost", port).await().getSession();
-        KeyPair pair = Utils.createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
+        session.addPublicKeyIdentity(Utils.createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA));
+        session.auth().verify();
+    }
+
+    @Test
+    public void testPublicKeyAuthNewWithFailureOnFirstIdentity() throws Exception {
+        final KeyPair pair = Utils.createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
+        sshd.setPublickeyAuthenticator(new PublickeyAuthenticator() {
+            public boolean authenticate(String username, PublicKey key, ServerSession session) {
+                return key.equals(pair.getPublic());
+            }
+        });
+        SshClient client = SshClient.setUpDefaultClient();
+        client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthPublicKey.Factory()));
+        client.start();
+        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
+        session.addPublicKeyIdentity(new SimpleGeneratorHostKeyProvider(null, "RSA").loadKey(KeyPairProvider.SSH_RSA));
         session.addPublicKeyIdentity(pair);
         session.auth().verify();
     }
@@ -431,11 +459,65 @@ public class ClientTest extends BaseTest {
     @Test
     public void testPasswordAuthNew() throws Exception {
         SshClient client = SshClient.setUpDefaultClient();
+        client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthPassword.Factory()));
         client.start();
         ClientSession session = client.connect("smx", "localhost", port).await().getSession();
-        KeyPair pair = Utils.createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
         session.addPasswordIdentity("smx");
         session.auth().verify();
+    }
+
+    @Test
+    public void testPasswordAuthNewWithFailureOnFirstIdentity() throws Exception {
+        SshClient client = SshClient.setUpDefaultClient();
+        client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthPassword.Factory()));
+        client.start();
+        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
+        session.addPasswordIdentity("bad");
+        session.addPasswordIdentity("smx");
+        session.auth().verify();
+    }
+
+    @Test
+    public void testKeyboardInteractiveAuthNew() throws Exception {
+        SshClient client = SshClient.setUpDefaultClient();
+        client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthKeyboardInteractive.Factory()));
+        client.start();
+        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
+        session.addPasswordIdentity("smx");
+        session.auth().verify();
+    }
+
+    @Test
+    public void testKeyboardInteractiveAuthNewWithFailureOnFirstIdentity() throws Exception {
+        SshClient client = SshClient.setUpDefaultClient();
+        client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthKeyboardInteractive.Factory()));
+        client.start();
+        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
+        session.addPasswordIdentity("bad");
+        session.addPasswordIdentity("smx");
+        session.auth().verify();
+    }
+
+    @Test
+    public void testKeyboardInteractiveWithFailures() throws Exception {
+        final AtomicInteger count = new AtomicInteger();
+        SshClient client = SshClient.setUpDefaultClient();
+        client.getProperties().put(ClientFactoryManager.PASSWORD_PROMPTS, "3");
+        client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthKeyboardInteractive.Factory()));
+        client.setUserInteraction(new UserInteraction() {
+            public void welcome(String banner) {
+            }
+            public String[] interactive(String destination, String name, String instruction, String[] prompt, boolean[] echo) {
+                count.incrementAndGet();
+                return new String[] { "bad" };
+            }
+        });
+        client.start();
+        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
+        AuthFuture future = session.auth();
+        future.await();
+        assertTrue(future.isFailure());
+        assertEquals(3, count.get());
     }
 
     @Test

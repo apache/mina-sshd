@@ -18,9 +18,12 @@
  */
 package org.apache.sshd.client.auth;
 
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import org.apache.sshd.ClientSession;
+import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.UserAuth;
 import org.apache.sshd.client.UserInteraction;
 import org.apache.sshd.client.session.ClientUserAuthServiceNew;
@@ -53,22 +56,34 @@ public class UserAuthKeyboardInteractive implements UserAuth {
     protected final Logger log = LoggerFactory.getLogger(getClass());
     private ClientSession session;
     private String service;
-    private String password;
+    private Iterator<String> passwords;
+    private String current;
+    private int nbTrials;
+    private int maxTrials;
 
     public void init(ClientSession session, String service, List<Object> identities) throws Exception {
         this.session = session;
         this.service = service;
+        List<String> pwds = new ArrayList<String>();
         for (Object o : identities) {
             if (o instanceof String) {
-                password = (String) o;
-                break;
+                pwds.add((String) o);
             }
         }
+        this.passwords = pwds.iterator();
+        this.maxTrials = session.getIntProperty(ClientFactoryManager.PASSWORD_PROMPTS, 3);
     }
 
     public boolean process(Buffer buffer) throws Exception {
         if (buffer == null) {
-            log.debug("Send SSH_MSG_USERAUTH_REQUEST for password");
+            if (passwords.hasNext()) {
+                current = passwords.next();
+            } else if (nbTrials++ < maxTrials) {
+                current = null;
+            } else {
+                return false;
+            }
+            log.debug("Send SSH_MSG_USERAUTH_REQUEST for keyboard-interactive");
             buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST);
             buffer.putString(session.getUsername());
             buffer.putString(service);
@@ -98,8 +113,8 @@ public class UserAuthKeyboardInteractive implements UserAuth {
             String[] rep = null;
             if (num == 0) {
                 rep = new String[0];
-            } else if (num == 1 && password != null && !echo[0] && prompt[0].toLowerCase().startsWith("password:")) {
-                rep = new String[] { password };
+            } else if (num == 1 && current != null && !echo[0] && prompt[0].toLowerCase().startsWith("password:")) {
+                rep = new String[] { current };
             } else {
                 UserInteraction ui = session.getFactoryManager().getUserInteraction();
                 if (ui != null) {
