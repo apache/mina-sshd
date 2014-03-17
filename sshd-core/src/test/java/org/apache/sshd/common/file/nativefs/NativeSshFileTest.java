@@ -27,6 +27,11 @@ public class NativeSshFileTest extends BaseTest {
 
     @Test
     public void testResolve() {
+        assertEquals("/Z:/git/mina-sshd/sshd-core/target/scp/remote/out.txt",
+                NativeSshFile.getPhysicalName("/", "Z:\\git\\mina-sshd\\sshd-core", "Z:\\git\\mina-sshd\\sshd-core\\target\\scp\\remote\\out.txt", false));
+        assertEquals("/Z:/git/mina-sshd/sshd-core/target/scp/remote/out.txt",
+                NativeSshFile.getPhysicalName("/", "Z:\\git\\mina-sshd\\sshd-core", "/Z:/git/mina-sshd/sshd-core/target/scp/remote/out.txt", false));
+
         assertEquals("/bar", NativeSshFile.getPhysicalName("/", "/foo", "/bar", false));
         assertEquals("/bar", NativeSshFile.getPhysicalName("/", "/", "/bar", false));
         assertEquals("/bar", NativeSshFile.getPhysicalName("/", "/", "bar", false));

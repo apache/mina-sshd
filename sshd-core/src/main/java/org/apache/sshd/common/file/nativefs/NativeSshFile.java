@@ -453,6 +453,15 @@ public class NativeSshFile implements SshFile {
         return normalizedPathName;
     }
 
+    public final static String normalizePath(final String pathName) {
+        // Support windows drive as
+        if (pathName.matches("[A-Z]:\\\\.*")) {
+            return "/" + normalizeSeparateChar(pathName);
+        } else {
+            return normalizeSeparateChar(pathName);
+        }
+    }
+
     /**
      * Get the physical canonical file name. It works like
      * File.getCanonicalPath().
@@ -482,7 +491,7 @@ public class NativeSshFile implements SshFile {
             normalizedRootDir += '/';
         }
 
-        String normalizedFileName = normalizeSeparateChar(fileName);
+        String normalizedFileName = normalizePath(fileName);
         String resArg;
         String normalizedCurrDir = currDir;
         if (normalizedFileName.charAt(0) != '/') {

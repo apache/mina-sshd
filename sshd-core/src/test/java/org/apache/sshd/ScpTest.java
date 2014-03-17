@@ -100,6 +100,32 @@ public class ScpTest extends BaseTest {
     }
 
     @Test
+    public void testUploadAbsoluteDriveLetter() throws Exception {
+        SshClient client = SshClient.setUpDefaultClient();
+        client.start();
+        ClientSession session = client.connect("localhost", port).await().getSession();
+        session.authPassword("test", "test").await();
+
+        ScpClient scp = session.createScpClient();
+
+        String data = "0123456789\n";
+
+        File root = new File("target/scp");
+        Utils.deleteRecursive(root);
+        root.mkdirs();
+        new File(root, "local").mkdirs();
+        assertTrue(root.exists());
+
+
+        writeFile(new File("target/scp/local/out.txt"), data);
+        new File(root, "remote").mkdirs();
+        scp.upload(new File("target/scp/local/out.txt").getAbsolutePath(), "/" + new File("target/scp/remote/out.txt").getAbsolutePath().replace(File.separatorChar, '/'));
+        assertFileLength(new File("target/scp/remote/out.txt"), data.length(), 5000);
+        scp.upload(new File("target/scp/local/out.txt").getAbsolutePath(), new File("target/scp/remote/out2.txt").getAbsolutePath());
+        assertFileLength(new File("target/scp/remote/out2.txt"), data.length(), 5000);
+    }
+
+    @Test
     public void testScpNativeOnSingleFile() throws Exception {
         SshClient client = SshClient.setUpDefaultClient();
         client.start();
