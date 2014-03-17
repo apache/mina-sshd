@@ -712,7 +712,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                 }
                 try {
                     SshFile p = resolveFile(path);
-                    sendPath(id, p);
+                    sendPath(id, p, false);
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
                     sendStatus(id, SSH_FX_NO_SUCH_FILE, e.getMessage());
@@ -795,6 +795,10 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
     }
 
     protected void sendPath(int id, SshFile f) throws IOException {
+        sendPath(id, f, true);
+    }
+
+    protected void sendPath(int id, SshFile f, boolean sendAttrs) throws IOException {
         Buffer buffer = new Buffer();
         buffer.putByte((byte) SSH_FXP_NAME);
         buffer.putInt(id);
@@ -809,7 +813,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         if (f.getName().length() == 0) {
             f = resolveFile(".");
         }
-        buffer.putString(getLongName(f)); // Format specified in the specs
+        buffer.putString(getLongName(f, sendAttrs)); // Format specified in the specs
         buffer.putInt(0);
         send(buffer);
     }
@@ -848,7 +852,24 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
     }
 
     private String getLongName(SshFile f) throws IOException {
-        Map<SshFile.Attribute, Object> attributes = f.getAttributes(true);
+        return getLongName(f, true);
+    }
+
+    private String getLongName(SshFile f, boolean sendAttrs) throws IOException {
+        Map<SshFile.Attribute, Object> attributes;
+        if (sendAttrs) {
+            attributes = f.getAttributes(true);
+        } else {
+            attributes = new HashMap<SshFile.Attribute, Object>();
+            attributes.put(SshFile.Attribute.Owner, "owner");
+            attributes.put(SshFile.Attribute.Group, "group");
+            attributes.put(SshFile.Attribute.Size, (long) 0);
+            attributes.put(SshFile.Attribute.IsDirectory, false);
+            attributes.put(SshFile.Attribute.IsSymbolicLink, false);
+            attributes.put(SshFile.Attribute.IsRegularFile, false);
+            attributes.put(SshFile.Attribute.Permissions, EnumSet.noneOf(SshFile.Permission.class));
+            attributes.put(SshFile.Attribute.LastModifiedTime, (long) 0);
+        }
         String username = (String) attributes.get(SshFile.Attribute.Owner);
         if (username.length() > 8) {
             username = username.substring(0, 8);

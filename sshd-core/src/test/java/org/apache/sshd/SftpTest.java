@@ -222,6 +222,19 @@ public class SftpTest extends BaseTest {
         }
     }
 
+    @Test
+    public void testRealPath() throws Exception {
+        ChannelSftp c = (ChannelSftp) session.openChannel("sftp");
+        c.connect();
+
+        URI url = getClass().getClassLoader().getResource(SshClient.class.getName().replace('.', '/') + ".class").toURI();
+        URI base = new File(System.getProperty("user.dir")).getAbsoluteFile().toURI();
+        String path = new File(base.relativize(url).getPath()).getParent() + "/";
+        path = path.replace('\\', '/');
+        String real = c.realpath(path + "/foobar");
+        System.out.println(real);
+    }
+
     protected void assertFileLength(File file, long length, long timeout) throws Exception {
         boolean ok = false;
         while (timeout > 0) {
