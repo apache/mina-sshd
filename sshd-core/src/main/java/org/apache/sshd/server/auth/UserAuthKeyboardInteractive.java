@@ -58,7 +58,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
         } else {
             byte cmd = buffer.getByte();
             if (cmd != SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE) {
-                throw new SshException("Received unexepected message: " + cmd);
+                throw new SshException("Received unexpected message: " + cmd);
             }
             int num = buffer.getInt();
             if (num != 1) {
