@@ -95,12 +95,32 @@ public class DHGEX implements KeyExchange {
 
     public boolean next(Buffer buffer) throws Exception {
         byte cmd = buffer.getByte();
-        if (cmd != expected) {
-            throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
-                    "Protocol error: expected packet " + expected + ", got " + cmd);
-        }
 
-        if (cmd == SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST) {
+        if (cmd == SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST_OLD && expected == SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST) {
+            log.debug("Received SSH_MSG_KEX_DH_GEX_REQUEST_OLD");
+            min = 1024;
+            prf = buffer.getInt();
+            max = 8192;
+
+            if (max < min || prf < min || max < prf) {
+                throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
+                        "Protocol error: bad parameters " + min + " !< " + prf + " !< " + max);
+            }
+            dh = chooseDH(min, prf, max);
+            f = dh.getE();
+            hash = dh.getHash();
+            hash.init();
+
+            log.debug("Send SSH_MSG_KEX_DH_GEX_GROUP");
+            buffer = session.createBuffer(SshConstants.SSH_MSG_KEX_DH_GEX_GROUP);
+            buffer.putMPInt(dh.getP());
+            buffer.putMPInt(dh.getG());
+            session.writePacket(buffer);
+
+            expected = SshConstants.SSH_MSG_KEX_DH_GEX_INIT;
+            return false;
+        }
+        if (cmd == SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST && expected == SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST) {
             log.debug("Received SSH_MSG_KEX_DH_GEX_REQUEST");
             min = buffer.getInt();
             prf = buffer.getInt();
@@ -122,6 +142,10 @@ public class DHGEX implements KeyExchange {
 
             expected = SshConstants.SSH_MSG_KEX_DH_GEX_INIT;
             return false;
+        }
+        if (cmd != expected) {
+            throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
+                    "Protocol error: expected packet " + expected + ", got " + cmd);
         }
 
         if (cmd == SshConstants.SSH_MSG_KEX_DH_GEX_INIT) {

@@ -44,6 +44,7 @@ public interface SshConstants {
     static final byte SSH_MSG_KEXDH_INIT=                     30;
     static final byte SSH_MSG_KEXDH_REPLY=                    31;
 
+    static final byte SSH_MSG_KEX_DH_GEX_REQUEST_OLD=         30;
     static final byte SSH_MSG_KEX_DH_GEX_GROUP=               31;
     static final byte SSH_MSG_KEX_DH_GEX_INIT=                32;
     static final byte SSH_MSG_KEX_DH_GEX_REPLY=               33;
