@@ -138,7 +138,9 @@ public class ProcessShellFactory implements Factory<Command> {
         }
 
         public void destroy() {
-            process.destroy();
+            if (process != null) {
+                process.destroy();
+            }
         }
 
         protected class TtyFilterInputStream extends FilterInputStream {

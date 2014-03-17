@@ -584,7 +584,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
                                                     
         SshServer sshd = SshServer.setUpDefaultServer();
         sshd.setPort(port);
-        sshd.getProperties().put(SshServer.WELCOME_BANNER, "Welcome to SSHD");
+        sshd.getProperties().put(SshServer.WELCOME_BANNER, "Welcome to SSHD\n");
         if (SecurityUtils.isBouncyCastleRegistered()) {
             sshd.setKeyPairProvider(new PEMGeneratorHostKeyProvider("key.pem"));
         } else {
@@ -625,7 +625,17 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
                 return true;
             }
         });
-        sshd.setCommandFactory(new ScpCommandFactory());
+        sshd.setCommandFactory(new ScpCommandFactory(new CommandFactory() {
+            public Command createCommand(String command) {
+                EnumSet<ProcessShellFactory.TtyOptions> ttyOptions;
+                if (OsUtils.isUNIX()) {
+                    ttyOptions = EnumSet.of(ProcessShellFactory.TtyOptions.ONlCr);
+                } else {
+                    ttyOptions = EnumSet.of(ProcessShellFactory.TtyOptions.Echo, ProcessShellFactory.TtyOptions.ICrNl, ProcessShellFactory.TtyOptions.ONlCr);
+                }
+                return new ProcessShellFactory(command.split(" "), ttyOptions).create();
+            }
+        }));
         sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(
                 new SftpSubsystem.Factory()
         ));
