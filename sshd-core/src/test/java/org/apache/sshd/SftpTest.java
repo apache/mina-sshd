@@ -235,6 +235,34 @@ public class SftpTest extends BaseTest {
         System.out.println(real);
     }
 
+    @Test
+    public void testCreateSymbolicLink() throws Exception {
+        File root = new File("target/sftp");
+        String unixPath = "target/sftp/out.txt";
+        String linkUnixPath = "target/sftp/link.txt";
+        File target = new File(unixPath);
+        File link = new File(linkUnixPath);
+        Utils.deleteRecursive(root);
+        root.mkdirs();
+        assertTrue(root.exists());
+
+        ChannelSftp c = (ChannelSftp) session.openChannel("sftp");
+        c.connect();
+        c.put(new ByteArrayInputStream("0123456789".getBytes()), unixPath);
+
+        assertTrue(target.exists());
+        assertEquals("0123456789", readFile(unixPath));
+
+        c.symlink(unixPath, linkUnixPath);
+
+        assertTrue(link.exists());
+        assertEquals("0123456789", readFile(linkUnixPath));
+
+        String str1 = c.readlink(linkUnixPath);
+        String str2 = c.realpath(unixPath);
+        assertEquals(str1, str2);
+    }
+
     protected void assertFileLength(File file, long length, long timeout) throws Exception {
         boolean ok = false;
         while (timeout > 0) {

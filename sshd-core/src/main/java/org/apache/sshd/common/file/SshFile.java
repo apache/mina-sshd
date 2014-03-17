@@ -90,6 +90,8 @@ public interface SshFile {
 
     String readSymbolicLink() throws IOException;
 
+    void createSymbolicLink(SshFile destination) throws IOException;
+
 
     /**
      * Get the owner name of the file

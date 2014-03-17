@@ -648,4 +648,8 @@ public class NativeSshFile implements SshFile {
     public String readSymbolicLink() throws IOException {
         throw new UnsupportedOperationException();
     }
+
+    public void createSymbolicLink(SshFile destination) throws IOException {
+        throw new UnsupportedOperationException();
+    }
 }

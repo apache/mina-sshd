@@ -26,6 +26,7 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.GroupPrincipal;
 import java.nio.file.attribute.PosixFilePermission;
@@ -36,6 +37,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+
+import org.apache.sshd.common.file.SshFile;
 
 /**
  * <strong>Internal class, do not use directly.</strong>
@@ -106,6 +109,12 @@ public class NativeSshFileNio extends NativeSshFile {
         Path path = file.toPath();
         Path link = Files.readSymbolicLink(path);
         return link.toString();
+    }
+
+    public void createSymbolicLink(SshFile destination) throws IOException {
+        Path link = file.toPath();
+        Path target = Paths.get(destination.getAbsolutePath());
+        Files.createSymbolicLink(target, link);
     }
 
     private EnumSet<Permission> fromPerms(Set<PosixFilePermission> perms) {

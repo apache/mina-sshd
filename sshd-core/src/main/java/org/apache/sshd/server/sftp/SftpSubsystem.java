@@ -770,6 +770,22 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                 }
                 break;
             }
+            case SSH_FXP_SYMLINK: {
+                String linkpath = buffer.getString();
+                String targetpath = buffer.getString();
+                log.debug("Received SSH_FXP_SYMLINK (linkpath={}, targetpath={})", linkpath, targetpath);
+                try {
+                    SshFile link = resolveFile(linkpath);
+                    SshFile target = resolveFile(targetpath);
+                    link.createSymbolicLink(target);
+                    sendStatus(id, SSH_FX_OK, "");
+                } catch (UnsupportedOperationException e) {
+                    sendStatus(id, SSH_FX_OP_UNSUPPORTED, "Command " + type + " is unsupported or not implemented");
+                } catch (IOException e) {
+                    sendStatus(id, SSH_FX_FAILURE, e.getMessage());
+                }
+                break;
+            }
             default: {
                 log.error("Received: {}", type);
                 sendStatus(id, SSH_FX_OP_UNSUPPORTED, "Command " + type + " is unsupported or not implemented");
