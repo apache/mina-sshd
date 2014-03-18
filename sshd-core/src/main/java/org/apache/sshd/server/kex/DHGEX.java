@@ -79,6 +79,7 @@ public class DHGEX implements KeyExchange {
     int prf;
     int max;
     private byte expected;
+    boolean oldRequest;
 
     public void init(AbstractSession s, byte[] V_S, byte[] V_C, byte[] I_S, byte[] I_C) throws Exception {
         if (!(s instanceof ServerSession)) {
@@ -98,6 +99,7 @@ public class DHGEX implements KeyExchange {
 
         if (cmd == SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST_OLD && expected == SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST) {
             log.debug("Received SSH_MSG_KEX_DH_GEX_REQUEST_OLD");
+            oldRequest = true;
             min = 1024;
             prf = buffer.getInt();
             max = 8192;
@@ -171,9 +173,13 @@ public class DHGEX implements KeyExchange {
             buffer.putString(I_C);
             buffer.putString(I_S);
             buffer.putString(K_S);
-            buffer.putInt(min);
-            buffer.putInt(prf);
-            buffer.putInt(max);
+            if (oldRequest) {
+                buffer.putInt(prf);
+            } else {
+                buffer.putInt(min);
+                buffer.putInt(prf);
+                buffer.putInt(max);
+            }
             buffer.putMPInt(dh.getP());
             buffer.putMPInt(dh.getG());
             buffer.putMPInt(e);
