@@ -278,7 +278,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
                 if (authed) { // authFuture.isSuccess()
                     cond |= AUTHED;
                 }
-                if (authFuture.isFailure()) {
+                if (kexState.get() == KEX_STATE_DONE && authFuture.isFailure()) {
                     cond |= WAIT_AUTH;
                 }
                 if ((cond & mask) != 0) {

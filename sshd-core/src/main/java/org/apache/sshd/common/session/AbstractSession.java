@@ -380,6 +380,9 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
                     }
                     kexState.set(KEX_STATE_DONE);
                 }
+                synchronized (lock) {
+                    lock.notifyAll();
+                }
                 break;
             default:
                 if (cmd >= SshConstants.SSH_MSG_KEX_FIRST && cmd <= SshConstants.SSH_MSG_KEX_LAST) {

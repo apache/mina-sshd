@@ -24,13 +24,16 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
+import java.net.SocketAddress;
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.client.ClientFactoryManager;
+import org.apache.sshd.client.ServerKeyVerifier;
 import org.apache.sshd.client.UserAuth;
 import org.apache.sshd.client.UserInteraction;
 import org.apache.sshd.client.auth.UserAuthKeyboardInteractive;
@@ -552,6 +555,30 @@ public class ClientTest extends BaseTest {
         } finally {
             TestEchoShellFactory.TestEchoShell.latch = null;
         }
+    }
+
+    @Test
+    public void testWaitAuth() throws Exception {
+        SshClient client = SshClient.setUpDefaultClient();
+        final AtomicBoolean ok = new AtomicBoolean();
+        client.setServerKeyVerifier(
+                new ServerKeyVerifier() {
+                    public boolean verifyServerKey(
+                            ClientSession sshClientSession,
+                            SocketAddress remoteAddress,
+                            PublicKey serverKey
+                    ) {
+                        System.out.println(serverKey);
+                        ok.set(true);
+                        return true;
+                    }
+                }
+        );
+        client.start();
+        ClientSession session = client.connect("localhost", port).await().getSession();
+        session.waitFor(ClientSession.WAIT_AUTH, 10000);
+        assertTrue(ok.get());
+        client.stop();
     }
 
     private void suspend(IoSession ioSession) {
