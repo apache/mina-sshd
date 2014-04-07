@@ -214,7 +214,7 @@ public class DefaultSftpClient implements SftpClient {
                 if (closing) {
                     throw new SshException("Channel has been closed");
                 }
-                Buffer buffer = messages.get(id);
+                Buffer buffer = messages.remove(id);
                 if (buffer != null) {
                     return buffer;
                 }
