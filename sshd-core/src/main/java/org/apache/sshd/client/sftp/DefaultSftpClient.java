@@ -449,7 +449,11 @@ public class DefaultSftpClient implements SftpClient {
         buffer.putString(handle.id);
         buffer.putLong(fileOffset);
         buffer.putInt(len);
-        buffer = receive(send(SSH_FXP_READ, buffer));
+        return checkData(receive(send(SSH_FXP_READ, buffer)), dstoff, dst);
+    }
+
+    protected int checkData(Buffer buffer, int dstoff, byte[] dst) throws SshException {
+        int len;
         int length = buffer.getInt();
         int type = buffer.getByte();
         int id = buffer.getInt();
@@ -500,7 +504,10 @@ public class DefaultSftpClient implements SftpClient {
     public DirEntry[] readDir(Handle handle) throws IOException {
         Buffer buffer = new Buffer();
         buffer.putString(handle.id);
-        buffer = receive(send(SSH_FXP_READDIR, buffer));
+        return checkDir(receive(send(SSH_FXP_READDIR, buffer)));
+    }
+
+    protected DirEntry[] checkDir(Buffer buffer) throws IOException {
         int length = buffer.getInt();
         int type = buffer.getByte();
         int id = buffer.getInt();
