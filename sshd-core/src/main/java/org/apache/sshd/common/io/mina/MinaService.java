@@ -66,7 +66,11 @@ public abstract class MinaService implements org.apache.sshd.common.io.IoService
         Map<Long, IoSession> mina = new HashMap<Long, IoSession>(getIoService().getManagedSessions());
         Map<Long, org.apache.sshd.common.io.IoSession> sessions = new HashMap<Long, org.apache.sshd.common.io.IoSession>();
         for (Long id : mina.keySet()) {
-            sessions.put(id, getSession(mina.get(id)));
+            // Avoid possible NPE if the MinaSession hasn't been created yet
+            org.apache.sshd.common.io.IoSession session = getSession(mina.get(id));
+            if (session != null) {
+                sessions.put(id, session);
+            }
         }
         return sessions;
     }
