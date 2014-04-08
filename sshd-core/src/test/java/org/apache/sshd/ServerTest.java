@@ -132,12 +132,12 @@ public class ServerTest extends BaseTest {
 
     @Test
     public void testAuthenticationTimeout() throws Exception {
-        sshd.getProperties().put(SshServer.AUTH_TIMEOUT, "1000");
+        sshd.getProperties().put(SshServer.AUTH_TIMEOUT, "5000");
 
         client = SshClient.setUpDefaultClient();
         client.start();
         ClientSession s = client.connect("localhost", port).await().getSession();
-        int res = s.waitFor(ClientSession.CLOSED, 5000);
+        int res = s.waitFor(ClientSession.CLOSED, 10000);
         assertEquals("Session should be closed", ClientSession.CLOSED | ClientSession.WAIT_AUTH, res);
     }
 

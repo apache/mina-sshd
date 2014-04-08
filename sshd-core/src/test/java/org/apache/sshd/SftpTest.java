@@ -237,6 +237,11 @@ public class SftpTest extends BaseTest {
 
     @Test
     public void testCreateSymbolicLink() throws Exception {
+        // Do not execute on windows as the file system does not support symlinks
+        if (System.getProperty("os.name").toLowerCase().contains("win")) {
+            return;
+        }
+
         File root = new File("target/sftp");
         String unixPath = "target/sftp/out.txt";
         String linkUnixPath = "target/sftp/link.txt";

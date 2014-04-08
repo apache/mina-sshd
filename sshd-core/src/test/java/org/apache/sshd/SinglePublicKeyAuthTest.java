@@ -107,6 +107,7 @@ public class SinglePublicKeyAuthTest extends BaseTest {
         assertEquals(1, count.get(KeyUtils.getFingerPrint(pairRsaBad.getPublic())).get());
         assertEquals(1, count.get(KeyUtils.getFingerPrint(pairRsa.getPublic())).get());
         client.close(false).await();
+        Thread.sleep(100);
         assertTrue(auth.getCache().isEmpty());
     }
 

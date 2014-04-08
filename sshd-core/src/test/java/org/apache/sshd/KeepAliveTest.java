@@ -45,9 +45,9 @@ public class KeepAliveTest extends BaseTest {
     private SshServer sshd;
     private int port;
 
-    private int heartbeat = 1000;
-    private int timeout = 2000;
-    private int wait = 4000;
+    private int heartbeat = 2000;
+    private int timeout = 4000;
+    private int wait = 8000;
 
     @Before
     public void setUp() throws Exception {
