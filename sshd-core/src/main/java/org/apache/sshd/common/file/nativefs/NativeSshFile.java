@@ -52,8 +52,7 @@ public class NativeSshFile implements SshFile {
     protected static final Logger LOG = LoggerFactory.getLogger(NativeSshFile.class);
 
     // the file name with respect to the user root.
-    // The path separator character will be '/' and
-    // it will always begin with '/'.
+    // The path separator character will be '/'.
     protected String fileName;
 
     protected File file;
@@ -78,8 +77,6 @@ public class NativeSshFile implements SshFile {
 
         if (fileName.length() == 0) {
             throw new IllegalArgumentException("fileName can not be empty");
-        } else if (fileName.charAt(0) != '/') {
-            throw new IllegalArgumentException("fileName must be an absolute path");
         }
 
         this.fileName = fileName;
@@ -96,10 +93,12 @@ public class NativeSshFile implements SshFile {
      */
     public String getAbsolutePath() {
 
+        char separator = nativeFileSystemView.getSeparator();
+
         // strip the last '/' if necessary
         String fullName = fileName;
         int filelen = fullName.length();
-        if ((filelen != 1) && (fullName.charAt(filelen - 1) == '/')) {
+        if (fileName.indexOf(separator) != filelen - 1 && (fullName.charAt(filelen - 1) == separator)) {
             fullName = fullName.substring(0, filelen - 1);
         }
 
@@ -111,20 +110,22 @@ public class NativeSshFile implements SshFile {
      */
     public String getName() {
 
+        char separator = nativeFileSystemView.getSeparator();
+
         // root - the short name will be '/'
-        if (fileName.equals("/")) {
-            return "/";
+        if (fileName.indexOf(separator) == fileName.length() - 1) {
+            return fileName;
         }
 
         // strip the last '/'
         String shortName = fileName;
         int filelen = fileName.length();
-        if (shortName.charAt(filelen - 1) == '/') {
+        if (shortName.charAt(filelen - 1) == separator) {
             shortName = shortName.substring(0, filelen - 1);
         }
 
         // return from the last '/'
-        int slashIndex = shortName.lastIndexOf('/');
+        int slashIndex = shortName.lastIndexOf(separator);
         if (slashIndex != -1) {
             shortName = shortName.substring(slashIndex + 1);
         }
@@ -234,8 +235,10 @@ public class NativeSshFile implements SshFile {
      */
     public boolean isRemovable() {
 
+        char separator = nativeFileSystemView.getSeparator();
+
         // root cannot be deleted
-        if ("/".equals(fileName)) {
+        if (fileName.indexOf(separator) == fileName.length() - 1) {
             return false;
         }
 
@@ -251,12 +254,16 @@ public class NativeSshFile implements SshFile {
 //        }
 
         // In order to maintain consistency, when possible we delete the last '/' character in the String
-        int indexOfSlash = fullName.lastIndexOf('/');
+        int indexOfSlash = fullName.lastIndexOf(separator);
         String parentFullName;
         if (indexOfSlash == 0) {
             parentFullName = "/";
         } else {
-            parentFullName = fullName.substring(0, indexOfSlash);
+            if (fullName.indexOf(separator) == indexOfSlash) {
+                parentFullName = fullName.substring(0, indexOfSlash + 1);
+            } else {
+                parentFullName = fullName.substring(0, indexOfSlash);
+            }
         }
 
         // we check if the parent FileObject is writable.
@@ -266,12 +273,19 @@ public class NativeSshFile implements SshFile {
     }
 
     public SshFile getParentFile() {
-        int indexOfSlash = getAbsolutePath().lastIndexOf('/');
+        char separator = nativeFileSystemView.getSeparator();
+
+        String path = getAbsolutePath();
+        int indexOfSlash = path.lastIndexOf(separator);
         String parentFullName;
         if (indexOfSlash == 0) {
             parentFullName = "/";
         } else {
-            parentFullName = getAbsolutePath().substring(0, indexOfSlash);
+            if (path.indexOf(separator) == indexOfSlash) {
+                parentFullName = path.substring(0, indexOfSlash + 1);
+            } else {
+                parentFullName = path.substring(0, indexOfSlash);
+            }
         }
 
         // we check if the parent FileObject is writable.
@@ -363,10 +377,12 @@ public class NativeSshFile implements SshFile {
             }
         });
 
+        char separator = nativeFileSystemView.getSeparator();
+
         // get the virtual name of the base directory
         String virtualFileStr = getAbsolutePath();
-        if (virtualFileStr.charAt(virtualFileStr.length() - 1) != '/') {
-            virtualFileStr += '/';
+        if (virtualFileStr.charAt(virtualFileStr.length() - 1) != separator) {
+            virtualFileStr += separator;
         }
 
         // now return all the files under the directory
@@ -448,18 +464,8 @@ public class NativeSshFile implements SshFile {
      * Normalize separate character. Separate character should be '/' always.
      */
     public final static String normalizeSeparateChar(final String pathName) {
-        String normalizedPathName = pathName.replace(File.separatorChar, '/');
-        normalizedPathName = normalizedPathName.replace('\\', '/');
+        String normalizedPathName = pathName.replace('\\', '/');
         return normalizedPathName;
-    }
-
-    public final static String normalizePath(final String pathName) {
-        // Support windows drive as
-        if (pathName.matches("[A-Z]:\\\\.*")) {
-            return "/" + normalizeSeparateChar(pathName);
-        } else {
-            return normalizeSeparateChar(pathName);
-        }
     }
 
     /**
@@ -477,11 +483,6 @@ public class NativeSshFile implements SshFile {
      *         will never be null.
      */
     public final static String getPhysicalName(final String rootDir,
-            final String currDir, final String fileName) {
-        return getPhysicalName(rootDir, currDir, fileName, false);
-    }
-
-    public final static String getPhysicalName(final String rootDir,
             final String currDir, final String fileName,
             final boolean caseInsensitive) {
 
@@ -491,7 +492,7 @@ public class NativeSshFile implements SshFile {
             normalizedRootDir += '/';
         }
 
-        String normalizedFileName = normalizePath(fileName);
+        String normalizedFileName = normalizeSeparateChar(fileName);
         String resArg;
         String normalizedCurrDir = currDir;
         if (normalizedFileName.charAt(0) != '/') {

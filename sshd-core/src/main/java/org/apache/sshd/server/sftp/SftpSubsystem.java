@@ -1094,7 +1094,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
     }
 
     private SshFile resolveFile(String path) {
-    	return this.root.getFile(path);
+    	return this.root.getNormalizedView().getFile(path);
     }
 
     private final static String[] MONTHS = { "Jan", "Feb", "Mar", "Apr", "May",

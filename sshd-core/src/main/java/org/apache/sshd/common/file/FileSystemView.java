@@ -41,4 +41,13 @@ public interface FileSystemView {
      */
     SshFile getFile(SshFile baseDir, String file);
 
+    /**
+     * Return a view of this file system which has a single root
+     * and uses '/' as a file separator.
+     * If the file system has multiple roots, they are mapped
+     * to directories inside that single root.
+     * @return a normalized file system view
+     */
+    FileSystemView getNormalizedView();
+
 }
