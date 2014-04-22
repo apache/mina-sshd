@@ -34,168 +34,17 @@ import org.apache.sshd.common.util.SttySupport;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ChannelShell extends ChannelSession {
-
-    private boolean agentForwarding;
-    private boolean usePty = true;
-    private String ptyType;
-    private int ptyColumns;
-    private int ptyLines;
-    private int ptyWidth;
-    private int ptyHeight;
-    private Map<PtyMode, Integer> ptyModes;
-    private Map<String, String> env = new LinkedHashMap<String, String>();
+public class ChannelShell extends PtyCapableChannelSession {
 
     public ChannelShell() {
-        ptyType = System.getenv("TERM");
-        if (ptyType == null) {
-            ptyType = "dummy";
-        }
-        ptyColumns = 80;
-        ptyLines = 24;
-        ptyWidth = 640;
-        ptyHeight = 480;
-        // Set up default pty modes
-        ptyModes = new HashMap<PtyMode, Integer>();
-        ptyModes.put(PtyMode.ISIG, 1);
-        ptyModes.put(PtyMode.ICANON, 1);
-        ptyModes.put(PtyMode.ECHO, 1);
-        ptyModes.put(PtyMode.ECHOE, 1);
-        ptyModes.put(PtyMode.ECHOK, 1);
-        ptyModes.put(PtyMode.ECHONL, 0);
-        ptyModes.put(PtyMode.NOFLSH, 0);
-    }
-
-    public void setupSensibleDefaultPty() {
-        try {
-            if (OsUtils.isUNIX()) {
-                ptyModes = SttySupport.getUnixPtyModes();
-                ptyColumns = SttySupport.getTerminalWidth();
-                ptyLines = SttySupport.getTerminalHeight();
-            } else {
-                ptyType = "windows";
-            }
-        } catch (Throwable t) {
-            // Ignore exceptions
-        }
-    }
-
-    public boolean isAgentForwarding() {
-        return agentForwarding;
-    }
-
-    public void setAgentForwarding(boolean agentForwarding) {
-        this.agentForwarding = agentForwarding;
-    }
-
-    public boolean isUsePty() {
-        return usePty;
-    }
-
-    public void setUsePty(boolean usePty) {
-        this.usePty = usePty;
-    }
-
-    public String getPtyType() {
-        return ptyType;
-    }
-
-    public void setPtyType(String ptyType) {
-        this.ptyType = ptyType;
-    }
-
-    public int getPtyColumns() {
-        return ptyColumns;
-    }
-
-    public void setPtyColumns(int ptyColumns) {
-        this.ptyColumns = ptyColumns;
-    }
-
-    public int getPtyLines() {
-        return ptyLines;
-    }
-
-    public void setPtyLines(int ptyLines) {
-        this.ptyLines = ptyLines;
-    }
-
-    public int getPtyWidth() {
-        return ptyWidth;
-    }
-
-    public void setPtyWidth(int ptyWidth) {
-        this.ptyWidth = ptyWidth;
-    }
-
-    public int getPtyHeight() {
-        return ptyHeight;
-    }
-
-    public void setPtyHeight(int ptyHeight) {
-        this.ptyHeight = ptyHeight;
-    }
-
-    public Map<PtyMode, Integer> getPtyModes() {
-        return ptyModes;
-    }
-
-    public void setPtyModes(Map<PtyMode, Integer> ptyModes) {
-        this.ptyModes = ptyModes;
-    }
-
-    public void setEnv(String key, String value) {
-        env.put(key, value);
+        super(true);
     }
 
     protected void doOpen() throws IOException {
-        Buffer buffer;
-
-        if (agentForwarding) {
-            log.debug("Send agent forwarding request");
-            buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST);
-            buffer.putInt(recipient);
-            buffer.putString("auth-agent-req@openssh.com");
-            buffer.putBoolean(false);
-            writePacket(buffer);
-        }
-
-        if (usePty) {
-            log.debug("Send SSH_MSG_CHANNEL_REQUEST pty-req");
-            buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST);
-            buffer.putInt(recipient);
-            buffer.putString("pty-req");
-            buffer.putBoolean(false);
-            buffer.putString(ptyType);
-            buffer.putInt(ptyColumns);
-            buffer.putInt(ptyLines);
-            buffer.putInt(ptyHeight);
-            buffer.putInt(ptyWidth);
-            Buffer modes = new Buffer();
-            for (PtyMode mode : ptyModes.keySet()) {
-                modes.putByte((byte) mode.toInt());
-                modes.putInt(ptyModes.get(mode));
-            }
-            modes.putByte((byte) 0);
-            buffer.putBytes(modes.getCompactData());
-            writePacket(buffer);
-        }
-
-        if (!env.isEmpty()) {
-            log.debug("Send SSH_MSG_CHANNEL_REQUEST env");
-            for (Map.Entry<String, String> entry : env.entrySet()) {
-                buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST);
-                buffer.putInt(recipient);
-                buffer.putString("env");
-                buffer.putBoolean(false);
-                buffer.putString(entry.getKey());
-                buffer.putString(entry.getValue());
-                writePacket(buffer);
-            }
-        }
+        doOpenPty();
 
         log.debug("Send SSH_MSG_CHANNEL_REQUEST shell");
-        buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST);
+        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST);
         buffer.putInt(recipient);
         buffer.putString("shell");
         buffer.putBoolean(false);
