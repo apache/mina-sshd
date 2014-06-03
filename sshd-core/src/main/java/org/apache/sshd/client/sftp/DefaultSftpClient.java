@@ -709,6 +709,7 @@ public class DefaultSftpClient implements SftpClient {
                     if (index == buffer.length) {
                         flush();
                     }
+                    off += nb;
                     len -= nb;
                 } while (len > 0);
             }
@@ -720,6 +721,9 @@ public class DefaultSftpClient implements SftpClient {
             }
             @Override
             public void close() throws IOException {
+                if (index > 0) {
+                    flush();
+                }
                 DefaultSftpClient.this.close(handle);
             }
         };
