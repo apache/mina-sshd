@@ -40,6 +40,7 @@ import org.apache.sshd.client.auth.UserAuthKeyboardInteractive;
 import org.apache.sshd.client.auth.UserAuthPassword;
 import org.apache.sshd.client.auth.UserAuthPublicKey;
 import org.apache.sshd.client.channel.ChannelExec;
+import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.Channel;
@@ -57,6 +58,7 @@ import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.io.mina.MinaSession;
 import org.apache.sshd.common.io.nio2.Nio2Session;
 import org.apache.sshd.common.session.AbstractSession;
+import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.BufferUtils;
 import org.apache.sshd.common.util.NoCloseOutputStream;
@@ -257,6 +259,28 @@ public class ClientTest extends BaseTest {
         client.stop();
 
         assertArrayEquals(sent.toByteArray(), out.toByteArray());
+    }
+
+    @Test
+    public void testClientWithCustomChannel() throws Exception {
+        SshClient client = SshClient.setUpDefaultClient();
+        client.start();
+        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
+        session.addPasswordIdentity("smx");
+        session.auth().verify();
+
+        ChannelShell channel = new ChannelShell();
+        session.getService(ConnectionService.class).registerChannel(channel);
+
+        ByteArrayOutputStream sent = new ByteArrayOutputStream();
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ByteArrayOutputStream err = new ByteArrayOutputStream();
+        channel.setOut(out);
+        channel.setErr(err);
+        channel.open().verify();
+
+        channel.close(false).await();
+        client.stop();
     }
 
     @Test

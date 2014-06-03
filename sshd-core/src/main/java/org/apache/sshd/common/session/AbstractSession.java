@@ -456,6 +456,15 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
         return currentService != null ? new Service[] { currentService } : new Service[0];
     }
 
+    public <T extends Service> T getService(Class<T> clazz) {
+        for (Service s : getServices()) {
+            if (clazz.isInstance(s)) {
+                return clazz.cast(s);
+            }
+        }
+        throw new IllegalStateException("Attempted to access unknown service " + clazz.getSimpleName());
+    }
+
     /**
      * Encode and send the given buffer.
      * The buffer has to have 5 bytes free at the beginning to allow the encoding to take place.

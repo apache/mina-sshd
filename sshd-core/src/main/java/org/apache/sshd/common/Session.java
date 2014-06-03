@@ -157,6 +157,15 @@ public interface Session extends Closeable {
     SshFuture reExchangeKeys() throws IOException;
 
     /**
+     * Get the service of the specified type.
+     * If the service is not of the specified class,
+     * an IllegalStateException will be thrown.
+     *
+     * @throws java.lang.IllegalStateException
+     */
+    <T extends Service> T getService(Class<T> clazz);
+
+    /**
      * Type safe key for storage within the user attributes of {@link org.apache.sshd.common.session.AbstractSession}.
      * Typically it is used as a static variable that is shared between the producer
      * and the consumer. To further restrict access the setting or getting it from

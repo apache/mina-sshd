@@ -220,21 +220,11 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
     }
 
     private ClientUserAuthService getUserAuthService() {
-        return findService(ClientUserAuthService.class);
+        return getService(ClientUserAuthService.class);
     }
 
     private ConnectionService getConnectionService() {
-        return findService(ConnectionService.class);
-    }
-
-    private <T> T findService(Class<T> clazz) {
-        if (clazz.isInstance(currentService)) {
-            return clazz.cast(currentService);
-        }
-        if (clazz.isInstance(nextService)) {
-            return clazz.cast(nextService);
-        }
-        throw new IllegalStateException("Attempted to access unknown service " + clazz.getSimpleName());
+        return getService(ConnectionService.class);
     }
 
     public ScpClient createScpClient() {
