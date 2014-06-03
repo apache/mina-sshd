@@ -140,7 +140,7 @@ public class DefaultSshFuture<T extends SshFuture> implements SshFuture<T> {
                 }
 
                 curTime = System.currentTimeMillis();
-                if (ready || curTime > endTime) {
+                if (ready || curTime >= endTime) {
                     return ready;
                 }
             }
