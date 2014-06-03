@@ -71,6 +71,8 @@ public class PortForwardingTest extends BaseTest {
         echoPort = getFreePort();
 
         sshd = SshServer.setUpDefaultServer();
+        sshd.getProperties().put(SshServer.WINDOW_SIZE, "2048");
+        sshd.getProperties().put(SshServer.MAX_PACKET_SIZE, "256");
         sshd.setPort(sshPort);
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setShellFactory(new EchoShellFactory());
@@ -154,6 +156,32 @@ public class PortForwardingTest extends BaseTest {
     }
 
     @Test
+    public void testRemoteForwardingNativeBigPayload() throws Exception {
+        ClientSession session = createNativeSession();
+
+        int forwardedPort = getFreePort();
+        SshdSocketAddress remote = new SshdSocketAddress("", forwardedPort);
+        SshdSocketAddress local = new SshdSocketAddress("localhost", echoPort);
+
+        session.startRemotePortForwarding(remote, local);
+
+        byte[] buf = new byte[1024];
+
+        Socket s = new Socket(remote.getHostName(), remote.getPort());
+        for (int i = 0; i < 1000; i++) {
+            s.getOutputStream().write("0123456789".getBytes());
+            s.getOutputStream().flush();
+            int n = s.getInputStream().read(buf);
+            String res = new String(buf, 0, n);
+            assertEquals("0123456789", res);
+        }
+        s.close();
+
+        session.stopRemotePortForwarding(remote);
+        session.close(false).await();
+    }
+
+    @Test
     public void testRemoteForwardingNativeNoExplicitPort() throws Exception {
         ClientSession session = createNativeSession();
 
@@ -211,6 +239,30 @@ public class PortForwardingTest extends BaseTest {
         int n = s.getInputStream().read(buf);
         String res = new String(buf, 0, n);
         assertEquals("Hello", res);
+        s.close();
+
+        session.stopLocalPortForwarding(bound);
+        session.close(false).await();
+    }
+
+    @Test
+    public void testLocalForwardingNativeBigPayload() throws Exception {
+        ClientSession session = createNativeSession();
+
+        SshdSocketAddress local = new SshdSocketAddress("", getFreePort());
+        SshdSocketAddress remote = new SshdSocketAddress("localhost", echoPort);
+
+        SshdSocketAddress bound = session.startLocalPortForwarding(local, remote);
+
+        byte[] buf = new byte[1024];
+        Socket s = new Socket(bound.getHostName(), bound.getPort());
+        for (int i = 0; i < 1000; i++) {
+            s.getOutputStream().write("Hello".getBytes());
+            s.getOutputStream().flush();
+            int n = s.getInputStream().read(buf);
+            String res = new String(buf, 0, n);
+            assertEquals("Hello", res);
+        }
         s.close();
 
         session.stopLocalPortForwarding(bound);
@@ -366,6 +418,8 @@ public class PortForwardingTest extends BaseTest {
 
     protected ClientSession createNativeSession() throws Exception {
         client = SshClient.setUpDefaultClient();
+        client.getProperties().put(SshServer.WINDOW_SIZE, "2048");
+        client.getProperties().put(SshServer.MAX_PACKET_SIZE, "256");
         client.setTcpipForwardingFilter(new BogusForwardingFilter());
         client.start();
         ConnectFuture sessionFuture = client.connect("localhost", sshPort);
