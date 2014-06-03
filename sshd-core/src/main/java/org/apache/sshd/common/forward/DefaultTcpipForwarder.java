@@ -28,6 +28,7 @@ import java.util.Set;
 
 import org.apache.sshd.ClientChannel;
 import org.apache.sshd.client.future.OpenFuture;
+import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.ForwardingFilter;
 import org.apache.sshd.common.Session;
 import org.apache.sshd.common.SshConstants;
@@ -35,6 +36,7 @@ import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.TcpipForwarder;
 import org.apache.sshd.common.future.CloseFuture;
+import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoHandler;
@@ -51,9 +53,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class DefaultTcpipForwarder implements TcpipForwarder, IoHandler {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultTcpipForwarder.class);
+public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable implements TcpipForwarder, IoHandler {
 
     private final ConnectionService service;
     private final Session session;
@@ -80,6 +80,12 @@ public class DefaultTcpipForwarder implements TcpipForwarder, IoHandler {
         }
         if (local.getPort() < 0) {
             throw new IllegalArgumentException("Invalid local port: " + local.getPort());
+        }
+        if (isClosed()) {
+            throw new IllegalStateException("TcpipForwarder is closed");
+        }
+        if (isClosing()) {
+            throw new IllegalStateException("TcpipForwarder is closing");
         }
         SshdSocketAddress bound = doBind(local);
         localToRemote.put(bound.getPort(), remote);
@@ -146,36 +152,19 @@ public class DefaultTcpipForwarder implements TcpipForwarder, IoHandler {
         if (localForwards.remove(local) && acceptor != null) {
             acceptor.unbind(local.toInetSocketAddress());
             if (acceptor.getBoundAddresses().isEmpty()) {
-                close();
+                acceptor.close(true);
+                acceptor = null;
             }
         }
     }
 
-    public synchronized void initialize() {
-        if (this.acceptor == null) {
-            this.acceptor = session.getFactoryManager().getIoServiceFactory()
-                    .createAcceptor(this);
-        }
-    }
-
     public synchronized void close() {
-        if (acceptor != null) {
-            acceptor.dispose();
-            acceptor = null;
-        }
+        close(true);
     }
 
-    public CloseFuture close(boolean immediately) {
-        IoAcceptor a;
-        synchronized (this) {
-            a = acceptor;
-            acceptor = null;
-        }
-        if (a != null) {
-            return a.close(immediately);
-        } else {
-            return CloseableUtils.closed();
-        }
+    @Override
+    protected synchronized Closeable getInnerCloseable() {
+        return acceptor != null ? acceptor : new CloseableUtils.AbstractCloseable() { };
     }
 
     //
@@ -207,7 +196,7 @@ public class DefaultTcpipForwarder implements TcpipForwarder, IoHandler {
     public void sessionClosed(IoSession session) throws Exception {
         TcpipClientChannel channel = (TcpipClientChannel) session.getAttribute(TcpipClientChannel.class);
         if (channel != null) {
-            LOGGER.debug("IoSession {} closed, will now close the channel", session);
+            log.debug("IoSession {} closed, will now close the channel", session);
             channel.close(false);
         }
     }
@@ -231,7 +220,9 @@ public class DefaultTcpipForwarder implements TcpipForwarder, IoHandler {
     //
 
     private SshdSocketAddress doBind(SshdSocketAddress address) throws IOException {
-        initialize();
+        if (acceptor == null) {
+            acceptor = session.getFactoryManager().getIoServiceFactory().createAcceptor(this);
+        }
         Set<SocketAddress> before = acceptor.getBoundAddresses();
         try {
             acceptor.bind(address.toInetSocketAddress());

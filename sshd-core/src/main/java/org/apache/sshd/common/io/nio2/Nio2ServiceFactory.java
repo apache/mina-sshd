@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.future.CloseFuture;
+import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoConnector;
 import org.apache.sshd.common.io.IoHandler;
@@ -38,9 +39,8 @@ import org.slf4j.LoggerFactory;
 
 /**
  */
-public class Nio2ServiceFactory implements IoServiceFactory {
+public class Nio2ServiceFactory extends CloseableUtils.AbstractCloseable implements IoServiceFactory {
 
-    private final Logger logger = LoggerFactory.getLogger(Nio2ServiceFactory.class);
     private final FactoryManager manager;
     private final AsynchronousChannelGroup group;
 
@@ -63,14 +63,16 @@ public class Nio2ServiceFactory implements IoServiceFactory {
         return new Nio2Acceptor(manager, handler, group);
     }
 
-    public CloseFuture close(boolean immediately) {
+    @Override
+    protected void doCloseImmediately() {
         try {
             group.shutdownNow();
             group.awaitTermination(5, TimeUnit.SECONDS);
         } catch (Exception e) {
-            logger.debug("Exception caught while closing channel group", e);
+            log.debug("Exception caught while closing channel group", e);
+        } finally {
+            super.doCloseImmediately();
         }
-        return CloseableUtils.closed();
     }
 
     public int getNioWorkers() {

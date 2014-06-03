@@ -43,7 +43,7 @@ import org.slf4j.LoggerFactory;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ServerUserAuthService implements Service {
+public class ServerUserAuthService extends CloseableUtils.AbstractCloseable implements Service {
 
     public static class Factory implements ServiceFactory {
 
@@ -56,7 +56,6 @@ public class ServerUserAuthService implements Service {
         }
     }
 
-    private final Logger log = LoggerFactory.getLogger(getClass());
     private final ServerSession session;
     private List<NamedFactory<UserAuth>> userAuthFactories;
     private List<List<String>> authMethods;
@@ -250,11 +249,6 @@ public class ServerUserAuthService implements Service {
                 currentAuth = null;
             }
         }
-    }
-
-    public CloseFuture close(boolean immediately) {
-        log.debug("Closing authentication service");
-        return CloseableUtils.closed();
     }
 
     private ServerFactoryManager getFactoryManager() {

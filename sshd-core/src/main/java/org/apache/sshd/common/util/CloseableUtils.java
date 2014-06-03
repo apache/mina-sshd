@@ -59,30 +59,60 @@ public class CloseableUtils {
     }
 
     public static Closeable parallel(final Object lock, final Closeable... closeables) {
-        if (closeables.length == 0) {
+        int nbNonNulls = 0;
+        for (Closeable closeable : closeables) {
+            if (closeable != null) {
+                nbNonNulls++;
+            }
+        }
+        if (nbNonNulls == 0) {
             return new Closeable() {
+                final CloseFuture future = new DefaultCloseFuture(lock);
+                public boolean isClosed() {
+                    return future.isClosed();
+                }
+                public boolean isClosing() {
+                    return isClosed();
+                }
                 public CloseFuture close(boolean immediately) {
-                    final CloseFuture future = new DefaultCloseFuture(lock);
                     future.setClosed();
                     return future;
                 }
             };
-        } else if (closeables.length == 1) {
-            return closeables[0];
+        } else if (nbNonNulls == 1) {
+            for (Closeable closeable : closeables) {
+                if (closeable != null) {
+                    return closeable;
+                }
+            }
+            throw new IllegalStateException();
         } else {
             return new Closeable() {
+                final CloseFuture future = new DefaultCloseFuture(lock);
+                final AtomicBoolean closing = new AtomicBoolean();
+                public boolean isClosed() {
+                    return future.isClosed();
+                }
+                public boolean isClosing() {
+                    return closing.get();
+                }
                 public CloseFuture close(boolean immediately) {
-                    final CloseFuture future = new DefaultCloseFuture(lock);
                     final AtomicInteger count = new AtomicInteger(closeables.length);
-                    SshFutureListener<CloseFuture> listener = new SshFutureListener<CloseFuture>() {
-                        public void operationComplete(CloseFuture f) {
-                            if (count.decrementAndGet() == 0) {
-                                future.setClosed();
+                    if (closing.compareAndSet(false, true)) {
+                        SshFutureListener<CloseFuture> listener = new SshFutureListener<CloseFuture>() {
+                            public void operationComplete(CloseFuture f) {
+                                if (count.decrementAndGet() == 0) {
+                                    future.setClosed();
+                                }
+                            }
+                        };
+                        for (Closeable c : closeables) {
+                            if (c != null) {
+                                c.close(immediately).addListener(listener);
+                            } else {
+                                listener.operationComplete(null);
                             }
                         }
-                    };
-                    for (Closeable c : closeables) {
-                        c.close(immediately).addListener(listener);
                     }
                     return future;
                 }
@@ -103,61 +133,91 @@ public class CloseableUtils {
     }
 
     public static Closeable sequential(final Object lock, final Closeable... closeables) {
-        if (closeables.length == 0) {
+        int nbNonNulls = 0;
+        for (Closeable closeable : closeables) {
+            if (closeable != null) {
+                nbNonNulls++;
+            }
+        }
+        if (nbNonNulls == 0) {
             return new Closeable() {
+                final CloseFuture future = new DefaultCloseFuture(lock);
+                public boolean isClosed() {
+                    return future.isClosed();
+                }
+                public boolean isClosing() {
+                    return isClosed();
+                }
                 public CloseFuture close(boolean immediately) {
-                    final CloseFuture future = new DefaultCloseFuture(lock);
                     future.setClosed();
                     return future;
                 }
             };
-        } else if (closeables.length == 1) {
-            return closeables[0];
+        } else if (nbNonNulls == 1) {
+            for (Closeable closeable : closeables) {
+                if (closeable != null) {
+                    return closeable;
+                }
+            }
+            throw new IllegalStateException();
         } else {
             return new Closeable() {
+                final DefaultCloseFuture future = new DefaultCloseFuture(lock);
+                final AtomicBoolean closing = new AtomicBoolean();
+                public boolean isClosed() {
+                    return future.isClosed();
+                }
+                public boolean isClosing() {
+                    return closing.get();
+                }
                 public CloseFuture close(final boolean immediately) {
-                    final DefaultCloseFuture future = new DefaultCloseFuture(lock);
-                    final Iterator<Closeable> iterator = Arrays.asList(closeables).iterator();
-                    SshFutureListener<CloseFuture> listener = new SshFutureListener<CloseFuture>() {
-                        public void operationComplete(CloseFuture previousFuture) {
-                            if (iterator.hasNext()) {
-                                Closeable c = iterator.next();
-                                CloseFuture nextFuture = c.close(immediately);
-                                nextFuture.addListener(this);
-                            } else {
-                                future.setClosed();
+                    if (closing.compareAndSet(false, true)) {
+                        final Iterator<Closeable> iterator = Arrays.asList(closeables).iterator();
+                        SshFutureListener<CloseFuture> listener = new SshFutureListener<CloseFuture>() {
+                            public void operationComplete(CloseFuture previousFuture) {
+                                while (iterator.hasNext()) {
+                                    Closeable c = iterator.next();
+                                    if (c != null) {
+                                        CloseFuture nextFuture = c.close(immediately);
+                                        nextFuture.addListener(this);
+                                        return;
+                                    }
+                                }
+                                if (!iterator.hasNext()) {
+                                    future.setClosed();
+                                }
                             }
-                        }
-                    };
-                    listener.operationComplete(null);
+                        };
+                        listener.operationComplete(null);
+                    }
                     return future;
                 }
             };
         }
     }
 
-    public static SshFuture parallel(final SshFuture... futures) {
-        if (futures.length == 0) {
-            final DefaultSshFuture<SshFuture> future = new DefaultSshFuture<SshFuture>(null);
-            future.setValue(true);
-            return future;
-        } else if (futures.length == 1) {
-            return futures[0];
-        } else {
-            final CloseFuture future = new DefaultCloseFuture(null);
+    public static <T extends SshFuture> CloseFuture parallel(final SshFuture<T>... futures) {
+        final CloseFuture future = new DefaultCloseFuture(null);
+        if (futures.length > 0) {
             final AtomicInteger count = new AtomicInteger(futures.length);
-            SshFutureListener<?> listener = new SshFutureListener<SshFuture>() {
-                public void operationComplete(SshFuture f) {
+            SshFutureListener<T> listener = new SshFutureListener<T>() {
+                public void operationComplete(T f) {
                     if (count.decrementAndGet() == 0) {
                         future.setClosed();
                     }
                 }
             };
-            for (SshFuture f : futures) {
-                f.addListener(listener);
+            for (SshFuture<T> f : futures) {
+                if (f != null) {
+                    f.addListener(listener);
+                } else {
+                    listener.operationComplete(null);
+                }
             }
-            return future;
+        } else {
+            future.setClosed();
         }
+        return future;
     }
 
     public static abstract class AbstractCloseable implements Closeable {
@@ -172,33 +232,38 @@ public class CloseableUtils {
         /** Lock object for this session state */
         protected final Object lock = new Object();
         /** State of this object */
-        protected final AtomicInteger state = new AtomicInteger();
+        protected final AtomicInteger state = new AtomicInteger(OPENED);
         /** A future that will be set 'closed' when the object is actually closed */
         protected final CloseFuture closeFuture = new DefaultCloseFuture(lock);
 
         public CloseFuture close(boolean immediately) {
             if (immediately) {
-                if (state.compareAndSet(0, IMMEDIATE) || state.compareAndSet(GRACEFUL, IMMEDIATE)) {
+                if (state.compareAndSet(OPENED, IMMEDIATE) || state.compareAndSet(GRACEFUL, IMMEDIATE)) {
                     log.debug("Closing {} immediately", this);
+                    preClose();
                     doCloseImmediately();
+                    log.debug("{} closed", this);
                 } else {
                     log.debug("{} is already {}", this, state.get() == CLOSED ? "closed" : "closing");
                 }
             } else {
-                if (state.compareAndSet(0, GRACEFUL)) {
+                if (state.compareAndSet(OPENED, GRACEFUL)) {
                     log.debug("Closing {} gracefully", this);
-                    SshFuture grace = doCloseGracefully();
+                    preClose();
+                    SshFuture<CloseFuture> grace = doCloseGracefully();
                     if (grace != null) {
-                        grace.addListener(new SshFutureListener() {
-                            public void operationComplete(SshFuture future) {
+                        grace.addListener(new SshFutureListener<CloseFuture>() {
+                            public void operationComplete(CloseFuture future) {
                                 if (state.compareAndSet(GRACEFUL, IMMEDIATE)) {
                                     doCloseImmediately();
+                                    log.debug("{} closed", this);
                                 }
                             }
                         });
                     } else {
                         if (state.compareAndSet(GRACEFUL, IMMEDIATE)) {
                             doCloseImmediately();
+                            log.debug("{} closed", this);
                         }
                     }
                 } else {
@@ -208,19 +273,26 @@ public class CloseableUtils {
             return closeFuture;
         }
 
-        protected SshFuture doCloseGracefully() {
+        public boolean isClosed() {
+            return state.get() == CLOSED;
+        }
+
+        public boolean isClosing() {
+            return state.get() != OPENED;
+        }
+
+        protected void preClose() {
+        }
+
+        protected SshFuture<CloseFuture> doCloseGracefully() {
             return null;
         }
 
         protected void doCloseImmediately() {
-            postClose();
-        }
-
-        protected void postClose() {
             closeFuture.setClosed();
             state.set(CLOSED);
-            log.debug("{} closed", this);
         }
+
     }
 
     public static abstract class AbstractInnerCloseable extends AbstractCloseable {
@@ -228,7 +300,7 @@ public class CloseableUtils {
         protected abstract Closeable getInnerCloseable();
 
         @Override
-        protected SshFuture doCloseGracefully() {
+        protected SshFuture<CloseFuture> doCloseGracefully() {
             return getInnerCloseable().close(false);
         }
 
@@ -236,7 +308,7 @@ public class CloseableUtils {
         protected void doCloseImmediately() {
             getInnerCloseable().close(true).addListener(new SshFutureListener<CloseFuture>() {
                 public void operationComplete(CloseFuture future) {
-                    postClose();
+                    AbstractInnerCloseable.super.doCloseImmediately();
                 }
             });
         }

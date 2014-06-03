@@ -78,12 +78,12 @@ public class ChannelSession extends AbstractClientChannel {
     }
 
     @Override
-    protected void postClose() {
+    protected void doCloseImmediately() {
         if (streamPumper != null) {
             streamPumper.interrupt();
             streamPumper = null;
         }
-        super.postClose();
+        super.doCloseImmediately();
     }
 
     protected void pumpInputStream() {

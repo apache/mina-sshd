@@ -30,6 +30,7 @@ import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.io.IoServiceFactoryFactory;
 import org.apache.sshd.common.session.ConnectionService;
+import org.apache.sshd.common.util.CloseableUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,9 +39,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractFactoryManager implements FactoryManager {
-
-    protected final Logger log = LoggerFactory.getLogger(getClass());
+public abstract class AbstractFactoryManager extends CloseableUtils.AbstractCloseable implements FactoryManager {
 
     protected Map<String,String> properties = new HashMap<String,String>();
     protected IoServiceFactoryFactory ioServiceFactoryFactory;

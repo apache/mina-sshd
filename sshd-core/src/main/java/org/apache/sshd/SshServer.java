@@ -62,6 +62,7 @@ import org.apache.sshd.common.file.nativefs.NativeFileSystemFactory;
 import org.apache.sshd.common.forward.DefaultTcpipForwarderFactory;
 import org.apache.sshd.common.forward.TcpipServerChannel;
 import org.apache.sshd.common.future.CloseFuture;
+import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.DefaultIoServiceFactoryFactory;
 import org.apache.sshd.common.io.IoAcceptor;
@@ -368,27 +369,30 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         start();
     }
 
-    public CloseFuture close(final boolean immediately) {
+    @Override
+    protected SshFuture<CloseFuture> doCloseGracefully() {
         stopSessionTimeoutListener();
         CloseFuture future;
         if (acceptor != null) {
-            future = CloseableUtils.sequential(acceptor, ioServiceFactory).close(immediately);
+            future = CloseableUtils.sequential(acceptor, ioServiceFactory).close(false);
         } else if (ioServiceFactory != null) {
-            future = ioServiceFactory.close(immediately);
+            future = ioServiceFactory.close(false);
         } else {
             future = CloseableUtils.closed();
         }
-        future.addListener(new SshFutureListener<CloseFuture>() {
-            public void operationComplete(CloseFuture future) {
-                acceptor = null;
-                ioServiceFactory = null;
-                if (shutdownExecutor && executor != null) {
-                    executor.shutdown();
-                    executor = null;
-                }
-            }
-        });
         return future;
+    }
+
+    @Override
+    protected void doCloseImmediately() {
+        CloseableUtils.sequential(acceptor, ioServiceFactory).close(true);
+        acceptor = null;
+        ioServiceFactory = null;
+        if (shutdownExecutor && executor != null) {
+            executor.shutdown();
+            executor = null;
+        }
+        super.doCloseImmediately();
     }
 
     /**

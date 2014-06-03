@@ -192,6 +192,12 @@ public class ChannelSession extends AbstractServerChannel {
 
     protected Closeable getCommandCloseable() {
         return new Closeable() {
+            public boolean isClosed() {
+                return commandExitFuture.isClosed();
+            }
+            public boolean isClosing() {
+                return isClosed();
+            }
             public CloseFuture close(boolean immediately) {
                 if (immediately) {
                     commandExitFuture.setClosed();
@@ -225,14 +231,14 @@ public class ChannelSession extends AbstractServerChannel {
         };
     }
     @Override
-    protected void postClose() {
+    protected void doCloseImmediately() {
         if (command != null) {
             command.destroy();
             command = null;
         }
         remoteWindow.notifyClosed();
         IoUtils.closeQuietly(out, err, receiver);
-        super.postClose();
+        super.doCloseImmediately();
     }
 
     @Override

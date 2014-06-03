@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
@@ -38,7 +39,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  */
-public abstract class Nio2Service implements IoService {
+public abstract class Nio2Service extends CloseableUtils.AbstractInnerCloseable implements IoService {
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
     protected final FactoryManager manager;
@@ -63,18 +64,10 @@ public abstract class Nio2Service implements IoService {
         }
     }
 
-    protected void doDispose() {
-    }
-
-    public CloseFuture close(boolean immediately) {
+    @Override
+    protected Closeable getInnerCloseable() {
         List<IoSession> s = new ArrayList<IoSession>(sessions.values());
-        CloseFuture future = CloseableUtils.parallel(s).close(immediately);
-        future.addListener(new SshFutureListener<CloseFuture>() {
-            public void operationComplete(CloseFuture future) {
-                doDispose();
-            }
-        });
-        return future;
+        return CloseableUtils.parallel(s);
     }
 
     public Map<Long, IoSession> getManagedSessions() {

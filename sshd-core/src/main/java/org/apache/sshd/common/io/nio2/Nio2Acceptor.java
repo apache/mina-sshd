@@ -95,7 +95,7 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
         return super.close(immediately);
     }
 
-    public void doDispose() {
+    public void doCloseImmediately() {
         for (SocketAddress address : channels.keySet()) {
             try {
                 channels.get(address).close();
@@ -103,7 +103,7 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
                 logger.debug("Exception caught while closing channel", e);
             }
         }
-        super.doDispose();
+        super.doCloseImmediately();
     }
 
     class AcceptCompletionHandler implements CompletionHandler<AsynchronousSocketChannel, SocketAddress> {

@@ -23,22 +23,20 @@ import java.util.List;
 
 import org.apache.sshd.client.auth.deprecated.UserAuth;
 import org.apache.sshd.client.future.AuthFuture;
+import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.Session;
-import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.CloseableUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Client side <code>ssh-auth</code> service.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ClientUserAuthService implements Service {
+public class ClientUserAuthService extends CloseableUtils.AbstractInnerCloseable implements Service {
 
     public static class Factory implements ServiceFactory {
 
@@ -51,13 +49,11 @@ public class ClientUserAuthService implements Service {
         }
     }
 
-    /** Our logger */
-    protected final Logger log = LoggerFactory.getLogger(getClass());
-
     protected final ClientSessionImpl session;
     protected ClientUserAuthServiceNew delegateNew;
     protected ClientUserAuthServiceOld delegateOld;
     protected boolean started;
+    protected DefaultCloseFuture future = new DefaultCloseFuture(null);
 
     public ClientUserAuthService(Session s) {
         if (!(s instanceof ClientSessionImpl)) {
@@ -89,13 +85,14 @@ public class ClientUserAuthService implements Service {
         }
     }
 
-    public CloseFuture close(boolean immediately) {
+    @Override
+    protected Closeable getInnerCloseable() {
         if (delegateNew != null) {
-            return delegateNew.close(immediately);
+            return delegateNew;
         } else if (delegateOld != null) {
-            return delegateOld.close(immediately);
+            return delegateOld;
         } else {
-            return CloseableUtils.closed();
+            return new CloseableUtils.AbstractCloseable() { };
         }
     }
 

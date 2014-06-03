@@ -50,10 +50,7 @@ import static org.apache.sshd.common.util.KeyUtils.getKeyType;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ClientUserAuthServiceNew implements Service {
-
-    /** Our logger */
-    protected final Logger log = LoggerFactory.getLogger(getClass());
+public class ClientUserAuthServiceNew extends CloseableUtils.AbstractCloseable implements Service {
 
     /**
      * The AuthFuture that is being used by the current auth request.  This encodes the state.
@@ -216,12 +213,12 @@ public class ClientUserAuthServiceNew implements Service {
         }
     }
 
-    public CloseFuture close(boolean immediately) {
-        log.debug("Closing authentication service");
+    @Override
+    protected void preClose() {
+        super.preClose();
         if (!authFuture.isDone()) {
             authFuture.setException(new SshException("Session is closed"));
         }
-        return CloseableUtils.closed();
     }
 
 }

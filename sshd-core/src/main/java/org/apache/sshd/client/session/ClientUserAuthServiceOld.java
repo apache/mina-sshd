@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ClientUserAuthServiceOld implements Service {
+public class ClientUserAuthServiceOld extends CloseableUtils.AbstractCloseable implements Service {
 
     /** Our logger */
     protected final Logger log = LoggerFactory.getLogger(getClass());
@@ -168,12 +168,12 @@ public class ClientUserAuthServiceOld implements Service {
         }
     }
 
-    public CloseFuture close(boolean immediately) {
-        log.debug("Closing authentication service");
+    @Override
+    protected void preClose() {
+        super.preClose();
         if (!authFuture.isDone()) {
             authFuture.setException(new SshException("Session is closed"));
         }
-        return CloseableUtils.closed();
     }
 
     public AuthFuture auth(UserAuth userAuth) throws IOException {

@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 /**
  * The server side fake agent, acting as an agent, but actually forwarding the requests to the auth channel on the client side.
  */
-public class AgentForwardSupport implements Closeable {
+public class AgentForwardSupport extends CloseableUtils.AbstractCloseable {
 
     private static final Logger log = LoggerFactory.getLogger(AgentForwardSupport.class);
 
@@ -67,8 +67,10 @@ public class AgentForwardSupport implements Closeable {
         }
     }
 
-    public CloseFuture close(boolean immediately) {
+    @Override
+    protected void doCloseImmediately() {
         close();
-        return CloseableUtils.closed();
+        super.doCloseImmediately();
     }
+
 }

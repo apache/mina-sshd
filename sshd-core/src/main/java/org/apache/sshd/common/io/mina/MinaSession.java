@@ -82,6 +82,12 @@ public class MinaSession extends CloseableUtils.AbstractInnerCloseable implement
     @Override
     protected Closeable getInnerCloseable() {
         return new Closeable() {
+            public boolean isClosing() {
+                return session.isClosing();
+            }
+            public boolean isClosed() {
+                return !session.isConnected();
+            }
             public org.apache.sshd.common.future.CloseFuture close(boolean immediately) {
                 final DefaultCloseFuture future = new DefaultCloseFuture(lock);
                 session.close(false).addListener(new IoFutureListener<IoFuture>() {

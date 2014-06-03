@@ -31,6 +31,7 @@ import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultSshFuture;
 import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.io.IoHandler;
@@ -132,7 +133,7 @@ public class Nio2Session extends CloseableUtils.AbstractCloseable implements IoS
     }
 
     @Override
-    protected SshFuture doCloseGracefully() {
+    protected CloseFuture doCloseGracefully() {
         synchronized (writes) {
             return CloseableUtils.parallel(writes.toArray(new SshFuture[writes.size()]));
         }
@@ -154,15 +155,13 @@ public class Nio2Session extends CloseableUtils.AbstractCloseable implements IoS
             log.info("Exception caught while closing socket", e);
         }
         service.sessionClosed(this);
-        closeFuture.setClosed();
-        state.set(CLOSED);
+        super.doCloseImmediately();
         try {
             handler.sessionClosed(this);
         } catch (Exception e) {
             // Ignore
             log.debug("Exception caught while calling IoHandler#sessionClosed", e);
         }
-        log.debug("{} closed", this);
     }
 
     public IoService getService() {

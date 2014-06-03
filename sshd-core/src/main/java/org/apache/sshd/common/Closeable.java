@@ -41,4 +41,17 @@ public interface Closeable {
      */
     CloseFuture close(boolean immediately);
 
+    /**
+     * Returns <code>true<</code> if this object has been closed.
+     */
+    boolean isClosed();
+
+    /**
+     * Returns <code>true</code> if the {@link #close(boolean)} method
+     * has been called.
+     * Note that this method will return <code>true</code> even if
+     * this {@link #isClosed()} returns <code>true</code>.
+     */
+    boolean isClosing();
+
 }

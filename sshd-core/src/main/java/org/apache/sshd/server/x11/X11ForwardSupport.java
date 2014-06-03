@@ -43,7 +43,7 @@ import org.slf4j.LoggerFactory;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class X11ForwardSupport implements IoHandler, Closeable {
+public class X11ForwardSupport extends CloseableUtils.AbstractInnerCloseable implements IoHandler, Closeable {
 
     private static String xauthCommand = System.getProperty("sshd.xauthCommand", "xauth");
 
@@ -55,8 +55,6 @@ public class X11ForwardSupport implements IoHandler, Closeable {
      */
     public static final String ENV_DISPLAY = "DISPLAY";
 
-    protected final Logger log = LoggerFactory.getLogger(getClass());
-
     private final ConnectionService service;
     private IoAcceptor acceptor;
 
@@ -65,18 +63,13 @@ public class X11ForwardSupport implements IoHandler, Closeable {
         this.service = service;
     }
 
-    public synchronized void initialize() {
-        if (this.acceptor == null) {
-            this.acceptor = service.getSession().getFactoryManager().getIoServiceFactory()
-                    .createAcceptor(this);
-        }
+    public void close() {
+        close(true);
     }
 
-    public synchronized void close() {
-        if (acceptor != null) {
-            acceptor.dispose();
-            acceptor = null;
-        }
+    @Override
+    protected Closeable getInnerCloseable() {
+        return acceptor != null ? acceptor : new CloseableUtils.AbstractCloseable() { };
     }
 
     public CloseFuture close(boolean immediately) {
@@ -96,7 +89,16 @@ public class X11ForwardSupport implements IoHandler, Closeable {
                                              String authenticationProtocol, String authenticationCookie,
                                              int screen) throws IOException {
 
-        initialize();
+        if (isClosed()) {
+            throw new IllegalStateException("X11ForwardSupport is closed");
+        }
+        if (isClosing()) {
+            throw new IllegalStateException("X11ForwardSupport is closing");
+        }
+
+        if (acceptor == null) {
+            acceptor = service.getSession().getFactoryManager().getIoServiceFactory().createAcceptor(this);
+        }
 
         int displayNumber, port;
         InetSocketAddress addr = null;

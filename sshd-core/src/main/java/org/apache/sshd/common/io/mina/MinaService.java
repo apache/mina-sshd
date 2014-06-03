@@ -62,6 +62,14 @@ public abstract class MinaService implements org.apache.sshd.common.io.IoService
         return CloseableUtils.closed();
     }
 
+    public boolean isClosed() {
+        return getIoService().isDisposed();
+    }
+
+    public boolean isClosing() {
+        return getIoService().isDisposing();
+    }
+
     public Map<Long, org.apache.sshd.common.io.IoSession> getManagedSessions() {
         Map<Long, IoSession> mina = new HashMap<Long, IoSession>(getIoService().getManagedSessions());
         Map<Long, org.apache.sshd.common.io.IoSession> sessions = new HashMap<Long, org.apache.sshd.common.io.IoSession>();

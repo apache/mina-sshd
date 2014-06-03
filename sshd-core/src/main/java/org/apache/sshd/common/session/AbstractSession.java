@@ -436,13 +436,15 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
         close(true);
     }
 
+    @Override
     protected Closeable getInnerCloseable() {
         return CloseableUtils.sequential(lock,
                 CloseableUtils.parallel(lock, getServices()), ioSession);
     }
 
-    protected void postClose() {
-        super.postClose();
+    @Override
+    protected void doCloseImmediately() {
+        super.doCloseImmediately();
         // Fire 'close' event
         final ArrayList<SessionListener> l = new ArrayList<SessionListener>(listeners);
         for (SessionListener sl : l) {

@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  */
-public class MinaServiceFactory implements IoServiceFactory {
+public class MinaServiceFactory extends CloseableUtils.AbstractCloseable implements IoServiceFactory {
 
     private final Logger logger = LoggerFactory.getLogger(MinaServiceFactory.class);
     private final FactoryManager manager;
@@ -62,14 +62,16 @@ public class MinaServiceFactory implements IoServiceFactory {
         return new MinaAcceptor(manager, handler, ioProcessor);
     }
 
-    public CloseFuture close(boolean immediately) {
+    @Override
+    protected void doCloseImmediately() {
         try {
             executor.shutdownNow();
             executor.awaitTermination(5, TimeUnit.SECONDS);
         } catch (Exception e) {
-            logger.debug("Exception caught while closing executor", e);
+            log.debug("Exception caught while closing executor", e);
+        } finally {
+            super.doCloseImmediately();
         }
-        return CloseableUtils.closed();
     }
 
     public int getNioWorkers() {

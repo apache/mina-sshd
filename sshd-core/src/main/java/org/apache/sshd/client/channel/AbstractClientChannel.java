@@ -128,7 +128,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     }
 
     @Override
-    protected void postClose() {
+    protected void doCloseImmediately() {
         // Close inverted streams after
         // If the inverted stream is closed before, there's a small time window
         // in which we have:
@@ -137,7 +137,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         // which leads to an IOException("Pipe closed") when reading.
         IoUtils.closeQuietly(in, out, err);
         IoUtils.closeQuietly(invertedIn, invertedOut, invertedErr);
-        super.postClose();
+        super.doCloseImmediately();
     }
 
     public int waitFor(int mask, long timeout) {
@@ -219,7 +219,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         } catch (Exception e) {
             this.openFuture.setException(e);
             this.closeFuture.setClosed();
-            this.postClose();
+            this.doCloseImmediately();
         } finally {
             notifyStateChanged();
         }
@@ -234,7 +234,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         this.openFailureMsg = msg;
         this.openFuture.setException(new SshException(msg));
         this.closeFuture.setClosed();
-        this.postClose();
+        this.doCloseImmediately();
         notifyStateChanged();
     }
 

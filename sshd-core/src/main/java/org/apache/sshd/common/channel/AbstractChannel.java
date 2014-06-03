@@ -59,7 +59,7 @@ public abstract class AbstractChannel extends CloseableUtils.AbstractInnerClosea
     protected int recipient;
     protected volatile boolean eof;
     protected AtomicInteger gracefulState = new AtomicInteger();
-    private DefaultCloseFuture gracefulFuture = new DefaultCloseFuture(lock);
+    protected final DefaultCloseFuture gracefulFuture = new DefaultCloseFuture(lock);
     protected final List<RequestHandler<Channel>> handlers = new ArrayList<RequestHandler<Channel>>();
 
     public void addRequestHandler(RequestHandler<Channel> handler) {
@@ -149,6 +149,12 @@ public abstract class AbstractChannel extends CloseableUtils.AbstractInnerClosea
 
     protected Closeable getGracefulCloseable() {
         return new Closeable() {
+            public boolean isClosed() {
+                return gracefulFuture.isClosed();
+            }
+            public boolean isClosing() {
+                return true;
+            }
             public CloseFuture close(boolean immediately) {
                 if (!immediately) {
                     log.debug("Send SSH_MSG_CHANNEL_CLOSE on channel {}", AbstractChannel.this);
@@ -181,12 +187,14 @@ public abstract class AbstractChannel extends CloseableUtils.AbstractInnerClosea
         };
     }
 
+    @Override
     protected Closeable getInnerCloseable() {
         return getGracefulCloseable();
     }
 
-    protected void postClose() {
-        super.postClose();
+    @Override
+    protected void doCloseImmediately() {
+        super.doCloseImmediately();
         service.unregisterChannel(AbstractChannel.this);
     }
 
