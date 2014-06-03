@@ -28,11 +28,12 @@ import org.apache.sshd.common.util.Buffer;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ChannelExec extends ChannelSession {
+public class ChannelExec extends PtyCapableChannelSession {
 
     private final String command;
 
     public ChannelExec(String command) {
+        super(false);
         if (command == null) {
             throw new IllegalArgumentException("command must not be null");
         }
@@ -40,6 +41,8 @@ public class ChannelExec extends ChannelSession {
     }
 
     protected void doOpen() throws IOException {
+        doOpenPty();
+
         log.debug("Send SSH_MSG_CHANNEL_REQUEST exec");
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST);
         buffer.putInt(recipient);
