@@ -298,10 +298,18 @@
         <projectRoot>${basedir}</projectRoot>
     </properties>
 
+    <profiles>
+        <profile>
+            <id>experimental</id>
+            <modules>
+                <module>sshd-pam</module>
+                <module>sshd-sftp</module>
+            </modules>
+        </profile>
+    </profiles>
+
     <modules>
         <module>sshd-core</module>
-        <module>sshd-pam</module>
-        <module>sshd-sftp</module>
         <module>sshd-git</module>
         <module>assembly</module>
     </modules>
