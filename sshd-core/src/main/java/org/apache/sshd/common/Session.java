@@ -21,6 +21,7 @@ package org.apache.sshd.common;
 import java.io.IOException;
 
 import org.apache.sshd.common.future.SshFuture;
+import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.util.Buffer;
 
@@ -164,6 +165,11 @@ public interface Session extends Closeable {
      * @throws java.lang.IllegalStateException
      */
     <T extends Service> T getService(Class<T> clazz);
+
+    /**
+     * Returns the IoSession associated to this ssh session
+     */
+    IoSession getIoSession();
 
     /**
      * Type safe key for storage within the user attributes of {@link org.apache.sshd.common.session.AbstractSession}.
