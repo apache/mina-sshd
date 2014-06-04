@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.git;
+package org.apache.sshd.git.pack;
 
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.CommandFactory;
@@ -27,20 +27,23 @@ import org.apache.sshd.server.command.UnknownCommand;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class GitCommandFactory implements CommandFactory {
+public class GitPackCommandFactory implements CommandFactory {
 
-    private CommandFactory delegate;
+    private final String rootDir;
+    private final CommandFactory delegate;
 
-    public GitCommandFactory() {
+    public GitPackCommandFactory(String rootDir) {
+        this(rootDir,  null);
     }
 
-    public GitCommandFactory(CommandFactory delegate) {
+    public GitPackCommandFactory(String rootDir, CommandFactory delegate) {
+        this.rootDir = rootDir;
         this.delegate = delegate;
     }
 
     public Command createCommand(String command) {
         if (command.startsWith("git-")) {
-            return new GitCommand(command.substring("git-".length()));
+            return new GitPackCommand(rootDir, command);
         } else if (delegate != null) {
             return delegate.createCommand(command);
         } else {

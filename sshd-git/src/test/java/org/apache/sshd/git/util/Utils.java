@@ -55,4 +55,18 @@ public class Utils {
         return f.toString();
     }
 
+    public static void deleteRecursive(File file) {
+        if (file != null) {
+            if (file.isDirectory()) {
+                File[] children = file.listFiles();
+                if (children != null) {
+                    for (File child : children) {
+                        deleteRecursive(child);
+                    }
+                }
+            }
+            file.delete();
+        }
+    }
+
 }

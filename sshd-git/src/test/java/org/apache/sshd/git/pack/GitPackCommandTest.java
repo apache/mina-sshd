@@ -16,52 +16,67 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.git;
+package org.apache.sshd.git.pack;
 
+import java.io.File;
 import java.util.Arrays;
 
+import com.jcraft.jsch.JSch;
 import org.apache.sshd.SshServer;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.git.transport.GitSshdSessionFactory;
 import org.apache.sshd.git.util.BogusPasswordAuthenticator;
 import org.apache.sshd.git.util.EchoShellFactory;
 import org.apache.sshd.git.util.Utils;
 import org.apache.sshd.server.Command;
-import org.apache.sshd.server.CommandFactory;
-import org.apache.sshd.server.command.UnknownCommand;
 import org.apache.sshd.server.sftp.SftpSubsystem;
-import org.junit.Ignore;
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.transport.CredentialsProvider;
+import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.junit.Test;
 
 /**
  */
-public class GitServerTest {
+public class GitPackCommandTest {
 
     @Test
-    @Ignore
-    public void testGit() {
-
-    }
-
-    public static void main(String[] args) throws Exception {
+    public void testGitPack() throws Exception {
         SshServer sshd = SshServer.setUpDefaultServer();
-        sshd.getProperties().put(SshServer.IDLE_TIMEOUT, "10000");
         sshd.setPort(8001);
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(new SftpSubsystem.Factory()));
         sshd.setShellFactory(new EchoShellFactory());
-//        sshd.setCommandFactory(new ScpCommandFactory());
-        sshd.setCommandFactory(new CommandFactory() {
-            public Command createCommand(String command) {
-                if (command.startsWith("git-")) {
-                    return new GitCommand(command.substring("git-".length()));
-                } else {
-                    return new UnknownCommand(command);
-                }
-            }
-        });
+        sshd.setCommandFactory(new GitPackCommandFactory("target/git/server"));
         sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
         sshd.start();
-        Thread.sleep(100000);
+
+        File serverDir = new File("target/git/server/test.git");
+        Utils.deleteRecursive(serverDir);
+        Git.init().setBare(true).setDirectory(serverDir).call();
+
+        JSch.setConfig("StrictHostKeyChecking", "no");
+        CredentialsProvider.setDefault(new UsernamePasswordCredentialsProvider("sshd", "sshd"));
+        GitSshdSessionFactory.setInstance(new GitSshdSessionFactory());
+
+        File dir = new File("target/git/local/test.git");
+        Utils.deleteRecursive(dir);
+        Git.cloneRepository()
+                .setURI("ssh://sshd@localhost:8001/test.git")
+                .setDirectory(dir)
+                .call();
+
+        Git git = Git.open(dir);
+        git.commit().setMessage("First Commit").setCommitter("sshd", "sshd@apache.org").call();
+        git.push().call();
+
+        new File("target/git/local/test.git/readme.txt").createNewFile();
+        git.add().addFilepattern("readme.txt").call();
+        git.commit().setMessage("readme").setCommitter("sshd", "sshd@apache.org").call();
+        git.push().call();
+
+        git.pull().setRebase(true).call();
+
+        sshd.stop();
     }
 
 }

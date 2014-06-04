@@ -74,6 +74,11 @@
             <name>Apache ServiceMix Repository</name>
             <url>http://svn.apache.org/repos/asf/servicemix/m2-repo</url>
         </repository>
+        <repository>
+            <id>jgit</id>
+            <name>Eclipse JGit repository</name>
+            <url>http://repo.eclipse.org/content/groups/jgit</url>
+        </repository>
     </repositories>
 
     <scm>
@@ -185,6 +190,16 @@
                 <artifactId>ganymed-ssh2</artifactId>
                 <version>build210</version>
             </dependency>
+            <dependency>
+                <groupId>org.eclipse.jgit</groupId>
+                <artifactId>org.eclipse.jgit</artifactId>
+                <version>3.4.0.201405281120-rc2</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jgit</groupId>
+                <artifactId>org.eclipse.jgit.pgm</artifactId>
+                <version>3.4.0.201405281120-rc2</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -287,9 +302,7 @@
         <module>sshd-core</module>
         <module>sshd-pam</module>
         <module>sshd-sftp</module>
-        <!--
         <module>sshd-git</module>
-        -->
         <module>assembly</module>
     </modules>
 

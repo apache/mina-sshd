@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.git;
+package org.apache.sshd.git.pgm;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,26 +28,23 @@ import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
-import org.eclipse.jgit.pgm.EmbeddedCommandRunner;
-import org.eclipse.jgit.pgm.TextBuiltin;
-import org.eclipse.jgit.pgm.opt.SubcommandHandler;
-import org.kohsuke.args4j.Argument;
-import org.kohsuke.args4j.Option;
 
 /**
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class GitCommand implements Command, Runnable {
+public class GitPgmCommand implements Command, Runnable {
 
+    private String rootDir;
     private String command;
     private InputStream in;
     private OutputStream out;
     private OutputStream err;
     private ExitCallback callback;
 
-    public GitCommand(String command) {
+    public GitPgmCommand(String rootDir, String command) {
+        this.rootDir = rootDir;
         this.command = command;
     }
 
@@ -89,12 +86,21 @@ public class GitCommand implements Command, Runnable {
                     args[i] = args[i].substring(1, args[i].length() - 1);
                 }
             }
-            new EmbeddedCommandRunner().execute(args, in, out, err);
+
+            new EmbeddedCommandRunner(rootDir).execute(args, in, out, err);
+            if (callback != null) {
+                callback.onExit(0);
+            }
         } catch (Throwable t) {
-            t.printStackTrace();
-        }
-        if (callback != null) {
-            callback.onExit(0);
+            try {
+                err.write((t.getMessage() + "\n").getBytes());
+                err.flush();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            if (callback != null) {
+                callback.onExit(-1);
+            }
         }
     }
 
