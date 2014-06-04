@@ -46,8 +46,8 @@ public class AgentForwardedChannel extends AbstractClientChannel implements Runn
                 } else if (result < Status.APR_SUCCESS) {
                     AgentServerProxy.throwException(result);
                 }
-                getOut().write(buf, 0, result);
-                getOut().flush();
+                getInvertedIn().write(buf, 0, result);
+                getInvertedIn().flush();
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -62,7 +62,7 @@ public class AgentForwardedChannel extends AbstractClientChannel implements Runn
 
     @Override
     protected synchronized void doOpen() throws IOException {
-        out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA);
+        invertedIn = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA);
     }
 
     @Override

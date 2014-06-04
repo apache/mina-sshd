@@ -96,7 +96,7 @@ public class TcpipClientChannel extends AbstractClientChannel {
 
     @Override
     protected synchronized void doOpen() throws IOException {
-        out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA);
+        invertedIn = out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA);
     }
 
     @Override

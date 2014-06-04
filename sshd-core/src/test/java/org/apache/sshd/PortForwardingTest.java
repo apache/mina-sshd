@@ -280,10 +280,10 @@ public class PortForwardingTest extends BaseTest {
         ChannelDirectTcpip channel = session.createDirectTcpipChannel(local, remote);
         channel.open().await();
 
-        channel.getOut().write("Hello".getBytes());
-        channel.getOut().flush();
+        channel.getInvertedIn().write("Hello".getBytes());
+        channel.getInvertedIn().flush();
         byte[] buf = new byte[1024];
-        int n = channel.getIn().read(buf);
+        int n = channel.getInvertedOut().read(buf);
         String res = new String(buf, 0, n);
         assertEquals("Hello", res);
         channel.close(false);

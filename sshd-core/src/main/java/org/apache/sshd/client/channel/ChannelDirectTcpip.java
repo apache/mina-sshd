@@ -19,8 +19,6 @@
 package org.apache.sshd.client.channel;
 
 import java.io.IOException;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
@@ -30,6 +28,8 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.channel.ChannelOutputStream;
+import org.apache.sshd.common.channel.ChannelPipedInputStream;
+import org.apache.sshd.common.channel.ChannelPipedOutputStream;
 import org.apache.sshd.common.util.Buffer;
 
 /**
@@ -41,7 +41,7 @@ public class ChannelDirectTcpip extends AbstractClientChannel {
 
     private final SshdSocketAddress local;
     private final SshdSocketAddress remote;
-    private final PipedOutputStream pipe = new PipedOutputStream();
+    private ChannelPipedOutputStream pipe;
 
     public ChannelDirectTcpip(SshdSocketAddress local, SshdSocketAddress remote) {
         super("direct-tcpip");
@@ -81,8 +81,10 @@ public class ChannelDirectTcpip extends AbstractClientChannel {
 
     @Override
     protected void doOpen() throws IOException {
-        out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA);
-        in = new PipedInputStream(pipe);
+        invertedIn = out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA);
+        ChannelPipedInputStream pis = new ChannelPipedInputStream(localWindow);
+        pipe = new ChannelPipedOutputStream(pis);
+        invertedOut = in = pis;
     }
 
     public OpenFuture open() throws IOException {

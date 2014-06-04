@@ -206,8 +206,8 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
         Buffer buffer = new Buffer();
         buffer.putBuffer(message);
         channel.waitFor(ClientChannel.OPENED | ClientChannel.CLOSED, Long.MAX_VALUE);
-        channel.getOut().write(buffer.array(), buffer.rpos(), buffer.available());
-        channel.getOut().flush();
+        channel.getInvertedIn().write(buffer.array(), buffer.rpos(), buffer.available());
+        channel.getInvertedIn().flush();
     }
 
     public void exceptionCaught(IoSession session, Throwable cause) throws Exception {

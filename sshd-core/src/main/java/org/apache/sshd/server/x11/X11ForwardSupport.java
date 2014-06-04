@@ -167,8 +167,8 @@ public class X11ForwardSupport extends CloseableUtils.AbstractInnerCloseable imp
         ChannelForwardedX11 channel = (ChannelForwardedX11) session.getAttribute(ChannelForwardedX11.class);
         Buffer buffer = new Buffer();
         buffer.putBuffer(message);
-        channel.getOut().write(buffer.array(), buffer.rpos(), buffer.available());
-        channel.getOut().flush();
+        channel.getInvertedIn().write(buffer.array(), buffer.rpos(), buffer.available());
+        channel.getInvertedIn().flush();
     }
 
     public void exceptionCaught(IoSession session, Throwable cause) throws Exception {
@@ -204,7 +204,7 @@ public class X11ForwardSupport extends CloseableUtils.AbstractInnerCloseable imp
 
         @Override
         protected synchronized void doOpen() throws IOException {
-            out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA);
+            invertedIn = out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA);
         }
 
         @Override
