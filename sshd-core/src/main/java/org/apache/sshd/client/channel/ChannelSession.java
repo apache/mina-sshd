@@ -26,8 +26,9 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.channel.ChannelPipedInputStream;
 import org.apache.sshd.common.channel.ChannelPipedOutputStream;
+import org.apache.sshd.common.channel.ChannelAsyncInputStream;
+import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
 import org.apache.sshd.common.future.CloseFuture;
-import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.CloseableUtils;
 
 /**
@@ -49,31 +50,47 @@ public class ChannelSession extends AbstractClientChannel {
 
     @Override
     protected void doOpen() throws IOException {
-        invertedIn = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA);
-        if (out == null) {
-            ChannelPipedInputStream pis = new ChannelPipedInputStream(localWindow);
-            ChannelPipedOutputStream pos = new ChannelPipedOutputStream(pis);
-            out = pos;
-            invertedOut = pis;
-        }
-        if (err == null) {
-            ChannelPipedInputStream pis = new ChannelPipedInputStream(localWindow);
-            ChannelPipedOutputStream pos = new ChannelPipedOutputStream(pis);
-            err = pos;
-            invertedErr = pis;
-        }
-        if (in != null) {
-            streamPumper = new Thread("ClientInputStreamPump") {
+        if (streaming == Streaming.Async) {
+            asyncIn = new ChannelAsyncOutputStream(this, SshConstants.SSH_MSG_CHANNEL_DATA) {
                 @Override
-                public void run() {
-                    pumpInputStream();
+                protected CloseFuture doCloseGracefully() {
+                    try {
+                        sendEof();
+                    } catch (IOException e) {
+                        session.exceptionCaught(e);
+                    }
+                    return super.doCloseGracefully();
                 }
             };
-            // Interrupt does not really work and the thread will only exit when
-            // the call to read() will return.  So ensure this thread is a daemon
-            // to avoid blocking the whole app
-            streamPumper.setDaemon(true);
-            streamPumper.start();
+            asyncOut = new ChannelAsyncInputStream(this);
+            asyncErr = new ChannelAsyncInputStream(this);
+        } else {
+            invertedIn = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA);
+            if (out == null) {
+                ChannelPipedInputStream pis = new ChannelPipedInputStream(localWindow);
+                ChannelPipedOutputStream pos = new ChannelPipedOutputStream(pis);
+                out = pos;
+                invertedOut = pis;
+            }
+            if (err == null) {
+                ChannelPipedInputStream pis = new ChannelPipedInputStream(localWindow);
+                ChannelPipedOutputStream pos = new ChannelPipedOutputStream(pis);
+                err = pos;
+                invertedErr = pis;
+            }
+            if (in != null) {
+                streamPumper = new Thread("ClientInputStreamPump") {
+                    @Override
+                    public void run() {
+                        pumpInputStream();
+                    }
+                };
+                // Interrupt does not really work and the thread will only exit when
+                // the call to read() will return.  So ensure this thread is a daemon
+                // to avoid blocking the whole app
+                streamPumper.setDaemon(true);
+                streamPumper.start();
+            }
         }
     }
 

@@ -20,26 +20,21 @@ package org.apache.sshd.common.io;
 
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.SshFuture;
+import org.apache.sshd.common.util.Buffer;
 
-public interface IoWriteFuture extends SshFuture<IoWriteFuture> {
+public interface IoReadFuture extends SshFuture<IoReadFuture> {
 
     /**
-     * Wait and verify that the write succeeded.
+     * Wait and verify that the read succeeded.
      *
-     * @throws SshException if the write failed for any reason
+     * @throws org.apache.sshd.common.SshException if the write failed for any reason
      */
     void verify() throws SshException;
 
-    /**
-     * Returns <tt>true</tt> if the write operation is finished successfully.
-     */
-    boolean isWritten();
+    Buffer getBuffer();
 
-    /**
-     * Returns the cause of the write failure if and only if the write
-     * operation has failed due to an {@link Exception}.  Otherwise,
-     * <tt>null</tt> is returned.
-     */
+    int getRead();
+
     Throwable getException();
 
 }

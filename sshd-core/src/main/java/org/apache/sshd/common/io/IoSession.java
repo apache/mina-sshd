@@ -62,6 +62,7 @@ public interface IoSession extends Closeable {
 
     /**
      * Write a packet on the socket.
+     * Multiple writes can be issued concurrently and will be queued.
      */
     IoWriteFuture write(Buffer buffer);
 

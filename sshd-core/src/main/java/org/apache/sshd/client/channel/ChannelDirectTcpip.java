@@ -27,6 +27,8 @@ import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.SshdSocketAddress;
+import org.apache.sshd.common.channel.ChannelAsyncInputStream;
+import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.channel.ChannelPipedInputStream;
 import org.apache.sshd.common.channel.ChannelPipedOutputStream;
@@ -81,10 +83,15 @@ public class ChannelDirectTcpip extends AbstractClientChannel {
 
     @Override
     protected void doOpen() throws IOException {
-        invertedIn = out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA);
-        ChannelPipedInputStream pis = new ChannelPipedInputStream(localWindow);
-        pipe = new ChannelPipedOutputStream(pis);
-        invertedOut = in = pis;
+        if (streaming == Streaming.Async) {
+            asyncIn = new ChannelAsyncOutputStream(this, SshConstants.SSH_MSG_CHANNEL_DATA);
+            asyncOut = new ChannelAsyncInputStream(this);
+        } else {
+            invertedIn = out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA);
+            ChannelPipedInputStream pis = new ChannelPipedInputStream(localWindow);
+            pipe = new ChannelPipedOutputStream(pis);
+            invertedOut = in = pis;
+        }
     }
 
     public OpenFuture open() throws IOException {

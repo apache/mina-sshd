@@ -116,6 +116,10 @@ public final class Buffer implements Readable {
         return wpos - rpos;
     }
 
+    public int capacity() {
+        return data.length - wpos;
+    }
+
     public byte[] array() {
         return data;
     }
@@ -372,10 +376,15 @@ public final class Buffer implements Readable {
     }
 
     public void putBuffer(Readable buffer) {
-        int r = buffer.available();
+        putBuffer(buffer, true);
+    }
+
+    public int putBuffer(Readable buffer, boolean expand) {
+        int r = expand ? buffer.available() : Math.min(buffer.available(), capacity());
         ensureCapacity(r);
         buffer.getRawBytes(data, wpos, r);
         wpos += r;
+        return r;
     }
 
     /**

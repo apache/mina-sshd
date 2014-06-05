@@ -139,7 +139,7 @@ public abstract class AbstractChannel extends CloseableUtils.AbstractInnerClosea
     }
 
     public void handleClose() throws IOException {
-            log.debug("Received SSH_MSG_CHANNEL_CLOSE on channel {}", this);
+        log.debug("Received SSH_MSG_CHANNEL_CLOSE on channel {}", this);
         if (gracefulState.compareAndSet(0, CLOSE_RECV)) {
             close(false);
         } else if (gracefulState.compareAndSet(CLOSE_SENT, CLOSE_SENT | CLOSE_RECV)) {
@@ -147,7 +147,7 @@ public abstract class AbstractChannel extends CloseableUtils.AbstractInnerClosea
         }
     }
 
-    protected Closeable getGracefulCloseable() {
+    protected Closeable getInnerCloseable() {
         return new Closeable() {
             public boolean isClosed() {
                 return gracefulFuture.isClosed();
@@ -185,11 +185,6 @@ public abstract class AbstractChannel extends CloseableUtils.AbstractInnerClosea
                 return gracefulFuture;
             }
         };
-    }
-
-    @Override
-    protected Closeable getInnerCloseable() {
-        return getGracefulCloseable();
     }
 
     @Override

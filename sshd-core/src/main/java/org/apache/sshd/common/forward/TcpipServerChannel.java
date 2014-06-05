@@ -36,6 +36,7 @@ import org.apache.sshd.common.io.IoConnectFuture;
 import org.apache.sshd.common.io.IoConnector;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoSession;
+import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.Readable;
 import org.apache.sshd.server.channel.AbstractServerChannel;
@@ -107,6 +108,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
             return f;
         }
 
+        // TODO: revisit for better threading. Use async io ?
         out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA);
         IoHandler handler = new IoHandler() {
             public void messageReceived(IoSession session, Readable message) throws Exception {
@@ -182,12 +184,19 @@ public class TcpipServerChannel extends AbstractServerChannel {
         });
     }
 
-    protected void doWriteData(byte[] data, int off, int len) throws IOException {
-        localWindow.consumeAndCheck(len);
+    protected void doWriteData(byte[] data, int off, final int len) throws IOException {
         // Make sure we copy the data as the incoming buffer may be reused
         Buffer buf = new Buffer(data, off, len);
         buf = new Buffer(buf.getCompactData());
-        ioSession.write(buf);
+        ioSession.write(buf).addListener(new SshFutureListener<IoWriteFuture>() {
+            public void operationComplete(IoWriteFuture future) {
+                try {
+                    localWindow.consumeAndCheck(len);
+                } catch (IOException e) {
+                    session.exceptionCaught(e);
+                }
+            }
+        });
     }
 
     protected void doWriteExtendedData(byte[] data, int off, int len) throws IOException {

@@ -39,6 +39,8 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.PtyMode;
 import org.apache.sshd.common.RequestHandler;
 import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.channel.ChannelAsyncInputStream;
+import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultCloseFuture;
@@ -47,6 +49,7 @@ import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.IoUtils;
 import org.apache.sshd.common.util.LoggingFilterOutputStream;
+import org.apache.sshd.server.AsyncCommand;
 import org.apache.sshd.server.ChannelSessionAware;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.Environment;
@@ -173,6 +176,8 @@ public class ChannelSession extends AbstractServerChannel {
     }
 
     protected String type;
+    protected ChannelAsyncOutputStream asyncOut;
+    protected ChannelAsyncOutputStream asyncErr;
     protected OutputStream out;
     protected OutputStream err;
     protected Command command;
@@ -238,6 +243,8 @@ public class ChannelSession extends AbstractServerChannel {
         }
         remoteWindow.notifyClosed();
         IoUtils.closeQuietly(out, err, receiver);
+        // TODO: graceful close ?
+        CloseableUtils.parallel(asyncOut, asyncErr).close(true);
         super.doCloseImmediately();
     }
 
@@ -436,7 +443,8 @@ public class ChannelSession extends AbstractServerChannel {
 
     /**
      * For {@link Command} to install {@link ChannelDataReceiver}.
-     * When you do this, {@link Command#setInputStream(InputStream)}
+     * When you do this, {@link Command#setInputStream(InputStream)} or
+     * {@link org.apache.sshd.server.AsyncCommand#setIoInputStream(org.apache.sshd.common.io.IoInputStream)}
      * will no longer be invoked. If you call this method from {@link Command#start(Environment)},
      * the input stream you received in {@link Command#setInputStream(InputStream)} will
      * not read any data.
@@ -447,7 +455,7 @@ public class ChannelSession extends AbstractServerChannel {
 
     protected void prepareCommand() throws IOException {
         // Add the user
-        addEnvVariable(Environment.ENV_USER, ((ServerSession) session).getUsername());
+        addEnvVariable(Environment.ENV_USER, session.getUsername());
         // If the shell wants to be aware of the session, let's do that
         if (command instanceof SessionAware) {
             ((SessionAware) command).setSession((ServerSession) session);
@@ -460,21 +468,35 @@ public class ChannelSession extends AbstractServerChannel {
             FileSystemFactory factory = ((ServerSession) session).getFactoryManager().getFileSystemFactory();
             ((FileSystemAware) command).setFileSystemView(factory.createFileSystemView(session));
         }
-        out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA);
-        err = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA);
-        if (log != null && log.isTraceEnabled()) {
-            // Wrap in logging filters
-            out = new LoggingFilterOutputStream(out, "OUT:", log);
-            err = new LoggingFilterOutputStream(err, "ERR:", log);
+        // If the shell wants to use non-blocking io
+        if (command instanceof AsyncCommand) {
+            asyncOut = new ChannelAsyncOutputStream(this, SshConstants.SSH_MSG_CHANNEL_DATA);
+            asyncErr = new ChannelAsyncOutputStream(this, SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA);
+            ((AsyncCommand) command).setIoOutputStream(asyncOut);
+            ((AsyncCommand) command).setIoErrorStream(asyncErr);
+        } else {
+            out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA);
+            err = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA);
+            if (log.isTraceEnabled()) {
+                // Wrap in logging filters
+                out = new LoggingFilterOutputStream(out, "OUT:", log);
+                err = new LoggingFilterOutputStream(err, "ERR:", log);
+            }
+            command.setOutputStream(out);
+            command.setErrorStream(err);
         }
-        command.setOutputStream(out);
-        command.setErrorStream(err);
         if (this.receiver==null) {
             // if the command hasn't installed any ChannelDataReceiver, install the default
             // and give the command an InputStream
-            PipeDataReceiver recv = new PipeDataReceiver(localWindow);
-            setDataReceiver(recv);
-            command.setInputStream(recv.getIn());
+            if (command instanceof AsyncCommand) {
+                AsyncDataReceiver recv = new AsyncDataReceiver(this);
+                setDataReceiver(recv);
+                ((AsyncCommand) command).setIoInputStream(recv.getIn());
+            } else {
+                PipeDataReceiver recv = new PipeDataReceiver(localWindow);
+                setDataReceiver(recv);
+                command.setInputStream(recv.getIn());
+            }
         }
         if (tempBuffer != null) {
             Buffer buffer = tempBuffer;

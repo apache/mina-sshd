@@ -16,30 +16,33 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.io;
+package org.apache.sshd.server.channel;
 
-import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.future.SshFuture;
+import java.io.IOException;
 
-public interface IoWriteFuture extends SshFuture<IoWriteFuture> {
+import org.apache.sshd.common.Channel;
+import org.apache.sshd.common.channel.ChannelAsyncInputStream;
+import org.apache.sshd.common.io.IoInputStream;
+import org.apache.sshd.common.util.Buffer;
 
-    /**
-     * Wait and verify that the write succeeded.
-     *
-     * @throws SshException if the write failed for any reason
-     */
-    void verify() throws SshException;
+public class AsyncDataReceiver implements ChannelDataReceiver {
 
-    /**
-     * Returns <tt>true</tt> if the write operation is finished successfully.
-     */
-    boolean isWritten();
+    private ChannelAsyncInputStream in;
 
-    /**
-     * Returns the cause of the write failure if and only if the write
-     * operation has failed due to an {@link Exception}.  Otherwise,
-     * <tt>null</tt> is returned.
-     */
-    Throwable getException();
+    public AsyncDataReceiver(Channel channel) {
+        in = new ChannelAsyncInputStream(channel);
+    }
 
+    public IoInputStream getIn() {
+        return in;
+    }
+
+    public int data(ChannelSession channel, byte[] buf, int start, int len) throws IOException {
+        in.write(new Buffer(buf, start, len));
+        return 0;
+    }
+
+    public void close() throws IOException {
+        in.close(false);
+    }
 }

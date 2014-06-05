@@ -370,7 +370,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     }
 
     @Override
-    protected SshFuture<CloseFuture> doCloseGracefully() {
+    protected CloseFuture doCloseGracefully() {
         stopSessionTimeoutListener();
         CloseFuture future;
         if (acceptor != null) {

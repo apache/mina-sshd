@@ -101,7 +101,7 @@ public class X11ForwardSupport extends CloseableUtils.AbstractInnerCloseable imp
         }
 
         int displayNumber, port;
-        InetSocketAddress addr = null;
+        InetSocketAddress addr;
 
         for (displayNumber = X11_DISPLAY_OFFSET; displayNumber < MAX_DISPLAYS; displayNumber++) {
             port = 6000 + displayNumber;
@@ -124,7 +124,7 @@ public class X11ForwardSupport extends CloseableUtils.AbstractInnerCloseable imp
 
         // only support non windows systems
         String os = System.getProperty("os.name").toLowerCase();
-        if (os.indexOf("windows") < 0) {
+        if (!os.contains("windows")) {
             try {
                 String authDisplay = "unix:" + displayNumber + "." + screen;
                 Process p = new ProcessBuilder(xauthCommand, "remove", authDisplay).start();
@@ -204,6 +204,9 @@ public class X11ForwardSupport extends CloseableUtils.AbstractInnerCloseable imp
 
         @Override
         protected synchronized void doOpen() throws IOException {
+            if (streaming == Streaming.Async) {
+                throw new IllegalArgumentException("Asynchronous streaming isn't supported yet on this channel");
+            }
             invertedIn = out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA);
         }
 

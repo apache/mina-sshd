@@ -26,10 +26,15 @@ import org.apache.sshd.ClientChannel;
 import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.Channel;
+import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.RequestHandler;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.AbstractChannel;
+import org.apache.sshd.common.channel.ChannelAsyncInputStream;
+import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
+import org.apache.sshd.common.io.IoInputStream;
+import org.apache.sshd.common.io.IoOutputStream;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.util.Buffer;
@@ -45,6 +50,13 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
 
     protected volatile boolean opened;
     protected final String type;
+
+    protected Streaming streaming;
+
+    protected ChannelAsyncOutputStream asyncIn;
+    protected ChannelAsyncInputStream asyncOut;
+    protected ChannelAsyncInputStream asyncErr;
+
     protected InputStream in;
     protected OutputStream invertedIn;
     protected OutputStream out;
@@ -59,8 +71,29 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
 
     protected AbstractClientChannel(String type) {
         this.type = type;
+        this.streaming = Streaming.Sync;
         addRequestHandler(new ExitStatusChannelRequestHandler());
         addRequestHandler(new ExitSignalChannelRequestHandler());
+    }
+
+    public Streaming getStreaming() {
+        return streaming;
+    }
+
+    public void setStreaming(Streaming streaming) {
+        this.streaming = streaming;
+    }
+
+    public IoOutputStream getAsyncIn() {
+        return asyncIn;
+    }
+
+    public IoInputStream getAsyncOut() {
+        return asyncOut;
+    }
+
+    public IoInputStream getAsyncErr() {
+        return asyncErr;
     }
 
     public OutputStream getInvertedIn() {
@@ -137,6 +170,14 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     }
 
     @Override
+    protected Closeable getInnerCloseable() {
+        return builder()
+                .parallel(asyncIn, asyncOut, asyncErr)
+                .close(super.getInnerCloseable())
+                .build();
+    }
+
+    @Override
     protected void doCloseImmediately() {
         // Close inverted streams after
         // If the inverted stream is closed before, there's a small time window
@@ -146,6 +187,8 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         // which leads to an IOException("Pipe closed") when reading.
         IoUtils.closeQuietly(in, out, err);
         IoUtils.closeQuietly(invertedIn, invertedOut, invertedErr);
+        // TODO: graceful close ?
+        CloseableUtils.parallel(asyncIn, asyncOut, asyncErr).close(true);
         super.doCloseImmediately();
     }
 
@@ -252,23 +295,39 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         if (state.get() != CloseableUtils.AbstractCloseable.OPENED) {
             return;
         }
-        if (out != null) {
+        if (asyncOut != null) {
+            asyncOut.write(new Buffer(data, off, len));
+        } else if (out != null) {
             out.write(data, off, len);
             out.flush();
+            localWindow.consumeAndCheck(len);
         } else {
             throw new IllegalStateException("No output stream for channel");
         }
-        localWindow.consumeAndCheck(len);
     }
 
     protected void doWriteExtendedData(byte[] data, int off, int len) throws IOException {
-        if (err != null) {
+        // If we're already closing, ignore incoming data
+        if (state.get() != CloseableUtils.AbstractCloseable.OPENED) {
+            return;
+        }
+        if (asyncErr != null) {
+            asyncErr.write(new Buffer(data, off, len));
+        } else if (err != null) {
             err.write(data, off, len);
             err.flush();
+            localWindow.consumeAndCheck(len);
         } else {
             throw new IllegalStateException("No error stream for channel");
         }
-        localWindow.consumeAndCheck(len);
+    }
+
+    @Override
+    public void handleWindowAdjust(Buffer buffer) throws IOException {
+        super.handleWindowAdjust(buffer);
+        if (asyncIn != null) {
+            asyncIn.onWindowExpanded();
+        }
     }
 
     public Integer getExitStatus() {

@@ -23,6 +23,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 import org.apache.sshd.client.future.OpenFuture;
+import org.apache.sshd.common.io.IoInputStream;
+import org.apache.sshd.common.io.IoOutputStream;
 import org.apache.sshd.common.future.CloseFuture;
 
 /**
@@ -46,6 +48,21 @@ public interface ClientChannel {
     int EXIT_STATUS = 0x0020;
     int EXIT_SIGNAL = 0x0040;
     int OPENED =      0x0080;
+
+    enum Streaming {
+        Async,
+        Sync
+    }
+
+    Streaming getStreaming();
+
+    void setStreaming(Streaming streaming);
+
+    IoOutputStream getAsyncIn();
+
+    IoInputStream getAsyncOut();
+
+    IoInputStream getAsyncErr();
 
     /**
      * Access to an output stream to send data directly to the remote channel.

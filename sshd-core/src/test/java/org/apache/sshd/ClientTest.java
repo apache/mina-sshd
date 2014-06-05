@@ -53,6 +53,8 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.forward.TcpipServerChannel;
 import org.apache.sshd.common.future.CloseFuture;
+import org.apache.sshd.common.future.SshFutureListener;
+import org.apache.sshd.common.io.IoReadFuture;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.io.mina.MinaSession;
@@ -71,6 +73,7 @@ import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.server.session.ServerConnectionService;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.session.ServerUserAuthService;
+import org.apache.sshd.util.AsyncEchoShellFactory;
 import org.apache.sshd.util.BaseTest;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.BogusPublickeyAuthenticator;
@@ -83,7 +86,6 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -145,6 +147,11 @@ public class ClientTest extends BaseTest {
                                 }
                                 return super.open(recipient, rwsize, rmpsize, buffer);
                             }
+
+                            @Override
+                            public String toString() {
+                                return "ChannelSession" + "[id=" + id + ", recipient=" + recipient + "]";
+                            }
                         };
                     }
                 },
@@ -158,6 +165,92 @@ public class ClientTest extends BaseTest {
             sshd.stop(true);
             Thread.sleep(50);
         }
+    }
+
+    @Test
+    public void testAsyncClient() throws Exception {
+        sshd.getProperties().put(SshServer.WINDOW_SIZE, "1024");
+        sshd.setShellFactory(new AsyncEchoShellFactory());
+
+        SshClient client = SshClient.setUpDefaultClient();
+        client.getProperties().put(SshClient.WINDOW_SIZE, "1024");
+        client.start();
+        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
+        session.addPasswordIdentity("smx");
+        session.auth().verify();
+        final ChannelShell channel = session.createShellChannel();
+        channel.setStreaming(ClientChannel.Streaming.Async);
+        channel.open().verify();
+
+
+        final byte[] message = "0123456789\n".getBytes();
+        final int nbMessages = 1000;
+
+        final ByteArrayOutputStream baosOut = new ByteArrayOutputStream();
+        final ByteArrayOutputStream baosErr = new ByteArrayOutputStream();
+        final AtomicInteger writes = new AtomicInteger(nbMessages);
+
+        channel.getAsyncIn().write(new Buffer(message))
+                .addListener(new SshFutureListener<IoWriteFuture>() {
+                    public void operationComplete(IoWriteFuture future) {
+                        try {
+                            if (future.isWritten()) {
+                                if (writes.decrementAndGet() > 0) {
+                                    channel.getAsyncIn().write(new Buffer(message)).addListener(this);
+                                } else {
+                                    channel.getAsyncIn().close(false);
+                                }
+                            } else {
+                                throw new SshException("Error writing", future.getException());
+                            }
+                        } catch (IOException e) {
+                            if (!channel.isClosing()) {
+                                e.printStackTrace();
+                                channel.close(true);
+                            }
+                        }
+                    }
+                });
+        channel.getAsyncOut().read(new Buffer())
+                .addListener(new SshFutureListener<IoReadFuture>() {
+                    public void operationComplete(IoReadFuture future) {
+                        try {
+                            future.verify();
+                            Buffer buffer = future.getBuffer();
+                            baosOut.write(buffer.array(), buffer.rpos(), buffer.available());
+                            buffer.rpos(buffer.rpos() + buffer.available());
+                            buffer.compact();
+                            channel.getAsyncOut().read(buffer).addListener(this);
+                        } catch (IOException e) {
+                            if (!channel.isClosing()) {
+                                e.printStackTrace();
+                                channel.close(true);
+                            }
+                        }
+                    }
+                });
+        channel.getAsyncErr().read(new Buffer())
+                .addListener(new SshFutureListener<IoReadFuture>() {
+                    public void operationComplete(IoReadFuture future) {
+                        try {
+                            future.verify();
+                            Buffer buffer = future.getBuffer();
+                            baosErr.write(buffer.array(), buffer.rpos(), buffer.available());
+                            buffer.rpos(buffer.rpos() + buffer.available());
+                            buffer.compact();
+                            channel.getAsyncErr().read(buffer).addListener(this);
+                        } catch (IOException e) {
+                            if (!channel.isClosing()) {
+                                e.printStackTrace();
+                                channel.close(true);
+                            }
+                        }
+                    }
+                });
+
+        channel.waitFor(ClientChannel.CLOSED, 0);
+
+        assertEquals(nbMessages * message.length, baosOut.size());
     }
 
     @Test

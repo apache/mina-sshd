@@ -75,6 +75,9 @@ public class AgentForwardedChannel extends AbstractClientChannel {
 
     @Override
     protected void doOpen() throws IOException {
+        if (streaming == Streaming.Async) {
+            throw new IllegalArgumentException("Asynchronous streaming isn't supported yet on this channel");
+        }
         invertedIn = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA);
     }
 

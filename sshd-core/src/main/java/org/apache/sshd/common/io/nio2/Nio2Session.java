@@ -31,6 +31,7 @@ import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultSshFuture;
 import org.apache.sshd.common.future.SshFuture;
@@ -118,7 +119,7 @@ public class Nio2Session extends CloseableUtils.AbstractCloseable implements IoS
 
     private void exceptionCaught(Throwable exc) {
         if (!closeFuture.isClosed()) {
-            if (state.get() != OPENED || !socket.isOpen()) {
+            if (isClosing() || !socket.isOpen()) {
                 close(true);
             } else {
                 try {
@@ -253,6 +254,18 @@ public class Nio2Session extends CloseableUtils.AbstractCloseable implements IoS
             super(lock);
             this.buffer = buffer;
         }
+        public void verify() throws SshException {
+            try {
+                await();
+            }
+            catch (InterruptedException e) {
+                throw new SshException("Interrupted", e);
+            }
+            if (!isWritten()) {
+                throw new SshException("Write failed", getException());
+            }
+        }
+
         public boolean isWritten() {
             return getValue() instanceof Boolean;
         }

@@ -1266,6 +1266,18 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
             return buffer;
         }
 
+        public void verify() throws SshException {
+            try {
+                await();
+            }
+            catch (InterruptedException e) {
+                throw new SshException("Interrupted", e);
+            }
+            if (!isWritten()) {
+                throw new SshException("Write failed", getException());
+            }
+        }
+
         public boolean isWritten() {
             return getValue() instanceof Boolean;
         }
@@ -1290,7 +1302,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
             if (future.isWritten()) {
                 setWritten();
             } else {
-                future.setException(future.getException());
+                setException(future.getException());
             }
         }
     }

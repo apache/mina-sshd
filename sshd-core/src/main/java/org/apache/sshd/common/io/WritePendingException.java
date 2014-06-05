@@ -18,28 +18,6 @@
  */
 package org.apache.sshd.common.io;
 
-import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.future.SshFuture;
-
-public interface IoWriteFuture extends SshFuture<IoWriteFuture> {
-
-    /**
-     * Wait and verify that the write succeeded.
-     *
-     * @throws SshException if the write failed for any reason
-     */
-    void verify() throws SshException;
-
-    /**
-     * Returns <tt>true</tt> if the write operation is finished successfully.
-     */
-    boolean isWritten();
-
-    /**
-     * Returns the cause of the write failure if and only if the write
-     * operation has failed due to an {@link Exception}.  Otherwise,
-     * <tt>null</tt> is returned.
-     */
-    Throwable getException();
+public class WritePendingException extends IllegalStateException {
 
 }

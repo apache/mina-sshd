@@ -18,28 +18,14 @@
  */
 package org.apache.sshd.common.io;
 
-import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.future.SshFuture;
+import org.apache.sshd.common.Closeable;
+import org.apache.sshd.common.util.Buffer;
 
-public interface IoWriteFuture extends SshFuture<IoWriteFuture> {
-
-    /**
-     * Wait and verify that the write succeeded.
-     *
-     * @throws SshException if the write failed for any reason
-     */
-    void verify() throws SshException;
+public interface IoOutputStream extends Closeable {
 
     /**
-     * Returns <tt>true</tt> if the write operation is finished successfully.
+     * NOTE: the buffer must not be touched until the returned write future is completed.
      */
-    boolean isWritten();
-
-    /**
-     * Returns the cause of the write failure if and only if the write
-     * operation has failed due to an {@link Exception}.  Otherwise,
-     * <tt>null</tt> is returned.
-     */
-    Throwable getException();
+    IoWriteFuture write(Buffer buffer);
 
 }

@@ -25,6 +25,7 @@ import org.apache.mina.core.future.IoFuture;
 import org.apache.mina.core.future.IoFutureListener;
 import org.apache.mina.core.future.WriteFuture;
 import org.apache.sshd.common.Closeable;
+import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.future.DefaultSshFuture;
 import org.apache.sshd.common.io.IoService;
@@ -106,6 +107,18 @@ public class MinaSession extends CloseableUtils.AbstractInnerCloseable implement
                 super(lock);
             }
 
+            public void verify() throws SshException {
+                try {
+                    await();
+                }
+                catch (InterruptedException e) {
+                    throw new SshException("Interrupted", e);
+                }
+                if (!isWritten()) {
+                    throw new SshException("Write failed", getException());
+                }
+            }
+
             public boolean isWritten() {
                 return getValue() instanceof Boolean;
             }
@@ -126,7 +139,7 @@ public class MinaSession extends CloseableUtils.AbstractInnerCloseable implement
                 setValue(exception);
             }
         }
-        final IoWriteFuture future = new Future(null);
+        final Future future = new Future(null);
         session.write(MinaSupport.asIoBuffer(buffer)).addListener(new IoFutureListener<WriteFuture>() {
             public void operationComplete(WriteFuture cf) {
                 if (cf.getException() != null) {

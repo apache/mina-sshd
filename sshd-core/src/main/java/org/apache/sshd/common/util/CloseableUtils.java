@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.common.Closeable;
+import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.future.DefaultSshFuture;
@@ -197,7 +198,11 @@ public class CloseableUtils {
     }
 
     public static <T extends SshFuture> CloseFuture parallel(final SshFuture<T>... futures) {
-        final CloseFuture future = new DefaultCloseFuture(null);
+        return parallel(null, futures);
+    }
+
+    public static <T extends SshFuture> CloseFuture parallel(Object lock, final SshFuture<T>... futures) {
+        final CloseFuture future = new DefaultCloseFuture(lock);
         if (futures.length > 0) {
             final AtomicInteger count = new AtomicInteger(futures.length);
             SshFutureListener<T> listener = new SshFutureListener<T>() {
@@ -220,6 +225,98 @@ public class CloseableUtils {
         return future;
     }
 
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static Builder builder(Logger logger, Object lock) {
+        return new Builder();
+    }
+
+    public static class Builder {
+        private final Object lock;
+        private Closeable closeable = null;
+        public Builder() {
+            this(null);
+        }
+        public Builder(Object lock) {
+            this.lock = lock;
+        }
+        public <T extends SshFuture> Builder when(final SshFuture<T>... futures) {
+            return close(new Closeable() {
+                private volatile boolean closing;
+                private volatile boolean closed;
+                public CloseFuture close(boolean immediately) {
+                    closing = true;
+                    if (immediately) {
+                        for (SshFuture<?> future : futures) {
+                            if (future instanceof DefaultSshFuture) {
+                                ((DefaultSshFuture<?>) future).setValue(new SshException("Closed"));
+                            }
+                        }
+                        closed = true;
+                        return closed();
+                    } else {
+                        return CloseableUtils.parallel(lock, futures).addListener(new SshFutureListener<CloseFuture>() {
+                            public void operationComplete(CloseFuture future) {
+                                closed = true;
+                            }
+                        });
+                    }
+                }
+
+                public boolean isClosed() {
+                    return closed;
+                }
+
+                public boolean isClosing() {
+                    return closing || closed;
+                }
+            });
+        }
+        public <T extends SshFuture> Builder when(Collection<? extends SshFuture<T>> futures) {
+            return when(futures.toArray(new SshFuture[futures.size()]));
+        }
+        public Builder sequential(Closeable... closeables) {
+            return close(CloseableUtils.sequential(lock, closeables));
+        }
+        public Builder sequential(Collection<Closeable> closeables) {
+            return close(CloseableUtils.sequential(lock, closeables));
+        }
+        public Builder parallel(Closeable... closeables) {
+            return close(CloseableUtils.parallel(lock, closeables));
+        }
+        public Builder parallel(Collection<? extends Closeable> closeables) {
+            return close(CloseableUtils.parallel(lock, closeables));
+        }
+        public Builder close(Closeable c) {
+            if (closeable == null) {
+                closeable = c;
+            } else {
+                closeable = CloseableUtils.sequential(lock, closeable, c);
+            }
+            return this;
+        }
+        public Closeable build() {
+            if (closeable == null) {
+                closeable = new Closeable() {
+                    private volatile boolean closed;
+                    public CloseFuture close(boolean immediately) {
+                        closed = true;
+                        return closed();
+                    }
+                    public boolean isClosed() {
+                        return closed;
+                    }
+                    public boolean isClosing() {
+                        return closed;
+                    }
+                };
+            }
+            return closeable;
+        }
+    }
+
     public static abstract class AbstractCloseable implements Closeable {
 
         protected static final int OPENED = 0;
@@ -230,11 +327,20 @@ public class CloseableUtils {
         /** Our logger */
         protected final Logger log = LoggerFactory.getLogger(getClass());
         /** Lock object for this session state */
-        protected final Object lock = new Object();
+        protected final Object lock;
         /** State of this object */
         protected final AtomicInteger state = new AtomicInteger(OPENED);
         /** A future that will be set 'closed' when the object is actually closed */
-        protected final CloseFuture closeFuture = new DefaultCloseFuture(lock);
+        protected final CloseFuture closeFuture;
+
+        protected AbstractCloseable() {
+            this(new Object());
+        }
+
+        protected AbstractCloseable(Object lock) {
+            this.lock = lock;
+            this.closeFuture = new DefaultCloseFuture(lock);
+        }
 
         public CloseFuture close(boolean immediately) {
             if (immediately) {
@@ -256,7 +362,7 @@ public class CloseableUtils {
                             public void operationComplete(CloseFuture future) {
                                 if (state.compareAndSet(GRACEFUL, IMMEDIATE)) {
                                     doCloseImmediately();
-                                    log.debug("{} closed", this);
+                                    log.debug("{} closed", AbstractCloseable.this);
                                 }
                             }
                         });
@@ -284,13 +390,17 @@ public class CloseableUtils {
         protected void preClose() {
         }
 
-        protected SshFuture<CloseFuture> doCloseGracefully() {
+        protected CloseFuture doCloseGracefully() {
             return null;
         }
 
         protected void doCloseImmediately() {
             closeFuture.setClosed();
             state.set(CLOSED);
+        }
+
+        protected Builder builder() {
+            return new Builder(lock);
         }
 
     }
@@ -300,7 +410,7 @@ public class CloseableUtils {
         protected abstract Closeable getInnerCloseable();
 
         @Override
-        protected SshFuture<CloseFuture> doCloseGracefully() {
+        protected CloseFuture doCloseGracefully() {
             return getInnerCloseable().close(false);
         }
 
