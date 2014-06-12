@@ -70,7 +70,7 @@ public class ECDH extends AbstractDH {
         ECPublicKeySpec keySpec = new ECPublicKeySpec(f, params);
         PublicKey yourPubKey = myKeyFac.generatePublic(keySpec);
         myKeyAgree.doPhase(yourPubKey, true);
-        return myKeyAgree.generateSecret();
+        return stripLeadingZeroes(myKeyAgree.generateSecret());
     }
 
     public void setCurveParameters(ECParameterSpec params) {
