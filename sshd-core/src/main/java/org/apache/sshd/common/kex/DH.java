@@ -76,7 +76,7 @@ public class DH extends AbstractDH {
         DHPublicKeySpec keySpec = new DHPublicKeySpec(f, p, g);
         PublicKey yourPubKey = myKeyFac.generatePublic(keySpec);
         myKeyAgree.doPhase(yourPubKey, true);
-        return myKeyAgree.generateSecret();
+        return stripLeadingZeroes(myKeyAgree.generateSecret());
     }
 
     public void setP(byte[] p) {
