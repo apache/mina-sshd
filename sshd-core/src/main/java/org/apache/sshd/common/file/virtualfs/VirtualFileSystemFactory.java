@@ -73,7 +73,7 @@ public class VirtualFileSystemFactory implements FileSystemFactory {
         String dir = computeRootDir(session.getUsername());
         Map<String, String> roots = new HashMap<String, String>();
         roots.put("/", dir);
-        return new NativeFileSystemView(session.getUsername(), roots, "/");
+        return new NativeFileSystemView(session.getUsername(), roots, "/", '/', false);
     }
 
 }
