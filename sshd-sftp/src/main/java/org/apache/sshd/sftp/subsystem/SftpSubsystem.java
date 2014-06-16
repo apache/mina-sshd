@@ -25,6 +25,7 @@ import org.apache.sshd.common.file.FileSystemView;
 import org.apache.sshd.common.file.SshFile;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.SelectorUtils;
+import org.apache.sshd.common.util.ThreadUtils;
 import org.apache.sshd.server.*;
 import org.apache.sshd.server.channel.ChannelDataReceiver;
 import org.apache.sshd.server.channel.ChannelSession;
@@ -96,7 +97,7 @@ public class SftpSubsystem implements Command, SessionAware, FileSystemAware, Sf
     private final ExecutorService executor;
 
     public SftpSubsystem() {
-        executor = Executors.newSingleThreadExecutor();
+        executor = ThreadUtils.newSingleThreadExecutor("sftp[" + Integer.toHexString(hashCode()) + "]");
     }
 
     public void setSftpLet(final Sftplet sftpLet) {

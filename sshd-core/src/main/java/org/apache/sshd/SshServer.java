@@ -30,7 +30,6 @@ import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -87,6 +86,7 @@ import org.apache.sshd.common.signature.SignatureRSA;
 import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.SecurityUtils;
+import org.apache.sshd.common.util.ThreadUtils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.CommandFactory;
 import org.apache.sshd.server.PasswordAuthenticator;
@@ -278,7 +278,9 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
             }
         }
         if (getScheduledExecutorService() == null) {
-            setScheduledExecutorService(Executors.newSingleThreadScheduledExecutor(), true);
+            setScheduledExecutorService(
+                    ThreadUtils.newSingleThreadScheduledExecutor(this.toString() + "-timer"),
+                    true);
         }
         if (getCipherFactories() == null) {
             throw new IllegalArgumentException("CipherFactories not set");
@@ -434,6 +436,11 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
             sessionFactory.removeListener(sessionTimeoutListener);
         }
         sessionTimeoutListener = null;
+    }
+
+    @Override
+    public String toString() {
+        return "SshServer[" + Integer.toHexString(hashCode()) + "]";
     }
 
     public static SshServer setUpDefaultServer() {

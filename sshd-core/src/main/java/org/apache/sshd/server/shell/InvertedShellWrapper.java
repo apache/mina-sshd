@@ -23,8 +23,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
+import org.apache.sshd.common.util.ThreadUtils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
@@ -58,15 +58,18 @@ public class InvertedShellWrapper implements Command, SessionAware {
     private boolean shutdownExecutor;
 
     public InvertedShellWrapper(InvertedShell shell) {
-        this(shell, Executors.newSingleThreadExecutor(), true, DEFAULT_BUFFER_SIZE);
+        this(shell, DEFAULT_BUFFER_SIZE);
     }
 
     public InvertedShellWrapper(InvertedShell shell, Executor executor) {
-        this(shell, executor, false, DEFAULT_BUFFER_SIZE);
+        this(shell, executor, DEFAULT_BUFFER_SIZE);
     }
 
     public InvertedShellWrapper(InvertedShell shell, int bufferSize) {
-        this(shell, Executors.newSingleThreadExecutor(), true, bufferSize);
+        this(shell,
+             ThreadUtils.newSingleThreadExecutor("shell[" + Integer.toHexString(shell.hashCode()) + "]"),
+             true,
+             bufferSize);
     }
 
     public InvertedShellWrapper(InvertedShell shell, Executor executor, int bufferSize) {

@@ -19,8 +19,6 @@
 package org.apache.sshd.common.io.mina;
 
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.mina.core.service.IoProcessor;
@@ -28,12 +26,12 @@ import org.apache.mina.core.service.SimpleIoProcessorPool;
 import org.apache.mina.transport.socket.nio.NioProcessor;
 import org.apache.mina.transport.socket.nio.NioSession;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoConnector;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.util.CloseableUtils;
+import org.apache.sshd.common.util.ThreadUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,9 +46,7 @@ public class MinaServiceFactory extends CloseableUtils.AbstractCloseable impleme
 
     public MinaServiceFactory(FactoryManager manager) {
         this.manager = manager;
-        this.executor = Executors.newCachedThreadPool();
-        // Set a default reject handler
-        ((ThreadPoolExecutor) this.executor).setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        this.executor = ThreadUtils.newCachedThreadPool(manager.toString() + "-mina");
         this.ioProcessor = new SimpleIoProcessorPool<NioSession>(NioProcessor.class, getNioWorkers());
     }
 

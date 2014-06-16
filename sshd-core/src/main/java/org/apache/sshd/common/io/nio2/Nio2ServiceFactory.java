@@ -21,21 +21,16 @@ package org.apache.sshd.common.io.nio2;
 import java.io.IOException;
 import java.nio.channels.AsynchronousChannelGroup;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.RuntimeSshException;
-import org.apache.sshd.common.future.CloseFuture;
-import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoConnector;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.util.CloseableUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.sshd.common.util.ThreadUtils;
 
 /**
  */
@@ -47,8 +42,9 @@ public class Nio2ServiceFactory extends CloseableUtils.AbstractCloseable impleme
     public Nio2ServiceFactory(FactoryManager manager) {
         this.manager = manager;
         try {
-            ExecutorService executor = Executors.newFixedThreadPool(getNioWorkers());
-            ((ThreadPoolExecutor) executor).setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+            ExecutorService executor = ThreadUtils.newFixedThreadPool(
+                    manager.toString() + "-nio2",
+                    getNioWorkers());
             group = AsynchronousChannelGroup.withThreadPool(executor);
         } catch (IOException e) {
             throw new RuntimeSshException(e);

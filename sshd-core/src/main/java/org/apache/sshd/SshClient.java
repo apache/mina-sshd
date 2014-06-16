@@ -115,6 +115,7 @@ import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.NoCloseInputStream;
 import org.apache.sshd.common.util.NoCloseOutputStream;
 import org.apache.sshd.common.util.SecurityUtils;
+import org.apache.sshd.common.util.ThreadUtils;
 import org.bouncycastle.openssl.PasswordFinder;
 
 /**
@@ -213,7 +214,9 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             throw new IllegalArgumentException("KeyExchangeFactories not set");
         }
         if (getScheduledExecutorService() == null) {
-            setScheduledExecutorService(Executors.newSingleThreadScheduledExecutor(), true);
+            setScheduledExecutorService(
+                    ThreadUtils.newSingleThreadScheduledExecutor(this.toString() + "-timer"),
+                    true);
         }
         if (getCipherFactories() == null) {
             throw new IllegalArgumentException("CipherFactories not set");
@@ -353,6 +356,11 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
     protected SessionFactory createSessionFactory() {
         return new SessionFactory();
+    }
+
+    @Override
+    public String toString() {
+        return "SshClient[" + Integer.toHexString(hashCode()) + "]";
     }
 
     /**
