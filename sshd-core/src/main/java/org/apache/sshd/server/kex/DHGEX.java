@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.server.kex;
 
+import java.io.IOException;
 import java.math.BigInteger;
 import java.net.URL;
 import java.security.KeyPair;
@@ -34,6 +35,7 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.digest.SHA1;
 import org.apache.sshd.common.kex.DH;
+import org.apache.sshd.common.kex.DHGroupData;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.BufferUtils;
@@ -219,14 +221,21 @@ public class DHGEX implements KeyExchange {
     }
 
     private DH chooseDH(int min, int prf, int max) throws Exception {
+        List<Moduli.DhGroup> groups = null;
         URL moduli;
         String moduliStr = session.getFactoryManager().getProperties().get(ServerFactoryManager.MODULI_URL);
         if (moduliStr != null) {
-            moduli = new URL(moduliStr);
-        } else {
-            moduli = getClass().getResource("/org/apache/sshd/moduli");
+            try {
+                moduli = new URL(moduliStr);
+                groups = Moduli.parseModuli(moduli);
+            } catch (IOException e) {
+                log.warn("Error loading external moduli", e);
+            }
         }
-        List<Moduli.DhGroup> groups = Moduli.parseModuli(moduli);
+        if (groups == null) {
+            moduli = getClass().getResource("/org/apache/sshd/moduli");
+            groups = Moduli.parseModuli(moduli);
+        }
 
         min = Math.max(min, 1024);
         prf = Math.max(prf, 1024);
@@ -249,7 +258,8 @@ public class DHGEX implements KeyExchange {
             }
         }
         if (selected.isEmpty()) {
-            throw new IllegalArgumentException("No suitable primes");
+            log.warn("No suitable primes found, defaulting to DHG1");
+            return getDH(new BigInteger(DHGroupData.getG()), new BigInteger(DHGroupData.getP1()));
         }
         Random random = session.getFactoryManager().getRandomFactory().create();
         int which = random.random(selected.size());
