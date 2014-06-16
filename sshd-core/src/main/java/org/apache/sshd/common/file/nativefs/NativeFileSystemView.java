@@ -45,6 +45,12 @@ import static org.apache.sshd.common.file.nativefs.NativeSshFile.normalizeSepara
  */
 public class NativeFileSystemView implements FileSystemView {
 
+    public enum UnsupportedAttributePolicy {
+        Ignore,
+        Warn,
+        ThrowException
+    }
+
     private final Logger LOG = LoggerFactory.getLogger(NativeFileSystemView.class);
 
 
@@ -59,6 +65,8 @@ public class NativeFileSystemView implements FileSystemView {
     private char separator;
 
     private boolean caseInsensitive = false;
+
+    private UnsupportedAttributePolicy unsupportedAttributePolicy = UnsupportedAttributePolicy.Warn;
 
     /**
      * Constructor - internal do not use directly, use {@link NativeFileSystemFactory} instead
@@ -139,6 +147,14 @@ public class NativeFileSystemView implements FileSystemView {
             roots.put("/", "/");
         }
         return roots;
+    }
+
+    public UnsupportedAttributePolicy getUnsupportedAttributePolicy() {
+        return unsupportedAttributePolicy;
+    }
+
+    public void setUnsupportedAttributePolicy(UnsupportedAttributePolicy unsupportedAttributePolicy) {
+        this.unsupportedAttributePolicy = unsupportedAttributePolicy;
     }
 
     public String getUserName() {
@@ -227,7 +243,7 @@ public class NativeFileSystemView implements FileSystemView {
 
     public NativeSshFile createNativeSshFile(String name, File file, String userName) {
         name = deNormalizeSeparateChar(name);
-        if (isJava7 && !isWindows) {
+        if (isJava7) {
             return new NativeSshFileNio(this, name, file, userName);
         } else {
 		    return new NativeSshFile(this, name, file, userName);

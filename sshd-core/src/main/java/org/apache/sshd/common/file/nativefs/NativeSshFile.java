@@ -27,13 +27,17 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.lang.reflect.Method;
+import java.nio.channels.FileChannel;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.StringTokenizer;
 
 import org.apache.sshd.common.file.SshFile;
@@ -640,8 +644,46 @@ public class NativeSshFile implements SshFile {
     }
 
     public void setAttributes(Map<Attribute, Object> attributes) throws IOException {
+        Set<Attribute> unsupported = new HashSet<Attribute>();
+        for (Attribute attribute : attributes.keySet()) {
+            Object value = attributes.get(attribute);
+            switch (attribute) {
+            case Size: {
+                long newSize = (Long) value;
+                FileChannel outChan = new FileOutputStream(file, true).getChannel();
+                outChan.truncate(newSize);
+                outChan.close();
+                continue;
+            }
+            case LastModifiedTime:
+                setLastModified((Long) value);
+                break;
+            default:
+                unsupported.add(attribute);
+                break;
+            }
+        }
+        handleUnsupportedAttributes(unsupported);
+    }
+
+    protected void handleUnsupportedAttributes(Collection<Attribute> attributes) {
         if (!attributes.isEmpty()) {
-            throw new UnsupportedOperationException();
+            StringBuilder sb = new StringBuilder();
+            for (Attribute attr : attributes) {
+                if (sb.length() > 0) {
+                    sb.append(", ");
+                }
+                sb.append(attr.name());
+            }
+            switch (nativeFileSystemView.getUnsupportedAttributePolicy()) {
+            case Ignore:
+                break;
+            case Warn:
+                LOG.warn("Unsupported attributes: " + sb.toString());
+                break;
+            case ThrowException:
+                throw new UnsupportedOperationException("Unsupported attributes: " + sb.toString());
+            }
         }
     }
 

@@ -58,27 +58,71 @@ public class NativeSshFileNio extends NativeSshFile {
     }
 
     public Map<Attribute, Object> getAttributes(boolean followLinks) throws IOException {
-        Map<String, Object> a = Files.readAttributes(
-                file.toPath(),
-                "unix:size,uid,owner,gid,group,isDirectory,isRegularFile,isSymbolicLink,permissions,creationTime,lastModifiedTime,lastAccessTime",
-                followLinks ? new LinkOption[0] : new LinkOption[] { LinkOption.NOFOLLOW_LINKS });
+        String[] attrs = new String[] { "unix:*", "posix:*", "*" };
+        Map<String, Object> a = null;
+        for (String attr : attrs) {
+            try {
+                a = Files.readAttributes(
+                        file.toPath(), attr,
+                        followLinks ? new LinkOption[0] : new LinkOption[]{LinkOption.NOFOLLOW_LINKS});
+                break;
+            } catch (UnsupportedOperationException e) {
+                // Ignore
+            }
+        }
+        if (a == null) {
+            throw new IllegalStateException();
+        }
         Map<Attribute, Object> map = new HashMap<Attribute, Object>();
         map.put(Attribute.Size, a.get("size"));
-        map.put(Attribute.Uid, a.get("uid"));
-        map.put(Attribute.Owner, ((UserPrincipal) a.get("owner")).getName());
-        map.put(Attribute.Gid, a.get("gid"));
-        map.put(Attribute.Group, ((GroupPrincipal) a.get("group")).getName());
+        if (a.containsKey("uid")) {
+            map.put(Attribute.Uid, a.get("uid"));
+        }
+        if (a.containsKey("owner")) {
+            map.put(Attribute.Owner, ((UserPrincipal) a.get("owner")).getName());
+        } else {
+            map.put(Attribute.Owner, userName);
+        }
+        if (a.containsKey("gid")) {
+            map.put(Attribute.Gid, a.get("gid"));
+        }
+        if (a.containsKey("group")) {
+            map.put(Attribute.Group, ((GroupPrincipal) a.get("group")).getName());
+        } else {
+            map.put(Attribute.Group, userName);
+        }
         map.put(Attribute.IsDirectory, a.get("isDirectory"));
         map.put(Attribute.IsRegularFile, a.get("isRegularFile"));
         map.put(Attribute.IsSymbolicLink, a.get("isSymbolicLink"));
         map.put(Attribute.CreationTime, ((FileTime) a.get("creationTime")).toMillis());
         map.put(Attribute.LastModifiedTime, ((FileTime) a.get("lastModifiedTime")).toMillis());
         map.put(Attribute.LastAccessTime, ((FileTime) a.get("lastAccessTime")).toMillis());
-        map.put(Attribute.Permissions, fromPerms((Set<PosixFilePermission>) a.get("permissions")));
+        if (a.containsKey("permissions")) {
+            map.put(Attribute.Permissions, fromPerms((Set<PosixFilePermission>) a.get("permissions")));
+        } else {
+            EnumSet<Permission> p = EnumSet.noneOf(Permission.class);
+            if (isReadable()) {
+                p.add(Permission.UserRead);
+                p.add(Permission.GroupRead);
+                p.add(Permission.OthersRead);
+            }
+            if (isWritable()) {
+                p.add(Permission.UserWrite);
+                p.add(Permission.GroupWrite);
+                p.add(Permission.OthersWrite);
+            }
+            if (isExecutable()) {
+                p.add(Permission.UserExecute);
+                p.add(Permission.GroupExecute);
+                p.add(Permission.OthersExecute);
+            }
+            map.put(Attribute.Permissions, p);
+        }
         return map;
     }
 
     public void setAttributes(Map<Attribute, Object> attributes) throws IOException {
+        Set<Attribute> unsupported = new HashSet<Attribute>();
         for (Attribute attribute : attributes.keySet()) {
             String name = null;
             Object value = attributes.get(attribute);
@@ -91,18 +135,23 @@ public class NativeSshFileNio extends NativeSshFile {
                     continue;
                 }
                 case Uid:              name = "unix:uid"; break;
-                case Owner:            name = "unix:owner"; value = toUser((String) value); break;
                 case Gid:              name = "unix:gid"; break;
-                case Group:            name = "unix:group"; value = toGroup((String) value); break;
-                case Permissions:      name = "unix:permissions"; value = toPerms((EnumSet<Permission>) value); break;
-                case CreationTime:     name = "unix:creationTime"; value = FileTime.fromMillis((Long) value); break;
-                case LastModifiedTime: name = "unix:lastModifiedTime"; value = FileTime.fromMillis((Long) value); break;
-                case LastAccessTime:   name = "unix:lastAccessTime"; value = FileTime.fromMillis((Long) value); break;
+                case Owner:            name = "posix:owner"; value = toUser((String) value); break;
+                case Group:            name = "posix:group"; value = toGroup((String) value); break;
+                case Permissions:      name = "posix:permissions"; value = toPerms((EnumSet<Permission>) value); break;
+                case CreationTime:     name = "basic:creationTime"; value = FileTime.fromMillis((Long) value); break;
+                case LastModifiedTime: name = "basic:lastModifiedTime"; value = FileTime.fromMillis((Long) value); break;
+                case LastAccessTime:   name = "basic:lastAccessTime"; value = FileTime.fromMillis((Long) value); break;
             }
             if (name != null && value != null) {
-                Files.setAttribute(file.toPath(), name, value, LinkOption.NOFOLLOW_LINKS);
+                try {
+                    Files.setAttribute(file.toPath(), name, value, LinkOption.NOFOLLOW_LINKS);
+                } catch (UnsupportedOperationException e) {
+                    unsupported.add(attribute);
+                }
             }
         }
+        handleUnsupportedAttributes(unsupported);
     }
 
     public String readSymbolicLink() throws IOException {
