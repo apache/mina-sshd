@@ -38,6 +38,7 @@ import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.BufferUtils;
 import org.apache.sshd.common.util.SecurityUtils;
+import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.session.ServerSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -218,7 +219,13 @@ public class DHGEX implements KeyExchange {
     }
 
     private DH chooseDH(int min, int prf, int max) throws Exception {
-        URL moduli = getClass().getResource("/org/apache/sshd/moduli");
+        URL moduli;
+        String moduliStr = session.getFactoryManager().getProperties().get(ServerFactoryManager.MODULI_URL);
+        if (moduliStr != null) {
+            moduli = new URL(moduliStr);
+        } else {
+            moduli = getClass().getResource("/org/apache/sshd/moduli");
+        }
         List<Moduli.DhGroup> groups = Moduli.parseModuli(moduli);
 
         min = Math.max(min, 1024);
