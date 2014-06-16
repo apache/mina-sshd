@@ -265,6 +265,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                 output = null;
             }
             if (output == null) {
+                outputPos = offset;
                 output = file.createOutputStream(offset);
             }
             output.write(data);
