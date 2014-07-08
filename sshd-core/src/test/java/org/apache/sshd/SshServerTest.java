@@ -28,6 +28,7 @@ import org.apache.sshd.util.Utils;
 import org.junit.Test;
 
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -68,6 +69,17 @@ public class SshServerTest extends BaseTest {
         sshd.stop();
 
         assertTrue(executorService.isShutdown());
+    }
+
+    @Test
+    public void testDynamicPort() throws Exception {
+        SshServer sshd = createTestServer();
+        sshd.setHost("localhost");
+        sshd.start();
+
+        assertNotEquals(0, sshd.getPort());
+
+        sshd.stop();
     }
 
 

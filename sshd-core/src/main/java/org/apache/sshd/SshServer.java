@@ -84,6 +84,7 @@ import org.apache.sshd.common.signature.SignatureDSA;
 import org.apache.sshd.common.signature.SignatureECDSA;
 import org.apache.sshd.common.signature.SignatureRSA;
 import org.apache.sshd.common.util.CloseableUtils;
+import org.apache.sshd.common.util.IoUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ThreadUtils;
@@ -334,6 +335,9 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         timeoutListenerFuture = getScheduledExecutorService()
                 .scheduleAtFixedRate(sessionTimeoutListener, 1, 1, TimeUnit.SECONDS);
 
+        if (port == 0) {
+            port = IoUtils.getFreePort();
+        }
         if (host != null) {
             String[] hosts = host.split(",");
             LinkedList<InetSocketAddress> addresses = new LinkedList<InetSocketAddress>();
@@ -341,18 +345,12 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
                 InetAddress[] inetAddresses = InetAddress.getAllByName(host);
                 for (InetAddress inetAddress : inetAddresses) {
                     InetSocketAddress inetSocketAddress = new InetSocketAddress(inetAddress, port);
-                    if (port == 0) {
-                        port = inetSocketAddress.getPort();
-                    }
                     addresses.add(inetSocketAddress);
                 }
             }
             acceptor.bind(addresses);
         } else {
             acceptor.bind(Collections.singleton(new InetSocketAddress(port)));
-            if (port == 0) {
-                port = ((InetSocketAddress) acceptor.getBoundAddresses().iterator().next()).getPort();
-            }
         }
     }
 

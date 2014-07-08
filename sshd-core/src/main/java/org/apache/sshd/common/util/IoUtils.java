@@ -20,6 +20,7 @@ package org.apache.sshd.common.util;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.net.ServerSocket;
 
 /**
  * TODO Add javadoc
@@ -27,6 +28,15 @@ import java.io.IOException;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class IoUtils {
+
+    public static int getFreePort() throws IOException {
+        ServerSocket s = new ServerSocket(0);
+        try {
+            return s.getLocalPort();
+        } finally {
+            s.close();
+        }
+    }
 
     public static void closeQuietly(Closeable... closeables) {
         for (Closeable c : closeables) {
