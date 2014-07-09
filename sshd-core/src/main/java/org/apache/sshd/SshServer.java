@@ -335,22 +335,22 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         timeoutListenerFuture = getScheduledExecutorService()
                 .scheduleAtFixedRate(sessionTimeoutListener, 1, 1, TimeUnit.SECONDS);
 
-        if (port == 0) {
-            port = IoUtils.getFreePort();
-        }
         if (host != null) {
             String[] hosts = host.split(",");
-            LinkedList<InetSocketAddress> addresses = new LinkedList<InetSocketAddress>();
             for (String host : hosts) {
                 InetAddress[] inetAddresses = InetAddress.getAllByName(host);
                 for (InetAddress inetAddress : inetAddresses) {
-                    InetSocketAddress inetSocketAddress = new InetSocketAddress(inetAddress, port);
-                    addresses.add(inetSocketAddress);
+                    acceptor.bind(new InetSocketAddress(inetAddress, port));
+                    if (port == 0) {
+                        port = ((InetSocketAddress) acceptor.getBoundAddresses().iterator().next()).getPort();
+                    }
                 }
             }
-            acceptor.bind(addresses);
         } else {
-            acceptor.bind(Collections.singleton(new InetSocketAddress(port)));
+            acceptor.bind(new InetSocketAddress(port));
+            if (port == 0) {
+                port = ((InetSocketAddress) acceptor.getBoundAddresses().iterator().next()).getPort();
+            }
         }
     }
 
