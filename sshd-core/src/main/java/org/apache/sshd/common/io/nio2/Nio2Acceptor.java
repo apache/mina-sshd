@@ -24,7 +24,6 @@ import java.net.StandardSocketOptions;
 import java.nio.channels.AsynchronousChannelGroup;
 import java.nio.channels.AsynchronousServerSocketChannel;
 import java.nio.channels.AsynchronousSocketChannel;
-import java.nio.channels.CompletionHandler;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -106,12 +105,12 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
         super.doCloseImmediately();
     }
 
-    class AcceptCompletionHandler implements CompletionHandler<AsynchronousSocketChannel, SocketAddress> {
+    class AcceptCompletionHandler extends Nio2CompletionHandler<AsynchronousSocketChannel, SocketAddress> {
         private final AsynchronousServerSocketChannel socket;
         AcceptCompletionHandler(AsynchronousServerSocketChannel socket) {
             this.socket = socket;
         }
-        public void completed(AsynchronousSocketChannel result, SocketAddress address) {
+        protected void onCompleted(AsynchronousSocketChannel result, SocketAddress address) {
             // Verify that the address has not been unbound
             if (!channels.containsKey(address)) {
                 try {
@@ -134,7 +133,7 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
                 failed(exc, address);
             }
         }
-        public void failed(Throwable exc, SocketAddress address) {
+        protected void onFailed(final Throwable exc, final SocketAddress address) {
             if (!channels.containsKey(address)) {
                 acceptorStopped(address);
             } else if (!disposing.get()) {

@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.channels.AsynchronousChannelGroup;
 import java.nio.channels.AsynchronousSocketChannel;
-import java.nio.channels.CompletionHandler;
 
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.future.DefaultSshFuture;
@@ -44,8 +43,8 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
         final IoConnectFuture future = new DefaultIoConnectFuture(null);
         try {
             final AsynchronousSocketChannel socket = AsynchronousSocketChannel.open(group);
-            socket.connect(address, null, new CompletionHandler<Void, Object>() {
-                public void completed(Void result, Object attachment) {
+            socket.connect(address, null, new Nio2CompletionHandler<Void, Object>() {
+                protected void onCompleted(Void result, Object attachment) {
                     try {
                         Nio2Session session = new Nio2Session(Nio2Connector.this, handler, socket);
                         handler.sessionCreated(session);
@@ -61,7 +60,7 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
                         future.setException(e);
                     }
                 }
-                public void failed(Throwable exc, Object attachment) {
+                protected void onFailed(final Throwable exc, final Object attachment) {
                     future.setException(exc);
                 }
             });

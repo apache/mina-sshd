@@ -23,7 +23,6 @@ import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.ClosedChannelException;
-import java.nio.channels.CompletionHandler;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
@@ -171,8 +170,8 @@ public class Nio2Session extends CloseableUtils.AbstractCloseable implements IoS
 
     public void startReading() {
         final ByteBuffer buffer = ByteBuffer.allocate(32 * 1024);
-        socket.read(buffer, null, new CompletionHandler<Integer, Object>() {
-            public void completed(Integer result, Object attachment) {
+        socket.read(buffer, null, new Nio2CompletionHandler<Integer, Object>() {
+            protected void onCompleted(Integer result, Object attachment) {
                 try {
                     if (result >= 0) {
                         log.debug("Read {} bytes", result);
@@ -199,7 +198,7 @@ public class Nio2Session extends CloseableUtils.AbstractCloseable implements IoS
                     failed(exc, attachment);
                 }
             }
-            public void failed(Throwable exc, Object attachment) {
+            protected void onFailed(Throwable exc, Object attachment) {
                 exceptionCaught(exc);
             }
         });
@@ -210,8 +209,8 @@ public class Nio2Session extends CloseableUtils.AbstractCloseable implements IoS
         if (future != null) {
             if (currentWrite.compareAndSet(null, future)) {
                 try {
-                    socket.write(future.buffer, null, new CompletionHandler<Integer, Object>() {
-                        public void completed(Integer result, Object attachment) {
+                    socket.write(future.buffer, null, new Nio2CompletionHandler<Integer, Object>() {
+                        protected void onCompleted(Integer result, Object attachment) {
                             if (future.buffer.hasRemaining()) {
                                 try {
                                     socket.write(future.buffer, null, this);
@@ -226,7 +225,7 @@ public class Nio2Session extends CloseableUtils.AbstractCloseable implements IoS
                                 finishWrite();
                             }
                         }
-                        public void failed(Throwable exc, Object attachment) {
+                        protected void onFailed(Throwable exc, Object attachment) {
                             future.setException(exc);
                             exceptionCaught(exc);
                             finishWrite();
