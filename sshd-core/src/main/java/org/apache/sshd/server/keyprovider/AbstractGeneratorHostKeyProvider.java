@@ -45,6 +45,7 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
     private int keySize;
     private AlgorithmParameterSpec keySpec;
     private KeyPair keyPair;
+    private boolean overwriteAllowed = true;
 
     protected AbstractGeneratorHostKeyProvider() {
     }
@@ -96,6 +97,14 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
         this.keySpec = keySpec;
     }
 
+    public boolean isOverwriteAllowed() {
+        return overwriteAllowed;
+    }
+
+    public void setOverwriteAllowed(boolean overwriteAllowed) {
+        this.overwriteAllowed = overwriteAllowed;
+    }
+
     protected abstract KeyPair doReadKeyPair(InputStream is) throws Exception;
 
     protected abstract void doWriteKeyPair(KeyPair kp, OutputStream os) throws Exception;
@@ -135,14 +144,18 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
     }
 
     private void writeKeyPair(KeyPair kp, File f) {
-        OutputStream os = null;
-        try {
-            os = new FileOutputStream(f);
-            doWriteKeyPair(kp, os);
-        } catch (Exception e) {
-            log.warn("Unable to write key {}: {}", path, e);
-        } finally {
-            close(os);
+        if (!f.exists() || overwriteAllowed) {
+            OutputStream os = null;
+            try {
+                os = new FileOutputStream(f);
+                doWriteKeyPair(kp, os);
+            } catch (Exception e) {
+                log.warn("Unable to write key {}: {}", path, e);
+            } finally {
+                close(os);
+            }
+        } else {
+            log.error("Overwriting key ({}) is disabled: using throwaway {}", f.getName(), kp);
         }
     }
 
