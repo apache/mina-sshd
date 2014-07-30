@@ -151,7 +151,7 @@ public class ServerTest extends BaseTest {
             public void sessionCreated(Session session) {
                 System.out.println("Session created");
             }
-            public void sessionEvent(Session sesssion, Event event) {
+            public void sessionEvent(Session session, Event event) {
                 System.out.println("Session event: " + event);
             }
             public void sessionClosed(Session session) {

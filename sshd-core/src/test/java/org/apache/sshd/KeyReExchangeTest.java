@@ -181,7 +181,7 @@ public class KeyReExchangeTest extends BaseTest {
         session.addListener(new SessionListener() {
             public void sessionCreated(Session session) {
             }
-            public void sessionEvent(Session sesssion, Event event) {
+            public void sessionEvent(Session session, Event event) {
                 if (event == Event.KeyEstablished) {
                     exchanges.incrementAndGet();
                 }

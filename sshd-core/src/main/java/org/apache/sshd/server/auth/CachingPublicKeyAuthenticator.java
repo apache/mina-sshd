@@ -60,7 +60,7 @@ public class CachingPublicKeyAuthenticator implements PublickeyAuthenticator, Se
     public void sessionCreated(Session session) {
     }
 
-    public void sessionEvent(Session sesssion, Event event) {
+    public void sessionEvent(Session session, Event event) {
     }
 
     public void sessionClosed(Session session) {

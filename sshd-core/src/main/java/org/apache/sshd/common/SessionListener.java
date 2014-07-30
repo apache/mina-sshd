@@ -37,10 +37,10 @@ public interface SessionListener {
 
     /**
      * An event has been triggered
-     * @param sesssion
+     * @param session
      * @param event
      */
-    void sessionEvent(Session sesssion, Event event);
+    void sessionEvent(Session session, Event event);
 
     /**
      * A session has been closed
