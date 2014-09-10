@@ -136,8 +136,8 @@ public class SftpSubsystem implements Command, SessionAware, FileSystemAware, Sf
     }
 
     public void setSession(ServerSession session) {
-        sftpLet.onConnect(this);
         this.session = session;
+        sftpLet.onConnect(this);
     }
 
     public void setFileSystemView(FileSystemView view) {
