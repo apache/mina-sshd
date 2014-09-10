@@ -19,13 +19,12 @@
 package org.apache.sshd.common.compression;
 
 import java.io.IOException;
+import java.util.zip.DataFormatException;
+import java.util.zip.Deflater;
+import java.util.zip.Inflater;
 
-import com.jcraft.jzlib.JZlib;
-import com.jcraft.jzlib.ZStream;
 import org.apache.sshd.common.Compression;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.SshConstants;
-import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.util.Buffer;
 
 /**
@@ -50,8 +49,9 @@ public class CompressionZlib implements Compression {
 
     static private final int BUF_SIZE = 4096;
 
-    private ZStream stream;
     private byte[] tmpbuf = new byte[BUF_SIZE];
+    private Deflater compresser;
+    private Inflater decompresser;
 
     /**
      * Create a new instance of a ZLib base compression
@@ -64,54 +64,28 @@ public class CompressionZlib implements Compression {
     }
 
     public void init(Type type, int level) {
-        stream = new ZStream();
-        if (type == Type.Deflater) {
-            stream.deflateInit(level);
-        } else {
-            stream.inflateInit();
-        }
+        compresser = new Deflater(level);
+        decompresser = new Inflater();
     }
 
     public void compress(Buffer buffer) throws IOException {
-        stream.next_in = buffer.array();
-        stream.next_in_index = buffer.rpos();
-        stream.avail_in = buffer.available();
+        compresser.setInput(buffer.array(), buffer.rpos(), buffer.available());
         buffer.wpos(buffer.rpos());
-        do {
-            stream.next_out = tmpbuf;
-            stream.next_out_index = 0;
-            stream.avail_out = BUF_SIZE;
-            int status = stream.deflate(JZlib.Z_PARTIAL_FLUSH);
-            switch (status) {
-                case JZlib.Z_OK:
-                    buffer.putRawBytes(tmpbuf, 0, BUF_SIZE - stream.avail_out);
-                    break;
-                default:
-                    throw new SshException(SshConstants.SSH2_DISCONNECT_COMPRESSION_ERROR, "compress: deflate returned " + status);
-            }
+        int len;
+        while ((len = compresser.deflate(tmpbuf, 0, tmpbuf.length, Deflater.SYNC_FLUSH)) > 0) {
+            buffer.putRawBytes(tmpbuf, 0, len);
         }
-        while (stream.avail_out == 0);
     }
 
     public void uncompress(Buffer from, Buffer to) throws IOException {
-        stream.next_in = from.array();
-        stream.next_in_index = from.rpos();
-        stream.avail_in = from.available();
-
-        while (true) {
-            stream.next_out = tmpbuf;
-            stream.next_out_index = 0;
-            stream.avail_out = BUF_SIZE;
-            int status = stream.inflate(JZlib.Z_PARTIAL_FLUSH);
-            switch (status) {
-                case JZlib.Z_OK:
-                    to.putRawBytes(tmpbuf, 0, BUF_SIZE - stream.avail_out);
-                    break;
-                case JZlib.Z_BUF_ERROR:
-                    return;
-                default:
-                    throw new SshException(SshConstants.SSH2_DISCONNECT_COMPRESSION_ERROR, "uncompress: inflate returned " + status);
+        decompresser.setInput(from.array(), from.rpos(), from.available());
+        int len;
+        try {
+            while ((len = decompresser.inflate(tmpbuf)) > 0) {
+                to.putRawBytes(tmpbuf, 0, len);
             }
+        } catch (DataFormatException e) {
+            throw new IOException("Error decompressing data", e);
         }
     }
 
