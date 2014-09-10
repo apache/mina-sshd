@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.ClientSession;
 import org.apache.sshd.client.SftpClient;
+import org.apache.sshd.client.SftpException;
 import org.apache.sshd.client.channel.ChannelSubsystem;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.util.Buffer;
@@ -277,7 +278,7 @@ public class DefaultSftpClient implements SftpClient {
             int substatus = buffer.getInt();
             String msg = buffer.getString();
             String lang = buffer.getString();
-            throw new SshException("SFTP error (" + substatus + "): " + msg);
+            throw new SftpException(substatus, msg);
         } else {
             throw new SshException("Unexpected SFTP packet received: " + type);
         }
@@ -292,7 +293,7 @@ public class DefaultSftpClient implements SftpClient {
             String msg = buffer.getString();
             String lang = buffer.getString();
             if (substatus != SSH_FX_OK) {
-                throw new SshException("SFTP error (" + substatus + "): " + msg);
+                throw new SftpException(substatus, msg);
             }
         } else {
             throw new SshException("Unexpected SFTP packet received: " + type);
@@ -307,7 +308,7 @@ public class DefaultSftpClient implements SftpClient {
             int substatus = buffer.getInt();
             String msg = buffer.getString();
             String lang = buffer.getString();
-            throw new SshException("SFTP error (" + substatus + "): " + msg);
+            throw new SftpException(substatus, msg);
         } else if (type == SSH_FXP_HANDLE) {
             String handle = buffer.getString();
             return new Handle(handle);
@@ -324,7 +325,7 @@ public class DefaultSftpClient implements SftpClient {
             int substatus = buffer.getInt();
             String msg = buffer.getString();
             String lang = buffer.getString();
-            throw new SshException("SFTP error (" + substatus + "): " + msg);
+            throw new SftpException(substatus, msg);
         } else if (type == SSH_FXP_ATTRS) {
             return readAttributes(buffer);
         } else {
@@ -340,7 +341,7 @@ public class DefaultSftpClient implements SftpClient {
             int substatus = buffer.getInt();
             String msg = buffer.getString();
             String lang = buffer.getString();
-            throw new SshException("SFTP error (" + substatus + "): " + msg);
+            throw new SftpException(substatus, msg);
         } else if (type == SSH_FXP_NAME) {
             int len = buffer.getInt();
             if (len != 1) {
@@ -452,7 +453,7 @@ public class DefaultSftpClient implements SftpClient {
         return checkData(receive(send(SSH_FXP_READ, buffer)), dstoff, dst);
     }
 
-    protected int checkData(Buffer buffer, int dstoff, byte[] dst) throws SshException {
+    protected int checkData(Buffer buffer, int dstoff, byte[] dst) throws IOException {
         int len;
         int length = buffer.getInt();
         int type = buffer.getByte();
@@ -464,7 +465,7 @@ public class DefaultSftpClient implements SftpClient {
             if (substatus == SSH_FX_EOF) {
                 return -1;
             }
-            throw new SshException("SFTP error (" + substatus + "): " + msg);
+            throw new SftpException(substatus, msg);
         } else if (type == SSH_FXP_DATA) {
             len = buffer.getInt();
             buffer.getRawBytes(dst, dstoff, len);
@@ -518,7 +519,7 @@ public class DefaultSftpClient implements SftpClient {
             if (substatus == SSH_FX_EOF) {
                 return null;
             }
-            throw new SshException("SFTP error (" + substatus + "): " + msg);
+            throw new SftpException(substatus, msg);
         } else if (type == SSH_FXP_NAME) {
             int len = buffer.getInt();
             DirEntry[] entries = new DirEntry[len];
