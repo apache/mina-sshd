@@ -136,6 +136,12 @@ public class SftpTest extends BaseTest {
         int i = is.read();
         is.close();
 
+        SftpClient.Attributes attributes = sftp.stat("target/sftp/client/test.txt");
+        assertTrue(attributes.isRegularFile());
+
+        attributes = sftp.stat("target/sftp/client");
+        assertTrue(attributes.isDirectory());
+
         int nb = 0;
         for (SftpClient.DirEntry entry : sftp.readDir("target/sftp/client")) {
             nb++;

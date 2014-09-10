@@ -105,6 +105,18 @@ public interface SftpClient {
             this.mtime = mtime;
             return this;
         }
+        public boolean isRegularFile() {
+            return (perms & S_IFMT) == S_IFREG;
+        }
+        public boolean isDirectory() {
+            return (perms & S_IFMT) == S_IFDIR;
+        }
+        public boolean isSymbolicLink() {
+            return (perms & S_IFMT) == S_IFLNK;
+        }
+        public boolean isOther() {
+            return !isRegularFile() && !isDirectory() && !isSymbolicLink();
+        }
     }
 
     public static class DirEntry {
