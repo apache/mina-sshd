@@ -582,7 +582,7 @@ public class DefaultSftpClient implements SftpClient {
         Buffer buffer = new Buffer();
         buffer.putString(linkPath);
         buffer.putString(targetPath);
-        checkStatus(receive(send(SSH_FXP_RENAME, buffer)));
+        checkStatus(receive(send(SSH_FXP_SYMLINK, buffer)));
     }
 
     public Iterable<DirEntry> readDir(final String path) throws IOException {
