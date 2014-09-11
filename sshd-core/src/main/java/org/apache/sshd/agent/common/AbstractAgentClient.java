@@ -20,12 +20,11 @@ package org.apache.sshd.agent.common;
 
 import java.io.IOException;
 import java.security.PublicKey;
-import java.security.interfaces.RSAPublicKey;
 import java.util.List;
 
 import org.apache.sshd.agent.SshAgent;
-import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.KeyUtils;
 
 import static org.apache.sshd.agent.SshAgentConstants.SSH2_AGENTC_ADD_IDENTITY;
 import static org.apache.sshd.agent.SshAgentConstants.SSH2_AGENTC_REMOVE_ALL_IDENTITIES;
@@ -92,7 +91,7 @@ public abstract class AbstractAgentClient {
                 byte[] data = req.getBytes();
                 int flags = req.getInt();
                 Buffer sig = new Buffer();
-                sig.putString(key instanceof RSAPublicKey ? KeyPairProvider.SSH_RSA : KeyPairProvider.SSH_DSS);
+                sig.putString(KeyUtils.getKeyType(key));
                 sig.putBytes(agent.sign(key, data));
                 rep.putByte(SSH2_AGENT_SIGN_RESPONSE);
                 rep.putBytes(sig.array(), sig.rpos(), sig.available());

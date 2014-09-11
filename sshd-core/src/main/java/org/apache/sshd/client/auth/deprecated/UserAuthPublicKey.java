@@ -28,6 +28,7 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.Signature;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.KeyUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,12 +58,12 @@ public class UserAuthPublicKey extends AbstractUserAuth {
                 buffer.putString(service);
                 buffer.putString("publickey");
                 buffer.putByte((byte) 1);
-                buffer.putString((key.getPublic() instanceof RSAPublicKey) ? KeyPairProvider.SSH_RSA : KeyPairProvider.SSH_DSS);
+                String alg = KeyUtils.getKeyType(key);
+                buffer.putString(alg);
                 int pos2 = buffer.wpos();
                 buffer.putPublicKey(key.getPublic());
 
-                // TODO: support elliptic keys
-                Signature verif = NamedFactory.Utils.create(session.getFactoryManager().getSignatureFactories(), (key.getPublic() instanceof RSAPublicKey) ? KeyPairProvider.SSH_RSA : KeyPairProvider.SSH_DSS);
+                Signature verif = NamedFactory.Utils.create(session.getFactoryManager().getSignatureFactories(), alg);
                 verif.init(key.getPublic(), key.getPrivate());
 
                 Buffer bs = new Buffer();
@@ -72,12 +73,12 @@ public class UserAuthPublicKey extends AbstractUserAuth {
                 bs.putString(service);
                 bs.putString("publickey");
                 bs.putByte((byte) 1);
-                bs.putString((key.getPublic() instanceof RSAPublicKey) ? KeyPairProvider.SSH_RSA : KeyPairProvider.SSH_DSS);
+                bs.putString(alg);
                 bs.putPublicKey(key.getPublic());
                 verif.update(bs.array(), bs.rpos(), bs.available());
 
                 bs = new Buffer();
-                bs.putString((key.getPublic() instanceof RSAPublicKey) ? KeyPairProvider.SSH_RSA : KeyPairProvider.SSH_DSS);
+                bs.putString(alg);
                 bs.putBytes(verif.sign());
                 buffer.putBytes(bs.array(), bs.rpos(), bs.available());
 

@@ -20,14 +20,13 @@ package org.apache.sshd.client.auth.deprecated;
 
 import java.io.IOException;
 import java.security.PublicKey;
-import java.security.interfaces.RSAPublicKey;
 import java.util.Iterator;
 
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.client.session.ClientSessionImpl;
-import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.KeyUtils;
 
 /**
  * Authentication delegating to an SSH agent
@@ -55,7 +54,7 @@ public class UserAuthAgent extends AbstractUserAuth {
             buffer.putString(service);
             buffer.putString("publickey");
             buffer.putByte((byte) 1);
-            buffer.putString((key instanceof RSAPublicKey) ? KeyPairProvider.SSH_RSA : KeyPairProvider.SSH_DSS);
+            buffer.putString(KeyUtils.getKeyType(key));
             int pos2 = buffer.wpos();
             buffer.putPublicKey(key);
 
@@ -67,11 +66,11 @@ public class UserAuthAgent extends AbstractUserAuth {
             bs.putString(service);
             bs.putString("publickey");
             bs.putByte((byte) 1);
-            bs.putString((key instanceof RSAPublicKey) ? KeyPairProvider.SSH_RSA : KeyPairProvider.SSH_DSS);
+            bs.putString(KeyUtils.getKeyType(key));
             bs.putPublicKey(key);
 
             Buffer bs2 = new Buffer();
-            bs2.putString((key instanceof RSAPublicKey) ? KeyPairProvider.SSH_RSA : KeyPairProvider.SSH_DSS);
+            bs2.putString(KeyUtils.getKeyType(key));
             bs2.putBytes(agent.sign(key, bs.getCompactData()));
             buffer.putBytes(bs2.array(), bs2.rpos(), bs2.available());
 

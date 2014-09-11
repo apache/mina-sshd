@@ -45,7 +45,7 @@ import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.DefaultAuthFuture;
 import org.apache.sshd.client.scp.DefaultScpClient;
 import org.apache.sshd.client.sftp.DefaultSftpClient;
-import org.apache.sshd.common.KeyPairProvider;
+import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.SessionListener;
@@ -317,7 +317,8 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
     }
 
     protected void sendKexInit() throws IOException {
-        clientProposal = createProposal(KeyPairProvider.SSH_RSA + "," + KeyPairProvider.SSH_DSS);
+        String algs = NamedFactory.Utils.getNames(getFactoryManager().getSignatureFactories());
+        clientProposal = createProposal(algs);
         I_C = sendKexInit(clientProposal);
     }
 

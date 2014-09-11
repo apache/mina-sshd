@@ -19,23 +19,19 @@
 package org.apache.sshd.client.kex;
 
 import java.security.PublicKey;
-import java.security.interfaces.DSAPublicKey;
-import java.security.interfaces.ECPublicKey;
-import java.security.interfaces.RSAPublicKey;
 
 import org.apache.sshd.client.session.ClientSessionImpl;
 import org.apache.sshd.common.Digest;
 import org.apache.sshd.common.KeyExchange;
-import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.Signature;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.kex.AbstractDH;
 import org.apache.sshd.common.kex.DH;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.KeyUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -102,14 +98,8 @@ public abstract class AbstractDHGClient implements KeyExchange {
 
         buffer = new Buffer(K_S);
         serverKey = buffer.getRawPublicKey();
-        final String keyAlg;
-        if (serverKey instanceof RSAPublicKey) {
-            keyAlg = KeyPairProvider.SSH_RSA;
-        } else if (serverKey instanceof DSAPublicKey) {
-            keyAlg = KeyPairProvider.SSH_DSS;
-        } else if (serverKey instanceof ECPublicKey) {
-            keyAlg = ECCurves.ECDSA_SHA2_PREFIX + ECCurves.getCurveName(((ECPublicKey) serverKey).getParams());
-        } else {
+        final String keyAlg = KeyUtils.getKeyType(serverKey);
+        if (keyAlg == null) {
             throw new SshException("Unsupported server key type");
         }
 

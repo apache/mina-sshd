@@ -33,7 +33,7 @@ import org.apache.sshd.common.util.Buffer;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SignatureECDSA extends AbstractSignatureDSA {
+public class SignatureECDSA extends AbstractSignature {
 
     /**
      * Signature algorithm for curves of above 384 bits.
@@ -107,7 +107,6 @@ public class SignatureECDSA extends AbstractSignatureDSA {
         }
     }
 
-    @Override
     public byte[] sign() throws Exception {
         byte[] sig = signature.sign();
 
@@ -142,7 +141,6 @@ public class SignatureECDSA extends AbstractSignatureDSA {
         return rsBuf.getCompactData();
     }
 
-    @Override
     public boolean verify(byte[] sig) throws Exception {
         sig = extractSig(sig);
 
@@ -161,17 +159,17 @@ public class SignatureECDSA extends AbstractSignatureDSA {
         int length = rArray.length + sArray.length + 6 + frst + scnd;
         byte[] tmp = new byte[length];
         tmp[0] = (byte) 0x30;
-        tmp[1] = (byte) 0x2c;
+        tmp[1] = (byte) (rArray.length + sArray.length + 4);
         tmp[1] += frst;
         tmp[1] += scnd;
         tmp[2] = (byte) 0x02;
-        tmp[3] = (byte) 0x14;
+        tmp[3] = (byte) rArray.length;
         tmp[3] += frst;
-        System.arraycopy(rArray, 0, tmp, 4 + frst, 20);
+        System.arraycopy(rArray, 0, tmp, 4 + frst, rArray.length);
         tmp[4 + tmp[3]] = (byte) 0x02;
-        tmp[5 + tmp[3]] = (byte) 0x14;
+        tmp[5 + tmp[3]] = (byte) sArray.length;
         tmp[5 + tmp[3]] += scnd;
-        System.arraycopy(sArray, 0, tmp, 6 + tmp[3] + scnd, 20);
+        System.arraycopy(sArray, 0, tmp, 6 + tmp[3] + scnd, sArray.length);
         sig = tmp;
 
         return signature.verify(sig);

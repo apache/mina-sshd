@@ -19,13 +19,10 @@
 package org.apache.sshd.server.auth;
 
 import java.security.PublicKey;
-import java.security.interfaces.RSAPublicKey;
 
-import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.Signature;
 import org.apache.sshd.common.SshConstants;
-import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.server.PublickeyAuthenticator;
 import org.apache.sshd.server.UserAuth;
@@ -58,9 +55,10 @@ public class UserAuthPublicKey extends AbstractUserAuth {
         int len = buffer.getInt();
         buffer.wpos(buffer.rpos() + len);
         PublicKey key = buffer.getRawPublicKey();
-        String keyAlg = (key instanceof RSAPublicKey) ? KeyPairProvider.SSH_RSA : KeyPairProvider.SSH_DSS;
-
-        Signature verif = NamedFactory.Utils.create(session.getFactoryManager().getSignatureFactories(), keyAlg);
+        Signature verif = NamedFactory.Utils.create(session.getFactoryManager().getSignatureFactories(), alg);
+        if (verif == null) {
+            throw new Exception("No Signature available for: " + alg);
+        }
         verif.init(key, null);
         buffer.wpos(oldLim);
 
@@ -88,7 +86,7 @@ public class UserAuthPublicKey extends AbstractUserAuth {
             buf.putString(service);
             buf.putString("publickey");
             buf.putByte((byte) 1);
-            buf.putString(keyAlg);
+            buf.putString(alg);
             buffer.rpos(oldPos);
             buffer.wpos(oldPos + 4 + len);
             buf.putBuffer(buffer);

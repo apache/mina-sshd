@@ -27,6 +27,7 @@ import java.security.interfaces.RSAKey;
 import java.security.spec.ECParameterSpec;
 
 import org.apache.sshd.common.KeyPairProvider;
+import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.digest.MD5;
 
 /**
@@ -80,18 +81,7 @@ public class KeyUtils {
         } else if (key instanceof ECKey) {
             ECKey ecKey = (ECKey) key;
             ECParameterSpec ecSpec = ecKey.getParams();
-            /*
-             * TODO make this more robust by checking the actual parameters instead of
-             * just the field size.
-             */
-            switch (ecSpec.getCurve().getField().getFieldSize()) {
-                case 256:
-                    return KeyPairProvider.ECDSA_SHA2_NISTP256;
-                case 384:
-                    return KeyPairProvider.ECDSA_SHA2_NISTP384;
-                case 521:
-                    return KeyPairProvider.ECDSA_SHA2_NISTP521;
-            }
+            return ECCurves.ECDSA_SHA2_PREFIX + ECCurves.getCurveName(ecSpec);
         }
         return null;
     }
