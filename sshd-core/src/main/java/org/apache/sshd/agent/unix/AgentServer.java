@@ -103,7 +103,7 @@ public class AgentServer {
                 byte[] buf = new byte[1024];
                 while (true) {
                     int result = Socket.recv(socket, buf, 0, buf.length);
-                    if (result == Status.APR_EOF) {
+                    if (result == -Status.APR_EOF) {
                         break;    
                     } else if (result < Status.APR_SUCCESS) {
                         throwException(result);
