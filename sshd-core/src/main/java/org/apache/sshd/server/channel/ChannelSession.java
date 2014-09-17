@@ -39,7 +39,6 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.PtyMode;
 import org.apache.sshd.common.RequestHandler;
 import org.apache.sshd.common.SshConstants;
-import org.apache.sshd.common.channel.ChannelAsyncInputStream;
 import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.future.CloseFuture;
@@ -188,6 +187,7 @@ public class ChannelSession extends AbstractServerChannel {
 
     public ChannelSession() {
         addRequestHandler(new ChannelSessionRequestHandler());
+        addRequestHandler(new PuttyRequestHandler());
     }
 
     @Override
