@@ -86,6 +86,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -634,6 +635,58 @@ public class ClientTest extends BaseTest {
         });
         client.start();
         ClientSession session = client.connect("smx", "localhost", port).await().getSession();
+        AuthFuture future = session.auth();
+        future.await();
+        assertTrue(future.isFailure());
+        assertEquals(3, count.get());
+    }
+
+
+    @Test
+    public void testKeyboardInteractiveInSessionUserInteractive() throws Exception {
+        final AtomicInteger count = new AtomicInteger();
+        SshClient client = SshClient.setUpDefaultClient();
+        client.getProperties().put(ClientFactoryManager.PASSWORD_PROMPTS, "3");
+        client.setUserAuthFactories(Arrays
+                        .<NamedFactory<UserAuth>> asList(new UserAuthKeyboardInteractive.Factory()));
+        client.start();
+        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
+        session.setUserInteraction(new UserInteraction() {
+            public void welcome(String banner) {
+            }
+
+            public String[] interactive(String destination, String name, String instruction,
+                                        String[] prompt, boolean[] echo) {
+                count.incrementAndGet();
+                return new String[] { "smx" };
+            }
+        });
+        AuthFuture future = session.auth();
+        future.await();
+        assertTrue(future.isSuccess());
+        assertFalse(future.isFailure());
+        assertEquals(1, count.get());
+    }
+
+    @Test
+    public void testKeyboardInteractiveInSessionUserInteractiveFailure() throws Exception {
+        final AtomicInteger count = new AtomicInteger();
+        SshClient client = SshClient.setUpDefaultClient();
+        client.getProperties().put(ClientFactoryManager.PASSWORD_PROMPTS, "3");
+        client.setUserAuthFactories(Arrays
+                        .<NamedFactory<UserAuth>> asList(new UserAuthKeyboardInteractive.Factory()));
+        client.start();
+        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
+        session.setUserInteraction(new UserInteraction() {
+            public void welcome(String banner) {
+            }
+
+            public String[] interactive(String destination, String name, String instruction,
+                                        String[] prompt, boolean[] echo) {
+                count.incrementAndGet();
+                return new String[] { "bad" };
+            }
+        });
         AuthFuture future = session.auth();
         future.await();
         assertTrue(future.isFailure());

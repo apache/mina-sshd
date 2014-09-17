@@ -116,9 +116,12 @@ public class UserAuthKeyboardInteractive implements UserAuth {
             } else if (num == 1 && current != null && !echo[0] && prompt[0].toLowerCase().startsWith("password:")) {
                 rep = new String[] { current };
             } else {
-                UserInteraction ui = session.getFactoryManager().getUserInteraction();
+                UserInteraction ui = session.getUserInteraction();
+                if (ui == null) {
+                    ui = session.getFactoryManager().getUserInteraction();
+                }
                 if (ui != null) {
-                    String dest = session.getUsername() + "@" + ((AbstractSession) session).getIoSession().getRemoteAddress().toString();
+                    String dest = session.getUsername() + "@" + session.getIoSession().getRemoteAddress().toString();
                     rep = ui.interactive(dest, name, instruction, prompt, echo);
                 }
             }

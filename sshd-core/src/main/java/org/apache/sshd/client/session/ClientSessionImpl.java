@@ -32,6 +32,7 @@ import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.ScpClient;
 import org.apache.sshd.client.ServerKeyVerifier;
 import org.apache.sshd.client.SftpClient;
+import org.apache.sshd.client.UserInteraction;
 import org.apache.sshd.client.auth.deprecated.UserAuth;
 import org.apache.sshd.client.auth.deprecated.UserAuthAgent;
 import org.apache.sshd.client.auth.deprecated.UserAuthKeyboardInteractive;
@@ -74,6 +75,8 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
     private ServiceFactory currentServiceFactory;
     private Service nextService;
     private ServiceFactory nextServiceFactory;
+    private final List<Object> identities = new ArrayList<Object>();
+    private UserInteraction userInteraction;
 
     protected AuthFuture authFuture;
 
@@ -118,14 +121,20 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         return (ClientFactoryManager) factoryManager;
     }
 
-    private final List<Object> identities = new ArrayList<Object>();
-
     public void addPasswordIdentity(String password) {
         identities.add(password);
     }
 
     public void addPublicKeyIdentity(KeyPair key) {
         identities.add(key);
+    }
+
+    public UserInteraction getUserInteraction() {
+        return userInteraction;
+    }
+
+    public void setUserInteraction(UserInteraction userInteraction) {
+        this.userInteraction = userInteraction;
     }
 
     public AuthFuture auth() throws IOException {

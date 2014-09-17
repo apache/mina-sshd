@@ -25,6 +25,7 @@ import java.util.Map;
 import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.ScpClient;
 import org.apache.sshd.client.SftpClient;
+import org.apache.sshd.client.UserInteraction;
 import org.apache.sshd.client.channel.ChannelDirectTcpip;
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ChannelShell;
@@ -64,6 +65,9 @@ public interface ClientSession extends Session {
 
     void addPasswordIdentity(String password);
     void addPublicKeyIdentity(KeyPair key);
+
+    UserInteraction getUserInteraction();
+    void setUserInteraction(UserInteraction userInteraction);
 
     AuthFuture auth() throws IOException;
 
