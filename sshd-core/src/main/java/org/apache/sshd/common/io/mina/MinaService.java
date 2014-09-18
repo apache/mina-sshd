@@ -23,6 +23,7 @@ import java.util.Map;
 
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.service.IoHandler;
+import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.service.IoProcessor;
 import org.apache.mina.core.service.IoService;
 import org.apache.mina.core.session.IdleStatus;
@@ -37,7 +38,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  */
-public abstract class MinaService implements org.apache.sshd.common.io.IoService, IoHandler, Closeable {
+public abstract class MinaService extends IoHandlerAdapter implements org.apache.sshd.common.io.IoService, IoHandler, Closeable {
 
     protected final Logger log = LoggerFactory.getLogger(getClass());
 
@@ -89,14 +90,8 @@ public abstract class MinaService implements org.apache.sshd.common.io.IoService
         handler.sessionCreated(ioSession);
     }
 
-    public void sessionOpened(IoSession session) throws Exception {
-    }
-
     public void sessionClosed(IoSession session) throws Exception {
         handler.sessionClosed(getSession(session));
-    }
-
-    public void sessionIdle(IoSession session, IdleStatus status) throws Exception {
     }
 
     public void exceptionCaught(IoSession session, Throwable cause) throws Exception {
@@ -105,9 +100,6 @@ public abstract class MinaService implements org.apache.sshd.common.io.IoService
 
     public void messageReceived(IoSession session, Object message) throws Exception {
         handler.messageReceived(getSession(session), MinaSupport.asReadable((IoBuffer) message));
-    }
-
-    public void messageSent(IoSession session, Object message) throws Exception {
     }
 
     protected org.apache.sshd.common.io.IoSession getSession(IoSession session) {
