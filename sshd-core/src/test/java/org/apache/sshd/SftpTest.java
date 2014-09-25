@@ -135,6 +135,7 @@ public class SftpTest extends BaseTest {
         is.read(new byte[1024 * 128]);
         int i = is.read();
         is.close();
+        is.close();
 
         SftpClient.Attributes attributes = sftp.stat("target/sftp/client/test.txt");
         assertTrue(attributes.isRegularFile());

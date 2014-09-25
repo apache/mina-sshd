@@ -657,6 +657,9 @@ public class DefaultSftpClient implements SftpClient {
             }
             @Override
             public int read(byte[] b, int off, int len) throws IOException {
+                if (handle == null) {
+                    throw new IOException("Stream closed");
+                }
                 int idx = off;
                 while (len > 0) {
                     if (index >= available) {
@@ -684,7 +687,10 @@ public class DefaultSftpClient implements SftpClient {
             }
             @Override
             public void close() throws IOException {
-                DefaultSftpClient.this.close(handle);
+                if (handle != null) {
+                    DefaultSftpClient.this.close(handle);
+                    handle = null;
+                }
             }
         };
     }
