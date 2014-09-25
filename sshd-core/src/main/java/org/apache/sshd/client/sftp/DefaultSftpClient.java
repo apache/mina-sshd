@@ -640,11 +640,15 @@ public class DefaultSftpClient implements SftpClient {
     }
 
     public InputStream read(final String path) throws IOException {
+        return read(path, EnumSet.of(OpenMode.Read));
+    }
+
+    public InputStream read(final String path, final EnumSet<OpenMode> mode) throws IOException {
         return new InputStream() {
             byte[] buffer = new byte[32 * 1024];
             int index = 0;
             int available = 0;
-            Handle handle = DefaultSftpClient.this.open(path, EnumSet.of(OpenMode.Read));
+            Handle handle = DefaultSftpClient.this.open(path, mode);
             long offset;
             @Override
             public int read() throws IOException {
@@ -696,10 +700,14 @@ public class DefaultSftpClient implements SftpClient {
     }
 
     public OutputStream write(final String path) throws IOException {
+        return write(path, EnumSet.of(OpenMode.Write));
+    }
+
+    public OutputStream write(final String path, final EnumSet<OpenMode> mode) throws IOException {
         return new OutputStream() {
             byte[] buffer = new byte[32 * 1024];
             int index = 0;
-            Handle handle = DefaultSftpClient.this.open(path, EnumSet.of(OpenMode.Write));
+            Handle handle = DefaultSftpClient.this.open(path, mode);
             long offset;
             @Override
             public void write(int b) throws IOException {

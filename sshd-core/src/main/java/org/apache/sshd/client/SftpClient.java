@@ -183,6 +183,10 @@ public interface SftpClient {
 
     InputStream read(String path) throws IOException;
 
+    InputStream read(String path, EnumSet<OpenMode> mode) throws IOException;
+
     OutputStream write(String path) throws IOException;
+
+    OutputStream write(String path, EnumSet<OpenMode> mode) throws IOException;
 
 }
