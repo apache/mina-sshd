@@ -70,7 +70,7 @@ public class DH {
             DHPublicKeySpec keySpec = new DHPublicKeySpec(f, p, g);
             PublicKey yourPubKey = myKeyFac.generatePublic(keySpec);
             myKeyAgree.doPhase(yourPubKey, true);
-            byte[] mySharedSecret = myKeyAgree.generateSecret();
+            byte[] mySharedSecret = stripLeadingZeroes(myKeyAgree.generateSecret());
             K = new BigInteger(mySharedSecret);
             K_array = mySharedSecret;
         }
@@ -99,5 +99,20 @@ public class DH {
 
     void setF(BigInteger f) {
         this.f = f;
+    }
+
+    // The shared secret returned by KeyAgreement.generateSecret() is
+    // a byte array, which can (by chance, roughly 1 out of 256 times)
+    // begin with zero byte (some JCE providers might strip this, though).
+    // In SSH, the shared secret is an integer, so we need to strip
+    // the leading zero(es).
+    private static byte[] stripLeadingZeroes(byte[] x) {
+        int i = 0;
+        while ((i < x.length - 1) && (x[i] == 0)) {
+            i++;
+        }
+        byte[] ret = new byte[x.length - i];
+        System.arraycopy(x, i, ret, 0, ret.length);
+        return ret;
     }
 }

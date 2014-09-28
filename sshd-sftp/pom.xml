@@ -29,7 +29,7 @@
 
     <groupId>org.apache.sshd</groupId>
     <artifactId>sshd-sftp</artifactId>
-    <version>0.9.0</version>
+    <version>0.9.1</version>
     <name>Apache Mina SSHD :: SFTP</name>
     <packaging>jar</packaging>
     <inceptionYear>2008</inceptionYear>
