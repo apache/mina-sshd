@@ -334,6 +334,9 @@ public class SshBuilder {
             if (serverKeyVerifier == null) {
                 serverKeyVerifier = AcceptAllServerKeyVerifier.INSTANCE;
             }
+            if (factory == null) {
+                factory = SshClient.DEFAULT_SSH_CLIENT_FACTORY;
+            }
             return me();
         }
 
@@ -394,6 +397,9 @@ public class SshBuilder {
                         new NoMoreSessionsHandler(),
                         new TcpipForwardHandler(),
                         new CancelTcpipForwardHandler());
+            }
+            if (factory == null) {
+                factory = SshServer.DEFAULT_SSH_SERVER_FACTORY;
             }
             return me();
         }

@@ -396,10 +396,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     }
 
     public static SshServer setUpDefaultServer() {
-        return SshBuilder
-                .server()
-                .factory(DEFAULT_SSH_SERVER_FACTORY)
-                .build();
+        return SshBuilder.server().build();
     }
 
     /*=================================

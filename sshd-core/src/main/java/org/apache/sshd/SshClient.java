@@ -332,10 +332,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
      * @return a newly create SSH client
      */
     public static SshClient setUpDefaultClient() {
-        return SshBuilder
-                .client()
-                .factory(DEFAULT_SSH_CLIENT_FACTORY)
-                .build();
+        return SshBuilder.client().build();
     }
 
     /*=================================
