@@ -30,15 +30,11 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.security.InvalidKeyException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.Executors;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Formatter;
 import java.util.logging.Handler;
@@ -57,60 +53,22 @@ import org.apache.sshd.client.auth.UserAuthPublicKey;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.future.ConnectFuture;
 import org.apache.sshd.client.future.DefaultConnectFuture;
-import org.apache.sshd.client.kex.DHG1;
-import org.apache.sshd.client.kex.DHG14;
-import org.apache.sshd.client.kex.DHGEX;
-import org.apache.sshd.client.kex.DHGEX256;
-import org.apache.sshd.client.kex.ECDHP256;
-import org.apache.sshd.client.kex.ECDHP384;
-import org.apache.sshd.client.kex.ECDHP521;
-import org.apache.sshd.client.keyverifier.AcceptAllServerKeyVerifier;
 import org.apache.sshd.client.session.ClientConnectionService;
 import org.apache.sshd.client.session.ClientSessionImpl;
 import org.apache.sshd.client.session.ClientUserAuthService;
 import org.apache.sshd.common.AbstractFactoryManager;
 import org.apache.sshd.common.Channel;
-import org.apache.sshd.common.Cipher;
 import org.apache.sshd.common.Closeable;
-import org.apache.sshd.common.Compression;
 import org.apache.sshd.common.Factory;
-import org.apache.sshd.common.KeyExchange;
 import org.apache.sshd.common.KeyPairProvider;
-import org.apache.sshd.common.Mac;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.Signature;
-import org.apache.sshd.common.cipher.AES128CBC;
-import org.apache.sshd.common.cipher.AES128CTR;
-import org.apache.sshd.common.cipher.AES192CBC;
-import org.apache.sshd.common.cipher.AES256CBC;
-import org.apache.sshd.common.cipher.AES256CTR;
-import org.apache.sshd.common.cipher.ARCFOUR128;
-import org.apache.sshd.common.cipher.ARCFOUR256;
-import org.apache.sshd.common.cipher.BlowfishCBC;
-import org.apache.sshd.common.cipher.TripleDESCBC;
-import org.apache.sshd.common.compression.CompressionNone;
-import org.apache.sshd.common.file.nativefs.NativeFileSystemFactory;
-import org.apache.sshd.common.forward.DefaultTcpipForwarderFactory;
-import org.apache.sshd.common.forward.TcpipServerChannel;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.DefaultIoServiceFactoryFactory;
 import org.apache.sshd.common.io.IoConnectFuture;
 import org.apache.sshd.common.io.IoConnector;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
-import org.apache.sshd.common.mac.HMACMD5;
-import org.apache.sshd.common.mac.HMACMD596;
-import org.apache.sshd.common.mac.HMACSHA1;
-import org.apache.sshd.common.mac.HMACSHA196;
-import org.apache.sshd.common.mac.HMACSHA256;
-import org.apache.sshd.common.mac.HMACSHA512;
-import org.apache.sshd.common.random.BouncyCastleRandom;
-import org.apache.sshd.common.random.JceRandom;
-import org.apache.sshd.common.random.SingletonRandomFactory;
 import org.apache.sshd.common.session.AbstractSession;
-import org.apache.sshd.common.signature.SignatureDSA;
-import org.apache.sshd.common.signature.SignatureECDSA;
-import org.apache.sshd.common.signature.SignatureRSA;
 import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.NoCloseInputStream;
 import org.apache.sshd.common.util.NoCloseOutputStream;
@@ -166,10 +124,15 @@ import org.bouncycastle.openssl.PasswordFinder;
  */
 public class SshClient extends AbstractFactoryManager implements ClientFactoryManager, Closeable {
 
+    public static final Factory<SshClient> DEFAULT_SSH_CLIENT_FACTORY = new Factory<SshClient>() {
+        public SshClient create() {
+            return new SshClient();
+        }
+    };
+
     protected IoConnector connector;
     protected SessionFactory sessionFactory;
     protected UserInteraction userInteraction;
-    protected Factory<IoConnector> connectorFactory;
     protected List<NamedFactory<UserAuth>> userAuthFactories;
 
     private ServerKeyVerifier serverKeyVerifier;
@@ -369,95 +332,10 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
      * @return a newly create SSH client
      */
     public static SshClient setUpDefaultClient() {
-        SshClient client = new SshClient();
-        // DHG14 uses 2048 bits key which are not supported by the default JCE provider
-        if (SecurityUtils.isBouncyCastleRegistered()) {
-            client.setKeyExchangeFactories(Arrays.<NamedFactory<KeyExchange>>asList(
-                    new DHGEX256.Factory(),
-                    new DHGEX.Factory(),
-                    new ECDHP256.Factory(),
-                    new ECDHP384.Factory(),
-                    new ECDHP521.Factory(),
-                    new DHG14.Factory(),
-                    new DHG1.Factory()));
-            client.setSignatureFactories(Arrays.<NamedFactory<Signature>>asList(
-                    new SignatureDSA.Factory(),
-                    new SignatureRSA.Factory(),
-                    new SignatureECDSA.NISTP256Factory(),
-                    new SignatureECDSA.NISTP384Factory(),
-                    new SignatureECDSA.NISTP521Factory()));
-            client.setRandomFactory(new SingletonRandomFactory(new BouncyCastleRandom.Factory()));
-        // EC keys are not supported until OpenJDK 7
-        } else if (SecurityUtils.hasEcc()) {
-            client.setKeyExchangeFactories(Arrays.<NamedFactory<KeyExchange>>asList(
-                    new ECDHP256.Factory(),
-                    new ECDHP384.Factory(),
-                    new ECDHP521.Factory(),
-                    new DHG1.Factory()));
-            client.setSignatureFactories(Arrays.<NamedFactory<Signature>>asList(
-                    new SignatureDSA.Factory(),
-                    new SignatureRSA.Factory(),
-                    new SignatureECDSA.NISTP256Factory(),
-                    new SignatureECDSA.NISTP384Factory(),
-                    new SignatureECDSA.NISTP521Factory()));
-            client.setRandomFactory(new SingletonRandomFactory(new JceRandom.Factory()));
-        } else {
-            client.setKeyExchangeFactories(Arrays.<NamedFactory<KeyExchange>>asList(
-                    new DHG1.Factory()));
-            client.setSignatureFactories(Arrays.<NamedFactory<Signature>>asList(
-                    new SignatureDSA.Factory(),
-                    new SignatureRSA.Factory()));
-            client.setRandomFactory(new SingletonRandomFactory(new JceRandom.Factory()));
-        }
-        setUpDefaultCiphers(client);
-        // Compression is not enabled by default
-        // client.setCompressionFactories(Arrays.<NamedFactory<Compression>>asList(
-        //         new CompressionNone.Factory(),
-        //         new CompressionZlib.Factory(),
-        //         new CompressionDelayedZlib.Factory()));
-        client.setCompressionFactories(Arrays.<NamedFactory<Compression>>asList(
-                new CompressionNone.Factory()));
-        client.setMacFactories(Arrays.<NamedFactory<Mac>>asList(
-                new HMACSHA256.Factory(),
-                new HMACSHA512.Factory(),
-                new HMACSHA1.Factory(),
-                new HMACMD5.Factory(),
-                new HMACSHA196.Factory(),
-                new HMACMD596.Factory()));
-        client.setChannelFactories(Arrays.<NamedFactory<Channel>>asList(
-                new TcpipServerChannel.ForwardedTcpipFactory()));
-        client.setServerKeyVerifier(AcceptAllServerKeyVerifier.INSTANCE);
-        client.setFileSystemFactory(new NativeFileSystemFactory());
-        client.setTcpipForwarderFactory(new DefaultTcpipForwarderFactory());
-        return client;
-    }
-
-    private static void setUpDefaultCiphers(SshClient client) {
-        List<NamedFactory<Cipher>> avail = new LinkedList<NamedFactory<Cipher>>();
-        avail.add(new AES128CTR.Factory());
-        avail.add(new AES256CTR.Factory());
-        avail.add(new ARCFOUR128.Factory());
-        avail.add(new ARCFOUR256.Factory());
-        avail.add(new AES128CBC.Factory());
-        avail.add(new TripleDESCBC.Factory());
-        avail.add(new BlowfishCBC.Factory());
-        avail.add(new AES192CBC.Factory());
-        avail.add(new AES256CBC.Factory());
-
-        for (Iterator<NamedFactory<Cipher>> i = avail.iterator(); i.hasNext();) {
-            final NamedFactory<Cipher> f = i.next();
-            try {
-                final Cipher c = f.create();
-                final byte[] key = new byte[c.getBlockSize()];
-                final byte[] iv = new byte[c.getIVSize()];
-                c.init(Cipher.Mode.Encrypt, key, iv);
-            } catch (InvalidKeyException e) {
-                i.remove();
-            } catch (Exception e) {
-                i.remove();
-            }
-        }
-        client.setCipherFactories(avail);
+        return SshBuilder
+                .client()
+                .factory(DEFAULT_SSH_CLIENT_FACTORY)
+                .build();
     }
 
     /*=================================
