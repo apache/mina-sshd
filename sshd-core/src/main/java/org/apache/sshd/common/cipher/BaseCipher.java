@@ -71,7 +71,7 @@ public class BaseCipher implements Cipher {
         cipher.update(input, inputOffset, inputLen, input, inputOffset);
     }
 
-    private static final byte[] resize(byte[] data, int size) {
+    protected static byte[] resize(byte[] data, int size) {
         if (data.length > size) {
             byte[] tmp = new byte[size];
             System.arraycopy(data, 0, tmp, 0, size);

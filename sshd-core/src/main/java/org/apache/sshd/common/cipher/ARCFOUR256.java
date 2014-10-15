@@ -26,7 +26,7 @@ import org.apache.sshd.common.NamedFactory;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ARCFOUR256 extends BaseCipher {
+public class ARCFOUR256 extends BaseRC4Cipher {
 
     /**
      * Named factory for AES128CTR Cipher
@@ -41,20 +41,7 @@ public class ARCFOUR256 extends BaseCipher {
     }
 
     public ARCFOUR256() {
-        super(8, 32, "ARCFOUR", "RC4");
+        super(8, 32);
     }
 
-    @Override
-    public void init(Mode mode, byte[] key, byte[] iv) throws Exception {
-        super.init(mode, key, iv);
-        try {
-            byte[] foo = new byte[1];
-            for (int i = 0; i < 1536; i++) {
-                cipher.update(foo, 0, 1, foo, 0);
-            }
-        } catch (Exception e) {
-            cipher = null;
-            throw e;
-        }
-    }
 }

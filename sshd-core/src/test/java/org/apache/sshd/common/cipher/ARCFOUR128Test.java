@@ -16,32 +16,21 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.sshd.common.cipher;
 
-import org.apache.sshd.common.Cipher;
-import org.apache.sshd.common.NamedFactory;
+import org.junit.Test;
 
 /**
- * ARCFOUR128 cipher
- *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ARCFOUR128 extends BaseRC4Cipher {
+public class ARCFOUR128Test extends BaseCipherTest {
+	public ARCFOUR128Test() {
+		super();
+	}
 
-    /**
-     * Named factory for ARCFOUR128 Cipher
-     */
-    public static class Factory implements NamedFactory<Cipher> {
-        public String getName() {
-            return "arcfour128";
-        }
-        public Cipher create() {
-            return new ARCFOUR128();
-        }
-    }
-
-    public ARCFOUR128() {
-        super(8, 16);
-    }
-
+	@Test
+	public void testEncryptDecrypt() throws Exception {
+		testEncryptDecrypt(new ARCFOUR128.Factory());
+	}
 }

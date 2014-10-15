@@ -18,30 +18,37 @@
  */
 package org.apache.sshd.common.cipher;
 
-import org.apache.sshd.common.Cipher;
-import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.util.SecurityUtils;
+
+import javax.crypto.spec.SecretKeySpec;
 
 /**
- * ARCFOUR128 cipher
- *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ARCFOUR128 extends BaseRC4Cipher {
+public class BaseRC4Cipher extends BaseCipher {
 
-    /**
-     * Named factory for ARCFOUR128 Cipher
-     */
-    public static class Factory implements NamedFactory<Cipher> {
-        public String getName() {
-            return "arcfour128";
-        }
-        public Cipher create() {
-            return new ARCFOUR128();
-        }
+    public static final int	SKIP_SIZE = 1536;
+
+    public BaseRC4Cipher(int ivsize, int bsize) {
+        super(ivsize, bsize, "ARCFOUR", "RC4");
     }
 
-    public ARCFOUR128() {
-        super(8, 16);
+    @Override
+    public void init(Mode mode, byte[] key, byte[] iv) throws Exception {
+        key = resize(key, bsize);
+        try {
+            cipher = SecurityUtils.getCipher(transformation);
+            cipher.init((mode == Mode.Encrypt ? javax.crypto.Cipher.ENCRYPT_MODE : javax.crypto.Cipher.DECRYPT_MODE),
+                    new SecretKeySpec(key, algorithm));
+
+            byte[] foo = new byte[1];
+            for (int i = 0; i < SKIP_SIZE; i++) {
+                cipher.update(foo, 0, 1, foo, 0);
+            }
+        } catch (Exception e) {
+            cipher = null;
+            throw e;
+        }
     }
 
 }
