@@ -473,7 +473,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                                 }
                             });
                         }
-                    };
+                    }
                     provider = new KeyPairProviderLoader().call();
                 }
             } catch (Throwable t) {
