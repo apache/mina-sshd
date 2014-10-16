@@ -271,6 +271,9 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         return future;
     }
 
+    /**
+     * @deprecated Use {@link #connect(String, String, int)} instead
+     */
     @Deprecated
     public ConnectFuture connect(String host, int port) throws IOException {
         return connect(null, host, port);

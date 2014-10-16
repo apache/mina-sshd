@@ -69,28 +69,51 @@ public interface ClientSession extends Session {
     UserInteraction getUserInteraction();
     void setUserInteraction(UserInteraction userInteraction);
 
+    /**
+     * Starts the authentication process.
+     * User identities will be tried until the server successfully authenticate the user.
+     * User identities must be provided before calling this method using
+     * {@link #addPasswordIdentity(String)} or {@link #addPublicKeyIdentity(java.security.KeyPair)}.
+     *
+     * @return the authentication future
+     * @throws IOException
+     * @see {@link #addPasswordIdentity(String)}
+     * @see {@link #addPublicKeyIdentity(java.security.KeyPair)}
+     */
     AuthFuture auth() throws IOException;
 
     /**
      * Authenticate the session with the given username using an ssh agent.
+     *
+     * @deprecated Use {@link #auth()} instead
+     * @see {@link #auth()}
      */
     @Deprecated
     AuthFuture authAgent(String username) throws IOException;
 
     /**
      * Authenticate the session with the given username and password.
+     *
+     * @deprecated Use {@link #auth()} instead
+     * @see {@link #auth()}
      */
     @Deprecated
     AuthFuture authPassword(String username, String password) throws IOException;
 
     /**
      * Authenticate the session with the given username and password.
+     *
+     * @deprecated Use {@link #auth()} instead
+     * @see {@link #auth()}
      */
     @Deprecated
     AuthFuture authInteractive(String username, String password) throws IOException;
 
     /**
      * Authenticate the session with the given username and public key.
+     *
+     * @deprecated Use {@link #auth()} instead
+     * @see {@link #auth()}
      */
     @Deprecated
     AuthFuture authPublicKey(String username, KeyPair key) throws IOException;
