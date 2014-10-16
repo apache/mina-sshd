@@ -171,7 +171,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
         new Thread("TcpIpServerChannel-ConnectorCleanup") {
             @Override
             public void run() {
-                connector.dispose();
+                connector.close(true);
             }
         }.start();
     }

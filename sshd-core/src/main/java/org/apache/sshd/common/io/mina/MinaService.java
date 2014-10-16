@@ -59,7 +59,7 @@ public abstract class MinaService extends IoHandlerAdapter implements org.apache
     }
 
     public CloseFuture close(boolean immediately) {
-        dispose();
+        getIoService().dispose();
         return CloseableUtils.closed();
     }
 
