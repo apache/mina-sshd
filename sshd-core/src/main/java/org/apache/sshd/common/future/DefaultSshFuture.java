@@ -18,8 +18,7 @@
  */
 package org.apache.sshd.common.future;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.lang.reflect.Array;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
@@ -36,13 +35,13 @@ public class DefaultSshFuture<T extends SshFuture> implements SshFuture<T> {
 
     /** A default value to indicate the future has been canceled */
     private static final Object CANCELED = new Object();
+    /** A value indicating a null */
+    private static final Object NULL = new Object();
 
     /** A lock used by the wait() method */
     private final Object lock;
-    private SshFutureListener<T> firstListener;
-    private List<SshFutureListener<T>> otherListeners;
+    private Object listeners;
     private Object result;
-    private boolean ready;
 
     /**
      * Creates a new instance.
@@ -56,7 +55,7 @@ public class DefaultSshFuture<T extends SshFuture> implements SshFuture<T> {
      */
     public T await() throws InterruptedException {
         synchronized (lock) {
-            while (!ready) {
+            while (result == null) {
                 lock.wait();
             }
         }
@@ -126,8 +125,8 @@ public class DefaultSshFuture<T extends SshFuture> implements SshFuture<T> {
         long endTime = Long.MAX_VALUE - timeoutMillis < curTime ? Long.MAX_VALUE : curTime + timeoutMillis;
 
         synchronized (lock) {
-            if (ready || timeoutMillis <= 0) {
-                return ready;
+            if (result != null || timeoutMillis <= 0) {
+                return result != null;
             }
 
             for (;;) {
@@ -140,8 +139,8 @@ public class DefaultSshFuture<T extends SshFuture> implements SshFuture<T> {
                 }
 
                 curTime = System.currentTimeMillis();
-                if (ready || curTime >= endTime) {
-                    return ready;
+                if (result != null || curTime >= endTime) {
+                    return result != null;
                 }
             }
         }
@@ -153,7 +152,7 @@ public class DefaultSshFuture<T extends SshFuture> implements SshFuture<T> {
      */
     public boolean isDone() {
         synchronized (lock) {
-            return ready;
+            return result != null;
         }
     }
 
@@ -163,12 +162,11 @@ public class DefaultSshFuture<T extends SshFuture> implements SshFuture<T> {
     public void setValue(Object newValue) {
         synchronized (lock) {
             // Allow only once.
-            if (ready) {
+            if (result != null) {
                 return;
             }
 
-            result = newValue;
-            ready = true;
+            result = newValue != null ? newValue : NULL;
             lock.notifyAll();
         }
 
@@ -180,7 +178,7 @@ public class DefaultSshFuture<T extends SshFuture> implements SshFuture<T> {
      */
     protected Object getValue() {
         synchronized (lock) {
-            return result;
+            return result == NULL ? null : result;
         }
     }
 
@@ -194,16 +192,20 @@ public class DefaultSshFuture<T extends SshFuture> implements SshFuture<T> {
 
         boolean notifyNow = false;
         synchronized (lock) {
-            if (ready) {
+            if (result != null) {
                 notifyNow = true;
             } else {
-                if (firstListener == null) {
-                    firstListener = listener;
+                if (listeners == null) {
+                    listeners = listener;
+                } else if (listeners instanceof SshFutureListener) {
+                    listeners = new Object[] { listeners, listener };
                 } else {
-                    if (otherListeners == null) {
-                        otherListeners = new ArrayList<SshFutureListener<T>>(1);
-                    }
-                    otherListeners.add(listener);
+                    Object[] ol = (Object[]) listeners;
+                    int l = ol.length;
+                    Object[] nl = new Object[l + 1];
+                    System.arraycopy(ol, 0, nl, 0, l);
+                    nl[l] = listener;
+                    listeners = nl;
                 }
             }
         }
@@ -223,15 +225,19 @@ public class DefaultSshFuture<T extends SshFuture> implements SshFuture<T> {
         }
 
         synchronized (lock) {
-            if (!ready) {
-                if (listener == firstListener) {
-                    if (otherListeners != null && !otherListeners.isEmpty()) {
-                        firstListener = otherListeners.remove(0);
+            if (result == null) {
+                if (listeners != null) {
+                    if (listeners == listener) {
+                        listeners = null;
                     } else {
-                        firstListener = null;
+                        int l = Array.getLength(listeners);
+                        for (int i = 0; i < l; i++) {
+                            if (Array.get(listeners, i) == listener) {
+                                Array.set(listeners, i, null);
+                                break;
+                            }
+                        }
                     }
-                } else if (otherListeners != null) {
-                    otherListeners.remove(listener);
                 }
             }
         }
@@ -243,15 +249,17 @@ public class DefaultSshFuture<T extends SshFuture> implements SshFuture<T> {
         // There won't be any visibility problem or concurrent modification
         // because 'ready' flag will be checked against both addListener and
         // removeListener calls.
-        if (firstListener != null) {
-            notifyListener(firstListener);
-            firstListener = null;
-
-            if (otherListeners != null) {
-                for (SshFutureListener<T> l : otherListeners) {
-                    notifyListener(l);
+        if (listeners != null) {
+            if (listeners instanceof SshFutureListener) {
+                notifyListener(asListener(listeners));
+            } else {
+                int l = Array.getLength(listeners);
+                for (int i = 0; i < l; i++) {
+                    SshFutureListener<T> listener = asListener(Array.get(listeners, i));
+                    if (listener != null) {
+                        notifyListener(listener);
+                    }
                 }
-                otherListeners = null;
             }
         }
     }
@@ -270,6 +278,11 @@ public class DefaultSshFuture<T extends SshFuture> implements SshFuture<T> {
 
     public void cancel() {
         setValue(CANCELED);
+    }
+
+    @SuppressWarnings("unchecked")
+    private SshFutureListener<T> asListener(Object o) {
+        return (SshFutureListener<T>) o;
     }
 
     @SuppressWarnings("unchecked")
