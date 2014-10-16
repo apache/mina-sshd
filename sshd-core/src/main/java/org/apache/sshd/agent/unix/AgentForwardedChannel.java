@@ -21,7 +21,6 @@ package org.apache.sshd.agent.unix;
 import java.io.IOException;
 
 import org.apache.sshd.client.channel.AbstractClientChannel;
-import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.tomcat.jni.Socket;
@@ -54,10 +53,6 @@ public class AgentForwardedChannel extends AbstractClientChannel implements Runn
         } finally {
             close(false);
         }
-    }
-
-    public synchronized OpenFuture open() throws IOException {
-        return internalOpen();
     }
 
     @Override

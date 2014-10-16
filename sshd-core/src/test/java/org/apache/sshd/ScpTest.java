@@ -89,7 +89,7 @@ public class ScpTest extends BaseTest {
         if (session != null) {
             session.disconnect();
         }
-        sshd.stop();
+        sshd.stop(true);
     }
 
     @Test

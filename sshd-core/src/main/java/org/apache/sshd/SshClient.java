@@ -62,7 +62,6 @@ import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.DefaultIoServiceFactoryFactory;
 import org.apache.sshd.common.io.IoConnectFuture;
@@ -249,26 +248,21 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         start();
     }
 
-    public CloseFuture close(boolean immediately) {
-        CloseFuture future;
-        if (connector != null) {
-            future = CloseableUtils.sequential(connector, ioServiceFactory).close(immediately);
-        } else if (ioServiceFactory != null) {
-            future = ioServiceFactory.close(immediately);
-        } else {
-            future = CloseableUtils.closed();
-        }
-        future.addListener(new SshFutureListener<CloseFuture>() {
-            public void operationComplete(CloseFuture future) {
-                connector = null;
-                ioServiceFactory = null;
-                if (shutdownExecutor && executor != null) {
-                    executor.shutdown();
-                    executor = null;
-                }
-            }
-        });
-        return future;
+    @Override
+    protected Closeable getInnerCloseable() {
+        return builder()
+                .sequential(connector, ioServiceFactory)
+                .run(new Runnable() {
+                    public void run() {
+                        connector = null;
+                        ioServiceFactory = null;
+                        if (shutdownExecutor && executor != null) {
+                            executor.shutdownNow();
+                            executor = null;
+                        }
+                    }
+                })
+                .build();
     }
 
     /**

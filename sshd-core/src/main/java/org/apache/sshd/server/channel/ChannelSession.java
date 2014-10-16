@@ -45,7 +45,6 @@ import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.util.Buffer;
-import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.IoUtils;
 import org.apache.sshd.common.util.LoggingFilterOutputStream;
 import org.apache.sshd.server.AsyncCommand;
@@ -192,49 +191,51 @@ public class ChannelSession extends AbstractServerChannel {
 
     @Override
     protected Closeable getInnerCloseable() {
-        return CloseableUtils.sequential(getCommandCloseable(), super.getInnerCloseable());
+        return builder()
+                .sequential(new CommandCloseable(), new GracefulChannelCloseable())
+                .parallel(asyncOut, asyncErr)
+                .build();
     }
 
-    protected Closeable getCommandCloseable() {
-        return new Closeable() {
-            public boolean isClosed() {
-                return commandExitFuture.isClosed();
-            }
-            public boolean isClosing() {
-                return isClosed();
-            }
-            public CloseFuture close(boolean immediately) {
-                if (immediately) {
-                    commandExitFuture.setClosed();
-                } else if (!commandExitFuture.isClosed()) {
-                    IoUtils.closeQuietly(receiver);
-                    final TimerTask task = new TimerTask() {
-                        @Override
-                        public void run() {
-                            commandExitFuture.setClosed();
-                        }
-                    };
-                    long timeout = DEFAULT_COMMAND_EXIT_TIMEOUT;
-                    String val = getSession().getFactoryManager().getProperties().get(ServerFactoryManager.COMMAND_EXIT_TIMEOUT);
-                    if (val != null) {
-                        try {
-                            timeout = Long.parseLong(val);
-                        } catch (NumberFormatException e) {
-                            // Ignore
-                        }
+    public class CommandCloseable implements Closeable {
+        public boolean isClosed() {
+            return commandExitFuture.isClosed();
+        }
+        public boolean isClosing() {
+            return isClosed();
+        }
+        public CloseFuture close(boolean immediately) {
+            if (immediately || command == null) {
+                commandExitFuture.setClosed();
+            } else if (!commandExitFuture.isClosed()) {
+                IoUtils.closeQuietly(receiver);
+                final TimerTask task = new TimerTask() {
+                    @Override
+                    public void run() {
+                        commandExitFuture.setClosed();
                     }
-                    log.debug("Wait {} ms for shell to exit cleanly", timeout);
-                    getSession().getFactoryManager().getScheduledExecutorService().schedule(task, timeout, TimeUnit.MILLISECONDS);
-                    commandExitFuture.addListener(new SshFutureListener<CloseFuture>() {
-                        public void operationComplete(CloseFuture future) {
-                            task.cancel();
-                        }
-                    });
+                };
+                long timeout = DEFAULT_COMMAND_EXIT_TIMEOUT;
+                String val = getSession().getFactoryManager().getProperties().get(ServerFactoryManager.COMMAND_EXIT_TIMEOUT);
+                if (val != null) {
+                    try {
+                        timeout = Long.parseLong(val);
+                    } catch (NumberFormatException e) {
+                        // Ignore
+                    }
                 }
-                return commandExitFuture;
+                log.debug("Wait {} ms for shell to exit cleanly", timeout);
+                getSession().getFactoryManager().getScheduledExecutorService().schedule(task, timeout, TimeUnit.MILLISECONDS);
+                commandExitFuture.addListener(new SshFutureListener<CloseFuture>() {
+                    public void operationComplete(CloseFuture future) {
+                        task.cancel();
+                    }
+                });
             }
-        };
+            return commandExitFuture;
+        }
     }
+
     @Override
     protected void doCloseImmediately() {
         if (command != null) {
@@ -243,8 +244,6 @@ public class ChannelSession extends AbstractServerChannel {
         }
         remoteWindow.notifyClosed();
         IoUtils.closeQuietly(out, err, receiver);
-        // TODO: graceful close ?
-        CloseableUtils.parallel(asyncOut, asyncErr).close(true);
         super.doCloseImmediately();
     }
 
@@ -256,7 +255,7 @@ public class ChannelSession extends AbstractServerChannel {
 
     protected void doWriteData(byte[] data, int off, int len) throws IOException {
         // If we're already closing, ignore incoming data
-        if (state.get() != OPENED) {
+        if (isClosing()) {
             return;
         }
         if (receiver != null) {
@@ -393,6 +392,10 @@ public class ChannelSession extends AbstractServerChannel {
     }
 
     protected boolean handleShell(Buffer buffer) throws IOException {
+        // If we're already closing, ignore incoming data
+        if (isClosing()) {
+            return false;
+        }
         if (((ServerSession) session).getFactoryManager().getShellFactory() == null) {
             return false;
         }
@@ -403,6 +406,10 @@ public class ChannelSession extends AbstractServerChannel {
     }
 
     protected boolean handleExec(Buffer buffer) throws IOException {
+        // If we're already closing, ignore incoming data
+        if (isClosing()) {
+            return false;
+        }
         String commandLine = buffer.getString();
         if (((ServerSession) session).getFactoryManager().getCommandFactory() == null) {
             log.warn("Unsupported command: {}", commandLine);
@@ -561,7 +568,7 @@ public class ChannelSession extends AbstractServerChannel {
     }
 
     protected void closeShell(int exitValue) throws IOException {
-        if (state.get() == OPENED) {
+        if (!isClosing()) {
             sendEof();
             sendExitStatus(exitValue);
             commandExitFuture.setClosed();

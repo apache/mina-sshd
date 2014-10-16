@@ -59,7 +59,7 @@ public class LoadTest extends BaseTest {
 
     @After
     public void tearDown() throws Exception {
-        sshd.stop();
+        sshd.stop(true);
     }
 
     @Test
@@ -112,33 +112,35 @@ public class LoadTest extends BaseTest {
 
     protected void runClient(String msg) throws Exception {
         SshClient client = SshClient.setUpDefaultClient();
-        client.getProperties().put(SshClient.MAX_PACKET_SIZE, Integer.toString(1024 * 16));
-        client.getProperties().put(SshClient.WINDOW_SIZE, Integer.toString(1024 * 8));
-        client.setKeyExchangeFactories(Arrays.<NamedFactory<KeyExchange>>asList(
-                new DHG1.Factory()));
-        client.setCipherFactories(Arrays.<NamedFactory<Cipher>>asList(
-                new BlowfishCBC.Factory()));
-        client.start();
-        ClientSession session = client.connect("localhost", port).await().getSession();
-        session.authPassword("sshd", "sshd").await().isSuccess();
+        try {
+            client.getProperties().put(SshClient.MAX_PACKET_SIZE, Integer.toString(1024 * 16));
+            client.getProperties().put(SshClient.WINDOW_SIZE, Integer.toString(1024 * 8));
+            client.setKeyExchangeFactories(Arrays.<NamedFactory<KeyExchange>>asList(
+                    new DHG1.Factory()));
+            client.setCipherFactories(Arrays.<NamedFactory<Cipher>>asList(
+                    new BlowfishCBC.Factory()));
+            client.start();
+            ClientSession session = client.connect("localhost", port).await().getSession();
+            session.authPassword("sshd", "sshd").await().isSuccess();
 
-        ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        ByteArrayOutputStream err = new ByteArrayOutputStream();
-        channel.setOut(out);
-        channel.setErr(err);
-        channel.open().await();
-        OutputStream pipedIn = channel.getInvertedIn();
+            ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            ByteArrayOutputStream err = new ByteArrayOutputStream();
+            channel.setOut(out);
+            channel.setErr(err);
+            channel.open().await();
+            OutputStream pipedIn = channel.getInvertedIn();
 
-        msg += "\nexit\n";
-        pipedIn.write(msg.getBytes());
-        pipedIn.flush();
+            msg += "\nexit\n";
+            pipedIn.write(msg.getBytes());
+            pipedIn.flush();
 
-        channel.waitFor(ClientChannel.CLOSED, 0);
+            channel.waitFor(ClientChannel.CLOSED, 0);
 
-        channel.close(false);
-        client.stop();
-
-        assertArrayEquals(msg.getBytes(), out.toByteArray());
+            channel.close(false);
+            assertArrayEquals(msg.getBytes(), out.toByteArray());
+        } finally {
+            client.stop();
+        }
     }
 }

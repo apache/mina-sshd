@@ -56,7 +56,7 @@ public class KeyReExchangeTest extends BaseTest {
 
     @After
     public void tearDown() throws Exception {
-        sshd.stop();
+        sshd.stop(true);
     }
 
     protected void setUp(long bytesLimit, long timeLimit) throws Exception {

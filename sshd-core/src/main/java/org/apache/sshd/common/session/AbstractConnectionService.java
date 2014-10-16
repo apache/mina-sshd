@@ -19,7 +19,6 @@
 package org.apache.sshd.common.session;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -30,23 +29,31 @@ import org.apache.sshd.client.channel.AbstractClientChannel;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.Closeable;
-import org.apache.sshd.common.RequestHandler;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.RequestHandler;
 import org.apache.sshd.common.Session;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.TcpipForwarder;
-import org.apache.sshd.common.future.CloseFuture;
-import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.server.channel.OpenChannelException;
 import org.apache.sshd.server.x11.X11ForwardSupport;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import static org.apache.sshd.common.SshConstants.*;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_CHANNEL_CLOSE;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_CHANNEL_DATA;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_CHANNEL_EOF;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_CHANNEL_FAILURE;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_CHANNEL_OPEN;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_CHANNEL_OPEN_CONFIRMATION;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_CHANNEL_OPEN_FAILURE;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_CHANNEL_REQUEST;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_CHANNEL_WINDOW_ADJUST;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_GLOBAL_REQUEST;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_REQUEST_FAILURE;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_REQUEST_SUCCESS;
 
 /**
  * Base implementation of ConnectionService.
@@ -88,10 +95,10 @@ public abstract class AbstractConnectionService extends CloseableUtils.AbstractI
 
     @Override
     protected Closeable getInnerCloseable() {
-        return CloseableUtils.sequential(
-                tcpipForwarder, agentForward, x11Forward,
-                CloseableUtils.parallel(channels.values())
-        );
+        return builder()
+                .sequential(tcpipForwarder, agentForward, x11Forward)
+                .parallel(channels.values())
+                .build();
     }
 
     protected int getNextChannelId() {
@@ -106,7 +113,7 @@ public abstract class AbstractConnectionService extends CloseableUtils.AbstractI
      * @throws IOException
      */
     public int registerChannel(Channel channel) throws IOException {
-        if (state.get() != OPENED) {
+        if (isClosing()) {
             throw new IllegalStateException("Session is being closed");
         }
         int channelId = getNextChannelId();
@@ -298,7 +305,7 @@ public abstract class AbstractConnectionService extends CloseableUtils.AbstractI
 
         log.debug("Received SSH_MSG_CHANNEL_OPEN {}", type);
 
-        if (state.get() != OPENED) {
+        if (isClosing()) {
             Buffer buf = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_FAILURE);
             buf.putInt(id);
             buf.putInt(SshConstants.SSH_OPEN_CONNECT_FAILED);
@@ -416,6 +423,7 @@ public abstract class AbstractConnectionService extends CloseableUtils.AbstractI
     }
 
     public String toString() {
-        return getClass().getSimpleName();
+        return getClass().getSimpleName() + "[" + session + "]";
     }
+
 }

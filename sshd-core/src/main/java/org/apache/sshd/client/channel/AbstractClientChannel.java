@@ -35,10 +35,7 @@ import org.apache.sshd.common.channel.ChannelAsyncInputStream;
 import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
 import org.apache.sshd.common.io.IoInputStream;
 import org.apache.sshd.common.io.IoOutputStream;
-import org.apache.sshd.common.future.CloseFuture;
-import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.util.Buffer;
-import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.IoUtils;
 
 /**
@@ -142,54 +139,29 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     }
 
     @Override
-    public CloseFuture close(final boolean immediately) {
-        if (!closeFuture.isDone()) {
-            if (opened) {
-                super.close(immediately);
-            } else if (openFuture != null) {
-                if (immediately) {
-                    openFuture.setException(new SshException("Channel closed"));
-                    super.close(immediately);
-                } else {
-                    openFuture.addListener(new SshFutureListener<OpenFuture>() {
-                        public void operationComplete(OpenFuture future) {
-                            if (future.isOpened()) {
-                                close(immediately);
-                            } else {
-                                close(true);
-                            }
-                        }
-                    });
-                }
-            } else {
-                closeFuture.setClosed();
-                notifyStateChanged();
-            }
-        }
-        return closeFuture;
-    }
-
-    @Override
     protected Closeable getInnerCloseable() {
         return builder()
+                .when(openFuture)
+                .run(new Runnable() {
+                    public void run() {
+                        // If the channel has not been opened yet,
+                        // skip the SSH_MSG_CHANNEL_CLOSE exchange
+                        if (openFuture == null) {
+                            gracefulFuture.setClosed();
+                        }
+                        // Close inverted streams after
+                        // If the inverted stream is closed before, there's a small time window
+                        // in which we have:
+                        //    ChannePipedInputStream#closed = true
+                        //    ChannePipedInputStream#writerClosed = false
+                        // which leads to an IOException("Pipe closed") when reading.
+                        IoUtils.closeQuietly(in, out, err);
+                        IoUtils.closeQuietly(invertedIn, invertedOut, invertedErr);
+                    }
+                })
                 .parallel(asyncIn, asyncOut, asyncErr)
-                .close(super.getInnerCloseable())
+                .close(new GracefulChannelCloseable())
                 .build();
-    }
-
-    @Override
-    protected void doCloseImmediately() {
-        // Close inverted streams after
-        // If the inverted stream is closed before, there's a small time window
-        // in which we have:
-        //    ChannePipedInputStream#closed = true
-        //    ChannePipedInputStream#writerClosed = false
-        // which leads to an IOException("Pipe closed") when reading.
-        IoUtils.closeQuietly(in, out, err);
-        IoUtils.closeQuietly(invertedIn, invertedOut, invertedErr);
-        // TODO: graceful close ?
-        CloseableUtils.parallel(asyncIn, asyncOut, asyncErr).close(true);
-        super.doCloseImmediately();
     }
 
     public int waitFor(int mask, long timeout) {
@@ -242,8 +214,8 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         }
     }
 
-    protected OpenFuture internalOpen() throws IOException {
-        if (closeFuture.isClosed()) {
+    public synchronized OpenFuture open() throws IOException {
+        if (isClosing()) {
             throw new SshException("Session has been closed");
         }
         openFuture = new DefaultOpenFuture(lock);
@@ -292,7 +264,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
 
     protected void doWriteData(byte[] data, int off, int len) throws IOException {
         // If we're already closing, ignore incoming data
-        if (state.get() != CloseableUtils.AbstractCloseable.OPENED) {
+        if (isClosing()) {
             return;
         }
         if (asyncOut != null) {
@@ -308,7 +280,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
 
     protected void doWriteExtendedData(byte[] data, int off, int len) throws IOException {
         // If we're already closing, ignore incoming data
-        if (state.get() != CloseableUtils.AbstractCloseable.OPENED) {
+        if (isClosing()) {
             return;
         }
         if (asyncErr != null) {

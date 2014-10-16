@@ -19,17 +19,13 @@
 package org.apache.sshd.common.io.nio2;
 
 import java.nio.channels.AsynchronousChannelGroup;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.future.CloseFuture;
-import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoService;
 import org.apache.sshd.common.io.IoSession;
@@ -66,8 +62,7 @@ public abstract class Nio2Service extends CloseableUtils.AbstractInnerCloseable 
 
     @Override
     protected Closeable getInnerCloseable() {
-        List<IoSession> s = new ArrayList<IoSession>(sessions.values());
-        return CloseableUtils.parallel(s);
+        return builder().parallel(sessions.values()).build();
     }
 
     public Map<Long, IoSession> getManagedSessions() {

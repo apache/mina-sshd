@@ -26,7 +26,6 @@ import java.util.concurrent.ArrayBlockingQueue;
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.common.AbstractAgentProxy;
 import org.apache.sshd.client.channel.AbstractClientChannel;
-import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.util.Buffer;
@@ -67,10 +66,6 @@ public class AgentForwardedChannel extends AbstractClientChannel {
                 throw (IOException) new InterruptedIOException().initCause(e);
             }
         }
-    }
-
-    public OpenFuture open() throws IOException {
-        return internalOpen();
     }
 
     @Override

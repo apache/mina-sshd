@@ -20,7 +20,6 @@ package org.apache.sshd.common.session;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -54,7 +53,14 @@ import org.apache.sshd.common.util.BufferUtils;
 import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.Readable;
 
-import static org.apache.sshd.common.SshConstants.*;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_DEBUG;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_DISCONNECT;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_IGNORE;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_KEXINIT;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_NEWKEYS;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_SERVICE_ACCEPT;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_SERVICE_REQUEST;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_UNIMPLEMENTED;
 
 /**
  * The AbstractSession handles all the basic SSH protocol such as key exchange, authentication,
@@ -417,7 +423,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     public void exceptionCaught(Throwable t) {
         // Ignore exceptions that happen while closing
         synchronized (lock) {
-            if (state.get() != OPENED) {
+            if (isClosing()) {
                 return;
             }
         }
@@ -438,16 +444,17 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
 
     @Override
     protected Closeable getInnerCloseable() {
-        return CloseableUtils.sequential(lock,
-                CloseableUtils.parallel(lock, getServices()), ioSession);
+        return builder()
+                .parallel(getServices())
+                .close(ioSession)
+                .build();
     }
 
     @Override
     protected void doCloseImmediately() {
         super.doCloseImmediately();
         // Fire 'close' event
-        final ArrayList<SessionListener> l = new ArrayList<SessionListener>(listeners);
-        for (SessionListener sl : l) {
+        for (SessionListener sl : listeners) {
             sl.sessionClosed(this);
         }
     }

@@ -35,8 +35,6 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.TcpipForwarder;
-import org.apache.sshd.common.future.CloseFuture;
-import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoHandler;
@@ -45,8 +43,6 @@ import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.Readable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * TODO Add javadoc
@@ -242,6 +238,10 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
             }
             throw bindErr;
         }
+    }
+
+    public String toString() {
+        return getClass().getSimpleName() + "[" + session + "]";
     }
 
 }

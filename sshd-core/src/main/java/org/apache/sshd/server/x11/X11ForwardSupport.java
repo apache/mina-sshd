@@ -29,7 +29,6 @@ import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.ChannelOutputStream;
-import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoSession;
@@ -37,8 +36,6 @@ import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.Readable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -69,20 +66,7 @@ public class X11ForwardSupport extends CloseableUtils.AbstractInnerCloseable imp
 
     @Override
     protected Closeable getInnerCloseable() {
-        return acceptor != null ? acceptor : new CloseableUtils.AbstractCloseable() { };
-    }
-
-    public CloseFuture close(boolean immediately) {
-        IoAcceptor a;
-        synchronized (this) {
-            a = acceptor;
-            acceptor = null;
-        }
-        if (a != null) {
-            return a.close(immediately);
-        } else {
-            return CloseableUtils.closed();
-        }
+        return builder().close(acceptor).build();
     }
 
     public synchronized String createDisplay(boolean singleConnection,
@@ -212,7 +196,7 @@ public class X11ForwardSupport extends CloseableUtils.AbstractInnerCloseable imp
 
         @Override
         protected Closeable getInnerCloseable() {
-            return CloseableUtils.sequential(serverSession, super.getInnerCloseable());
+            return builder().sequential(serverSession, super.getInnerCloseable()).build();
         }
 
         protected synchronized void doWriteData(byte[] data, int off, int len) throws IOException {

@@ -18,11 +18,14 @@
  */
 package org.apache.sshd.common.util;
 
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.SshException;
@@ -47,346 +50,273 @@ public class CloseableUtils {
         return future;
     }
 
-    public static Closeable parallel(final Collection<? extends Closeable> closeables) {
-        return parallel(null, closeables);
-    }
+    public static class Builder {
 
-    public static Closeable parallel(final Object lock, final Collection<? extends Closeable> closeables) {
-        return parallel(lock, closeables.toArray(new Closeable[closeables.size()]));
-    }
+        private final Object lock;
+        private final List<Closeable> closeables = new ArrayList<Closeable>();
 
-    public static Closeable parallel(final Closeable... closeables) {
-        return parallel(null, closeables);
-    }
-
-    public static Closeable parallel(final Object lock, final Closeable... closeables) {
-        int nbNonNulls = 0;
-        for (Closeable closeable : closeables) {
-            if (closeable != null) {
-                nbNonNulls++;
-            }
+        private Builder(Object lock) {
+            this.lock = lock;
         }
-        if (nbNonNulls == 0) {
-            return new Closeable() {
-                final CloseFuture future = new DefaultCloseFuture(lock);
-                public boolean isClosed() {
-                    return future.isClosed();
-                }
-                public boolean isClosing() {
-                    return isClosed();
-                }
-                public CloseFuture close(boolean immediately) {
-                    future.setClosed();
-                    return future;
-                }
-            };
-        } else if (nbNonNulls == 1) {
-            for (Closeable closeable : closeables) {
-                if (closeable != null) {
-                    return closeable;
-                }
-            }
-            throw new IllegalStateException();
-        } else {
-            return new Closeable() {
-                final CloseFuture future = new DefaultCloseFuture(lock);
-                final AtomicBoolean closing = new AtomicBoolean();
-                public boolean isClosed() {
-                    return future.isClosed();
-                }
-                public boolean isClosing() {
-                    return closing.get();
-                }
-                public CloseFuture close(boolean immediately) {
-                    final AtomicInteger count = new AtomicInteger(closeables.length);
-                    if (closing.compareAndSet(false, true)) {
-                        SshFutureListener<CloseFuture> listener = new SshFutureListener<CloseFuture>() {
-                            public void operationComplete(CloseFuture f) {
-                                if (count.decrementAndGet() == 0) {
-                                    future.setClosed();
-                                }
-                            }
-                        };
-                        for (Closeable c : closeables) {
-                            if (c != null) {
-                                c.close(immediately).addListener(listener);
-                            } else {
-                                listener.operationComplete(null);
-                            }
-                        }
+
+        public Builder run(final Runnable r) {
+            return close(new SimpleCloseable(lock) {
+                @Override
+                protected void doClose(boolean immediately) {
+                    try {
+                        r.run();
+                    } finally {
+                        super.doClose(immediately);
                     }
-                    return future;
                 }
-            };
+            });
         }
-    }
 
-    public static Closeable sequential(final Collection<? extends Closeable> closeables) {
-        return sequential(null, closeables);
-    }
-
-    public static Closeable sequential(final Object lock, final Collection<? extends Closeable> closeables) {
-        return sequential(lock, closeables.toArray(new Closeable[closeables.size()]));
-    }
-
-    public static Closeable sequential(final Closeable... closeables) {
-        return sequential(null, closeables);
-    }
-
-    public static Closeable sequential(final Object lock, final Closeable... closeables) {
-        int nbNonNulls = 0;
-        for (Closeable closeable : closeables) {
-            if (closeable != null) {
-                nbNonNulls++;
+        public <T extends SshFuture> Builder when(SshFuture<T> future) {
+            if (future != null) {
+                when(Collections.singleton(future));
             }
+            return this;
         }
-        if (nbNonNulls == 0) {
-            return new Closeable() {
-                final CloseFuture future = new DefaultCloseFuture(lock);
-                public boolean isClosed() {
-                    return future.isClosed();
-                }
-                public boolean isClosing() {
-                    return isClosed();
-                }
-                public CloseFuture close(boolean immediately) {
-                    future.setClosed();
-                    return future;
-                }
-            };
-        } else if (nbNonNulls == 1) {
+
+        public <T extends SshFuture> Builder when(SshFuture<T>... futures) {
+            return when(Arrays.asList(futures));
+        }
+
+        public <T extends SshFuture> Builder when(final Iterable<? extends SshFuture<T>> futures) {
+            return close(new FuturesCloseable<T>(lock, futures));
+        }
+
+        public Builder sequential(Closeable... closeables) {
             for (Closeable closeable : closeables) {
-                if (closeable != null) {
-                    return closeable;
-                }
+                close(closeable);
             }
-            throw new IllegalStateException();
-        } else {
-            return new Closeable() {
-                final DefaultCloseFuture future = new DefaultCloseFuture(lock);
-                final AtomicBoolean closing = new AtomicBoolean();
-                public boolean isClosed() {
-                    return future.isClosed();
-                }
-                public boolean isClosing() {
-                    return closing.get();
-                }
-                public CloseFuture close(final boolean immediately) {
-                    if (closing.compareAndSet(false, true)) {
-                        final Iterator<Closeable> iterator = Arrays.asList(closeables).iterator();
-                        SshFutureListener<CloseFuture> listener = new SshFutureListener<CloseFuture>() {
-                            public void operationComplete(CloseFuture previousFuture) {
-                                while (iterator.hasNext()) {
-                                    Closeable c = iterator.next();
-                                    if (c != null) {
-                                        CloseFuture nextFuture = c.close(immediately);
-                                        nextFuture.addListener(this);
-                                        return;
-                                    }
-                                }
-                                if (!iterator.hasNext()) {
-                                    future.setClosed();
-                                }
-                            }
-                        };
-                        listener.operationComplete(null);
-                    }
-                    return future;
-                }
-            };
+            return this;
+        }
+
+        public Builder sequential(Iterable<Closeable> closeables) {
+            return close(new SequentialCloseable(lock, closeables));
+        }
+
+        public Builder parallel(Closeable... closeables) {
+            if (closeables.length == 1) {
+                close(closeables[0]);
+            } else if (closeables.length > 0) {
+                parallel(Arrays.asList(closeables));
+            }
+            return this;
+        }
+
+        public Builder parallel(Iterable<? extends Closeable> closeables) {
+            return close(new ParallelCloseable(lock, closeables));
+        }
+
+        public Builder close(Closeable c) {
+            if (c != null) {
+                closeables.add(c);
+            }
+            return this;
+        }
+
+        public Closeable build() {
+            if (closeables.isEmpty()) {
+                return new SimpleCloseable(lock);
+            } else if (closeables.size() == 1) {
+                return closeables.get(0);
+            } else {
+                return new SequentialCloseable(lock, closeables);
+            }
+        }
+
+    }
+
+    private static class SimpleCloseable implements Closeable {
+
+        protected final DefaultCloseFuture future;
+        protected final AtomicBoolean closing;
+
+        public SimpleCloseable(Object lock) {
+            future = new DefaultCloseFuture(lock);
+            closing = new AtomicBoolean();
+        }
+
+        public boolean isClosed() {
+            return future.isClosed();
+        }
+        public boolean isClosing() {
+            return closing.get();
+        }
+        public CloseFuture close(boolean immediately) {
+            if (closing.compareAndSet(false, true)) {
+                doClose(immediately);
+            }
+            return future;
+        }
+
+        protected void doClose(boolean immediately) {
+            future.setClosed();
         }
     }
 
-    public static <T extends SshFuture> CloseFuture parallel(final SshFuture<T>... futures) {
-        return parallel(null, futures);
-    }
+    private static class ParallelCloseable extends SimpleCloseable {
 
-    public static <T extends SshFuture> CloseFuture parallel(Object lock, final SshFuture<T>... futures) {
-        final CloseFuture future = new DefaultCloseFuture(lock);
-        if (futures.length > 0) {
-            final AtomicInteger count = new AtomicInteger(futures.length);
-            SshFutureListener<T> listener = new SshFutureListener<T>() {
-                public void operationComplete(T f) {
+        final Iterable<? extends Closeable> closeables;
+
+        private ParallelCloseable(Object lock, Iterable<? extends Closeable> closeables) {
+            super(lock);
+            this.closeables = closeables;
+        }
+
+        protected void doClose(final boolean immediately) {
+            final AtomicInteger count = new AtomicInteger(1);
+            SshFutureListener<CloseFuture> listener = new SshFutureListener<CloseFuture>() {
+                public void operationComplete(CloseFuture f) {
                     if (count.decrementAndGet() == 0) {
                         future.setClosed();
                     }
                 }
             };
-            for (SshFuture<T> f : futures) {
-                if (f != null) {
-                    f.addListener(listener);
-                } else {
-                    listener.operationComplete(null);
+            for (Closeable c : closeables) {
+                if (c != null) {
+                    count.incrementAndGet();
+                    c.close(immediately).addListener(listener);
                 }
             }
-        } else {
-            future.setClosed();
+            listener.operationComplete(null);
         }
-        return future;
     }
 
-    public static Builder builder() {
-        return new Builder();
-    }
+    private static class SequentialCloseable extends SimpleCloseable {
 
-    public static Builder builder(Logger logger, Object lock) {
-        return new Builder();
-    }
+        private final Iterable<? extends Closeable> closeables;
 
-    public static class Builder {
-        private final Object lock;
-        private Closeable closeable = null;
-        public Builder() {
-            this(null);
+        public SequentialCloseable(Object lock, Iterable<? extends Closeable> closeables) {
+            super(lock);
+            this.closeables = closeables;
         }
-        public Builder(Object lock) {
-            this.lock = lock;
-        }
-        public <T extends SshFuture> Builder when(final SshFuture<T>... futures) {
-            return close(new Closeable() {
-                private volatile boolean closing;
-                private volatile boolean closed;
-                public CloseFuture close(boolean immediately) {
-                    closing = true;
-                    if (immediately) {
-                        for (SshFuture<?> future : futures) {
-                            if (future instanceof DefaultSshFuture) {
-                                ((DefaultSshFuture<?>) future).setValue(new SshException("Closed"));
-                            }
+
+        protected void doClose(final boolean immediately) {
+            final Iterator<? extends Closeable> iterator = closeables.iterator();
+            SshFutureListener<CloseFuture> listener = new SshFutureListener<CloseFuture>() {
+                public void operationComplete(CloseFuture previousFuture) {
+                    while (iterator.hasNext()) {
+                        Closeable c = iterator.next();
+                        if (c != null) {
+                            CloseFuture nextFuture = c.close(immediately);
+                            nextFuture.addListener(this);
+                            return;
                         }
-                        closed = true;
-                        return closed();
-                    } else {
-                        return CloseableUtils.parallel(lock, futures).addListener(new SshFutureListener<CloseFuture>() {
-                            public void operationComplete(CloseFuture future) {
-                                closed = true;
-                            }
-                        });
+                    }
+                    if (!iterator.hasNext()) {
+                        future.setClosed();
                     }
                 }
+            };
+            listener.operationComplete(null);
+        }
+    }
 
-                public boolean isClosed() {
-                    return closed;
-                }
+    private static class FuturesCloseable<T extends SshFuture> extends CloseableUtils.SimpleCloseable {
 
-                public boolean isClosing() {
-                    return closing || closed;
+        private final Iterable<? extends SshFuture<T>> futures;
+
+        public FuturesCloseable(Object lock, Iterable<? extends SshFuture<T>> futures) {
+            super(lock);
+            this.futures = futures;
+        }
+
+        protected void doClose(boolean immediately) {
+            if (immediately) {
+                for (SshFuture<?> f : futures) {
+                    if (f instanceof DefaultSshFuture) {
+                        ((DefaultSshFuture<?>) f).setValue(new SshException("Closed"));
+                    }
                 }
-            });
-        }
-        public <T extends SshFuture> Builder when(Collection<? extends SshFuture<T>> futures) {
-            return when(futures.toArray(new SshFuture[futures.size()]));
-        }
-        public Builder sequential(Closeable... closeables) {
-            return close(CloseableUtils.sequential(lock, closeables));
-        }
-        public Builder sequential(Collection<Closeable> closeables) {
-            return close(CloseableUtils.sequential(lock, closeables));
-        }
-        public Builder parallel(Closeable... closeables) {
-            return close(CloseableUtils.parallel(lock, closeables));
-        }
-        public Builder parallel(Collection<? extends Closeable> closeables) {
-            return close(CloseableUtils.parallel(lock, closeables));
-        }
-        public Builder close(Closeable c) {
-            if (closeable == null) {
-                closeable = c;
+                future.setClosed();
             } else {
-                closeable = CloseableUtils.sequential(lock, closeable, c);
-            }
-            return this;
-        }
-        public Closeable build() {
-            if (closeable == null) {
-                closeable = new Closeable() {
-                    private volatile boolean closed;
-                    public CloseFuture close(boolean immediately) {
-                        closed = true;
-                        return closed();
-                    }
-                    public boolean isClosed() {
-                        return closed;
-                    }
-                    public boolean isClosing() {
-                        return closed;
+                final AtomicInteger count = new AtomicInteger(1);
+                SshFutureListener<T> listener = new SshFutureListener<T>() {
+                    public void operationComplete(T f) {
+                        if (count.decrementAndGet() == 0) {
+                            future.setClosed();
+                        }
                     }
                 };
+                for (SshFuture<T> f : futures) {
+                    if (f != null) {
+                        count.incrementAndGet();
+                        f.addListener(listener);
+                    }
+                }
+                listener.operationComplete(null);
             }
-            return closeable;
         }
     }
 
     public static abstract class AbstractCloseable implements Closeable {
 
-        protected static final int OPENED = 0;
-        protected static final int GRACEFUL = 1;
-        protected static final int IMMEDIATE = 2;
-        protected static final int CLOSED = 3;
-
+        protected enum State {
+            Opened, Graceful, Immediate, Closed
+        }
         /** Our logger */
         protected final Logger log = LoggerFactory.getLogger(getClass());
         /** Lock object for this session state */
-        protected final Object lock;
+        protected final Object lock = new Object();
         /** State of this object */
-        protected final AtomicInteger state = new AtomicInteger(OPENED);
+        protected final AtomicReference<State> state = new AtomicReference<State>(State.Opened);
         /** A future that will be set 'closed' when the object is actually closed */
-        protected final CloseFuture closeFuture;
-
-        protected AbstractCloseable() {
-            this(new Object());
-        }
-
-        protected AbstractCloseable(Object lock) {
-            this.lock = lock;
-            this.closeFuture = new DefaultCloseFuture(lock);
-        }
+        protected final CloseFuture closeFuture = new DefaultCloseFuture(lock);
 
         public CloseFuture close(boolean immediately) {
             if (immediately) {
-                if (state.compareAndSet(OPENED, IMMEDIATE) || state.compareAndSet(GRACEFUL, IMMEDIATE)) {
+                if (state.compareAndSet(State.Opened, State.Immediate)
+                        || state.compareAndSet(State.Graceful, State.Immediate)) {
                     log.debug("Closing {} immediately", this);
                     preClose();
                     doCloseImmediately();
                     log.debug("{} closed", this);
                 } else {
-                    log.debug("{} is already {}", this, state.get() == CLOSED ? "closed" : "closing");
+                    log.debug("{} is already {}", this, state.get() == State.Closed ? "closed" : "closing");
                 }
             } else {
-                if (state.compareAndSet(OPENED, GRACEFUL)) {
+                if (state.compareAndSet(State.Opened, State.Graceful)) {
                     log.debug("Closing {} gracefully", this);
                     preClose();
                     SshFuture<CloseFuture> grace = doCloseGracefully();
                     if (grace != null) {
                         grace.addListener(new SshFutureListener<CloseFuture>() {
                             public void operationComplete(CloseFuture future) {
-                                if (state.compareAndSet(GRACEFUL, IMMEDIATE)) {
+                                if (state.compareAndSet(State.Graceful, State.Immediate)) {
                                     doCloseImmediately();
                                     log.debug("{} closed", AbstractCloseable.this);
                                 }
                             }
                         });
                     } else {
-                        if (state.compareAndSet(GRACEFUL, IMMEDIATE)) {
+                        if (state.compareAndSet(State.Graceful, State.Immediate)) {
                             doCloseImmediately();
                             log.debug("{} closed", this);
                         }
                     }
                 } else {
-                    log.debug("{} is already {}", this, state.get() == CLOSED ? "closed" : "closing");
+                    log.debug("{} is already {}", this, state.get() == State.Closed ? "closed" : "closing");
                 }
             }
             return closeFuture;
         }
 
         public boolean isClosed() {
-            return state.get() == CLOSED;
+            return state.get() == State.Closed;
         }
 
         public boolean isClosing() {
-            return state.get() != OPENED;
+            return state.get() != State.Opened;
         }
 
+        /**
+         * preClose is guaranteed to be called before doCloseGracefully or doCloseImmediately.
+         * When preClose() is called, isClosing() == true
+         */
         protected void preClose() {
         }
 
@@ -394,9 +324,16 @@ public class CloseableUtils {
             return null;
         }
 
+        /**
+         * doCloseImmediately is called once and only once
+         * with state == Immediate
+         *
+         * Overriding methods should always call the base implementation.
+         * It may be called concurrently while preClose() or doCloseGracefully is executing
+         */
         protected void doCloseImmediately() {
             closeFuture.setClosed();
-            state.set(CLOSED);
+            state.set(State.Closed);
         }
 
         protected Builder builder() {

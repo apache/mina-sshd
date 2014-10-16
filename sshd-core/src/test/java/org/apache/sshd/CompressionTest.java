@@ -82,7 +82,7 @@ public class CompressionTest extends BaseTest {
     @After
     public void tearDown() throws Exception {
         if (sshd != null) {
-            sshd.stop();
+            sshd.stop(true);
             Thread.sleep(50);
         }
         JSch.setConfig("compression.s2c", "none");

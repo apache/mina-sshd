@@ -82,7 +82,7 @@ public class SftpTest extends BaseTest {
     @After
     public void tearDown() throws Exception {
         session.disconnect();
-        sshd.stop();
+        sshd.stop(true);
     }
 
     @Test

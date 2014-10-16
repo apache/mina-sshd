@@ -36,7 +36,6 @@ import org.apache.sshd.common.ForwardingFilter;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.Session;
 import org.apache.sshd.common.SshdSocketAddress;
-import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.io.DefaultIoServiceFactoryFactory;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoServiceFactory;
@@ -324,29 +323,25 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     }
 
     @Override
-    protected CloseFuture doCloseGracefully() {
-        stopSessionTimeoutListener();
-        CloseFuture future;
-        if (acceptor != null) {
-            future = CloseableUtils.sequential(acceptor, ioServiceFactory).close(false);
-        } else if (ioServiceFactory != null) {
-            future = ioServiceFactory.close(false);
-        } else {
-            future = CloseableUtils.closed();
-        }
-        return future;
-    }
-
-    @Override
-    protected void doCloseImmediately() {
-        CloseableUtils.sequential(acceptor, ioServiceFactory).close(true);
-        acceptor = null;
-        ioServiceFactory = null;
-        if (shutdownExecutor && executor != null) {
-            executor.shutdown();
-            executor = null;
-        }
-        super.doCloseImmediately();
+    protected Closeable getInnerCloseable() {
+        return builder()
+                .run(new Runnable() {
+                    public void run() {
+                        stopSessionTimeoutListener();
+                    }
+                })
+                .sequential(acceptor, ioServiceFactory)
+                .run(new Runnable() {
+                    public void run() {
+                        acceptor = null;
+                        ioServiceFactory = null;
+                        if (shutdownExecutor && executor != null) {
+                            executor.shutdownNow();
+                            executor = null;
+                        }
+                    }
+                })
+                .build();
     }
 
     /**

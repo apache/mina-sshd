@@ -21,7 +21,6 @@ package org.apache.sshd.client.channel;
 import java.io.IOException;
 import java.io.InputStream;
 
-import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.channel.ChannelPipedInputStream;
@@ -29,7 +28,6 @@ import org.apache.sshd.common.channel.ChannelPipedOutputStream;
 import org.apache.sshd.common.channel.ChannelAsyncInputStream;
 import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
 import org.apache.sshd.common.future.CloseFuture;
-import org.apache.sshd.common.util.CloseableUtils;
 
 /**
  * TODO Add javadoc
@@ -42,10 +40,6 @@ public class ChannelSession extends AbstractClientChannel {
 
     public ChannelSession() {
         super("session");
-    }
-
-    public OpenFuture open() throws IOException {
-        return internalOpen();
     }
 
     @Override
@@ -117,7 +111,7 @@ public class ChannelSession extends AbstractClientChannel {
                 }
             }
         } catch (Exception e) {
-            if (state.get() == CloseableUtils.AbstractCloseable.OPENED) {
+            if (!isClosing()) {
                 log.info("Caught exception", e);
                 close(false);
             }

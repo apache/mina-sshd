@@ -92,7 +92,7 @@ public class ClientUserAuthService extends CloseableUtils.AbstractInnerCloseable
         } else if (delegateOld != null) {
             return delegateOld;
         } else {
-            return new CloseableUtils.AbstractCloseable() { };
+            return builder().build();
         }
     }
 

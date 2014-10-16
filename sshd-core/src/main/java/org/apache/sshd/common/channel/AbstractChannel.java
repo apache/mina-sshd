@@ -21,7 +21,7 @@ package org.apache.sshd.common.channel;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.Closeable;
@@ -48,8 +48,9 @@ public abstract class AbstractChannel extends CloseableUtils.AbstractInnerClosea
     public static final int DEFAULT_WINDOW_SIZE = 0x200000;
     public static final int DEFAULT_PACKET_SIZE = 0x8000;
 
-    protected static final int CLOSE_SENT = 0x01;
-    protected static final int CLOSE_RECV = 0x02;
+    protected static enum GracefulState {
+        Opened, CloseSent, CloseReceived, Closed
+    }
 
     protected final Window localWindow = new Window(this, null, getClass().getName().contains(".client."), true);
     protected final Window remoteWindow = new Window(this, null, getClass().getName().contains(".client."), false);
@@ -58,7 +59,7 @@ public abstract class AbstractChannel extends CloseableUtils.AbstractInnerClosea
     protected int id;
     protected int recipient;
     protected volatile boolean eof;
-    protected AtomicInteger gracefulState = new AtomicInteger();
+    protected AtomicReference<GracefulState> gracefulState = new AtomicReference<GracefulState>(GracefulState.Opened);
     protected final DefaultCloseFuture gracefulFuture = new DefaultCloseFuture(lock);
     protected final List<RequestHandler<Channel>> handlers = new ArrayList<RequestHandler<Channel>>();
 
@@ -140,61 +141,67 @@ public abstract class AbstractChannel extends CloseableUtils.AbstractInnerClosea
 
     public void handleClose() throws IOException {
         log.debug("Received SSH_MSG_CHANNEL_CLOSE on channel {}", this);
-        if (gracefulState.compareAndSet(0, CLOSE_RECV)) {
+        if (gracefulState.compareAndSet(GracefulState.Opened, GracefulState.CloseReceived)) {
             close(false);
-        } else if (gracefulState.compareAndSet(CLOSE_SENT, CLOSE_SENT | CLOSE_RECV)) {
+        } else if (gracefulState.compareAndSet(GracefulState.CloseSent, GracefulState.Closed)) {
             gracefulFuture.setClosed();
         }
     }
 
     protected Closeable getInnerCloseable() {
-        return new Closeable() {
-            public boolean isClosed() {
-                return gracefulFuture.isClosed();
-            }
-            public boolean isClosing() {
-                return true;
-            }
-            public CloseFuture close(boolean immediately) {
-                if (!immediately) {
-                    log.debug("Send SSH_MSG_CHANNEL_CLOSE on channel {}", AbstractChannel.this);
-                    Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_CLOSE);
-                    buffer.putInt(recipient);
-                    try {
-                        session.writePacket(buffer).addListener(new SshFutureListener<IoWriteFuture>() {
-                            public void operationComplete(IoWriteFuture future) {
-                                if (future.isWritten()) {
-                                    log.debug("Message SSH_MSG_CHANNEL_CLOSE written on channel {}", AbstractChannel.this);
-                                    if (gracefulState.compareAndSet(0, CLOSE_SENT)) {
-                                        // Waiting for CLOSE message to come back from the remote side
-                                    } else if (gracefulState.compareAndSet(CLOSE_RECV, CLOSE_SENT | CLOSE_RECV)) {
-                                        gracefulFuture.setValue(true);
-                                    }
-                                } else {
-                                    close(true);
+        return new GracefulChannelCloseable();
+    }
+
+    public class GracefulChannelCloseable implements Closeable {
+
+        protected volatile boolean closing;
+
+        public boolean isClosing() {
+            return closing;
+        }
+        public boolean isClosed() {
+            return gracefulFuture.isClosed();
+        }
+        public CloseFuture close(boolean immediately) {
+            closing = true;
+            if (immediately) {
+                gracefulFuture.setClosed();
+            } else if (!gracefulFuture.isClosed()) {
+                log.debug("Send SSH_MSG_CHANNEL_CLOSE on channel {}", AbstractChannel.this);
+                Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_CLOSE);
+                buffer.putInt(recipient);
+                try {
+                    session.writePacket(buffer).addListener(new SshFutureListener<IoWriteFuture>() {
+                        public void operationComplete(IoWriteFuture future) {
+                            if (future.isWritten()) {
+                                log.debug("Message SSH_MSG_CHANNEL_CLOSE written on channel {}", AbstractChannel.this);
+                                if (gracefulState.compareAndSet(GracefulState.Opened, GracefulState.CloseSent)) {
+                                    // Waiting for CLOSE message to come back from the remote side
+                                } else if (gracefulState.compareAndSet(GracefulState.CloseReceived, GracefulState.Closed)) {
+                                    gracefulFuture.setClosed();
                                 }
+                            } else {
+                                AbstractChannel.this.close(true);
                             }
-                        });
-                    } catch (IOException e) {
-                        log.debug("Exception caught while writing SSH_MSG_CHANNEL_CLOSE packet on channel " + AbstractChannel.this, e);
-                        close(true);
-                    }
-                } else {
-                    gracefulFuture.setClosed();
+                        }
+                    });
+                } catch (IOException e) {
+                    log.debug("Exception caught while writing SSH_MSG_CHANNEL_CLOSE packet on channel " + AbstractChannel.this, e);
+                    AbstractChannel.this.close(true);
                 }
-                return gracefulFuture;
             }
-        };
+            return gracefulFuture;
+        }
     }
 
     @Override
     protected void doCloseImmediately() {
-        super.doCloseImmediately();
         service.unregisterChannel(AbstractChannel.this);
+        super.doCloseImmediately();
     }
 
     protected void writePacket(Buffer buffer) throws IOException {
-        if (state.get() == OPENED) {
+        if (!isClosing()) {
             session.writePacket(buffer);
         } else {
             log.debug("Discarding output packet because channel is being closed");

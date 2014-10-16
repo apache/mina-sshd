@@ -98,6 +98,7 @@ import static org.junit.Assert.assertTrue;
 public class ClientTest extends BaseTest {
 
     private SshServer sshd;
+    private SshClient client;
     private int port;
     private CountDownLatch authLatch;
     private CountDownLatch channelLatch;
@@ -158,14 +159,19 @@ public class ClientTest extends BaseTest {
                 },
                 new TcpipServerChannel.DirectTcpipFactory()));
         sshd.start();
+
+        client = SshClient.setUpDefaultClient();
     }
 
     @After
     public void tearDown() throws Exception {
         if (sshd != null) {
             sshd.stop(true);
-            Thread.sleep(50);
         }
+        if (client != null) {
+            client.stop();
+        }
+        Thread.sleep(50);
     }
 
     @Test
@@ -173,7 +179,6 @@ public class ClientTest extends BaseTest {
         sshd.getProperties().put(SshServer.WINDOW_SIZE, "1024");
         sshd.setShellFactory(new AsyncEchoShellFactory());
 
-        SshClient client = SshClient.setUpDefaultClient();
         client.getProperties().put(SshClient.WINDOW_SIZE, "1024");
         client.start();
         ClientSession session = client.connect("smx", "localhost", port).await().getSession();
@@ -252,11 +257,12 @@ public class ClientTest extends BaseTest {
         channel.waitFor(ClientChannel.CLOSED, 0);
 
         assertEquals(nbMessages * message.length, baosOut.size());
+
+        client.close(true);
     }
 
     @Test
     public void testCommandDeadlock() throws Exception {
-        SshClient client = SshClient.setUpDefaultClient();
         client.start();
         ClientSession session = client.connect("localhost", port).await().getSession();
         session.authPassword("smx", "smx").await().isSuccess();
@@ -280,7 +286,6 @@ public class ClientTest extends BaseTest {
 
     @Test
     public void testClient() throws Exception {
-        SshClient client = SshClient.setUpDefaultClient();
         client.start();
         ClientSession session = client.connect("localhost", port).await().getSession();
         session.authPassword("smx", "smx").await().isSuccess();
@@ -319,7 +324,6 @@ public class ClientTest extends BaseTest {
 
     @Test
     public void testClientInverted() throws Exception {
-        SshClient client = SshClient.setUpDefaultClient();
         client.start();
         ClientSession session = client.connect("localhost", port).await().getSession();
         session.authPassword("smx", "smx").await().isSuccess();
@@ -357,7 +361,6 @@ public class ClientTest extends BaseTest {
 
     @Test
     public void testClientWithCustomChannel() throws Exception {
-        SshClient client = SshClient.setUpDefaultClient();
         client.start();
         ClientSession session = client.connect("smx", "localhost", port).await().getSession();
         session.addPasswordIdentity("smx");
@@ -379,7 +382,6 @@ public class ClientTest extends BaseTest {
 
     @Test
     public void testClientClosingStream() throws Exception {
-        SshClient client = SshClient.setUpDefaultClient();
         client.start();
         ClientSession session = client.connect("localhost", port).await().getSession();
         session.authPassword("smx", "smx").await().isSuccess();
@@ -418,7 +420,6 @@ public class ClientTest extends BaseTest {
 
     @Test
     public void testClientWithLengthyDialog() throws Exception {
-        SshClient client = SshClient.setUpDefaultClient();
         // Reduce window size and packet size
 //        client.getProperties().put(SshClient.WINDOW_SIZE, Integer.toString(0x20000));
 //        client.getProperties().put(SshClient.MAX_PACKET_SIZE, Integer.toString(0x1000));
@@ -470,7 +471,6 @@ public class ClientTest extends BaseTest {
 
     @Test(expected = SshException.class)
     public void testOpenChannelOnClosedSession() throws Exception {
-        SshClient client = SshClient.setUpDefaultClient();
         client.start();
         ClientSession session = client.connect("localhost", port).await().getSession();
         session.authPassword("smx", "smx").await().isSuccess();
@@ -489,7 +489,6 @@ public class ClientTest extends BaseTest {
     @Test
     public void testCloseBeforeAuthSucceed() throws Exception {
         authLatch = new CountDownLatch(1);
-        SshClient client = SshClient.setUpDefaultClient();
         client.start();
         ClientSession session = client.connect("localhost", port).await().getSession();
         AuthFuture authFuture = session.authPassword("smx", "smx");
@@ -503,7 +502,6 @@ public class ClientTest extends BaseTest {
 
     @Test
     public void testCloseCleanBeforeChannelOpened() throws Exception {
-        SshClient client = SshClient.setUpDefaultClient();
         client.start();
         ClientSession session = client.connect("localhost", port).await().getSession();
         session.authPassword("smx", "smx").await();
@@ -522,7 +520,6 @@ public class ClientTest extends BaseTest {
     @Test
     public void testCloseImmediateBeforeChannelOpened() throws Exception {
         channelLatch = new CountDownLatch(1);
-        SshClient client = SshClient.setUpDefaultClient();
         client.start();
         ClientSession session = client.connect("localhost", port).await().getSession();
         session.authPassword("smx", "smx").await();
@@ -541,7 +538,6 @@ public class ClientTest extends BaseTest {
 
     @Test
     public void testPublicKeyAuth() throws Exception {
-        SshClient client = SshClient.setUpDefaultClient();
         client.start();
         ClientSession session = client.connect("localhost", port).await().getSession();
 
@@ -552,7 +548,6 @@ public class ClientTest extends BaseTest {
 
     @Test
     public void testPublicKeyAuthNew() throws Exception {
-        SshClient client = SshClient.setUpDefaultClient();
         client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthPublicKey.Factory()));
         client.start();
         ClientSession session = client.connect("smx", "localhost", port).await().getSession();
@@ -568,7 +563,6 @@ public class ClientTest extends BaseTest {
                 return key.equals(pair.getPublic());
             }
         });
-        SshClient client = SshClient.setUpDefaultClient();
         client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthPublicKey.Factory()));
         client.start();
         ClientSession session = client.connect("smx", "localhost", port).await().getSession();
@@ -579,7 +573,6 @@ public class ClientTest extends BaseTest {
 
     @Test
     public void testPasswordAuthNew() throws Exception {
-        SshClient client = SshClient.setUpDefaultClient();
         client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthPassword.Factory()));
         client.start();
         ClientSession session = client.connect("smx", "localhost", port).await().getSession();
@@ -589,7 +582,6 @@ public class ClientTest extends BaseTest {
 
     @Test
     public void testPasswordAuthNewWithFailureOnFirstIdentity() throws Exception {
-        SshClient client = SshClient.setUpDefaultClient();
         client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthPassword.Factory()));
         client.start();
         ClientSession session = client.connect("smx", "localhost", port).await().getSession();
@@ -600,7 +592,6 @@ public class ClientTest extends BaseTest {
 
     @Test
     public void testKeyboardInteractiveAuthNew() throws Exception {
-        SshClient client = SshClient.setUpDefaultClient();
         client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthKeyboardInteractive.Factory()));
         client.start();
         ClientSession session = client.connect("smx", "localhost", port).await().getSession();
@@ -610,7 +601,6 @@ public class ClientTest extends BaseTest {
 
     @Test
     public void testKeyboardInteractiveAuthNewWithFailureOnFirstIdentity() throws Exception {
-        SshClient client = SshClient.setUpDefaultClient();
         client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthKeyboardInteractive.Factory()));
         client.start();
         ClientSession session = client.connect("smx", "localhost", port).await().getSession();
@@ -645,7 +635,6 @@ public class ClientTest extends BaseTest {
     @Test
     public void testKeyboardInteractiveInSessionUserInteractive() throws Exception {
         final AtomicInteger count = new AtomicInteger();
-        SshClient client = SshClient.setUpDefaultClient();
         client.getProperties().put(ClientFactoryManager.PASSWORD_PROMPTS, "3");
         client.setUserAuthFactories(Arrays
                         .<NamedFactory<UserAuth>> asList(new UserAuthKeyboardInteractive.Factory()));
@@ -671,7 +660,6 @@ public class ClientTest extends BaseTest {
     @Test
     public void testKeyboardInteractiveInSessionUserInteractiveFailure() throws Exception {
         final AtomicInteger count = new AtomicInteger();
-        SshClient client = SshClient.setUpDefaultClient();
         client.getProperties().put(ClientFactoryManager.PASSWORD_PROMPTS, "3");
         client.setUserAuthFactories(Arrays
                         .<NamedFactory<UserAuth>> asList(new UserAuthKeyboardInteractive.Factory()));
@@ -698,7 +686,6 @@ public class ClientTest extends BaseTest {
         TestEchoShellFactory.TestEchoShell.latch = new CountDownLatch(1);
         try
         {
-            SshClient client = SshClient.setUpDefaultClient();
             client.start();
             ClientSession session = client.connect("localhost", port).await().getSession();
             session.authPassword("smx", "smx");
@@ -729,7 +716,6 @@ public class ClientTest extends BaseTest {
 
     @Test
     public void testWaitAuth() throws Exception {
-        SshClient client = SshClient.setUpDefaultClient();
         final AtomicBoolean ok = new AtomicBoolean();
         client.setServerKeyVerifier(
                 new ServerKeyVerifier() {

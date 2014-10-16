@@ -19,24 +19,21 @@
 package org.apache.sshd.common.channel;
 
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.Channel;
-import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultSshFuture;
+import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoOutputStream;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.io.WritePendingException;
-import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.CloseableUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-public class ChannelAsyncOutputStream extends CloseableUtils.AbstractInnerCloseable implements IoOutputStream {
+public class ChannelAsyncOutputStream extends CloseableUtils.AbstractCloseable implements IoOutputStream {
 
     private final Channel channel;
     private final byte cmd;
@@ -65,10 +62,8 @@ public class ChannelAsyncOutputStream extends CloseableUtils.AbstractInnerClosea
     }
 
     @Override
-    protected Closeable getInnerCloseable() {
-        return builder()
-                .when(pendingWrite.get())
-                .build();
+    protected CloseFuture doCloseGracefully() {
+        return builder().when(pendingWrite.get()).build().close(false);
     }
 
     protected synchronized void doWriteIfPossible(boolean resume) {

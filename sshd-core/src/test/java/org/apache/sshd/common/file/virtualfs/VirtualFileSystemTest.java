@@ -22,7 +22,6 @@ import java.io.File;
 import java.io.IOException;
 
 import org.apache.sshd.SshServer;
-import org.apache.sshd.common.AbstractFactoryManager;
 import org.apache.sshd.common.file.FileSystemView;
 import org.apache.sshd.common.file.SshFile;
 import org.apache.sshd.common.file.nativefs.NativeFileSystemFactory;
@@ -105,7 +104,4 @@ public class VirtualFileSystemTest extends BaseTest {
         }
     }
 
-    static class TestFactoryManager extends AbstractFactoryManager {
-
-    }
 }

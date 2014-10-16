@@ -141,7 +141,7 @@ public class MacTest extends BaseTest {
     @After
     public void tearDown() throws Exception {
         if (sshd != null) {
-            sshd.stop();
+            sshd.stop(true);
         }
     }
 
@@ -154,22 +154,25 @@ public class MacTest extends BaseTest {
         JSch.setConfig("mac.c2s", "hmac-md5,hmac-sha1,hmac-sha2-256,hmac-sha1-96,hmac-md5-96,hmac-sha2-512");
         JSch.setConfig("hmac-sha2-512",  "com.jcraft.jsch.jce.HMACSHA512");
         com.jcraft.jsch.Session s = sch.getSession("smx", "localhost", port);
-        s.setUserInfo(new SimpleUserInfo("smx"));
-        s.connect();
-        com.jcraft.jsch.Channel c = s.openChannel("shell");
-        c.connect();
-        OutputStream os = c.getOutputStream();
-        InputStream is = c.getInputStream();
-        for (int i = 0; i < 10; i++) {
-            os.write("this is my command\n".getBytes());
-            os.flush();
-            byte[] data = new byte[512];
-            int len = is.read(data);
-            String str = new String(data, 0, len);
-            assertEquals("this is my command\n", str);
+        try {
+            s.setUserInfo(new SimpleUserInfo("smx"));
+            s.connect();
+            com.jcraft.jsch.Channel c = s.openChannel("shell");
+            c.connect();
+            OutputStream os = c.getOutputStream();
+            InputStream is = c.getInputStream();
+            for (int i = 0; i < 10; i++) {
+                os.write("this is my command\n".getBytes());
+                os.flush();
+                byte[] data = new byte[512];
+                int len = is.read(data);
+                String str = new String(data, 0, len);
+                assertEquals("this is my command\n", str);
+            }
+            c.disconnect();
+        } finally {
+            s.disconnect();
         }
-        c.disconnect();
-        s.disconnect();
     }
 
     static boolean checkCipher(String cipher){

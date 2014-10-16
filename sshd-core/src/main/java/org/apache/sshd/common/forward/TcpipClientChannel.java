@@ -104,7 +104,7 @@ public class TcpipClientChannel extends AbstractClientChannel {
 
     @Override
     protected Closeable getInnerCloseable() {
-        return CloseableUtils.sequential(serverSession, super.getInnerCloseable());
+        return builder().sequential(serverSession, super.getInnerCloseable()).build();
     }
 
     protected synchronized void doWriteData(byte[] data, int off, int len) throws IOException {

@@ -130,7 +130,7 @@ public class CipherTest extends BaseTest {
     @After
     public void tearDown() throws Exception {
         if (sshd != null) {
-            sshd.stop();
+            sshd.stop(true);
         }
     }
 

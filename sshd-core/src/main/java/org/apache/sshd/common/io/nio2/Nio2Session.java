@@ -33,7 +33,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultSshFuture;
-import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoService;
 import org.apache.sshd.common.io.IoSession;
@@ -105,7 +104,7 @@ public class Nio2Session extends CloseableUtils.AbstractCloseable implements IoS
         log.debug("Writing {} bytes", buffer.available());
         ByteBuffer buf = ByteBuffer.wrap(buffer.array(), buffer.rpos(), buffer.available());
         final DefaultIoWriteFuture future = new DefaultIoWriteFuture(null, buf);
-        if (state.get() != OPENED) {
+        if (isClosing()) {
             Throwable exc = new ClosedChannelException();
             future.setException(exc);
             exceptionCaught(exc);
@@ -134,9 +133,7 @@ public class Nio2Session extends CloseableUtils.AbstractCloseable implements IoS
 
     @Override
     protected CloseFuture doCloseGracefully() {
-        synchronized (writes) {
-            return CloseableUtils.parallel(writes.toArray(new SshFuture[writes.size()]));
-        }
+        return builder().when(writes).build().close(false);
     }
 
     @Override
@@ -231,10 +228,7 @@ public class Nio2Session extends CloseableUtils.AbstractCloseable implements IoS
                             finishWrite();
                         }
                         private void finishWrite() {
-                            synchronized (writes) {
-                                writes.remove(future);
-                                writes.notifyAll();
-                            }
+                            writes.remove(future);
                             currentWrite.compareAndSet(future, null);
                             startWriting();
                         }

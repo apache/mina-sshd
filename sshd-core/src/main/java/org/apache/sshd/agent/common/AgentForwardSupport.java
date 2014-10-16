@@ -21,21 +21,14 @@ package org.apache.sshd.agent.common;
 import java.io.IOException;
 
 import org.apache.sshd.agent.SshAgentServer;
-import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.util.CloseableUtils;
-import org.apache.sshd.server.session.ServerSession;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * The server side fake agent, acting as an agent, but actually forwarding the requests to the auth channel on the client side.
  */
 public class AgentForwardSupport extends CloseableUtils.AbstractCloseable {
-
-    private static final Logger log = LoggerFactory.getLogger(AgentForwardSupport.class);
 
     private final ConnectionService service;
     private String agentId;
@@ -71,6 +64,10 @@ public class AgentForwardSupport extends CloseableUtils.AbstractCloseable {
     protected void doCloseImmediately() {
         close();
         super.doCloseImmediately();
+    }
+
+    public String toString() {
+        return getClass().getSimpleName() + "[" + service.getSession() + "]";
     }
 
 }

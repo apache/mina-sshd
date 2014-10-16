@@ -21,24 +21,18 @@ package org.apache.sshd.common.channel;
 import java.io.IOException;
 
 import org.apache.sshd.common.Channel;
-import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.CloseFuture;
-import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.future.DefaultSshFuture;
-import org.apache.sshd.common.future.SshFuture;
-import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoInputStream;
 import org.apache.sshd.common.io.IoReadFuture;
 import org.apache.sshd.common.io.ReadPendingException;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.Readable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-public class ChannelAsyncInputStream extends CloseableUtils.AbstractInnerCloseable implements IoInputStream {
+public class ChannelAsyncInputStream extends CloseableUtils.AbstractCloseable implements IoInputStream {
 
     private final Channel channel;
     private final Buffer buffer = new Buffer();
@@ -72,16 +66,20 @@ public class ChannelAsyncInputStream extends CloseableUtils.AbstractInnerCloseab
     }
 
     @Override
-    protected Closeable getInnerCloseable() {
+    protected void preClose() {
         synchronized (buffer) {
             if (buffer.available() == 0) {
                 if (pending != null) {
                     pending.setValue(new SshException("Closed"));
                 }
             }
-            return builder()
-                    .when(pending)
-                    .build();
+        }
+    }
+
+    @Override
+    protected CloseFuture doCloseGracefully() {
+        synchronized (buffer) {
+            return builder().when(pending).build().close(false);
         }
     }
 
