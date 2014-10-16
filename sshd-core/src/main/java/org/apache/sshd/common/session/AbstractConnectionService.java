@@ -113,12 +113,14 @@ public abstract class AbstractConnectionService extends CloseableUtils.AbstractI
      * @throws IOException
      */
     public int registerChannel(Channel channel) throws IOException {
-        if (isClosing()) {
-            throw new IllegalStateException("Session is being closed");
-        }
         int channelId = getNextChannelId();
         channel.init(this, session, channelId);
-        channels.put(channelId, channel);
+        synchronized (lock) {
+            if (isClosing()) {
+                throw new IllegalStateException("Session is being closed");
+            }
+            channels.put(channelId, channel);
+        }
         return channelId;
     }
 
