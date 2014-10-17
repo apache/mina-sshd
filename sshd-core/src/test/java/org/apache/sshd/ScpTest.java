@@ -103,8 +103,9 @@ public class ScpTest extends BaseTest {
     public void testUploadAbsoluteDriveLetter() throws Exception {
         SshClient client = SshClient.setUpDefaultClient();
         client.start();
-        ClientSession session = client.connect("localhost", port).await().getSession();
-        session.authPassword("test", "test").await();
+        ClientSession session = client.connect("test", "localhost", port).await().getSession();
+        session.addPasswordIdentity("test");
+        session.auth().verify();
 
         ScpClient scp = session.createScpClient();
 
@@ -129,8 +130,9 @@ public class ScpTest extends BaseTest {
     public void testScpNativeOnSingleFile() throws Exception {
         SshClient client = SshClient.setUpDefaultClient();
         client.start();
-        ClientSession session = client.connect("localhost", port).await().getSession();
-        session.authPassword("test", "test").await();
+        ClientSession session = client.connect("test", "localhost", port).await().getSession();
+        session.addPasswordIdentity("test");
+        session.auth().verify();
 
         ScpClient scp = session.createScpClient();
 
@@ -165,8 +167,9 @@ public class ScpTest extends BaseTest {
     public void testScpNativeOnMultipleFiles() throws Exception {
         SshClient client = SshClient.setUpDefaultClient();
         client.start();
-        ClientSession session = client.connect("localhost", port).await().getSession();
-        session.authPassword("test", "test").await();
+        ClientSession session = client.connect("test", "localhost", port).await().getSession();
+        session.addPasswordIdentity("test");
+        session.auth().verify();
 
         ScpClient scp = session.createScpClient();
 
@@ -225,8 +228,9 @@ public class ScpTest extends BaseTest {
     public void testScpNativeOnRecursiveDirs() throws Exception {
         SshClient client = SshClient.setUpDefaultClient();
         client.start();
-        ClientSession session = client.connect("localhost", port).await().getSession();
-        session.authPassword("test", "test").await();
+        ClientSession session = client.connect("test", "localhost", port).await().getSession();
+        session.addPasswordIdentity("test");
+        session.auth().verify();
 
         ScpClient scp = session.createScpClient();
 
@@ -259,8 +263,9 @@ public class ScpTest extends BaseTest {
     public void testScpNativeOnDirWithPattern() throws Exception {
         SshClient client = SshClient.setUpDefaultClient();
         client.start();
-        ClientSession session = client.connect("localhost", port).await().getSession();
-        session.authPassword("test", "test").await();
+        ClientSession session = client.connect("test", "localhost", port).await().getSession();
+        session.addPasswordIdentity("test");
+        session.auth().verify();
 
         ScpClient scp = session.createScpClient();
 
@@ -293,8 +298,9 @@ public class ScpTest extends BaseTest {
     public void testScpNativeOnMixedDirAndFiles() throws Exception {
         SshClient client = SshClient.setUpDefaultClient();
         client.start();
-        ClientSession session = client.connect("localhost", port).await().getSession();
-        session.authPassword("test", "test").await();
+        ClientSession session = client.connect("test", "localhost", port).await().getSession();
+        session.addPasswordIdentity("test");
+        session.auth().verify();
 
         ScpClient scp = session.createScpClient();
 
@@ -338,8 +344,9 @@ public class ScpTest extends BaseTest {
 
         SshClient client = SshClient.setUpDefaultClient();
         client.start();
-        ClientSession session = client.connect("localhost", port).await().getSession();
-        session.authPassword("test", "test").await();
+        ClientSession session = client.connect("test", "localhost", port).await().getSession();
+        session.addPasswordIdentity("test");
+        session.auth().verify();
 
         ScpClient scp = session.createScpClient();
 

@@ -109,8 +109,9 @@ public class KeyReExchangeTest extends BaseTest {
 
         SshClient client = SshClient.setUpDefaultClient();
         client.start();
-        ClientSession session = client.connect("localhost", port).await().getSession();
-        session.authPassword("smx", "smx").await();
+        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
+        session.addPasswordIdentity("smx");
+        session.auth().verify();
         ChannelShell channel = session.createShellChannel();
 
         ByteArrayOutputStream sent = new ByteArrayOutputStream();
@@ -154,8 +155,9 @@ public class KeyReExchangeTest extends BaseTest {
 
         SshClient client = SshClient.setUpDefaultClient();
         client.start();
-        ClientSession session = client.connect("localhost", port).await().getSession();
-        session.authPassword("smx", "smx").await();
+        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
+        session.addPasswordIdentity("smx");
+        session.auth().verify();
         ChannelShell channel = session.createShellChannel();
 
         ByteArrayOutputStream sent = new ByteArrayOutputStream();

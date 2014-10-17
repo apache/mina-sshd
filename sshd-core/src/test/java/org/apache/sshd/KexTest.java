@@ -117,8 +117,9 @@ public class KexTest extends BaseTest {
         try {
             client.setKeyExchangeFactories(Collections.singletonList(kex));
             client.start();
-            ClientSession session = client.connect("localhost", port).await().getSession();
-            assertTrue(session.authPassword("smx", "smx").await().isSuccess());
+            ClientSession session = client.connect("smx", "localhost", port).await().getSession();
+            session.addPasswordIdentity("smx");
+            session.auth().verify();
             ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
 
             PipedOutputStream pipedIn = new PipedOutputStream();

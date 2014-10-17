@@ -130,8 +130,8 @@ public class AgentTest extends BaseTest {
         SshClient client1 = SshClient.setUpDefaultClient();
         client1.setAgentFactory(localAgentFactory);
         client1.start();
-        ClientSession session1 = client1.connect("localhost", port1).await().getSession();
-        assertTrue(session1.authAgent("smx").await().isSuccess());
+        ClientSession session1 = client1.connect("smx", "localhost", port1).await().getSession();
+        session1.auth().verify();
         ChannelShell channel1 = session1.createShellChannel();
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         ByteArrayOutputStream err = new ByteArrayOutputStream();
@@ -152,8 +152,8 @@ public class AgentTest extends BaseTest {
         client2.setAgentFactory(agentFactory);
         client2.getProperties().putAll(shellFactory.shell.getEnvironment().getEnv());
         client2.start();
-        ClientSession session2 = client2.connect("localhost", port2).await().getSession();
-        assertTrue(session2.authAgent("smx").await().isSuccess());
+        ClientSession session2 = client2.connect("smx", "localhost", port2).await().getSession();
+        session2.auth().verify();
         ChannelShell channel2 = session2.createShellChannel();
         channel2.setIn(shellFactory.shell.getIn());
         channel2.setOut(shellFactory.shell.getOut());

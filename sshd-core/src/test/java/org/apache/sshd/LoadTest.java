@@ -120,8 +120,9 @@ public class LoadTest extends BaseTest {
             client.setCipherFactories(Arrays.<NamedFactory<Cipher>>asList(
                     new BlowfishCBC.Factory()));
             client.start();
-            ClientSession session = client.connect("localhost", port).await().getSession();
-            session.authPassword("sshd", "sshd").await().isSuccess();
+            ClientSession session = client.connect("sshd", "localhost", port).await().getSession();
+            session.addPasswordIdentity("sshd");
+            session.auth().verify();
 
             ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
             ByteArrayOutputStream out = new ByteArrayOutputStream();

@@ -75,8 +75,9 @@ public class KeepAliveTest extends BaseTest {
     public void testClient() throws Exception {
         SshClient client = SshClient.setUpDefaultClient();
         client.start();
-        ClientSession session = client.connect("localhost", port).await().getSession();
-        session.authPassword("smx", "smx").await().isSuccess();
+        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
+        session.addPasswordIdentity("smx");
+        session.auth().verify();
         ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
 
         int state = channel.waitFor(ClientChannel.CLOSED, wait);
@@ -107,8 +108,9 @@ public class KeepAliveTest extends BaseTest {
         SshClient client = SshClient.setUpDefaultClient();
         client.getProperties().put(ClientFactoryManager.HEARTBEAT_INTERVAL, Integer.toString(heartbeat));
         client.start();
-        ClientSession session = client.connect("localhost", port).await().getSession();
-        session.authPassword("smx", "smx").await().isSuccess();
+        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
+        session.addPasswordIdentity("smx");
+        session.auth().verify();
         ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
 
         int state = channel.waitFor(ClientChannel.CLOSED, wait);
@@ -141,8 +143,9 @@ public class KeepAliveTest extends BaseTest {
 
         SshClient client = SshClient.setUpDefaultClient();
         client.start();
-        ClientSession session = client.connect("localhost", port).await().getSession();
-        session.authPassword("smx", "smx").await().isSuccess();
+        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
+        session.addPasswordIdentity("smx");
+        session.auth().verify();
         ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         ByteArrayOutputStream err = new ByteArrayOutputStream();

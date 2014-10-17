@@ -264,8 +264,9 @@ public class ClientTest extends BaseTest {
     @Test
     public void testCommandDeadlock() throws Exception {
         client.start();
-        ClientSession session = client.connect("localhost", port).await().getSession();
-        session.authPassword("smx", "smx").await().isSuccess();
+        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
+        session.addPasswordIdentity("smx");
+        session.auth().verify();
         ChannelExec channel = session.createExecChannel("test");
         channel.setOut(new NoCloseOutputStream(System.out));
         channel.setErr(new NoCloseOutputStream(System.err));
@@ -287,8 +288,9 @@ public class ClientTest extends BaseTest {
     @Test
     public void testClient() throws Exception {
         client.start();
-        ClientSession session = client.connect("localhost", port).await().getSession();
-        session.authPassword("smx", "smx").await().isSuccess();
+        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
+        session.addPasswordIdentity("smx");
+        session.auth().verify();
         ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
 
         ByteArrayOutputStream sent = new ByteArrayOutputStream();
@@ -325,8 +327,9 @@ public class ClientTest extends BaseTest {
     @Test
     public void testClientInverted() throws Exception {
         client.start();
-        ClientSession session = client.connect("localhost", port).await().getSession();
-        session.authPassword("smx", "smx").await().isSuccess();
+        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
+        session.addPasswordIdentity("smx");
+        session.auth().verify();
         ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
 
         ByteArrayOutputStream sent = new ByteArrayOutputStream();
@@ -383,8 +386,9 @@ public class ClientTest extends BaseTest {
     @Test
     public void testClientClosingStream() throws Exception {
         client.start();
-        ClientSession session = client.connect("localhost", port).await().getSession();
-        session.authPassword("smx", "smx").await().isSuccess();
+        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
+        session.addPasswordIdentity("smx");
+        session.auth().verify();
         ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
 
 
@@ -426,8 +430,9 @@ public class ClientTest extends BaseTest {
 //        sshd.getProperties().put(SshServer.WINDOW_SIZE, Integer.toString(0x20000));
 //        sshd.getProperties().put(SshServer.MAX_PACKET_SIZE, Integer.toString(0x1000));
         client.start();
-        ClientSession session = client.connect("localhost", port).await().getSession();
-        session.authPassword("smx", "smx");
+        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
+        session.addPasswordIdentity("smx");
+        session.auth().verify();
         ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
         ByteArrayOutputStream sent = new ByteArrayOutputStream();
         PipedOutputStream pipedIn = new PipedOutputStream();
@@ -472,8 +477,9 @@ public class ClientTest extends BaseTest {
     @Test(expected = SshException.class)
     public void testOpenChannelOnClosedSession() throws Exception {
         client.start();
-        ClientSession session = client.connect("localhost", port).await().getSession();
-        session.authPassword("smx", "smx").await().isSuccess();
+        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
+        session.addPasswordIdentity("smx");
+        session.auth().verify();
         ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
         session.close(false);
 
@@ -490,8 +496,9 @@ public class ClientTest extends BaseTest {
     public void testCloseBeforeAuthSucceed() throws Exception {
         authLatch = new CountDownLatch(1);
         client.start();
-        ClientSession session = client.connect("localhost", port).await().getSession();
-        AuthFuture authFuture = session.authPassword("smx", "smx");
+        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
+        session.addPasswordIdentity("smx");
+        AuthFuture authFuture = session.auth();
         CloseFuture closeFuture = session.close(false);
         authLatch.countDown();
         authFuture.await();
@@ -503,8 +510,9 @@ public class ClientTest extends BaseTest {
     @Test
     public void testCloseCleanBeforeChannelOpened() throws Exception {
         client.start();
-        ClientSession session = client.connect("localhost", port).await().getSession();
-        session.authPassword("smx", "smx").await();
+        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
+        session.addPasswordIdentity("smx");
+        session.auth().verify();
         ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
         channel.setIn(new ByteArrayInputStream(new byte[0]));
         channel.setOut(new ByteArrayOutputStream());
@@ -521,8 +529,9 @@ public class ClientTest extends BaseTest {
     public void testCloseImmediateBeforeChannelOpened() throws Exception {
         channelLatch = new CountDownLatch(1);
         client.start();
-        ClientSession session = client.connect("localhost", port).await().getSession();
-        session.authPassword("smx", "smx").await();
+        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
+        session.addPasswordIdentity("smx");
+        session.auth().verify();
         ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
         channel.setIn(new ByteArrayInputStream(new byte[0]));
         channel.setOut(new ByteArrayOutputStream());
@@ -539,11 +548,11 @@ public class ClientTest extends BaseTest {
     @Test
     public void testPublicKeyAuth() throws Exception {
         client.start();
-        ClientSession session = client.connect("localhost", port).await().getSession();
+        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
 
         KeyPair pair = Utils.createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
-
-        assertTrue(session.authPublicKey("smx", pair).await().isSuccess());
+        session.addPublicKeyIdentity(pair);
+        session.auth().verify();
     }
 
     @Test
@@ -687,8 +696,9 @@ public class ClientTest extends BaseTest {
         try
         {
             client.start();
-            ClientSession session = client.connect("localhost", port).await().getSession();
-            session.authPassword("smx", "smx");
+            ClientSession session = client.connect("smx", "localhost", port).await().getSession();
+            session.addPasswordIdentity("smx");
+            session.auth().verify();
             ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
             PipedOutputStream pipedIn = new PipedOutputStream();
             channel.setIn(new PipedInputStream(pipedIn));
@@ -731,7 +741,7 @@ public class ClientTest extends BaseTest {
                 }
         );
         client.start();
-        ClientSession session = client.connect("localhost", port).await().getSession();
+        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
         session.waitFor(ClientSession.WAIT_AUTH, 10000);
         assertTrue(ok.get());
         client.stop();

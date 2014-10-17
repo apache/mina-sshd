@@ -72,8 +72,9 @@ public class WelcomeBannerTest extends BaseTest {
             }
         });
         client.start();
-        ClientSession session = client.connect("localhost", port).await().getSession();
-        session.authPassword("smx", "smx").await().isSuccess();
+        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
+        session.addPasswordIdentity("smx");
+        session.auth().verify();
         assertEquals(WELCOME, welcome.get());
         session.close(true);
     }

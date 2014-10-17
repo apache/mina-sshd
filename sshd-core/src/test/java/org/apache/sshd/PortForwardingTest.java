@@ -422,13 +422,10 @@ public class PortForwardingTest extends BaseTest {
         client.getProperties().put(SshServer.MAX_PACKET_SIZE, "256");
         client.setTcpipForwardingFilter(new BogusForwardingFilter());
         client.start();
-        ConnectFuture sessionFuture = client.connect("localhost", sshPort);
-        sessionFuture.await();
-        ClientSession session = sessionFuture.getSession();
 
-        AuthFuture authPassword = session.authPassword("sshd", "sshd");
-        authPassword.await();
-
+        ClientSession session = client.connect("sshd", "localhost", sshPort).await().getSession();
+        session.addPasswordIdentity("sshd");
+        session.auth().verify();
         return session;
     }
 

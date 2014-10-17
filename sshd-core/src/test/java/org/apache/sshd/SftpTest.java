@@ -96,8 +96,9 @@ public class SftpTest extends BaseTest {
     public void testClient() throws Exception {
         SshClient client = SshClient.setUpDefaultClient();
         client.start();
-        ClientSession session = client.connect("localhost", port).await().getSession();
-        session.authPassword("x", "x").await();
+        ClientSession session = client.connect("x", "localhost", port).await().getSession();
+        session.addPasswordIdentity("x");
+        session.auth().verify();
 
         Utils.deleteRecursive(new File("target/sftp"));
         new File("target/sftp").mkdirs();

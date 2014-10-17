@@ -136,7 +136,7 @@ public class ServerTest extends BaseTest {
 
         client = SshClient.setUpDefaultClient();
         client.start();
-        ClientSession s = client.connect("localhost", port).await().getSession();
+        ClientSession s = client.connect("test", "localhost", port).await().getSession();
         int res = s.waitFor(ClientSession.CLOSED, 10000);
         assertEquals("Session should be closed", ClientSession.CLOSED | ClientSession.WAIT_AUTH, res);
     }
@@ -162,8 +162,9 @@ public class ServerTest extends BaseTest {
 
         client = SshClient.setUpDefaultClient();
         client.start();
-        ClientSession s = client.connect("localhost", port).await().getSession();
-        s.authPassword("test", "test").await();
+        ClientSession s = client.connect("test", "localhost", port).await().getSession();
+        s.addPasswordIdentity("test");
+        s.auth().verify();
         ChannelShell shell = s.createShellChannel();
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         ByteArrayOutputStream err = new ByteArrayOutputStream();
@@ -194,7 +195,7 @@ public class ServerTest extends BaseTest {
             }
         });
         client.start();
-        ClientSession s = client.connect("localhost", port).await().getSession();
+        ClientSession s = client.connect("test", "localhost", port).await().getSession();
         s.close(false);
     }
 
