@@ -27,7 +27,6 @@
         <version>0.13.0-SNAPSHOT</version>
     </parent>
 
-    <groupId>org.apache.sshd</groupId>
     <artifactId>sshd-sftp</artifactId>
     <version>0.13.0-SNAPSHOT</version>
     <name>Apache Mina SSHD :: SFTP</name>
@@ -78,55 +77,6 @@
                 <filtering>true</filtering>
             </resource>
         </resources>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-bundle-plugin</artifactId>
-                <configuration>
-                    <instructions>
-                        <Bundle-SymbolicName>org.apache.sshd.core</Bundle-SymbolicName>
-                        <Import-Package>
-                            org.apache.mina*;version="[2,3)",
-                            com.jcraft.jzlib*;resolution:=optional,
-                            org.bouncycastle*;resolution:=optional,
-                            org.apache.tomcat.jni*;resolution:=optional,
-                            *
-                        </Import-Package>
-                        <Export-Package>
-                            org.apache.sshd*;version=${project.version};-noimport:=true
-                        </Export-Package>
-                        <_versionpolicy>[$(version;==;$(@)),$(version;+;$(@)))</_versionpolicy>
-                    </instructions>
-                    <unpackBundle>true</unpackBundle>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>bundle-manifest</id>
-                        <phase>process-classes</phase>
-                        <goals>
-                            <goal>manifest</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <version>2.1</version>
-                <configuration>
-                    <archive>
-                        <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
-                    </archive>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <configuration>
-                    <redirectTestOutputToFile>true</redirectTestOutputToFile>
-                </configuration>
-            </plugin>
-        </plugins>
     </build>
 
 </project>

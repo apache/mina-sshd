@@ -27,7 +27,6 @@
         <version>0.13.0-SNAPSHOT</version>
     </parent>
 
-    <groupId>org.apache.sshd</groupId>
     <artifactId>sshd-pam</artifactId>
     <version>0.13.0-SNAPSHOT</version>
     <name>Apache Mina SSHD :: PAM</name>
@@ -50,31 +49,4 @@
         </dependency>
     </dependencies>
 
-    <build>
-        <plugins>
-            <!--
-            <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-bundle-plugin</artifactId>
-                <version>1.4.3</version>
-                <extensions>true</extensions>
-                <configuration>
-                    <instructions>
-                        <Bundle-SymbolicName>org.apache.sshd.pam</Bundle-SymbolicName>
-                        <Import-Package>
-                            com.jcraft.jzlib*;resolution:=optional,
-                            net.sf.jpam*;resolution:=optional,
-                            org.bouncycastle*;resolution:=optional,
-                            *
-                        </Import-Package>
-                        <Export-Package>
-                            org.apache.sshd*;version=${version};-noimport:=true
-                        </Export-Package>
-                    </instructions>
-                    <unpackBundle>true</unpackBundle>
-                </configuration>
-            </plugin>
-            -->
-        </plugins>
-    </build>
 </project>
