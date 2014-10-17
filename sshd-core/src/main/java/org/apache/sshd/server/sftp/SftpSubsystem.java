@@ -228,17 +228,22 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
     }
 
     protected static class FileHandle extends Handle {
+        int flags;
         OutputStream output;
         long outputPos;
         InputStream input;
         long inputPos;
         long length;
 
-        public FileHandle(SshFile sshFile) {
+        public FileHandle(SshFile sshFile, int flags) {
             super(sshFile);
+            this.flags = flags;
         }
 
         public int read(byte[] data, long offset) throws IOException {
+            if ((flags & SSH_FXF_READ) == 0) {
+                throw new IOException("File has not been opened for reading");
+            }
             if (input != null && offset >= length) {
                 return -1;
             }
@@ -260,6 +265,12 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         }
 
         public void write(byte[] data, long offset) throws IOException {
+            if ((flags & SSH_FXF_WRITE) == 0) {
+                throw new IOException("File has not been opened for writing");
+            }
+            if ((flags & SSH_FXF_APPEND) != 0) {
+                offset = (output != null) ? outputPos : file.getSize();
+            }
             if (output != null && offset != outputPos) {
                 IoUtils.closeQuietly(output);
                 output = null;
@@ -406,6 +417,14 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                 try {
                     SshFile file = resolveFile(path);
                     if (file.doesExist()) {
+                        if ((pflags & SSH_FXP_READ) != 0 && !file.isReadable()) {
+                            sendStatus(id, SSH_FX_PERMISSION_DENIED, "Can not read " + path);
+                            return;
+                        }
+                        if ((pflags & SSH_FXP_WRITE) != 0 && !file.isWritable()) {
+                            sendStatus(id, SSH_FX_PERMISSION_DENIED, "Can not write " + path);
+                            return;
+                        }
                         if (((pflags & SSH_FXF_CREAT) != 0) && ((pflags & SSH_FXF_EXCL) != 0)) {
                             sendStatus(id, SSH_FX_FAILURE, path);
                             return;
@@ -416,19 +435,27 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                                 sendStatus(id, SSH_FX_PERMISSION_DENIED, "Can not create " + path);
                                 return;
                             }
-                            file.create();
+                            if (!file.create()) {
+                                sendStatus(id, SSH_FX_NO_SUCH_FILE, "No such file " + path);
+                                return;
+                            }
+                        } else {
+                            sendStatus(id, SSH_FX_NO_SUCH_FILE, "No such file " + path);
+                            return;
                         }
                     }
-                    String acc = ((pflags & (SSH_FXF_READ | SSH_FXF_WRITE)) != 0 ? "r" : "") +
-                            ((pflags & SSH_FXF_WRITE) != 0 ? "w" : "");
                     if ((pflags & SSH_FXF_TRUNC) != 0) {
+                        if (!file.isWritable()) {
+                            sendStatus(id, SSH_FX_PERMISSION_DENIED, "Can not truncate " + path);
+                            return;
+                        }
                         file.truncate();
                     }
                     if ((pflags & SSH_FXF_CREAT) != 0) {
                         file.setAttributes(attrs);
                     }
                     String handle = UUID.randomUUID().toString();
-                    handles.put(handle, new FileHandle(file));
+                    handles.put(handle, new FileHandle(file, pflags));
                     sendHandle(id, handle);
                 } catch (IOException e) {
                     sendStatus(id, SSH_FX_FAILURE, e.getMessage() == null ? "" : e.getMessage());

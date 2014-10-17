@@ -700,7 +700,7 @@ public class DefaultSftpClient implements SftpClient {
     }
 
     public OutputStream write(final String path) throws IOException {
-        return write(path, EnumSet.of(OpenMode.Write));
+        return write(path, EnumSet.of(OpenMode.Write, OpenMode.Create, OpenMode.Truncate));
     }
 
     public OutputStream write(final String path, final EnumSet<OpenMode> mode) throws IOException {

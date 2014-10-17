@@ -21,6 +21,8 @@ package org.apache.sshd;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOError;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
@@ -52,6 +54,7 @@ import static junit.framework.Assert.assertNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class SftpTest extends BaseTest {
 
@@ -93,6 +96,80 @@ public class SftpTest extends BaseTest {
     }
 
     @Test
+    public void testOpen() throws Exception {
+        SshClient client = SshClient.setUpDefaultClient();
+        client.start();
+        ClientSession session = client.connect("x", "localhost", port).await().getSession();
+        session.addPasswordIdentity("x");
+        session.auth().verify();
+
+        String file = "target/sftp/client/test.txt";
+
+        new File(file).getParentFile().mkdirs();
+        new File(file).createNewFile();
+        new File(file).setWritable(false, false);
+        new File(file).setReadable(false, false);
+
+        SftpClient sftp = session.createSftpClient();
+        SftpClient.Handle h;
+
+        try {
+            sftp.open(file, EnumSet.of(SftpClient.OpenMode.Read));
+            fail("Should have failed");
+        } catch (IOException e) {
+            // ok
+        }
+
+        try {
+            sftp.open(file, EnumSet.of(SftpClient.OpenMode.Write));
+            fail("Should have failed");
+        } catch (IOException e) {
+            // ok
+        }
+
+        try {
+            sftp.open(file, EnumSet.of(SftpClient.OpenMode.Truncate));
+            fail("Should have failed");
+        } catch (IOException e) {
+            // ok
+        }
+
+        Assert.assertEquals(0, (sftp.stat(file).perms & (SftpClient.S_IWUSR | SftpClient.S_IRUSR)));
+
+        new File(file).setWritable(true, false);
+
+        h = sftp.open(file, EnumSet.of(SftpClient.OpenMode.Truncate, SftpClient.OpenMode.Write));
+        sftp.close(h);
+
+        h = sftp.open(file, EnumSet.of(SftpClient.OpenMode.Write));
+        byte[] d = "0123456789\n".getBytes();
+        sftp.write(h, 0, d, 0, d.length);
+        sftp.write(h, d.length, d, 0, d.length);
+        sftp.close(h);
+        h = sftp.open(file, EnumSet.of(SftpClient.OpenMode.Write));
+        sftp.write(h, d.length * 2, d, 0, d.length);
+        sftp.close(h);
+        h = sftp.open(file, EnumSet.of(SftpClient.OpenMode.Write));
+        sftp.write(h, 3, "-".getBytes(), 0, 1);
+        sftp.close(h);
+
+        try {
+            sftp.open(file, EnumSet.of(SftpClient.OpenMode.Read));
+            fail("Should have failed");
+        } catch (IOException e) {
+            // ok
+        }
+
+        new File(file).setReadable(true, false);
+
+        h = sftp.open(file, EnumSet.of(SftpClient.OpenMode.Read));
+        byte[] buf = new byte[3];
+        int l = sftp.read(h, 2l, buf, 0, 3);
+        assertEquals("2-4", new String(buf, 0, l));
+        sftp.close(h);
+    }
+
+    @Test
     public void testClient() throws Exception {
         SshClient client = SshClient.setUpDefaultClient();
         client.start();
@@ -109,7 +186,7 @@ public class SftpTest extends BaseTest {
 
         sftp.mkdir("target/sftp/client");
 
-        SftpClient.Handle h = sftp.open("target/sftp/client/test.txt", EnumSet.of(SftpClient.OpenMode.Write));
+        SftpClient.Handle h = sftp.open("target/sftp/client/test.txt", EnumSet.of(SftpClient.OpenMode.Write, SftpClient.OpenMode.Create));
         byte[] d = "0123456789\n".getBytes();
         sftp.write(h, 0, d, 0, d.length);
         sftp.write(h, d.length, d, 0, d.length);
@@ -208,7 +285,7 @@ public class SftpTest extends BaseTest {
         c.disconnect();
 
         assertTrue(target.exists());
-        assertEquals("01234a", readFile(unixPath));
+        assertEquals("01234a6789", readFile(unixPath));
 
         target.delete();
         assertFalse(target.exists());

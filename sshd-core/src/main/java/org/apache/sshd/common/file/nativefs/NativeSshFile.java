@@ -22,6 +22,7 @@ package org.apache.sshd.common.file.nativefs;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -318,13 +319,8 @@ public class NativeSshFile implements SshFile {
     /**
      * Truncate file to length 0.
      */
-    public void truncate() throws IOException{
-        RandomAccessFile tempFile = new RandomAccessFile(file, "rw");
-        try {
-            tempFile.setLength(0);
-        } finally {
-            tempFile.close();
-        }
+    public void truncate() throws IOException {
+        new FileWriter(file).close();
     }
 
     /**
@@ -412,9 +408,12 @@ public class NativeSshFile implements SshFile {
         }
 
         // move to the appropriate offset and create output stream
+        final boolean canRead = file.canRead();
+        if (!canRead) {
+            file.setReadable(true, true);
+        }
         final RandomAccessFile raf = new RandomAccessFile(file, "rw");
         try {
-            raf.setLength(offset);
             raf.seek(offset);
 
             // The IBM jre needs to have both the stream and the random access file
@@ -423,6 +422,9 @@ public class NativeSshFile implements SshFile {
                 public void close() throws IOException {
                     super.close();
                     raf.close();
+                    if (!canRead) {
+                        file.setReadable(false, true);
+                    }
                 }
             };
         } catch (IOException e) {
@@ -442,20 +444,12 @@ public class NativeSshFile implements SshFile {
         }
 
         // move to the appropriate offset and create input stream
-        final RandomAccessFile raf = new RandomAccessFile(file, "r");
+        final FileInputStream fis = new FileInputStream(file);
         try {
-            raf.seek(offset);
-
-            // The IBM jre needs to have both the stream and the random access file
-            // objects closed to actually close the file
-            return new FileInputStream(raf.getFD()) {
-                public void close() throws IOException {
-                    super.close();
-                    raf.close();
-                }
-            };
+            fis.getChannel().position(offset);
+            return fis;
         } catch (IOException e) {
-            raf.close();
+            fis.close();
             throw e;
         }
     }

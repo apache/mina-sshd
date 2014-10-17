@@ -22,11 +22,15 @@ package org.apache.sshd.common.file.nativefs;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.GroupPrincipal;
 import java.nio.file.attribute.PosixFilePermission;
@@ -210,6 +214,39 @@ public class NativeSshFileNio extends NativeSshFile {
             }
         }
         return set;
+    }
+
+    @Override
+    public OutputStream createOutputStream(long offset) throws IOException {
+        Path path = file.toPath();
+        final SeekableByteChannel sbc = Files.newByteChannel(path, StandardOpenOption.WRITE, StandardOpenOption.CREATE);
+        if (offset > 0) {
+            sbc.position(offset);
+        }
+        return new OutputStream() {
+            @Override
+            public void write(int b) throws IOException {
+                write(new byte[] { (byte) b }, 0, 1);
+            }
+
+            @Override
+            public void write(byte[] b, int off, int len) throws IOException {
+                if (b == null) {
+                    throw new NullPointerException();
+                } else if ((off < 0) || (off > b.length) || (len < 0) ||
+                        ((off + len) > b.length) || ((off + len) < 0)) {
+                    throw new IndexOutOfBoundsException();
+                } else if (len == 0) {
+                    return;
+                }
+                sbc.write(ByteBuffer.wrap(b, off, len));
+            }
+
+            @Override
+            public void close() throws IOException {
+                sbc.close();
+            }
+        };
     }
 
 }
