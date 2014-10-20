@@ -41,6 +41,7 @@ import org.apache.sshd.common.TcpipForwarderFactory;
 import org.apache.sshd.common.cipher.AES128CBC;
 import org.apache.sshd.common.cipher.AES128CTR;
 import org.apache.sshd.common.cipher.AES192CBC;
+import org.apache.sshd.common.cipher.AES192CTR;
 import org.apache.sshd.common.cipher.AES256CBC;
 import org.apache.sshd.common.cipher.AES256CTR;
 import org.apache.sshd.common.cipher.ARCFOUR128;
@@ -261,6 +262,7 @@ public class SshBuilder {
         protected static List<NamedFactory<Cipher>> setUpDefaultCiphers() {
             List<NamedFactory<Cipher>> avail = new LinkedList<NamedFactory<Cipher>>();
             avail.add(new AES128CTR.Factory());
+            avail.add(new AES192CTR.Factory());
             avail.add(new AES256CTR.Factory());
             avail.add(new ARCFOUR128.Factory());
             avail.add(new ARCFOUR256.Factory());
