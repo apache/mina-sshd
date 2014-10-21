@@ -42,7 +42,9 @@ public interface Closeable {
     CloseFuture close(boolean immediately);
 
     /**
-     * Returns <code>true<</code> if this object has been closed.
+     * Returns <code>true</code> if this object has been closed.
+     *
+     * @return <code>true</code> if closing
      */
     boolean isClosed();
 
@@ -51,6 +53,8 @@ public interface Closeable {
      * has been called.
      * Note that this method will return <code>true</code> even if
      * this {@link #isClosed()} returns <code>true</code>.
+     *
+     * @return <code>true</code> if closing
      */
     boolean isClosing();
 

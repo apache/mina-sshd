@@ -68,14 +68,14 @@ public interface TcpipForwarder extends Closeable {
      * Called when the other side requested a remote port forward.
      * @param local
      * @return the list of bound local addresses
-     * @throws Exception
+     * @throws IOException
      */
     SshdSocketAddress localPortForwardingRequested(SshdSocketAddress local) throws IOException;
 
     /**
      * Called when the other side cancelled a remote port forward.
      * @param local
-     * @throws Exception
+     * @throws IOException
      */
     void localPortForwardingCancelled(SshdSocketAddress local) throws IOException;
 

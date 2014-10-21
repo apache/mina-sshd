@@ -40,11 +40,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * (from org.apache.sshd.common.keyprovider.FileKeyPairProvider)
- * This host key provider loads private keys from the specified resources.
- * <p/>
- * Note that this class has a direct dependency on BouncyCastle and won't work
- * unless it has been correctly registered as a security provider.
+ * <p>This host key provider loads private keys from the specified resources.</p>
+ *
+ * <p>Note that this class has a direct dependency on BouncyCastle and won't work
+ * unless it has been correctly registered as a security provider.</p>
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */

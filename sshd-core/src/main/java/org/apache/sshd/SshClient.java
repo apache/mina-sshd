@@ -93,20 +93,10 @@ import org.bouncycastle.openssl.PasswordFinder;
  *    SshClient client = SshClient.setUpDefaultClient();
  *    client.start();
  *    try {
- *        ClientSession session = client.connect(host, port).await().getSession();
+ *        ClientSession session = client.connect(login, host, port).await().getSession();
+ *        session.addPasswordIdentity(password);
+ *        session.auth().verify();
  *
- *        int ret = ClientSession.WAIT_AUTH;
- *        while ((ret & ClientSession.WAIT_AUTH) != 0) {
- *            System.out.print("Password:");
- *            BufferedReader r = new BufferedReader(new InputStreamReader(System.in));
- *            String password = r.readLine();
- *            session.authPassword(login, password);
- *            ret = session.waitFor(ClientSession.WAIT_AUTH | ClientSession.CLOSED | ClientSession.AUTHED, 0);
- *        }
- *        if ((ret & ClientSession.CLOSED) != 0) {
- *            System.err.println("error");
- *            System.exit(-1);
- *        }
  *        ClientChannel channel = session.createChannel("shell");
  *        channel.setIn(new NoCloseInputStream(System.in));
  *        channel.setOut(new NoCloseOutputStream(System.out));

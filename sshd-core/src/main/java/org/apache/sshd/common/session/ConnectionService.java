@@ -38,7 +38,7 @@ public interface ConnectionService extends Service {
      *
      * @param channel the channel to register
      * @return the id of this channel
-     * @throws Exception
+     * @throws IOException
      */
     int registerChannel(Channel channel) throws IOException;
 

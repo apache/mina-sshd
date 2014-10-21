@@ -27,7 +27,7 @@ import java.util.Map;
  * This shell have inverted streams, such as the one obtained when launching a
  * new {@link Process} from java.  This interface is meant to be used with
  * {@link InvertedShellWrapper} class as an implementation of
- * {@link Factory}.
+ * {@link org.apache.sshd.common.Factory}.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -38,7 +38,7 @@ public interface InvertedShell {
      * the ssh server to retrieve and use.
      *
      * @param env
-     * @throws Exception
+     * @throws IOException
      */
     void start(Map<String,String> env) throws IOException;
 

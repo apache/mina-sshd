@@ -108,7 +108,7 @@ public interface ServerFactoryManager extends FactoryManager {
     public static final String MODULI_URL = "moduli-url";
 
     /**
-     * Retrieve the list of named factories for <code>UserAuth<code> objects.
+     * Retrieve the list of named factories for <code>UserAuth</code> objects.
      *
      * @return a list of named <code>UserAuth</code> factories, never <code>null</code>
      */

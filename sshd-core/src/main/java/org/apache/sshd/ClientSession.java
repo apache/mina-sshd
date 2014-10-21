@@ -77,8 +77,8 @@ public interface ClientSession extends Session {
      *
      * @return the authentication future
      * @throws IOException
-     * @see {@link #addPasswordIdentity(String)}
-     * @see {@link #addPublicKeyIdentity(java.security.KeyPair)}
+     * @see #addPasswordIdentity(String)
+     * @see #addPublicKeyIdentity(java.security.KeyPair)
      */
     AuthFuture auth() throws IOException;
 
@@ -86,7 +86,7 @@ public interface ClientSession extends Session {
      * Authenticate the session with the given username using an ssh agent.
      *
      * @deprecated Use {@link #auth()} instead
-     * @see {@link #auth()}
+     * @see #auth()
      */
     @Deprecated
     AuthFuture authAgent(String username) throws IOException;
@@ -95,7 +95,7 @@ public interface ClientSession extends Session {
      * Authenticate the session with the given username and password.
      *
      * @deprecated Use {@link #auth()} instead
-     * @see {@link #auth()}
+     * @see #auth()
      */
     @Deprecated
     AuthFuture authPassword(String username, String password) throws IOException;
@@ -104,7 +104,7 @@ public interface ClientSession extends Session {
      * Authenticate the session with the given username and password.
      *
      * @deprecated Use {@link #auth()} instead
-     * @see {@link #auth()}
+     * @see #auth()
      */
     @Deprecated
     AuthFuture authInteractive(String username, String password) throws IOException;
@@ -113,7 +113,7 @@ public interface ClientSession extends Session {
      * Authenticate the session with the given username and public key.
      *
      * @deprecated Use {@link #auth()} instead
-     * @see {@link #auth()}
+     * @see #auth()
      */
     @Deprecated
     AuthFuture authPublicKey(String username, KeyPair key) throws IOException;

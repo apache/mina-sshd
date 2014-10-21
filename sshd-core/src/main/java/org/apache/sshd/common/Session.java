@@ -177,7 +177,8 @@ public interface Session extends Closeable {
      * and the consumer. To further restrict access the setting or getting it from
      * the Session you can add static get and set methods, e.g:
      *
-     * private static final AttributeKey<MyValue> MY_KEY = new AttributeKey<MyValue>();
+     * <pre>
+     * private static final AttributeKey&lt;MyValue&gt; MY_KEY = new AttributeKey&lt;MyValue&gt;();
      *
      * public static MyValue getMyValue(Session s) {
      *   return s.getAttribute(MY_KEY);
@@ -186,6 +187,7 @@ public interface Session extends Closeable {
      * private void setMyValue(Session s, MyValue value) {
      *   s.setAttribute(MY_KEY, value);
      * }
+     * </pre>
      *
      * @param <T> type of value stored in the attribute.
      *
