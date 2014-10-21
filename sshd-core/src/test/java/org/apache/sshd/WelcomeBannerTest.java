@@ -55,7 +55,6 @@ public class WelcomeBannerTest extends BaseTest {
     public void tearDown() throws Exception {
         if (sshd != null) {
             sshd.stop(true);
-            Thread.sleep(50);
         }
     }
 

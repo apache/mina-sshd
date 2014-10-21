@@ -56,6 +56,7 @@ public class SshServerTest extends BaseTest {
         sshd.stop();
 
         assertFalse(executorService.isShutdown());
+        executorService.shutdownNow();
     }
 
     @Test

@@ -45,7 +45,7 @@ public class PEMGeneratorHostKeyProviderTest extends BaseTest {
 
         File path = new File("target/keys");
         path.mkdirs();
-        path = new File(path, "simple.key");
+        path = new File(path, "simple_dsa.key");
         path.delete();
 
         // Generate
@@ -77,7 +77,7 @@ public class PEMGeneratorHostKeyProviderTest extends BaseTest {
 
         File path = new File("target/keys");
         path.mkdirs();
-        path = new File(path, "simple.key");
+        path = new File(path, "simple_rsa.key");
         path.delete();
 
         // Generate
@@ -109,7 +109,7 @@ public class PEMGeneratorHostKeyProviderTest extends BaseTest {
 
         File path = new File("target/keys");
         path.mkdirs();
-        path = new File(path, "simple.key");
+        path = new File(path, "simple_ec_nistp256.key");
         path.delete();
 
         // Generate
@@ -141,7 +141,7 @@ public class PEMGeneratorHostKeyProviderTest extends BaseTest {
 
         File path = new File("target/keys");
         path.mkdirs();
-        path = new File(path, "simple.key");
+        path = new File(path, "simple_ec_nistp384.key");
         path.delete();
 
         // Generate
@@ -173,7 +173,7 @@ public class PEMGeneratorHostKeyProviderTest extends BaseTest {
 
         File path = new File("target/keys");
         path.mkdirs();
-        path = new File(path, "simple.key");
+        path = new File(path, "simple_ec_nistp521.key");
         path.delete();
 
         // Generate

@@ -117,9 +117,9 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
-                    <reportsDirectory>${project.build.directory}/surefire-reports-mina</reportsDirectory>
+                    <reportsDirectory>${project.build.directory}/surefire-reports-nio2</reportsDirectory>
                     <systemProperties>
-                        <org.apache.sshd.common.io.IoServiceFactory>org.apache.sshd.common.io.mina.MinaServiceFactory</org.apache.sshd.common.io.IoServiceFactory>
+                        <org.apache.sshd.common.io.IoServiceFactory>org.apache.sshd.common.io.nio2.Nio2ServiceFactory</org.apache.sshd.common.io.IoServiceFactory>
                     </systemProperties>
                     <excludes>
                         <exclude>**/*LoadTest.java</exclude>
@@ -127,14 +127,14 @@
                 </configuration>
                 <executions>
                     <execution>
-                        <id>nio2</id>
+                        <id>mina</id>
                         <goals>
                             <goal>test</goal>
                         </goals>
                         <configuration>
-                            <reportsDirectory>${project.build.directory}/surefire-reports-nio2</reportsDirectory>
+                            <reportsDirectory>${project.build.directory}/surefire-reports-mina</reportsDirectory>
                             <systemProperties>
-                                <org.apache.sshd.common.io.IoServiceFactory>org.apache.sshd.common.io.nio2.Nio2ServiceFactory</org.apache.sshd.common.io.IoServiceFactory>
+		                        <org.apache.sshd.common.io.IoServiceFactory>org.apache.sshd.common.io.mina.MinaServiceFactory</org.apache.sshd.common.io.IoServiceFactory>
                             </systemProperties>
                         </configuration>
                     </execution>

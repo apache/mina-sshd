@@ -108,7 +108,6 @@ public class PortForwardingLoadTest extends BaseTest {
     public void tearDown() throws Exception {
         if (sshd != null) {
             sshd.stop(true);
-            Thread.sleep(50);
         }
         if (acceptor != null) {
             acceptor.dispose(true);

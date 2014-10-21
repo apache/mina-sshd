@@ -171,7 +171,6 @@ public class ClientTest extends BaseTest {
         if (client != null) {
             client.stop();
         }
-        Thread.sleep(50);
     }
 
     @Test

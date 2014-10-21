@@ -169,6 +169,11 @@ public class AgentTest extends BaseTest {
         System.out.println(out.toString());
         System.err.println(err.toString());
 
+        sshd1.stop(true);
+        sshd2.stop(true);
+        client1.stop();
+        client2.stop();
+
     }
 
     public static class TestEchoShellFactory extends EchoShellFactory {
