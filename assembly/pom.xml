@@ -24,12 +24,12 @@
     <parent>
         <groupId>org.apache.sshd</groupId>
         <artifactId>sshd</artifactId>
-        <version>0.13.1-SNAPSHOT</version>
+        <version>0.13.0-SNAPSHOT</version>
     </parent>
 
     <groupId>org.apache.sshd</groupId>
     <artifactId>apache-sshd</artifactId>
-    <version>0.13.1-SNAPSHOT</version>
+    <version>0.13.0-SNAPSHOT</version>
     <name>Apache Mina SSHD :: Assembly</name>
     <packaging>pom</packaging>
 
