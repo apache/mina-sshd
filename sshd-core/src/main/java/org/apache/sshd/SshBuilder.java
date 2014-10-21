@@ -88,7 +88,7 @@ public class SshBuilder {
         return new ServerBuilder();
     }
 
-    static class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder<T, S>> {
+    protected static class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder<T, S>> {
 
         protected Factory<T> factory = null;
 
@@ -292,9 +292,14 @@ public class SshBuilder {
     /**
      * SshClient builder
      */
-    static class ClientBuilder extends BaseBuilder<SshClient, ClientBuilder> {
+    public static class ClientBuilder extends BaseBuilder<SshClient, ClientBuilder> {
 
         protected ServerKeyVerifier serverKeyVerifier;
+
+        public ClientBuilder serverKeyVerifier(ServerKeyVerifier serverKeyVerifier) {
+            this.serverKeyVerifier = serverKeyVerifier;
+            return me();
+        }
 
         @Override
         protected ClientBuilder fillWithDefaultValues() {
@@ -353,7 +358,7 @@ public class SshBuilder {
     /**
      * SshServer builder
      */
-    static class ServerBuilder extends BaseBuilder<SshServer, ServerBuilder> {
+    public static class ServerBuilder extends BaseBuilder<SshServer, ServerBuilder> {
 
         @Override
         protected ServerBuilder fillWithDefaultValues() {
