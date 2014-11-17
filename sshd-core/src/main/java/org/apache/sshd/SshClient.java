@@ -62,6 +62,7 @@ import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.DefaultIoServiceFactoryFactory;
 import org.apache.sshd.common.io.IoConnectFuture;
@@ -362,6 +363,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         boolean agentForward = false;
         List<String> command = null;
         int logLevel = 0;
+        int socksPort = -1;
         boolean error = false;
         List<String> identities = new ArrayList<String>();
 
@@ -373,6 +375,13 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                     break;
                 }
                 port = Integer.parseInt(args[++i]);
+            } else if (command == null && "-D".equals(args[i])) {
+                if (i + 1 >= args.length) {
+                    System.err.println("option requires an argument: " + args[i]);
+                    error = true;
+                    break;
+                }
+                socksPort = Integer.parseInt(args[++i]);
             } else if (command == null && "-l".equals(args[i])) {
                 if (i + 1 >= args.length) {
                     System.err.println("option requires an argument: " + args[i]);
@@ -386,11 +395,11 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                 logLevel += 2;
             } else if (command == null && "-vvv".equals(args[i])) {
                 logLevel += 3;
-            } else if ("-A".equals(args[i])) {
+            } else if (command == null && "-A".equals(args[i])) {
                 agentForward = true;
-            } else if ("-a".equals(args[i])) {
+            } else if (command == null && "-a".equals(args[i])) {
                 agentForward = false;
-            } else if ("-i".equals(args[i])) {
+            } else if (command == null && "-i".equals(args[i])) {
                 if (i + 1 >= args.length) {
                     System.err.println("option requires and argument: " + args[i]);
                     error = true;
@@ -402,7 +411,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                 error = true;
                 break;
             } else {
-                if (host == null) {
+                if (command == null && host == null) {
                     host = args[i];
                 } else {
                     if (command == null) {
@@ -417,7 +426,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             error = true;
         }
         if (error) {
-            System.err.println("usage: ssh [-A|-a] [-v[v][v]] [-l login] [-p port] hostname [command]");
+            System.err.println("usage: ssh [-A|-a] [-v[v][v]] [-D socksPort] [-l login] [-p port] hostname [command]");
             System.exit(-1);
         }
         if (logLevel <= 0) {
@@ -475,6 +484,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             public void welcome(String banner) {
                 System.out.println(banner);
             }
+
             public String[] interactive(String destination, String name, String instruction, String[] prompt, boolean[] echo) {
                 String[] answers = new String[prompt.length];
                 try {
@@ -507,28 +517,33 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         ClientSession session = client.connect(login, host, port).await().getSession();
         session.auth().verify();
 
-        ClientChannel channel;
-        if (command == null) {
-            channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
-            ((ChannelShell) channel).setAgentForwarding(agentForward);
-            channel.setIn(new NoCloseInputStream(System.in));
+        if (socksPort >= 0) {
+            session.startDynamicPortForwarding(new SshdSocketAddress("localhost", socksPort));
+            Thread.sleep(Long.MAX_VALUE);
         } else {
-            channel = session.createChannel(ClientChannel.CHANNEL_EXEC);
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            Writer w = new OutputStreamWriter(baos);
-            for (String cmd : command) {
-                w.append(cmd).append(" ");
+            ClientChannel channel;
+            if (command == null) {
+                channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
+                ((ChannelShell) channel).setAgentForwarding(agentForward);
+                channel.setIn(new NoCloseInputStream(System.in));
+            } else {
+                channel = session.createChannel(ClientChannel.CHANNEL_EXEC);
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                Writer w = new OutputStreamWriter(baos);
+                for (String cmd : command) {
+                    w.append(cmd).append(" ");
+                }
+                w.append("\n");
+                w.close();
+                channel.setIn(new ByteArrayInputStream(baos.toByteArray()));
             }
-            w.append("\n");
-            w.close();
-            channel.setIn(new ByteArrayInputStream(baos.toByteArray()));
+            channel.setOut(new NoCloseOutputStream(System.out));
+            channel.setErr(new NoCloseOutputStream(System.err));
+            channel.open().await();
+            channel.waitFor(ClientChannel.CLOSED, 0);
+            session.close(false);
+            client.stop();
         }
-        channel.setOut(new NoCloseOutputStream(System.out));
-        channel.setErr(new NoCloseOutputStream(System.err));
-        channel.open().await();
-        channel.waitFor(ClientChannel.CLOSED, 0);
-        session.close(false);
-        client.stop();
     }
 
 }

@@ -260,6 +260,14 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         getConnectionService().getTcpipForwarder().stopRemotePortForwarding(remote);
     }
 
+    public SshdSocketAddress startDynamicPortForwarding(SshdSocketAddress local) throws IOException {
+        return getConnectionService().getTcpipForwarder().startDynamicPortForwarding(local);
+    }
+
+    public void stopDynamicPortForwarding(SshdSocketAddress local) throws IOException {
+        getConnectionService().getTcpipForwarder().stopDynamicPortForwarding(local);
+    }
+
     protected void handleMessage(Buffer buffer) throws Exception {
         synchronized (lock) {
             super.handleMessage(buffer);

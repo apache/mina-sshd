@@ -194,6 +194,23 @@ public interface ClientSession extends Session {
     void stopRemotePortForwarding(SshdSocketAddress remote) throws IOException;
 
     /**
+     * Start dynamic local port forwarding using a SOCKS proxy.
+     *
+     * @param local
+     * @return
+     * @throws IOException
+     */
+    SshdSocketAddress startDynamicPortForwarding(SshdSocketAddress local) throws IOException;
+
+    /**
+     * Stop a previously started dynamic port forwarding.
+     *
+     * @param local
+     * @throws IOException
+     */
+    void stopDynamicPortForwarding(SshdSocketAddress local) throws IOException;
+
+    /**
      * Wait for a specific state.
      */
     int waitFor(int mask, long timeout);

@@ -84,4 +84,9 @@ public interface TcpipForwarder extends Closeable {
      */
     @Deprecated
     void close();
+
+    SshdSocketAddress startDynamicPortForwarding(SshdSocketAddress local) throws IOException;
+
+    void stopDynamicPortForwarding(SshdSocketAddress local) throws IOException;
+
 }

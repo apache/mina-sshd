@@ -49,12 +49,13 @@ import org.apache.sshd.common.util.Readable;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable implements TcpipForwarder, IoHandler {
+public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable implements TcpipForwarder {
 
     private final ConnectionService service;
     private final Session session;
     private final Map<Integer, SshdSocketAddress> localToRemote = new HashMap<Integer, SshdSocketAddress>();
     private final Map<Integer, SshdSocketAddress> remoteToLocal = new HashMap<Integer, SshdSocketAddress>();
+    private final Map<Integer, SocksProxy> dynamicLocal = new HashMap<Integer, SocksProxy>();
     private final Set<SshdSocketAddress> localForwards = new HashSet<SshdSocketAddress>();
     protected IoAcceptor acceptor;
 
@@ -83,7 +84,7 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
         if (isClosing()) {
             throw new IllegalStateException("TcpipForwarder is closing");
         }
-        SshdSocketAddress bound = doBind(local);
+        SshdSocketAddress bound = doBind(local, new StaticIoHandler());
         localToRemote.put(bound.getPort(), remote);
         return bound;
     }
@@ -124,6 +125,36 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
         }
     }
 
+    public synchronized SshdSocketAddress startDynamicPortForwarding(SshdSocketAddress local) throws IOException {
+        if (local == null) {
+            throw new IllegalArgumentException("Local address is null");
+        }
+        if (local.getPort() < 0) {
+            throw new IllegalArgumentException("Invalid local port: " + local.getPort());
+        }
+        if (isClosed()) {
+            throw new IllegalStateException("TcpipForwarder is closed");
+        }
+        if (isClosing()) {
+            throw new IllegalStateException("TcpipForwarder is closing");
+        }
+        SocksProxy socksProxy = new SocksProxy(service);
+        SshdSocketAddress bound = doBind(local, new SocksProxy(service));
+        dynamicLocal.put(bound.getPort(), socksProxy);
+        return bound;
+    }
+
+    public synchronized void stopDynamicPortForwarding(SshdSocketAddress local) throws IOException {
+        Closeable obj = dynamicLocal.remove(local.getPort());
+        if (obj != null) {
+            obj.close(true);
+            acceptor.unbind(local.toInetSocketAddress());
+            if (acceptor.getBoundAddresses().isEmpty()) {
+                close();
+            }
+        }
+    }
+
     public synchronized SshdSocketAddress getForwardedPort(int remotePort) {
         return remoteToLocal.get(remotePort);
     }
@@ -139,7 +170,7 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
         if (filter == null || !filter.canListen(local, session)) {
             throw new IOException("Rejected address: " + local);
         }
-        SshdSocketAddress bound = doBind(local);
+        SshdSocketAddress bound = doBind(local, new StaticIoHandler());
         localForwards.add(bound);
         return bound;
     }
@@ -160,64 +191,16 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
 
     @Override
     protected synchronized Closeable getInnerCloseable() {
-        return builder().close(acceptor).build();
-    }
-
-    //
-    // IoHandler implementation
-    //
-
-    public void sessionCreated(final IoSession session) throws Exception {
-        final TcpipClientChannel channel;
-        int localPort = ((InetSocketAddress) session.getLocalAddress()).getPort();
-        if (localToRemote.containsKey(localPort)) {
-            SshdSocketAddress remote = localToRemote.get(localPort);
-            channel = new TcpipClientChannel(TcpipClientChannel.Type.Direct, session, remote);
-        } else {
-            channel = new TcpipClientChannel(TcpipClientChannel.Type.Forwarded, session, null);
-        }
-        session.setAttribute(TcpipClientChannel.class, channel);
-        this.service.registerChannel(channel);
-        channel.open().addListener(new SshFutureListener<OpenFuture>() {
-            public void operationComplete(OpenFuture future) {
-                Throwable t = future.getException();
-                if (t != null) {
-                    DefaultTcpipForwarder.this.service.unregisterChannel(channel);
-                    channel.close(false);
-                }
-            }
-        });
-    }
-
-    public void sessionClosed(IoSession session) throws Exception {
-        TcpipClientChannel channel = (TcpipClientChannel) session.getAttribute(TcpipClientChannel.class);
-        if (channel != null) {
-            log.debug("IoSession {} closed, will now close the channel", session);
-            channel.close(false);
-        }
-    }
-
-    public void messageReceived(IoSession session, Readable message) throws Exception {
-        TcpipClientChannel channel = (TcpipClientChannel) session.getAttribute(TcpipClientChannel.class);
-        Buffer buffer = new Buffer();
-        buffer.putBuffer(message);
-        channel.waitFor(ClientChannel.OPENED | ClientChannel.CLOSED, Long.MAX_VALUE);
-        channel.getInvertedIn().write(buffer.array(), buffer.rpos(), buffer.available());
-        channel.getInvertedIn().flush();
-    }
-
-    public void exceptionCaught(IoSession session, Throwable cause) throws Exception {
-        cause.printStackTrace();
-        session.close(false);
+        return builder().parallel(dynamicLocal.values()).close(acceptor).build();
     }
 
     //
     // Private methods
     //
 
-    private SshdSocketAddress doBind(SshdSocketAddress address) throws IOException {
+    private SshdSocketAddress doBind(SshdSocketAddress address, IoHandler handler) throws IOException {
         if (acceptor == null) {
-            acceptor = session.getFactoryManager().getIoServiceFactory().createAcceptor(this);
+            acceptor = session.getFactoryManager().getIoServiceFactory().createAcceptor(handler);
         }
         Set<SocketAddress> before = acceptor.getBoundAddresses();
         try {
@@ -242,6 +225,58 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
 
     public String toString() {
         return getClass().getSimpleName() + "[" + session + "]";
+    }
+
+    //
+    // Static IoHandler implementation
+    //
+
+    class StaticIoHandler implements IoHandler {
+
+        public void sessionCreated(final IoSession session) throws Exception {
+            final TcpipClientChannel channel;
+            int localPort = ((InetSocketAddress) session.getLocalAddress()).getPort();
+            if (localToRemote.containsKey(localPort)) {
+                SshdSocketAddress remote = localToRemote.get(localPort);
+                channel = new TcpipClientChannel(TcpipClientChannel.Type.Direct, session, remote);
+            } else {
+                channel = new TcpipClientChannel(TcpipClientChannel.Type.Forwarded, session, null);
+            }
+            session.setAttribute(TcpipClientChannel.class, channel);
+            service.registerChannel(channel);
+            channel.open().addListener(new SshFutureListener<OpenFuture>() {
+                public void operationComplete(OpenFuture future) {
+                    Throwable t = future.getException();
+                    if (t != null) {
+                        DefaultTcpipForwarder.this.service.unregisterChannel(channel);
+                        channel.close(false);
+                    }
+                }
+            });
+        }
+
+        public void sessionClosed(IoSession session) throws Exception {
+            TcpipClientChannel channel = (TcpipClientChannel) session.getAttribute(TcpipClientChannel.class);
+            if (channel != null) {
+                log.debug("IoSession {} closed, will now close the channel", session);
+                channel.close(false);
+            }
+        }
+
+        public void messageReceived(IoSession session, Readable message) throws Exception {
+            TcpipClientChannel channel = (TcpipClientChannel) session.getAttribute(TcpipClientChannel.class);
+            Buffer buffer = new Buffer();
+            buffer.putBuffer(message);
+            channel.waitFor(ClientChannel.OPENED | ClientChannel.CLOSED, Long.MAX_VALUE);
+            channel.getInvertedIn().write(buffer.array(), buffer.rpos(), buffer.available());
+            channel.getInvertedIn().flush();
+        }
+
+        public void exceptionCaught(IoSession session, Throwable cause) throws Exception {
+            cause.printStackTrace();
+            session.close(false);
+        }
+
     }
 
 }
