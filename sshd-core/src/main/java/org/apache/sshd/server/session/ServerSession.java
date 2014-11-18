@@ -20,7 +20,11 @@ package org.apache.sshd.server.session;
 
 import java.io.IOException;
 import java.security.KeyPair;
+import java.util.List;
 
+import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.KeyPairProvider;
+import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
@@ -124,7 +128,54 @@ public class ServerSession extends AbstractSession {
     }
 
     protected void sendKexInit() throws IOException {
-        serverProposal = createProposal(factoryManager.getKeyPairProvider().getKeyTypes());
+    	/*
+    	 * Make sure that the provided host keys have at least one supported signature factory
+    	 */
+        FactoryManager manager = getFactoryManager();
+        KeyPairProvider kpp = manager.getKeyPairProvider();
+        String hostKeyTypes = kpp.getKeyTypes();
+        List<String> supported = NamedFactory.Utils.getNameList(manager.getSignatureFactories());
+        String[] provided = hostKeyTypes.split(",");
+        StringBuilder resolvedHostKeys = null;
+        for (int index = 0; index < provided.length; index++) {
+            String keyType = provided[index];
+            if (!supported.contains(keyType)) {
+                if (log.isDebugEnabled()) {
+                    log.debug("sendKexInit(" + hostKeyTypes + ") " + keyType + " not in list of supported: " + supported);
+                }
+    			// Use 1st unsupported key type as trigger to create a new list
+                if (resolvedHostKeys == null) {
+                    resolvedHostKeys = new StringBuilder(hostKeyTypes.length());
+                    // copy all provided key types up to this index - we know they are supported
+                    for (int supportedIndex = 0; supportedIndex < index; supportedIndex++) {
+                        if (supportedIndex > 0) {
+                            resolvedHostKeys.append(',');
+                        }
+                        resolvedHostKeys.append(provided[supportedIndex]);
+                    }
+                }
+                continue;
+            }
+            if (resolvedHostKeys != null) {
+                if (resolvedHostKeys.length() > 0) {
+                    resolvedHostKeys.append(',');
+                }
+                resolvedHostKeys.append(keyType);
+            }
+        }
+
+        // check if had to construct a new list
+        if (resolvedHostKeys != null) {
+            // make sure the new list has at least one supported AND provided key type
+            if (resolvedHostKeys.length() <= 0) {
+                throw new SshException(SshConstants.SSH2_DISCONNECT_HOST_KEY_NOT_VERIFIABLE,
+                        "sendKexInit(" + hostKeyTypes + ") none of the keys appears in supported list: " + supported);
+            }
+
+            hostKeyTypes = resolvedHostKeys.toString();
+        }
+
+        serverProposal = createProposal(hostKeyTypes);
         I_S = sendKexInit(serverProposal);
     }
 

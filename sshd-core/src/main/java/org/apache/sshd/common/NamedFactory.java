@@ -18,6 +18,9 @@
  */
 package org.apache.sshd.common;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -32,7 +35,7 @@ public interface NamedFactory<T> extends Factory<T> {
 
     /**
      * Name of this factory
-     * @return
+     * @return the name of this factory
      */
     String getName();
 
@@ -40,7 +43,23 @@ public interface NamedFactory<T> extends Factory<T> {
      * Utility class to help using NamedFactories
      */
     public static class Utils {
-
+    	/**
+    	 * @param factories The named factories
+    	 * @return A {@link List} of all the factories names - in same order
+    	 * as they appear in the input collection
+    	 */
+    	public static <T> List<String> getNameList(Collection<NamedFactory<T>> factories) {
+    		if ((factories == null) || factories.isEmpty()) {
+    			return Collections.emptyList();
+    		}
+    		
+    		List<String>	names=new ArrayList<String>(factories.size());
+    		for (NamedFactory<T> f : factories) {
+    			names.add(f.getName());
+    		}
+    		
+    		return names;
+    	}
         /**
          * Create an instance of the specified name by looking up the needed factory
          * in the list.
@@ -69,8 +88,8 @@ public interface NamedFactory<T> extends Factory<T> {
          * @return a comma separated list of factory names
          */
         public static <T> String getNames(List<NamedFactory<T>> factories) {
-            StringBuffer sb = new StringBuffer();
-            for (NamedFactory f : factories) {
+            StringBuilder sb = new StringBuilder();
+            for (NamedFactory<T> f : factories) {
                 if (sb.length() > 0) {
                     sb.append(",");
                 }
