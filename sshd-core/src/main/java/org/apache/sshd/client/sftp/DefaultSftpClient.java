@@ -164,6 +164,7 @@ public class DefaultSftpClient implements SftpClient {
     protected boolean receive(Buffer incoming) throws IOException {
         int rpos = incoming.rpos();
         int wpos = incoming.wpos();
+        clientSession.resetIdleTimeout();
         if (wpos - rpos > 4) {
             int length = incoming.getInt();
             if (length < 5) {

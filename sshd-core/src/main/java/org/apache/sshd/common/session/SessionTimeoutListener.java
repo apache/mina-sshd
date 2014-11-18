@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.server.session;
+package org.apache.sshd.common.session;
 
 import org.apache.sshd.common.Session;
 import org.apache.sshd.common.SessionListener;
@@ -27,20 +27,20 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
- * Task that iterates over all currently open {@link ServerSession}s and checks each of them for timeouts. If 
- * the {@link ServerSession} has timed out (either auth or idle timeout), the session will be disconnected.
+ * Task that iterates over all currently open {@link AbstractSession}s and checks each of them for timeouts. If
+ * the {@link AbstractSession} has timed out (either auth or idle timeout), the session will be disconnected.
  *
- * @see org.apache.sshd.server.session.ServerSession#checkForTimeouts()
+ * @see org.apache.sshd.common.session.AbstractSession#checkForTimeouts()
  */
-public class ServerSessionTimeoutListener implements SessionListener, Runnable {
+public class SessionTimeoutListener implements SessionListener, Runnable {
 
-    private final Logger log = LoggerFactory.getLogger(ServerSessionTimeoutListener.class);
+    private final Logger log = LoggerFactory.getLogger(SessionTimeoutListener.class);
     
-    private final Set<ServerSession> sessions = new CopyOnWriteArraySet<ServerSession>();
+    private final Set<AbstractSession> sessions = new CopyOnWriteArraySet<AbstractSession>();
 
     public void sessionCreated(Session session) {
-        if (session instanceof ServerSession) {
-            sessions.add((ServerSession) session);
+        if (session instanceof AbstractSession && (session.getAuthTimeout() > 0 || session.getIdleTimeout() > 0)) {
+            sessions.add((AbstractSession) session);
         }
     }
 
@@ -52,7 +52,7 @@ public class ServerSessionTimeoutListener implements SessionListener, Runnable {
     }
 
     public void run() {
-        for (ServerSession session : sessions) {
+        for (AbstractSession session : sessions) {
             try {
                 session.checkForTimeouts();
             } catch (Exception e) {

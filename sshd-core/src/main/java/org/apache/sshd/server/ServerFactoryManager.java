@@ -48,19 +48,6 @@ public interface ServerFactoryManager extends FactoryManager {
     public static final String MAX_AUTH_REQUESTS = "max-auth-requests";
 
     /**
-     * Key used to retrieve the value of the timeout after which
-     * the server will close the connection if the client has not been
-     * authenticated.
-     */
-    public static final String AUTH_TIMEOUT = "auth-timeout";
-
-    /**
-     * Key used to retrieve the value of idle timeout after which
-     * the server will close the connection.  In milliseconds.
-     */
-    public static final String IDLE_TIMEOUT = "idle-timeout";
-
-    /**
      * Key used to retrieve the value of welcome banner that will be displayed
      * when a user connects to the server.
      */

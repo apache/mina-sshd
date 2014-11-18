@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -144,6 +145,13 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     protected final AtomicReference<Buffer> requestResult = new AtomicReference<Buffer>();
     protected final Map<AttributeKey<?>, Object> attributes = new ConcurrentHashMap<AttributeKey<?>, Object>();
 
+    // Session timeout
+    protected long authTimeoutTimestamp = 0L;
+    protected long idleTimeoutTimestamp = 0L;
+    protected long authTimeoutMs = TimeUnit.MINUTES.toMillis(2);    // 2 minutes in milliseconds
+    protected long idleTimeoutMs = TimeUnit.MINUTES.toMillis(10);   // 10 minutes in milliseconds
+    protected final AtomicReference<TimeoutStatus> timeoutStatus = new AtomicReference<TimeoutStatus>(TimeoutStatus.NoTimeout);
+
     //
     // Rekeying
     //
@@ -166,7 +174,10 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
         this.isServer = isServer;
         this.factoryManager = factoryManager;
         this.ioSession = ioSession;
-        this.random = factoryManager.getRandomFactory().create();
+        random = factoryManager.getRandomFactory().create();
+        authTimeoutMs = getLongProperty(FactoryManager.AUTH_TIMEOUT, authTimeoutMs);
+        authTimeoutTimestamp = System.currentTimeMillis() + authTimeoutMs;
+        idleTimeoutMs = getLongProperty(FactoryManager.IDLE_TIMEOUT, idleTimeoutMs);
     }
 
     /**
@@ -1131,6 +1142,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     protected void requestSuccess(Buffer buffer) throws Exception{
         synchronized (requestResult) {
             requestResult.set(new Buffer(buffer.getCompactData()));
+            resetIdleTimeout();
             requestResult.notify();
         }
     }
@@ -1138,6 +1150,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     protected void requestFailure(Buffer buffer) throws Exception{
         synchronized (requestResult) {
             requestResult.set(null);
+            resetIdleTimeout();
             requestResult.notify();
         }
     }
@@ -1254,7 +1267,53 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
 
     public abstract void startService(String name) throws Exception;
 
-    public abstract void resetIdleTimeout();
+    /**
+     * Checks whether the session has timed out (both auth and idle timeouts are checked). If the session has
+     * timed out, a DISCONNECT message will be sent.
+     *
+     * @throws IOException
+     */
+    protected void checkForTimeouts() throws IOException {
+        if (!isClosing()) {
+            long now = System.currentTimeMillis();
+            if (!authed && authTimeoutMs > 0 && now > authTimeoutTimestamp) {
+                timeoutStatus.set(TimeoutStatus.AuthTimeout);
+                disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "Session has timed out waiting for authentication after " + authTimeoutMs + " ms.");
+            }
+            if (idleTimeoutMs > 0 && idleTimeoutTimestamp > 0 && now > idleTimeoutTimestamp) {
+                timeoutStatus.set(TimeoutStatus.AuthTimeout);
+                disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "User session has timed out idling after " + idleTimeoutMs + " ms.");
+            }
+        }
+    }
+
+    public void resetIdleTimeout() {
+        this.idleTimeoutTimestamp = System.currentTimeMillis() + idleTimeoutMs;
+    }
+
+    /**
+     * Check if timeout has occurred.
+     * @return
+     */
+    public TimeoutStatus getTimeoutStatus() {
+        return timeoutStatus.get();
+    }
+
+    /**
+     * What is timeout value in milliseconds for authentication stage
+     * @return
+     */
+    public long getAuthTimeout() {
+        return authTimeoutMs;
+    }
+
+    /**
+     * What is timeout value in milliseconds for communication
+     * @return
+     */
+    public long getIdleTimeout() {
+        return idleTimeoutMs;
+    }
 
     /**
      * Future holding a packet pending key exchange termination.

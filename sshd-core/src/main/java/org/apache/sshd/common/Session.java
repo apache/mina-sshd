@@ -33,6 +33,15 @@ import org.apache.sshd.common.util.Buffer;
 public interface Session extends Closeable {
 
     /**
+     * Timeout status.
+     */
+    enum TimeoutStatus {
+        NoTimeout,
+        AuthTimeout,
+        IdleTimeout
+    }
+
+    /**
      * Returns the value of the user-defined attribute of this session.
      *
      * @param key the key of the attribute; must not be null.
@@ -196,4 +205,24 @@ public interface Session extends Closeable {
     public class AttributeKey<T> {
     }
 
+    public void resetIdleTimeout();
+
+    /**
+     * Check if timeout has occurred.
+     * @return the timeout status, never <code>null</code>
+     */
+    public TimeoutStatus getTimeoutStatus();
+
+    /**
+     * What is timeout value in milliseconds for authentication stage
+     * @return
+     */
+    public long getAuthTimeout();
+
+    /**
+     * What is timeout value in milliseconds for communication
+     * @return
+     */
+
+    public long getIdleTimeout();
 }

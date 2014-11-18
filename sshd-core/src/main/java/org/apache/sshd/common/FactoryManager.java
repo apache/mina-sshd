@@ -25,7 +25,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.io.IoServiceFactory;
-import org.apache.sshd.common.io.IoServiceFactoryFactory;
 import org.apache.sshd.common.session.ConnectionService;
 
 /**
@@ -57,6 +56,19 @@ public interface FactoryManager {
      * Default number of worker threads to use.
      */
     public static final int DEFAULT_NIO_WORKERS = Runtime.getRuntime().availableProcessors() + 1;
+
+    /**
+     * Key used to retrieve the value of the timeout after which
+     * it will close the connection if the other side has not been
+     * authenticated.
+     */
+    public static final String AUTH_TIMEOUT = "auth-timeout";
+
+    /**
+     * Key used to retrieve the value of idle timeout after which
+     * it will close the connection.  In milliseconds.
+     */
+    public static final String IDLE_TIMEOUT = "idle-timeout";
 
     /**
      * A map of properties that can be used to configure the SSH server

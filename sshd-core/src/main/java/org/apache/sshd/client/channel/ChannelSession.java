@@ -102,6 +102,7 @@ public class ChannelSession extends AbstractClientChannel {
             byte[] buffer = new byte[remoteWindow.getPacketSize()];
             while (!closeFuture.isClosed()) {
                 int len = securedRead(in, buffer, 0, buffer.length);
+                session.resetIdleTimeout();
                 if (len > 0) {
                     invertedIn.write(buffer, 0, len);
                     invertedIn.flush();

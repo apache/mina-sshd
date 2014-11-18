@@ -386,10 +386,6 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         throw new IllegalStateException("Starting services is not supported on the client side");
     }
 
-    @Override
-    public void resetIdleTimeout() {
-    }
-
     public Map<Object, Object> getMetadataMap() {
 		return metadataMap;
 	}

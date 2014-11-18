@@ -43,19 +43,11 @@ public class ServerSession extends AbstractSession {
 
     protected static final long MAX_PACKETS = (1l << 31);
 
-    private long authTimeoutTimestamp;
-    private long idleTimeoutTimestamp = 0L;
-    private int authTimeoutMs = 2 * 60 * 1000;    // 2 minutes in milliseconds
-    private int idleTimeoutMs = 10 * 60 * 1000;   // 10 minutes in milliseconds
     private long maxBytes = 1024 * 1024 * 1024;   // 1 GB
     private long maxKeyInterval = 60 * 60 * 1000; // 1 hour
 
-
     public ServerSession(ServerFactoryManager server, IoSession ioSession) throws Exception {
         super(true, server, ioSession);
-        authTimeoutMs = getIntProperty(ServerFactoryManager.AUTH_TIMEOUT, authTimeoutMs);
-        authTimeoutTimestamp = System.currentTimeMillis() + authTimeoutMs;
-        idleTimeoutMs = getIntProperty(ServerFactoryManager.IDLE_TIMEOUT, idleTimeoutMs);
         maxBytes = Math.max(32, getLongProperty(ServerFactoryManager.REKEY_BYTES_LIMIT, maxBytes));
         maxKeyInterval = getLongProperty(ServerFactoryManager.REKEY_TIME_LIMIT, maxKeyInterval);
         log.info("Server session created from {}", ioSession.getRemoteAddress());
@@ -85,24 +77,6 @@ public class ServerSession extends AbstractSession {
         disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "Unsupported packet: SSH_MSG_SERVICE_ACCEPT");
     }
 
-    /**
-     * Checks whether the server session has timed out (both auth and idle timeouts are checked). If the session has
-     * timed out, a DISCONNECT message will be sent to the client.
-     *
-     * @throws IOException
-     */
-    protected void checkForTimeouts() throws IOException {
-        if (!isClosing()) {
-            long now = System.currentTimeMillis();
-            if (!authed && now > authTimeoutTimestamp) {
-                disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "Session has timed out waiting for authentication after " + authTimeoutMs + " ms.");
-            }
-            if (idleTimeoutTimestamp > 0 && now > idleTimeoutTimestamp) {
-                disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "User session has timed out idling after " + idleTimeoutMs + " ms.");
-            }
-        }
-    }
-
     protected void checkRekey() throws IOException {
         if (kexState.get() == KEX_STATE_DONE) {
             if (   inPackets > MAX_PACKETS || outPackets > MAX_PACKETS
@@ -112,10 +86,6 @@ public class ServerSession extends AbstractSession {
                 reExchangeKeys();
             }
         }
-    }
-
-    public void resetIdleTimeout() {
-        this.idleTimeoutTimestamp = System.currentTimeMillis() + idleTimeoutMs;
     }
 
     private void sendServerIdentification() {

@@ -223,6 +223,9 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         if (sessionFactory == null) {
             sessionFactory = createSessionFactory();
         }
+
+        setupSessionTimeout(sessionFactory);
+
         sessionFactory.setClient(this);
         connector = createConnector();
     }
@@ -242,6 +245,11 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     @Override
     protected Closeable getInnerCloseable() {
         return builder()
+                .run(new Runnable() {
+                    public void run() {
+                        removeSessionTimeout(sessionFactory);
+                    }
+                })
                 .sequential(connector, ioServiceFactory)
                 .run(new Runnable() {
                     public void run() {
