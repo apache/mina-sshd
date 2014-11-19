@@ -48,7 +48,8 @@ public interface SshFile {
         Permissions,        // EnumSet<Permission>
         CreationTime,       // long
         LastModifiedTime,   // long
-        LastAccessTime      // long
+        LastAccessTime,     // long
+        NLink               // int
     }
 
     //

@@ -95,6 +95,9 @@ public class NativeSshFileNio extends NativeSshFile {
         } else {
             map.put(Attribute.Group, userName);
         }
+        if (a.containsKey("nlink")) {
+            map.put(Attribute.NLink, a.get("nlink"));
+        }
         map.put(Attribute.IsDirectory, a.get("isDirectory"));
         map.put(Attribute.IsRegularFile, a.get("isRegularFile"));
         map.put(Attribute.IsSymbolicLink, a.get("isSymbolicLink"));

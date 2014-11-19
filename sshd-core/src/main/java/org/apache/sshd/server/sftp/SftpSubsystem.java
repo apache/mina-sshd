@@ -949,8 +949,9 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         sb.append((perms & S_IROTH) != 0 ? "r" : "-");
         sb.append((perms & S_IWOTH) != 0 ? "w" : "-");
         sb.append((perms & S_IXOTH) != 0 ? "x" : "-");
-        sb.append(" ");
-        sb.append("  1");
+        sb.append("  ");
+        sb.append(attributes.containsKey(SshFile.Attribute.NLink)
+                ? attributes.get(SshFile.Attribute.NLink) : "1");
         sb.append(" ");
         sb.append(username);
         sb.append(" ");
