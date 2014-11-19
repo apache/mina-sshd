@@ -902,7 +902,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
     private String getLongName(SshFile f, boolean sendAttrs) throws IOException {
         Map<SshFile.Attribute, Object> attributes;
         if (sendAttrs) {
-            attributes = f.getAttributes(true);
+            attributes = f.getAttributes(false);
         } else {
             attributes = new HashMap<SshFile.Attribute, Object>();
             attributes.put(SshFile.Attribute.Owner, "owner");

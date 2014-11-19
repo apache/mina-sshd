@@ -53,6 +53,11 @@ import org.apache.sshd.common.file.SshFile;
  */
 public class NativeSshFileNio extends NativeSshFile {
 
+    @Override
+    public boolean doesExist() {
+        return Files.exists(file.toPath(), LinkOption.NOFOLLOW_LINKS);
+    }
+
     /**
      * Constructor, internal do not use directly.
      * @param nativeFileSystemView
