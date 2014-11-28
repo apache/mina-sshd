@@ -174,8 +174,8 @@ public class NativeSshFileNio extends NativeSshFile {
 
     public void createSymbolicLink(SshFile destination) throws IOException {
         Path link = file.toPath();
-        Path target = Paths.get(destination.getAbsolutePath());
-        Files.createSymbolicLink(target, link);
+        Path target = Paths.get(destination.toString());
+        Files.createSymbolicLink(link, target);
     }
 
     private EnumSet<Permission> fromPerms(Set<PosixFilePermission> perms) {

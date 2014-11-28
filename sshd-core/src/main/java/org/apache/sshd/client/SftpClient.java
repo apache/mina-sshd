@@ -21,12 +21,13 @@ package org.apache.sshd.client;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.util.EnumSet;
 
 /**
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public interface SftpClient {
+public interface SftpClient extends AutoCloseable {
 
     //
     // Permission flags
@@ -134,6 +135,8 @@ public interface SftpClient {
      * Close the client.
      */
     void close() throws IOException;
+
+    boolean isClosing();
 
     //
     // Low level API

@@ -132,6 +132,10 @@ public class DefaultSftpClient implements SftpClient {
         init();
     }
 
+    public boolean isClosing() {
+        return closing;
+    }
+
     public void close() throws IOException {
         this.channel.close(false);
     }

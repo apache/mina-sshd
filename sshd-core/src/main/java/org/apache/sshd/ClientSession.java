@@ -19,6 +19,7 @@
 package org.apache.sshd;
 
 import java.io.IOException;
+import java.nio.file.FileSystem;
 import java.security.KeyPair;
 import java.util.Map;
 
@@ -159,6 +160,8 @@ public interface ClientSession extends Session {
      * Create an SFTP client from this session.
      */
     SftpClient createSftpClient() throws IOException;
+
+    FileSystem createSftpFileSystem() throws IOException;
 
     /**
      * Start forwarding the given local address on the client to the given address on the server.

@@ -165,6 +165,8 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
     public static final int SSH_FX_CONNECTION_LOST =   7;
     public static final int SSH_FX_OP_UNSUPPORTED =    8;
 
+    public static final int SSH_FX_FILE_ALREADY_EXISTS = 11; // Not in v3, but we need it
+
     public static final int SSH_FILEXFER_ATTR_SIZE =        0x00000001;
     public static final int SSH_FILEXFER_ATTR_UIDGID =      0x00000002;
     public static final int SSH_FILEXFER_ATTR_PERMISSIONS = 0x00000004;
@@ -768,7 +770,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                     SshFile p = resolveFile(path);
                     if (p.doesExist()) {
                         if (p.isDirectory()) {
-                            sendStatus(id, SSH_FX_FAILURE, p.getAbsolutePath());
+                            sendStatus(id, SSH_FX_FILE_ALREADY_EXISTS, p.getAbsolutePath());
                         } else {
                             sendStatus(id, SSH_FX_NO_SUCH_FILE, p.getAbsolutePath());
                         }
@@ -885,6 +887,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                 log.debug("Received SSH_FXP_SYMLINK (linkpath={}, targetpath={})", linkpath, targetpath);
                 try {
                     SshFile link = resolveFile(linkpath);
+                    // TODO: resolving the file is wrong, we should keep it relative
                     SshFile target = resolveFile(targetpath);
                     link.createSymbolicLink(target);
                     sendStatus(id, SSH_FX_OK, "");

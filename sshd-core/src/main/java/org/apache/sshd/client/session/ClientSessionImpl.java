@@ -20,6 +20,7 @@ package org.apache.sshd.client.session;
 
 import java.io.IOException;
 import java.net.SocketAddress;
+import java.nio.file.FileSystem;
 import java.security.KeyPair;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -47,6 +48,8 @@ import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.DefaultAuthFuture;
 import org.apache.sshd.client.scp.DefaultScpClient;
 import org.apache.sshd.client.sftp.DefaultSftpClient;
+import org.apache.sshd.client.sftp.SftpFileSystem;
+import org.apache.sshd.client.sftp.SftpFileSystemProvider;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.ServiceFactory;
@@ -276,6 +279,10 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
 
     public SftpClient createSftpClient() throws IOException {
         return new DefaultSftpClient(this);
+    }
+
+    public FileSystem createSftpFileSystem() throws IOException {
+        return new SftpFileSystem(new SftpFileSystemProvider((org.apache.sshd.SshClient) factoryManager), this);
     }
 
     public SshdSocketAddress startLocalPortForwarding(SshdSocketAddress local, SshdSocketAddress remote) throws IOException {
