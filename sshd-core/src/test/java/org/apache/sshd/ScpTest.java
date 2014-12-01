@@ -63,16 +63,13 @@ public class ScpTest extends BaseTest {
 
     @Before
     public void setUp() throws Exception {
-        port = Utils.getFreePort();
-//        port = 8102;
-
         sshd = SshServer.setUpDefaultServer();
-        sshd.setPort(port);
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setCommandFactory(new ScpCommandFactory());
         sshd.setShellFactory(new EchoShellFactory());
         sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
         sshd.start();
+        port = sshd.getPort();
     }
 
     protected com.jcraft.jsch.Session getJschSession() throws JSchException {

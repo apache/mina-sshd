@@ -60,8 +60,6 @@ public class KeyReExchangeTest extends BaseTest {
     }
 
     protected void setUp(long bytesLimit, long timeLimit) throws Exception {
-        port = Utils.getFreePort();
-
         sshd = SshServer.setUpDefaultServer();
         if (bytesLimit > 0) {
             sshd.getProperties().put(ServerFactoryManager.REKEY_BYTES_LIMIT, Long.toString(bytesLimit));
@@ -69,11 +67,11 @@ public class KeyReExchangeTest extends BaseTest {
         if (timeLimit > 0) {
             sshd.getProperties().put(ServerFactoryManager.REKEY_TIME_LIMIT, Long.toString(timeLimit));
         }
-        sshd.setPort(port);
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setShellFactory(new EchoShellFactory());
         sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
         sshd.start();
+        port  = sshd.getPort();
     }
 
     @Test

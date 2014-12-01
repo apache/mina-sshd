@@ -33,8 +33,6 @@ import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 import org.apache.sshd.client.channel.ChannelDirectTcpip;
-import org.apache.sshd.client.future.AuthFuture;
-import org.apache.sshd.client.future.ConnectFuture;
 import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.util.BaseTest;
 import org.apache.sshd.util.BogusForwardingFilter;
@@ -67,18 +65,15 @@ public class PortForwardingTest extends BaseTest {
 
     @Before
     public void setUp() throws Exception {
-        sshPort = getFreePort();
-        echoPort = getFreePort();
-
         sshd = SshServer.setUpDefaultServer();
         sshd.getProperties().put(SshServer.WINDOW_SIZE, "2048");
         sshd.getProperties().put(SshServer.MAX_PACKET_SIZE, "256");
-        sshd.setPort(sshPort);
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setShellFactory(new EchoShellFactory());
         sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
         sshd.setTcpipForwardingFilter(new BogusForwardingFilter());
         sshd.start();
+        sshPort = sshd.getPort();
 
         NioSocketAcceptor acceptor = new NioSocketAcceptor();
         acceptor.setHandler(new IoHandlerAdapter() {
@@ -92,7 +87,8 @@ public class PortForwardingTest extends BaseTest {
             }
         });
         acceptor.setReuseAddress(true);
-        acceptor.bind(new InetSocketAddress(echoPort));
+        acceptor.bind(new InetSocketAddress(0));
+        echoPort = acceptor.getLocalAddress().getPort();
         this.acceptor = acceptor;
 
     }
@@ -135,13 +131,12 @@ public class PortForwardingTest extends BaseTest {
     public void testRemoteForwardingNative() throws Exception {
         ClientSession session = createNativeSession();
 
-        int forwardedPort = getFreePort();
-        SshdSocketAddress remote = new SshdSocketAddress("", forwardedPort);
+        SshdSocketAddress remote = new SshdSocketAddress("", 0);
         SshdSocketAddress local = new SshdSocketAddress("localhost", echoPort);
 
-        session.startRemotePortForwarding(remote, local);
+        SshdSocketAddress bound = session.startRemotePortForwarding(remote, local);
 
-        Socket s = new Socket(remote.getHostName(), remote.getPort());
+        Socket s = new Socket(bound.getHostName(), bound.getPort());
         s.getOutputStream().write("Hello".getBytes());
         s.getOutputStream().flush();
         byte[] buf = new byte[1024];
@@ -158,15 +153,14 @@ public class PortForwardingTest extends BaseTest {
     public void testRemoteForwardingNativeBigPayload() throws Exception {
         ClientSession session = createNativeSession();
 
-        int forwardedPort = getFreePort();
-        SshdSocketAddress remote = new SshdSocketAddress("", forwardedPort);
+        SshdSocketAddress remote = new SshdSocketAddress("", 0);
         SshdSocketAddress local = new SshdSocketAddress("localhost", echoPort);
 
-        session.startRemotePortForwarding(remote, local);
+        SshdSocketAddress bound = session.startRemotePortForwarding(remote, local);
 
         byte[] buf = new byte[1024];
 
-        Socket s = new Socket(remote.getHostName(), remote.getPort());
+        Socket s = new Socket(bound.getHostName(), bound.getPort());
         for (int i = 0; i < 1000; i++) {
             s.getOutputStream().write("0123456789".getBytes());
             s.getOutputStream().flush();
@@ -177,28 +171,6 @@ public class PortForwardingTest extends BaseTest {
         s.close();
 
         session.stopRemotePortForwarding(remote);
-        session.close(false).await();
-    }
-
-    @Test
-    public void testRemoteForwardingNativeNoExplicitPort() throws Exception {
-        ClientSession session = createNativeSession();
-
-        SshdSocketAddress remote = new SshdSocketAddress("0.0.0.0", 0);
-        SshdSocketAddress local = new SshdSocketAddress("localhost", echoPort);
-
-        SshdSocketAddress bound = session.startRemotePortForwarding(remote, local);
-
-        Socket s = new Socket(bound.getHostName(), bound.getPort());
-        s.getOutputStream().write("Hello".getBytes());
-        s.getOutputStream().flush();
-        byte[] buf = new byte[1024];
-        int n = s.getInputStream().read(buf);
-        String res = new String(buf, 0, n);
-        assertEquals("Hello", res);
-        s.close();
-
-        session.stopRemotePortForwarding(bound);
         session.close(false).await();
     }
 
@@ -248,9 +220,7 @@ public class PortForwardingTest extends BaseTest {
     public void testLocalForwardingNativeReuse() throws Exception {
         ClientSession session = createNativeSession();
 
-        int port = getFreePort();
-
-        SshdSocketAddress local = new SshdSocketAddress("", port);
+        SshdSocketAddress local = new SshdSocketAddress("", 0);
         SshdSocketAddress remote = new SshdSocketAddress("localhost", echoPort);
 
         SshdSocketAddress bound = session.startLocalPortForwarding(local, remote);
@@ -266,7 +236,7 @@ public class PortForwardingTest extends BaseTest {
     public void testLocalForwardingNativeBigPayload() throws Exception {
         ClientSession session = createNativeSession();
 
-        SshdSocketAddress local = new SshdSocketAddress("", getFreePort());
+        SshdSocketAddress local = new SshdSocketAddress("", 0);
         SshdSocketAddress remote = new SshdSocketAddress("localhost", echoPort);
 
         SshdSocketAddress bound = session.startLocalPortForwarding(local, remote);
@@ -290,8 +260,7 @@ public class PortForwardingTest extends BaseTest {
     public void testForwardingChannel() throws Exception {
         ClientSession session = createNativeSession();
 
-        int forwardedPort = getFreePort();
-        SshdSocketAddress local = new SshdSocketAddress("", forwardedPort);
+        SshdSocketAddress local = new SshdSocketAddress("", 0);
         SshdSocketAddress remote = new SshdSocketAddress("localhost", echoPort);
 
         ChannelDirectTcpip channel = session.createDirectTcpipChannel(local, remote);
@@ -317,7 +286,7 @@ public class PortForwardingTest extends BaseTest {
         session.setPortForwardingR(forwardedPort, "localhost", echoPort);
 
         // 2. Establish a connection through it
-        new Socket("localhost", forwardedPort);
+        Socket s = new Socket("localhost", forwardedPort);
 
         // 3. Simulate the client going away
         rudelyDisconnectJschSession(session);
@@ -348,6 +317,8 @@ public class PortForwardingTest extends BaseTest {
 
         session.delPortForwardingR(forwardedPort);
         session.disconnect();
+
+        s.close();
     }
 
     /**

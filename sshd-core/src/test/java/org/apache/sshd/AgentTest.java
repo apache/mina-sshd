@@ -43,7 +43,6 @@ import org.apache.sshd.util.Utils;
 import org.junit.Test;
 
 import static org.apache.sshd.util.Utils.createTestKeyPairProvider;
-import static org.apache.sshd.util.Utils.getFreePort;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -99,8 +98,8 @@ public class AgentTest extends BaseTest {
             return;
         }
 
-        int port1 = getFreePort();
-        int port2 = getFreePort();
+        int port1;
+        int port2;
 
         TestEchoShellFactory shellFactory = new TestEchoShellFactory();
         ProxyAgentFactory agentFactory = new ProxyAgentFactory();
@@ -110,22 +109,22 @@ public class AgentTest extends BaseTest {
         localAgentFactory.getAgent().addIdentity(pair, "smx");
 
         SshServer sshd1 = SshServer.setUpDefaultServer();
-        sshd1.setPort(port1);
         sshd1.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd1.setShellFactory(shellFactory);
         sshd1.setPasswordAuthenticator(new BogusPasswordAuthenticator());
         sshd1.setPublickeyAuthenticator(new BogusPublickeyAuthenticator());
         sshd1.setAgentFactory(agentFactory);
         sshd1.start();
+        port1 = sshd1.getPort();
 
         SshServer sshd2 = SshServer.setUpDefaultServer();
-        sshd2.setPort(port2);
         sshd2.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd2.setShellFactory(new TestEchoShellFactory());
         sshd2.setPasswordAuthenticator(new BogusPasswordAuthenticator());
         sshd2.setPublickeyAuthenticator(new BogusPublickeyAuthenticator());
         sshd2.setAgentFactory(new ProxyAgentFactory());
         sshd2.start();
+        port2 = sshd2.getPort();
 
         SshClient client1 = SshClient.setUpDefaultClient();
         client1.setAgentFactory(localAgentFactory);

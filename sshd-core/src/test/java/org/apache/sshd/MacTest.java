@@ -127,15 +127,13 @@ public class MacTest extends BaseTest {
 
 
     protected void setUp(NamedFactory<Mac> mac) throws Exception {
-        port = Utils.getFreePort();
-
         sshd = SshServer.setUpDefaultServer();
-        sshd.setPort(port);
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setMacFactories(Arrays.<NamedFactory<Mac>>asList(mac));
         sshd.setShellFactory(new EchoShellFactory());
         sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
         sshd.start();
+        port  = sshd.getPort();
     }
 
     @After

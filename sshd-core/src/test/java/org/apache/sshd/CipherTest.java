@@ -116,15 +116,13 @@ public class CipherTest extends BaseTest {
 
 
     protected void setUp(NamedFactory<org.apache.sshd.common.Cipher> cipher) throws Exception {
-        port = Utils.getFreePort();
-
         sshd = SshServer.setUpDefaultServer();
-        sshd.setPort(port);
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setCipherFactories(Arrays.<NamedFactory<org.apache.sshd.common.Cipher>>asList(cipher));
         sshd.setShellFactory(new EchoShellFactory());
         sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
         sshd.start();
+        port = sshd.getPort();
     }
 
     @After

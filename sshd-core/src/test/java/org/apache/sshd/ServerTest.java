@@ -63,15 +63,13 @@ public class ServerTest extends BaseTest {
 
     @Before
     public void setUp() throws Exception {
-        port = Utils.getFreePort();
-
         sshd = SshServer.setUpDefaultServer();
-        sshd.setPort(port);
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setShellFactory(new TestEchoShellFactory());
         sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
         sshd.setSessionFactory(new org.apache.sshd.server.session.SessionFactory());
         sshd.start();
+        port = sshd.getPort();
     }
 
     @After

@@ -40,15 +40,13 @@ public class WelcomeBannerTest extends BaseTest {
 
     @Before
     public void setUp() throws Exception {
-        port = Utils.getFreePort();
-
         sshd = SshServer.setUpDefaultServer();
-        sshd.setPort(port);
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
         sshd.setPublickeyAuthenticator(new BogusPublickeyAuthenticator());
         sshd.getProperties().put(SshServer.WELCOME_BANNER, WELCOME);
         sshd.start();
+        port = sshd.getPort();
     }
 
     @After

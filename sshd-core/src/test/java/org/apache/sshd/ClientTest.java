@@ -105,12 +105,10 @@ public class ClientTest extends BaseTest {
 
     @Before
     public void setUp() throws Exception {
-        port = Utils.getFreePort();
         authLatch = new CountDownLatch(0);
         channelLatch = new CountDownLatch(0);
 
         sshd = SshServer.setUpDefaultServer();
-        sshd.setPort(port);
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setShellFactory(new TestEchoShellFactory());
         sshd.setCommandFactory(new CommandFactory() {
@@ -159,6 +157,7 @@ public class ClientTest extends BaseTest {
                 },
                 new TcpipServerChannel.DirectTcpipFactory()));
         sshd.start();
+        port = sshd.getPort();
 
         client = SshClient.setUpDefaultClient();
     }
@@ -620,7 +619,6 @@ public class ClientTest extends BaseTest {
     @Test
     public void testKeyboardInteractiveWithFailures() throws Exception {
         final AtomicInteger count = new AtomicInteger();
-        SshClient client = SshClient.setUpDefaultClient();
         client.getProperties().put(ClientFactoryManager.PASSWORD_PROMPTS, "3");
         client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthKeyboardInteractive.Factory()));
         client.setUserInteraction(new UserInteraction() {

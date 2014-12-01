@@ -23,6 +23,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -76,16 +77,13 @@ public class PortForwardingLoadTest extends BaseTest {
 
     @Before
     public void setUp() throws Exception {
-        sshPort = getFreePort();
-        echoPort = getFreePort();
-
         sshd = SshServer.setUpDefaultServer();
-        sshd.setPort(sshPort);
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setShellFactory(new EchoShellFactory());
         sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
         sshd.setTcpipForwardingFilter(new BogusForwardingFilter());
         sshd.start();
+        sshPort = sshd.getPort();
 
         NioSocketAcceptor acceptor = new NioSocketAcceptor();
         acceptor.setHandler(new IoHandlerAdapter() {
@@ -99,7 +97,8 @@ public class PortForwardingLoadTest extends BaseTest {
             }
         });
         acceptor.setReuseAddress(true);
-        acceptor.bind(new InetSocketAddress(echoPort));
+        acceptor.bind(new InetSocketAddress(0));
+        echoPort = acceptor.getLocalAddress().getPort();
         this.acceptor = acceptor;
 
     }
@@ -129,10 +128,11 @@ public class PortForwardingLoadTest extends BaseTest {
         }
         final String PAYLOAD = sb.toString();
         Session session = createSession();
-        final ServerSocket ss = new ServerSocket(0);
+        final ServerSocket ss = new ServerSocket();
+        ss.setReuseAddress(true);
+        ss.bind(new InetSocketAddress((InetAddress) null, 0));
         int forwardedPort = ss.getLocalPort();
-        int sinkPort = getFreePort();
-        session.setPortForwardingL(sinkPort, "localhost", forwardedPort);
+        int sinkPort = session.setPortForwardingL(0, "localhost", forwardedPort);
         final AtomicInteger conCount = new AtomicInteger(0);
 
         new Thread() {
@@ -188,6 +188,7 @@ public class PortForwardingLoadTest extends BaseTest {
             }
         }
         session.delPortForwardingL(sinkPort);
+        ss.close();
     }
 
     @Test
@@ -200,7 +201,9 @@ public class PortForwardingLoadTest extends BaseTest {
                 "longer Test Data. This is significantly longer Test Data. This is significantly "+
                 "longer Test Data. ";
         Session session = createSession();
-        final ServerSocket ss = new ServerSocket(0);
+        final ServerSocket ss = new ServerSocket();
+        ss.setReuseAddress(true);
+        ss.bind(new InetSocketAddress((InetAddress) null, 0));
         int forwardedPort = ss.getLocalPort();
         int sinkPort = getFreePort();
         session.setPortForwardingR(sinkPort, "localhost", forwardedPort);
@@ -262,6 +265,7 @@ public class PortForwardingLoadTest extends BaseTest {
             Assert.assertTrue(dataOK[i]);
         }
         session.delPortForwardingR(forwardedPort);
+        ss.close();
     }
 
     @Test
@@ -276,7 +280,6 @@ public class PortForwardingLoadTest extends BaseTest {
         final int nbDownloads = 2;
         final int nbLoops = 2;
 
-        final int port = getFreePort();
         StringBuilder resp = new StringBuilder();
         resp.append("<html><body>\n");
         for (int i = 0; i < 1000; i++) {
@@ -297,17 +300,15 @@ public class PortForwardingLoadTest extends BaseTest {
             }
         });
         acceptor.setReuseAddress(true);
-        acceptor.bind(new InetSocketAddress(port));
-
+        acceptor.bind(new InetSocketAddress(0));
+        final int port = acceptor.getLocalAddress().getPort();
 
         Session session = createSession();
 
-        final int forwardedPort1 = getFreePort();
+        final int forwardedPort1 = session.setPortForwardingL(0, host, port);
         final int forwardedPort2 = getFreePort();
-        System.err.println("URL: http://localhost:" + forwardedPort2);
-
-        session.setPortForwardingL(forwardedPort1, host, port);
         session.setPortForwardingR(forwardedPort2, "localhost", forwardedPort1);
+        System.err.println("URL: http://localhost:" + forwardedPort2);
 
 
         final CountDownLatch latch = new CountDownLatch(nbThread * nbDownloads * nbLoops);

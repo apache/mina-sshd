@@ -90,10 +90,7 @@ public class EcdsaTest extends BaseTest {
 
     @Before
     public void setUp() throws Exception {
-        port = Utils.getFreePort();
-
         sshd = SshServer.setUpDefaultServer();
-        sshd.setPort(port);
 //        sshd.setShellFactory(new TestEchoShellFactory());
         sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
         sshd.setSessionFactory(new org.apache.sshd.server.session.SessionFactory());
@@ -127,6 +124,7 @@ public class EcdsaTest extends BaseTest {
                 }
             });
             sshd.start();
+            port = sshd.getPort();
 
             client = SshClient.setUpDefaultClient();
             client.setSignatureFactories(Arrays.<NamedFactory<Signature>>asList(
@@ -150,6 +148,7 @@ public class EcdsaTest extends BaseTest {
                 }
             });
             sshd.start();
+            port  = sshd.getPort();
 
             client = SshClient.setUpDefaultClient();
             client.start();

@@ -42,7 +42,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.sshd.util.Utils.getFreePort;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
@@ -61,18 +60,15 @@ public class ProxyTest extends BaseTest {
 
     @Before
     public void setUp() throws Exception {
-        sshPort = getFreePort();
-        echoPort = getFreePort();
-
         sshd = SshServer.setUpDefaultServer();
         sshd.getProperties().put(SshServer.WINDOW_SIZE, "2048");
         sshd.getProperties().put(SshServer.MAX_PACKET_SIZE, "256");
-        sshd.setPort(sshPort);
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setShellFactory(new EchoShellFactory());
         sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
         sshd.setTcpipForwardingFilter(new BogusForwardingFilter());
         sshd.start();
+        sshPort = sshd.getPort();
 
         NioSocketAcceptor acceptor = new NioSocketAcceptor();
         acceptor.setHandler(new IoHandlerAdapter() {
@@ -86,7 +82,8 @@ public class ProxyTest extends BaseTest {
             }
         });
         acceptor.setReuseAddress(true);
-        acceptor.bind(new InetSocketAddress(echoPort));
+        acceptor.bind(new InetSocketAddress(0));
+        echoPort = acceptor.getLocalAddress().getPort();
         this.acceptor = acceptor;
 
     }

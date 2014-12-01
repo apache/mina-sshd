@@ -19,6 +19,8 @@
 package org.apache.sshd.util;
 
 import java.io.File;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -39,8 +41,10 @@ public class Utils {
     }
 
     public static int getFreePort() throws Exception {
-        ServerSocket s = new ServerSocket(0);
+        ServerSocket s = new ServerSocket();
         try {
+            s.setReuseAddress(true);
+            s.bind(new InetSocketAddress((InetAddress) null, 0));
             return s.getLocalPort();
         } finally {
             s.close();

@@ -57,9 +57,7 @@ public class SinglePublicKeyAuthTest extends BaseTest {
 
     @Before
     public void setUp() throws Exception {
-        port = Utils.getFreePort();
         sshd = SshServer.setUpDefaultServer();
-        sshd.setPort(port);
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setCommandFactory(new CommandFactory() {
             public Command createCommand(String command) {
@@ -73,6 +71,7 @@ public class SinglePublicKeyAuthTest extends BaseTest {
             }
         });
         sshd.start();
+        port = sshd.getPort();
     }
 
     @After

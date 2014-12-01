@@ -48,10 +48,7 @@ public class AuthenticationTest extends BaseTest {
 
     @Before
     public void setUp() throws Exception {
-        port = Utils.getFreePort();
-
         sshd = SshServer.setUpDefaultServer();
-        sshd.setPort(port);
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
         sshd.setPublickeyAuthenticator(new BogusPublickeyAuthenticator());
@@ -64,6 +61,7 @@ public class AuthenticationTest extends BaseTest {
             }
         });
         sshd.start();
+        port = sshd.getPort();
     }
 
     @After

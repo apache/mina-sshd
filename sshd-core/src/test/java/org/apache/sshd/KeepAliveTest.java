@@ -51,16 +51,14 @@ public class KeepAliveTest extends BaseTest {
 
     @Before
     public void setUp() throws Exception {
-        port = Utils.getFreePort();
-
         sshd = SshServer.setUpDefaultServer();
         sshd.getProperties().put(ServerFactoryManager.IDLE_TIMEOUT, Integer.toString(timeout));
-        sshd.setPort(port);
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setShellFactory(new TestEchoShellFactory());
         sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
         sshd.setPublickeyAuthenticator(new BogusPublickeyAuthenticator());
         sshd.start();
+        port  = sshd.getPort();
     }
 
     @After
