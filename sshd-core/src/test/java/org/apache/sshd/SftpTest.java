@@ -21,7 +21,6 @@ package org.apache.sshd;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.IOError;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -34,6 +33,7 @@ import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
 import org.apache.sshd.client.SftpClient;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.command.ScpCommandFactory;
 import org.apache.sshd.server.sftp.SftpSubsystem;
@@ -51,10 +51,8 @@ import org.junit.Test;
 
 import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertNull;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static junit.framework.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class SftpTest extends BaseTest {
 
@@ -236,6 +234,109 @@ public class SftpTest extends BaseTest {
         client.stop();
     }
 
+    /**
+     * this test is meant to test out write's logic, to ensure that internal chunking (based on Buffer.MAX_LEN) is
+     * functioning properly. To do this, we write a variety of file sizes, both smaller and larger than Buffer.MAX_LEN.
+     * in addition, this test ensures that improper arguments passed in get caught with an IllegalArgumentException
+     * @throws Exception upon any uncaught exception or failure
+     */
+    @Test
+    public void testWriteChunking() throws Exception {
+        SshClient client = SshClient.setUpDefaultClient();
+        client.start();
+        ClientSession session = client.connect("x", "localhost", port).await().getSession();
+        session.addPasswordIdentity("x");
+        session.auth().verify();
+
+        Utils.deleteRecursive(new File("target/sftp"));
+        new File("target/sftp").mkdirs();
+        new File("target/sftp/client").delete();
+
+        SftpClient sftp = session.createSftpClient();
+
+        sftp.mkdir("target/sftp/client");
+
+        uploadAndVerifyFile(sftp, 0, "emptyFile.txt");
+        uploadAndVerifyFile(sftp, 1000, "smallFile.txt");
+        uploadAndVerifyFile(sftp, Buffer.MAX_LEN - 1, "bufferMaxLenMinusOneFile.txt");
+        uploadAndVerifyFile(sftp, Buffer.MAX_LEN, "bufferMaxLenFile.txt");
+        // were chunking not implemented, these would fail. these sizes should invoke our internal chunking mechanism
+        uploadAndVerifyFile(sftp, Buffer.MAX_LEN + 1, "bufferMaxLenPlusOneFile.txt");
+        uploadAndVerifyFile(sftp, (int)(1.5 * Buffer.MAX_LEN), "1point5BufferMaxLenFile.txt");
+        uploadAndVerifyFile(sftp, (2 * Buffer.MAX_LEN) - 1, "2TimesBufferMaxLenMinusOneFile.txt");
+        uploadAndVerifyFile(sftp, 2 * Buffer.MAX_LEN, "2TimesBufferMaxLenFile.txt");
+        uploadAndVerifyFile(sftp, (2 * Buffer.MAX_LEN) + 1, "2TimesBufferMaxLenPlusOneFile.txt");
+        uploadAndVerifyFile(sftp, 200000, "largerFile.txt");
+
+        // test erroneous calls that check for negative values
+        testInvalidParams(sftp);
+
+        // cleanup
+        sftp.rmdir("target/sftp/client");
+        sftp.close();
+        client.stop();
+    }
+
+    private void testInvalidParams(SftpClient sftp) throws Exception {
+        // generate random file and upload it
+        final String filePath = "target/sftp/client/invalid";
+        SftpClient.Handle handle = sftp.open(filePath, EnumSet.of(SftpClient.OpenMode.Write, SftpClient.OpenMode.Create));
+        String randomData = randomString(5);
+        try {
+            sftp.write(handle, -1, randomData.getBytes(), 0, 0);
+            fail("should not have been able to write file with invalid file offset");
+        } catch (IllegalArgumentException e) {
+            // expected
+        }
+        try {
+            sftp.write(handle, 0, randomData.getBytes(), -1, 0);
+            fail("should not have been able to write file with invalid source offset");
+        } catch (IllegalArgumentException e) {
+            // expected
+        }
+        try {
+            sftp.write(handle, 0, randomData.getBytes(), 0, -1);
+            fail("should not have been able to write file with invalid length");
+        } catch (IllegalArgumentException e) {
+            // expected
+        }
+        try {
+            sftp.write(handle, 0, randomData.getBytes(), 0, randomData.length() + 1);
+            fail("should not have been able to write file with length bigger than array itself (no offset)");
+        } catch (IllegalArgumentException e) {
+            // expected
+        }
+        try {
+            sftp.write(handle, 0, randomData.getBytes(), randomData.length(), 1);
+            fail("should not have been able to write file with length bigger than array itself (with offset)");
+        } catch (IllegalArgumentException e) {
+            // expected
+        }
+
+        // cleanup
+        sftp.close(handle);
+        sftp.remove(filePath);
+        assertFalse("file should not be there", new File(filePath).exists());
+    }
+
+    private void uploadAndVerifyFile(SftpClient sftp, int size, String filename) throws Exception {
+        // generate random file and upload it
+        final String filePath = "target/sftp/client/" + filename;
+        SftpClient.Handle handle = sftp.open(filePath, EnumSet.of(SftpClient.OpenMode.Write, SftpClient.OpenMode.Create));
+        String randomData = randomString(size);
+        sftp.write(handle, 0, randomData.getBytes(), 0, randomData.length());
+        sftp.close(handle);
+
+        // verify results
+        File resultFile = new File(filePath);
+        assertTrue("file should exist on disk", resultFile.exists());
+        assertTrue("file contents should match", randomData.equals(readFile(filePath)));
+
+        // cleanup
+        sftp.remove(filePath);
+        assertFalse("file should have been removed", resultFile.exists());
+    }
+
     @Test
     public void testSftp() throws Exception {
         String d = "0123456789\n";
@@ -396,6 +497,14 @@ public class SftpTest extends BaseTest {
         c.connect();
         c.put(new ByteArrayInputStream(data.getBytes()), path);
         c.disconnect();
+    }
+
+    private String randomString(int size) {
+        StringBuilder sb = new StringBuilder(size);
+        for (int i = 0; i < size; i++) {
+            sb.append((char) ((i % 10) + '0'));
+        }
+        return sb.toString();
     }
 
 }

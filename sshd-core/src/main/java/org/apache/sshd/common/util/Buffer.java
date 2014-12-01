@@ -195,7 +195,7 @@ public final class Buffer implements Readable {
 
     public String getString() {
         int len = getInt();
-        if (len < 0 || len > MAX_LEN) {
+        if (len < 0) {
             throw new IllegalStateException("Bad item length: " + len);
         }
         ensureAvailable(len);
@@ -218,9 +218,10 @@ public final class Buffer implements Readable {
 
     public byte[] getBytes() {
         int len = getInt();
-        if (len < 0 || len > MAX_LEN) {
+        if (len < 0) {
             throw new IllegalStateException("Bad item length: " + len);
         }
+        ensureAvailable(len);
         byte[] b = new byte[len];
         getRawBytes(b);
         return b;

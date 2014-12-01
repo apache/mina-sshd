@@ -477,6 +477,13 @@ public class DefaultSftpClient implements SftpClient {
     }
 
     public void write(Handle handle, long fileOffset, byte[] src, int srcoff, int len) throws IOException {
+        // do some bounds checking first
+        if (fileOffset < 0 || srcoff < 0 || len < 0) {
+            throw new IllegalArgumentException("please ensure all parameters are non-negative values");
+        }
+        if (srcoff + len > src.length) {
+            throw new IllegalArgumentException("cannot read bytes " + srcoff + " to " + (srcoff + len) + " when array is only of length " + src.length);
+        }
         Buffer buffer = new Buffer();
         buffer.putString(handle.id);
         buffer.putLong(fileOffset);
