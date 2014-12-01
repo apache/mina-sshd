@@ -20,22 +20,23 @@
 package org.apache.sshd.common.file;
 
 import java.io.IOException;
+import java.nio.file.FileSystem;
 
 import org.apache.sshd.common.Session;
 
 /**
- * Factory for file system implementations - it returns the file system view for user.
+ * Factory for file system implementations - it returns the file system for user.
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public interface FileSystemFactory {
 
     /**
-     * Create user specific file system view.
+     * Create user specific file system.
      * @param session The session created for the user
-     * @return The current {@link FileSystemView} for the provided session
-     * @throws IOException when the filesystem view can not be created
+     * @return The current {@link FileSystem} for the provided session
+     * @throws java.io.IOException when the filesystem can not be created
      */
-    FileSystemView createFileSystemView(Session session) throws IOException;
+    FileSystem createFileSystem(Session session) throws IOException;
 
 }

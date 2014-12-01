@@ -492,7 +492,7 @@ public class ChannelSession extends AbstractServerChannel {
         // If the shell wants to be aware of the file system, let's do that too
         if (command instanceof FileSystemAware) {
             FileSystemFactory factory = ((ServerSession) session).getFactoryManager().getFileSystemFactory();
-            ((FileSystemAware) command).setFileSystemView(factory.createFileSystemView(session));
+            ((FileSystemAware) command).setFileSystem(factory.createFileSystem(session));
         }
         // If the shell wants to use non-blocking io
         if (command instanceof AsyncCommand) {

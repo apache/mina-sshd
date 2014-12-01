@@ -240,9 +240,11 @@ public class SftpFileSystemProvider extends FileSystemProvider {
 
             @Override
             public void close() throws IOException {
-                sftp.close(handle);
-                sftp.close();
-                pos = -1;
+                if (pos >= 0) {
+                    sftp.close(handle);
+                    sftp.close();
+                    pos = -1;
+                }
             }
         };
     }

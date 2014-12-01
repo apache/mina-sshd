@@ -18,3 +18,4 @@
 ##
 
 org.apache.sshd.client.sftp.SftpFileSystemProvider
+org.apache.sshd.common.file.root.RootedFileSystemProvider

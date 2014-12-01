@@ -16,19 +16,33 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.file;
+package org.apache.sshd.common.file.root;
 
-import java.nio.file.FileSystem;
+import java.io.IOException;
+import java.net.URI;
+import java.nio.file.LinkOption;
+
+import org.apache.sshd.common.file.util.BasePath;
+import org.apache.sshd.common.file.util.ImmutableList;
 
 /**
- * Interface that can be implemented by a command to be able to access the
- * file system in which this command will be used.
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface FileSystemAware {
-    /**
-     * Set the file system in which this shell will be executed.
-     *
-     * @param fileSystem
-     */
-    void setFileSystem(FileSystem fileSystem);
+public class RootedPath extends BasePath<RootedPath, RootedFileSystem> {
+
+    public RootedPath(RootedFileSystem fileSystem, String root, ImmutableList<String> names) {
+        super(fileSystem, root, names);
+    }
+
+    public URI toUri() {
+        // TODO
+        return null;
+    }
+
+    public RootedPath toRealPath(LinkOption... options) throws IOException {
+        RootedPath absolute = toAbsolutePath();
+        fileSystem.provider().checkAccess(absolute);
+        return absolute;
+    }
+
 }

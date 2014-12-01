@@ -18,14 +18,15 @@
  */
 package org.apache.sshd.common.file.virtualfs;
 
-import java.util.HashMap;
+import java.io.IOException;
+import java.nio.file.FileSystem;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.sshd.common.Session;
 import org.apache.sshd.common.file.FileSystemFactory;
-import org.apache.sshd.common.file.FileSystemView;
-import org.apache.sshd.common.file.nativefs.NativeFileSystemView;
+import org.apache.sshd.common.file.root.RootedFileSystemProvider;
 
 /**
  * SSHd file system factory to reduce the visibility to a physical folder.
@@ -69,11 +70,9 @@ public class VirtualFileSystemFactory implements FileSystemFactory {
         return homeDir;
     }
 
-    public FileSystemView createFileSystemView(Session session) {
+    public FileSystem createFileSystem(Session session) throws IOException {
         String dir = computeRootDir(session.getUsername());
-        Map<String, String> roots = new HashMap<String, String>();
-        roots.put("/", dir);
-        return new NativeFileSystemView(session.getUsername(), roots, "/", '/', false);
+        return new RootedFileSystemProvider().newFileSystem(Paths.get(dir), null);
     }
 
 }

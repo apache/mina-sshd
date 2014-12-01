@@ -458,7 +458,7 @@ public class SftpTest extends BaseTest {
         assertTrue(target.exists());
         assertEquals("0123456789", readFile(unixPath));
 
-        c.symlink(unixPath, linkUnixPath);
+        c.symlink(linkUnixPath, unixPath);
 
         assertTrue(link.exists());
         assertEquals("0123456789", readFile(linkUnixPath));

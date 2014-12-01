@@ -20,10 +20,12 @@ package org.apache.sshd.client.scp;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
+import java.nio.file.FileSystem;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 
 import org.apache.sshd.ClientSession;
@@ -31,8 +33,6 @@ import org.apache.sshd.client.ScpClient;
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.file.FileSystemFactory;
-import org.apache.sshd.common.file.FileSystemView;
-import org.apache.sshd.common.file.SshFile;
 import org.apache.sshd.common.scp.ScpHelper;
 
 /**
@@ -81,33 +81,41 @@ public class DefaultScpClient implements ScpClient {
         sb.append(remote);
 
         FileSystemFactory factory = clientSession.getFactoryManager().getFileSystemFactory();
-        FileSystemView fs = factory.createFileSystemView(clientSession);
-        SshFile target = fs.getFile(local);
-        if (options.contains(Option.TargetIsDirectory)) {
-            if (!target.doesExist()) {
-                throw new SshException("Target directory " + target.toString() + " does not exists");
-            }
-            if (!target.isDirectory()) {
-                throw new SshException("Target directory " + target.toString() + " is not a directory");
-            }
-        }
-
-        ChannelExec channel = clientSession.createExecChannel(sb.toString());
+        FileSystem fs = factory.createFileSystem(clientSession);
         try {
-            channel.open().await();
-        } catch (InterruptedException e) {
-            throw (IOException) new InterruptedIOException().initCause(e);
+            Path target = fs.getPath(local);
+            if (options.contains(Option.TargetIsDirectory)) {
+                if (!Files.exists(target)) {
+                    throw new SshException("Target directory " + target.toString() + " does not exists");
+                }
+                if (!Files.isDirectory(target)) {
+                    throw new SshException("Target directory " + target.toString() + " is not a directory");
+                }
+            }
+
+            ChannelExec channel = clientSession.createExecChannel(sb.toString());
+            try {
+                channel.open().await();
+            } catch (InterruptedException e) {
+                throw (IOException) new InterruptedIOException().initCause(e);
+            }
+
+            ScpHelper helper = new ScpHelper(channel.getInvertedOut(), channel.getInvertedIn(), fs);
+
+            helper.receive(target,
+                           options.contains(Option.Recursive),
+                           options.contains(Option.TargetIsDirectory),
+                           options.contains(Option.PreserveAttributes),
+                           ScpHelper.DEFAULT_RECEIVE_BUFFER_SIZE);
+
+            channel.close(false);
+        } finally {
+            try {
+                fs.close();
+            } catch (UnsupportedOperationException e) {
+                // Ignore
+            }
         }
-
-        ScpHelper helper = new ScpHelper(channel.getInvertedOut(), channel.getInvertedIn(), fs);
-
-        helper.receive(target,
-                       options.contains(Option.Recursive),
-                       options.contains(Option.TargetIsDirectory),
-                       options.contains(Option.PreserveAttributes),
-                       ScpHelper.DEFAULT_RECEIVE_BUFFER_SIZE);
-
-        channel.close(false);
     }
 
     public void upload(String local, String remote, Option... options) throws IOException {
@@ -151,19 +159,25 @@ public class DefaultScpClient implements ScpClient {
         }
 
         FileSystemFactory factory = clientSession.getFactoryManager().getFileSystemFactory();
-        FileSystemView fs = factory.createFileSystemView(clientSession);
-        ScpHelper helper = new ScpHelper(channel.getInvertedOut(), channel.getInvertedIn(), fs);
-
-        helper.send(Arrays.asList(local),
-                    options.contains(Option.Recursive),
-                    options.contains(Option.PreserveAttributes),
-                    ScpHelper.DEFAULT_SEND_BUFFER_SIZE);
-
+        FileSystem fs = factory.createFileSystem(clientSession);
+        try {
+            ScpHelper helper = new ScpHelper(channel.getInvertedOut(), channel.getInvertedIn(), fs);
+            helper.send(Arrays.asList(local),
+                        options.contains(Option.Recursive),
+                        options.contains(Option.PreserveAttributes),
+                        ScpHelper.DEFAULT_SEND_BUFFER_SIZE);
+        } finally {
+            try {
+                fs.close();
+            } catch (UnsupportedOperationException e) {
+                // Ignore
+            }
+        }
         channel.close(false);
     }
 
     private List<Option> options(Option... options) {
-        List<Option> opts = new ArrayList<Option>();
+        List<Option> opts = new ArrayList<>();
         if (options != null) {
             opts.addAll(Arrays.asList(options));
         }

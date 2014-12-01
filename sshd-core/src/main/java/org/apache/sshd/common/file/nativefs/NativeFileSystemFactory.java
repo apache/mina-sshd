@@ -20,10 +20,11 @@
 package org.apache.sshd.common.file.nativefs;
 
 import java.io.File;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 
 import org.apache.sshd.common.Session;
 import org.apache.sshd.common.file.FileSystemFactory;
-import org.apache.sshd.common.file.FileSystemView;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,8 +38,6 @@ public class NativeFileSystemFactory implements FileSystemFactory {
     private final Logger LOG = LoggerFactory.getLogger(NativeFileSystemFactory.class);
 
     private boolean createHome;
-
-    private boolean caseInsensitive;
 
     /**
      * Should the home directories be created automatically
@@ -58,27 +57,9 @@ public class NativeFileSystemFactory implements FileSystemFactory {
     }
 
     /**
-     * Is this file system case insensitive.
-     * Enabling might cause problems when working against case-sensitive file systems, like on Linux
-     * @return true if this file system is case insensitive
-     */
-    public boolean isCaseInsensitive() {
-        return caseInsensitive;
-    }
-
-    /**
-     * Should this file system be case insensitive.
-     * Enabling might cause problems when working against case-sensitive file systems, like on Linux
-     * @param caseInsensitive true if this file system should be case insensitive
-     */
-    public void setCaseInsensitive(boolean caseInsensitive) {
-        this.caseInsensitive = caseInsensitive;
-    }
-
-    /**
      * Create the appropriate user file system view.
      */
-    public FileSystemView createFileSystemView(Session session) {
+    public FileSystem createFileSystem(Session session) {
         String userName = session.getUsername();
         // create home if does not exist
         if (createHome) {
@@ -95,7 +76,7 @@ public class NativeFileSystemFactory implements FileSystemFactory {
             }
         }
 
-        FileSystemView fsView = new NativeFileSystemView(userName, caseInsensitive);
-        return fsView;
+        return FileSystems.getDefault();
     }
+
 }

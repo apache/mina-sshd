@@ -25,9 +25,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.nio.file.FileSystem;
 
 import org.apache.sshd.common.file.FileSystemAware;
-import org.apache.sshd.common.file.FileSystemView;
 import org.apache.sshd.common.scp.ScpHelper;
 import org.apache.sshd.common.util.ThreadUtils;
 import org.apache.sshd.server.Command;
@@ -53,7 +53,7 @@ public class ScpCommand implements Command, Runnable, FileSystemAware {
     protected boolean optF;
     protected boolean optD;
     protected boolean optP; // TODO: handle modification times
-    protected FileSystemView root;
+    protected FileSystem fileSystem;
     protected String path;
     protected InputStream in;
     protected OutputStream out;
@@ -237,8 +237,8 @@ public class ScpCommand implements Command, Runnable, FileSystemAware {
         this.callback = callback;
     }
 
-    public void setFileSystemView(FileSystemView view) {
-        this.root = view;
+    public void setFileSystem(FileSystem fs) {
+        this.fileSystem = fs;
     }
 
     public void start(Environment env) throws IOException {
@@ -274,15 +274,23 @@ public class ScpCommand implements Command, Runnable, FileSystemAware {
         }
 
         executors = null;
+
+        try {
+            fileSystem.close();
+        } catch (UnsupportedOperationException e) {
+            // Ignore
+        } catch (IOException e) {
+            log.debug("Error closing FileSystem", e);
+        }
     }
 
     public void run() {
         int exitValue = ScpHelper.OK;
         String exitMessage = null;
-        ScpHelper helper = new ScpHelper(in, out, root);
+        ScpHelper helper = new ScpHelper(in, out, fileSystem);
         try {
             if (optT) {
-                helper.receive(root.getFile(path), optR, optD, optP, receiveBufferSize);
+                helper.receive(fileSystem.getPath(path), optR, optD, optP, receiveBufferSize);
             } else if (optF) {
                 helper.send(Collections.singletonList(path), optR, optP, sendBufferSize);
             } else {

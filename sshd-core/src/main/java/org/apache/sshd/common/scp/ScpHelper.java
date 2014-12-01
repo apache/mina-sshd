@@ -20,17 +20,26 @@ package org.apache.sshd.common.scp;
 
 import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
+import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.DirectoryStream;
+import java.nio.file.FileSystem;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.BasicFileAttributeView;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileTime;
+import java.nio.file.attribute.PosixFilePermission;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.file.FileSystemView;
-import org.apache.sshd.common.file.SshFile;
 import org.apache.sshd.common.util.DirectoryScanner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,22 +79,22 @@ public class ScpHelper {
     public static final int S_IWOTH =  0000002;
     public static final int S_IXOTH =  0000001;
 
-    protected final FileSystemView root;
+    protected final FileSystem fileSystem;
     protected final InputStream in;
     protected final OutputStream out;
 
-    public ScpHelper(InputStream in, OutputStream out, FileSystemView root) {
+    public ScpHelper(InputStream in, OutputStream out, FileSystem fileSystem) {
         this.in = in;
         this.out = out;
-        this.root = root;
+        this.fileSystem = fileSystem;
     }
 
-    public void receive(SshFile path, boolean recursive, boolean shouldBeDir, boolean preserve, int bufferSize) throws IOException {
+    public void receive(Path path, boolean recursive, boolean shouldBeDir, boolean preserve, int bufferSize) throws IOException {
         if (shouldBeDir) {
-            if (!path.doesExist()) {
+            if (!Files.exists(path)) {
                 throw new SshException("Target directory " + path.toString() + " does not exists");
             }
-            if (!path.isDirectory()) {
+            if (!Files.isDirectory(path)) {
                 throw new SshException("Target directory " + path.toString() + " is not a directory");
             }
         }
@@ -136,7 +145,7 @@ public class ScpHelper {
     }
 
 
-    public void receiveDir(String header, SshFile path, long[] time, boolean preserve, int bufferSize) throws IOException {
+    public void receiveDir(String header, Path path, long[] time, boolean preserve, int bufferSize) throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("Receiving directory {}", path);
         }
@@ -151,26 +160,26 @@ public class ScpHelper {
         if (length != 0) {
             throw new IOException("Expected 0 length for directory but got " + length);
         }
-        SshFile file;
-        if (path.doesExist() && path.isDirectory()) {
-            file = root.getFile(path, name);
-        } else if (!path.doesExist() && path.getParentFile().doesExist() && path.getParentFile().isDirectory()) {
+        Path file;
+        if (Files.exists(path) && Files.isDirectory(path)) {
+            file = path.resolve(name);
+        } else if (!Files.exists(path) && Files.exists(path.getParent()) && Files.isDirectory(path.getParent())) {
             file = path;
         } else {
             throw new IOException("Can not write to " + path);
         }
-        if (!(file.doesExist() && file.isDirectory()) && !file.mkdir()) {
-            throw new IOException("Could not create directory " + file);
+        if (!(Files.exists(file) && Files.isDirectory(file))) {
+            Files.createDirectory(file);
         }
 
         if (preserve) {
-            Map<SshFile.Attribute, Object> attrs = new HashMap<SshFile.Attribute, Object>();
-            attrs.put(SshFile.Attribute.Permissions, fromOctalPerms(perms));
+            setOctalPerms(file, perms);
             if (time != null) {
-                attrs.put(SshFile.Attribute.LastModifiedTime, time[0]);
-                attrs.put(SshFile.Attribute.LastAccessTime, time[1]);
+                Files.getFileAttributeView(file, BasicFileAttributeView.class)
+                        .setTimes(FileTime.from(time[0], TimeUnit.SECONDS),
+                                FileTime.from(time[1], TimeUnit.SECONDS),
+                                null);
             }
-            file.setAttributes(attrs);
         }
 
         ack();
@@ -198,7 +207,7 @@ public class ScpHelper {
 
     }
 
-    public void receiveFile(String header, SshFile path, long[] time, boolean preserve, int bufferSize) throws IOException {
+    public void receiveFile(String header, Path path, long[] time, boolean preserve, int bufferSize) throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("Receiving file {}", path);
         }
@@ -211,7 +220,7 @@ public class ScpHelper {
         }
 
         String perms = header.substring(1, 5);
-        long length = Long.parseLong(header.substring(6, header.indexOf(' ', 6)));
+        final long length = Long.parseLong(header.substring(6, header.indexOf(' ', 6)));
         String name = header.substring(header.indexOf(' ', 6) + 1);
         if (length < 0L) { // TODO consider throwing an exception...
             log.warn("receiveFile(" + path + ") bad length in header: " + header);
@@ -225,50 +234,78 @@ public class ScpHelper {
         }
 
 
-        SshFile file;
-        if (path.doesExist() && path.isDirectory()) {
-            file = root.getFile(path, name);
-        } else if (path.doesExist() && path.isFile()) {
+        Path file;
+        if (Files.exists(path) && Files.isDirectory(path)) {
+            file = path.resolve(name);
+        } else if (Files.exists(path) && Files.isRegularFile(path)) {
             file = path;
-        } else if (!path.doesExist() && path.getParentFile().doesExist() && path.getParentFile().isDirectory()) {
+        } else if (!Files.exists(path) && Files.exists(path.getParent()) && Files.isDirectory(path.getParent())) {
             file = path;
         } else {
             throw new IOException("Can not write to " + path);
         }
-        if (file.doesExist() && file.isDirectory()) {
+        if (Files.exists(file) && Files.isDirectory(file)) {
             throw new IOException("File is a directory: " + file);
-        } else if (file.doesExist() && !file.isWritable()) {
+        } else if (Files.exists(file) && !Files.isWritable(file)) {
             throw new IOException("Can not write to file: " + file);
         }
-        if (file.doesExist()) {
-            file.truncate();
-        }
-        OutputStream os = file.createOutputStream(0);
-        try {
-            ack();
-
-            byte[] buffer = new byte[bufSize];
-            while (length > 0) {
-                int len = (int) Math.min(length, buffer.length);
-                len = in.read(buffer, 0, len);
-                if (len <= 0) {
-                    throw new IOException("End of stream reached");
+        InputStream is = new FilterInputStream(in) {
+            long remaining = length;
+            @Override
+            public int read() throws IOException {
+                if (remaining > 0) {
+                    remaining--;
+                    return super.read();
+                } else{
+                    return -1;
                 }
-                os.write(buffer, 0, len);
-                length -= len;
             }
-        } finally {
-            os.close();
+
+            @Override
+            public int read(byte[] b, int off, int len) throws IOException {
+                int nb = len;
+                if (nb > remaining) {
+                    nb = (int) remaining;
+                }
+                if (nb > 0) {
+                    int read = super.read(b, off, nb);
+                    remaining -= read;
+                    return read;
+                } else {
+                    return -1;
+                }
+            }
+
+            @Override
+            public long skip(long n) throws IOException {
+                long skipped = super.skip(n);
+                remaining -= skipped;
+                return skipped;
+            }
+
+            @Override
+            public int available() throws IOException {
+                int av = super.available();
+                if (av > remaining) {
+                    return (int) remaining;
+                } else {
+                    return av;
+                }
+            }
+        };
+        try (OutputStream os = Files.newOutputStream(file)) {
+            ack();
+            copy(is, os, bufSize);
         }
 
         if (preserve) {
-            Map<SshFile.Attribute, Object> attrs = new HashMap<SshFile.Attribute, Object>();
-            attrs.put(SshFile.Attribute.Permissions, fromOctalPerms(perms));
+            setOctalPerms(file, perms);
             if (time != null) {
-                attrs.put(SshFile.Attribute.LastModifiedTime, time[0]);
-                attrs.put(SshFile.Attribute.LastAccessTime, time[1]);
+                Files.getFileAttributeView(file, BasicFileAttributeView.class)
+                        .setTimes(FileTime.from(time[0], TimeUnit.SECONDS),
+                                FileTime.from(time[1], TimeUnit.SECONDS),
+                                null);
             }
-            file.setAttributes(attrs);
         }
 
         ack();
@@ -309,10 +346,10 @@ public class ScpHelper {
                 }
                 String[] included = new DirectoryScanner(basedir, pattern).scan();
                 for (String path : included) {
-                    SshFile file = root.getFile(basedir + "/" + path);
-                    if (file.isFile()) {
+                    Path file = fileSystem.getPath(basedir + "/" + path);
+                    if (Files.isRegularFile(file)) {
                         sendFile(file, preserve, bufferSize);
-                    } else if (file.isDirectory()) {
+                    } else if (Files.isDirectory(file)) {
                         if (!recursive) {
                             out.write(ScpHelper.WARNING);
                             out.write((path + " not a regular file\n").getBytes());
@@ -331,13 +368,13 @@ public class ScpHelper {
                     basedir = pattern.substring(0, lastSep);
                     pattern = pattern.substring(lastSep + 1);
                 }
-                SshFile file = root.getFile(basedir + "/" + pattern);
-                if (!file.doesExist()) {
+                Path file = fileSystem.getPath(basedir + "/" + pattern);
+                if (!Files.exists(file)) {
                     throw new IOException(file + ": no such file or directory");
                 }
-                if (file.isFile()) {
+                if (Files.isRegularFile(file)) {
                     sendFile(file, preserve, bufferSize);
-                } else if (file.isDirectory()) {
+                } else if (Files.isDirectory(file)) {
                     if (!recursive) {
                         throw new IOException(file + " not a regular file");
                     } else {
@@ -350,7 +387,7 @@ public class ScpHelper {
         }
     }
 
-    public void sendFile(SshFile path, boolean preserve, int bufferSize) throws IOException {
+    public void sendFile(Path path, boolean preserve, int bufferSize) throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("Sending file {}", path);
         }
@@ -359,15 +396,15 @@ public class ScpHelper {
             throw new IOException("sendFile(" + path + ") buffer size (" + bufferSize + ") below minimum (" + MIN_SEND_BUFFER_SIZE + ")");
         }
 
-        Map<SshFile.Attribute,Object> attrs =  path.getAttributes(true);
+        BasicFileAttributes basic = Files.getFileAttributeView(path, BasicFileAttributeView.class).readAttributes();
         if (preserve) {
             StringBuffer buf = new StringBuffer();
             buf.append("T");
-            buf.append(attrs.get(SshFile.Attribute.LastModifiedTime));
+            buf.append(basic.lastModifiedTime().to(TimeUnit.SECONDS));
             buf.append(" ");
             buf.append("0");
             buf.append(" ");
-            buf.append(attrs.get(SshFile.Attribute.LastAccessTime));
+            buf.append(basic.lastAccessTime().to(TimeUnit.SECONDS));
             buf.append(" ");
             buf.append("0");
             buf.append("\n");
@@ -378,17 +415,17 @@ public class ScpHelper {
 
         StringBuffer buf = new StringBuffer();
         buf.append("C");
-        buf.append(preserve ? toOctalPerms((EnumSet<SshFile.Permission>) attrs.get(SshFile.Attribute.Permissions)) : "0644");
+        buf.append(preserve ? getOctalPerms(path) : "0644");
         buf.append(" ");
-        buf.append(attrs.get(SshFile.Attribute.Size)); // length
+        buf.append(basic.size()); // length
         buf.append(" ");
-        buf.append(path.getName());
+        buf.append(path.getFileName().toString());
         buf.append("\n");
         out.write(buf.toString().getBytes());
         out.flush();
         readAck(false);
 
-        long fileSize = path.getSize();
+        long fileSize = Files.size(path);
         if (fileSize < 0L) { // TODO consider throwing an exception...
             log.warn("sendFile(" + path + ") bad file size: " + fileSize);
         }
@@ -400,36 +437,27 @@ public class ScpHelper {
             bufSize = MIN_SEND_BUFFER_SIZE;
         }
 
-        InputStream is = path.createInputStream(0);
-        try {
-            byte[] buffer = new byte[bufSize];
-            for (;;) {
-                int len = is.read(buffer, 0, buffer.length);
-                if (len == -1) {
-                    break;
-                }
-                out.write(buffer, 0, len);
-            }
-        } finally {
-            is.close();
+        // TODO: use bufSize
+        try (InputStream in = Files.newInputStream(path)) {
+            copy(in, out, bufSize);
         }
         ack();
         readAck(false);
     }
 
-    public void sendDir(SshFile path, boolean preserve, int bufferSize) throws IOException {
+    public void sendDir(Path path, boolean preserve, int bufferSize) throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("Sending directory {}", path);
         }
-        Map<SshFile.Attribute,Object> attrs =  path.getAttributes(true);
+        BasicFileAttributes basic = Files.getFileAttributeView(path, BasicFileAttributeView.class).readAttributes();
         if (preserve) {
             StringBuffer buf = new StringBuffer();
             buf.append("T");
-            buf.append(attrs.get(SshFile.Attribute.LastModifiedTime));
+            buf.append(basic.lastModifiedTime().to(TimeUnit.SECONDS));
             buf.append(" ");
             buf.append("0");
             buf.append(" ");
-            buf.append(attrs.get(SshFile.Attribute.LastAccessTime));
+            buf.append(basic.lastAccessTime().to(TimeUnit.SECONDS));
             buf.append(" ");
             buf.append("0");
             buf.append("\n");
@@ -440,21 +468,23 @@ public class ScpHelper {
 
         StringBuffer buf = new StringBuffer();
         buf.append("D");
-        buf.append(preserve ? toOctalPerms((EnumSet<SshFile.Permission>) attrs.get(SshFile.Attribute.Permissions)) : "0755");
+        buf.append(preserve ? getOctalPerms(path) : "0755");
         buf.append(" ");
         buf.append("0"); // length
         buf.append(" ");
-        buf.append(path.getName());
+        buf.append(path.getFileName().toString());
         buf.append("\n");
         out.write(buf.toString().getBytes());
         out.flush();
         readAck(false);
 
-        for (SshFile child : path.listSshFiles()) {
-            if (child.isFile()) {
-                sendFile(child, preserve, bufferSize);
-            } else if (child.isDirectory()) {
-                sendDir(child, preserve, bufferSize);
+        try (DirectoryStream<Path> children = Files.newDirectoryStream(path)) {
+            for (Path child : children) {
+                if (Files.isRegularFile(child)) {
+                    sendFile(child, preserve, bufferSize);
+                } else if (Files.isDirectory(child)) {
+                    sendDir(child, preserve, bufferSize);
+                }
             }
         }
 
@@ -468,55 +498,90 @@ public class ScpHelper {
         return new long[] { Long.parseLong(numbers[0]), Long.parseLong(numbers[2]) };
     }
 
-    public static String toOctalPerms(EnumSet<SshFile.Permission> perms) {
+    public static String getOctalPerms(Path path) throws IOException {
         int pf = 0;
-        for (SshFile.Permission p : perms) {
-            switch (p) {
-                case UserRead:      pf |= S_IRUSR; break;
-                case UserWrite:     pf |= S_IWUSR; break;
-                case UserExecute:   pf |= S_IXUSR; break;
-                case GroupRead:     pf |= S_IRGRP; break;
-                case GroupWrite:    pf |= S_IWGRP; break;
-                case GroupExecute:  pf |= S_IXGRP; break;
-                case OthersRead:    pf |= S_IROTH; break;
-                case OthersWrite:   pf |= S_IWOTH; break;
-                case OthersExecute: pf |= S_IXOTH; break;
+        if (path.getFileSystem().supportedFileAttributeViews().contains("posix")) {
+            Set<PosixFilePermission> perms = Files.getPosixFilePermissions(path);
+            for (PosixFilePermission p : perms) {
+                switch (p) {
+                case OWNER_READ:
+                    pf |= S_IRUSR;
+                    break;
+                case OWNER_WRITE:
+                    pf |= S_IWUSR;
+                    break;
+                case OWNER_EXECUTE:
+                    pf |= S_IXUSR;
+                    break;
+                case GROUP_READ:
+                    pf |= S_IRGRP;
+                    break;
+                case GROUP_WRITE:
+                    pf |= S_IWGRP;
+                    break;
+                case GROUP_EXECUTE:
+                    pf |= S_IXGRP;
+                    break;
+                case OTHERS_READ:
+                    pf |= S_IROTH;
+                    break;
+                case OTHERS_WRITE:
+                    pf |= S_IWOTH;
+                    break;
+                case OTHERS_EXECUTE:
+                    pf |= S_IXOTH;
+                    break;
+                }
+            }
+        } else {
+            if (Files.isReadable(path)) {
+                pf |= S_IRUSR | S_IRGRP | S_IROTH;
+            }
+            if (Files.isWritable(path)) {
+                pf |= S_IWUSR | S_IWGRP | S_IWOTH;
+            }
+            if (Files.isExecutable(path)) {
+                pf |= S_IXUSR | S_IXGRP | S_IXOTH;
             }
         }
         return String.format("%04o", pf);
     }
 
-    public static EnumSet<SshFile.Permission> fromOctalPerms(String str) {
+    public static void setOctalPerms(Path path, String str) throws IOException {
         int perms = Integer.parseInt(str, 8);
-        EnumSet<SshFile.Permission> p = EnumSet.noneOf(SshFile.Permission.class);
+        EnumSet<PosixFilePermission> p = EnumSet.noneOf(PosixFilePermission.class);
         if ((perms & S_IRUSR) != 0) {
-            p.add(SshFile.Permission.UserRead);
+            p.add(PosixFilePermission.OWNER_READ);
         }
         if ((perms & S_IWUSR) != 0) {
-            p.add(SshFile.Permission.UserWrite);
+            p.add(PosixFilePermission.OWNER_WRITE);
         }
         if ((perms & S_IXUSR) != 0) {
-            p.add(SshFile.Permission.UserExecute);
+            p.add(PosixFilePermission.OWNER_EXECUTE);
         }
         if ((perms & S_IRGRP) != 0) {
-            p.add(SshFile.Permission.GroupRead);
+            p.add(PosixFilePermission.GROUP_READ);
         }
         if ((perms & S_IWGRP) != 0) {
-            p.add(SshFile.Permission.GroupWrite);
+            p.add(PosixFilePermission.GROUP_WRITE);
         }
         if ((perms & S_IXGRP) != 0) {
-            p.add(SshFile.Permission.GroupExecute);
+            p.add(PosixFilePermission.GROUP_EXECUTE);
         }
         if ((perms & S_IROTH) != 0) {
-            p.add(SshFile.Permission.OthersRead);
+            p.add(PosixFilePermission.OTHERS_READ);
         }
         if ((perms & S_IWOTH) != 0) {
-            p.add(SshFile.Permission.OthersWrite);
+            p.add(PosixFilePermission.OTHERS_WRITE);
         }
         if ((perms & S_IXOTH) != 0) {
-            p.add(SshFile.Permission.OthersExecute);
+            p.add(PosixFilePermission.OTHERS_EXECUTE);
         }
-        return p;
+        if (path.getFileSystem().supportedFileAttributeViews().contains("posix")) {
+            Files.setPosixFilePermissions(path, p);
+        } else {
+            log.warn("Unable to set file permissions because the underlying file system does not support posix permissions");
+        }
     }
 
     public void ack() throws IOException {
@@ -543,6 +608,19 @@ public class ScpHelper {
                 break;
         }
         return c;
+    }
+
+    private static long copy(InputStream source, OutputStream sink, int bufferSize)
+            throws IOException
+    {
+        long nread = 0L;
+        byte[] buf = new byte[bufferSize];
+        int n;
+        while ((n = source.read(buf)) > 0) {
+            sink.write(buf, 0, n);
+            nread += n;
+        }
+        return nread;
     }
 
 }

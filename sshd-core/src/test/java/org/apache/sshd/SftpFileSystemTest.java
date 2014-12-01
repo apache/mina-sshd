@@ -94,9 +94,10 @@ public class SftpFileSystemTest extends BaseTest {
 //        assertEquals("test.txt", Files.readSymbolicLink(link).toString());
 
         Path link = fs.getPath("target/sftp/client/test2.txt");
-        Files.createSymbolicLink(link, file);
+        Files.createSymbolicLink(link, link.getParent().relativize(file));
         assertTrue(Files.isSymbolicLink(link));
-        assertEquals(file.toAbsolutePath().toString(), Files.readSymbolicLink(link).toString());
+        assertEquals("test.txt", Files.readSymbolicLink(link).toString());
+        Files.delete(link);
 
         attrs = Files.readAttributes(file, "*", LinkOption.NOFOLLOW_LINKS);
         System.out.println(attrs);
@@ -107,6 +108,17 @@ public class SftpFileSystemTest extends BaseTest {
         Files.delete(file);
 
         fs.close();
+    }
+
+    @Test
+    public void testRootFileSystem() throws Exception {
+        Path rootNative = Paths.get("target/root").toAbsolutePath();
+        Utils.deleteRecursive(rootNative.toFile());
+        Files.createDirectories(rootNative);
+
+        FileSystem fs = FileSystems.newFileSystem(URI.create("root:" + rootNative.toUri().toString() + "!/"), null);
+
+        Files.createDirectories(fs.getPath("test/foo"));
     }
 
 }

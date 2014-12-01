@@ -25,25 +25,39 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.channels.SeekableByteChannel;
+import java.nio.file.AccessDeniedException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.OpenOption;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.FileTime;
+import java.nio.file.attribute.GroupPrincipal;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.UserPrincipal;
+import java.nio.file.attribute.UserPrincipalLookupService;
 import java.util.Calendar;
 import java.util.Collection;
-import java.util.Date;
 import java.util.EnumSet;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.file.FileSystemAware;
-import org.apache.sshd.common.file.FileSystemView;
-import org.apache.sshd.common.file.SshFile;
 import org.apache.sshd.common.util.Buffer;
-import org.apache.sshd.common.util.IoUtils;
 import org.apache.sshd.common.util.SelectorUtils;
 import org.apache.sshd.common.util.ThreadUtils;
 import org.apache.sshd.server.Command;
@@ -115,6 +129,46 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         public String getName() {
             return NAME;
         }
+    }
+
+    //
+    // File attributes
+    //
+    enum Attribute {
+        Size,               // long
+        Uid,                // int
+        Owner,              // String
+        Gid,                // int
+        Group,              // String
+        IsDirectory,        // boolean
+        IsRegularFile,      // boolean
+        IsSymbolicLink,     // boolean
+        Permissions,        // EnumSet<Permission>
+        CreationTime,       // long
+        LastModifiedTime,   // long
+        LastAccessTime,     // long
+        NLink               // int
+    }
+
+    //
+    // File permissions
+    //
+    enum Permission {
+        UserRead,
+        UserWrite,
+        UserExecute,
+        GroupRead,
+        GroupWrite,
+        GroupExecute,
+        OthersRead,
+        OthersWrite,
+        OthersExecute
+    }
+
+    public enum UnsupportedAttributePolicy {
+        Ignore,
+        Warn,
+        ThrowException
     }
 
     /**
@@ -212,35 +266,41 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
 	private ExecutorService executors;
 	private boolean shutdownExecutor;
 	private Future<?> pendingFuture;
-    private FileSystemView root;
+
+    private FileSystem fileSystem = FileSystems.getDefault();
+    private Path defaultDir = fileSystem.getPath(System.getProperty("user.dir"));
+
     private int version;
-    private Map<String, Handle> handles = new HashMap<String, Handle>();
+    private Map<String, Handle> handles = new HashMap<>();
 
-    protected static abstract class Handle {
-        SshFile file;
+    private UnsupportedAttributePolicy unsupportedAttributePolicy = UnsupportedAttributePolicy.Warn;
 
-        public Handle(SshFile file) {
+    protected static abstract class Handle implements java.io.Closeable {
+        Path file;
+
+        public Handle(Path file) {
             this.file = file;
         }
 
-        public SshFile getFile() {
+        public Path getFile() {
             return file;
         }
 
         public void close() throws IOException {
-            file.handleClose();
         }
     }
 
-    protected static class DirectoryHandle extends Handle implements Iterator<SshFile> {
+    protected static class DirectoryHandle extends Handle implements Iterator<Path> {
         boolean done;
         // the directory should be read once at "open directory"
-        List<SshFile> fileList = null;
+        DirectoryStream<Path> ds;
+        Iterator<Path> fileList = null;
         int fileIndex;
 
-        public DirectoryHandle(SshFile file) {
+        public DirectoryHandle(Path file) throws IOException {
             super(file);
-            fileList = file.listSshFiles();
+            ds = Files.newDirectoryStream(file);
+            fileList = ds.iterator();
             fileIndex = 0;
         }
 
@@ -253,13 +313,11 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         }
 
         public boolean hasNext() {
-            return fileIndex < fileList.size();
+            return fileList.hasNext();
         }
 
-        public SshFile next() {
-            SshFile f = fileList.get(fileIndex);
-            fileIndex++;
-            return f;
+        public Path next() {
+            return fileList.next();
         }
 
         public void remove() {
@@ -270,70 +328,47 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
             // allow the garbage collector to do the job
             fileList = null;
         }
+
+        @Override
+        public void close() throws IOException {
+            ds.close();
+        }
     }
 
     protected static class FileHandle extends Handle {
-        int flags;
-        OutputStream output;
-        long outputPos;
-        InputStream input;
-        long inputPos;
-        long length;
+        SeekableByteChannel channel;
 
-        public FileHandle(SshFile sshFile, int flags) {
-            super(sshFile);
-            this.flags = flags;
+        public FileHandle(Path file, int flags) throws IOException {
+            super(file);
+            Set<OpenOption> options = new HashSet<>();
+            if ((flags & SSH_FXF_READ) != 0) {
+                options.add(StandardOpenOption.READ);
+            }
+            if ((flags & SSH_FXF_WRITE) != 0) {
+                options.add(StandardOpenOption.WRITE);
+            }
+            if ((flags & SSH_FXF_APPEND) != 0) {
+                options.add(StandardOpenOption.APPEND);
+            }
+            if ((flags & SSH_FXF_TRUNC) != 0) {
+                options.add(StandardOpenOption.TRUNCATE_EXISTING);
+            }
+            channel = Files.newByteChannel(file, options);
         }
 
         public int read(byte[] data, long offset) throws IOException {
-            if ((flags & SSH_FXF_READ) == 0) {
-                throw new IOException("File has not been opened for reading");
-            }
-            if (input != null && offset >= length) {
-                return -1;
-            }
-            if (input != null && offset != inputPos) {
-                IoUtils.closeQuietly(input);
-                input = null;
-            }
-            if (input == null) {
-                input = file.createInputStream(offset);
-                length = file.getSize();
-                inputPos = offset;
-            }
-            if (offset >= length) {
-                return -1;
-            }
-            int read = input.read(data);
-            inputPos += read;
-            return read;
+            channel.position(offset);
+            return channel.read(ByteBuffer.wrap(data));
         }
 
         public void write(byte[] data, long offset) throws IOException {
-            if ((flags & SSH_FXF_WRITE) == 0) {
-                throw new IOException("File has not been opened for writing");
-            }
-            if ((flags & SSH_FXF_APPEND) != 0) {
-                offset = (output != null) ? outputPos : file.getSize();
-            }
-            if (output != null && offset != outputPos) {
-                IoUtils.closeQuietly(output);
-                output = null;
-            }
-            if (output == null) {
-                outputPos = offset;
-                output = file.createOutputStream(offset);
-            }
-            output.write(data);
-            outputPos += data.length;
+            channel.position(offset);
+            channel.write(ByteBuffer.wrap(data));
         }
 
         @Override
         public void close() throws IOException {
-            IoUtils.closeQuietly(output, input);
-            output = null;
-            input = null;
-            super.close();
+            channel.close();
         }
     }
 
@@ -375,8 +410,8 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         this.session = session;
     }
 
-    public void setFileSystemView(FileSystemView view) {
-        this.root = view;
+    public void setFileSystem(FileSystem fileSystem) {
+        this.fileSystem = fileSystem;
     }
 
     public void setExitCallback(ExitCallback callback) {
@@ -450,8 +485,6 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                     }
                 }
             }
-            dis = null;
-
             callback.onExit(0);
         }
     }
@@ -495,16 +528,16 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
 
                 String path = buffer.getString();
                 int pflags = buffer.getInt();
-                Map<SshFile.Attribute, Object> attrs = readAttrs(buffer);
+                Map<Attribute, Object> attrs = readAttrs(buffer);
                 log.debug("Received SSH_FXP_OPEN (path={}, pflags={}, attrs={})", new Object[] { path, pflags, attrs });
                 try {
-                    SshFile file = resolveFile(path);
-                    if (file.doesExist()) {
-                        if ((pflags & SSH_FXF_READ) != 0 && !file.isReadable()) {
+                    Path file = resolveFile(path);
+                    if (Files.exists(file)) {
+                        if ((pflags & SSH_FXF_READ) != 0 && !Files.isReadable(file)) {
                             sendStatus(id, SSH_FX_PERMISSION_DENIED, "Can not read " + path);
                             return;
                         }
-                        if ((pflags & SSH_FXF_WRITE) != 0 && !file.isWritable()) {
+                        if ((pflags & SSH_FXF_WRITE) != 0 && !Files.isWritable(file)) {
                             sendStatus(id, SSH_FX_PERMISSION_DENIED, "Can not write " + path);
                             return;
                         }
@@ -514,28 +547,14 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                         }
                     } else {
                         if (((pflags & SSH_FXF_CREAT) != 0)) {
-                            if (!file.isWritable()) {
-                                sendStatus(id, SSH_FX_PERMISSION_DENIED, "Can not create " + path);
-                                return;
-                            }
-                            if (!file.create()) {
-                                sendStatus(id, SSH_FX_NO_SUCH_FILE, "No such file " + path);
-                                return;
-                            }
+                            Files.createFile(file);
                         } else {
                             sendStatus(id, SSH_FX_NO_SUCH_FILE, "No such file " + path);
                             return;
                         }
                     }
-                    if ((pflags & SSH_FXF_TRUNC) != 0) {
-                        if (!file.isWritable()) {
-                            sendStatus(id, SSH_FX_PERMISSION_DENIED, "Can not truncate " + path);
-                            return;
-                        }
-                        file.truncate();
-                    }
-                    if ((pflags & SSH_FXF_CREAT) != 0) {
-                        file.setAttributes(attrs);
+                    if (((pflags & SSH_FXF_CREAT) != 0)) {
+                        setAttributes(file, attrs);
                     }
                     String handle = UUID.randomUUID().toString();
                     handles.put(handle, new FileHandle(file, pflags));
@@ -602,10 +621,6 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                     } else {
                         FileHandle fh = (FileHandle) p;
                         fh.write(data, offset);
-                        SshFile sshFile = fh.getFile();
-
-                        sshFile.setLastModified(new Date().getTime());
-                        
                         sendStatus(id, SSH_FX_OK, "");
                     }
                 } catch (IOException e) {
@@ -617,7 +632,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                 String path = buffer.getString();
                 log.debug("Received SSH_FXP_LSTAT (path={})", path);
                 try {
-                    SshFile p = resolveFile(path);
+                    Path p = resolveFile(path);
                     sendAttrs(id, p, false);
                 } catch (FileNotFoundException e) {
                     sendStatus(id, SSH_FX_NO_SUCH_FILE, e.getMessage());
@@ -645,11 +660,11 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
             }
             case SSH_FXP_SETSTAT: {
                 String path = buffer.getString();
-                Map<SshFile.Attribute, Object> attrs = readAttrs(buffer);
+                Map<Attribute, Object> attrs = readAttrs(buffer);
                 log.debug("Received SSH_FXP_SETSTAT (path={}, attrs={})", path, attrs);
                 try {
-                    SshFile p = resolveFile(path);
-                    p.setAttributes(attrs);
+                    Path p = resolveFile(path);
+                    setAttributes(p, attrs);
                     sendStatus(id, SSH_FX_OK, "");
                 } catch (FileNotFoundException e) {
                     sendStatus(id, SSH_FX_NO_SUCH_FILE, e.getMessage());
@@ -662,21 +677,19 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
             }
             case SSH_FXP_FSETSTAT: {
                 String handle = buffer.getString();
-                Map<SshFile.Attribute, Object> attrs = readAttrs(buffer);
+                Map<Attribute, Object> attrs = readAttrs(buffer);
                 log.debug("Received SSH_FXP_FSETSTAT (handle={}, attrs={})", handle, attrs);
                 try {
                     Handle p = handles.get(handle);
                     if (p == null) {
                         sendStatus(id, SSH_FX_FAILURE, handle);
                     } else {
-                        p.getFile().setAttributes(attrs);
+                        setAttributes(p.getFile(), attrs);
                         sendStatus(id, SSH_FX_OK, "");
                     }
                 } catch (FileNotFoundException e) {
                     sendStatus(id, SSH_FX_NO_SUCH_FILE, e.getMessage());
-                } catch (IOException e) {
-                    sendStatus(id, SSH_FX_FAILURE, e.getMessage());
-                } catch (UnsupportedOperationException e) {
+                } catch (IOException | UnsupportedOperationException e) {
                     sendStatus(id, SSH_FX_FAILURE, e.getMessage());
                 }
                 break;
@@ -685,12 +698,12 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                 String path = buffer.getString();
                 log.debug("Received SSH_FXP_OPENDIR (path={})", path);
                 try {
-                    SshFile p = resolveFile(path);
-                    if (!p.doesExist()) {
+                    Path p = resolveFile(path);
+                    if (!Files.exists(p)) {
                         sendStatus(id, SSH_FX_NO_SUCH_FILE, path);
-                    } else if (!p.isDirectory()) {
+                    } else if (!Files.isDirectory(p)) {
                         sendStatus(id, SSH_FX_NO_SUCH_FILE, path);
-                    } else if (!p.isReadable()) {
+                    } else if (!Files.isReadable(p)) {
                         sendStatus(id, SSH_FX_PERMISSION_DENIED, path);
                     } else {
                         String handle = UUID.randomUUID().toString();
@@ -711,12 +724,12 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                         sendStatus(id, SSH_FX_FAILURE, handle);
                     } else if (((DirectoryHandle) p).isDone()) {
                         sendStatus(id, SSH_FX_EOF, "", "");
-                    } else if (!p.getFile().doesExist()) {
-                        sendStatus(id, SSH_FX_NO_SUCH_FILE, p.getFile().getAbsolutePath());
-                    } else if (!p.getFile().isDirectory()) {
-                        sendStatus(id, SSH_FX_NO_SUCH_FILE, p.getFile().getAbsolutePath());
-                    } else if (!p.getFile().isReadable()) {
-                        sendStatus(id, SSH_FX_PERMISSION_DENIED, p.getFile().getAbsolutePath());
+                    } else if (!Files.exists(p.getFile())) {
+                        sendStatus(id, SSH_FX_NO_SUCH_FILE, p.getFile().toString());
+                    } else if (!Files.isDirectory(p.getFile())) {
+                        sendStatus(id, SSH_FX_NO_SUCH_FILE, p.getFile().toString());
+                    } else if (!Files.isReadable(p.getFile())) {
+                        sendStatus(id, SSH_FX_PERMISSION_DENIED, p.getFile().toString());
                     } else {
                         DirectoryHandle dh = (DirectoryHandle) p;
                         if (dh.hasNext()) {
@@ -745,14 +758,13 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                 String path = buffer.getString();
                 log.debug("Received SSH_FXP_REMOVE (path={})", path);
                 try {
-                    SshFile p = resolveFile(path);
-                    if (!p.doesExist()) {
-                        sendStatus(id, SSH_FX_NO_SUCH_FILE, p.getAbsolutePath());
-                    } else if (p.isDirectory()) {
-                        sendStatus(id, SSH_FX_NO_SUCH_FILE, p.getAbsolutePath());
-                    } else if (!p.delete()) {
-                        sendStatus(id, SSH_FX_FAILURE, "Failed to delete file");
+                    Path p = resolveFile(path);
+                    if (!Files.exists(p)) {
+                        sendStatus(id, SSH_FX_NO_SUCH_FILE, p.toString());
+                    } else if (Files.isDirectory(p)) {
+                        sendStatus(id, SSH_FX_NO_SUCH_FILE, p.toString());
                     } else {
+                        Files.delete(p);
                         sendStatus(id, SSH_FX_OK, "");
                     }
                 } catch (IOException e) {
@@ -762,26 +774,25 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
             }
             case SSH_FXP_MKDIR: {
                 String path = buffer.getString();
-                Map<SshFile.Attribute, Object> attrs = readAttrs(buffer);
+                Map<Attribute, Object> attrs = readAttrs(buffer);
 
                 log.debug("Received SSH_FXP_MKDIR (path={})", path);
                 // attrs
                 try {
-                    SshFile p = resolveFile(path);
-                    if (p.doesExist()) {
-                        if (p.isDirectory()) {
-                            sendStatus(id, SSH_FX_FILE_ALREADY_EXISTS, p.getAbsolutePath());
+                    Path p = resolveFile(path);
+                    if (Files.exists(p)) {
+                        if (Files.isDirectory(p)) {
+                            sendStatus(id, SSH_FX_FILE_ALREADY_EXISTS, p.toString());
                         } else {
-                            sendStatus(id, SSH_FX_NO_SUCH_FILE, p.getAbsolutePath());
+                            sendStatus(id, SSH_FX_NO_SUCH_FILE, p.toString());
                         }
-                    } else if (!p.isWritable()) {
-                        sendStatus(id, SSH_FX_PERMISSION_DENIED, p.getAbsolutePath());
-                    } else if (!p.mkdir()) {
-                        throw new IOException("Error creating dir " + path);
                     } else {
-                        p.setAttributes(attrs);
+                        Files.createDirectory(p);
+                        setAttributes(p, attrs);
                         sendStatus(id, SSH_FX_OK, "");
                     }
+                } catch (AccessDeniedException e) {
+                    sendStatus(id, SSH_FX_PERMISSION_DENIED, e.getMessage());
                 } catch (IOException e) {
                     sendStatus(id, SSH_FX_FAILURE, e.getMessage());
                 }
@@ -792,23 +803,12 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                 log.debug("Received SSH_FXP_RMDIR (path={})", path);
                 // attrs
                 try {
-                    SshFile p = resolveFile(path);
-                    if (p.isDirectory()) {
-                        if (p.doesExist()) {
-                            if (p.listSshFiles().size() == 0) {
-                                if (p.delete()) {
-                                    sendStatus(id, SSH_FX_OK, "");
-                                } else {
-                                    sendStatus(id, SSH_FX_FAILURE, "Unable to delete directory " + path);
-                                }
-                            } else {
-                                sendStatus(id, SSH_FX_FAILURE, path);
-                            }
-                        } else {
-                            sendStatus(id, SSH_FX_NO_SUCH_FILE, path);
-                        }
+                    Path p = resolveFile(path);
+                    if (Files.isDirectory(p)) {
+                        Files.delete(p);
+                        sendStatus(id, SSH_FX_OK, "");
                     } else {
-                        sendStatus(id, SSH_FX_NO_SUCH_FILE, p.getAbsolutePath());
+                        sendStatus(id, SSH_FX_NO_SUCH_FILE, p.toString());
                     }
                 } catch (IOException e) {
                     sendStatus(id, SSH_FX_FAILURE, e.getMessage());
@@ -822,7 +822,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                     path = ".";
                 }
                 try {
-                    SshFile p = resolveFile(path);
+                    Path p = resolveFile(path).toAbsolutePath().normalize();
                     sendPath(id, p, false);
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
@@ -837,7 +837,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                 String path = buffer.getString();
                 log.debug("Received SSH_FXP_STAT (path={})", path);
                 try {
-                    SshFile p = resolveFile(path);
+                    Path p = resolveFile(path);
                     sendAttrs(id, p, true);
                 } catch (FileNotFoundException e) {
                     sendStatus(id, SSH_FX_NO_SUCH_FILE, e.getMessage());
@@ -851,15 +851,14 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                 String newPath = buffer.getString();
                 log.debug("Received SSH_FXP_RENAME (oldPath={}, newPath={})", oldPath, newPath);
                 try {
-                    SshFile o = resolveFile(oldPath);
-                    SshFile n = resolveFile(newPath);
-                    if (!o.doesExist()) {
-                        sendStatus(id, SSH_FX_NO_SUCH_FILE, o.getAbsolutePath());
-                    } else if (n.doesExist()) {
-                        sendStatus(id, SSH_FX_FAILURE, n.getAbsolutePath());
-                    } else if (!o.move(n)) {
-                        sendStatus(id, SSH_FX_FAILURE, "Failed to rename file");
+                    Path o = resolveFile(oldPath);
+                    Path n = resolveFile(newPath);
+                    if (!Files.exists(o)) {
+                        sendStatus(id, SSH_FX_NO_SUCH_FILE, o.toString());
+                    } else if (Files.exists(n)) {
+                        sendStatus(id, SSH_FX_FAILURE, n.toString());
                     } else {
+                        Files.move(o, n);
                         sendStatus(id, SSH_FX_OK, "");
                     }
                 } catch (IOException e) {
@@ -871,8 +870,8 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                 String path = buffer.getString();
                 log.debug("Received SSH_FXP_READLINK (path={})", path);
                 try {
-                    SshFile f = resolveFile(path);
-                    String l = f.readSymbolicLink();
+                    Path f = resolveFile(path);
+                    String l = Files.readSymbolicLink(f).toString();
                     sendLink(id, l);
                 } catch (UnsupportedOperationException e) {
                     sendStatus(id, SSH_FX_OP_UNSUPPORTED, "Command " + type + " is unsupported or not implemented");
@@ -886,10 +885,9 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                 String targetpath = buffer.getString();
                 log.debug("Received SSH_FXP_SYMLINK (linkpath={}, targetpath={})", linkpath, targetpath);
                 try {
-                    SshFile link = resolveFile(linkpath);
-                    // TODO: resolving the file is wrong, we should keep it relative
-                    SshFile target = resolveFile(targetpath);
-                    link.createSymbolicLink(target);
+                    Path link = resolveFile(linkpath);
+                    Path target = fileSystem.getPath(targetpath);
+                    Files.createSymbolicLink(link, target);
                     sendStatus(id, SSH_FX_OK, "");
                 } catch (UnsupportedOperationException e) {
                     sendStatus(id, SSH_FX_OP_UNSUPPORTED, "Command " + type + " is unsupported or not implemented");
@@ -914,7 +912,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         send(buffer);
     }
 
-    protected void sendAttrs(int id, SshFile file, boolean followLinks) throws IOException {
+    protected void sendAttrs(int id, Path file, boolean followLinks) throws IOException {
         Buffer buffer = new Buffer();
         buffer.putByte((byte) SSH_FXP_ATTRS);
         buffer.putInt(id);
@@ -922,23 +920,23 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         send(buffer);
     }
 
-    protected void sendPath(int id, SshFile f) throws IOException {
+    protected void sendPath(int id, Path f) throws IOException {
         sendPath(id, f, true);
     }
 
-    protected void sendPath(int id, SshFile f, boolean sendAttrs) throws IOException {
+    protected void sendPath(int id, Path f, boolean sendAttrs) throws IOException {
         Buffer buffer = new Buffer();
         buffer.putByte((byte) SSH_FXP_NAME);
         buffer.putInt(id);
         buffer.putInt(1);
         //normalize the given path, use *nix style separator
-        String normalizedPath = SelectorUtils.normalizePath(f.getAbsolutePath(), "/");
+        String normalizedPath = SelectorUtils.normalizePath(f.toString(), "/");
         if (normalizedPath.length() == 0) {
             normalizedPath = "/";
         }
         buffer.putString(normalizedPath);
         f = resolveFile(normalizedPath);
-        if (f.getName().length() == 0) {
+        if (f.getFileName() == null) {
             f = resolveFile(".");
         }
         buffer.putString(getLongName(f, sendAttrs)); // Format specified in the specs
@@ -958,7 +956,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         send(buffer);
     }
 
-    protected void sendName(int id, Iterator<SshFile> files) throws IOException {
+    protected void sendName(int id, Iterator<Path> files) throws IOException {
         Buffer buffer = new Buffer();
         buffer.putByte((byte) SSH_FXP_NAME);
         buffer.putInt(id);
@@ -966,8 +964,8 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         buffer.putInt(0);
         int nb = 0;
         while (files.hasNext() && buffer.wpos() < MAX_PACKET_LENGTH) {
-            SshFile f = files.next();
-            buffer.putString(f.getName());
+            Path f = files.next();
+            buffer.putString(f.getFileName().toString());
             buffer.putString(getLongName(f)); // Format specified in the specs
             writeAttrs(buffer, f, false);
             nb++;
@@ -979,26 +977,26 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         send(buffer);
     }
 
-    private String getLongName(SshFile f) throws IOException {
+    private String getLongName(Path f) throws IOException {
         return getLongName(f, true);
     }
 
-    private String getLongName(SshFile f, boolean sendAttrs) throws IOException {
-        Map<SshFile.Attribute, Object> attributes;
+    private String getLongName(Path f, boolean sendAttrs) throws IOException {
+        Map<Attribute, Object> attributes;
         if (sendAttrs) {
-            attributes = f.getAttributes(false);
+            attributes = getAttributes(f, false);
         } else {
-            attributes = new HashMap<SshFile.Attribute, Object>();
-            attributes.put(SshFile.Attribute.Owner, "owner");
-            attributes.put(SshFile.Attribute.Group, "group");
-            attributes.put(SshFile.Attribute.Size, (long) 0);
-            attributes.put(SshFile.Attribute.IsDirectory, false);
-            attributes.put(SshFile.Attribute.IsSymbolicLink, false);
-            attributes.put(SshFile.Attribute.IsRegularFile, false);
-            attributes.put(SshFile.Attribute.Permissions, EnumSet.noneOf(SshFile.Permission.class));
-            attributes.put(SshFile.Attribute.LastModifiedTime, (long) 0);
+            attributes = new HashMap<>();
+            attributes.put(Attribute.Owner, "owner");
+            attributes.put(Attribute.Group, "group");
+            attributes.put(Attribute.Size, (long) 0);
+            attributes.put(Attribute.IsDirectory, false);
+            attributes.put(Attribute.IsSymbolicLink, false);
+            attributes.put(Attribute.IsRegularFile, false);
+            attributes.put(Attribute.Permissions, EnumSet.noneOf(Permission.class));
+            attributes.put(Attribute.LastModifiedTime, (long) 0);
         }
-        String username = (String) attributes.get(SshFile.Attribute.Owner);
+        String username = (String) attributes.get(Attribute.Owner);
         if (username.length() > 8) {
             username = username.substring(0, 8);
         } else {
@@ -1006,7 +1004,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                 username = username + " ";
             }
         }
-        String group = (String) attributes.get(SshFile.Attribute.Group);
+        String group = (String) attributes.get(Attribute.Group);
         if (group.length() > 8) {
             group = group.substring(0, 8);
         } else {
@@ -1015,11 +1013,11 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
             }
         }
 
-        long length = (Long) attributes.get(SshFile.Attribute.Size);
+        long length = (Long) attributes.get(Attribute.Size);
         String lengthString = String.format("%1$8s", length);
 
-        boolean isDirectory = (Boolean) attributes.get(SshFile.Attribute.IsDirectory);
-        boolean isLink = (Boolean) attributes.get(SshFile.Attribute.IsSymbolicLink);
+        boolean isDirectory = (Boolean) attributes.get(Attribute.IsDirectory);
+        boolean isLink = (Boolean) attributes.get(Attribute.IsSymbolicLink);
         int perms = getPermissions(attributes);
 
         StringBuilder sb = new StringBuilder();
@@ -1034,8 +1032,8 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         sb.append((perms & S_IWOTH) != 0 ? "w" : "-");
         sb.append((perms & S_IXOTH) != 0 ? "x" : "-");
         sb.append("  ");
-        sb.append(attributes.containsKey(SshFile.Attribute.NLink)
-                ? attributes.get(SshFile.Attribute.NLink) : "1");
+        sb.append(attributes.containsKey(Attribute.NLink)
+                ? attributes.get(Attribute.NLink) : "1");
         sb.append(" ");
         sb.append(username);
         sb.append(" ");
@@ -1043,63 +1041,63 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         sb.append(" ");
         sb.append(lengthString);
         sb.append(" ");
-        sb.append(getUnixDate((Long) attributes.get(SshFile.Attribute.LastModifiedTime)));
+        sb.append(getUnixDate((Long) attributes.get(Attribute.LastModifiedTime)));
         sb.append(" ");
-        sb.append(f.getName());
+        sb.append(f.getFileName().toString());
 
         return sb.toString();
     }
 
-    protected Map<SshFile.Attribute, Object> getPermissions(int perms) {
-        Map<SshFile.Attribute, Object> attrs = new HashMap<SshFile.Attribute, Object>();
+    protected Map<Attribute, Object> getPermissions(int perms) {
+        Map<Attribute, Object> attrs = new HashMap<>();
         if ((perms & S_IFMT) == S_IFREG) {
-            attrs.put(SshFile.Attribute.IsRegularFile, Boolean.TRUE);
+            attrs.put(Attribute.IsRegularFile, Boolean.TRUE);
         }
         if ((perms & S_IFMT) == S_IFDIR) {
-            attrs.put(SshFile.Attribute.IsDirectory, Boolean.TRUE);
+            attrs.put(Attribute.IsDirectory, Boolean.TRUE);
         }
         if ((perms & S_IFMT) == S_IFLNK) {
-            attrs.put(SshFile.Attribute.IsSymbolicLink, Boolean.TRUE);
+            attrs.put(Attribute.IsSymbolicLink, Boolean.TRUE);
         }
-        EnumSet<SshFile.Permission> p = EnumSet.noneOf(SshFile.Permission.class);
+        EnumSet<Permission> p = EnumSet.noneOf(Permission.class);
         if ((perms & S_IRUSR) != 0) {
-            p.add(SshFile.Permission.UserRead);
+            p.add(Permission.UserRead);
         }
         if ((perms & S_IWUSR) != 0) {
-            p.add(SshFile.Permission.UserWrite);
+            p.add(Permission.UserWrite);
         }
         if ((perms & S_IXUSR) != 0) {
-            p.add(SshFile.Permission.UserExecute);
+            p.add(Permission.UserExecute);
         }
         if ((perms & S_IRGRP) != 0) {
-            p.add(SshFile.Permission.GroupRead);
+            p.add(Permission.GroupRead);
         }
         if ((perms & S_IWGRP) != 0) {
-            p.add(SshFile.Permission.GroupWrite);
+            p.add(Permission.GroupWrite);
         }
         if ((perms & S_IXGRP) != 0) {
-            p.add(SshFile.Permission.GroupExecute);
+            p.add(Permission.GroupExecute);
         }
         if ((perms & S_IROTH) != 0) {
-            p.add(SshFile.Permission.OthersRead);
+            p.add(Permission.OthersRead);
         }
         if ((perms & S_IWOTH) != 0) {
-            p.add(SshFile.Permission.OthersWrite);
+            p.add(Permission.OthersWrite);
         }
         if ((perms & S_IXOTH) != 0) {
-            p.add(SshFile.Permission.OthersExecute);
+            p.add(Permission.OthersExecute);
         }
-        attrs.put(SshFile.Attribute.Permissions, p);
+        attrs.put(Attribute.Permissions, p);
         return attrs;
     }
 
-    protected int getPermissions(Map<SshFile.Attribute, Object> attributes) {
-        boolean isReg = (Boolean) attributes.get(SshFile.Attribute.IsRegularFile);
-        boolean isDir = (Boolean) attributes.get(SshFile.Attribute.IsDirectory);
-        boolean isLnk = (Boolean) attributes.get(SshFile.Attribute.IsSymbolicLink);
+    protected int getPermissions(Map<Attribute, Object> attributes) {
+        boolean isReg = (Boolean) attributes.get(Attribute.IsRegularFile);
+        boolean isDir = (Boolean) attributes.get(Attribute.IsDirectory);
+        boolean isLnk = (Boolean) attributes.get(Attribute.IsSymbolicLink);
         int pf = 0;
-        EnumSet<SshFile.Permission> perms = (EnumSet<SshFile.Permission>) attributes.get(SshFile.Attribute.Permissions);
-        for (SshFile.Permission p : perms) {
+        EnumSet<Permission> perms = (EnumSet<Permission>) attributes.get(Attribute.Permissions);
+        for (Permission p : perms) {
             switch (p) {
                 case UserRead:      pf |= S_IRUSR; break;
                 case UserWrite:     pf |= S_IWUSR; break;
@@ -1118,41 +1116,41 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         return pf;
     }
 
-    protected void writeAttrs(Buffer buffer, SshFile file, boolean followLinks) throws IOException {
-        if (!file.doesExist()) {
-            throw new FileNotFoundException(file.getAbsolutePath());
+    protected void writeAttrs(Buffer buffer, Path file, boolean followLinks) throws IOException {
+        if (!Files.exists(file)) {
+            throw new FileNotFoundException(file.toString());
         }
-        Map<SshFile.Attribute, Object> attributes = file.getAttributes(followLinks);
-        boolean isReg = getBool((Boolean) attributes.get(SshFile.Attribute.IsRegularFile));
-        boolean isDir = getBool((Boolean) attributes.get(SshFile.Attribute.IsDirectory));
-        boolean isLnk = getBool((Boolean) attributes.get(SshFile.Attribute.IsSymbolicLink));
+        Map<Attribute, Object> attributes = getAttributes(file, followLinks);
+        boolean isReg = getBool((Boolean) attributes.get(Attribute.IsRegularFile));
+        boolean isDir = getBool((Boolean) attributes.get(Attribute.IsDirectory));
+        boolean isLnk = getBool((Boolean) attributes.get(Attribute.IsSymbolicLink));
         int flags = 0;
-        if ((isReg || isLnk) && attributes.containsKey(SshFile.Attribute.Size)) {
+        if ((isReg || isLnk) && attributes.containsKey(Attribute.Size)) {
             flags |= SSH_FILEXFER_ATTR_SIZE;
         }
-        if (attributes.containsKey(SshFile.Attribute.Uid) && attributes.containsKey(SshFile.Attribute.Gid)) {
+        if (attributes.containsKey(Attribute.Uid) && attributes.containsKey(Attribute.Gid)) {
             flags |= SSH_FILEXFER_ATTR_UIDGID;
         }
-        if (attributes.containsKey(SshFile.Attribute.Permissions)) {
+        if (attributes.containsKey(Attribute.Permissions)) {
             flags |= SSH_FILEXFER_ATTR_PERMISSIONS;
         }
-        if (attributes.containsKey(SshFile.Attribute.LastAccessTime) && attributes.containsKey(SshFile.Attribute.LastModifiedTime)) {
+        if (attributes.containsKey(Attribute.LastAccessTime) && attributes.containsKey(Attribute.LastModifiedTime)) {
             flags |= SSH_FILEXFER_ATTR_ACMODTIME;
         }
         buffer.putInt(flags);
         if ((flags & SSH_FILEXFER_ATTR_SIZE) != 0) {
-            buffer.putLong((Long) attributes.get(SshFile.Attribute.Size));
+            buffer.putLong((Long) attributes.get(Attribute.Size));
         }
         if ((flags & SSH_FILEXFER_ATTR_UIDGID) != 0) {
-            buffer.putInt((Integer) attributes.get(SshFile.Attribute.Uid));
-            buffer.putInt((Integer) attributes.get(SshFile.Attribute.Gid));
+            buffer.putInt((Integer) attributes.get(Attribute.Uid));
+            buffer.putInt((Integer) attributes.get(Attribute.Gid));
         }
         if ((flags & SSH_FILEXFER_ATTR_PERMISSIONS) != 0) {
             buffer.putInt(getPermissions(attributes));
         }
         if ((flags & SSH_FILEXFER_ATTR_ACMODTIME) != 0) {
-            buffer.putInt(((Long) attributes.get(SshFile.Attribute.LastAccessTime)) / 1000);
-            buffer.putInt(((Long) attributes.get(SshFile.Attribute.LastModifiedTime)) / 1000);
+            buffer.putInt(((Long) attributes.get(Attribute.LastAccessTime)) / 1000);
+            buffer.putInt(((Long) attributes.get(Attribute.LastModifiedTime)) / 1000);
         }
     }
 
@@ -1160,22 +1158,190 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         return bool != null && bool;
     }
 
-    protected Map<SshFile.Attribute, Object> readAttrs(Buffer buffer) throws IOException {
-        Map<SshFile.Attribute, Object> attrs = new HashMap<SshFile.Attribute, Object>();
+    protected Map<Attribute, Object> getAttributes(Path file, boolean followLinks) throws IOException {
+        String[] attrs = new String[] { "unix:*", "posix:*", "*" };
+        Map<String, Object> a = null;
+        for (String attr : attrs) {
+            try {
+                a = Files.readAttributes(
+                        file, attr,
+                        followLinks ? new LinkOption[0] : new LinkOption[]{LinkOption.NOFOLLOW_LINKS});
+                break;
+            } catch (UnsupportedOperationException e) {
+                // Ignore
+            }
+        }
+        if (a == null) {
+            throw new IllegalStateException();
+        }
+        Map<Attribute, Object> map = new HashMap<>();
+        map.put(Attribute.Size, a.get("size"));
+        if (a.containsKey("uid")) {
+            map.put(Attribute.Uid, a.get("uid"));
+        }
+        if (a.containsKey("owner")) {
+            map.put(Attribute.Owner, ((UserPrincipal) a.get("owner")).getName());
+        } else {
+            map.put(Attribute.Owner, session.getUsername());
+        }
+        if (a.containsKey("gid")) {
+            map.put(Attribute.Gid, a.get("gid"));
+        }
+        if (a.containsKey("group")) {
+            map.put(Attribute.Group, ((GroupPrincipal) a.get("group")).getName());
+        } else {
+            map.put(Attribute.Group, session.getUsername());
+        }
+        if (a.containsKey("nlink")) {
+            map.put(Attribute.NLink, a.get("nlink"));
+        }
+        map.put(Attribute.IsDirectory, a.get("isDirectory"));
+        map.put(Attribute.IsRegularFile, a.get("isRegularFile"));
+        map.put(Attribute.IsSymbolicLink, a.get("isSymbolicLink"));
+        map.put(Attribute.CreationTime, ((FileTime) a.get("creationTime")).toMillis());
+        map.put(Attribute.LastModifiedTime, ((FileTime) a.get("lastModifiedTime")).toMillis());
+        map.put(Attribute.LastAccessTime, ((FileTime) a.get("lastAccessTime")).toMillis());
+        if (a.containsKey("permissions")) {
+            map.put(Attribute.Permissions, fromPerms((Set<PosixFilePermission>) a.get("permissions")));
+        } else {
+            EnumSet<Permission> p = EnumSet.noneOf(Permission.class);
+            if (Files.isReadable(file)) {
+                p.add(Permission.UserRead);
+                p.add(Permission.GroupRead);
+                p.add(Permission.OthersRead);
+            }
+            if (Files.isWritable(file)) {
+                p.add(Permission.UserWrite);
+                p.add(Permission.GroupWrite);
+                p.add(Permission.OthersWrite);
+            }
+            if (Files.isExecutable(file)) {
+                p.add(Permission.UserExecute);
+                p.add(Permission.GroupExecute);
+                p.add(Permission.OthersExecute);
+            }
+            map.put(Attribute.Permissions, p);
+        }
+        return map;
+    }
+
+    protected void setAttributes(Path file, Map<Attribute, Object>  attributes) throws IOException {
+        Set<Attribute> unsupported = new HashSet<>();
+        for (Attribute attribute : attributes.keySet()) {
+            String name = null;
+            Object value = attributes.get(attribute);
+            switch (attribute) {
+            case Size:             {
+                long newSize = (Long) value;
+                try (FileChannel channel = FileChannel.open(file, StandardOpenOption.WRITE)) {
+                    channel.truncate(newSize);
+                }
+                continue;
+            }
+            case Uid:              name = "unix:uid"; break;
+            case Gid:              name = "unix:gid"; break;
+            case Owner:            name = "posix:owner"; value = toUser(file, (String) value); break;
+            case Group:            name = "posix:group"; value = toGroup(file, (String) value); break;
+            case Permissions:      name = "posix:permissions"; value = toPerms((EnumSet<Permission>) value); break;
+            case CreationTime:     name = "basic:creationTime"; value = FileTime.fromMillis((Long) value); break;
+            case LastModifiedTime: name = "basic:lastModifiedTime"; value = FileTime.fromMillis((Long) value); break;
+            case LastAccessTime:   name = "basic:lastAccessTime"; value = FileTime.fromMillis((Long) value); break;
+            }
+            if (name != null && value != null) {
+                try {
+                    Files.setAttribute(file, name, value, LinkOption.NOFOLLOW_LINKS);
+                } catch (UnsupportedOperationException e) {
+                    unsupported.add(attribute);
+                }
+            }
+        }
+        handleUnsupportedAttributes(unsupported);
+    }
+
+    protected void handleUnsupportedAttributes(Collection<Attribute> attributes) {
+        if (!attributes.isEmpty()) {
+            StringBuilder sb = new StringBuilder();
+            for (Attribute attr : attributes) {
+                if (sb.length() > 0) {
+                    sb.append(", ");
+                }
+                sb.append(attr.name());
+            }
+            switch (unsupportedAttributePolicy) {
+            case Ignore:
+                break;
+            case Warn:
+                log.warn("Unsupported attributes: " + sb.toString());
+                break;
+            case ThrowException:
+                throw new UnsupportedOperationException("Unsupported attributes: " + sb.toString());
+            }
+        }
+    }
+
+
+    private EnumSet<Permission> fromPerms(Set<PosixFilePermission> perms) {
+        EnumSet<Permission> p = EnumSet.noneOf(Permission.class);
+        for (PosixFilePermission perm : perms) {
+            switch (perm) {
+            case OWNER_READ:     p.add(Permission.UserRead); break;
+            case OWNER_WRITE:    p.add(Permission.UserWrite); break;
+            case OWNER_EXECUTE:  p.add(Permission.UserExecute); break;
+            case GROUP_READ:     p.add(Permission.GroupRead); break;
+            case GROUP_WRITE:    p.add(Permission.GroupWrite); break;
+            case GROUP_EXECUTE:  p.add(Permission.GroupExecute); break;
+            case OTHERS_READ:    p.add(Permission.OthersRead); break;
+            case OTHERS_WRITE:   p.add(Permission.OthersWrite); break;
+            case OTHERS_EXECUTE: p.add(Permission.OthersExecute); break;
+            }
+        }
+        return p;
+    }
+
+    private GroupPrincipal toGroup(Path file, String name) throws IOException {
+        UserPrincipalLookupService lookupService = file.getFileSystem().getUserPrincipalLookupService();
+        return lookupService.lookupPrincipalByGroupName(name);
+    }
+
+    private UserPrincipal toUser(Path file, String name) throws IOException {
+        UserPrincipalLookupService lookupService = file.getFileSystem().getUserPrincipalLookupService();
+        return lookupService.lookupPrincipalByName(name);
+    }
+
+    private Set<PosixFilePermission> toPerms(EnumSet<Permission> perms) {
+        Set<PosixFilePermission> set = new HashSet<>();
+        for (Permission p : perms) {
+            switch (p) {
+            case UserRead:      set.add(PosixFilePermission.OWNER_READ); break;
+            case UserWrite:     set.add(PosixFilePermission.OWNER_WRITE); break;
+            case UserExecute:   set.add(PosixFilePermission.OWNER_EXECUTE); break;
+            case GroupRead:     set.add(PosixFilePermission.GROUP_READ); break;
+            case GroupWrite:    set.add(PosixFilePermission.GROUP_WRITE); break;
+            case GroupExecute:  set.add(PosixFilePermission.GROUP_EXECUTE); break;
+            case OthersRead:    set.add(PosixFilePermission.OTHERS_READ); break;
+            case OthersWrite:   set.add(PosixFilePermission.OTHERS_WRITE); break;
+            case OthersExecute: set.add(PosixFilePermission.OTHERS_EXECUTE); break;
+            }
+        }
+        return set;
+    }
+
+    protected Map<Attribute, Object> readAttrs(Buffer buffer) throws IOException {
+        Map<Attribute, Object> attrs = new HashMap<>();
         int flags = buffer.getInt();
         if ((flags & SSH_FILEXFER_ATTR_SIZE) != 0) {
-            attrs.put(SshFile.Attribute.Size, buffer.getLong());
+            attrs.put(Attribute.Size, buffer.getLong());
         }
         if ((flags & SSH_FILEXFER_ATTR_UIDGID) != 0) {
-            attrs.put(SshFile.Attribute.Uid, buffer.getInt());
-            attrs.put(SshFile.Attribute.Gid, buffer.getInt());
+            attrs.put(Attribute.Uid, buffer.getInt());
+            attrs.put(Attribute.Gid, buffer.getInt());
         }
         if ((flags & SSH_FILEXFER_ATTR_PERMISSIONS) != 0) {
             attrs.putAll(getPermissions(buffer.getInt()));
         }
         if ((flags & SSH_FILEXFER_ATTR_ACMODTIME) != 0) {
-            attrs.put(SshFile.Attribute.LastAccessTime, ((long) buffer.getInt()) * 1000);
-            attrs.put(SshFile.Attribute.LastModifiedTime, ((long) buffer.getInt()) * 1000);
+            attrs.put(Attribute.LastAccessTime, ((long) buffer.getInt()) * 1000);
+            attrs.put(Attribute.LastModifiedTime, ((long) buffer.getInt()) * 1000);
         }
         return attrs;
     }
@@ -1203,37 +1369,46 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
     }
 
     public void destroy() {
-        // if thread has not completed, cancel it
-        if ((pendingFuture != null) && (!pendingFuture.isDone())) {
-            boolean result = pendingFuture.cancel(true);
-            // TODO consider waiting some reasonable (?) amount of time for cancellation
-            if (log.isDebugEnabled()) {
-                log.debug("destroy() - cancel pending future=" + result);
-            }
-        }
-
-        pendingFuture = null;
-
-        if ((executors != null) && shutdownExecutor) {
-            Collection<Runnable> runners = executors.shutdownNow();
-            if (log.isDebugEnabled()) {
-                log.debug("destroy() - shutdown executor service - runners count=" + ((runners == null) ? 0 : runners.size()));
-            }
-        }
-
-        executors = null;
-
         if (!closed) {
             if (log.isDebugEnabled()) {
                 log.debug("destroy() - mark as closed");
             }
 
             closed = true;
+
+            // if thread has not completed, cancel it
+            if ((pendingFuture != null) && (!pendingFuture.isDone())) {
+                boolean result = pendingFuture.cancel(true);
+                // TODO consider waiting some reasonable (?) amount of time for cancellation
+                if (log.isDebugEnabled()) {
+                    log.debug("destroy() - cancel pending future=" + result);
+                }
+            }
+
+            pendingFuture = null;
+
+            if ((executors != null) && shutdownExecutor) {
+                Collection<Runnable> runners = executors.shutdownNow();
+                if (log.isDebugEnabled()) {
+                    log.debug("destroy() - shutdown executor service - runners count=" + ((runners == null) ? 0 : runners.size()));
+                }
+            }
+
+            executors = null;
+
+            try {
+                fileSystem.close();
+            } catch (UnsupportedOperationException e) {
+                // Ignore
+            } catch (IOException e) {
+                log.debug("Error closing FileSystem", e);
+            }
         }
     }
 
-    private SshFile resolveFile(String path) {
-    	return this.root.getNormalizedView().getFile(path);
+    private Path resolveFile(String path) {
+        return defaultDir.resolve(path);
+//    	return this.fileSystem.getPath(path);
     }
 
     private final static String[] MONTHS = { "Jan", "Feb", "Mar", "Apr", "May",
@@ -1242,12 +1417,12 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
     /**
      * Get unix style date string.
      */
-    private final static String getUnixDate(long millis) {
+    private static String getUnixDate(long millis) {
         if (millis < 0) {
             return "------------";
         }
 
-        StringBuffer sb = new StringBuffer(16);
+        StringBuilder sb = new StringBuilder(16);
         Calendar cal = new GregorianCalendar();
         cal.setTimeInMillis(millis);
 
