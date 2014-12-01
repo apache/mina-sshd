@@ -417,11 +417,11 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                 try {
                     SshFile file = resolveFile(path);
                     if (file.doesExist()) {
-                        if ((pflags & SSH_FXP_READ) != 0 && !file.isReadable()) {
+                        if ((pflags & SSH_FXF_READ) != 0 && !file.isReadable()) {
                             sendStatus(id, SSH_FX_PERMISSION_DENIED, "Can not read " + path);
                             return;
                         }
-                        if ((pflags & SSH_FXP_WRITE) != 0 && !file.isWritable()) {
+                        if ((pflags & SSH_FXF_WRITE) != 0 && !file.isWritable()) {
                             sendStatus(id, SSH_FX_PERMISSION_DENIED, "Can not write " + path);
                             return;
                         }
