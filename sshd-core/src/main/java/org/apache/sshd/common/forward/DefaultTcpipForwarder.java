@@ -92,9 +92,6 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
     public synchronized void stopLocalPortForwarding(SshdSocketAddress local) throws IOException {
         if (localToRemote.remove(local.getPort()) != null && acceptor != null) {
             acceptor.unbind(local.toInetSocketAddress());
-            if (acceptor.getBoundAddresses().isEmpty()) {
-                close();
-            }
         }
     }
 
@@ -149,9 +146,6 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
         if (obj != null) {
             obj.close(true);
             acceptor.unbind(local.toInetSocketAddress());
-            if (acceptor.getBoundAddresses().isEmpty()) {
-                close();
-            }
         }
     }
 
@@ -178,10 +172,6 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
     public synchronized void localPortForwardingCancelled(SshdSocketAddress local) throws IOException {
         if (localForwards.remove(local) && acceptor != null) {
             acceptor.unbind(local.toInetSocketAddress());
-            if (acceptor.getBoundAddresses().isEmpty()) {
-                acceptor.close(true);
-                acceptor = null;
-            }
         }
     }
 
@@ -214,7 +204,7 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
                 throw new IOException("Multiple local addresses have been bound for " + address);
             }
             InetSocketAddress result = (InetSocketAddress) after.iterator().next();
-            return new SshdSocketAddress(address.getHostName(), result.getPort());
+            return new SshdSocketAddress(result.getHostName(), result.getPort());
         } catch (IOException bindErr) {
             if (acceptor.getBoundAddresses().isEmpty()) {
                 close();

@@ -41,13 +41,11 @@ import org.apache.sshd.common.io.IoHandler;
 public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
 
     private final Map<SocketAddress, AsynchronousServerSocketChannel> channels;
-    private final Map<SocketAddress, AsynchronousServerSocketChannel> unbound;
     private int backlog = 50;
 
     public Nio2Acceptor(FactoryManager manager, IoHandler handler, AsynchronousChannelGroup group) {
         super(manager, handler, group);
         channels = new ConcurrentHashMap<SocketAddress, AsynchronousServerSocketChannel>();
-        unbound = new ConcurrentHashMap<SocketAddress, AsynchronousServerSocketChannel>();
     }
 
     public void bind(Collection<? extends SocketAddress> addresses) throws IOException {
@@ -75,7 +73,11 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
         for (SocketAddress address : addresses) {
             AsynchronousServerSocketChannel channel = channels.remove(address);
             if (channel != null) {
-                unbound.put(address, channel);
+                try {
+                    channel.close();
+                } catch (IOException e) {
+                    log.warn("Error unbinding socket", e);
+                }
             }
         }
     }
@@ -113,12 +115,6 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
         protected void onCompleted(AsynchronousSocketChannel result, SocketAddress address) {
             // Verify that the address has not been unbound
             if (!channels.containsKey(address)) {
-                try {
-                    result.close();
-                } catch (IOException e) {
-                    logger.debug("Ignoring error closing accepted connection on unbound socket", e);
-                }
-                acceptorStopped(address);
                 return;
             }
             try {
@@ -134,15 +130,9 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
             }
         }
         protected void onFailed(final Throwable exc, final SocketAddress address) {
-            if (!channels.containsKey(address)) {
-                acceptorStopped(address);
-            } else if (!disposing.get()) {
+            if (channels.containsKey(address) && !disposing.get()) {
                 logger.warn("Caught exception while accepting incoming connection", exc);
             }
-        }
-        protected void acceptorStopped(SocketAddress address) {
-            // TODO: check remaining sessions on that address
-            // TODO: and eventually close the server socket
         }
     }
 }

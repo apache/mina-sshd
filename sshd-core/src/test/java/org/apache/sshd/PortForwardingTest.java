@@ -226,7 +226,7 @@ public class PortForwardingTest extends BaseTest {
     public void testLocalForwardingNative() throws Exception {
         ClientSession session = createNativeSession();
 
-        SshdSocketAddress local = new SshdSocketAddress("", getFreePort());
+        SshdSocketAddress local = new SshdSocketAddress("", 0);
         SshdSocketAddress remote = new SshdSocketAddress("localhost", echoPort);
 
         SshdSocketAddress bound = session.startLocalPortForwarding(local, remote);
@@ -241,6 +241,24 @@ public class PortForwardingTest extends BaseTest {
         s.close();
 
         session.stopLocalPortForwarding(bound);
+        session.close(false).await();
+    }
+
+    @Test
+    public void testLocalForwardingNativeReuse() throws Exception {
+        ClientSession session = createNativeSession();
+
+        int port = getFreePort();
+
+        SshdSocketAddress local = new SshdSocketAddress("", port);
+        SshdSocketAddress remote = new SshdSocketAddress("localhost", echoPort);
+
+        SshdSocketAddress bound = session.startLocalPortForwarding(local, remote);
+        session.stopLocalPortForwarding(bound);
+
+        SshdSocketAddress bound2 = session.startLocalPortForwarding(local, remote);
+        session.stopLocalPortForwarding(bound2);
+
         session.close(false).await();
     }
 
