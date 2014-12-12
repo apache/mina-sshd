@@ -474,6 +474,10 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         if (f.exists() && f.isFile() && f.canRead()) {
             files.add(f.getAbsolutePath());
         }
+        f = new File(System.getProperty("user.home"), ".ssh/id_ecdsa");
+        if (f.exists() && f.isFile() && f.canRead()) {
+            files.add(f.getAbsolutePath());
+        }
         if (files.size() > 0) {
             // SSHD-292: we need to use a different class to load the FileKeyPairProvider
             //  in order to break the link between SshClient and BouncyCastle
