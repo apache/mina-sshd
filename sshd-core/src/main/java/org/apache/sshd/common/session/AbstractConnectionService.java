@@ -19,6 +19,7 @@
 package org.apache.sshd.common.session;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -80,6 +81,10 @@ public abstract class AbstractConnectionService extends CloseableUtils.AbstractI
         agentForward = new AgentForwardSupport(this);
         x11Forward = new X11ForwardSupport(this);
         tcpipForwarder = session.getFactoryManager().getTcpipForwarderFactory().create(this);
+    }
+
+    public Collection<Channel> getChannels() {
+        return channels.values();
     }
 
     public AbstractSession getSession() {

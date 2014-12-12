@@ -272,7 +272,9 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         } else if (out != null) {
             out.write(data, off, len);
             out.flush();
-            localWindow.consumeAndCheck(len);
+            if (invertedOut == null) {
+                localWindow.consumeAndCheck(len);
+            }
         } else {
             throw new IllegalStateException("No output stream for channel");
         }
@@ -288,7 +290,9 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         } else if (err != null) {
             err.write(data, off, len);
             err.flush();
-            localWindow.consumeAndCheck(len);
+            if (invertedErr == null) {
+                localWindow.consumeAndCheck(len);
+            }
         } else {
             throw new IllegalStateException("No error stream for channel");
         }

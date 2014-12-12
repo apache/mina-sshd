@@ -92,7 +92,6 @@ public class ChannelPipedInputStream extends InputStream {
 
     @Override
     public int read(byte[] b, int off, int len) throws IOException {
-        int avail;
         long startTime = System.currentTimeMillis();
         lock.lock();
         try {
@@ -128,11 +127,10 @@ public class ChannelPipedInputStream extends InputStream {
             if (buffer.rpos() > localWindow.getPacketSize() || buffer.available() == 0) {
                 buffer.compact();
             }
-            avail = localWindow.getMaxSize() - buffer.available();
         } finally {
             lock.unlock();
         }
-        localWindow.check(avail);
+        localWindow.consumeAndCheck(len);
         return len;
     }
 
@@ -168,6 +166,5 @@ public class ChannelPipedInputStream extends InputStream {
         } finally {
             lock.unlock();
         }
-        localWindow.consume(len);
     }
 }
