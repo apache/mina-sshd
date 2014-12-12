@@ -18,7 +18,10 @@
  */
 package org.apache.sshd.common.io.nio2;
 
+import java.io.IOException;
+import java.net.SocketOption;
 import java.nio.channels.AsynchronousChannelGroup;
+import java.nio.channels.NetworkChannel;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -72,4 +75,27 @@ public abstract class Nio2Service extends CloseableUtils.AbstractInnerCloseable 
     public void sessionClosed(Nio2Session session) {
         sessions.remove(session.getId());
     }
+
+    protected <T> void setOption(NetworkChannel socket, String property, SocketOption<T> option, T defaultValue) throws IOException {
+        String valStr = manager.getProperties().get(property);
+        T val = defaultValue;
+        if (valStr != null) {
+            Class<T> type = option.type();
+            if (type == Integer.class) {
+                val = type.cast(Integer.parseInt(valStr));
+            } else if (type == Boolean.class) {
+                val = type.cast(Boolean.parseBoolean(valStr));
+            } else {
+                throw new IllegalStateException("Unsupported socket option type " + type);
+            }
+        }
+        if (val != null) {
+            try {
+                socket.setOption(option, val);
+            } catch (IOException e) {
+                logger.warn("Unable to set socket option " + option + " to " + val, e);
+            }
+        }
+    }
+
 }

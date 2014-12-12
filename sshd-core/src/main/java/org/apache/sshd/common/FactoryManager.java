@@ -71,6 +71,48 @@ public interface FactoryManager {
     public static final String IDLE_TIMEOUT = "idle-timeout";
 
     /**
+     * Socket backlog.
+     * See {@link java.nio.channels.AsynchronousServerSocketChannel#bind(java.net.SocketAddress, int)}
+     */
+    public static final String SOCKET_BACKLOG = "socket-backlog";
+
+    /**
+     * Socket keep-alive.
+     * See {@link java.net.StandardSocketOptions#SO_KEEPALIVE}
+     */
+    public static final String SOCKET_KEEPALIVE = "socket-keepalive";
+
+    /**
+     * Socket send buffer size.
+     * See {@link java.net.StandardSocketOptions#SO_SNDBUF}
+     */
+    public static final String SOCKET_SNDBUF = "socket-sndbuf";
+
+    /**
+     * Socket receive buffer size.
+     * See {@link java.net.StandardSocketOptions#SO_RCVBUF}
+     */
+    public static final String SOCKET_RCVBUF = "socket-rcvbuf";
+
+    /**
+     * Socket reuse address.
+     * See {@link java.net.StandardSocketOptions#SO_REUSEADDR}
+     */
+    public static final String SOCKET_REUSEADDR = "socket-reuseaddr";
+
+    /**
+     * Socket linger.
+     * See {@link java.net.StandardSocketOptions#SO_LINGER}
+     */
+    public static final String SOCKET_LINGER = "socket-linger";
+
+    /**
+     * Socket tcp no-delay.
+     * See {@link java.net.StandardSocketOptions#TCP_NODELAY}
+     */
+    public static final String TCP_NODELAY = "tcp-nodelay";
+
+    /**
      * A map of properties that can be used to configure the SSH server
      * or client.  This map will never be changed by either the server or
      * client and is not supposed to be changed at runtime (changes are not

@@ -25,7 +25,6 @@ import org.apache.mina.core.future.IoFutureListener;
 import org.apache.mina.core.service.IoConnector;
 import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.service.IoProcessor;
-import org.apache.mina.core.session.IoSessionConfig;
 import org.apache.mina.transport.socket.nio.NioSession;
 import org.apache.mina.transport.socket.nio.NioSocketConnector;
 import org.apache.sshd.common.FactoryManager;
@@ -37,7 +36,6 @@ import org.apache.sshd.common.io.IoConnectFuture;
 public class MinaConnector extends MinaService implements org.apache.sshd.common.io.IoConnector, IoHandler {
 
     protected volatile IoConnector connector;
-    protected IoSessionConfig sessionConfig;
 
     public MinaConnector(FactoryManager manager, org.apache.sshd.common.io.IoHandler handler, IoProcessor<NioSession> ioProcessor) {
         super(manager, handler, ioProcessor);
@@ -45,9 +43,7 @@ public class MinaConnector extends MinaService implements org.apache.sshd.common
 
     protected IoConnector createConnector() {
         NioSocketConnector connector = new NioSocketConnector(ioProcessor);
-        if (sessionConfig != null) {
-            connector.getSessionConfig().setAll(sessionConfig);
-        }
+        configure(connector.getSessionConfig());
         return connector;
     }
 

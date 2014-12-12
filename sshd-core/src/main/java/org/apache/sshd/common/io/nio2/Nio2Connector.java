@@ -20,6 +20,7 @@ package org.apache.sshd.common.io.nio2;
 
 import java.io.IOException;
 import java.net.SocketAddress;
+import java.net.StandardSocketOptions;
 import java.nio.channels.AsynchronousChannelGroup;
 import java.nio.channels.AsynchronousSocketChannel;
 
@@ -43,6 +44,12 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
         final IoConnectFuture future = new DefaultIoConnectFuture(null);
         try {
             final AsynchronousSocketChannel socket = AsynchronousSocketChannel.open(group);
+            setOption(socket, FactoryManager.SOCKET_KEEPALIVE, StandardSocketOptions.SO_KEEPALIVE, null);
+            setOption(socket, FactoryManager.SOCKET_LINGER, StandardSocketOptions.SO_LINGER, null);
+            setOption(socket, FactoryManager.SOCKET_RCVBUF, StandardSocketOptions.SO_RCVBUF, null);
+            setOption(socket, FactoryManager.SOCKET_REUSEADDR, StandardSocketOptions.SO_REUSEADDR, Boolean.TRUE);
+            setOption(socket, FactoryManager.SOCKET_SNDBUF, StandardSocketOptions.SO_SNDBUF, null);
+            setOption(socket, FactoryManager.TCP_NODELAY, StandardSocketOptions.TCP_NODELAY, null);
             socket.connect(address, null, new Nio2CompletionHandler<Void, Object>() {
                 protected void onCompleted(Void result, Object attachment) {
                     try {

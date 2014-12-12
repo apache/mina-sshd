@@ -19,7 +19,6 @@
 package org.apache.sshd.common.io.mina;
 
 import java.io.IOException;
-import java.net.Socket;
 import java.net.SocketAddress;
 import java.util.Collection;
 import java.util.Set;
@@ -28,7 +27,6 @@ import org.apache.mina.core.service.IoAcceptor;
 import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.service.IoProcessor;
 import org.apache.mina.core.service.IoService;
-import org.apache.mina.core.session.IoSessionConfig;
 import org.apache.mina.transport.socket.nio.NioSession;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 import org.apache.sshd.common.FactoryManager;
@@ -39,12 +37,20 @@ public class MinaAcceptor extends MinaService implements org.apache.sshd.common.
 
     protected volatile IoAcceptor acceptor;
     // Acceptor
-    protected int backlog = 50;
+    protected int backlog = 0;
     protected boolean reuseAddress = true;
-    protected IoSessionConfig sessionConfig;
 
     public MinaAcceptor(FactoryManager manager, org.apache.sshd.common.io.IoHandler handler, IoProcessor<NioSession> ioProcessor) {
         super(manager, handler, ioProcessor);
+
+        String valStr = manager.getProperties().get(FactoryManager.SOCKET_BACKLOG);
+        if (valStr != null) {
+            backlog = Integer.parseInt(valStr);
+        }
+        valStr = manager.getProperties().get(FactoryManager.SOCKET_REUSEADDR);
+        if (valStr != null) {
+            reuseAddress = Boolean.parseBoolean(valStr);
+        }
     }
 
     protected IoAcceptor createAcceptor() {
@@ -52,26 +58,7 @@ public class MinaAcceptor extends MinaService implements org.apache.sshd.common.
         acceptor.setCloseOnDeactivation(false);
         acceptor.setReuseAddress(reuseAddress);
         acceptor.setBacklog(backlog);
-
-        // MINA itself forces our socket receive buffer to 1024 bytes
-        // by default, despite what the operating system defaults to.
-        // This limits us to about 3 MB/s incoming data transfer.  By
-        // forcing back to the operating system default we can get a
-        // decent transfer rate again.
-        //
-        final Socket s = new Socket();
-        try {
-            try {
-                acceptor.getSessionConfig().setReceiveBufferSize(s.getReceiveBufferSize());
-            } finally {
-                s.close();
-            }
-        } catch (IOException e) {
-            log.warn("cannot adjust SO_RCVBUF back to system default", e);
-        }
-        if (sessionConfig != null) {
-            acceptor.getSessionConfig().setAll(sessionConfig);
-        }
+        configure(acceptor.getSessionConfig());
         return acceptor;
     }
 

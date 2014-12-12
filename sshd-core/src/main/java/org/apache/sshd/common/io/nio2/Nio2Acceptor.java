@@ -41,18 +41,28 @@ import org.apache.sshd.common.io.IoHandler;
 public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
 
     private final Map<SocketAddress, AsynchronousServerSocketChannel> channels;
-    private int backlog = 50;
+    private int backlog = 0;
 
     public Nio2Acceptor(FactoryManager manager, IoHandler handler, AsynchronousChannelGroup group) {
         super(manager, handler, group);
         channels = new ConcurrentHashMap<SocketAddress, AsynchronousServerSocketChannel>();
+
+        String valStr = manager.getProperties().get(FactoryManager.SOCKET_BACKLOG);
+        if (valStr != null) {
+            backlog = Integer.parseInt(valStr);
+        }
     }
 
     public void bind(Collection<? extends SocketAddress> addresses) throws IOException {
         for (SocketAddress address : addresses) {
             logger.debug("Binding Nio2Acceptor to address {}", address);
             AsynchronousServerSocketChannel socket = AsynchronousServerSocketChannel.open(group);
-            socket.setOption(StandardSocketOptions.SO_REUSEADDR, Boolean.TRUE);
+            setOption(socket, FactoryManager.SOCKET_KEEPALIVE, StandardSocketOptions.SO_KEEPALIVE, null);
+            setOption(socket, FactoryManager.SOCKET_LINGER, StandardSocketOptions.SO_LINGER, null);
+            setOption(socket, FactoryManager.SOCKET_RCVBUF, StandardSocketOptions.SO_RCVBUF, null);
+            setOption(socket, FactoryManager.SOCKET_REUSEADDR, StandardSocketOptions.SO_REUSEADDR, Boolean.TRUE);
+            setOption(socket, FactoryManager.SOCKET_SNDBUF, StandardSocketOptions.SO_SNDBUF, null);
+            setOption(socket, FactoryManager.TCP_NODELAY, StandardSocketOptions.TCP_NODELAY, null);
             socket.bind(address, backlog);
             SocketAddress local = socket.getLocalAddress();
             channels.put(local, socket);

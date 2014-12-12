@@ -28,6 +28,8 @@ import org.apache.mina.core.service.IoProcessor;
 import org.apache.mina.core.service.IoService;
 import org.apache.mina.core.session.IdleStatus;
 import org.apache.mina.core.session.IoSession;
+import org.apache.mina.core.session.IoSessionConfig;
+import org.apache.mina.transport.socket.SocketSessionConfig;
 import org.apache.mina.transport.socket.nio.NioSession;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
@@ -45,6 +47,7 @@ public abstract class MinaService extends IoHandlerAdapter implements org.apache
     protected final FactoryManager manager;
     protected final org.apache.sshd.common.io.IoHandler handler;
     protected final IoProcessor<NioSession> ioProcessor;
+    protected IoSessionConfig sessionConfig;
 
     public MinaService(FactoryManager manager, org.apache.sshd.common.io.IoHandler handler, IoProcessor<NioSession> ioProcessor) {
         this.manager = manager;
@@ -106,4 +109,38 @@ public abstract class MinaService extends IoHandlerAdapter implements org.apache
         return (org.apache.sshd.common.io.IoSession)
                 session.getAttribute(org.apache.sshd.common.io.IoSession.class);
     }
+
+    protected void configure(SocketSessionConfig config) {
+        Integer intVal;
+        Boolean boolVal;
+        if ((boolVal = getBoolean(FactoryManager.SOCKET_KEEPALIVE)) != null) {
+            config.setKeepAlive(boolVal);
+        }
+        if ((intVal = getInteger(FactoryManager.SOCKET_SNDBUF)) != null) {
+            config.setSendBufferSize(intVal);
+        }
+        if ((intVal = getInteger(FactoryManager.SOCKET_RCVBUF)) != null) {
+            config.setReceiveBufferSize(intVal);
+        }
+        if ((intVal = getInteger(FactoryManager.SOCKET_LINGER)) != null) {
+            config.setSoLinger(intVal);
+        }
+        if ((boolVal = getBoolean(FactoryManager.SOCKET_LINGER)) != null) {
+            config.setTcpNoDelay(boolVal);
+        }
+        if (sessionConfig != null) {
+            config.setAll(sessionConfig);
+        }
+    }
+
+    protected Integer getInteger(String property) {
+        String strVal = manager.getProperties().get(property);
+        return (strVal != null) ? Integer.parseInt(strVal) : null;
+    }
+
+    protected Boolean getBoolean(String property) {
+        String strVal = manager.getProperties().get(property);
+        return (strVal != null) ? Boolean.parseBoolean(strVal) : null;
+    }
+
 }
