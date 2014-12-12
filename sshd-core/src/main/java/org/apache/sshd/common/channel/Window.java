@@ -127,7 +127,11 @@ public class Window {
                 lock.wait();
             }
             if (waiting) {
-                log.debug("Space available for {}", name);
+                if (closed) {
+                    log.debug("Window {} has been closed", name);
+                } else {
+                    log.debug("Space available for {}", name);
+                }
                 waiting = false;
             }
             if (closed) {
@@ -148,7 +152,11 @@ public class Window {
                 lock.wait();
             }
             if (waiting) {
-                log.debug("Space available for {}", name);
+                if (closed) {
+                    log.debug("Window {} has been closed", name);
+                } else {
+                    log.debug("Space available for {}", name);
+                }
                 waiting = false;
             }
             if (closed) {
