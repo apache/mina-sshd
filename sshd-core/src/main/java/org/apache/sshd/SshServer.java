@@ -25,7 +25,9 @@ import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.sshd.common.AbstractFactoryManager;
 import org.apache.sshd.common.Closeable;
@@ -372,6 +374,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         int port = 8000;
         String provider;
         boolean error = false;
+        Map<String, String> options = new LinkedHashMap<String, String>();
 
         for (int i = 0; i < args.length; i++) {
             if ("-p".equals(args[i])) {
@@ -394,6 +397,20 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
                     System.err.println("provider should be mina or nio2: " + args[i]);
                     break;
                 }
+            } else if ("-o".equals(args[i])) {
+                if (i + 1 >= args.length) {
+                    System.err.println("option requires and argument: " + args[i]);
+                    error = true;
+                    break;
+                }
+                String opt = args[++i];
+                int idx = opt.indexOf('=');
+                if (idx <= 0) {
+                    System.err.println("bad syntax for option: " + opt);
+                    error = true;
+                    break;
+                }
+                options.put(opt.substring(0, idx), opt.substring(idx + 1));
             } else if (args[i].startsWith("-")) {
                 System.err.println("illegal option: " + args[i]);
                 error = true;
@@ -405,13 +422,14 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
             }
         }
         if (error) {
-            System.err.println("usage: sshd [-p port] [-io mina|nio2]");
+            System.err.println("usage: sshd [-p port] [-io mina|nio2] [-o option=value]");
             System.exit(-1);
         }
 
         System.err.println("Starting SSHD on port " + port);
                                                     
         SshServer sshd = SshServer.setUpDefaultServer();
+        sshd.getProperties().putAll(options);
         sshd.setPort(port);
         sshd.getProperties().put(SshServer.WELCOME_BANNER, "Welcome to SSHD\n");
         if (SecurityUtils.isBouncyCastleRegistered()) {

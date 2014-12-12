@@ -33,7 +33,9 @@ import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Formatter;
@@ -374,6 +376,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         int socksPort = -1;
         boolean error = false;
         List<String> identities = new ArrayList<String>();
+        Map<String, String> options = new LinkedHashMap<String, String>();
 
         for (int i = 0; i < args.length; i++) {
             if (command == null && "-p".equals(args[i])) {
@@ -414,6 +417,20 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                     break;
                 }
                 identities.add(args[++i]);
+            } else if (command == null && "-o".equals(args[i])) {
+                if (i + 1 >= args.length) {
+                    System.err.println("option requires and argument: " + args[i]);
+                    error = true;
+                    break;
+                }
+                String opt = args[++i];
+                int idx = opt.indexOf('=');
+                if (idx <= 0) {
+                    System.err.println("bad syntax for option: " + opt);
+                    error = true;
+                    break;
+                }
+                options.put(opt.substring(0, idx), opt.substring(idx + 1));
             } else if (command == null && args[i].startsWith("-")) {
                 System.err.println("illegal option: " + args[i]);
                 error = true;
@@ -434,7 +451,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             error = true;
         }
         if (error) {
-            System.err.println("usage: ssh [-A|-a] [-v[v][v]] [-D socksPort] [-l login] [-p port] hostname [command]");
+            System.err.println("usage: ssh [-A|-a] [-v[v][v]] [-D socksPort] [-l login] [-p port] [-o option=value] hostname [command]");
             System.exit(-1);
         }
         if (logLevel <= 0) {
@@ -486,6 +503,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         }
 
         SshClient client = SshClient.setUpDefaultClient();
+        client.getProperties().putAll(options);
         client.start();
         client.setKeyPairProvider(provider);
         client.setUserInteraction(new UserInteraction() {
