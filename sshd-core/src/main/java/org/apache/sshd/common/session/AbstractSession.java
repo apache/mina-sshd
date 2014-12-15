@@ -26,7 +26,9 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -148,8 +150,9 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     // Session timeout
     protected long authTimeoutTimestamp = 0L;
     protected long idleTimeoutTimestamp = 0L;
-    protected long authTimeoutMs = TimeUnit.MINUTES.toMillis(2);    // 2 minutes in milliseconds
-    protected long idleTimeoutMs = TimeUnit.MINUTES.toMillis(10);   // 10 minutes in milliseconds
+    protected long authTimeoutMs = TimeUnit.MINUTES.toMillis(2);          // 2 minutes in milliseconds
+    protected long idleTimeoutMs = TimeUnit.MINUTES.toMillis(10);         // 10 minutes in milliseconds
+    protected long disconnectTimeoutMs = TimeUnit.SECONDS.toMillis(10);   // 10 seconds in milliseconds
     protected final AtomicReference<TimeoutStatus> timeoutStatus = new AtomicReference<TimeoutStatus>(TimeoutStatus.NoTimeout);
 
     //
@@ -178,6 +181,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
         authTimeoutMs = getLongProperty(FactoryManager.AUTH_TIMEOUT, authTimeoutMs);
         authTimeoutTimestamp = System.currentTimeMillis() + authTimeoutMs;
         idleTimeoutMs = getLongProperty(FactoryManager.IDLE_TIMEOUT, idleTimeoutMs);
+        disconnectTimeoutMs = getLongProperty(FactoryManager.DISCONNECT_TIMEOUT, disconnectTimeoutMs);
     }
 
     /**
@@ -515,6 +519,27 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
             resetIdleTimeout();
             checkRekey();
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public IoWriteFuture writePacket(Buffer buffer, long timeout, TimeUnit unit) throws IOException {
+        final IoWriteFuture writeFuture = writePacket(buffer);
+        final DefaultSshFuture<IoWriteFuture> future = (DefaultSshFuture<IoWriteFuture>) writeFuture;
+        final ScheduledFuture<?> sched = factoryManager.getScheduledExecutorService().schedule(new Runnable() {
+            @Override
+            public void run() {
+                log.info("Timeout writing packet.");
+                future.setValue(new TimeoutException());
+            }
+        }, timeout, unit);
+        future.addListener(new SshFutureListener<IoWriteFuture>() {
+            @Override
+            public void operationComplete(IoWriteFuture future) {
+                sched.cancel(false);
+            }
+        });
+        return writeFuture;
     }
 
     protected IoWriteFuture doWritePacket(Buffer buffer) throws IOException {
@@ -1072,7 +1097,9 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
         buffer.putInt(reason);
         buffer.putString(msg);
         buffer.putString("");
-        writePacket(buffer).addListener(new SshFutureListener<IoWriteFuture>() {
+        // Write the packet with a timeout to ensure a timely close of the session
+        // in case the consumer does not read packets anymore.
+        writePacket(buffer, disconnectTimeoutMs, TimeUnit.MILLISECONDS).addListener(new SshFutureListener<IoWriteFuture>() {
             public void operationComplete(IoWriteFuture future) {
                 close(true);
             }

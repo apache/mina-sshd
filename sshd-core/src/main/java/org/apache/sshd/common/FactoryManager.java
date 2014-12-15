@@ -71,6 +71,14 @@ public interface FactoryManager {
     public static final String IDLE_TIMEOUT = "idle-timeout";
 
     /**
+     * Key used to retrieve the value of the disconnect timeout which
+     * is used when a disconnection is attempted.  If the disconnect
+     * message has not been sent before the timeout, the underlying socket
+     * will be forcibly closed.
+     */
+    public static final String DISCONNECT_TIMEOUT = "disconnect-timeout";
+
+    /**
      * Socket backlog.
      * See {@link java.nio.channels.AsynchronousServerSocketChannel#bind(java.net.SocketAddress, int)}
      */

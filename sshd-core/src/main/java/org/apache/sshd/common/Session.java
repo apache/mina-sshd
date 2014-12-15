@@ -19,6 +19,7 @@
 package org.apache.sshd.common;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.io.IoSession;
@@ -122,9 +123,23 @@ public interface Session extends Closeable {
      *
      * @param buffer the buffer to encode and send
      * @return a future that can be used to check when the packet has actually been sent
-     * @throws java.io.IOException if an error occured when encoding sending the packet
+     * @throws java.io.IOException if an error occurred when encoding sending the packet
      */
     IoWriteFuture writePacket(Buffer buffer) throws IOException;
+
+    /**
+     * Encode and send the given buffer with the specified timeout.
+     * If the buffer could not be written before the timeout elapses, the returned
+     * {@link org.apache.sshd.common.io.IoWriteFuture} will be set with a
+     * {@link java.util.concurrent.TimeoutException} exception to indicate a timeout.
+     *
+     * @param buffer the buffer to encode and spend
+     * @param timeout the timeout
+     * @param unit the time unit of the timeout parameter
+     * @return a future that can be used to check when the packet has actually been sent
+     * @throws java.io.IOException if an error occurred when encoding sending the packet
+     */
+    IoWriteFuture writePacket(Buffer buffer, long timeout, TimeUnit unit) throws IOException;
 
     /**
      * Send a global request and wait for the response.
