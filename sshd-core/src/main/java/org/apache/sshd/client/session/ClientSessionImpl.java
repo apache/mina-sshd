@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.security.KeyPair;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,7 +54,11 @@ import org.apache.sshd.common.SessionListener;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.SshdSocketAddress;
+import org.apache.sshd.common.cipher.CipherNone;
+import org.apache.sshd.common.future.DefaultSshFuture;
+import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.io.IoSession;
+import org.apache.sshd.common.session.AbstractConnectionService;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.util.Buffer;
@@ -188,6 +193,32 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         }
     }
 
+    @Override
+    public SshFuture switchToNoneCipher() throws IOException {
+        if (!(currentService instanceof AbstractConnectionService)
+                || !((AbstractConnectionService) currentService).getChannels().isEmpty()) {
+            throw new IllegalStateException("The switch to the none cipher must be done immediately after authentication");
+        }
+        if (kexState.compareAndSet(KEX_STATE_DONE, KEX_STATE_INIT)) {
+            reexchangeFuture = new DefaultSshFuture(null);
+            if (!serverProposal[SshConstants.PROPOSAL_ENC_ALGS_CTOS].matches("(^|.*,)none($|,.*)")
+                    || !serverProposal[SshConstants.PROPOSAL_ENC_ALGS_STOC].matches("(^|.*,)none($|,.*)")) {
+                reexchangeFuture.setValue(new SshException("Server does not support none cipher"));
+            } else if (!clientProposal[SshConstants.PROPOSAL_ENC_ALGS_CTOS].matches("(^|.*,)none($|,.*)")
+                    || !clientProposal[SshConstants.PROPOSAL_ENC_ALGS_STOC].matches("(^|.*,)none($|,.*)")) {
+                reexchangeFuture.setValue(new SshException("Client does not support none cipher"));
+            } else {
+                log.info("Switching to none cipher");
+                clientProposal[SshConstants.PROPOSAL_ENC_ALGS_CTOS] = "none";
+                clientProposal[SshConstants.PROPOSAL_ENC_ALGS_STOC] = "none";
+                I_C = sendKexInit(clientProposal);
+            }
+            return reexchangeFuture;
+        } else {
+            throw new SshException("In flight key exchange");
+        }
+    }
+
     public ClientChannel createChannel(String type) throws IOException {
         return createChannel(type, null);
     }
@@ -205,6 +236,9 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
     }
 
     public ChannelShell createShellChannel() throws IOException {
+        if (inCipher instanceof CipherNone || outCipher instanceof CipherNone) {
+            throw new IllegalStateException("Interactive channels are not supported with none cipher");
+        }
         ChannelShell channel = new ChannelShell();
         getConnectionService().registerChannel(channel);
         return channel;

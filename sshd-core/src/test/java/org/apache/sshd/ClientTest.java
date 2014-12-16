@@ -51,6 +51,7 @@ import org.apache.sshd.common.Service;
 import org.apache.sshd.common.Session;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.cipher.CipherNone;
 import org.apache.sshd.common.forward.TcpipServerChannel;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
@@ -741,6 +742,22 @@ public class ClientTest extends BaseTest {
         ClientSession session = client.connect("smx", "localhost", port).await().getSession();
         session.waitFor(ClientSession.WAIT_AUTH, 10000);
         assertTrue(ok.get());
+        client.stop();
+    }
+
+    @Test
+    public void testSwitchToNoneCipher() throws Exception {
+        sshd.getCipherFactories().add(new CipherNone.Factory());
+        client.getCipherFactories().add(new CipherNone.Factory());
+        client.start();
+        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
+        session.addPasswordIdentity("smx");
+        session.auth().verify();
+        session.switchToNoneCipher().await();
+
+        ClientChannel channel = session.createSubsystemChannel("sftp");
+        channel.open().verify();
+
         client.stop();
     }
 

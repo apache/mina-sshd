@@ -34,6 +34,7 @@ import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.common.Session;
 import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.future.CloseFuture;
+import org.apache.sshd.common.future.SshFuture;
 
 /**
  * An authenticated session to a given SSH server
@@ -229,5 +230,19 @@ public interface ClientSession extends Session {
      * Return ClientFactoryManager for this session.
      */
     ClientFactoryManager getFactoryManager();
+
+    /**
+     * Switch to a none cipher for performance.
+     *
+     * This should be done after the authentication phase has been performed.
+     * After such a switch, interactive channels are not allowed anymore.
+     * Both client and server must have been configured to support the none cipher.
+     * If that's not the case, the returned future will be set with an exception.
+     *
+     * @return an {@link SshFuture} that can be used to wait for the exchange
+     *         to be finished
+     * @throws IOException if a key exchange is already running
+     */
+    SshFuture switchToNoneCipher() throws IOException;
 
 }
