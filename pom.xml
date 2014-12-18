@@ -258,6 +258,7 @@
                                 <exclude>**/*.iml</exclude>
                                 <exclude>src/docs/**</exclude>
                                 <exclude>**/stty-output-*.txt</exclude>
+                                <exclude>**/big-msg.txt</exclude>
                                 <exclude>sshd-sftp/**</exclude>
                                 <exclude>sshd-pam/**</exclude>
                             </excludes>
