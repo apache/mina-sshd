@@ -259,7 +259,7 @@ public class DHGEX implements KeyExchange {
         }
         if (selected.isEmpty()) {
             log.warn("No suitable primes found, defaulting to DHG1");
-            return getDH(new BigInteger(DHGroupData.getG()), new BigInteger(DHGroupData.getP1()));
+            return getDH(new BigInteger(DHGroupData.getP1()), new BigInteger(DHGroupData.getG()));
         }
         Random random = session.getFactoryManager().getRandomFactory().create();
         int which = random.random(selected.size());
