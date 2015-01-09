@@ -69,12 +69,16 @@ public class DefaultIoServiceFactoryFactory implements IoServiceFactoryFactory {
 
     private static <T> T tryLoad(ServiceLoader<T> loader) {
         Iterator<T> it = loader.iterator();
-        while (it.hasNext()) {
-            try {
-                return it.next();
-            } catch (Throwable t) {
-                LOGGER.trace("Exception while loading factory from ServiceLoader", t);
+        try {
+            while (it.hasNext()) {
+                try {
+                    return it.next();
+                } catch (Throwable t) {
+                    LOGGER.trace("Exception while loading factory from ServiceLoader", t);
+                }
             }
+        } catch (Throwable t) {
+            LOGGER.trace("Exception while loading factory from ServiceLoader", t);
         }
         return null;
     }
