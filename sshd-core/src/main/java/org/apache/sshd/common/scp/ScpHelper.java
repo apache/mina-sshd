@@ -211,6 +211,9 @@ public class ScpHelper {
         } else if (file.doesExist() && !file.isWritable()) {
             throw new IOException("Can not write to file: " + file);
         }
+        if (file.doesExist()) {
+            file.truncate();
+        }
         OutputStream os = file.createOutputStream(0);
         try {
             ack();

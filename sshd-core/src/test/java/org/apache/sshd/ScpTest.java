@@ -124,6 +124,35 @@ public class ScpTest extends BaseTest {
     }
 
     @Test
+    public void testScpUploadOverwrite() throws Exception {
+        SshClient client = SshClient.setUpDefaultClient();
+        client.start();
+        ClientSession session = client.connect("test", "localhost", port).await().getSession();
+        session.addPasswordIdentity("test");
+        session.auth().verify();
+
+        ScpClient scp = session.createScpClient();
+
+        String data = "0123456789\n";
+
+        File root = new File("target/scp");
+        Utils.deleteRecursive(root);
+        root.mkdirs();
+        new File(root, "local").mkdirs();
+        assertTrue(root.exists());
+
+        new File(root, "remote").mkdirs();
+        writeFile(new File("target/scp/remote/out.txt"), data + data);
+
+        writeFile(new File("target/scp/local/out.txt"), data);
+        scp.upload("target/scp/local/out.txt", "target/scp/remote/out.txt");
+        assertFileLength(new File("target/scp/remote/out.txt"), data.length(), 5000);
+
+        session.close(false).await();
+        client.stop();
+    }
+
+    @Test
     public void testScpNativeOnSingleFile() throws Exception {
         SshClient client = SshClient.setUpDefaultClient();
         client.start();
