@@ -34,6 +34,7 @@ import com.jcraft.jsch.JSch;
 import org.apache.sshd.client.SftpClient;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.command.ScpCommandFactory;
 import org.apache.sshd.server.sftp.SftpSubsystem;
@@ -99,40 +100,51 @@ public class SftpTest extends BaseTest {
         session.addPasswordIdentity("x");
         session.auth().verify();
 
-        String file = "target/sftp/client/test.txt";
+        String file = "target/sftp/client/testOpen.txt";
+        File javaFile = new File(file);
 
-        new File(file).getParentFile().mkdirs();
-        new File(file).createNewFile();
-        new File(file).setWritable(false, false);
-        new File(file).setReadable(false, false);
+        javaFile.getParentFile().mkdirs();
+        javaFile.createNewFile();
+        javaFile.setWritable(false, false);
+        javaFile.setReadable(false, false);
 
         SftpClient sftp = session.createSftpClient();
         SftpClient.Handle h;
 
+        boolean	isWindows = OsUtils.isWin32();
+
         try {
-            sftp.open(file, EnumSet.of(SftpClient.OpenMode.Read));
-            fail("Should have failed");
+            h = sftp.open(file, EnumSet.of(SftpClient.OpenMode.Read));
+            // NOTE: on Windows files are always readable
+            // see https://svn.apache.org/repos/asf/harmony/enhanced/java/branches/java6/classlib/modules/luni/src/test/api/windows/org/apache/harmony/luni/tests/java/io/WinFileTest.java
+            Assert.assertTrue("Empty read should have failed", isWindows);
+            sftp.close(h);
+        } catch (IOException e) {
+            if (isWindows) {
+                throw e;
+            }
+        }
+
+        try {
+            h = sftp.open(file, EnumSet.of(SftpClient.OpenMode.Write));
+            fail("Empty write should have failed");
         } catch (IOException e) {
             // ok
         }
 
         try {
-            sftp.open(file, EnumSet.of(SftpClient.OpenMode.Write));
-            fail("Should have failed");
+            h = sftp.open(file, EnumSet.of(SftpClient.OpenMode.Truncate));
+            fail("Empty truncate should have failed");
         } catch (IOException e) {
             // ok
         }
 
-        try {
-            sftp.open(file, EnumSet.of(SftpClient.OpenMode.Truncate));
-            fail("Should have failed");
-        } catch (IOException e) {
-            // ok
-        }
+        // NOTE: on Windows files are always readable
+        int	perms=sftp.stat(file).perms;
+        int	permsMask=SftpClient.S_IWUSR | (isWindows ? 0 : SftpClient.S_IRUSR);
+        Assert.assertEquals("Mismatched permissions - 0x" + Integer.toHexString(perms), 0, (perms & permsMask));
 
-        Assert.assertEquals(0, (sftp.stat(file).perms & (SftpClient.S_IWUSR | SftpClient.S_IRUSR)));
-
-        new File(file).setWritable(true, false);
+        javaFile.setWritable(true, false);
 
         h = sftp.open(file, EnumSet.of(SftpClient.OpenMode.Truncate, SftpClient.OpenMode.Write));
         sftp.close(h);
@@ -150,18 +162,22 @@ public class SftpTest extends BaseTest {
         sftp.close(h);
 
         try {
-            sftp.open(file, EnumSet.of(SftpClient.OpenMode.Read));
-            fail("Should have failed");
+            h = sftp.open(file, EnumSet.of(SftpClient.OpenMode.Read));
+            // NOTE: on Windows files are always readable
+            Assert.assertTrue("Data read should have failed", isWindows);
+            sftp.close(h);
         } catch (IOException e) {
-            // ok
+            if (isWindows) {
+                throw e;
+            }
         }
 
-        new File(file).setReadable(true, false);
+        javaFile.setReadable(true, false);
 
         h = sftp.open(file, EnumSet.of(SftpClient.OpenMode.Read));
         byte[] buf = new byte[3];
         int l = sftp.read(h, 2l, buf, 0, 3);
-        assertEquals("2-4", new String(buf, 0, l));
+        assertEquals("Mismatched read data", "2-4", new String(buf, 0, l));
         sftp.close(h);
     }
 
