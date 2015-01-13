@@ -1127,8 +1127,11 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     protected void negotiate() {
         String[] guess = new String[SshConstants.PROPOSAL_MAX];
         for (int i = 0; i < SshConstants.PROPOSAL_MAX; i++) {
-            String[] c = clientProposal[i].split(",");
-            String[] s = serverProposal[i].split(",");
+        	String paramName = SshConstants.PROPOSAL_KEX_NAMES[i];
+        	String clientParamValue = clientProposal[i];
+        	String serverParamValue = serverProposal[i];
+            String[] c = clientParamValue.split(",");
+            String[] s = serverParamValue.split(",");
             for (String ci : c) {
                 for (String si : s) {
                     if (ci.equals(si)) {
@@ -1140,27 +1143,33 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
                     break;
                 }
             }
-            if (guess[i] == null && i != SshConstants.PROPOSAL_LANG_CTOS && i != SshConstants.PROPOSAL_LANG_STOC) {
-                final String[] items = new String[] {
-                    "kex algorithms",
-                    "server host key algorithms",
-                    "encryption algorithms (client to server)",
-                    "encryption algorithms (server to client)",
-                    "mac algorithms (client to server)",
-                    "mac algorithms (server to client)",
-                    "compression algorithms (client to server)",
-                    "compression algorithms (server to client)"
-                };
-                throw new IllegalStateException("Unable to negotiate key exchange for " + items[i] +
-                        " (client: " + clientProposal[i] + " / server: " + serverProposal[i] + ")");
+            
+            // check if reached an agreement
+            if (guess[i] == null) {
+            	String	message="Unable to negotiate key exchange for " + paramName
+            				  + " (client: " + clientParamValue + " / server: " + serverParamValue + ")";
+                // OK if could not negotiate languages
+            	if ((i != SshConstants.PROPOSAL_LANG_CTOS) && (i != SshConstants.PROPOSAL_LANG_STOC)) {
+            		throw new IllegalStateException(message);
+            	} else {
+            		if (log.isTraceEnabled()) {
+            			log.trace(message);
+            		}
+            	}
+            } else {
+            	if (log.isTraceEnabled()) {
+            		log.trace("Kex: negotiate(" + paramName + ") guess=" + guess[i]
+            				+ " (client: " + clientParamValue + " / server: " + serverParamValue);
+            	}
             }
         }
         negotiated = guess;
-        log.info("Kex: server->client {} {} {}",
+
+        log.debug("Kex: server->client {} {} {}",
                 new Object[]{negotiated[SshConstants.PROPOSAL_ENC_ALGS_STOC],
                         negotiated[SshConstants.PROPOSAL_MAC_ALGS_STOC],
                         negotiated[SshConstants.PROPOSAL_COMP_ALGS_STOC]});
-        log.info("Kex: client->server {} {} {}",
+        log.debug("Kex: client->server {} {} {}",
                 new Object[]{negotiated[SshConstants.PROPOSAL_ENC_ALGS_CTOS],
                         negotiated[SshConstants.PROPOSAL_MAC_ALGS_CTOS],
                         negotiated[SshConstants.PROPOSAL_COMP_ALGS_CTOS]});
