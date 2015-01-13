@@ -18,6 +18,11 @@
  */
 package org.apache.sshd;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,6 +33,7 @@ import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.log4j.Logger;
 import org.apache.sshd.client.SessionFactory;
@@ -55,13 +61,9 @@ import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.Utils;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 /**
  * TODO Add javadoc
@@ -264,6 +266,52 @@ public class ServerTest extends BaseTest {
         });
         client.start();
         ClientSession s = client.connect("test", "localhost", port).await().getSession();
+        s.close(false);
+    }
+
+    @Test
+    public void testKexCompletedEvent() throws Exception {
+    	final AtomicInteger	serverEventCount=new AtomicInteger(0);
+        sshd.getSessionFactory().addListener(new SessionListener() {
+	            public void sessionCreated(Session session) {
+	            	// ignored
+	            }
+	
+	            public void sessionEvent(Session session, Event event) {
+	            	if (event == Event.KexCompleted) {
+	            		serverEventCount.incrementAndGet();
+	            	}
+	            }
+	
+	            public void sessionClosed(Session session) {
+	            	// ignored
+	            }
+	        });
+
+        client = SshClient.setUpDefaultClient();
+        client.start();
+    	final AtomicInteger	clientEventCount=new AtomicInteger(0);
+        client.getSessionFactory().addListener(new SessionListener() {
+	            public void sessionCreated(Session session) {
+	            	// ignored
+	            }
+	
+	            public void sessionEvent(Session session, Event event) {
+	            	if (event == Event.KexCompleted) {
+	            		clientEventCount.incrementAndGet();
+	            	}
+	            }
+	
+	            public void sessionClosed(Session session) {
+	            	// ignored
+	            }
+	        });
+
+        ClientSession s = client.connect("test", "localhost", port).await().getSession();
+        s.addPasswordIdentity("test");
+        s.auth().verify();
+        Assert.assertEquals("Mismatched client events count", 1, clientEventCount.get());
+        Assert.assertEquals("Mismatched server events count", 1, serverEventCount.get());
         s.close(false);
     }
 

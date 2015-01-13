@@ -386,6 +386,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
                 negotiate();
                 kex = NamedFactory.Utils.create(factoryManager.getKeyExchangeFactories(), negotiated[SshConstants.PROPOSAL_KEX_ALGS]);
                 kex.init(this, serverVersion.getBytes(), clientVersion.getBytes(), I_S, I_C);
+                sendEvent(SessionListener.Event.KexCompleted);
                 break;
             case SSH_MSG_NEWKEYS:
                 log.debug("Received SSH_MSG_NEWKEYS");

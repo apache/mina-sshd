@@ -26,7 +26,7 @@ package org.apache.sshd.common;
 public interface SessionListener {
 
     enum Event {
-        KeyEstablished, Authenticated
+        KeyEstablished, Authenticated, KexCompleted
     }
 
     /**
