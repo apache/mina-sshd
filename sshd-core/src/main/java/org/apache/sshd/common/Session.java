@@ -89,6 +89,15 @@ public interface Session extends Closeable {
     FactoryManager getFactoryManager();
 
     /**
+     * Retrieve one of the negotiated values during the KEX stage
+     * @param paramType The parameter type index - one of the {@link SSHConstants}
+     *  {@code PROPOSAL_XXX} values
+     * @return The negotiated parameter value - {@code null} if invalid
+     * parameter index or no negotiated value
+     */
+    String getNegotiatedKexParameter(int paramType);
+
+    /**
      * Retrieve a configuration property as an integer
      *
      * @param name the name of the property

@@ -260,6 +260,14 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
         return factoryManager;
     }
 
+    public String getNegotiatedKexParameter(int paramType) {
+    	if ((paramType < 0) || (negotiated == null) || (paramType >= negotiated.length)) {
+    		return null;
+    	} else {
+    		return negotiated[paramType];
+    	}
+    }
+
     public boolean isAuthenticated() {
         return authed;
     }
