@@ -19,6 +19,8 @@
 package org.apache.sshd.common.util;
 
 import java.math.BigInteger;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
@@ -194,12 +196,16 @@ public final class Buffer implements Readable {
     }
 
     public String getString() {
+        return getString(StandardCharsets.UTF_8);
+    }
+
+    public String getString(Charset charset) {
         int len = getInt();
         if (len < 0) {
             throw new IllegalStateException("Bad item length: " + len);
         }
         ensureAvailable(len);
-        String s = new String(data, rpos, len);
+        String s = new String(data, rpos, len, charset);
         rpos += len;
         return s;
     }
@@ -389,6 +395,16 @@ public final class Buffer implements Readable {
     }
 
     /**
+     * Writes 16 bits
+     * @param i
+     */
+    public void putShort(int i) {
+        ensureCapacity(2);
+        data[wpos++] = (byte) (i >>  8);
+        data[wpos++] = (byte) (i      );
+    }
+
+    /**
      * Writes 32 bits
      * @param i
      */
@@ -432,7 +448,11 @@ public final class Buffer implements Readable {
     }
 
     public void putString(String string) {
-        putString(string.getBytes());
+        putString(string, Charset.defaultCharset());
+    }
+
+    public void putString(String string, Charset charset) {
+        putString(string.getBytes(charset));
     }
 
     public void putString(byte[] str) {

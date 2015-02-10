@@ -19,14 +19,23 @@
 package org.apache.sshd;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URI;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
+import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.DirectoryStream;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.FileTime;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Arrays;
 import java.util.Map;
 
@@ -44,6 +53,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class SftpFileSystemTest extends BaseTest {
 
@@ -71,18 +81,39 @@ public class SftpFileSystemTest extends BaseTest {
     public void testFileSystem() throws Exception {
         Utils.deleteRecursive(new File("target/sftp"));
 
-        FileSystem fs = FileSystems.newFileSystem(URI.create("sftp://x:x@localhost:" + port + "/"), null);
+        String uri = "sftp://x:x@localhost:" + port + "/";
+
+        FileSystem fs = FileSystems.newFileSystem(URI.create(uri), null);
         Path root = fs.getRootDirectories().iterator().next();
         try (DirectoryStream<Path> ds = Files.newDirectoryStream(root)) {
             for (Path child : ds) {
                 System.out.println(child);
             }
         }
+        Path current = fs.getPath(".").toRealPath();
         Path file = fs.getPath("target/sftp/client/test.txt");
         Files.createDirectories(file.getParent());
         Files.write(file, "Hello world\n".getBytes());
         String buf = new String(Files.readAllBytes(file));
         assertEquals("Hello world\n", buf);
+
+        Path file2 = fs.getPath("target/sftp/client/test2.txt");
+        Path file3 = fs.getPath("target/sftp/client/test3.txt");
+        try {
+            Files.move(file2, file3);
+            fail("Expected an IOException");
+        } catch (NoSuchFileException e) {
+            // expected
+        }
+        Files.write(file2, "h".getBytes());
+        try {
+            Files.move(file, file2);
+            fail("Expected an IOException");
+        } catch (FileAlreadyExistsException e) {
+            // expected
+        }
+        Files.move(file, file2, StandardCopyOption.REPLACE_EXISTING);
+        Files.move(file2, file);
 
         Map<String, Object> attrs = Files.readAttributes(file, "*");
         System.out.println(attrs);
@@ -105,7 +136,42 @@ public class SftpFileSystemTest extends BaseTest {
         buf = new String(Files.readAllBytes(file));
         assertEquals("Hello world\n", buf);
 
+        try (FileChannel channel = FileChannel.open(file)) {
+            try (FileLock lock = channel.lock()) {
+                System.out.println("Locked " + lock.toString());
+
+                try (FileChannel channel2 = FileChannel.open(file)) {
+                    try (FileLock lock2 = channel2.lock()) {
+                        System.out.println("Locked " + lock2.toString());
+                        fail("Expected an exception");
+                    } catch (OverlappingFileLockException e) {
+                        // expected
+                    }
+                }
+
+            }
+        }
+
         Files.delete(file);
+
+        fs.close();
+    }
+
+    @Test
+    public void testAttributes() throws Exception {
+        Utils.deleteRecursive(new File("target/sftp"));
+
+        FileSystem fs = FileSystems.newFileSystem(URI.create("sftp://x:x@localhost:" + port + "/"), null);
+        Path file = fs.getPath("target/sftp/client/test.txt");
+        Files.createDirectories(file.getParent());
+        Files.write(file, "Hello world\n".getBytes());
+
+        Map<String, Object> attrs = Files.readAttributes(file, "posix:*");
+
+        Files.setAttribute(file, "basic:size", 2l);
+        Files.setAttribute(file, "posix:permissions", PosixFilePermissions.fromString("rwxr-----"));
+        Files.setAttribute(file, "basic:lastModifiedTime", FileTime.fromMillis(100000l));
+        Files.setAttribute(file, "posix:group", file.getFileSystem().getUserPrincipalLookupService().lookupPrincipalByGroupName("everyone"));
 
         fs.close();
     }

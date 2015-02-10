@@ -19,10 +19,11 @@
 package org.apache.sshd.client.sftp;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InterruptedIOException;
+import java.io.OutputStream;
 import java.net.URI;
-import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
+import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.AccessMode;
@@ -33,11 +34,13 @@ import java.nio.file.FileStore;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystemAlreadyExistsException;
 import java.nio.file.FileSystemNotFoundException;
+import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.ProviderMismatchException;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -52,6 +55,7 @@ import java.nio.file.attribute.UserPrincipal;
 import java.nio.file.spi.FileSystemProvider;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -62,11 +66,12 @@ import org.apache.sshd.SshBuilder;
 import org.apache.sshd.SshClient;
 import org.apache.sshd.client.SftpClient;
 import org.apache.sshd.client.SftpException;
+import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.util.IoUtils;
+
+import static org.apache.sshd.client.SftpClient.*;
 
 public class SftpFileSystemProvider extends FileSystemProvider {
-
-    public static final int SSH_FX_NO_SUCH_FILE =         2;
-    public static final int SSH_FX_FILE_ALREADY_EXISTS = 11;
 
     final SshClient client;
     final Map<String, SftpFileSystem> fileSystems = new HashMap<String, SftpFileSystem>();
@@ -140,6 +145,11 @@ public class SftpFileSystemProvider extends FileSystemProvider {
 
     @Override
     public SeekableByteChannel newByteChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
+        return newFileChannel(path, options, attrs);
+    }
+
+    @Override
+    public FileChannel newFileChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
         final SftpPath p = toSftpPath(path);
         final EnumSet<SftpClient.OpenMode> modes = EnumSet.noneOf(SftpClient.OpenMode.class);
         for (OpenOption option : options) {
@@ -162,91 +172,10 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         }
         if (modes.isEmpty()) {
             modes.add(SftpClient.OpenMode.Read);
+            modes.add(SftpClient.OpenMode.Write);
         }
-        return new SeekableByteChannel() {
-            final SftpClient sftp = p.getFileSystem().getClient();
-            final SftpClient.Handle handle = sftp.open(p.toString(), modes);
-            long pos = 0;
-            @Override
-            public int read(ByteBuffer dst) throws IOException {
-                if (dst.hasArray()) {
-                    int read = sftp.read(handle, pos, dst.array(), dst.arrayOffset() + dst.position(), dst.remaining());
-                    if (read > 0) {
-                        dst.position(dst.position() + read);
-                        pos += read;
-                    }
-                    return read;
-                } else {
-                    int remaining = Math.min(8192, dst.remaining());
-                    byte[] buf = new byte[remaining];
-                    int read = sftp.read(handle, pos, buf, 0, remaining);
-                    if (read > 0) {
-                        dst.put(buf, 0, read);
-                        pos += read;
-                    }
-                    return read;
-                }
-            }
-
-            @Override
-            public int write(ByteBuffer src) throws IOException {
-                if (src.hasArray()) {
-                    int rem = src.remaining();
-                    sftp.write(handle, pos, src.array(), src.arrayOffset() + src.position(), rem);
-                    src.position(src.position() + rem);
-                    pos += rem;
-                    return rem;
-                } else {
-                    byte[] buf = new byte[Math.min(8192, src.remaining())];
-                    src.get(buf);
-                    sftp.write(handle, pos, buf, 0, buf.length);
-                    pos += buf.length;
-                    return buf.length;
-                }
-            }
-
-            @Override
-            public long position() throws IOException {
-                if (pos < 0) {
-                    throw new ClosedChannelException();
-                }
-                return pos;
-            }
-
-            @Override
-            public SeekableByteChannel position(long newPosition) throws IOException {
-                if (newPosition < 0) {
-                    throw new IllegalArgumentException();
-                }
-                pos = newPosition;
-                return this;
-            }
-
-            @Override
-            public long size() throws IOException {
-                return sftp.stat(handle).size;
-            }
-
-            @Override
-            public SeekableByteChannel truncate(long size) throws IOException {
-                sftp.setStat(handle, new SftpClient.Attributes().size(size));
-                return this;
-            }
-
-            @Override
-            public boolean isOpen() {
-                return pos >= 0;
-            }
-
-            @Override
-            public void close() throws IOException {
-                if (pos >= 0) {
-                    sftp.close(handle);
-                    sftp.close();
-                    pos = -1;
-                }
-            }
-        };
+        // TODO: attrs
+        return new SftpFileChannel(p, modes);
     }
 
     @Override
@@ -288,14 +217,26 @@ public class SftpFileSystemProvider extends FileSystemProvider {
     public void createDirectory(Path dir, FileAttribute<?>... attrs) throws IOException {
         SftpPath p = toSftpPath(dir);
         try (SftpClient sftp = p.getFileSystem().getClient()) {
-            // TODO: handle attributes
             try {
                 sftp.mkdir(dir.toString());
             } catch (SftpException e) {
-                if (e.getStatus() == SSH_FX_FILE_ALREADY_EXISTS) {
+                if (sftp.getVersion() == 3 && e.getStatus() == DefaultSftpClient.SSH_FX_FAILURE) {
+                    try {
+                        Attributes attributes = sftp.stat(dir.toString());
+                        if (attributes != null) {
+                            throw new FileAlreadyExistsException(p.toString());
+                        }
+                    } catch (SshException e2) {
+                        e.addSuppressed(e2);
+                    }
+                }
+                if (e.getStatus() == DefaultSftpClient.SSH_FX_FILE_ALREADY_EXISTS) {
                     throw new FileAlreadyExistsException(p.toString());
                 }
                 throw e;
+            }
+            for (FileAttribute<?> attr : attrs) {
+                setAttribute(p, attr.name(), attr.value());
             }
         }
     }
@@ -316,19 +257,129 @@ public class SftpFileSystemProvider extends FileSystemProvider {
 
     @Override
     public void copy(Path source, Path target, CopyOption... options) throws IOException {
-        // TODO
+        SftpPath src = toSftpPath(source);
+        SftpPath dst = toSftpPath(target);
+        if (src.getFileSystem() != dst.getFileSystem()) {
+            throw new ProviderMismatchException();
+        }
+        checkAccess(src);
+
+        boolean replaceExisting = false;
+        boolean copyAttributes = false;
+        boolean noFollowLinks = false;
+        for (CopyOption opt : options) {
+            replaceExisting |= opt == StandardCopyOption.REPLACE_EXISTING;
+            copyAttributes |= opt == StandardCopyOption.COPY_ATTRIBUTES;
+            noFollowLinks |= opt == LinkOption.NOFOLLOW_LINKS;
+        }
+        LinkOption[] linkOptions = noFollowLinks ? new LinkOption[] { LinkOption.NOFOLLOW_LINKS }
+                                                 : new LinkOption[0];
+
+        // attributes of source file
+        BasicFileAttributes attrs = readAttributes(source,
+                BasicFileAttributes.class,
+                linkOptions);
+        if (attrs.isSymbolicLink())
+            throw new IOException("Copying of symbolic links not supported");
+
+        // delete target if it exists and REPLACE_EXISTING is specified
+        if (replaceExisting) {
+            deleteIfExists(target);
+        } else if (Files.exists(target))
+            throw new FileAlreadyExistsException(target.toString());
+
+        // create directory or copy file
+        if (attrs.isDirectory()) {
+            createDirectory(target);
+        } else {
+            try (InputStream in = newInputStream(source);
+                 OutputStream os = newOutputStream(target)) {
+                IoUtils.copy(in, os);
+            }
+        }
+
+        // copy basic attributes to target
+        if (copyAttributes) {
+            BasicFileAttributeView view = getFileAttributeView(target, BasicFileAttributeView.class, linkOptions);
+            try {
+                view.setTimes(attrs.lastModifiedTime(),
+                        attrs.lastAccessTime(),
+                        attrs.creationTime());
+            } catch (Throwable x) {
+                // rollback
+                try {
+                    delete(target);
+                } catch (Throwable suppressed) {
+                    x.addSuppressed(suppressed);
+                }
+                throw x;
+            }
+        }
     }
 
     @Override
     public void move(Path source, Path target, CopyOption... options) throws IOException {
-        // TODO
+        SftpPath src = toSftpPath(source);
+        SftpPath dst = toSftpPath(target);
+        if (src.getFileSystem() != dst.getFileSystem()) {
+            throw new ProviderMismatchException();
+        }
+        checkAccess(src);
 
+        boolean replaceExisting = false;
+        boolean copyAttributes = false;
+        boolean noFollowLinks = false;
+        for (CopyOption opt : options) {
+            replaceExisting |= opt == StandardCopyOption.REPLACE_EXISTING;
+            copyAttributes |= opt == StandardCopyOption.COPY_ATTRIBUTES;
+            noFollowLinks |= opt == LinkOption.NOFOLLOW_LINKS;
+        }
+        LinkOption[] linkOptions = noFollowLinks ? new LinkOption[] { LinkOption.NOFOLLOW_LINKS }
+                : new LinkOption[0];
+
+        // attributes of source file
+        BasicFileAttributes attrs = readAttributes(source,
+                BasicFileAttributes.class,
+                linkOptions);
+        if (attrs.isSymbolicLink())
+            throw new IOException("Copying of symbolic links not supported");
+
+        // delete target if it exists and REPLACE_EXISTING is specified
+        if (replaceExisting) {
+            deleteIfExists(target);
+        } else if (Files.exists(target))
+            throw new FileAlreadyExistsException(target.toString());
+
+        try (SftpClient sftp = src.getFileSystem().getClient()) {
+            sftp.rename(src.toString(), dst.toString());
+        }
+
+        // copy basic attributes to target
+        if (copyAttributes) {
+            BasicFileAttributeView view = getFileAttributeView(target, BasicFileAttributeView.class, linkOptions);
+            try {
+                view.setTimes(attrs.lastModifiedTime(),
+                        attrs.lastAccessTime(),
+                        attrs.creationTime());
+            } catch (Throwable x) {
+                // rollback
+                try {
+                    delete(target);
+                } catch (Throwable suppressed) {
+                    x.addSuppressed(suppressed);
+                }
+                throw x;
+            }
+        }
     }
 
     @Override
     public boolean isSameFile(Path path1, Path path2) throws IOException {
         SftpPath p1 = toSftpPath(path1);
         SftpPath p2 = toSftpPath(path2);
+        if (p1.getFileSystem() != p2.getFileSystem()) {
+            throw new ProviderMismatchException();
+        }
         checkAccess(p1);
         checkAccess(p2);
         return p1.equals(p2);
@@ -414,7 +465,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
                                 attributes = client.lstat(p.toString());
                             }
                         } catch (SftpException e) {
-                            if (e.getStatus() == SSH_FX_NO_SUCH_FILE) {
+                            if (e.getStatus() == DefaultSftpClient.SSH_FX_NO_SUCH_FILE) {
                                 throw new NoSuchFileException(p.toString());
                             }
                             throw e;
@@ -423,20 +474,17 @@ public class SftpFileSystemProvider extends FileSystemProvider {
                     return new PosixFileAttributes() {
                         @Override
                         public UserPrincipal owner() {
-                            // TODO
-                            return null;
+                            return attributes.owner != null ? new SftpFileSystem.DefaultGroupPrincipal(attributes.owner) : null;
                         }
 
                         @Override
                         public GroupPrincipal group() {
-                            // TODO
-                            return null;
+                            return attributes.group != null ? new SftpFileSystem.DefaultGroupPrincipal(attributes.group) : null;
                         }
 
                         @Override
                         public Set<PosixFilePermission> permissions() {
-                            // TODO
-                            return null;
+                            return permissionsToAttributes(attributes.perms);
                         }
 
                         @Override
@@ -451,8 +499,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
 
                         @Override
                         public FileTime creationTime() {
-                            // TODO
-                            return null;
+                            return FileTime.from(attributes.ctime, TimeUnit.SECONDS);
                         }
 
                         @Override
@@ -617,20 +664,26 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         SftpClient.Attributes attributes = new SftpClient.Attributes();
         switch (attr) {
         case "lastModifiedTime":
-            attributes.mtime = (int) ((FileTime) value).to(TimeUnit.SECONDS);
+            attributes.mtime((int) ((FileTime) value).to(TimeUnit.SECONDS));
             break;
         case "lastAccessTime":
-            attributes.atime = (int) ((FileTime) value).to(TimeUnit.SECONDS);
+            attributes.atime((int) ((FileTime) value).to(TimeUnit.SECONDS));
+            break;
+        case "creationTime":
+            attributes.ctime((int) ((FileTime) value).to(TimeUnit.SECONDS));
             break;
         case "size":
-            attributes.size = (long) value;
+            attributes.size((long) value);
+            break;
+        case "permissions":
+            attributes.perms(attributesToPermissions((Set<PosixFilePermission>) value));
             break;
         case "owner":
-        case "permissions":
+            attributes.owner(((UserPrincipal) value).getName());
+            break;
         case "group":
-            // TODO: handle those
-            throw new IllegalArgumentException(attr);
-        case "creationTime":
+            attributes.group(((GroupPrincipal) value).getName());
+            break;
         case "isRegularFile":
         case "isDirectory":
         case "isSymbolicLink":
@@ -653,8 +706,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         return (SftpPath) path;
     }
 
-    static boolean followLinks(LinkOption... paramVarArgs)
-    {
+    static boolean followLinks(LinkOption... paramVarArgs) {
         boolean bool = true;
         for (LinkOption localLinkOption : paramVarArgs) {
             if (localLinkOption == LinkOption.NOFOLLOW_LINKS) {
@@ -662,6 +714,76 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             }
         }
         return bool;
+    }
+
+    private Set<PosixFilePermission> permissionsToAttributes(int perms) {
+        Set<PosixFilePermission> p = new HashSet<>();
+        if ((perms & S_IRUSR) != 0) {
+            p.add(PosixFilePermission.OWNER_READ);
+        }
+        if ((perms & S_IWUSR) != 0) {
+            p.add(PosixFilePermission.OWNER_WRITE);
+        }
+        if ((perms & S_IXUSR) != 0) {
+            p.add(PosixFilePermission.OWNER_EXECUTE);
+        }
+        if ((perms & S_IRGRP) != 0) {
+            p.add(PosixFilePermission.GROUP_READ);
+        }
+        if ((perms & S_IWGRP) != 0) {
+            p.add(PosixFilePermission.GROUP_WRITE);
+        }
+        if ((perms & S_IXGRP) != 0) {
+            p.add(PosixFilePermission.GROUP_EXECUTE);
+        }
+        if ((perms & S_IROTH) != 0) {
+            p.add(PosixFilePermission.OTHERS_READ);
+        }
+        if ((perms & S_IWOTH) != 0) {
+            p.add(PosixFilePermission.OTHERS_WRITE);
+        }
+        if ((perms & S_IXOTH) != 0) {
+            p.add(PosixFilePermission.OTHERS_EXECUTE);
+        }
+        return p;
+    }
+
+    protected int attributesToPermissions(Set<PosixFilePermission> perms) {
+        int pf = 0;
+        if (perms != null) {
+            for (PosixFilePermission p : perms) {
+                switch (p) {
+                case OWNER_READ:
+                    pf |= S_IRUSR;
+                    break;
+                case OWNER_WRITE:
+                    pf |= S_IWUSR;
+                    break;
+                case OWNER_EXECUTE:
+                    pf |= S_IXUSR;
+                    break;
+                case GROUP_READ:
+                    pf |= S_IRGRP;
+                    break;
+                case GROUP_WRITE:
+                    pf |= S_IWGRP;
+                    break;
+                case GROUP_EXECUTE:
+                    pf |= S_IXGRP;
+                    break;
+                case OTHERS_READ:
+                    pf |= S_IROTH;
+                    break;
+                case OTHERS_WRITE:
+                    pf |= S_IWOTH;
+                    break;
+                case OTHERS_EXECUTE:
+                    pf |= S_IXOTH;
+                    break;
+                }
+            }
+        }
+        return pf;
     }
 
 }

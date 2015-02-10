@@ -31,7 +31,9 @@ import java.util.Vector;
 
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.SftpException;
 import org.apache.sshd.client.SftpClient;
+import org.apache.sshd.client.sftp.DefaultSftpClient;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.OsUtils;
@@ -50,6 +52,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertNull;
 import static junit.framework.Assert.assertTrue;
@@ -431,8 +434,52 @@ public class SftpTest extends BaseTest {
         URI base = new File(System.getProperty("user.dir")).getAbsoluteFile().toURI();
         String path = new File(base.relativize(url).getPath()).getParent() + "/";
         path = path.replace('\\', '/');
-        String real = c.realpath(path + "/foobar");
+        String real = c.realpath(path);
         System.out.println(real);
+        try {
+            real = c.realpath(path + "/foobar");
+            System.out.println(real);
+            fail("Expected SftpException");
+        } catch (SftpException e) {
+            // ok
+        }
+    }
+
+    @Test
+    public void testRename() throws Exception {
+        SshClient client = SshClient.setUpDefaultClient();
+        client.start();
+        ClientSession session = client.connect("x", "localhost", port).await().getSession();
+        session.addPasswordIdentity("x");
+        session.auth().verify();
+
+        Utils.deleteRecursive(new File("target/sftp"));
+        new File("target/sftp").mkdirs();
+        new File("target/sftp/client").delete();
+
+        SftpClient sftp = session.createSftpClient();
+        try (OutputStream os = sftp.write("target/sftp/test.txt")) {
+            os.write("Hello world!\n".getBytes());
+        }
+
+        try {
+            sftp.rename("target/sftp/test2.txt", "target/sftp/test3.txt");
+            fail("Expected an SftpException");
+        } catch (org.apache.sshd.client.SftpException e) {
+            assertEquals(DefaultSftpClient.SSH_FX_NO_SUCH_FILE, e.getStatus());
+        }
+
+        try (OutputStream os = sftp.write("target/sftp/test2.txt")) {
+            os.write("H".getBytes());
+        }
+
+        try {
+            sftp.rename("target/sftp/test.txt", "target/sftp/test2.txt");
+            fail("Expected an SftpException");
+        } catch (org.apache.sshd.client.SftpException e) {
+            assertEquals(DefaultSftpClient.SSH_FX_FILE_ALREADY_EXISTS, e.getStatus());
+        }
+        sftp.rename("target/sftp/test.txt", "target/sftp/test2.txt", SftpClient.CopyMode.Overwrite);
     }
 
     @Test
@@ -458,7 +505,7 @@ public class SftpTest extends BaseTest {
         assertTrue(target.exists());
         assertEquals("0123456789", readFile(unixPath));
 
-        c.symlink(linkUnixPath, unixPath);
+        c.symlink(unixPath, linkUnixPath);
 
         assertTrue(link.exists());
         assertEquals("0123456789", readFile(linkUnixPath));

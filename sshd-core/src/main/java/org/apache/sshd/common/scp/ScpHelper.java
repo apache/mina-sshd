@@ -41,6 +41,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.util.DirectoryScanner;
+import org.apache.sshd.common.util.IoUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -295,7 +296,7 @@ public class ScpHelper {
         };
         try (OutputStream os = Files.newOutputStream(file)) {
             ack();
-            copy(is, os, bufSize);
+            IoUtils.copy(is, os, bufSize);
         }
 
         if (preserve) {
@@ -439,7 +440,7 @@ public class ScpHelper {
 
         // TODO: use bufSize
         try (InputStream in = Files.newInputStream(path)) {
-            copy(in, out, bufSize);
+            IoUtils.copy(in, out, bufSize);
         }
         ack();
         readAck(false);
@@ -608,19 +609,6 @@ public class ScpHelper {
                 break;
         }
         return c;
-    }
-
-    private static long copy(InputStream source, OutputStream sink, int bufferSize)
-            throws IOException
-    {
-        long nread = 0L;
-        byte[] buf = new byte[bufferSize];
-        int n;
-        while ((n = source.read(buf)) > 0) {
-            sink.write(buf, 0, n);
-            nread += n;
-        }
-        return nread;
     }
 
 }

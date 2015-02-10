@@ -20,6 +20,8 @@ package org.apache.sshd.common.util;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 /**
  * TODO Add javadoc
@@ -27,6 +29,21 @@ import java.io.IOException;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class IoUtils {
+
+    public static long copy(InputStream source, OutputStream sink) throws IOException {
+        return copy(source, sink, 8192);
+    }
+
+    public static long copy(InputStream source, OutputStream sink, int bufferSize) throws IOException {
+        long nread = 0L;
+        byte[] buf = new byte[bufferSize];
+        int n;
+        while ((n = source.read(buf)) > 0) {
+            sink.write(buf, 0, n);
+            nread += n;
+        }
+        return nread;
+    }
 
     public static void closeQuietly(Closeable... closeables) {
         for (Closeable c : closeables) {

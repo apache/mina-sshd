@@ -22,7 +22,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.nio.file.attribute.FileTime;
 import java.util.EnumSet;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
@@ -62,11 +64,20 @@ public interface SftpClient extends AutoCloseable {
         Exclusive
     }
 
+    enum CopyMode {
+        Atomic,
+        Overwrite
+    }
+
     enum Attribute {
         Size,
         UidGid,
         Perms,
-        AcModTime
+        AcModTime,
+        OwnerGroup,
+        AccessTime,
+        ModifyTime,
+        CreateTime,
     }
 
     public static class Handle {
@@ -79,14 +90,37 @@ public interface SftpClient extends AutoCloseable {
     public static class Attributes {
         public EnumSet<Attribute> flags = EnumSet.noneOf(Attribute.class);
         public long size;
+        public byte type;
         public int uid;
         public int gid;
         public int perms;
         public int atime;
+        public int ctime;
         public int mtime;
+        public String owner;
+        public String group;
+        public FileTime accessTime;
+        public FileTime createTime;
+        public FileTime modifyTime;
         public Attributes size(long size) {
             flags.add(Attribute.Size);
             this.size = size;
+            return this;
+        }
+        public Attributes owner(String owner) {
+            flags.add(Attribute.OwnerGroup);
+            this.owner = owner;
+            if (group == null) {
+                group = "GROUP@";
+            }
+            return this;
+        }
+        public Attributes group(String group) {
+            flags.add(Attribute.OwnerGroup);
+            this.group = group;
+            if (owner == null) {
+                owner = "OWNER@";
+            }
             return this;
         }
         public Attributes owner(int uid, int gid) {
@@ -100,10 +134,46 @@ public interface SftpClient extends AutoCloseable {
             this.perms = perms;
             return this;
         }
+        public Attributes atime(int atime) {
+            flags.add(Attribute.AccessTime);
+            this.atime = atime;
+            this.accessTime = FileTime.from(atime, TimeUnit.SECONDS);
+            return this;
+        }
+        public Attributes ctime(int ctime) {
+            flags.add(Attribute.CreateTime);
+            this.ctime = ctime;
+            this.createTime = FileTime.from(atime, TimeUnit.SECONDS);
+            return this;
+        }
+        public Attributes mtime(int mtime) {
+            flags.add(Attribute.ModifyTime);
+            this.mtime = mtime;
+            this.modifyTime = FileTime.from(atime, TimeUnit.SECONDS);
+            return this;
+        }
         public Attributes time(int atime, int mtime) {
             flags.add(Attribute.AcModTime);
             this.atime = atime;
             this.mtime = mtime;
+            return this;
+        }
+        public Attributes accessTime(FileTime atime) {
+            flags.add(Attribute.AccessTime);
+            this.atime = (int) atime.to(TimeUnit.SECONDS);
+            this.accessTime = atime;
+            return this;
+        }
+        public Attributes createTime(FileTime ctime) {
+            flags.add(Attribute.CreateTime);
+            this.ctime = (int) ctime.to(TimeUnit.SECONDS);
+            this.createTime = ctime;
+            return this;
+        }
+        public Attributes modifyTime(FileTime mtime) {
+            flags.add(Attribute.ModifyTime);
+            this.mtime = (int) mtime.to(TimeUnit.SECONDS);
+            this.modifyTime = mtime;
             return this;
         }
         public boolean isRegularFile() {
@@ -131,6 +201,8 @@ public interface SftpClient extends AutoCloseable {
         }
     }
 
+    int getVersion();
+
     /**
      * Close the client.
      */
@@ -149,6 +221,8 @@ public interface SftpClient extends AutoCloseable {
     void remove(String path) throws IOException;
 
     void rename(String oldPath, String newPath) throws IOException;
+
+    void rename(String oldPath, String newPath, CopyMode... options) throws IOException;
 
     int read(Handle handle, long fileOffset, byte[] dst, int dstoff, int len) throws IOException;
 
@@ -177,6 +251,12 @@ public interface SftpClient extends AutoCloseable {
     String readLink(String path) throws IOException;
 
     void symLink(String linkPath, String targetPath) throws IOException;
+
+    void link(String linkPath, String targetPath, boolean symbolic) throws IOException;
+
+    void lock(Handle handle, long offset, long length, int mask) throws IOException;
+
+    void unlock(Handle handle, long offset, long length) throws IOException;
 
     //
     // High level API

@@ -25,10 +25,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.attribute.FileTime;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.ClientSession;
@@ -63,6 +66,9 @@ public class DefaultSftpClient implements SftpClient {
     public static final int SSH_FXP_RENAME =          18;
     public static final int SSH_FXP_READLINK =        19;
     public static final int SSH_FXP_SYMLINK =         20;
+    public static final int SSH_FXP_LINK =            21; // v6
+    public static final int SSH_FXP_BLOCK =           22; // v6
+    public static final int SSH_FXP_UNBLOCK =         23; // v6
     public static final int SSH_FXP_STATUS =         101;
     public static final int SSH_FXP_HANDLE =         102;
     public static final int SSH_FXP_DATA =           103;
@@ -71,21 +77,29 @@ public class DefaultSftpClient implements SftpClient {
     public static final int SSH_FXP_EXTENDED =       200;
     public static final int SSH_FXP_EXTENDED_REPLY = 201;
 
-    public static final int SSH_FX_OK =                0;
-    public static final int SSH_FX_EOF =               1;
-    public static final int SSH_FX_NO_SUCH_FILE =      2;
-    public static final int SSH_FX_PERMISSION_DENIED = 3;
-    public static final int SSH_FX_FAILURE =           4;
-    public static final int SSH_FX_BAD_MESSAGE =       5;
-    public static final int SSH_FX_NO_CONNECTION =     6;
-    public static final int SSH_FX_CONNECTION_LOST =   7;
-    public static final int SSH_FX_OP_UNSUPPORTED =    8;
+    public static final int SSH_FX_OK =                           0;
+    public static final int SSH_FX_EOF =                          1;
+    public static final int SSH_FX_NO_SUCH_FILE =                 2;
+    public static final int SSH_FX_PERMISSION_DENIED =            3;
+    public static final int SSH_FX_FAILURE =                      4;
+    public static final int SSH_FX_BAD_MESSAGE =                  5;
+    public static final int SSH_FX_NO_CONNECTION =                6;
+    public static final int SSH_FX_CONNECTION_LOST =              7;
+    public static final int SSH_FX_OP_UNSUPPORTED =               8;
+    public static final int SSH_FX_FILE_ALREADY_EXISTS =         11;
+    public static final int SSH_FX_LOCK_CONFLICT =               17;
 
-    public static final int SSH_FILEXFER_ATTR_SIZE =        0x00000001;
-    public static final int SSH_FILEXFER_ATTR_UIDGID =      0x00000002;
-    public static final int SSH_FILEXFER_ATTR_PERMISSIONS = 0x00000004;
-    public static final int SSH_FILEXFER_ATTR_ACMODTIME =   0x00000008; //v3 naming convention
-    public static final int SSH_FILEXFER_ATTR_EXTENDED =    0x80000000;
+    public static final int SSH_FILEXFER_ATTR_SIZE =            0x00000001;
+    public static final int SSH_FILEXFER_ATTR_UIDGID =          0x00000002;
+    public static final int SSH_FILEXFER_ATTR_PERMISSIONS =     0x00000004;
+    public static final int SSH_FILEXFER_ATTR_ACMODTIME =       0x00000008; // v3 naming convention
+    public static final int SSH_FILEXFER_ATTR_ACCESSTIME =      0x00000008; // v4
+    public static final int SSH_FILEXFER_ATTR_CREATETIME =      0x00000010; // v4
+    public static final int SSH_FILEXFER_ATTR_MODIFYTIME =      0x00000020; // v4
+    public static final int SSH_FILEXFER_ATTR_ACL =             0x00000040; // v4
+    public static final int SSH_FILEXFER_ATTR_OWNERGROUP =      0x00000080; // v4
+    public static final int SSH_FILEXFER_ATTR_SUBSECOND_TIMES = 0x00000100; // v4
+    public static final int SSH_FILEXFER_ATTR_EXTENDED =        0x80000000;
 
     public static final int SSH_FXF_READ =   0x00000001;
     public static final int SSH_FXF_WRITE =  0x00000002;
@@ -94,17 +108,59 @@ public class DefaultSftpClient implements SftpClient {
     public static final int SSH_FXF_TRUNC =  0x00000010;
     public static final int SSH_FXF_EXCL =   0x00000020;
 
+    public static final int SSH_FXF_ACCESS_DISPOSITION = 0x00000007;
+    public static final int SSH_FXF_CREATE_NEW =         0x00000000;
+    public static final int SSH_FXF_CREATE_TRUNCATE =    0x00000001;
+    public static final int SSH_FXF_OPEN_EXISTING =      0x00000002;
+    public static final int SSH_FXF_OPEN_OR_CREATE =     0x00000003;
+    public static final int SSH_FXF_TRUNCATE_EXISTING =  0x00000004;
+    public static final int SSH_FXF_APPEND_DATA =        0x00000008;
+    public static final int SSH_FXF_APPEND_DATA_ATOMIC = 0x00000010;
+    public static final int SSH_FXF_TEXT_MODE =          0x00000020;
+    public static final int SSH_FXF_READ_LOCK =          0x00000040;
+    public static final int SSH_FXF_WRITE_LOCK =         0x00000080;
+    public static final int SSH_FXF_DELETE_LOCK =        0x00000100;
+
+    public static final int SSH_FXP_RENAME_OVERWRITE = 0x00000001;
+    public static final int SSH_FXP_RENAME_ATOMIC =    0x00000002;
+    public static final int SSH_FXP_RENAME_NATIVE =    0x00000004;
+
+    public static final int ACE4_READ_DATA            = 0x00000001;
+    public static final int ACE4_LIST_DIRECTORY       = 0x00000001;
+    public static final int ACE4_WRITE_DATA           = 0x00000002;
+    public static final int ACE4_ADD_FILE             = 0x00000002;
+    public static final int ACE4_APPEND_DATA          = 0x00000004;
+    public static final int ACE4_ADD_SUBDIRECTORY     = 0x00000004;
+    public static final int ACE4_READ_NAMED_ATTRS     = 0x00000008;
+    public static final int ACE4_WRITE_NAMED_ATTRS    = 0x00000010;
+    public static final int ACE4_EXECUTE              = 0x00000020;
+    public static final int ACE4_DELETE_CHILD         = 0x00000040;
+    public static final int ACE4_READ_ATTRIBUTES      = 0x00000080;
+    public static final int ACE4_WRITE_ATTRIBUTES     = 0x00000100;
+    public static final int ACE4_DELETE               = 0x00010000;
+    public static final int ACE4_READ_ACL             = 0x00020000;
+    public static final int ACE4_WRITE_ACL            = 0x00040000;
+    public static final int ACE4_WRITE_OWNER          = 0x00080000;
+    public static final int ACE4_SYNCHRONIZE          = 0x00100000;
+
+    public static int SFTP_V3 = 3;
+    public static int SFTP_V4 = 4;
+    public static int SFTP_V5 = 5;
+    public static int SFTP_V6 = 6;
+
     private final ClientSession clientSession;
     private final ChannelSubsystem channel;
     private final Map<Integer, Buffer> messages;
     private final AtomicInteger cmdId = new AtomicInteger(100);
     private final Buffer receiveBuffer = new Buffer();
     private boolean closing;
+    private int version;
+    private final Map<String, byte[]> extensions = new HashMap<>();
 
     public DefaultSftpClient(ClientSession clientSession) throws IOException {
         this.clientSession = clientSession;
         this.channel = clientSession.createSubsystemChannel("sftp");
-        this.messages = new HashMap<Integer, Buffer>();
+        this.messages = new HashMap<>();
         try {
             this.channel.setOut(new OutputStream() {
                 @Override
@@ -130,6 +186,11 @@ public class DefaultSftpClient implements SftpClient {
             }
         });
         init();
+    }
+
+    @Override
+    public int getVersion() {
+        return version;
     }
 
     public boolean isClosing() {
@@ -258,9 +319,9 @@ public class DefaultSftpClient implements SftpClient {
         DataOutputStream dos = new DataOutputStream(channel.getInvertedIn());
         dos.writeInt(5);
         dos.writeByte(SSH_FXP_INIT);
-        dos.writeInt(3);
+        dos.writeInt(SFTP_V6);
         dos.flush();
-        Buffer buffer = null;
+        Buffer buffer;
         synchronized (messages) {
             while (messages.isEmpty()) {
                 try {
@@ -276,8 +337,14 @@ public class DefaultSftpClient implements SftpClient {
         int type = buffer.getByte();
         int id = buffer.getInt();
         if (type == SSH_FXP_VERSION) {
-            if (id != 3) {
-                throw new SshException("Unable to use SFTP v3, server replied with version " + id);
+            if (id < SFTP_V3) {
+                throw new SshException("Unsupported sftp version " + id);
+            }
+            version = id;
+            while (buffer.available() > 0) {
+                String name = buffer.getString();
+                byte[] data = buffer.getBytes();
+                extensions.put(name, data);
             }
         } else if (type == SSH_FXP_STATUS) {
             int substatus = buffer.getInt();
@@ -353,7 +420,9 @@ public class DefaultSftpClient implements SftpClient {
                 throw new SshException("SFTP error: received " + len + " names instead of 1");
             }
             String name = buffer.getString();
-            String longName = buffer.getString();
+            if (version == SFTP_V3) {
+                String longName = buffer.getString();
+            }
             Attributes attrs = readAttributes(buffer);
             return name;
         } else {
@@ -364,70 +433,232 @@ public class DefaultSftpClient implements SftpClient {
     protected Attributes readAttributes(Buffer buffer) throws IOException {
         Attributes attrs = new Attributes();
         int flags = buffer.getInt();
-        if ((flags & SSH_FILEXFER_ATTR_SIZE) != 0) {
-            attrs.flags.add(Attribute.Size);
-            attrs.size = buffer.getLong();
-        }
-        if ((flags & SSH_FILEXFER_ATTR_UIDGID) != 0) {
-            attrs.flags.add(Attribute.UidGid);
-            attrs.uid = buffer.getInt();
-            attrs.gid = buffer.getInt();
-        }
-        if ((flags & SSH_FILEXFER_ATTR_PERMISSIONS) != 0) {
-            attrs.flags.add(Attribute.Perms);
-            attrs.perms = buffer.getInt();
-        }
-        if ((flags & SSH_FILEXFER_ATTR_ACMODTIME) != 0) {
-            attrs.flags.add(Attribute.AcModTime);
-            attrs.atime = buffer.getInt();
-            attrs.mtime = buffer.getInt();
+        if (version == SFTP_V3) {
+            if ((flags & SSH_FILEXFER_ATTR_SIZE) != 0) {
+                attrs.flags.add(Attribute.Size);
+                attrs.size = buffer.getLong();
+            }
+            if ((flags & SSH_FILEXFER_ATTR_UIDGID) != 0) {
+                attrs.flags.add(Attribute.UidGid);
+                attrs.uid = buffer.getInt();
+                attrs.gid = buffer.getInt();
+            }
+            if ((flags & SSH_FILEXFER_ATTR_PERMISSIONS) != 0) {
+                attrs.flags.add(Attribute.Perms);
+                attrs.perms = buffer.getInt();
+            }
+            if ((flags & SSH_FILEXFER_ATTR_ACMODTIME) != 0) {
+                attrs.flags.add(Attribute.AcModTime);
+                attrs.atime = buffer.getInt();
+                attrs.mtime = buffer.getInt();
+            }
+        } else if (version >= SFTP_V4) {
+            attrs.type = buffer.getByte();
+            if ((flags & SSH_FILEXFER_ATTR_SIZE) != 0) {
+                attrs.flags.add(Attribute.Size);
+                attrs.size = buffer.getLong();
+            }
+            if ((flags & SSH_FILEXFER_ATTR_OWNERGROUP) != 0) {
+                attrs.flags.add(Attribute.OwnerGroup);
+                attrs.owner = buffer.getString();
+                attrs.group = buffer.getString();
+            }
+            if ((flags & SSH_FILEXFER_ATTR_PERMISSIONS) != 0) {
+                attrs.flags.add(Attribute.Perms);
+                attrs.perms = buffer.getInt();
+            }
+            if ((flags & SSH_FILEXFER_ATTR_ACCESSTIME) != 0) {
+                attrs.flags.add(Attribute.AccessTime);
+                attrs.accessTime = readTime(buffer, flags);
+                attrs.atime = (int) attrs.accessTime.to(TimeUnit.SECONDS);
+            }
+            if ((flags & SSH_FILEXFER_ATTR_CREATETIME) != 0) {
+                attrs.flags.add(Attribute.CreateTime);
+                attrs.createTime = readTime(buffer, flags);
+                attrs.ctime = (int) attrs.createTime.to(TimeUnit.SECONDS);
+            }
+            if ((flags & SSH_FILEXFER_ATTR_MODIFYTIME) != 0) {
+                attrs.flags.add(Attribute.ModifyTime);
+                attrs.modifyTime = readTime(buffer, flags);
+                attrs.mtime = (int) attrs.modifyTime.to(TimeUnit.SECONDS);
+            }
+            // TODO: acl
+        } else {
+            throw new IllegalStateException();
         }
         return attrs;
     }
 
+    private FileTime readTime(Buffer buffer, int flags) {
+        long secs = buffer.getLong();
+        long millis = secs * 1000;
+        if ((flags & SSH_FILEXFER_ATTR_SUBSECOND_TIMES) != 0) {
+            millis += buffer.getInt() / 1000000l;
+        }
+        return FileTime.from(millis, TimeUnit.MILLISECONDS);
+    }
+
+
     protected void writeAttributes(Buffer buffer, Attributes attributes) throws IOException {
-        int flags = 0;
-        for (Attribute a : attributes.flags) {
-            switch (a) {
-                case Size:      flags |= SSH_FILEXFER_ATTR_SIZE; break;
-                case UidGid:    flags |= SSH_FILEXFER_ATTR_UIDGID; break;
-                case Perms:     flags |= SSH_FILEXFER_ATTR_PERMISSIONS; break;
-                case AcModTime: flags |= SSH_FILEXFER_ATTR_ACMODTIME; break;
+        if (version == SFTP_V3) {
+            int flags = 0;
+            for (Attribute a : attributes.flags) {
+                switch (a) {
+                case Size:
+                    flags |= SSH_FILEXFER_ATTR_SIZE;
+                    break;
+                case UidGid:
+                    flags |= SSH_FILEXFER_ATTR_UIDGID;
+                    break;
+                case Perms:
+                    flags |= SSH_FILEXFER_ATTR_PERMISSIONS;
+                    break;
+                case AcModTime:
+                    flags |= SSH_FILEXFER_ATTR_ACMODTIME;
+                    break;
+                }
             }
-        }
-        buffer.putInt(flags);
-        if ((flags & SSH_FILEXFER_ATTR_SIZE) != 0) {
-            buffer.putLong(attributes.size);
-        }
-        if ((flags & SSH_FILEXFER_ATTR_UIDGID) != 0) {
-            buffer.putInt(attributes.uid);
-            buffer.putInt(attributes.gid);
-        }
-        if ((flags & SSH_FILEXFER_ATTR_PERMISSIONS) != 0) {
-            buffer.putInt(attributes.perms);
-        }
-        if ((flags & SSH_FILEXFER_ATTR_ACMODTIME) != 0) {
-            buffer.putInt(attributes.atime);
-            buffer.putInt(attributes.mtime);
+            buffer.putInt(flags);
+            if ((flags & SSH_FILEXFER_ATTR_SIZE) != 0) {
+                buffer.putLong(attributes.size);
+            }
+            if ((flags & SSH_FILEXFER_ATTR_UIDGID) != 0) {
+                buffer.putInt(attributes.uid);
+                buffer.putInt(attributes.gid);
+            }
+            if ((flags & SSH_FILEXFER_ATTR_PERMISSIONS) != 0) {
+                buffer.putInt(attributes.perms);
+            }
+            if ((flags & SSH_FILEXFER_ATTR_ACMODTIME) != 0) {
+                buffer.putInt(attributes.atime);
+                buffer.putInt(attributes.mtime);
+            }
+        } else if (version >= SFTP_V4) {
+            int flags = 0;
+            for (Attribute a : attributes.flags) {
+                switch (a) {
+                case Size:
+                    flags |= SSH_FILEXFER_ATTR_SIZE;
+                    break;
+                case OwnerGroup:
+                    flags |= SSH_FILEXFER_ATTR_OWNERGROUP;
+                    break;
+                case Perms:
+                    flags |= SSH_FILEXFER_ATTR_PERMISSIONS;
+                    break;
+                case AccessTime:
+                    flags |= SSH_FILEXFER_ATTR_ACCESSTIME;
+                    break;
+                case ModifyTime:
+                    flags |= SSH_FILEXFER_ATTR_MODIFYTIME;
+                    break;
+                case CreateTime:
+                    flags |= SSH_FILEXFER_ATTR_CREATETIME;
+                    break;
+                }
+            }
+            buffer.putInt(flags);
+            buffer.putByte(attributes.type);
+            if ((flags & SSH_FILEXFER_ATTR_SIZE) != 0) {
+                buffer.putLong(attributes.size);
+            }
+            if ((flags & SSH_FILEXFER_ATTR_OWNERGROUP) != 0) {
+                buffer.putString(attributes.owner != null ? attributes.owner : "OWNER@", StandardCharsets.UTF_8);
+                buffer.putString(attributes.group != null ? attributes.group : "GROUP@", StandardCharsets.UTF_8);
+            }
+            if ((flags & SSH_FILEXFER_ATTR_PERMISSIONS) != 0) {
+                buffer.putInt(attributes.perms);
+            }
+            if ((flags & SSH_FILEXFER_ATTR_ACCESSTIME) != 0) {
+                buffer.putLong(attributes.accessTime.to(TimeUnit.SECONDS));
+                if ((flags & SSH_FILEXFER_ATTR_SUBSECOND_TIMES) != 0) {
+                    long nanos = attributes.accessTime.to(TimeUnit.NANOSECONDS);
+                    nanos = nanos % TimeUnit.SECONDS.toNanos(1);
+                    buffer.putInt((int) nanos);
+                }
+                buffer.putInt(attributes.atime);
+            }
+            if ((flags & SSH_FILEXFER_ATTR_CREATETIME) != 0) {
+                buffer.putLong(attributes.createTime.to(TimeUnit.SECONDS));
+                if ((flags & SSH_FILEXFER_ATTR_SUBSECOND_TIMES) != 0) {
+                    long nanos = attributes.createTime.to(TimeUnit.NANOSECONDS);
+                    nanos = nanos % TimeUnit.SECONDS.toNanos(1);
+                    buffer.putInt((int) nanos);
+                }
+                buffer.putInt(attributes.atime);
+            }
+            if ((flags & SSH_FILEXFER_ATTR_MODIFYTIME) != 0) {
+                buffer.putLong(attributes.modifyTime.to(TimeUnit.SECONDS));
+                if ((flags & SSH_FILEXFER_ATTR_SUBSECOND_TIMES) != 0) {
+                    long nanos = attributes.modifyTime.to(TimeUnit.NANOSECONDS);
+                    nanos = nanos % TimeUnit.SECONDS.toNanos(1);
+                    buffer.putInt((int) nanos);
+                }
+                buffer.putInt(attributes.atime);
+            }
+            // TODO: acl
+        } else {
+            throw new IllegalStateException();
         }
     }
 
     public Handle open(String path, EnumSet<OpenMode> options) throws IOException {
         Buffer buffer = new Buffer();
         buffer.putString(path);
-        int mode = 0;
-        for (OpenMode m : options) {
-            switch (m) {
-                case Read:      mode |= SSH_FXF_READ; break;
-                case Write:     mode |= SSH_FXF_WRITE; break;
-                case Append:    mode |= SSH_FXF_APPEND; break;
-                case Create:    mode |= SSH_FXF_CREAT; break;
-                case Truncate:  mode |= SSH_FXF_TRUNC; break;
-                case Exclusive: mode |= SSH_FXF_EXCL; break;
+        if (version == SFTP_V3) {
+            int mode = 0;
+            for (OpenMode m : options) {
+                switch (m) {
+                case Read:
+                    mode |= SSH_FXF_READ;
+                    break;
+                case Write:
+                    mode |= SSH_FXF_WRITE;
+                    break;
+                case Append:
+                    mode |= SSH_FXF_APPEND;
+                    break;
+                case Create:
+                    mode |= SSH_FXF_CREAT;
+                    break;
+                case Truncate:
+                    mode |= SSH_FXF_TRUNC;
+                    break;
+                case Exclusive:
+                    mode |= SSH_FXF_EXCL;
+                    break;
+                }
             }
+            buffer.putInt(mode);
+        } else {
+            int mode = 0;
+            int access = 0;
+            if (options.contains(OpenMode.Read)) {
+                access |= ACE4_READ_DATA | ACE4_READ_ATTRIBUTES;
+            }
+            if (options.contains(OpenMode.Write)) {
+                access |= ACE4_WRITE_DATA | ACE4_WRITE_ATTRIBUTES;
+            }
+            if (options.contains(OpenMode.Append)) {
+                access |= ACE4_APPEND_DATA;
+            }
+            if (options.contains(OpenMode.Create) && options.contains(OpenMode.Exclusive)) {
+                mode |= SSH_FXF_CREATE_NEW;
+            } else if (options.contains(OpenMode.Create) && options.contains(OpenMode.Truncate)) {
+                mode |= SSH_FXF_CREATE_TRUNCATE;
+            } else if (options.contains(OpenMode.Create)) {
+                mode |= SSH_FXF_OPEN_OR_CREATE;
+            } else if (options.contains(OpenMode.Truncate)) {
+                mode |= SSH_FXF_TRUNCATE_EXISTING;
+            } else {
+                mode |= SSH_FXF_OPEN_EXISTING;
+            }
+            if (version >= SFTP_V5) {
+                buffer.putInt(access);
+            }
+            buffer.putInt(mode);
         }
-        buffer.putInt(mode);
-        buffer.putInt(0);
+        writeAttributes(buffer, new Attributes());
         return checkHandle(receive(send(SSH_FXP_OPEN, buffer)));
     }
 
@@ -444,9 +675,29 @@ public class DefaultSftpClient implements SftpClient {
     }
 
     public void rename(String oldPath, String newPath) throws IOException {
+        rename(oldPath, newPath, new CopyMode[0]);
+    }
+
+    public void rename(String oldPath, String newPath, CopyMode... options) throws IOException {
         Buffer buffer = new Buffer();
         buffer.putString(oldPath);
         buffer.putString(newPath);
+        if (version >= SFTP_V5) {
+            int opts = 0;
+            for (CopyMode opt : options) {
+                switch (opt) {
+                case Atomic:
+                    opts |= SSH_FXP_RENAME_ATOMIC;
+                    break;
+                case Overwrite:
+                    opts |= SSH_FXP_RENAME_OVERWRITE;
+                    break;
+                }
+            }
+            buffer.putInt(opts);
+        } else if (options.length > 0) {
+            throw new UnsupportedOperationException("copy options can not be used with this SFTP version");
+        }
         checkStatus(receive(send(SSH_FXP_RENAME, buffer)));
     }
 
@@ -497,8 +748,11 @@ public class DefaultSftpClient implements SftpClient {
 
     public void mkdir(String path) throws IOException {
         Buffer buffer = new Buffer();
-        buffer.putString(path);
+        buffer.putString(path, StandardCharsets.UTF_8);
         buffer.putInt(0);
+        if (version != SFTP_V3) {
+            buffer.putByte((byte) 0);
+        }
         checkStatus(receive(send(SSH_FXP_MKDIR, buffer)));
     }
 
@@ -537,7 +791,7 @@ public class DefaultSftpClient implements SftpClient {
             DirEntry[] entries = new DirEntry[len];
             for (int i = 0; i < len; i++) {
                 String name = buffer.getString();
-                String longName = buffer.getString();
+                String longName = (version == SFTP_V3) ? buffer.getString() : null;
                 Attributes attrs = readAttributes(buffer);
                 entries[i] = new DirEntry(name, longName, attrs);
             }
@@ -556,18 +810,27 @@ public class DefaultSftpClient implements SftpClient {
     public Attributes stat(String path) throws IOException {
         Buffer buffer = new Buffer();
         buffer.putString(path);
+        if (version >= SFTP_V4) {
+            buffer.putInt(0);
+        }
         return checkAttributes(receive(send(SSH_FXP_STAT, buffer)));
     }
 
     public Attributes lstat(String path) throws IOException {
         Buffer buffer = new Buffer();
         buffer.putString(path);
+        if (version >= SFTP_V4) {
+            buffer.putInt(0);
+        }
         return checkAttributes(receive(send(SSH_FXP_LSTAT, buffer)));
     }
 
     public Attributes stat(Handle handle) throws IOException {
         Buffer buffer = new Buffer();
         buffer.putString(handle.id);
+        if (version >= SFTP_V4) {
+            buffer.putInt(0);
+        }
         return checkAttributes(receive(send(SSH_FXP_FSTAT, buffer)));
     }
 
@@ -592,10 +855,44 @@ public class DefaultSftpClient implements SftpClient {
     }
 
     public void symLink(String linkPath, String targetPath) throws IOException {
+        link(linkPath, targetPath, true);
+    }
+
+    public void link(String linkPath, String targetPath, boolean symbolic) throws IOException {
+        if (version < SFTP_V6) {
+            if (!symbolic) {
+                throw new UnsupportedOperationException("Hard links are not supported in sftp v" + version);
+            }
+            Buffer buffer = new Buffer();
+            buffer.putString(targetPath);
+            buffer.putString(linkPath);
+            checkStatus(receive(send(SSH_FXP_SYMLINK, buffer)));
+        } else {
+            Buffer buffer = new Buffer();
+            buffer.putString(targetPath);
+            buffer.putString(linkPath);
+            buffer.putBoolean(symbolic);
+            checkStatus(receive(send(SSH_FXP_LINK, buffer)));
+        }
+    }
+
+    @Override
+    public void lock(Handle handle, long offset, long length, int mask) throws IOException {
         Buffer buffer = new Buffer();
-        buffer.putString(linkPath);
-        buffer.putString(targetPath);
-        checkStatus(receive(send(SSH_FXP_SYMLINK, buffer)));
+        buffer.putString(handle.id);
+        buffer.putLong(offset);
+        buffer.putLong(length);
+        buffer.putInt(mask);
+        checkStatus(receive(send(SSH_FXP_BLOCK, buffer)));
+    }
+
+    @Override
+    public void unlock(Handle handle, long offset, long length) throws IOException {
+        Buffer buffer = new Buffer();
+        buffer.putString(handle.id);
+        buffer.putLong(offset);
+        buffer.putLong(length);
+        checkStatus(receive(send(SSH_FXP_UNBLOCK, buffer)));
     }
 
     public Iterable<DirEntry> readDir(final String path) throws IOException {

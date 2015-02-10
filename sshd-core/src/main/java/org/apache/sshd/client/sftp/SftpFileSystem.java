@@ -118,6 +118,11 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> {
         }
 
         @Override
+        public int getVersion() {
+            return delegate.getVersion();
+        }
+
+        @Override
         public boolean isClosing() {
             return false;
         }
@@ -154,6 +159,11 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> {
         @Override
         public void rename(String oldPath, String newPath) throws IOException {
             delegate.rename(oldPath, newPath);
+        }
+
+        @Override
+        public void rename(String oldPath, String newPath, CopyMode... options) throws IOException {
+            delegate.rename(oldPath, newPath, options);
         }
 
         @Override
@@ -251,6 +261,20 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> {
             return delegate.write(path, mode);
         }
 
+        @Override
+        public void link(String linkPath, String targetPath, boolean symbolic) throws IOException {
+            delegate.link(linkPath, targetPath, symbolic);
+        }
+
+        @Override
+        public void lock(Handle handle, long offset, long length, int mask) throws IOException {
+            delegate.lock(handle, offset, length, mask);
+        }
+
+        @Override
+        public void unlock(Handle handle, long offset, long length) throws IOException {
+            delegate.unlock(handle, offset, length);
+        }
     }
 
     protected static class DefaultUserPrincipalLookupService extends UserPrincipalLookupService {
@@ -264,7 +288,6 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> {
         public GroupPrincipal lookupPrincipalByGroupName(String group) throws IOException {
             return new DefaultGroupPrincipal(group);
         }
-
     }
 
     protected static class DefaultUserPrincipal implements UserPrincipal {
@@ -278,7 +301,6 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> {
             this.name = name;
         }
 
-        @Override
         public String getName() {
             return name;
         }
@@ -300,7 +322,6 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> {
         public String toString() {
             return name;
         }
-
     }
 
     protected static class DefaultGroupPrincipal extends DefaultUserPrincipal implements GroupPrincipal {
