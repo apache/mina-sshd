@@ -22,7 +22,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * A enum describing the tty modes.
+ * A enum describing the tty modes according to
+ * <a href="https://tools.ietf.org/html/rfc4254#section-8">RFC 4254 - section 8</a>.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */

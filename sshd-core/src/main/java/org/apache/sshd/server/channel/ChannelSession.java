@@ -339,16 +339,27 @@ public class ChannelSession extends AbstractServerChannel {
         int tWidth = buffer.getInt();
         int tHeight = buffer.getInt();
         byte[] modes = buffer.getBytes();
+        Environment environment = getEnvironment();
+        Map<PtyMode, Integer> ptyModes = environment.getPtyModes();
         for (int i = 0; i < modes.length && modes[i] != 0;) {
-            PtyMode mode = PtyMode.fromInt(modes[i++]);
+            int opcode = modes[i++] & 0x00FF;
+            PtyMode mode = PtyMode.fromInt(opcode);
+            /**
+             * According to section 8 of RFC 4254:
+             * "Opcodes 160 to 255 are not yet defined, and cause parsing to stop"
+             */
+            if (mode == null) {
+                log.warn("Unknown pty opcode value: " + opcode);
+                break;
+            }
             int val  = ((modes[i++] << 24) & 0xff000000) |
                        ((modes[i++] << 16) & 0x00ff0000) |
                        ((modes[i++] <<  8) & 0x0000ff00) |
-                       ((modes[i++]      ) & 0x000000ff);
-            getEnvironment().getPtyModes().put(mode, val);
+                       ((modes[i++]) & 0x000000ff);
+            ptyModes.put(mode, val);
         }
         if (log.isDebugEnabled()) {
-            log.debug("pty for channel {}: term={}, size=({} - {}), pixels=({}, {}), modes=[{}]", new Object[] { id, term, tColumns, tRows, tWidth, tHeight, getEnvironment().getPtyModes() });
+            log.debug("pty for channel {}: term={}, size=({} - {}), pixels=({}, {}), modes=[{}]", new Object[] { id, term, tColumns, tRows, tWidth, tHeight, ptyModes });
         }
         addEnvVariable(Environment.ENV_TERM, term);
         addEnvVariable(Environment.ENV_COLUMNS, Integer.toString(tColumns));
