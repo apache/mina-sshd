@@ -54,6 +54,7 @@ import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.BufferUtils;
 import org.apache.sshd.common.util.CloseableUtils;
+import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.Readable;
 
 import static org.apache.sshd.common.SshConstants.SSH_MSG_DEBUG;
@@ -102,12 +103,12 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     protected final Random random;
     /** Boolean indicating if this session has been authenticated or not */
     protected boolean authed;
-    /** The name of the authenticated useer */
+    /** The name of the authenticated user */
     protected String username;
 
-    /** Session listener */
+    /** Session listeners container */
     protected final List<SessionListener> listeners = new CopyOnWriteArrayList<SessionListener>();
-
+    protected final SessionListener sessionListenerProxy;
     //
     // Key exchange support
     //
@@ -177,6 +178,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
         this.isServer = isServer;
         this.factoryManager = factoryManager;
         this.ioSession = ioSession;
+        sessionListenerProxy = EventListenerUtils.proxyWrapper(SessionListener.class, getClass().getClassLoader(), listeners);
         random = factoryManager.getRandomFactory().create();
         authTimeoutMs = getLongProperty(FactoryManager.AUTH_TIMEOUT, authTimeoutMs);
         authTimeoutTimestamp = System.currentTimeMillis() + authTimeoutMs;
@@ -478,9 +480,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     protected void doCloseImmediately() {
         super.doCloseImmediately();
         // Fire 'close' event
-        for (SessionListener sl : listeners) {
-            sl.sessionClosed(this);
-        }
+        sessionListenerProxy.sessionClosed(this);
     }
 
     protected Service[] getServices() {
@@ -1280,11 +1280,8 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     }
 
     protected void sendEvent(SessionListener.Event event) throws IOException {
-        for (SessionListener sl : listeners) {
-            sl.sessionEvent(this, event);
-        }
+    	sessionListenerProxy.sessionEvent(this, event);
     }
-
 
     /**
      * {@inheritDoc}

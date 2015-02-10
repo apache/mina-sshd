@@ -34,6 +34,10 @@ public abstract class AbstractSessionFactory extends AbstractSessionIoHandler {
 
     protected final List<SessionListener> listeners = new CopyOnWriteArrayList<SessionListener>();
 
+    protected AbstractSessionFactory() {
+    	super();
+    }
+
     protected AbstractSession createSession(IoSession ioSession) throws Exception {
         AbstractSession session = doCreateSession(ioSession);
 

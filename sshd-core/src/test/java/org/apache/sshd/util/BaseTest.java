@@ -19,6 +19,7 @@
 package org.apache.sshd.util;
 
 import org.junit.Rule;
+import org.junit.rules.TestName;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 
@@ -28,11 +29,17 @@ import org.junit.runner.Description;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class BaseTest extends TestWatcher {
-
-    @Rule
-    public TestWatcher rule = this;
-
+    @Rule public TestWatcher rule = this;
+    @Rule public final TestName TEST_NAME_HOLDER = new TestName();
     private long startTime;
+
+    protected BaseTest() {
+    	super();
+    }
+
+    public final String getCurrentTestName() {
+        return TEST_NAME_HOLDER.getMethodName();
+    }
 
     @Override
     protected void starting(Description description) {

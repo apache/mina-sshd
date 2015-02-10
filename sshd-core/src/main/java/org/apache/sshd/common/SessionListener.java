@@ -18,12 +18,14 @@
  */
 package org.apache.sshd.common;
 
+import java.util.EventListener;
+
 /**
  * Represents an interface receiving Session events.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface SessionListener {
+public interface SessionListener extends EventListener {
 
     enum Event {
         KeyEstablished, Authenticated, KexCompleted
