@@ -104,7 +104,8 @@ public class DefaultScpClient implements ScpClient {
         helper.receive(target,
                        options.contains(Option.Recursive),
                        options.contains(Option.TargetIsDirectory),
-                       options.contains(Option.PreserveAttributes));
+                       options.contains(Option.PreserveAttributes),
+                       ScpHelper.DEFAULT_RECEIVE_BUFFER_SIZE);
 
         channel.close(false);
     }
@@ -155,7 +156,8 @@ public class DefaultScpClient implements ScpClient {
 
         helper.send(Arrays.asList(local),
                     options.contains(Option.Recursive),
-                    options.contains(Option.PreserveAttributes));
+                    options.contains(Option.PreserveAttributes),
+                    ScpHelper.DEFAULT_SEND_BUFFER_SIZE);
 
         channel.close(false);
     }

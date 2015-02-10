@@ -46,6 +46,20 @@ public class ScpHelper {
     public static final int WARNING = 1;
     public static final int ERROR = 2;
 
+    /**
+     * Default size (in bytes) of send / receive buffer size
+     */
+    public static final int DEFAULT_COPY_BUFFER_SIZE = 8192;
+    public static final int DEFAULT_RECEIVE_BUFFER_SIZE = DEFAULT_COPY_BUFFER_SIZE;
+    public static final int DEFAULT_SEND_BUFFER_SIZE = DEFAULT_COPY_BUFFER_SIZE;
+
+    /**
+     * The minimum size for sending / receiving files
+     */
+    public static final int MIN_COPY_BUFFER_SIZE = Byte.MAX_VALUE;
+    public static final int MIN_RECEIVE_BUFFER_SIZE = MIN_COPY_BUFFER_SIZE;
+    public static final int MIN_SEND_BUFFER_SIZE = MIN_COPY_BUFFER_SIZE;
+
     public static final int S_IRUSR =  0000400;
     public static final int S_IWUSR =  0000200;
     public static final int S_IXUSR =  0000100;
@@ -66,7 +80,7 @@ public class ScpHelper {
         this.root = root;
     }
 
-    public void receive(SshFile path, boolean recursive, boolean shouldBeDir, boolean preserve) throws IOException {
+    public void receive(SshFile path, boolean recursive, boolean shouldBeDir, boolean preserve, int bufferSize) throws IOException {
         if (shouldBeDir) {
             if (!path.doesExist()) {
                 throw new SshException("Target directory " + path.toString() + " does not exists");
@@ -110,19 +124,19 @@ public class ScpHelper {
 
             if (recursive && isDir)
             {
-                receiveDir(line, path, time, preserve);
+                receiveDir(line, path, time, preserve, bufferSize);
                 time = null;
             }
             else
             {
-                receiveFile(line, path, time, preserve);
+                receiveFile(line, path, time, preserve, bufferSize);
                 time = null;
             }
         }
     }
 
 
-    public void receiveDir(String header, SshFile path, long[] time, boolean preserve) throws IOException {
+    public void receiveDir(String header, SshFile path, long[] time, boolean preserve, int bufferSize) throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("Receiving directory {}", path);
         }
@@ -166,10 +180,10 @@ public class ScpHelper {
             header = readLine();
             log.debug("Received header: " + header);
             if (header.startsWith("C")) {
-                receiveFile(header, file, time, preserve);
+                receiveFile(header, file, time, preserve, bufferSize);
                 time = null;
             } else if (header.startsWith("D")) {
-                receiveDir(header, file, time, preserve);
+                receiveDir(header, file, time, preserve, bufferSize);
                 time = null;
             } else if (header.equals("E")) {
                 ack();
@@ -184,7 +198,7 @@ public class ScpHelper {
 
     }
 
-    public void receiveFile(String header, SshFile path, long[] time, boolean preserve) throws IOException {
+    public void receiveFile(String header, SshFile path, long[] time, boolean preserve, int bufferSize) throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("Receiving file {}", path);
         }
@@ -192,9 +206,24 @@ public class ScpHelper {
             throw new IOException("Expected a C message but got '" + header + "'");
         }
 
+        if (bufferSize < MIN_RECEIVE_BUFFER_SIZE) {
+            throw new IOException("receiveFile(" + path + ") buffer size (" + bufferSize + ") below minimum (" + MIN_RECEIVE_BUFFER_SIZE + ")");
+        }
+
         String perms = header.substring(1, 5);
         long length = Long.parseLong(header.substring(6, header.indexOf(' ', 6)));
         String name = header.substring(header.indexOf(' ', 6) + 1);
+        if (length < 0L) { // TODO consider throwing an exception...
+            log.warn("receiveFile(" + path + ") bad length in header: " + header);
+        }
+
+        // if file size is less than buffer size allocate only expected file size
+        int bufSize = (int) Math.min(length, bufferSize);
+        if (bufSize < 0) { // TODO consider throwing an exception
+            log.warn("receiveFile(" + path + ") bad buffer size (" + bufSize + ") using default (" + MIN_RECEIVE_BUFFER_SIZE + ")");
+            bufSize = MIN_RECEIVE_BUFFER_SIZE;
+        }
+
 
         SshFile file;
         if (path.doesExist() && path.isDirectory()) {
@@ -218,7 +247,7 @@ public class ScpHelper {
         try {
             ack();
 
-            byte[] buffer = new byte[8192];
+            byte[] buffer = new byte[bufSize];
             while (length > 0) {
                 int len = (int) Math.min(length, buffer.length);
                 len = in.read(buffer, 0, len);
@@ -267,7 +296,7 @@ public class ScpHelper {
         }
     }
 
-    public void send(List<String> paths, boolean recursive, boolean preserve) throws IOException {
+    public void send(List<String> paths, boolean recursive, boolean preserve, int bufferSize) throws IOException {
         readAck(false);
         for (String pattern : paths) {
             int idx = pattern.indexOf('*');
@@ -282,13 +311,13 @@ public class ScpHelper {
                 for (String path : included) {
                     SshFile file = root.getFile(basedir + "/" + path);
                     if (file.isFile()) {
-                        sendFile(file, preserve);
+                        sendFile(file, preserve, bufferSize);
                     } else if (file.isDirectory()) {
                         if (!recursive) {
                             out.write(ScpHelper.WARNING);
                             out.write((path + " not a regular file\n").getBytes());
                         } else {
-                            sendDir(file, preserve);
+                            sendDir(file, preserve, bufferSize);
                         }
                     } else {
                         out.write(ScpHelper.WARNING);
@@ -307,12 +336,12 @@ public class ScpHelper {
                     throw new IOException(file + ": no such file or directory");
                 }
                 if (file.isFile()) {
-                    sendFile(file, preserve);
+                    sendFile(file, preserve, bufferSize);
                 } else if (file.isDirectory()) {
                     if (!recursive) {
                         throw new IOException(file + " not a regular file");
                     } else {
-                        sendDir(file, preserve);
+                        sendDir(file, preserve, bufferSize);
                     }
                 } else {
                     throw new IOException(file + ": unknown file type");
@@ -321,9 +350,13 @@ public class ScpHelper {
         }
     }
 
-    public void sendFile(SshFile path, boolean preserve) throws IOException {
+    public void sendFile(SshFile path, boolean preserve, int bufferSize) throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("Sending file {}", path);
+        }
+
+        if (bufferSize < MIN_SEND_BUFFER_SIZE) {
+            throw new IOException("sendFile(" + path + ") buffer size (" + bufferSize + ") below minimum (" + MIN_SEND_BUFFER_SIZE + ")");
         }
 
         Map<SshFile.Attribute,Object> attrs =  path.getAttributes(true);
@@ -355,9 +388,21 @@ public class ScpHelper {
         out.flush();
         readAck(false);
 
+        long fileSize = path.getSize();
+        if (fileSize < 0L) { // TODO consider throwing an exception...
+            log.warn("sendFile(" + path + ") bad file size: " + fileSize);
+        }
+
+        // if file size is less than buffer size allocate only expected file size
+        int bufSize = (int) Math.min(fileSize, bufferSize);
+        if (bufSize < 0) { // TODO consider throwing an exception
+            log.warn("sendFile(" + path + ") bad buffer size (" + bufSize + ") using default (" + MIN_SEND_BUFFER_SIZE + ")");
+            bufSize = MIN_SEND_BUFFER_SIZE;
+        }
+
         InputStream is = path.createInputStream(0);
         try {
-            byte[] buffer = new byte[8192];
+            byte[] buffer = new byte[bufSize];
             for (;;) {
                 int len = is.read(buffer, 0, buffer.length);
                 if (len == -1) {
@@ -372,7 +417,7 @@ public class ScpHelper {
         readAck(false);
     }
 
-    public void sendDir(SshFile path, boolean preserve) throws IOException {
+    public void sendDir(SshFile path, boolean preserve, int bufferSize) throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("Sending directory {}", path);
         }
@@ -407,9 +452,9 @@ public class ScpHelper {
 
         for (SshFile child : path.listSshFiles()) {
             if (child.isFile()) {
-                sendFile(child, preserve);
+                sendFile(child, preserve, bufferSize);
             } else if (child.isDirectory()) {
-                sendDir(child, preserve);
+                sendDir(child, preserve, bufferSize);
             }
         }
 

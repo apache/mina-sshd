@@ -63,26 +63,107 @@ public class ScpCommand implements Command, Runnable, FileSystemAware {
     protected ExecutorService executors;
     protected boolean shutdownExecutor;
     protected Future<?> pendingFuture;
+    protected int sendBufferSize;
+    protected int receiveBufferSize;
 
+    /**
+     * Simple constructor - uses an ad-hoc {@link ExecutorService} to
+     * run the command as well as default send / receive buffer sizes
+     *
+     * @param command The command to be executed
+     * @see #ScpCommand(String, ExecutorService, boolean, int, int)
+     * @see ScpHelper#DEFAULT_COPY_BUFFER_SIZE
+     */
     public ScpCommand(String command) {
-        this(command, null);
+        this(command, ScpHelper.DEFAULT_COPY_BUFFER_SIZE);
     }
 
+    /**
+     * Uses an ad-hoc {@link ExecutorService} to run the command
+     *
+     * @param command    The command to be executed
+     * @param bufferSize Size (in bytes) of buffer to be used for <U>both</U>
+     *                   sending and receiving files
+     * @see #ScpCommand(String, ExecutorService, int)
+     */
+    public ScpCommand(String command, int bufferSize) {
+        this(command, null, bufferSize);
+    }
+
+    /**
+     * @param command         The command to be executed
+     * @param executorService An {@link ExecutorService} to be used when
+     *                        {@link #start(Environment)}-ing execution. If {@code null} an ad-hoc
+     *                        single-threaded service is created and used. <B>Note:</B> the
+     *                        executor service will <U>not</U> be shutdown when command terminates
+     *                        unless it is the ad-hoc service
+     * @param bufferSize      Size (in bytes) of buffer to be used for <U>both</U>
+     *                        sending and receiving files
+     * @see #ScpCommand(String, ExecutorService, boolean, int, int)
+     */
+    public ScpCommand(String command, ExecutorService executorService, int bufferSize) {
+        this(command, executorService, false, bufferSize);
+    }
+
+    /**
+     * @param command         The command to be executed
+     * @param executorService An {@link ExecutorService} to be used when
+     *                        {@link #start(Environment)}-ing execution. If {@code null} an ad-hoc
+     *                        single-threaded service is created and used. <B>Note:</B> the
+     *                        executor service will <U>not</U> be shutdown when command terminates
+     *                        unless it is the ad-hoc service
+     * @see #ScpCommand(String, ExecutorService, boolean, int)
+     */
     public ScpCommand(String command, ExecutorService executorService) {
         this(command, executorService, false);
     }
 
     /**
-     * @param command The command to be executed
+     * @param command         The command to be executed
      * @param executorService An {@link ExecutorService} to be used when
-     *        {@link #start(Environment)}-ing execution. If {@code null} an ad-hoc
-     *        single-threaded service is created and used.
-     * @param shutdownOnExit If {@code true} the {@link ExecutorService#shutdownNow()}
-     *        will be called when command terminates - unless it is the ad-hoc
-     *        service, which will be shutdown regardless
-     * @see ThreadUtils#newSingleThreadExecutor(String)
+     *                        {@link #start(Environment)}-ing execution. If {@code null} an ad-hoc
+     *                        single-threaded service is created and used.
+     * @param shutdownOnExit  If {@code true} the {@link ExecutorService#shutdownNow()}
+     *                        will be called when command terminates - unless it is the ad-hoc
+     *                        service, which will be shutdown regardless
+     * @see #ScpCommand(String, ExecutorService, boolean, int)
+     * @see ScpHelper#DEFAULT_COPY_BUFFER_SIZE
      */
     public ScpCommand(String command, ExecutorService executorService, boolean shutdownOnExit) {
+        this(command, executorService, false, ScpHelper.DEFAULT_COPY_BUFFER_SIZE);
+    }
+
+    /**
+     * @param command         The command to be executed
+     * @param executorService An {@link ExecutorService} to be used when
+     *                        {@link #start(Environment)}-ing execution. If {@code null} an ad-hoc
+     *                        single-threaded service is created and used.
+     * @param shutdownOnExit  If {@code true} the {@link ExecutorService#shutdownNow()}
+     *                        will be called when command terminates - unless it is the ad-hoc
+     *                        service, which will be shutdown regardless
+     * @param bufferSize      Size (in bytes) of buffer to be used for <U>both</U>
+     *                        sending and receiving files
+     * @see #ScpCommand(String, ExecutorService, boolean, int, int)
+     */
+    public ScpCommand(String command, ExecutorService executorService, boolean shutdownOnExit, int bufferSize) {
+        this(command, executorService, shutdownOnExit, bufferSize, bufferSize);
+    }
+
+    /**
+     * @param command         The command to be executed
+     * @param executorService An {@link ExecutorService} to be used when
+     *                        {@link #start(Environment)}-ing execution. If {@code null} an ad-hoc
+     *                        single-threaded service is created and used.
+     * @param shutdownOnExit  If {@code true} the {@link ExecutorService#shutdownNow()}
+     *                        will be called when command terminates - unless it is the ad-hoc
+     *                        service, which will be shutdown regardless
+     * @param sendSize        Size (in bytes) of buffer to use when sending files
+     * @param receiveSize     Size (in bytes) of buffer to use when receiving files
+     * @see ThreadUtils#newSingleThreadExecutor(String)
+     * @see ScpHelper#MIN_SEND_BUFFER_SIZE
+     * @see ScpHelper#MIN_RECEIVE_BUFFER_SIZE
+     */
+    public ScpCommand(String command, ExecutorService executorService, boolean shutdownOnExit, int sendSize, int receiveSize) {
         name = command;
 
         if ((executors = executorService) == null) {
@@ -91,6 +172,14 @@ public class ScpCommand implements Command, Runnable, FileSystemAware {
             shutdownExecutor = true;    // we always close the ad-hoc executor service
         } else {
             shutdownExecutor = shutdownOnExit;
+        }
+
+        if ((sendBufferSize = sendSize) < ScpHelper.MIN_SEND_BUFFER_SIZE) {
+            throw new IllegalArgumentException("<ScpCommmand>(" + command + ") send buffer size (" + sendSize + ") below minimum required (" + ScpHelper.MIN_SEND_BUFFER_SIZE + ")");
+        }
+
+        if ((receiveBufferSize = receiveSize) < ScpHelper.MIN_RECEIVE_BUFFER_SIZE) {
+            throw new IllegalArgumentException("<ScpCommmand>(" + command + ") receive buffer size (" + sendSize + ") below minimum required (" + ScpHelper.MIN_RECEIVE_BUFFER_SIZE + ")");
         }
 
         log.debug("Executing command {}", command);
@@ -120,7 +209,7 @@ public class ScpCommand implements Command, Runnable, FileSystemAware {
                     }
                 }
             } else {
-                path = command.substring(command.indexOf(args[i-1]) + args[i-1].length() + 1);
+                path = command.substring(command.indexOf(args[i - 1]) + args[i - 1].length() + 1);
                 if (path.startsWith("\"") && path.endsWith("\"") || path.startsWith("'") && path.endsWith("'")) {
                     path = path.substring(1, path.length() - 1);
                 }
@@ -193,9 +282,9 @@ public class ScpCommand implements Command, Runnable, FileSystemAware {
         ScpHelper helper = new ScpHelper(in, out, root);
         try {
             if (optT) {
-                helper.receive(root.getFile(path), optR, optD, optP);
+                helper.receive(root.getFile(path), optR, optD, optP, receiveBufferSize);
             } else if (optF) {
-                helper.send(Collections.singletonList(path), optR, optP);
+                helper.send(Collections.singletonList(path), optR, optP, sendBufferSize);
             } else {
                 throw new IOException("Unsupported mode");
             }
@@ -218,5 +307,8 @@ public class ScpCommand implements Command, Runnable, FileSystemAware {
         }
     }
 
-
+    @Override
+    public String toString() {
+        return name;
+    }
 }
