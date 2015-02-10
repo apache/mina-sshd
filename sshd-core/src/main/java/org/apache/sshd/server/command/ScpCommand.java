@@ -21,14 +21,15 @@ package org.apache.sshd.server.command;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
 import org.apache.sshd.common.file.FileSystemAware;
 import org.apache.sshd.common.file.FileSystemView;
 import org.apache.sshd.common.scp.ScpHelper;
+import org.apache.sshd.common.util.ThreadUtils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
@@ -59,9 +60,39 @@ public class ScpCommand implements Command, Runnable, FileSystemAware {
     protected OutputStream err;
     protected ExitCallback callback;
     protected IOException error;
+    protected ExecutorService executors;
+    protected boolean shutdownExecutor;
+    protected Future<?> pendingFuture;
 
     public ScpCommand(String command) {
-        this.name = command;
+        this(command, null);
+    }
+
+    public ScpCommand(String command, ExecutorService executorService) {
+        this(command, executorService, false);
+    }
+
+    /**
+     * @param command The command to be executed
+     * @param executorService An {@link ExecutorService} to be used when
+     *        {@link #start(Environment)}-ing execution. If {@code null} an ad-hoc
+     *        single-threaded service is created and used.
+     * @param shutdownOnExit If {@code true} the {@link ExecutorService#shutdownNow()}
+     *        will be called when command terminates - unless it is the ad-hoc
+     *        service, which will be shutdown regardless
+     * @see ThreadUtils#newSingleThreadExecutor(String)
+     */
+    public ScpCommand(String command, ExecutorService executorService, boolean shutdownOnExit) {
+        name = command;
+
+        if ((executors = executorService) == null) {
+            String poolName = command.replace(' ', '_').replace('/', ':');
+            executors = ThreadUtils.newSingleThreadExecutor(poolName);
+            shutdownExecutor = true;    // we always close the ad-hoc executor service
+        } else {
+            shutdownExecutor = shutdownOnExit;
+        }
+
         log.debug("Executing command {}", command);
         String[] args = command.split(" ");
         for (int i = 1; i < args.length; i++) {
@@ -97,7 +128,7 @@ public class ScpCommand implements Command, Runnable, FileSystemAware {
             }
         }
         if (!optF && !optT) {
-            error = new IOException("Either -f or -t option should be set");
+            error = new IOException("Either -f or -t option should be set for " + command);
         }
     }
 
@@ -125,10 +156,35 @@ public class ScpCommand implements Command, Runnable, FileSystemAware {
         if (error != null) {
             throw error;
         }
-        new Thread(this, "ScpCommand: " + name).start();
+
+        try {
+            pendingFuture = executors.submit(this);
+        } catch (RuntimeException e) {    // e.g., RejectedExecutionException
+            log.error("Failed (" + e.getClass().getSimpleName() + ") to start command=" + name + ": " + e.getMessage(), e);
+            throw new IOException(e);
+        }
     }
 
     public void destroy() {
+        // if thread has not completed, cancel it
+        if ((pendingFuture != null) && (!pendingFuture.isDone())) {
+            boolean result = pendingFuture.cancel(true);
+            // TODO consider waiting some reasonable (?) amount of time for cancellation
+            if (log.isDebugEnabled()) {
+                log.debug("destroy() - cancel pending future=" + result);
+            }
+        }
+
+        pendingFuture = null;
+
+        if ((executors != null) && shutdownExecutor) {
+            Collection<Runnable> runners = executors.shutdownNow();
+            if (log.isDebugEnabled()) {
+                log.debug("destroy() - shutdown executor service - runners count=" + ((runners == null) ? 0 : runners.size()));
+            }
+        }
+
+        executors = null;
     }
 
     public void run() {
@@ -154,7 +210,7 @@ public class ScpCommand implements Command, Runnable, FileSystemAware {
             } catch (IOException e2) {
                 // Ignore
             }
-            log.info("Error in scp command", e);
+            log.info("Error in scp command=" + name, e);
         } finally {
             if (callback != null) {
                 callback.onExit(exitValue, exitMessage);

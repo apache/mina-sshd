@@ -18,8 +18,7 @@
  */
 package org.apache.sshd.server.command;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.concurrent.ExecutorService;
 
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.CommandFactory;
@@ -34,14 +33,85 @@ import org.apache.sshd.server.CommandFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ScpCommandFactory implements CommandFactory {
+	/**
+	 * Command prefix used to identify SCP commands
+	 */
+    public static final String SCP_COMMAND_PREFIX = "scp";
 
     private CommandFactory delegate;
+    private ExecutorService executors;
+    private boolean shutdownExecutor;
 
     public ScpCommandFactory() {
+        this(null, null);
     }
 
-    public ScpCommandFactory(CommandFactory delegate) {
-        this.delegate = delegate;
+    /**
+     * @param executorService An {@link ExecutorService} to be used when
+     *        starting {@link ScpCommand} execution. If {@code null} an ad-hoc
+     *        single-threaded service is created and used.
+     */
+    public ScpCommandFactory(ExecutorService executorService) {
+        this(null, executorService);
+    }
+
+    /**
+     * @param delegateFactory A {@link CommandFactory} to be used if the
+     *        command is not an SCP one. If {@code null} then an {@link IllegalArgumentException}
+     *        will be thrown when attempting to invoke {@link #createCommand(String)}
+     *        with a non-SCP command
+     * @see #SCP_COMMAND_PREFIX
+     */
+    public ScpCommandFactory(CommandFactory delegateFactory) {
+        this(delegateFactory, null);
+    }
+
+    /**
+     * @param delegateFactory A {@link CommandFactory} to be used if the
+     *        command is not an SCP one. If {@code null} then an {@link IllegalArgumentException}
+     *        will be thrown when attempting to invoke {@link #createCommand(String)}
+     *        with a non-SCP command
+     * @param executorService An {@link ExecutorService} to be used when
+     *        starting {@link ScpCommand} execution. If {@code null} then a single-threaded
+     *        ad-hoc service is used. <B>Note:</B> the service will <U>not</U> be shutdown
+     *        when the command is terminated - unless it is the ad-hoc service, which will be
+     *        shutdown regardless
+     * @see #ScpCommandFactory(CommandFactory, ExecutorService, boolean)
+     */
+    public ScpCommandFactory(CommandFactory delegateFactory, ExecutorService executorService) {
+        this(delegateFactory, executorService, false);
+    }
+
+    /**
+     * @param delegateFactory A {@link CommandFactory} to be used if the
+     *        command is not an SCP one. If {@code null} then an {@link IllegalArgumentException}
+     *        will be thrown when attempting to invoke {@link #createCommand(String)}
+     *        with a non-SCP command
+     * @param executorService An {@link ExecutorService} to be used when
+     *        starting {@link ScpCommand} execution. If {@code null} then a single-threaded
+     *        ad-hoc service is used. <B>Note:</B> the service will <U>not</U> be shutdown
+     *        when the command is terminated - unless it is the ad-hoc service, which will be
+     *        shutdown regardless
+     * @param shutdownOnExit If {@code true} the {@link ExecutorService#shutdownNow()}
+     *        will be called when command terminates - unless it is the ad-hoc
+     *        service, which will be shutdown regardless
+     */
+    public ScpCommandFactory(CommandFactory delegateFactory, ExecutorService executorService, boolean shutdownOnExit) {
+        delegate = delegateFactory;
+        executors = executorService;
+        shutdownExecutor = shutdownOnExit;
+    }
+
+    public CommandFactory getDelegateCommandFactory() {
+        return delegate;
+    }
+
+    public ExecutorService getExecutorService() {
+        return executors;
+    }
+
+    public boolean isShutdownOnExit() {
+        return shutdownExecutor;
     }
 
     /**
@@ -51,14 +121,17 @@ public class ScpCommandFactory implements CommandFactory {
      *
      * @param command command to parse 
      * @return configured {@link Command} instance
-     * @throws IllegalArgumentException
+     * @throws IllegalArgumentException if not an SCP command and no
+     *         delegate command factory is available
+     * @see #SCP_COMMAND_PREFIX
      */
     public Command createCommand(String command) {
         try {
-            if (!command.startsWith("scp")) {
-                throw new IllegalArgumentException("Unknown command, does not begin with 'scp'");
+            if (!command.startsWith(SCP_COMMAND_PREFIX)) {
+                throw new IllegalArgumentException("Unknown command, does not begin with '" + SCP_COMMAND_PREFIX + "': " + command);
             }
-            return new ScpCommand(command);
+
+            return new ScpCommand(command, getExecutorService(), isShutdownOnExit());
         } catch (IllegalArgumentException iae) {
             if (delegate != null) {
                 return delegate.createCommand(command);
@@ -66,5 +139,4 @@ public class ScpCommandFactory implements CommandFactory {
             throw iae;
         }
     }
-
 }
