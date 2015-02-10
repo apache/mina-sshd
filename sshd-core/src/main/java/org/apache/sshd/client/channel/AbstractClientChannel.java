@@ -97,10 +97,6 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         return invertedIn;
     }
 
-    /**
-     * @deprecated Use {@link #getInvertedOut()} instead
-     */
-    @Deprecated
     public InputStream getIn() {
         return in;
     }
@@ -113,10 +109,6 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         return invertedOut;
     }
 
-    /**
-     * @deprecated Use {@link #getInvertedIn()} instead
-     */
-    @Deprecated
     public OutputStream getOut() {
         return out;
     }

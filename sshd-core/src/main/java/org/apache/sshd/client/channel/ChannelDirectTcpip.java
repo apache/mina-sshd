@@ -19,6 +19,8 @@
 package org.apache.sshd.client.channel;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
@@ -92,6 +94,22 @@ public class ChannelDirectTcpip extends AbstractClientChannel {
             pipe = new ChannelPipedOutputStream(pis);
             invertedOut = in = pis;
         }
+    }
+
+    /**
+     * @deprecated Use {@link #getInvertedOut()} instead
+     */
+    @Deprecated
+    public InputStream getIn() {
+        return in;
+    }
+
+    /**
+     * @deprecated Use {@link #getInvertedIn()} instead
+     */
+    @Deprecated
+    public OutputStream getOut() {
+        return out;
     }
 
     @Override
