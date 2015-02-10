@@ -460,9 +460,10 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         int id = buffer.getInt();
         switch (type) {
             case SSH_FXP_INIT: {
-                log.debug("Received SSH_FXP_INIT (version={})", version);
-                if (length != 5) {
-                    throw new IllegalArgumentException();
+                log.debug("Received SSH_FXP_INIT (version={})", id);
+                // see https://filezilla-project.org/specs/draft-ietf-secsh-filexfer-02.txt - section 4 - Protocol Initialization
+                if (length < 5) { // we don't care about extensions
+                    throw new IllegalArgumentException("Incomplete SSH_FXP_INIT data: length=" + length);
                 }
                 version = id;
                 if (version >= LOWER_SFTP_IMPL) {
