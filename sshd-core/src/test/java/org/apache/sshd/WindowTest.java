@@ -170,16 +170,13 @@ public class WindowTest extends BaseTest {
             writer.write("\n");
             writer.flush();
 
-            Thread.sleep(5);
-            assertNotEquals("client local and server remote", clientLocal.getSize(), serverRemote.getSize());
+            waitForWindowNotEquals(clientLocal, serverRemote, "client local", "server remote");
 
             String line = reader.readLine();
             assertEquals(message, line);
 
-            Thread.sleep(5);
-
-            assertEquals("client local and server remote", clientLocal.getSize(), serverRemote.getSize());
-            assertEquals("client remote and server local", clientRemote.getSize(), serverLocal.getSize());
+            waitForWindowEquals(clientLocal, serverRemote, "client local", "server remote");
+            waitForWindowEquals(clientRemote, serverLocal, "client remote", "server local");
         }
     }
 
@@ -220,16 +217,13 @@ public class WindowTest extends BaseTest {
             writer.write("\n");
             writer.flush();
 
-            Thread.sleep(5);
-            assertEquals("client local and server remote", clientLocal.getSize(), serverRemote.getSize());
+            waitForWindowEquals(clientLocal, serverRemote, "client local", "server remote");
 
             String line = reader.readLine();
             assertEquals(message, line);
 
-            Thread.sleep(5);
-
-            assertEquals("client local and server remote", clientLocal.getSize(), serverRemote.getSize());
-            assertEquals("client remote and server local", clientRemote.getSize(), serverLocal.getSize());
+            waitForWindowEquals(clientLocal, serverRemote, "client local", "server remote");
+            waitForWindowEquals(clientRemote, serverLocal, "client remote", "server local");
         }
     }
 
@@ -262,8 +256,7 @@ public class WindowTest extends BaseTest {
             Buffer buffer = new Buffer((message + "\n").getBytes());
             channel.getAsyncIn().write(buffer).verify();
 
-            Thread.sleep(5);
-            assertNotEquals("client local and server remote", clientLocal.getSize(), serverRemote.getSize());
+            waitForWindowNotEquals(clientLocal, serverRemote, "client local", "server remote");
 
             Buffer buf = new Buffer(16);
             IoReadFuture future = channel.getAsyncOut().read(buf);
@@ -271,11 +264,29 @@ public class WindowTest extends BaseTest {
             assertEquals(11, buf.available());
             assertEquals(message + "\n", new String(buf.array(), buf.rpos(), buf.available()));
 
-            Thread.sleep(5);
-
-            assertEquals("client local and server remote", clientLocal.getSize(), serverRemote.getSize());
-            assertEquals("client remote and server local", clientRemote.getSize(), serverLocal.getSize());
+            waitForWindowEquals(clientLocal, serverRemote, "client local", "server remote");
+            waitForWindowEquals(clientRemote, serverLocal, "client remote", "server local");
         }
+    }
+
+    protected void waitForWindowNotEquals(Window w1, Window w2, String n1, String n2) throws InterruptedException {
+        for (int j = 0; j < 50; j++) {
+            if (w1.getSize() != w2.getSize()) {
+                break;
+            }
+            Thread.sleep(1);
+        }
+        assertNotEquals(n1 + " and " + n2, w1.getSize(), w2.getSize());
+    }
+
+    protected void waitForWindowEquals(Window w1, Window w2, String n1, String n2) throws InterruptedException {
+        for (int j = 0; j < 50; j++) {
+            if (w1.getSize() == w2.getSize()) {
+                break;
+            }
+            Thread.sleep(1);
+        }
+        assertEquals(n1 + " and " + n2, w1.getSize(), w2.getSize());
     }
 
     public static class TestEchoShellFactory extends EchoShellFactory {
