@@ -28,7 +28,9 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoSession;
+import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.server.ServerFactoryManager;
@@ -52,8 +54,6 @@ public class ServerSession extends AbstractSession {
         maxKeyInterval = getLongProperty(ServerFactoryManager.REKEY_TIME_LIMIT, maxKeyInterval);
         log.info("Server session created from {}", ioSession.getRemoteAddress());
         sendServerIdentification();
-        kexState.set(KEX_STATE_INIT);
-        sendKexInit();
     }
 
     public String getNegotiated(int index) {
@@ -150,14 +150,23 @@ public class ServerSession extends AbstractSession {
     }
 
     protected boolean readIdentification(Buffer buffer) throws IOException {
-        clientVersion = doReadIdentification(buffer);
+        clientVersion = doReadIdentification(buffer, true);
         if (clientVersion == null) {
             return false;
         }
         log.debug("Client version string: {}", clientVersion);
         if (!clientVersion.startsWith("SSH-2.0-")) {
-            throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_VERSION_NOT_SUPPORTED,
-                                   "Unsupported protocol version: " + clientVersion);
+            String msg = "Unsupported protocol version: " + clientVersion;
+            ioSession.write(new Buffer((msg + "\n").getBytes())).addListener(new SshFutureListener<IoWriteFuture>() {
+                @Override
+                public void operationComplete(IoWriteFuture future) {
+                    close(true);
+                }
+            });
+            throw new SshException(msg);
+        } else {
+            kexState.set(KEX_STATE_INIT);
+            sendKexInit();
         }
         return true;
     }

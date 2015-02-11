@@ -113,7 +113,7 @@ public class AbstractSessionTest extends BaseTest {
             return false;
         }
         public String doReadIdentification(Buffer buffer) {
-            return super.doReadIdentification(buffer);
+            return super.doReadIdentification(buffer, false);
         }
         @Override
         protected void sendKexInit() throws IOException {

@@ -807,7 +807,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     /**
      * Read the other side identification.
      * This method is specific to the client or server side, but both should call
-     * {@link #doReadIdentification(org.apache.sshd.common.util.Buffer)} and
+     * {@link #doReadIdentification(org.apache.sshd.common.util.Buffer,boolean)} and
      * store the result in the needed property.
      *
      * @param buffer the buffer containing the remote identification
@@ -826,7 +826,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
      * @param buffer the buffer containing the identification string
      * @return the remote identification or <code>null</code> if more data is needed
      */
-    protected String doReadIdentification(Buffer buffer) {
+    protected String doReadIdentification(Buffer buffer, boolean server) {
         byte[] data = new byte[256];
         for (;;) {
             int rpos = buffer.rpos();
@@ -855,7 +855,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
                 data[pos++] = b;
             }
             String str = new String(data, 0, pos);
-            if (str.startsWith("SSH-")) {
+            if (server || str.startsWith("SSH-")) {
                 return str;
             }
             if (buffer.rpos() > 16 * 1024) {

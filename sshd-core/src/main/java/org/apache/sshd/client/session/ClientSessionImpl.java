@@ -350,7 +350,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
     }
 
     protected boolean readIdentification(Buffer buffer) throws IOException {
-        serverVersion = doReadIdentification(buffer);
+        serverVersion = doReadIdentification(buffer, false);
         if (serverVersion == null) {
             return false;
         }
