@@ -79,6 +79,13 @@ public interface FactoryManager {
     public static final String DISCONNECT_TIMEOUT = "disconnect-timeout";
 
     /**
+     * Key used to configure the timeout used when writing a close request
+     * on a channel. If the message can not be written before the specified
+     * timeout elapses, the channel will be immediately closed. In milliseconds.
+     */
+    public static final String CHANNEL_CLOSE_TIMEOUT = "channel-close-timeout";
+
+    /**
      * Socket backlog.
      * See {@link java.nio.channels.AsynchronousServerSocketChannel#bind(java.net.SocketAddress, int)}
      */

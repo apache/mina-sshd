@@ -21,6 +21,7 @@ package org.apache.sshd.common.channel;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.Channel;
@@ -47,6 +48,8 @@ public abstract class AbstractChannel extends CloseableUtils.AbstractInnerClosea
 
     public static final int DEFAULT_WINDOW_SIZE = 0x200000;
     public static final int DEFAULT_PACKET_SIZE = 0x8000;
+
+    public static final long DEFAULT_CHANNEL_CLOSE_TIMEOUT = 5000;
 
     protected static enum GracefulState {
         Opened, CloseSent, CloseReceived, Closed
@@ -171,7 +174,16 @@ public abstract class AbstractChannel extends CloseableUtils.AbstractInnerClosea
                 Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_CLOSE);
                 buffer.putInt(recipient);
                 try {
-                    session.writePacket(buffer).addListener(new SshFutureListener<IoWriteFuture>() {
+                    long timeout = DEFAULT_CHANNEL_CLOSE_TIMEOUT;
+                    String val = getSession().getFactoryManager().getProperties().get(FactoryManager.CHANNEL_CLOSE_TIMEOUT);
+                    if (val != null) {
+                        try {
+                            timeout = Long.parseLong(val);
+                        } catch (NumberFormatException e) {
+                            // Ignore
+                        }
+                    }
+                    session.writePacket(buffer, timeout, TimeUnit.MILLISECONDS).addListener(new SshFutureListener<IoWriteFuture>() {
                         public void operationComplete(IoWriteFuture future) {
                             if (future.isWritten()) {
                                 log.debug("Message SSH_MSG_CHANNEL_CLOSE written on channel {}", AbstractChannel.this);
@@ -181,6 +193,7 @@ public abstract class AbstractChannel extends CloseableUtils.AbstractInnerClosea
                                     gracefulFuture.setClosed();
                                 }
                             } else {
+                                log.debug("Failed to write SSH_MSG_CHANNEL_CLOSE on channel {}", AbstractChannel.this);
                                 AbstractChannel.this.close(true);
                             }
                         }

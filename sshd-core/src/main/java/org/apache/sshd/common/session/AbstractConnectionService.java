@@ -261,7 +261,6 @@ public abstract class AbstractConnectionService extends CloseableUtils.AbstractI
     public void channelClose(Buffer buffer) throws IOException {
         Channel channel = getChannel(buffer);
         channel.handleClose();
-        unregisterChannel(channel);
     }
 
     /**
