@@ -766,7 +766,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                 break;
             }
             default: {
-                log.error("Received: {}", type);
+                log.warn("Received: {}", type);
                 sendStatus(id, SSH_FX_OP_UNSUPPORTED, "Command " + type + " is unsupported or not implemented");
                 break;
             }
@@ -783,7 +783,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
             doVersionSelect(buffer, id);
             break;
         default:
-            log.error("Received unsupported SSH_FXP_EXTENDED({})", extension);
+            log.info("Received unsupported SSH_FXP_EXTENDED({})", extension);
             sendStatus(id, SSH_FX_OP_UNSUPPORTED, "Command SSH_FXP_EXTENDED(" + extension + ") is unsupported or not implemented");
             break;
         }
