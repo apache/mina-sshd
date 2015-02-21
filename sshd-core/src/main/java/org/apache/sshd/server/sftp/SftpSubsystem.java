@@ -41,6 +41,7 @@ import java.util.concurrent.Future;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.file.FileSystemAware;
 import org.apache.sshd.common.file.FileSystemView;
+import org.apache.sshd.common.file.FileUploadAware;
 import org.apache.sshd.common.file.SshFile;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.IoUtils;
@@ -225,7 +226,12 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
             return file;
         }
 
-        public void close() throws IOException {
+        /**
+         * @param explicit true if the client explicitly requested the close,
+         * false if it is being closed due to a disconnect or error state
+         * @throws IOException
+         */
+        public void close(boolean explicit) throws IOException {
             file.handleClose();
         }
     }
@@ -327,11 +333,17 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         }
 
         @Override
-        public void close() throws IOException {
-            IoUtils.closeQuietly(output, input);
-            output = null;
-            input = null;
-            super.close();
+        public void close(boolean explicit) throws IOException {
+            try {
+                if (explicit && (output instanceof FileUploadAware)) {
+                    ((FileUploadAware) output).handleSuccess();
+                }
+            } finally {
+                IoUtils.closeQuietly(output, input);
+                output = null;
+                input = null;
+                super.close(explicit);
+            }
         }
     }
 
@@ -442,7 +454,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                 for (Map.Entry<String, Handle> entry : handles.entrySet()) {
                     Handle handle = entry.getValue();
                     try {
-                        handle.close();
+                        handle.close(false);
                     } catch (IOException ioe) {
                         log.error("Could not close open handle: " + entry.getKey(), ioe);
                     }
@@ -552,7 +564,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                         sendStatus(id, SSH_FX_FAILURE, handle, "");
                     } else {
                         handles.remove(handle);
-                        h.close();
+                        h.close(true);
                         sendStatus(id, SSH_FX_OK, "", "");
                     }
                 } catch (IOException e) {

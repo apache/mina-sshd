@@ -30,6 +30,7 @@ import java.util.Map;
 
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.file.FileSystemView;
+import org.apache.sshd.common.file.FileUploadAware;
 import org.apache.sshd.common.file.SshFile;
 import org.apache.sshd.common.util.DirectoryScanner;
 import org.slf4j.Logger;
@@ -256,6 +257,9 @@ public class ScpHelper {
                 }
                 os.write(buffer, 0, len);
                 length -= len;
+            }
+            if (os instanceof FileUploadAware) {
+                ((FileUploadAware) os).handleSuccess();
             }
         } finally {
             os.close();

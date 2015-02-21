@@ -24,7 +24,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * This is the file abstraction used by the server.
@@ -211,7 +210,10 @@ public interface SshFile {
      * @param offset The number of bytes at where to start writing.
      *      If the file is not random accessible,
      *      any offset other than zero will throw an exception.
-     * @return An {@link java.io.OutputStream} used to write to the {@link SshFile}
+     * @return An {@link java.io.OutputStream} used to write to the
+     * {@link SshFile}. On the server-side, the returned stream may optionally
+     * implement {@link org.apache.sshd.common.file.FileUploadAware} to receive
+     * a notification when the upload has completed successfully.
      * @throws java.io.IOException 
      */
     OutputStream createOutputStream(long offset) throws IOException;
