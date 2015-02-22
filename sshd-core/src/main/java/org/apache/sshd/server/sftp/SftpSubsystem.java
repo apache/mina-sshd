@@ -448,6 +448,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
 
     protected class FileHandle extends Handle {
         final FileChannel channel;
+        long pos;
         final List<FileLock> locks = new ArrayList<>();
 
         public FileHandle(Path file, int flags, int access, Map<String, Object> attrs) throws IOException {
@@ -504,16 +505,34 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                 setAttributes(file, attrs);
             }
             this.channel = channel;
+            this.pos = 0;
         }
 
         public int read(byte[] data, long offset) throws IOException {
-            channel.position(offset);
-            return channel.read(ByteBuffer.wrap(data));
+            return read(data, 0, data.length, offset);
+        }
+
+        public int read(byte[] data, int doff, int length, long offset) throws IOException {
+            if (pos != offset) {
+                channel.position(offset);
+                pos = offset;
+            }
+            int read = channel.read(ByteBuffer.wrap(data, doff, length));
+            pos += read;
+            return read;
         }
 
         public void write(byte[] data, long offset) throws IOException {
-            channel.position(offset);
-            channel.write(ByteBuffer.wrap(data));
+            write(data, 0, data.length, offset);
+        }
+
+        public void write(byte[] data, int doff, int length, long offset) throws IOException {
+            if (pos != offset) {
+                channel.position(offset);
+                pos = offset;
+            }
+            channel.write(ByteBuffer.wrap(data, doff, length));
+            pos += length;
         }
 
         @Override
