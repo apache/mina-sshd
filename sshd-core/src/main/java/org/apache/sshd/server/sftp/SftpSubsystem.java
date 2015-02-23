@@ -1196,15 +1196,23 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
     protected void doWrite(Buffer buffer, int id) throws IOException {
         String handle = buffer.getString();
         long offset = buffer.getLong();
-        byte[] data = buffer.getBytes();
-        log.debug("Received SSH_FXP_WRITE (handle={}, offset={}, data=byte[{}])", new Object[] { handle, offset, data.length });
+        int length = buffer.getInt();
+        if (length < 0) {
+            throw new IllegalStateException();
+        }
+        if (buffer.available() < length) {
+            throw new BufferUnderflowException();
+        }
+        byte[] data = buffer.array();
+        int doff = buffer.rpos();
+        log.debug("Received SSH_FXP_WRITE (handle={}, offset={}, data=byte[{}])", new Object[] { handle, offset, length });
         try {
             Handle p = handles.get(handle);
             if (!(p instanceof FileHandle)) {
                 sendStatus(id, SSH_FX_INVALID_HANDLE, handle);
             } else {
                 FileHandle fh = (FileHandle) p;
-                fh.write(data, offset);
+                fh.write(data, doff, length, offset);
                 sendStatus(id, SSH_FX_OK, "");
             }
         } catch (IOException e) {
@@ -1223,13 +1231,16 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                 sendStatus(id, SSH_FX_INVALID_HANDLE, handle);
             } else {
                 FileHandle fh = (FileHandle) p;
-                byte[] b = new byte[Math.min(len, Buffer.MAX_LEN)];
-                len = fh.read(b, offset);
+                Buffer buf = new Buffer(len + 9);
+                buf.putByte((byte) SSH_FXP_DATA);
+                buf.putInt(id);
+                int pos = buf.wpos();
+                buf.putInt(0);
+                len = fh.read(buf.array(), buf.wpos(), len, offset);
                 if (len >= 0) {
-                    Buffer buf = new Buffer(len + 5);
-                    buf.putByte((byte) SSH_FXP_DATA);
-                    buf.putInt(id);
-                    buf.putBytes(b, 0, len);
+                    buf.wpos(pos);
+                    buf.putInt(len);
+                    buf.wpos(pos + 4 + len);
                     send(buf);
                 } else {
                     sendStatus(id, SSH_FX_EOF, "");
