@@ -412,6 +412,18 @@ public class NativeSshFile implements SshFile {
         if (!canRead) {
             file.setReadable(true, true);
         }
+
+        /*
+         * Move to the appropriate offset only if non-zero. The reason for
+         * this check is that special "files" (e.g., /proc or /dev ones)
+         * might not support 'seek' to a specific position but rather only
+         * sequential read/write. If this is what is requested, there is no
+         * reason to risk incurring an IOException
+         */
+        if (offset == 0L) {
+            return new FileOutputStream(file);
+        }
+
         final RandomAccessFile raf = new RandomAccessFile(file, "rw");
         try {
             raf.seek(offset);
@@ -420,8 +432,11 @@ public class NativeSshFile implements SshFile {
             // objects closed to actually close the file
             return new FileOutputStream(raf.getFD()) {
                 public void close() throws IOException {
-                    super.close();
-                    raf.close();
+                    try {
+                        super.close();
+                    } finally { // make sure we close the random access file even if super close fails
+                        raf.close();
+                    }
                     if (!canRead) {
                         file.setReadable(false, true);
                     }
@@ -437,16 +452,30 @@ public class NativeSshFile implements SshFile {
      * Create input stream for reading.
      */
     public InputStream createInputStream(final long offset) throws IOException {
+        if (LOG.isTraceEnabled()) {
+            LOG.trace("createInputStream(" + file.getAbsolutePath() + ")[" + offset + "]");
+        }
 
         // permission check
         if (!isReadable()) {
             throw new IOException("No read permission : " + file.getName());
         }
 
-        // move to the appropriate offset and create input stream
         final FileInputStream fis = new FileInputStream(file);
+        /*
+         * Move to the appropriate offset only if non-zero. The reason for
+         * this check is that special "files" (e.g., /proc or /dev ones)
+         * might not support 'seek' to a specific position but rather only
+         * sequential read/write. If this is what is requested, there is no
+         * reason to risk incurring an IOException
+         */
+        if (offset == 0L) {
+            return fis;
+        }
+
         try {
-            fis.getChannel().position(offset);
+            FileChannel channel=fis.getChannel();
+            channel.position(offset);
             return fis;
         } catch (IOException e) {
             fis.close();
