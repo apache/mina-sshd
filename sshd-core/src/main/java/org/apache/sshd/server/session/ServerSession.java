@@ -158,7 +158,6 @@ public class ServerSession extends AbstractSession {
         if (!clientVersion.startsWith("SSH-2.0-")) {
             String msg = "Unsupported protocol version: " + clientVersion;
             ioSession.write(new Buffer((msg + "\n").getBytes())).addListener(new SshFutureListener<IoWriteFuture>() {
-                @Override
                 public void operationComplete(IoWriteFuture future) {
                     close(true);
                 }

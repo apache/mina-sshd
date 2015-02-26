@@ -337,7 +337,6 @@ public class ServerTest extends BaseTest {
     public static class StreamCommand implements Command, Runnable {
 
         public static class Factory implements CommandFactory {
-            @Override
             public Command createCommand(String name) {
                 return new StreamCommand(name);
             }
@@ -352,32 +351,28 @@ public class ServerTest extends BaseTest {
             this.name = name;
         }
 
-        @Override
         public void setInputStream(InputStream in) {
-
+            // ignored
         }
 
-        @Override
         public void setOutputStream(OutputStream out) {
             this.out = out;
         }
 
-        @Override
         public void setErrorStream(OutputStream err) {
-
+            // ignored
         }
 
-        @Override
         public void setExitCallback(ExitCallback callback) {
-
+            // ignored
         }
 
-        @Override
         public void start(Environment env) throws IOException {
-            new Thread(this).start();
+            Thread  t=new Thread(this);
+            t.setDaemon(true);
+            t.start();
         }
 
-        @Override
         public void destroy() {
             synchronized (name) {
                 if ("block".equals(name)) {
@@ -390,7 +385,6 @@ public class ServerTest extends BaseTest {
             }
         }
 
-        @Override
         public void run() {
             try {
                 Thread.sleep(5000);

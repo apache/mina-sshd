@@ -531,19 +531,16 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     }
 
     @SuppressWarnings("unchecked")
-    @Override
     public IoWriteFuture writePacket(Buffer buffer, long timeout, TimeUnit unit) throws IOException {
         final IoWriteFuture writeFuture = writePacket(buffer);
         final DefaultSshFuture<IoWriteFuture> future = (DefaultSshFuture<IoWriteFuture>) writeFuture;
         final ScheduledFuture<?> sched = factoryManager.getScheduledExecutorService().schedule(new Runnable() {
-            @Override
             public void run() {
                 log.info("Timeout writing packet.");
                 future.setValue(new TimeoutException());
             }
         }, timeout, unit);
         future.addListener(new SshFutureListener<IoWriteFuture>() {
-            @Override
             public void operationComplete(IoWriteFuture future) {
                 sched.cancel(false);
             }

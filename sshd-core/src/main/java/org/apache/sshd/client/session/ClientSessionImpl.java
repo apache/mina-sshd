@@ -193,7 +193,6 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         }
     }
 
-    @Override
     public SshFuture switchToNoneCipher() throws IOException {
         if (!(currentService instanceof AbstractConnectionService)
                 || !((AbstractConnectionService) currentService).getChannels().isEmpty()) {
