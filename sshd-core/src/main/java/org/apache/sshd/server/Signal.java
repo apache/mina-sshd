@@ -18,8 +18,11 @@
  */
 package org.apache.sshd.server;
 
+import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * System signals definition that the shell can receive.
@@ -58,6 +61,11 @@ public enum Signal {
     WINCH(28),
     IO(29),
     PWR(30);
+
+    /**
+     * A {@link Set} of all the available {@link Signal}s
+     */
+    public static final Set<Signal> SIGNALS = Collections.unmodifiableSet(EnumSet.allOf(Signal.class));
 
     private static final Map<String, Signal> lookupTable = new HashMap<String, Signal>(40);
 

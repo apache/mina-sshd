@@ -21,7 +21,8 @@ package org.apache.sshd.server.channel;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.EnumSet;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -41,6 +42,8 @@ import org.apache.sshd.common.RequestHandler;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
 import org.apache.sshd.common.channel.ChannelOutputStream;
+import org.apache.sshd.common.file.FileSystemAware;
+import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
@@ -52,8 +55,6 @@ import org.apache.sshd.server.ChannelSessionAware;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
-import org.apache.sshd.common.file.FileSystemAware;
-import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.SessionAware;
 import org.apache.sshd.server.Signal;
@@ -97,23 +98,31 @@ public class ChannelSession extends AbstractServerChannel {
             if (signals == null) {
                 throw new IllegalArgumentException("signals may not be null");
             }
-            if (listener == null) {
-                throw new IllegalArgumentException("listener may not be null");
-            }
-            for (Signal s : signals) {
-                getSignalListeners(s, true).add(listener);
-            }
+            
+            addSignalListener(listener, Arrays.asList(signals));
         }
 
         public void addSignalListener(SignalListener listener) {
-            addSignalListener(listener, EnumSet.allOf(Signal.class));
+            addSignalListener(listener, Signal.SIGNALS);
         }
 
-        public void addSignalListener(SignalListener listener, EnumSet<Signal> signals) {
+        /*
+         * NOTE: we don't care if the collection is a Set or not - after all,
+         * we hold the listeners inside a Set, so even if we add several times
+         * the same listener to the same signal set, it is harmless
+         */
+        public void addSignalListener(SignalListener listener, Collection<Signal> signals) {
+            if (listener == null) {
+                throw new IllegalArgumentException("listener may not be null");
+            }
+
             if (signals == null) {
                 throw new IllegalArgumentException("signals may not be null");
             }
-            addSignalListener(listener, signals.toArray(new Signal[signals.size()]));
+
+            for (Signal s : signals) {
+                getSignalListeners(s, true).add(listener);
+            }
         }
 
         public Map<String, String> getEnv() {
@@ -128,7 +137,7 @@ public class ChannelSession extends AbstractServerChannel {
             if (listener == null) {
                 throw new IllegalArgumentException("listener may not be null");
             }
-            for (Signal s : EnumSet.allOf(Signal.class)) {
+            for (Signal s : Signal.SIGNALS) {
                 final Set<SignalListener> ls = getSignalListeners(s, false);
                 if (ls != null) {
                     ls.remove(listener);
@@ -170,7 +179,6 @@ public class ChannelSession extends AbstractServerChannel {
             // may be null in case create=false
             return ls;
         }
-
     }
 
     protected String type;

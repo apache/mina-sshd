@@ -18,7 +18,7 @@
  */
 package org.apache.sshd.server;
 
-import java.util.EnumSet;
+import java.util.Collection;
 import java.util.Map;
 
 import org.apache.sshd.common.PtyMode;
@@ -76,7 +76,7 @@ public interface Environment {
      * @param listener the listener to register
      * @param signals the signals the listener is interested in
      */
-    void addSignalListener(SignalListener listener, EnumSet<Signal> signals);
+    void addSignalListener(SignalListener listener, Collection<Signal> signals);
 
     /**
      * Add a global listener for all signals

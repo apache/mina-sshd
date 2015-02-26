@@ -18,8 +18,8 @@
  */
 package org.apache.sshd.util;
 
+import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.Map;
 
 import org.apache.sshd.common.PtyMode;
@@ -38,15 +38,19 @@ public class BogusEnvironment implements Environment {
     }
 
     public void addSignalListener(SignalListener listener, Signal... signal) {
+        // ignored
     }
 
-    public void addSignalListener(SignalListener listener, EnumSet<Signal> signals) {
+    public void addSignalListener(SignalListener listener, Collection<Signal> signals) {
+        // ignored
     }
 
     public void addSignalListener(SignalListener listener) {
+        // ignored
     }
 
     public void removeSignalListener(SignalListener listener) {
+        // ignored
     }
 
 }

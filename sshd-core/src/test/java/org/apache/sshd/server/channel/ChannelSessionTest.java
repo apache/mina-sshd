@@ -18,15 +18,21 @@
  */
 package org.apache.sshd.server.channel;
 
-import static junit.framework.Assert.assertTrue;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
+import java.util.Collection;
+
 import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
 import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.server.Signal;
+import org.apache.sshd.server.SignalListener;
+import org.apache.sshd.util.BaseTest;
 import org.apache.sshd.util.BogusChannel;
 import org.junit.Test;
 
-public class ChannelSessionTest {
+public class ChannelSessionTest extends BaseTest {
 
     private boolean expanded = false;
 
@@ -48,5 +54,23 @@ public class ChannelSessionTest {
         };
         channelSession.handleWindowAdjust(buffer);
         assertTrue(expanded);
+    }
+
+    @Test
+    public void testAddSignalListenerOnDuplicateSignals() {
+        ChannelSession.StandardEnvironment environ = new ChannelSession.StandardEnvironment();
+        SignalListener listener = new SignalListener() {
+            public void signal(Signal signal) {
+                // ignored
+            }
+        };
+
+        for (Signal s : Signal.SIGNALS) {
+            environ.addSignalListener(listener, s, s, s, s, s, s);
+
+            Collection<SignalListener> ls = environ.getSignalListeners(s, false);
+            int numListeners = (ls == null) ? 0 : ls.size();
+            assertEquals("Mismatched registered listeners count for signal=" + s, 1, numListeners);
+        }
     }
 }
