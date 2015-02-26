@@ -28,8 +28,6 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
@@ -205,7 +203,6 @@ public class ScpHelper {
                 throw new IOException("Unexpected message: '" + header + "'");
             }
         }
-
     }
 
     public void receiveFile(String header, Path path, long[] time, boolean preserve, int bufferSize) throws IOException {
@@ -228,12 +225,20 @@ public class ScpHelper {
         }
 
         // if file size is less than buffer size allocate only expected file size
-        int bufSize = (int) Math.min(length, bufferSize);
+        int bufSize;
+        if (length == 0L) {
+            if (log.isDebugEnabled()) {
+                log.debug("receiveFile(" + path + ") zero file size (perhaps special file) using copy buffer size=" + MIN_RECEIVE_BUFFER_SIZE);
+            }
+            bufSize = MIN_RECEIVE_BUFFER_SIZE;
+        } else {
+            bufSize= (int) Math.min(length, bufferSize);
+        }
+
         if (bufSize < 0) { // TODO consider throwing an exception
             log.warn("receiveFile(" + path + ") bad buffer size (" + bufSize + ") using default (" + MIN_RECEIVE_BUFFER_SIZE + ")");
             bufSize = MIN_RECEIVE_BUFFER_SIZE;
         }
-
 
         Path file;
         if (Files.exists(path) && Files.isDirectory(path)) {
@@ -432,7 +437,16 @@ public class ScpHelper {
         }
 
         // if file size is less than buffer size allocate only expected file size
-        int bufSize = (int) Math.min(fileSize, bufferSize);
+        int bufSize;
+        if (fileSize == 0L) {
+            if (log.isDebugEnabled()) {
+                log.debug("sendFile(" + path + ") zero file size (perhaps special file) using copy buffer size=" + MIN_SEND_BUFFER_SIZE);
+            }
+            bufSize = MIN_SEND_BUFFER_SIZE;
+        } else {
+            bufSize = (int) Math.min(fileSize, bufferSize);
+        }
+
         if (bufSize < 0) { // TODO consider throwing an exception
             log.warn("sendFile(" + path + ") bad buffer size (" + bufSize + ") using default (" + MIN_SEND_BUFFER_SIZE + ")");
             bufSize = MIN_SEND_BUFFER_SIZE;

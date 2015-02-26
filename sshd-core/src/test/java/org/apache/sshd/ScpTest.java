@@ -24,14 +24,17 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.channels.FileChannel;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 import ch.ethz.ssh2.Connection;
 import ch.ethz.ssh2.SCPClient;
+
 import com.jcraft.jsch.ChannelExec;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
+
 import org.apache.sshd.client.ScpClient;
 import org.apache.sshd.server.command.ScpCommandFactory;
 import org.apache.sshd.util.BaseTest;
@@ -150,6 +153,101 @@ public class ScpTest extends BaseTest {
 
         session.close(false).await();
         client.stop();
+    }
+
+    @Test
+    public void testScpUploadZeroLengthFile() throws Exception {
+        File    root=assertHierarchyTargetFolderExists(new File("target/scp"));
+        File    local=assertHierarchyTargetFolderExists(new File(root, "local"));
+        File    remote=assertHierarchyTargetFolderExists(new File(root, "remote"));
+        File    zeroLocal=new File(local, getCurrentTestName());
+
+        FileOutputStream    fout=new FileOutputStream(zeroLocal);
+        try {
+            if (zeroLocal.length() > 0L) {
+                FileChannel fch=fout.getChannel();
+                try {
+                    fch.truncate(0L);
+                } finally {
+                    fch.close();
+                }
+            }
+        } finally {
+            fout.close();
+        }
+
+        assertEquals("Non-zero size for local file=" + zeroLocal.getAbsolutePath(), 0L, zeroLocal.length());
+
+        File    zeroRemote=new File(remote, zeroLocal.getName());
+        if (zeroRemote.exists()) {
+            assertTrue("Failed to delete remote target " + zeroRemote.getAbsolutePath(), zeroRemote.delete());
+        }
+
+        SshClient client = SshClient.setUpDefaultClient();
+        try {
+            client.start();
+
+            ClientSession session = client.connect("test", "localhost", port).await().getSession();
+            try {
+                session.addPasswordIdentity("test");
+                session.auth().verify();
+    
+                ScpClient scp = session.createScpClient();
+                scp.upload("target/scp/local/" + zeroLocal.getName(), "target/scp/remote/" + zeroRemote.getName());
+                assertFileLength(zeroRemote, 0L, TimeUnit.SECONDS.toMillis(5L));
+            } finally {
+                session.close(false).await();
+            }
+        } finally {
+            client.stop();
+        }
+    }
+
+    @Test
+    public void testScpDownloadZeroLengthFile() throws Exception {
+        File    root=assertHierarchyTargetFolderExists(new File("target/scp"));
+        File    local=assertHierarchyTargetFolderExists(new File(root, "local"));
+        File    remote=assertHierarchyTargetFolderExists(new File(root, "remote"));
+        File    zeroLocal=new File(local, getCurrentTestName());
+        if (zeroLocal.exists()) {
+            assertTrue("Failed to delete local target " + zeroLocal.getAbsolutePath(), zeroLocal.delete());
+        }
+
+        File                zeroRemote=new File(remote, zeroLocal.getName());
+        FileOutputStream    fout=new FileOutputStream(zeroRemote);
+        try {
+            if (zeroRemote.length() > 0L) {
+                FileChannel fch=fout.getChannel();
+                try {
+                    fch.truncate(0L);
+                } finally {
+                    fch.close();
+                }
+            }
+        } finally {
+            fout.close();
+        }
+
+        assertEquals("Non-zero size for remote file=" + zeroRemote.getAbsolutePath(), 0L, zeroRemote.length());
+
+        SshClient client = SshClient.setUpDefaultClient();
+        try {
+            client.start();
+
+            ClientSession session = client.connect("test", "localhost", port).await().getSession();
+            try {
+                session.addPasswordIdentity("test");
+                session.auth().verify();
+    
+                ScpClient scp = session.createScpClient();
+                scp.download("target/scp/remote/" + zeroRemote.getName(), "target/scp/local/" + zeroLocal.getName());
+                assertFileLength(zeroLocal, 0L, TimeUnit.SECONDS.toMillis(5L));
+            } finally {
+                session.close(false).await();
+            }
+        } finally {
+            client.stop();
+        }
     }
 
     @Test
@@ -515,8 +613,16 @@ public class ScpTest extends BaseTest {
             Thread.sleep(100);
             timeout -= 100;
         }
-        assertTrue(file.exists());
-        assertEquals(length, file.length());
+        assertTrue("File not found: " + file.getAbsolutePath(), file.exists());
+        assertEquals("Mismatched file size for " + file.getAbsolutePath(), length, file.length());
+    }
+
+    protected File assertHierarchyTargetFolderExists(File folder) {
+        if (!folder.exists()) {
+            assertTrue("Failed to create hierarchy of " + folder.getAbsolutePath(), folder.mkdirs());
+        }
+        
+        return folder;
     }
 
     protected String readFile(String path) throws Exception {
