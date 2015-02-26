@@ -195,7 +195,6 @@ public class ScpHelper {
                 throw new IOException("Unexpected message: '" + header + "'");
             }
         }
-
     }
 
     public void receiveFile(String header, SshFile path, long[] time, boolean preserve, int bufferSize) throws IOException {
@@ -218,12 +217,20 @@ public class ScpHelper {
         }
 
         // if file size is less than buffer size allocate only expected file size
-        int bufSize = (int) Math.min(length, bufferSize);
+        int bufSize;
+        if (length == 0L) {
+            if (log.isDebugEnabled()) {
+                log.debug("receiveFile(" + path + ") zero file size (perhaps special file) using copy buffer size=" + MIN_RECEIVE_BUFFER_SIZE);
+            }
+            bufSize = MIN_RECEIVE_BUFFER_SIZE;
+        } else {
+            bufSize= (int) Math.min(length, bufferSize);
+        }
+
         if (bufSize < 0) { // TODO consider throwing an exception
             log.warn("receiveFile(" + path + ") bad buffer size (" + bufSize + ") using default (" + MIN_RECEIVE_BUFFER_SIZE + ")");
             bufSize = MIN_RECEIVE_BUFFER_SIZE;
         }
-
 
         SshFile file;
         if (path.doesExist() && path.isDirectory()) {
@@ -235,15 +242,18 @@ public class ScpHelper {
         } else {
             throw new IOException("Can not write to " + path);
         }
+
         if (file.doesExist() && file.isDirectory()) {
             throw new IOException("File is a directory: " + file);
         } else if (file.doesExist() && !file.isWritable()) {
             throw new IOException("Can not write to file: " + file);
         }
+
         if (file.doesExist()) {
             file.truncate();
         }
-        OutputStream os = file.createOutputStream(0);
+
+        OutputStream os = file.createOutputStream(0L);
         try {
             ack();
 
@@ -394,13 +404,22 @@ public class ScpHelper {
         }
 
         // if file size is less than buffer size allocate only expected file size
-        int bufSize = (int) Math.min(fileSize, bufferSize);
+        int bufSize;
+        if (fileSize == 0L) {
+            if (log.isDebugEnabled()) {
+                log.debug("sendFile(" + path + ") zero file size (perhaps special file) using copy buffer size=" + MIN_SEND_BUFFER_SIZE);
+            }
+            bufSize = MIN_SEND_BUFFER_SIZE;
+        } else {
+            bufSize = (int) Math.min(fileSize, bufferSize);
+        }
+
         if (bufSize < 0) { // TODO consider throwing an exception
             log.warn("sendFile(" + path + ") bad buffer size (" + bufSize + ") using default (" + MIN_SEND_BUFFER_SIZE + ")");
             bufSize = MIN_SEND_BUFFER_SIZE;
         }
 
-        InputStream is = path.createInputStream(0);
+        InputStream is = path.createInputStream(0L);
         try {
             byte[] buffer = new byte[bufSize];
             for (;;) {
