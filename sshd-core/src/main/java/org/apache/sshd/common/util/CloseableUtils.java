@@ -18,6 +18,8 @@
  */
 package org.apache.sshd.common.util;
 
+import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -43,6 +45,22 @@ import org.slf4j.LoggerFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class CloseableUtils {
+
+    // TODO once JDK 8+ becomes the minimum for this project, make it a static method in the Closeable interface
+    public static void close(Closeable closeable) throws IOException {
+        if (closeable == null) {
+            return;
+        }
+
+        if ((!closeable.isClosed()) && (!closeable.isClosing())) {
+            CloseFuture future=closeable.close(true);
+            try {
+                future.await();
+            } catch(InterruptedException e) {
+                throw new InterruptedIOException(e.getClass().getSimpleName() + " while await future closure: " + e.getMessage());
+            }
+        }
+    }
 
     public static CloseFuture closed() {
         CloseFuture future = new DefaultCloseFuture(null);
@@ -130,7 +148,14 @@ public class CloseableUtils {
 
     }
 
-    private static class SimpleCloseable implements Closeable {
+    public static abstract class IoBaseCloseable implements Closeable {
+        // TODO once JDK 8+ becomes the minimum for this project, make it a default method instead of this class
+        public void close() throws IOException {
+            CloseableUtils.close(this);
+        }
+    }
+
+    private static class SimpleCloseable extends IoBaseCloseable {
 
         protected final DefaultCloseFuture future;
         protected final AtomicBoolean closing;
@@ -160,7 +185,7 @@ public class CloseableUtils {
 
     private static class ParallelCloseable extends SimpleCloseable {
 
-        final Iterable<? extends Closeable> closeables;
+        private final Iterable<? extends Closeable> closeables;
 
         private ParallelCloseable(Object lock, Iterable<? extends Closeable> closeables) {
             super(lock);
@@ -253,7 +278,7 @@ public class CloseableUtils {
         }
     }
 
-    public static abstract class AbstractCloseable implements Closeable {
+    public static abstract class AbstractCloseable extends IoBaseCloseable {
 
         protected enum State {
             Opened, Graceful, Immediate, Closed

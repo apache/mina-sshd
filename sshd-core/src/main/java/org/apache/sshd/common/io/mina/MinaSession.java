@@ -82,7 +82,7 @@ public class MinaSession extends CloseableUtils.AbstractInnerCloseable implement
 
     @Override
     protected Closeable getInnerCloseable() {
-        return new Closeable() {
+        return new CloseableUtils.IoBaseCloseable() {
             public boolean isClosing() {
                 return session.isClosing();
             }

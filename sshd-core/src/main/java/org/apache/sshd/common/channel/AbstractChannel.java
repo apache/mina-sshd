@@ -155,7 +155,7 @@ public abstract class AbstractChannel extends CloseableUtils.AbstractInnerClosea
         return new GracefulChannelCloseable();
     }
 
-    public class GracefulChannelCloseable implements Closeable {
+    public class GracefulChannelCloseable extends CloseableUtils.IoBaseCloseable {
 
         protected volatile boolean closing;
 

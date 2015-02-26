@@ -48,6 +48,7 @@ import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.IoUtils;
 import org.apache.sshd.common.util.LoggingFilterOutputStream;
 import org.apache.sshd.server.AsyncCommand;
@@ -213,7 +214,7 @@ public class ChannelSession extends AbstractServerChannel {
                 .build();
     }
 
-    public class CommandCloseable implements Closeable {
+    public class CommandCloseable extends CloseableUtils.IoBaseCloseable {
         public boolean isClosed() {
             return commandExitFuture.isClosed();
         }

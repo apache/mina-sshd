@@ -27,7 +27,7 @@ import org.apache.sshd.common.future.CloseFuture;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface Closeable {
+public interface Closeable extends java.io.Closeable {
 
     /**
      * Close this resource asynchronously and return a future.

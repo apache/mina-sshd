@@ -23,7 +23,6 @@ import java.util.Map;
 
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.service.IoHandler;
-import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.service.IoProcessor;
 import org.apache.mina.core.service.IoService;
 import org.apache.mina.core.session.IdleStatus;
@@ -33,14 +32,13 @@ import org.apache.mina.transport.socket.SocketSessionConfig;
 import org.apache.mina.transport.socket.nio.NioSession;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.util.CloseableUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  */
-public abstract class MinaService extends IoHandlerAdapter implements org.apache.sshd.common.io.IoService, IoHandler, Closeable {
+public abstract class MinaService extends CloseableUtils.AbstractCloseable implements org.apache.sshd.common.io.IoService, IoHandler, Closeable {
 
     protected final Logger log = LoggerFactory.getLogger(getClass());
 
@@ -61,17 +59,10 @@ public abstract class MinaService extends IoHandlerAdapter implements org.apache
         getIoService().dispose();
     }
 
-    public CloseFuture close(boolean immediately) {
+    @Override
+    protected void doCloseImmediately() {
         getIoService().dispose();
-        return CloseableUtils.closed();
-    }
-
-    public boolean isClosed() {
-        return getIoService().isDisposed();
-    }
-
-    public boolean isClosing() {
-        return getIoService().isDisposing();
+        super.doCloseImmediately();
     }
 
     public Map<Long, org.apache.sshd.common.io.IoSession> getManagedSessions() {
@@ -85,6 +76,22 @@ public abstract class MinaService extends IoHandlerAdapter implements org.apache
             }
         }
         return sessions;
+    }
+
+    public void sessionOpened(IoSession session) throws Exception {
+        // Empty handler
+    }
+
+    public void sessionIdle(IoSession session, IdleStatus status) throws Exception {
+        // Empty handler
+    }
+
+    public void messageSent(IoSession session, Object message) throws Exception {
+        // Empty handler
+    }
+
+    public void inputClosed(IoSession session) throws Exception {
+        session.close(true);
     }
 
     public void sessionCreated(IoSession session) throws Exception {
