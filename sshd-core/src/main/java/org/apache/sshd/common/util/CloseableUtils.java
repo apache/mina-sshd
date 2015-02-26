@@ -68,7 +68,7 @@ public class CloseableUtils {
         return future;
     }
 
-    public static class Builder {
+    public static class Builder implements ObjectBuilder<Closeable> {
 
         private final Object lock;
         private final List<Closeable> closeables = new ArrayList<Closeable>();

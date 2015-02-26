@@ -66,6 +66,7 @@ import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.signature.SignatureDSA;
 import org.apache.sshd.common.signature.SignatureECDSA;
 import org.apache.sshd.common.signature.SignatureRSA;
+import org.apache.sshd.common.util.ObjectBuilder;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.global.CancelTcpipForwardHandler;
@@ -88,7 +89,7 @@ public class SshBuilder {
         return new ServerBuilder();
     }
 
-    protected static class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder<T, S>> {
+    protected static class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder<T, S>> implements ObjectBuilder<T> {
 
         protected Factory<T> factory = null;
 

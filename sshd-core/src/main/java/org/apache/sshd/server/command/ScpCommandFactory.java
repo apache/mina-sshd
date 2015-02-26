@@ -21,6 +21,7 @@ package org.apache.sshd.server.command;
 import java.util.concurrent.ExecutorService;
 
 import org.apache.sshd.common.scp.ScpHelper;
+import org.apache.sshd.common.util.ObjectBuilder;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.CommandFactory;
 
@@ -33,166 +34,136 @@ import org.apache.sshd.server.CommandFactory;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ScpCommandFactory implements CommandFactory {
-	/**
-	 * Command prefix used to identify SCP commands
-	 */
+public class ScpCommandFactory implements CommandFactory, Cloneable {
+    /**
+     * Command prefix used to identify SCP commands
+     */
     public static final String SCP_COMMAND_PREFIX = "scp";
 
+    /**
+     * A useful {@link ObjectBuilder} for {@link ScpCommandFactory}
+     */
+    public static class Builder implements ObjectBuilder<ScpCommandFactory> {
+
+        private final ScpCommandFactory factory = new ScpCommandFactory();
+
+        public Builder() {
+            super();
+        }
+
+        public Builder withDelegate(CommandFactory delegate) {
+            factory.setDelegateCommandFactory(delegate);
+            return this;
+        }
+
+        public Builder withExecutorService(ExecutorService service) {
+            factory.setExecutorService(service);
+            return this;
+        }
+
+        public Builder withShutdownOnExit(boolean shutdown) {
+            factory.setShutdownOnExit(shutdown);
+            return this;
+        }
+
+        public Builder withSendBufferSize(int sendSize) {
+            factory.setSendBufferSize(sendSize);
+            return this;
+        }
+
+        public Builder withReceiveBufferSize(int receiveSize) {
+            factory.setReceiveBufferSize(receiveSize);
+            return this;
+        }
+
+        public ScpCommandFactory build() {
+            // return a clone so that each invocation returns a different instance - avoid shared instances
+            return factory.clone();
+        }
+    }
+
+    /*
+     * NOTE: we expose setters since there is no problem to change these settings between
+     * successive invocations of the 'createCommand' method
+     */
     private CommandFactory delegate;
     private ExecutorService executors;
     private boolean shutdownExecutor;
-    private int sendBufferSize;
-    private int receiveBufferSize;
+    private int sendBufferSize = ScpHelper.MIN_SEND_BUFFER_SIZE;
+    private int receiveBufferSize = ScpHelper.MIN_RECEIVE_BUFFER_SIZE;
 
-    /**
-     * Default constructor - uses an ad-hoc {@link ExecutorService} with
-     * no delegate {@link CommandFactory} and default send/receive buffer
-     * sizes
-     *
-     * @see ScpHelper#DEFAULT_COPY_BUFFER_SIZE
-     */
     public ScpCommandFactory() {
-        this(null, null);
-    }
-
-    /**
-     * Uses an ad-hoc {@link ExecutorService} with no delegate {@link CommandFactory}
-     *
-     * @param bufferSize Size (in bytes) of buffer to be used for <U>both</U>
-     *                   sending and receiving files
-     * @see #ScpCommandFactory(CommandFactory, ExecutorService, boolean, int, int)
-     */
-    public ScpCommandFactory(int bufferSize) {
-        this(null, null, true, bufferSize);
-    }
-
-    /**
-     * @param executorService An {@link ExecutorService} to be used when
-     *                        starting {@link ScpCommand} execution. If {@code null} an ad-hoc
-     *                        single-threaded service is created and used. <B>Note:</B> the
-     *                        executor service will <U>not</U> be shutdown when command terminates
-     *                        unless it is the ad-hoc service
-     */
-    public ScpCommandFactory(ExecutorService executorService) {
-        this(null, executorService);
-    }
-
-    /**
-     * @param delegateFactory A {@link CommandFactory} to be used if the
-     *                        command is not an SCP one. If {@code null} then an {@link IllegalArgumentException}
-     *                        will be thrown when attempting to invoke {@link #createCommand(String)}
-     *                        with a non-SCP command
-     * @see #SCP_COMMAND_PREFIX
-     */
-    public ScpCommandFactory(CommandFactory delegateFactory) {
-        this(delegateFactory, null);
-    }
-
-    /**
-     * @param delegateFactory A {@link CommandFactory} to be used if the
-     *                        command is not an SCP one. If {@code null} then an {@link IllegalArgumentException}
-     *                        will be thrown when attempting to invoke {@link #createCommand(String)}
-     *                        with a non-SCP command
-     * @param executorService An {@link ExecutorService} to be used when
-     *                        starting {@link ScpCommand} execution. If {@code null} then a single-threaded
-     *                        ad-hoc service is used. <B>Note:</B> the service will <U>not</U> be shutdown
-     *                        when the command is terminated - unless it is the ad-hoc service, which will be
-     *                        shutdown regardless
-     * @see #ScpCommandFactory(CommandFactory, ExecutorService, boolean)
-     */
-    public ScpCommandFactory(CommandFactory delegateFactory, ExecutorService executorService) {
-        this(delegateFactory, executorService, false);
-    }
-
-    /**
-     * @param delegateFactory A {@link CommandFactory} to be used if the
-     *                        command is not an SCP one. If {@code null} then an {@link IllegalArgumentException}
-     *                        will be thrown when attempting to invoke {@link #createCommand(String)}
-     *                        with a non-SCP command
-     * @param executorService An {@link ExecutorService} to be used when
-     *                        starting {@link ScpCommand} execution. If {@code null} then a single-threaded
-     *                        ad-hoc service is used. <B>Note:</B> the service will <U>not</U> be shutdown
-     *                        when the command is terminated - unless it is the ad-hoc service, which will be
-     *                        shutdown regardless
-     * @param shutdownOnExit  If {@code true} the {@link ExecutorService#shutdownNow()}
-     *                        will be called when command terminates - unless it is the ad-hoc
-     *                        service, which will be shutdown regardless
-     * @see #ScpCommandFactory(CommandFactory, ExecutorService, boolean, int)
-     */
-    public ScpCommandFactory(CommandFactory delegateFactory, ExecutorService executorService, boolean shutdownOnExit) {
-        this(delegateFactory, executorService, shutdownOnExit, ScpHelper.DEFAULT_COPY_BUFFER_SIZE);
-    }
-
-    /**
-     * @param delegateFactory A {@link CommandFactory} to be used if the
-     *                        command is not an SCP one. If {@code null} then an {@link IllegalArgumentException}
-     *                        will be thrown when attempting to invoke {@link #createCommand(String)}
-     *                        with a non-SCP command
-     * @param executorService An {@link ExecutorService} to be used when
-     *                        starting {@link ScpCommand} execution. If {@code null} then a single-threaded
-     *                        ad-hoc service is used. <B>Note:</B> the service will <U>not</U> be shutdown
-     *                        when the command is terminated - unless it is the ad-hoc service, which will be
-     *                        shutdown regardless
-     * @param shutdownOnExit  If {@code true} the {@link ExecutorService#shutdownNow()}
-     *                        will be called when command terminates - unless it is the ad-hoc
-     *                        service, which will be shutdown regardless
-     * @param bufferSize      Size (in bytes) of buffer to be used for <U>both</U>
-     *                        sending and receiving files
-     * @see #ScpCommandFactory(CommandFactory, ExecutorService, boolean, int, int)
-     */
-    public ScpCommandFactory(CommandFactory delegateFactory, ExecutorService executorService, boolean shutdownOnExit, int bufferSize) {
-        this(delegateFactory, executorService, shutdownOnExit, bufferSize, bufferSize);
-    }
-
-    /**
-     * @param delegateFactory A {@link CommandFactory} to be used if the
-     *                        command is not an SCP one. If {@code null} then an {@link IllegalArgumentException}
-     *                        will be thrown when attempting to invoke {@link #createCommand(String)}
-     *                        with a non-SCP command
-     * @param executorService An {@link ExecutorService} to be used when
-     *                        starting {@link ScpCommand} execution. If {@code null} then a single-threaded
-     *                        ad-hoc service is used. <B>Note:</B> the service will <U>not</U> be shutdown
-     *                        when the command is terminated - unless it is the ad-hoc service, which will be
-     *                        shutdown regardless
-     * @param shutdownOnExit  If {@code true} the {@link ExecutorService#shutdownNow()}
-     *                        will be called when command terminates - unless it is the ad-hoc
-     *                        service, which will be shutdown regardless
-     * @param sendSize        Size (in bytes) of buffer to use when sending files
-     * @param receiveSize     Size (in bytes) of buffer to use when receiving files
-     * @see ScpHelper#MIN_SEND_BUFFER_SIZE
-     * @see ScpHelper#MIN_RECEIVE_BUFFER_SIZE
-     */
-    public ScpCommandFactory(CommandFactory delegateFactory, ExecutorService executorService, boolean shutdownOnExit, int sendSize, int receiveSize) {
-        delegate = delegateFactory;
-        executors = executorService;
-        shutdownExecutor = shutdownOnExit;
-        if ((sendBufferSize = sendSize) < ScpHelper.MIN_SEND_BUFFER_SIZE) {
-            throw new IllegalArgumentException("<ScpCommandFactory>() send buffer size (" + sendSize + ") below minimum required (" + ScpHelper.MIN_SEND_BUFFER_SIZE + ")");
-        }
-        if ((receiveBufferSize = receiveSize) < ScpHelper.MIN_RECEIVE_BUFFER_SIZE) {
-            throw new IllegalArgumentException("<ScpCommandFactory>() receive buffer size (" + sendSize + ") below minimum required (" + ScpHelper.MIN_RECEIVE_BUFFER_SIZE + ")");
-        }
+        super();
     }
 
     public CommandFactory getDelegateCommandFactory() {
         return delegate;
     }
 
+    /**
+     * @param factory A {@link CommandFactory} to be used if the
+     *                command is not an SCP one. If {@code null} then an {@link IllegalArgumentException}
+     *                will be thrown when attempting to invoke {@link #createCommand(String)}
+     *                with a non-SCP command
+     */
+    public void setDelegateCommandFactory(CommandFactory factory) {
+        delegate = factory;
+    }
+
     public ExecutorService getExecutorService() {
         return executors;
+    }
+
+    /**
+     * @param service An {@link ExecutorService} to be used when
+     *                starting {@link ScpCommand} execution. If {@code null} then a single-threaded
+     *                ad-hoc service is used. <B>Note:</B> the service will <U>not</U> be shutdown
+     *                when the command is terminated - unless it is the ad-hoc service, which will be
+     *                shutdown regardless
+     */
+    public void setExecutorService(ExecutorService service) {
+        executors = service;
     }
 
     public boolean isShutdownOnExit() {
         return shutdownExecutor;
     }
 
+    /**
+     * @param shutdown  If {@code true} the {@link ExecutorService#shutdownNow()}
+     *                  will be called when command terminates - unless it is the ad-hoc
+     *                 service, which will be shutdown regardless
+     */
+    public void setShutdownOnExit(boolean shutdown) {
+        shutdownExecutor = shutdown;
+    }
+
     public int getSendBufferSize() {
         return sendBufferSize;
     }
 
+    /**
+     * @param sendSize  Size (in bytes) of buffer to use when sending files
+     * @see ScpHelper#MIN_SEND_BUFFER_SIZE
+     */
+    public void setSendBufferSize(int sendSize) {
+        if ((sendBufferSize = sendSize) < ScpHelper.MIN_SEND_BUFFER_SIZE) {
+            throw new IllegalArgumentException("<ScpCommandFactory>() send buffer size (" + sendSize + ") below minimum required (" + ScpHelper.MIN_SEND_BUFFER_SIZE + ")");
+        }
+    }
+
     public int getReceiveBufferSize() {
         return receiveBufferSize;
+    }
+
+    /**
+     * @param receiveSize   Size (in bytes) of buffer to use when receiving files
+     * @see ScpHelper#MIN_RECEIVE_BUFFER_SIZE
+     */
+    public void setReceiveBufferSize(int receiveSize) {
+        if ((receiveBufferSize = receiveSize) < ScpHelper.MIN_RECEIVE_BUFFER_SIZE) {
+            throw new IllegalArgumentException("<ScpCommandFactory>() receive buffer size (" + receiveSize + ") below minimum required (" + ScpHelper.MIN_RECEIVE_BUFFER_SIZE + ")");
+        }
     }
 
     /**
@@ -217,5 +188,14 @@ public class ScpCommandFactory implements CommandFactory {
         }
 
         throw new IllegalArgumentException("Unknown command, does not begin with '" + SCP_COMMAND_PREFIX + "': " + command);
+    }
+
+    @Override
+    public ScpCommandFactory clone() {
+        try {
+            return getClass().cast(super.clone());    // shallow clone is good enough
+        } catch(CloneNotSupportedException e) {
+            throw new RuntimeException(e);    // un-expected...
+        }
     }
 }

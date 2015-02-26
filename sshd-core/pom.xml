@@ -25,6 +25,7 @@
         <groupId>org.apache.sshd</groupId>
         <artifactId>sshd</artifactId>
         <version>1.0.0-SNAPSHOT</version>
+        <relativePath>..</relativePath>
     </parent>
 
     <artifactId>sshd-core</artifactId>
@@ -90,6 +91,11 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-all</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

@@ -472,7 +472,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
                 return true;
             }
         });
-        sshd.setCommandFactory(new ScpCommandFactory(new CommandFactory() {
+        sshd.setCommandFactory(new ScpCommandFactory.Builder().withDelegate(new CommandFactory() {
             public Command createCommand(String command) {
                 EnumSet<ProcessShellFactory.TtyOptions> ttyOptions;
                 if (OsUtils.isUNIX()) {
@@ -482,10 +482,8 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
                 }
                 return new ProcessShellFactory(command.split(" "), ttyOptions).create();
             }
-        }));
-        sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(
-                new SftpSubsystem.Factory()
-        ));
+        }).build());
+        sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(new SftpSubsystem.Factory()));
         sshd.start();
 
         Thread.sleep(Long.MAX_VALUE);
