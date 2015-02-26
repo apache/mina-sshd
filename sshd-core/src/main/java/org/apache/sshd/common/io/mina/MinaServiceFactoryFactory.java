@@ -18,19 +18,33 @@
  */
 package org.apache.sshd.common.io.mina;
 
+import java.util.concurrent.ExecutorService;
+
 import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.io.AbstractIoServiceFactoryFactory;
 import org.apache.sshd.common.io.IoServiceFactory;
-import org.apache.sshd.common.io.IoServiceFactoryFactory;
 
 /**
  */
-public class MinaServiceFactoryFactory implements IoServiceFactoryFactory {
-
+public class MinaServiceFactoryFactory extends AbstractIoServiceFactoryFactory {
     public MinaServiceFactoryFactory() {
+        this(null, true);
+    }
+
+    /**
+     * @param executors The {@link ExecutorService} to use for spawning threads.
+     * If {@code null} then an internal service is allocated - in which case it
+     * is automatically shutdown regardless of the value of the <tt>shutdownOnExit</tt>
+     * parameter value
+     * @param shutdownOnExit If {@code true} then the {@link ExecutorService#shutdownNow()}
+     * will be called (unless it is an internally allocated service which is always
+     * closed)
+     */
+    public MinaServiceFactoryFactory(ExecutorService executors, boolean shutdownOnExit) {
+        super(executors, shutdownOnExit);
     }
 
     public IoServiceFactory create(FactoryManager manager) {
-        return new MinaServiceFactory(manager);
+        return new MinaServiceFactory(manager, getExecutorService(), isShutdownExecutor());
     }
-
 }

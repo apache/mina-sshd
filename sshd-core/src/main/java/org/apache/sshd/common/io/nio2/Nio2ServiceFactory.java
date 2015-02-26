@@ -25,61 +25,58 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.RuntimeSshException;
+import org.apache.sshd.common.io.AbstractIoServiceFactory;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoConnector;
 import org.apache.sshd.common.io.IoHandler;
-import org.apache.sshd.common.io.IoServiceFactory;
-import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.ThreadUtils;
 
 /**
  */
-public class Nio2ServiceFactory extends CloseableUtils.AbstractCloseable implements IoServiceFactory {
+public class Nio2ServiceFactory extends AbstractIoServiceFactory {
 
-    private final FactoryManager manager;
     private final AsynchronousChannelGroup group;
 
-    public Nio2ServiceFactory(FactoryManager manager) {
-        this.manager = manager;
+    public Nio2ServiceFactory(FactoryManager factoryManager, ExecutorService service, boolean shutdownOnExit) {
+        super(factoryManager,
+              service == null ? ThreadUtils.newFixedThreadPool(factoryManager.toString() + "-nio2", getNioWorkers(factoryManager)) : service,
+              service == null || shutdownOnExit);
         try {
-            ExecutorService executor = ThreadUtils.newFixedThreadPool(
-                    manager.toString() + "-nio2",
-                    getNioWorkers());
-            group = AsynchronousChannelGroup.withThreadPool(executor);
-        } catch (IOException e) {
+            group = AsynchronousChannelGroup.withThreadPool(ThreadUtils.protectExecutorServiceShutdown(getExecutorService(), isShutdownExecutor()));
+        } catch(IOException e) {
+            logger.warn("Failed (" + e.getClass().getSimpleName() + " to start async. channel group: " + e.getMessage(), e);
             throw new RuntimeSshException(e);
         }
     }
 
     public IoConnector createConnector(IoHandler handler) {
-        return new Nio2Connector(manager, handler, group);
+        return new Nio2Connector(getFactoryManager(), handler, group);
     }
 
     public IoAcceptor createAcceptor(IoHandler handler) {
-        return new Nio2Acceptor(manager, handler, group);
+        return new Nio2Acceptor(getFactoryManager(), handler, group);
     }
 
     @Override
     protected void doCloseImmediately() {
         try {
-            group.shutdownNow();
-            group.awaitTermination(5, TimeUnit.SECONDS);
+            if (!group.isShutdown()) {
+                logger.debug("Shutdown group");
+                group.shutdownNow();
+            
+                // if we protect the executor then the await will fail since we didn't really shut it down...
+                if (isShutdownExecutor()) {
+                    if (group.awaitTermination(5, TimeUnit.SECONDS)) {
+                        logger.debug("Group successfully shut down");
+                    } else {
+                        logger.debug("Not all group tasks terminated");
+                    }
+                }
+            }
         } catch (Exception e) {
-            log.debug("Exception caught while closing channel group", e);
+            logger.debug("Exception caught while closing channel group", e);
         } finally {
             super.doCloseImmediately();
         }
     }
-
-    public int getNioWorkers() {
-        String nioWorkers = manager.getProperties().get(FactoryManager.NIO_WORKERS);
-        if (nioWorkers != null && nioWorkers.length() > 0) {
-            int nb = Integer.parseInt(nioWorkers);
-            if (nb > 0) {
-                return nb;
-            }
-        }
-        return FactoryManager.DEFAULT_NIO_WORKERS;
-    }
-
 }

@@ -18,15 +18,19 @@
  */
 package org.apache.sshd.common.util;
 
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+import java.util.Collections;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -35,6 +39,90 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ThreadUtils {
+
+    /**
+     * Wraps an {@link ExecutorService} in such a way as to &quot;protect&quot;
+     * it for calls to the {@link ExecutorService#shutdown()} or
+     * {@link ExecutorService#shutdownNow()}. All other calls are delegated as-is
+     * to the original service. <B>Note:</B> the exposed wrapped proxy will
+     * answer correctly the {@link ExecutorService#isShutdown()} query if indeed
+     * one of the {@code shutdown} methods was invoked.
+     *
+     * @param executorService The original service - ignored if {@code null}
+     * @param shutdownOnExit  If {@code true} then it is OK to shutdown the executor
+     *                        so no wrapping takes place.
+     * @return Either the original service or a wrapped one - depending on the
+     * value of the <tt>shutdownOnExit</tt> parameter
+     */
+    public static ExecutorService protectExecutorServiceShutdown(final ExecutorService executorService, boolean shutdownOnExit) {
+        if (executorService == null || shutdownOnExit) {
+            return executorService;
+        } else {
+            return (ExecutorService) Proxy.newProxyInstance(
+                    resolveDefaultClassLoader(executorService),
+                    new Class<?>[]{ExecutorService.class},
+                    new InvocationHandler() {
+                        private final AtomicBoolean stopped = new AtomicBoolean(false);
+
+                        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                            String name = method.getName();
+                            if ("isShutdown".equals(name)) {
+                                return stopped.get();
+                            } else if ("shutdown".equals(name)) {
+                                stopped.set(true);
+                                return null;    // void...
+                            } else if ("shutdownNow".equals(name)) {
+                                stopped.set(true);
+                                return Collections.emptyList();
+                            } else {
+                                return method.invoke(executorService, args);
+                            }
+                        }
+                    });
+        }
+    }
+
+    public static ClassLoader resolveDefaultClassLoader(Object anchor) {
+        return resolveDefaultClassLoader(anchor == null ? null : anchor.getClass());
+    }
+
+    /**
+     * Attempts to find the most suitable {@link ClassLoader} as follows:</BR>
+     * <UL>
+     * <LI>
+     * Check the {@link Thread#getContextClassLoader()} value
+     * </LI>
+     * <p/>
+     * <LI>
+     * If no thread context class loader then check the anchor
+     * class (if given) for its class loader
+     * </LI>
+     * <p/>
+     * <LI>
+     * If still no loader available, then use {@link ClassLoader#getSystemClassLoader()}
+     * </LI>
+     * </UL>
+     *
+     * @param anchor
+     * @return
+     */
+    public static ClassLoader resolveDefaultClassLoader(Class<?> anchor) {
+        Thread thread = Thread.currentThread();
+        ClassLoader cl = thread.getContextClassLoader();
+        if (cl != null) {
+            return cl;
+        }
+
+        if (anchor != null) {
+            cl = anchor.getClassLoader();
+        }
+
+        if (cl == null) {   // can happen for core Java classes
+            cl = ClassLoader.getSystemClassLoader();
+        }
+
+        return cl;
+    }
 
     public static ExecutorService newFixedThreadPool(
             String poolName,
@@ -72,6 +160,7 @@ public class ThreadUtils {
     }
 
     public static class SshdThreadFactory implements ThreadFactory {
+
         private final ThreadGroup group;
         private final AtomicInteger threadNumber = new AtomicInteger(1);
         private final String namePrefix;
@@ -95,6 +184,7 @@ public class ThreadUtils {
     }
 
     private ThreadUtils() {
+        // no instance allowe
     }
 
 }

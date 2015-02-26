@@ -19,66 +19,36 @@
 package org.apache.sshd.common.io.mina;
 
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.mina.core.service.IoProcessor;
 import org.apache.mina.core.service.SimpleIoProcessorPool;
 import org.apache.mina.transport.socket.nio.NioProcessor;
 import org.apache.mina.transport.socket.nio.NioSession;
 import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.io.AbstractIoServiceFactory;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoConnector;
 import org.apache.sshd.common.io.IoHandler;
-import org.apache.sshd.common.io.IoServiceFactory;
-import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.ThreadUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  */
-public class MinaServiceFactory extends CloseableUtils.AbstractCloseable implements IoServiceFactory {
+public class MinaServiceFactory extends AbstractIoServiceFactory {
 
-    private final Logger logger = LoggerFactory.getLogger(MinaServiceFactory.class);
-    private final FactoryManager manager;
-    private final ExecutorService executor;
     private final IoProcessor<NioSession> ioProcessor;
 
-    public MinaServiceFactory(FactoryManager manager) {
-        this.manager = manager;
-        this.executor = ThreadUtils.newCachedThreadPool(manager.toString() + "-mina");
-        this.ioProcessor = new SimpleIoProcessorPool<NioSession>(NioProcessor.class, getNioWorkers());
+    public MinaServiceFactory(FactoryManager factoryManager, ExecutorService service, boolean shutdownOnExit) {
+        super(factoryManager,
+              service == null ? ThreadUtils.newCachedThreadPool(factoryManager.toString() + "-mina") : service,
+              service == null || shutdownOnExit);
+        ioProcessor = new SimpleIoProcessorPool<>(NioProcessor.class, getExecutorService(), getNioWorkers(factoryManager), null);
     }
 
     public IoConnector createConnector(IoHandler handler) {
-        return new MinaConnector(manager, handler, ioProcessor);
+        return new MinaConnector(getFactoryManager(), handler, ioProcessor);
     }
 
     public IoAcceptor createAcceptor(IoHandler handler) {
-        return new MinaAcceptor(manager, handler, ioProcessor);
+        return new MinaAcceptor(getFactoryManager(), handler, ioProcessor);
     }
-
-    @Override
-    protected void doCloseImmediately() {
-        try {
-            executor.shutdownNow();
-            executor.awaitTermination(5, TimeUnit.SECONDS);
-        } catch (Exception e) {
-            log.debug("Exception caught while closing executor", e);
-        } finally {
-            super.doCloseImmediately();
-        }
-    }
-
-    public int getNioWorkers() {
-        String nioWorkers = manager.getProperties().get(FactoryManager.NIO_WORKERS);
-        if (nioWorkers != null && nioWorkers.length() > 0) {
-            int nb = Integer.parseInt(nioWorkers);
-            if (nb > 0) {
-                return nb;
-            }
-        }
-        return FactoryManager.DEFAULT_NIO_WORKERS;
-    }
-
 }
