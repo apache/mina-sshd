@@ -21,6 +21,7 @@ package org.apache.sshd.server.sftp;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.EOFException;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -934,8 +935,12 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         buffer.putByte((byte) SSH_FXP_NAME);
         buffer.putInt(id);
         buffer.putInt(1);
+
+        String originalPath = f.getAbsolutePath();
+        //in case we are running on Windows
+        String unixPath = originalPath.replace(File.separatorChar, '/');
         //normalize the given path, use *nix style separator
-        String normalizedPath = SelectorUtils.normalizePath(f.getAbsolutePath(), "/");
+        String normalizedPath = SelectorUtils.normalizePath(unixPath, "/");
         if (normalizedPath.length() == 0) {
             normalizedPath = "/";
         }
