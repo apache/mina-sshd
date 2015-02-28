@@ -1,8 +1,14 @@
+target/
+Servers/
+.metadata/
+.settings/
+RemoteSystemsTempFiles/
 .classpath
 .project
-.settings
 *.iml
 *.ipr
 *.iws
-target
 .idea
+.springBeans
+.externalToolBuilders
+
