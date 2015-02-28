@@ -45,6 +45,7 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.AclEntry;
 import java.nio.file.attribute.AclEntryFlag;
 import java.nio.file.attribute.AclEntryPermission;
 import java.nio.file.attribute.AclEntryType;
@@ -55,7 +56,8 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.nio.file.attribute.UserPrincipal;
 import java.nio.file.attribute.UserPrincipalLookupService;
-import java.nio.file.attribute.AclEntry;
+import java.nio.file.attribute.UserPrincipalNotFoundException;
+import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
@@ -398,6 +400,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         }
 
         public void close() throws IOException {
+            // ignored
         }
     }
 
@@ -1741,8 +1744,8 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
             String view = null;
             Object value = attributes.get(attribute);
             switch (attribute) {
-            case "size":             {
-                long newSize = (Long) value;
+            case "size": {
+                long newSize = ((Number) value).longValue();
                 try (FileChannel channel = FileChannel.open(file, StandardOpenOption.WRITE)) {
                     channel.truncate(newSize);
                 }
@@ -1757,7 +1760,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
             case "lastModifiedTime": view = "basic"; break;
             case "lastAccessTime":   view = "basic"; break;
             }
-            if (view != null) {
+            if (view != null && value != null) {
                 try {
                     Files.setAttribute(file, view + ":" + attribute, value, LinkOption.NOFOLLOW_LINKS);
                 } catch (UnsupportedOperationException e) {
@@ -1789,15 +1792,46 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         }
     }
 
-
     private GroupPrincipal toGroup(Path file, GroupPrincipal name) throws IOException {
-        UserPrincipalLookupService lookupService = file.getFileSystem().getUserPrincipalLookupService();
-        return lookupService.lookupPrincipalByGroupName(name.toString());
+        String groupName = name.toString();
+        FileSystem fileSystem = file.getFileSystem();
+        UserPrincipalLookupService lookupService = fileSystem.getUserPrincipalLookupService();
+        try {
+            return lookupService.lookupPrincipalByGroupName(groupName);
+        } catch (UserPrincipalNotFoundException e) {
+            handleUserPrincipalLookupServiceException(GroupPrincipal.class, groupName, e);
+            return null;
+        }
     }
 
     private UserPrincipal toUser(Path file, UserPrincipal name) throws IOException {
-        UserPrincipalLookupService lookupService = file.getFileSystem().getUserPrincipalLookupService();
-        return lookupService.lookupPrincipalByName(name.toString());
+        String username = name.toString();
+        FileSystem fileSystem = file.getFileSystem();
+        UserPrincipalLookupService lookupService = fileSystem.getUserPrincipalLookupService();
+        try {
+            return lookupService.lookupPrincipalByName(username);
+        } catch (UserPrincipalNotFoundException e) {
+            handleUserPrincipalLookupServiceException(UserPrincipal.class, username, e);
+            return null;
+        }
+    }
+
+    private void handleUserPrincipalLookupServiceException(Class<? extends Principal> principalType, String name, IOException e) throws IOException {
+        /* According to Javadoc:
+         * 
+         *      "Where an implementation does not support any notion of group
+         *      or user then this method always throws UserPrincipalNotFoundException."
+         */
+        switch (unsupportedAttributePolicy) {
+        case Ignore:
+            break;
+        case Warn:
+            log.warn("handleUserPrincipalLookupServiceException(" + principalType.getSimpleName() + "[" + name + "])"
+                   + " failed (" + e.getClass().getSimpleName() + "): " + e.getMessage());
+            break;
+        case ThrowException:
+            throw e;
+        }
     }
 
     private Set<PosixFilePermission> permissionsToAttributes(int perms) {

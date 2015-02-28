@@ -35,11 +35,15 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.FileTime;
+import java.nio.file.attribute.GroupPrincipal;
 import java.nio.file.attribute.PosixFilePermissions;
+import java.nio.file.attribute.UserPrincipalLookupService;
+import java.nio.file.attribute.UserPrincipalNotFoundException;
 import java.util.Arrays;
 import java.util.Map;
 
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.command.ScpCommandFactory;
 import org.apache.sshd.server.sftp.SftpSubsystem;
@@ -84,12 +88,24 @@ public class SftpFileSystemTest extends BaseTest {
         String uri = "sftp://x:x@localhost:" + port + "/";
 
         FileSystem fs = FileSystems.newFileSystem(URI.create(uri), null);
-        Path root = fs.getRootDirectories().iterator().next();
-        try (DirectoryStream<Path> ds = Files.newDirectoryStream(root)) {
-            for (Path child : ds) {
-                System.out.println(child);
+        Iterable<Path> rootDirs = fs.getRootDirectories();
+        for (Path root : rootDirs) {
+            try (DirectoryStream<Path> ds = Files.newDirectoryStream(root)) {
+                for (Path child : ds) {
+                    System.out.println(child);
+                }
+            } catch(IOException | RuntimeException e) {
+                // TODO on Windows one might get share problems for *.sys files
+                // e.g. "C:\hiberfil.sys: The process cannot access the file because it is being used by another process"
+                // for now, Windows is less of a target so we are lenient with it
+                if (OsUtils.isWin32()) {
+                    System.err.println(e.getClass().getSimpleName() + " while accessing children of root=" + root + ": " + e.getMessage());
+                } else {
+                    throw e;
+                }
             }
         }
+
         Path current = fs.getPath(".").toRealPath();
         Path file = fs.getPath("target/sftp/client/test.txt");
         Files.createDirectories(file.getParent());
@@ -124,11 +140,14 @@ public class SftpFileSystemTest extends BaseTest {
 //        assertTrue(Files.isSymbolicLink(link));
 //        assertEquals("test.txt", Files.readSymbolicLink(link).toString());
 
-        Path link = fs.getPath("target/sftp/client/test2.txt");
-        Files.createSymbolicLink(link, link.getParent().relativize(file));
-        assertTrue(Files.isSymbolicLink(link));
-        assertEquals("test.txt", Files.readSymbolicLink(link).toString());
-        Files.delete(link);
+        // TODO there are many issues with Windows and symbolic links - for now they are of a lesser interest
+        if (OsUtils.isUNIX()) {
+            Path link = fs.getPath("target/sftp/client/test2.txt");
+            Files.createSymbolicLink(link, link.getParent().relativize(file));
+            assertTrue("Not a symbolic link: " + link, Files.isSymbolicLink(link));
+            assertEquals("test.txt", Files.readSymbolicLink(link).toString());
+            Files.delete(link);
+        }
 
         attrs = Files.readAttributes(file, "*", LinkOption.NOFOLLOW_LINKS);
         System.out.println(attrs);
@@ -161,19 +180,34 @@ public class SftpFileSystemTest extends BaseTest {
     public void testAttributes() throws Exception {
         Utils.deleteRecursive(new File("target/sftp"));
 
-        FileSystem fs = FileSystems.newFileSystem(URI.create("sftp://x:x@localhost:" + port + "/"), null);
-        Path file = fs.getPath("target/sftp/client/test.txt");
-        Files.createDirectories(file.getParent());
-        Files.write(file, "Hello world\n".getBytes());
+        try (FileSystem fs = FileSystems.newFileSystem(URI.create("sftp://x:x@localhost:" + port + "/"), null)) {
+            Path file = fs.getPath("target/sftp/client/test.txt");
+            Files.createDirectories(file.getParent());
+            Files.write(file, "Hello world\n".getBytes());
+    
+            Map<String, Object> attrs = Files.readAttributes(file, "posix:*");
+    
+            Files.setAttribute(file, "basic:size", 2l);
+            Files.setAttribute(file, "posix:permissions", PosixFilePermissions.fromString("rwxr-----"));
+            Files.setAttribute(file, "basic:lastModifiedTime", FileTime.fromMillis(100000l));
 
-        Map<String, Object> attrs = Files.readAttributes(file, "posix:*");
-
-        Files.setAttribute(file, "basic:size", 2l);
-        Files.setAttribute(file, "posix:permissions", PosixFilePermissions.fromString("rwxr-----"));
-        Files.setAttribute(file, "basic:lastModifiedTime", FileTime.fromMillis(100000l));
-        Files.setAttribute(file, "posix:group", file.getFileSystem().getUserPrincipalLookupService().lookupPrincipalByGroupName("everyone"));
-
-        fs.close();
+            FileSystem fileSystem = file.getFileSystem();
+            try {
+                UserPrincipalLookupService userLookupService = fileSystem.getUserPrincipalLookupService();
+                GroupPrincipal group = userLookupService.lookupPrincipalByGroupName("everyone");
+                Files.setAttribute(file, "posix:group", group);
+            } catch (UserPrincipalNotFoundException e) {
+                // Also, according to the Javadoc:
+                //      "Where an implementation does not support any notion of
+                //       group then this method always throws UserPrincipalNotFoundException."
+                // Therefore we are lenient with this exception for Windows
+                if (OsUtils.isWin32()) {
+                    System.err.println(e.getClass().getSimpleName() + ": " + e.getMessage());
+                } else {
+                    throw e;
+                }
+            }
+        }
     }
 
     @Test
