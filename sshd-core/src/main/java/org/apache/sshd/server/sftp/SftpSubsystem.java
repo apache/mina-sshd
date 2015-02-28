@@ -21,6 +21,7 @@ package org.apache.sshd.server.sftp;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.EOFException;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -694,6 +695,10 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         int length = buffer.getInt();
         int type = buffer.getByte();
         int id = buffer.getInt();
+        if (log.isDebugEnabled()) {
+            log.debug("process(length={}, type={}, id={})", new Integer[] { length, type, id });
+        }
+
         switch (type) {
             case SSH_FXP_INIT: {
                 doInit(buffer, id);
@@ -1448,12 +1453,17 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         buffer.putByte((byte) SSH_FXP_NAME);
         buffer.putInt(id);
         buffer.putInt(1);
+
+        String originalPath = f.toString();
+        //in case we are running on Windows
+        String unixPath = originalPath.replace(File.separatorChar, '/');
         //normalize the given path, use *nix style separator
-        String normalizedPath = SelectorUtils.normalizePath(f.toString(), "/");
+        String normalizedPath = SelectorUtils.normalizePath(unixPath, "/");
         if (normalizedPath.length() == 0) {
             normalizedPath = "/";
         }
         buffer.putString(normalizedPath, StandardCharsets.UTF_8);
+
         f = resolveFile(normalizedPath);
         if (f.getFileName() == null) {
             f = resolveFile(".");
@@ -2152,8 +2162,9 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
     }
 
     private Path resolveFile(String path) {
-        return defaultDir.resolve(path);
-//    	return this.fileSystem.getPath(path);
+        //in case we are running on Windows
+        String localPath = (path == null) ? null : path.replace('/', File.separatorChar);
+        return defaultDir.resolve(localPath);
     }
 
     private final static String[] MONTHS = { "Jan", "Feb", "Mar", "Apr", "May",

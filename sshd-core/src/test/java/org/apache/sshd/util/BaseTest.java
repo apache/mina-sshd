@@ -18,6 +18,10 @@
  */
 package org.apache.sshd.util;
 
+import static org.junit.Assert.assertTrue;
+
+import java.io.File;
+
 import org.junit.Rule;
 import org.junit.rules.TestName;
 import org.junit.rules.TestWatcher;
@@ -52,4 +56,13 @@ public abstract class BaseTest extends TestWatcher {
         long duration = System.currentTimeMillis() - startTime;
         System.out.println("\nFinished " + description.getClassName() + ":" + description.getMethodName() + " in " + duration + " ms\n");
     }
+
+    public static final File assertHierarchyTargetFolderExists(File folder) {
+        if (!folder.exists()) {
+            assertTrue("Failed to create hierarchy of " + folder.getAbsolutePath(), folder.mkdirs());
+        }
+        
+        return folder;
+    }
+
 }

@@ -617,14 +617,6 @@ public class ScpTest extends BaseTest {
         assertEquals("Mismatched file size for " + file.getAbsolutePath(), length, file.length());
     }
 
-    protected File assertHierarchyTargetFolderExists(File folder) {
-        if (!folder.exists()) {
-            assertTrue("Failed to create hierarchy of " + folder.getAbsolutePath(), folder.mkdirs());
-        }
-        
-        return folder;
-    }
-
     protected String readFile(String path) throws Exception {
         ChannelExec c = (ChannelExec) session.openChannel("exec");
         OutputStream os = c.getOutputStream();
