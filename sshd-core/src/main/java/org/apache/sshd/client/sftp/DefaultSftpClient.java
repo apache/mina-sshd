@@ -40,6 +40,7 @@ import org.apache.sshd.client.SftpException;
 import org.apache.sshd.client.channel.ChannelSubsystem;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.server.sftp.SftpSubsystem;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -811,7 +812,7 @@ public class DefaultSftpClient implements SftpClient {
         Buffer buffer = new Buffer();
         buffer.putString(path);
         if (version >= SFTP_V4) {
-            buffer.putInt(0);
+            buffer.putInt(SftpSubsystem.SSH_FILEXFER_ATTR_ALL);
         }
         return checkAttributes(receive(send(SSH_FXP_STAT, buffer)));
     }
@@ -820,7 +821,7 @@ public class DefaultSftpClient implements SftpClient {
         Buffer buffer = new Buffer();
         buffer.putString(path);
         if (version >= SFTP_V4) {
-            buffer.putInt(0);
+            buffer.putInt(SftpSubsystem.SSH_FILEXFER_ATTR_ALL);
         }
         return checkAttributes(receive(send(SSH_FXP_LSTAT, buffer)));
     }
@@ -829,7 +830,7 @@ public class DefaultSftpClient implements SftpClient {
         Buffer buffer = new Buffer();
         buffer.putString(handle.id);
         if (version >= SFTP_V4) {
-            buffer.putInt(0);
+            buffer.putInt(SftpSubsystem.SSH_FILEXFER_ATTR_ALL);
         }
         return checkAttributes(receive(send(SSH_FXP_FSTAT, buffer)));
     }
