@@ -109,6 +109,16 @@ public class DefaultSftpClient implements SftpClient {
     public static final int SSH_FXF_TRUNC =  0x00000010;
     public static final int SSH_FXF_EXCL =   0x00000020;
 
+    public static final int SSH_FILEXFER_TYPE_REGULAR =      1;
+    public static final int SSH_FILEXFER_TYPE_DIRECTORY =    2;
+    public static final int SSH_FILEXFER_TYPE_SYMLINK =      3;
+    public static final int SSH_FILEXFER_TYPE_SPECIAL =      4;
+    public static final int SSH_FILEXFER_TYPE_UNKNOWN =      5;
+    public static final int SSH_FILEXFER_TYPE_SOCKET =       6; // v5
+    public static final int SSH_FILEXFER_TYPE_CHAR_DEVICE =  7; // v5
+    public static final int SSH_FILEXFER_TYPE_BLOCK_DEVICE = 8; // v5
+    public static final int SSH_FILEXFER_TYPE_FIFO         = 9; // v5
+
     public static final int SSH_FXF_ACCESS_DISPOSITION = 0x00000007;
     public static final int SSH_FXF_CREATE_NEW =         0x00000000;
     public static final int SSH_FXF_CREATE_TRUNCATE =    0x00000001;
@@ -468,6 +478,20 @@ public class DefaultSftpClient implements SftpClient {
                 attrs.flags.add(Attribute.Perms);
                 attrs.perms = buffer.getInt();
             }
+            
+            // update the permissions according to the type
+            switch (attrs.type) {
+            case SSH_FILEXFER_TYPE_REGULAR:
+                attrs.perms |= S_IFREG;
+                break;
+            case SSH_FILEXFER_TYPE_DIRECTORY:
+                attrs.perms |= S_IFDIR;
+                break;
+            case SSH_FILEXFER_TYPE_SYMLINK:
+                attrs.perms |= S_IFLNK;
+                break;
+            }
+
             if ((flags & SSH_FILEXFER_ATTR_ACCESSTIME) != 0) {
                 attrs.flags.add(Attribute.AccessTime);
                 attrs.accessTime = readTime(buffer, flags);
@@ -485,7 +509,7 @@ public class DefaultSftpClient implements SftpClient {
             }
             // TODO: acl
         } else {
-            throw new IllegalStateException();
+            throw new IllegalStateException("readAttributes - unsupported version: " + version);
         }
         return attrs;
     }

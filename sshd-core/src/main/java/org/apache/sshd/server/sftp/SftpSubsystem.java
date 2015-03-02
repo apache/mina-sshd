@@ -78,6 +78,8 @@ import java.util.concurrent.TimeUnit;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.file.FileSystemAware;
 import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.IoUtils;
+import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.SelectorUtils;
 import org.apache.sshd.common.util.ThreadUtils;
 import org.apache.sshd.server.Command;
@@ -1589,12 +1591,8 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         return sb.toString();
     }
 
-    protected int attributesToPermissions(Map<String, Object> attributes) {
-        boolean isReg = getBool((Boolean) attributes.get("isRegularFile"));
-        boolean isDir = getBool((Boolean) attributes.get("isDirectory"));
-        boolean isLnk = getBool((Boolean) attributes.get("isSymbolicLink"));
+    protected int attributesToPermissions(boolean isReg, boolean isDir, boolean isLnk, Collection<PosixFilePermission> perms) {
         int pf = 0;
-        Set<PosixFilePermission> perms = (Set<PosixFilePermission>) attributes.get("permissions");
         if (perms != null) {
             for (PosixFilePermission p : perms) {
                 switch (p) {
@@ -1635,7 +1633,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
     }
 
     protected void writeAttrs(Buffer buffer, Path file, int flags, boolean followLinks) throws IOException {
-        LinkOption[] options = followLinks ? new LinkOption[0] : new LinkOption[] { LinkOption.NOFOLLOW_LINKS };
+        LinkOption[] options = IoUtils.getLinkOptions(followLinks);
         if (!Files.exists(file, options)) {
             throw new FileNotFoundException(file.toString());
         }
@@ -1644,83 +1642,82 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
     }
 
     protected void writeAttrs(Buffer buffer, Map<String, Object> attributes) throws IOException {
+        boolean isReg = getBool((Boolean) attributes.get("isRegularFile"));
+        boolean isDir = getBool((Boolean) attributes.get("isDirectory"));
+        boolean isLnk = getBool((Boolean) attributes.get("isSymbolicLink"));
+        @SuppressWarnings("unchecked")
+        Collection<PosixFilePermission> perms = (Collection<PosixFilePermission>) attributes.get("permissions");
+        Number size = (Number) attributes.get("size");
+        FileTime lastModifiedTime = (FileTime) attributes.get("lastModifiedTime");
+        FileTime lastAccessTime = (FileTime) attributes.get("lastAccessTime");
+
         if (version == SFTP_V3) {
-            boolean isReg = getBool((Boolean) attributes.get("isRegularFile"));
-            boolean isDir = getBool((Boolean) attributes.get("isDirectory"));
-            boolean isLnk = getBool((Boolean) attributes.get("isSymbolicLink"));
             int flags =
-                    ((isReg || isLnk) && attributes.containsKey("size") ? SSH_FILEXFER_ATTR_SIZE : 0) |
+                    ((isReg || isLnk) && (size != null) ? SSH_FILEXFER_ATTR_SIZE : 0) |
                     (attributes.containsKey("uid") && attributes.containsKey("gid") ? SSH_FILEXFER_ATTR_UIDGID : 0) |
-                    (attributes.containsKey("permissions") ? SSH_FILEXFER_ATTR_PERMISSIONS : 0) |
-                    (attributes.containsKey("lastModifiedTime") && attributes.containsKey("lastAccessTime") ? SSH_FILEXFER_ATTR_ACMODTIME : 0);
+                    ((perms != null) ? SSH_FILEXFER_ATTR_PERMISSIONS : 0) |
+                    (((lastModifiedTime != null) && (lastAccessTime != null)) ? SSH_FILEXFER_ATTR_ACMODTIME : 0);
             buffer.putInt(flags);
             if ((flags & SSH_FILEXFER_ATTR_SIZE) != 0) {
-                buffer.putLong((Long) attributes.get("size"));
+                buffer.putLong(size.longValue());
             }
             if ((flags & SSH_FILEXFER_ATTR_UIDGID) != 0) {
-                buffer.putInt((Integer) attributes.get("uid"));
-                buffer.putInt((Integer) attributes.get("gid"));
+                buffer.putInt(((Number) attributes.get("uid")).intValue());
+                buffer.putInt(((Number) attributes.get("gid")).intValue());
             }
             if ((flags & SSH_FILEXFER_ATTR_PERMISSIONS) != 0) {
-                buffer.putInt(attributesToPermissions(attributes));
+                buffer.putInt(attributesToPermissions(isReg, isDir, isLnk, perms));
             }
             if ((flags & SSH_FILEXFER_ATTR_ACMODTIME) != 0) {
-                buffer.putInt(((FileTime) attributes.get("lastAccessTime")).to(TimeUnit.SECONDS));
-                buffer.putInt(((FileTime) attributes.get("lastModifiedTime")).to(TimeUnit.SECONDS));
+                buffer.putInt(lastAccessTime.to(TimeUnit.SECONDS));
+                buffer.putInt(lastModifiedTime.to(TimeUnit.SECONDS));
             }
         } else if (version >= SFTP_V4) {
-            boolean isReg = getBool((Boolean) attributes.get("isRegularFile"));
-            boolean isDir = getBool((Boolean) attributes.get("isDirectory"));
-            boolean isLnk = getBool((Boolean) attributes.get("isSymbolicLink"));
-            int flags =
-                    ((isReg || isLnk) && attributes.containsKey("size") ? SSH_FILEXFER_ATTR_SIZE : 0) |
-                            (attributes.containsKey("owner") && attributes.containsKey("group") ? SSH_FILEXFER_ATTR_OWNERGROUP : 0) |
-                            (attributes.containsKey("permissions") ? SSH_FILEXFER_ATTR_PERMISSIONS : 0) |
-                            (attributes.containsKey("lastModifiedTime") ? SSH_FILEXFER_ATTR_MODIFYTIME : 0) |
-                            (attributes.containsKey("creationTime") ? SSH_FILEXFER_ATTR_CREATETIME : 0) |
-                            (attributes.containsKey("lastAccessTime") ? SSH_FILEXFER_ATTR_ACCESSTIME : 0);
+            FileTime creationTime = (FileTime) attributes.get("creationTime");
+            int flags = (((isReg || isLnk) && (size != null)) ? SSH_FILEXFER_ATTR_SIZE : 0) |
+                        ((attributes.containsKey("owner") && attributes.containsKey("group")) ? SSH_FILEXFER_ATTR_OWNERGROUP : 0) |
+                        ((perms != null) ? SSH_FILEXFER_ATTR_PERMISSIONS : 0) |
+                        ((lastModifiedTime != null) ? SSH_FILEXFER_ATTR_MODIFYTIME : 0) |
+                        ((creationTime != null) ? SSH_FILEXFER_ATTR_CREATETIME : 0) |
+                        ((lastAccessTime != null) ? SSH_FILEXFER_ATTR_ACCESSTIME : 0);
             buffer.putInt(flags);
             buffer.putByte((byte) (isReg ? SSH_FILEXFER_TYPE_REGULAR :
                     isDir ? SSH_FILEXFER_TYPE_DIRECTORY :
                             isLnk ? SSH_FILEXFER_TYPE_SYMLINK :
                                     SSH_FILEXFER_TYPE_UNKNOWN));
             if ((flags & SSH_FILEXFER_ATTR_SIZE) != 0) {
-                buffer.putLong((Long) attributes.get("size"));
+                buffer.putLong(size.longValue());
             }
             if ((flags & SSH_FILEXFER_ATTR_OWNERGROUP) != 0) {
                 buffer.putString(attributes.get("owner").toString(), StandardCharsets.UTF_8);
                 buffer.putString(attributes.get("group").toString(), StandardCharsets.UTF_8);
             }
             if ((flags & SSH_FILEXFER_ATTR_PERMISSIONS) != 0) {
-                buffer.putInt(attributesToPermissions(attributes));
+                buffer.putInt(attributesToPermissions(isReg, isDir, isLnk, perms));
             }
+
             if ((flags & SSH_FILEXFER_ATTR_ACCESSTIME) != 0) {
-                buffer.putLong(((FileTime) attributes.get("lastAccessTime")).to(TimeUnit.SECONDS));
-                if ((flags & SSH_FILEXFER_ATTR_SUBSECOND_TIMES) != 0) {
-                    long nanos = ((FileTime) attributes.get("lastAccessTime")).to(TimeUnit.NANOSECONDS);
-                    nanos = nanos % TimeUnit.SECONDS.toNanos(1);
-                    buffer.putInt((int) nanos);
-                }
+                putFileTime(buffer, flags, lastAccessTime);
             }
+
             if ((flags & SSH_FILEXFER_ATTR_CREATETIME) != 0) {
-                buffer.putLong(((FileTime) attributes.get("creationTime")).to(TimeUnit.SECONDS));
-                if ((flags & SSH_FILEXFER_ATTR_SUBSECOND_TIMES) != 0) {
-                    long nanos = ((FileTime) attributes.get("creationTime")).to(TimeUnit.NANOSECONDS);
-                    nanos = nanos % TimeUnit.SECONDS.toNanos(1);
-                    buffer.putInt((int) nanos);
-                }
+                putFileTime(buffer, flags, lastAccessTime);
             }
             if ((flags & SSH_FILEXFER_ATTR_MODIFYTIME) != 0) {
-                buffer.putLong(((FileTime) attributes.get("lastModifiedTime")).to(TimeUnit.SECONDS));
-                if ((flags & SSH_FILEXFER_ATTR_SUBSECOND_TIMES) != 0) {
-                    long nanos = ((FileTime) attributes.get("lastModifiedTime")).to(TimeUnit.NANOSECONDS);
-                    nanos = nanos % TimeUnit.SECONDS.toNanos(1);
-                    buffer.putInt((int) nanos);
-                }
+                putFileTime(buffer, flags, lastModifiedTime);
             }
             // TODO: acls
             // TODO: bits
             // TODO: extended
+        }
+    }
+
+    protected void putFileTime(Buffer buffer, int flags, FileTime time) {
+        buffer.putLong(time.to(TimeUnit.SECONDS));
+        if ((flags & SSH_FILEXFER_ATTR_SUBSECOND_TIMES) != 0) {
+            long nanos = time.to(TimeUnit.NANOSECONDS);
+            nanos = nanos % TimeUnit.SECONDS.toNanos(1);
+            buffer.putInt((int) nanos);
         }
     }
 
@@ -1733,16 +1730,21 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
     }
 
     protected Map<String, Object> getAttributes(Path file, int flags, boolean followLinks) throws IOException {
-        Set<String> views = file.getFileSystem().supportedFileAttributeViews();
-        LinkOption[] opts = followLinks ? new LinkOption[0] : new LinkOption[] { LinkOption.NOFOLLOW_LINKS };
+        FileSystem fs = file.getFileSystem();
+        Collection<String> views = fs.supportedFileAttributeViews();
+        LinkOption[] opts = IoUtils.getLinkOptions(followLinks);
         // TODO: support flags
         if (views.contains("unix")) {
             return Files.readAttributes(file, "unix:*", opts);
         } else {
             Map<String, Object> a = new HashMap<>();
-            for (String view : file.getFileSystem().supportedFileAttributeViews()) {
+            for (String view : views) {
                 Map<String, Object> ta = Files.readAttributes(file, view + ":*", opts);
                 a.putAll(ta);
+            }
+            if (OsUtils.isWin32() && (!a.containsKey("permissions"))) {
+                Set<PosixFilePermission> perms = IoUtils.getPermissionsFromFile(file.toFile());
+                a.put("permissions", perms);
             }
             return a;
         }
@@ -1765,7 +1767,16 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
             case "gid":              view = "unix"; break;
             case "owner":            view = "posix"; value = toUser(file, (UserPrincipal) value); break;
             case "group":            view = "posix"; value = toGroup(file, (GroupPrincipal) value); break;
-            case "permissions":      view = "posix"; break;
+            case "permissions":
+                if (OsUtils.isWin32()) {
+                    @SuppressWarnings("unchecked")
+                    Collection<PosixFilePermission> perms = (Collection<PosixFilePermission>) value;
+                    IoUtils.setPermissionsToFile(file.toFile(), perms);
+                    continue;
+                }
+                view = "posix";
+                break;
+
             case "creationTime":     view = "basic"; break;
             case "lastModifiedTime": view = "basic"; break;
             case "lastAccessTime":   view = "basic"; break;

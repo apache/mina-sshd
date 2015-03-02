@@ -19,9 +19,18 @@
 package org.apache.sshd.common.util;
 
 import java.io.Closeable;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.LinkOption;
+import java.nio.file.attribute.PosixFilePermission;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * TODO Add javadoc
@@ -29,6 +38,18 @@ import java.io.OutputStream;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class IoUtils {
+
+    public static final LinkOption[] EMPTY_OPTIONS = new LinkOption[0];
+
+    private static final LinkOption[] NO_FOLLOW_OPTIONS = new LinkOption[] { LinkOption.NOFOLLOW_LINKS };
+    
+    public static LinkOption[] getLinkOptions(boolean followLinks) {
+        if (followLinks) {
+            return EMPTY_OPTIONS;
+        } else {    // return a clone that modifications to the array will not affect others
+            return NO_FOLLOW_OPTIONS.clone();
+        }
+    }
 
     public static long copy(InputStream source, OutputStream sink) throws IOException {
         return copy(source, sink, 8192);
@@ -55,6 +76,79 @@ public class IoUtils {
                 // Ignore
             }
         }
+    }
+
+    public static final List<String> WINDOWS_EXECUTABLE_EXTENSIONS = Collections.unmodifiableList(Arrays.asList(".bat", ".exe", ".cmd"));
+
+    /**
+     * @param fileName The file name to be evaluated - ignored if {@code null}/empty
+     * @return {@code true} if the file ends in one of the {@link #WINDOWS_EXECUTABLE_EXTENSIONS}
+     */
+    public static boolean isWindowsExecutable(String fileName) {
+        if ((fileName == null) || (fileName.length() <= 0)) {
+            return false;
+        }
+        for (String suffix : WINDOWS_EXECUTABLE_EXTENSIONS) {
+            if (fileName.endsWith(suffix)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * @param f The {@link File} to be checked
+     * @return A {@link Set} of {@link PosixFilePermission}s based on whether
+     * the file is readable/writable/executable. If so, then <U>all</U> the
+     * relevant permissions are set (i.e., owner, group and others)
+     */
+    public static Set<PosixFilePermission> getPermissionsFromFile(File f) {
+        Set<PosixFilePermission> perms = EnumSet.noneOf(PosixFilePermission.class);
+        if (f.canRead()) {
+            perms.add(PosixFilePermission.OWNER_READ);
+            perms.add(PosixFilePermission.GROUP_READ);
+            perms.add(PosixFilePermission.OTHERS_READ);
+        }
+
+        if (f.canWrite()) {
+            perms.add(PosixFilePermission.OWNER_WRITE);
+            perms.add(PosixFilePermission.GROUP_WRITE);
+            perms.add(PosixFilePermission.OTHERS_WRITE);
+        }
+
+        if (f.canExecute() || (OsUtils.isWin32() && isWindowsExecutable(f.getName()))) {
+            perms.add(PosixFilePermission.OWNER_EXECUTE);
+            perms.add(PosixFilePermission.GROUP_EXECUTE);
+            perms.add(PosixFilePermission.OTHERS_EXECUTE);
+        }
+
+        return perms;
+    }
+    
+    /**
+     * @param f The {@link File}
+     * @param perms A {@link Collection} of {@link PosixFilePermission}s to set on it.
+     * <B>Note:</B> the file is set to readable/writable/executable not only by the
+     * owner if <U>any</U> of relevant the owner/group/others permission is set
+     */
+    public static void setPermissionsToFile(File f, Collection<PosixFilePermission> perms) {
+        boolean readable = perms != null &&
+                  (perms.contains(PosixFilePermission.OWNER_READ)
+                || perms.contains(PosixFilePermission.GROUP_READ)
+                || perms.contains(PosixFilePermission.OTHERS_READ));
+        f.setReadable(readable, false);
+
+        boolean writable = perms != null &&
+                  (perms.contains(PosixFilePermission.OWNER_WRITE)
+                || perms.contains(PosixFilePermission.GROUP_WRITE)
+                || perms.contains(PosixFilePermission.OTHERS_WRITE));
+        f.setWritable(writable, false);
+
+        boolean executable = perms != null &&
+                  (perms.contains(PosixFilePermission.OWNER_EXECUTE)
+                || perms.contains(PosixFilePermission.GROUP_EXECUTE)
+                || perms.contains(PosixFilePermission.OTHERS_EXECUTE));
+        f.setExecutable(executable, false);
     }
 
 }

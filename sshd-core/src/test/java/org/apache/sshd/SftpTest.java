@@ -184,69 +184,72 @@ public class SftpTest extends BaseTest {
     public void testClient() throws Exception {
         SshClient client = SshClient.setUpDefaultClient();
         client.start();
-        ClientSession session = client.connect("x", "localhost", port).await().getSession();
-        session.addPasswordIdentity("x");
-        session.auth().verify();
+        try {
+            try (ClientSession session = client.connect("x", "localhost", port).await().getSession()) {
+                session.addPasswordIdentity("x");
+                session.auth().verify();
+        
+                Utils.deleteRecursive(new File("target/sftp"));
+                new File("target/sftp").mkdirs();
+                new File("target/sftp/client/test.txt").delete();
+                new File("target/sftp/client").delete();
+        
+                try (SftpClient sftp = session.createSftpClient()) {
+                    sftp.mkdir("target/sftp/client");
+            
+                    SftpClient.Handle h = sftp.open("target/sftp/client/test.txt", EnumSet.of(SftpClient.OpenMode.Write, SftpClient.OpenMode.Create));
+                    byte[] d = "0123456789\n".getBytes();
+                    sftp.write(h, 0, d, 0, d.length);
+                    sftp.write(h, d.length, d, 0, d.length);
+            
+                    SftpClient.Attributes attrs = sftp.stat(h);
+                    assertNotNull("No handle attributes", attrs);
+            
+                    sftp.close(h);
+            
+                    h = sftp.openDir("target/sftp/client");
+                    SftpClient.DirEntry[] dir = sftp.readDir(h);
+                    assertNotNull("No dir entries", dir);
+                    assertEquals("Mismatced number of dir entries", 1, dir.length);
+                    assertNull("Unexpected entry read", sftp.readDir(h));
+                    sftp.close(h);
+            
+                    sftp.remove("target/sftp/client/test.txt");
 
-        Utils.deleteRecursive(new File("target/sftp"));
-        new File("target/sftp").mkdirs();
-        new File("target/sftp/client/test.txt").delete();
-        new File("target/sftp/client").delete();
-
-        try(SftpClient sftp = session.createSftpClient()) {
-            sftp.mkdir("target/sftp/client");
-    
-            SftpClient.Handle h = sftp.open("target/sftp/client/test.txt", EnumSet.of(SftpClient.OpenMode.Write, SftpClient.OpenMode.Create));
-            byte[] d = "0123456789\n".getBytes();
-            sftp.write(h, 0, d, 0, d.length);
-            sftp.write(h, d.length, d, 0, d.length);
-    
-            SftpClient.Attributes attrs = sftp.stat(h);
-            assertNotNull("No handle attributes", attrs);
-    
-            sftp.close(h);
-    
-            h = sftp.openDir("target/sftp/client");
-            SftpClient.DirEntry[] dir = sftp.readDir(h);
-            assertNotNull("No dir entries", dir);
-            assertEquals("Mismatced number of dir entries", 1, dir.length);
-            assertNull("Unexpected entry read", sftp.readDir(h));
-            sftp.close(h);
-    
-            sftp.remove("target/sftp/client/test.txt");
-    
-            byte[]  workBuf=new byte[1024 * 128];
-            try(OutputStream os = sftp.write("target/sftp/client/test.txt")) {
-                os.write(workBuf);
+                    byte[] workBuf = new byte[1024 * 128];
+                    try (OutputStream os = sftp.write("target/sftp/client/test.txt")) {
+                        os.write(workBuf);
+                    }
+            
+                    try (InputStream is = sftp.read("target/sftp/client/test.txt")) {
+                        int readLen = is.read(workBuf);
+                        assertEquals("Mismatched read data length", workBuf.length, readLen);
+        
+                        int i = is.read();
+                        assertEquals("Unexpected read past EOF", -1, i);
+                    }
+        
+                    SftpClient.Attributes attributes = sftp.stat("target/sftp/client/test.txt");
+                    assertTrue("Test file not detected as regular", attributes.isRegularFile());
+            
+                    attributes = sftp.stat("target/sftp/client");
+                    assertTrue("Test directory not reported as such", attributes.isDirectory());
+            
+                    int nb = 0;
+                    for (SftpClient.DirEntry entry : sftp.readDir("target/sftp/client")) {
+                        assertNotNull("Unexpected null entry", entry);
+                        nb++;
+                    }
+                    assertEquals("Mismatched read dir entries", 1, nb);
+            
+                    sftp.remove("target/sftp/client/test.txt");
+            
+                    sftp.rmdir("target/sftp/client/");
+                }
             }
-    
-            try(InputStream is = sftp.read("target/sftp/client/test.txt")) {
-                int readLen=is.read(workBuf);
-                assertEquals("Mismatched read data length", workBuf.length, readLen);
-
-                int i = is.read();
-                assertEquals("Unexpected read past EOF", -1, i);
-            }
-
-            SftpClient.Attributes attributes = sftp.stat("target/sftp/client/test.txt");
-            assertTrue("Test file not detected as regular", attributes.isRegularFile());
-    
-            attributes = sftp.stat("target/sftp/client");
-            assertTrue("Test directory not reported as such", attributes.isDirectory());
-    
-            int nb = 0;
-            for (SftpClient.DirEntry entry : sftp.readDir("target/sftp/client")) {
-                assertNotNull("Unexpected null entry", entry);
-                nb++;
-            }
-            assertEquals("Mismatched read dir entries", 1, nb);
-    
-            sftp.remove("target/sftp/client/test.txt");
-    
-            sftp.rmdir("target/sftp/client/");
+        } finally {
+            client.stop();
         }
-
-        client.stop();
     }
 
     /**

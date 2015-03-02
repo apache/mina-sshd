@@ -272,8 +272,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             copyAttributes |= opt == StandardCopyOption.COPY_ATTRIBUTES;
             noFollowLinks |= opt == LinkOption.NOFOLLOW_LINKS;
         }
-        LinkOption[] linkOptions = noFollowLinks ? new LinkOption[] { LinkOption.NOFOLLOW_LINKS }
-                                                 : new LinkOption[0];
+        LinkOption[] linkOptions = IoUtils.getLinkOptions(!noFollowLinks);
 
         // attributes of source file
         BasicFileAttributes attrs = readAttributes(source,
@@ -334,8 +333,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             copyAttributes |= opt == StandardCopyOption.COPY_ATTRIBUTES;
             noFollowLinks |= opt == LinkOption.NOFOLLOW_LINKS;
         }
-        LinkOption[] linkOptions = noFollowLinks ? new LinkOption[] { LinkOption.NOFOLLOW_LINKS }
-                : new LinkOption[0];
+        LinkOption[] linkOptions = IoUtils.getLinkOptions(noFollowLinks);
 
         // attributes of source file
         BasicFileAttributes attrs = readAttributes(source,
