@@ -255,51 +255,9 @@ public class ScpHelper {
         } else if (Files.exists(file) && !Files.isWritable(file)) {
             throw new IOException("Can not write to file: " + file);
         }
-        InputStream is = new FilterInputStream(in) {
-            long remaining = length;
-            @Override
-            public int read() throws IOException {
-                if (remaining > 0) {
-                    remaining--;
-                    return super.read();
-                } else{
-                    return -1;
-                }
-            }
-
-            @Override
-            public int read(byte[] b, int off, int len) throws IOException {
-                int nb = len;
-                if (nb > remaining) {
-                    nb = (int) remaining;
-                }
-                if (nb > 0) {
-                    int read = super.read(b, off, nb);
-                    remaining -= read;
-                    return read;
-                } else {
-                    return -1;
-                }
-            }
-
-            @Override
-            public long skip(long n) throws IOException {
-                long skipped = super.skip(n);
-                remaining -= skipped;
-                return skipped;
-            }
-
-            @Override
-            public int available() throws IOException {
-                int av = super.available();
-                if (av > remaining) {
-                    return (int) remaining;
-                } else {
-                    return av;
-                }
-            }
-        };
-        try (OutputStream os = Files.newOutputStream(file)) {
+        
+        try (InputStream is = new LimitInputStream(this.in, length);
+             OutputStream os = Files.newOutputStream(file)) {
             ack();
             IoUtils.copy(is, os, bufSize);
         }
@@ -625,4 +583,60 @@ public class ScpHelper {
         return c;
     }
 
+    private static class LimitInputStream extends FilterInputStream {
+
+        private long remaining;
+
+        public LimitInputStream(InputStream in, long length) {
+            super(in);
+            remaining = length;
+        }
+
+        @Override
+        public int read() throws IOException {
+            if (remaining > 0) {
+                remaining--;
+                return super.read();
+            } else{
+                return -1;
+            }
+        }
+
+        @Override
+        public int read(byte[] b, int off, int len) throws IOException {
+            int nb = len;
+            if (nb > remaining) {
+                nb = (int) remaining;
+            }
+            if (nb > 0) {
+                int read = super.read(b, off, nb);
+                remaining -= read;
+                return read;
+            } else {
+                return -1;
+            }
+        }
+
+        @Override
+        public long skip(long n) throws IOException {
+            long skipped = super.skip(n);
+            remaining -= skipped;
+            return skipped;
+        }
+
+        @Override
+        public int available() throws IOException {
+            int av = super.available();
+            if (av > remaining) {
+                return (int) remaining;
+            } else {
+                return av;
+            }
+        }
+
+        @Override
+        public void close() throws IOException {
+            // do not close the original input stream since it serves for ACK(s)
+        }
+    }
 }
