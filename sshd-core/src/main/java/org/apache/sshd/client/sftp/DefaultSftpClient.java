@@ -27,6 +27,7 @@ import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.attribute.FileTime;
+import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -627,7 +628,7 @@ public class DefaultSftpClient implements SftpClient {
         }
     }
 
-    public Handle open(String path, EnumSet<OpenMode> options) throws IOException {
+    public Handle open(String path, Collection<OpenMode> options) throws IOException {
         Buffer buffer = new Buffer();
         buffer.putString(path);
         if (version == SFTP_V3) {

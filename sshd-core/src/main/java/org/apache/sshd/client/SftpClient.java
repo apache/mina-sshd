@@ -21,8 +21,8 @@ package org.apache.sshd.client;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
 import java.nio.file.attribute.FileTime;
+import java.util.Collection;
 import java.util.EnumSet;
 import java.util.concurrent.TimeUnit;
 
@@ -214,7 +214,7 @@ public interface SftpClient extends AutoCloseable {
     // Low level API
     //
 
-    Handle open(String path, EnumSet<OpenMode> options) throws IOException;
+    Handle open(String path, Collection<OpenMode> options) throws IOException;
 
     void close(Handle handle) throws IOException;
 

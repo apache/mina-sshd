@@ -392,7 +392,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
     private UnsupportedAttributePolicy unsupportedAttributePolicy = UnsupportedAttributePolicy.Warn;
 
     protected static abstract class Handle implements java.io.Closeable {
-        Path file;
+        private Path file;
 
         public Handle(Path file) {
             this.file = file;
@@ -453,9 +453,9 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
     }
 
     protected class FileHandle extends Handle {
-        final FileChannel channel;
-        long pos;
-        final List<FileLock> locks = new ArrayList<>();
+        private final FileChannel channel;
+        private long pos;
+        private final List<FileLock> locks = new ArrayList<>();
 
         public FileHandle(Path file, int flags, int access, Map<String, Object> attrs) throws IOException {
             super(file);

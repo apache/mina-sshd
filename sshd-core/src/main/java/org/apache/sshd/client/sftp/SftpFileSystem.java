@@ -25,6 +25,7 @@ import java.nio.file.attribute.GroupPrincipal;
 import java.nio.file.attribute.UserPrincipal;
 import java.nio.file.attribute.UserPrincipalLookupService;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -142,7 +143,7 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> {
         }
 
         @Override
-        public Handle open(String path, EnumSet<OpenMode> options) throws IOException {
+        public Handle open(String path, Collection<OpenMode> options) throws IOException {
             return delegate.open(path, options);
         }
 
