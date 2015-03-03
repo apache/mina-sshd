@@ -24,11 +24,11 @@
     <parent>
         <groupId>org.apache.sshd</groupId>
         <artifactId>sshd</artifactId>
-        <version>0.14.0</version>
+        <version>0.14.1-SNAPSHOT</version>
     </parent>
 
     <artifactId>sshd-git</artifactId>
-    <version>0.14.0</version>
+    <version>0.14.1-SNAPSHOT</version>
     <name>Apache Mina SSHD :: Git</name>
     <packaging>jar</packaging>
     <inceptionYear>2008</inceptionYear>
