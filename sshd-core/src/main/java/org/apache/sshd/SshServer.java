@@ -64,7 +64,7 @@ import org.apache.sshd.server.session.ServerConnectionService;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.session.ServerUserAuthService;
 import org.apache.sshd.server.session.SessionFactory;
-import org.apache.sshd.server.sftp.SftpSubsystem;
+import org.apache.sshd.server.sftp.SftpSubsystemFactory;
 import org.apache.sshd.server.shell.ProcessShellFactory;
 
 /**
@@ -483,7 +483,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
                 return new ProcessShellFactory(command.split(" "), ttyOptions).create();
             }
         }).build());
-        sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(new SftpSubsystem.Factory()));
+        sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(new SftpSubsystemFactory()));
         sshd.start();
 
         Thread.sleep(Long.MAX_VALUE);

@@ -30,6 +30,7 @@ import org.apache.sshd.git.util.EchoShellFactory;
 import org.apache.sshd.git.util.Utils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.sftp.SftpSubsystem;
+import org.apache.sshd.server.sftp.SftpSubsystemFactory;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
@@ -44,7 +45,7 @@ public class GitPackCommandTest {
         SshServer sshd = SshServer.setUpDefaultServer();
         sshd.setPort(8001);
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
-        sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(new SftpSubsystem.Factory()));
+        sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(new SftpSubsystemFactory()));
         sshd.setShellFactory(new EchoShellFactory());
         sshd.setCommandFactory(new GitPackCommandFactory("target/git/server"));
         sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());

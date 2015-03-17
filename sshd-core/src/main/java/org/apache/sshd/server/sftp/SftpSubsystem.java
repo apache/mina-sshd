@@ -75,7 +75,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.file.FileSystemAware;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.IoUtils;
@@ -100,66 +99,6 @@ import static org.apache.sshd.common.sftp.SftpConstants.*;
 public class SftpSubsystem implements Command, Runnable, SessionAware, FileSystemAware {
 
     protected final Logger log = LoggerFactory.getLogger(getClass());
-
-    public static class Factory implements NamedFactory<Command> {
-
-        public static final String NAME = "sftp";
-
-    	private final ExecutorService	executors;
-    	private final boolean shutdownExecutor;
-
-    	public Factory() {
-    		this(null);
-    	}
-
-        /**
-         * @param executorService The {@link ExecutorService} to be used by
-         *                        the {@link SftpSubsystem} command when starting execution. If
-         *                        {@code null} then a single-threaded ad-hoc service is used.
-         *                        <B>Note:</B> the service will <U>not</U> be shutdown when the
-         *                        subsystem is closed - unless it is the ad-hoc service, which will be
-         *                        shutdown regardless
-         * @see Factory(ExecutorService, boolean)}
-         */
-        public Factory(ExecutorService executorService) {
-        	this(executorService, false);
-        }
-
-        /**
-         * @param executorService The {@link ExecutorService} to be used by
-         *                        the {@link SftpSubsystem} command when starting execution. If
-         *                        {@code null} then a single-threaded ad-hoc service is used.
-         * @param shutdownOnExit  If {@code true} the {@link ExecutorService#shutdownNow()}
-         *                        will be called when subsystem terminates - unless it is the ad-hoc
-         *                        service, which will be shutdown regardless
-         */
-        public Factory(ExecutorService executorService, boolean shutdownOnExit) {
-        	executors = executorService;
-        	shutdownExecutor = shutdownOnExit;
-        }
-
-        public ExecutorService getExecutorService() {
-        	return executors;
-        }
-        
-        public boolean isShutdownOnExit() {
-        	return shutdownExecutor;
-        }
-
-        public Command create() {
-            return new SftpSubsystem(getExecutorService(), isShutdownOnExit());
-        }
-
-        public String getName() {
-            return NAME;
-        }
-    }
-
-    public enum UnsupportedAttributePolicy {
-        Ignore,
-        Warn,
-        ThrowException
-    }
 
     /**
      * Properties key for the maximum of available open handles per session.
@@ -194,7 +133,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
     private final Map<String, byte[]> extensions = new HashMap<>();
     private final Map<String, Handle> handles = new HashMap<>();
 
-    private UnsupportedAttributePolicy unsupportedAttributePolicy = UnsupportedAttributePolicy.Warn;
+    private final UnsupportedAttributePolicy unsupportedAttributePolicy;
 
     protected static abstract class Handle implements java.io.Closeable {
         private Path file;
@@ -378,22 +317,6 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         }
     }
 
-    public SftpSubsystem() {
-        this(null);
-    }
-
-    /**
-     * @param executorService The {@link ExecutorService} to be used by
-     *                        the {@link SftpSubsystem} command when starting execution. If
-     *                        {@code null} then a single-threaded ad-hoc service is used.
-     *                        <b>Note:</b> the service will <U>not</U> be shutdown when the
-     *                        subsystem is closed - unless it is the ad-hoc service
-     * @see #SftpSubsystem(ExecutorService, boolean)
-     */
-    public SftpSubsystem(ExecutorService executorService) {
-        this(executorService, false);
-    }
-
     /**
      * @param executorService The {@link ExecutorService} to be used by
      *                        the {@link SftpSubsystem} command when starting execution. If
@@ -401,15 +324,25 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
      * @param shutdownOnExit  If {@code true} the {@link ExecutorService#shutdownNow()}
      *                        will be called when subsystem terminates - unless it is the ad-hoc
      *                        service, which will be shutdown regardless
+     * @param policy The {@link UnsupportedAttributePolicy} to use if failed to access
+     * some local file attributes
      * @see ThreadUtils#newSingleThreadExecutor(String)
      */
-    public SftpSubsystem(ExecutorService executorService, boolean shutdownOnExit) {
+    public SftpSubsystem(ExecutorService executorService, boolean shutdownOnExit, UnsupportedAttributePolicy policy) {
         if ((executors = executorService) == null) {
             executors = ThreadUtils.newSingleThreadExecutor(getClass().getSimpleName());
             shutdownExecutor = true;    // we always close the ad-hoc executor service
         } else {
             shutdownExecutor = shutdownOnExit;
         }
+        
+        if ((unsupportedAttributePolicy=policy) == null) {
+            throw new IllegalArgumentException("No policy provided");
+        }
+    }
+
+    public final UnsupportedAttributePolicy getUnsupportedAttributePolicy() {
+        return unsupportedAttributePolicy;
     }
 
     public void setSession(ServerSession session) {

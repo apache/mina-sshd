@@ -38,7 +38,7 @@ import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.command.ScpCommandFactory;
-import org.apache.sshd.server.sftp.SftpSubsystem;
+import org.apache.sshd.server.sftp.SftpSubsystemFactory;
 import org.apache.sshd.util.BaseTest;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
@@ -72,7 +72,7 @@ public class SftpTest extends BaseTest {
     public void setUp() throws Exception {
         sshd = SshServer.setUpDefaultServer();
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
-        sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(new SftpSubsystem.Factory()));
+        sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(new SftpSubsystemFactory()));
         sshd.setCommandFactory(new ScpCommandFactory());
         sshd.setShellFactory(new EchoShellFactory());
         sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
@@ -125,7 +125,7 @@ public class SftpTest extends BaseTest {
                     h = sftp.open(file, EnumSet.of(SftpClient.OpenMode.Read));
                     // NOTE: on Windows files are always readable
                     // see https://svn.apache.org/repos/asf/harmony/enhanced/java/branches/java6/classlib/modules/luni/src/test/api/windows/org/apache/harmony/luni/tests/java/io/WinFileTest.java
-                    Assert.assertTrue("Empty read should have failed", isWindows);
+                    assertTrue("Empty read should have failed", isWindows);
                     sftp.close(h);
                 } catch (IOException e) {
                     if (isWindows) {
@@ -139,20 +139,20 @@ public class SftpTest extends BaseTest {
                 } catch (IOException e) {
                     // ok
                 }
-        
+
                 try {
                     h = sftp.open(file, EnumSet.of(SftpClient.OpenMode.Truncate));
                     // NOTE: on Windows files are always readable
-                    Assert.assertTrue("Empty truncate should have failed", isWindows);
+                    assertTrue("Empty truncate should have failed", isWindows);
                     sftp.close(h);
                 } catch (IOException e) {
                     // ok
                 }
-        
+
                 // NOTE: on Windows files are always readable
                 int	perms=sftp.stat(file).perms;
                 int	permsMask=S_IWUSR | (isWindows ? 0 : S_IRUSR);
-                Assert.assertEquals("Mismatched permissions - 0x" + Integer.toHexString(perms), 0, (perms & permsMask));
+                assertEquals("Mismatched permissions - 0x" + Integer.toHexString(perms), 0, (perms & permsMask));
         
                 javaFile.setWritable(true, false);
         
@@ -174,7 +174,7 @@ public class SftpTest extends BaseTest {
                 try {
                     h = sftp.open(file, EnumSet.of(SftpClient.OpenMode.Read));
                     // NOTE: on Windows files are always readable
-                    Assert.assertTrue("Data read should have failed", isWindows);
+                    assertTrue("Data read should have failed", isWindows);
                     sftp.close(h);
                 } catch (IOException e) {
                     if (isWindows) {

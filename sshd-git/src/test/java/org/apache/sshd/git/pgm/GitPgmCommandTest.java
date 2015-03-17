@@ -32,6 +32,7 @@ import org.apache.sshd.git.util.EchoShellFactory;
 import org.apache.sshd.git.util.Utils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.sftp.SftpSubsystem;
+import org.apache.sshd.server.sftp.SftpSubsystemFactory;
 import org.eclipse.jgit.api.Git;
 import org.junit.Test;
 
@@ -50,7 +51,7 @@ public class GitPgmCommandTest {
         SshServer sshd = SshServer.setUpDefaultServer();
         sshd.setPort(8001);
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
-        sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(new SftpSubsystem.Factory()));
+        sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(new SftpSubsystemFactory()));
         sshd.setShellFactory(new EchoShellFactory());
         sshd.setCommandFactory(new GitPgmCommandFactory("target/git/pgm"));
         sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
