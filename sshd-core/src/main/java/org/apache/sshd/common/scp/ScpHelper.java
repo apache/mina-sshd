@@ -20,6 +20,7 @@ package org.apache.sshd.common.scp;
 
 import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
+import java.io.File;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -161,7 +162,8 @@ public class ScpHelper {
         }
         Path file;
         if (Files.exists(path) && Files.isDirectory(path)) {
-            file = path.resolve(name);
+            String localName = name.replace('/', File.separatorChar);
+            file = path.resolve(localName);
         } else if (!Files.exists(path) && Files.exists(path.getParent()) && Files.isDirectory(path.getParent())) {
             file = path;
         } else {
@@ -242,7 +244,8 @@ public class ScpHelper {
 
         Path file;
         if (Files.exists(path) && Files.isDirectory(path)) {
-            file = path.resolve(name);
+            String localName = name.replace('/', File.separatorChar);
+            file = path.resolve(localName);
         } else if (Files.exists(path) && Files.isRegularFile(path)) {
             file = path;
         } else if (!Files.exists(path) && Files.exists(path.getParent()) && Files.isDirectory(path.getParent())) {
@@ -310,7 +313,7 @@ public class ScpHelper {
                 }
                 String[] included = new DirectoryScanner(basedir, pattern).scan();
                 for (String path : included) {
-                    Path file = fileSystem.getPath(basedir + "/" + path);
+                    Path file = resolveLocalPath(basedir + "/" + path);
                     if (Files.isRegularFile(file)) {
                         sendFile(file, preserve, bufferSize);
                     } else if (Files.isDirectory(file)) {
@@ -332,7 +335,7 @@ public class ScpHelper {
                     basedir = pattern.substring(0, lastSep);
                     pattern = pattern.substring(lastSep + 1);
                 }
-                Path file = fileSystem.getPath(basedir + "/" + pattern);
+                Path file = resolveLocalPath(basedir + "/" + pattern);
                 if (!Files.exists(file)) {
                     throw new IOException(file + ": no such file or directory");
                 }
@@ -349,6 +352,11 @@ public class ScpHelper {
                 }
             }
         }
+    }
+
+    protected Path resolveLocalPath(String path) {
+        String localPath = (path == null) ? null : path.replace('/', File.separatorChar);
+        return fileSystem.getPath(localPath);
     }
 
     public void sendFile(Path path, boolean preserve, int bufferSize) throws IOException {
