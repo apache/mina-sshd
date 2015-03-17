@@ -32,9 +32,16 @@ public class AES256CBC extends BaseCipher {
      * Named factory for AES256CBC Cipher
      */
     public static class Factory implements NamedFactory<Cipher> {
-        public String getName() {
-            return "aes256-cbc";
+        public static final String NAME = "aes256-cbc";
+
+        public Factory() {
+            super();
         }
+
+        public String getName() {
+            return NAME;
+        }
+
         public Cipher create() {
             return new AES256CBC();
         }

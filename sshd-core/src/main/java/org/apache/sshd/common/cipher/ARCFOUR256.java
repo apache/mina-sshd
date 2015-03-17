@@ -32,9 +32,16 @@ public class ARCFOUR256 extends BaseRC4Cipher {
      * Named factory for AES128CTR Cipher
      */
     public static class Factory implements NamedFactory<Cipher> {
-        public String getName() {
-            return "arcfour256";
+        public static final String NAME = "arcfour256";
+
+        public Factory() {
+            super();
         }
+
+        public String getName() {
+            return NAME;
+        }
+
         public Cipher create() {
             return new ARCFOUR256();
         }

@@ -18,10 +18,13 @@
  */
 package org.apache.sshd.util;
 
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.File;
 
+import org.apache.sshd.common.util.GenericUtils;
 import org.junit.Rule;
 import org.junit.rules.TestName;
 import org.junit.rules.TestWatcher;
@@ -57,12 +60,44 @@ public abstract class BaseTest extends TestWatcher {
         System.out.println("\nFinished " + description.getClassName() + ":" + description.getMethodName() + " in " + duration + " ms\n");
     }
 
-    public static final File assertHierarchyTargetFolderExists(File folder) {
+    /* ------------------- Useful extra test helpers ---------------------- */
+
+    public static String shuffleCase(CharSequence cs) {
+        if (GenericUtils.isEmpty(cs)) {
+            return "";
+        }
+
+        StringBuilder sb = new StringBuilder(cs.length());
+        for (int index = 0; index < cs.length(); index++) {
+            char ch = cs.charAt(index);
+            double v = Math.random();
+            if (Double.compare(v, 0.3d) < 0) {
+                ch = Character.toUpperCase(ch);
+            } else if ((Double.compare(v, 0.3d) >= 0) && (Double.compare(v, 0.6d) < 0)) {
+                ch = Character.toLowerCase(ch);
+            }
+            sb.append(ch);
+        }
+
+        return sb.toString();
+    }
+
+    /* ----------------------- Useful extra assertions --------------------- */
+
+    public static File assertHierarchyTargetFolderExists(File folder) {
         if (!folder.exists()) {
             assertTrue("Failed to create hierarchy of " + folder.getAbsolutePath(), folder.mkdirs());
         }
         
         return folder;
     }
-
+    
+    public static void assertObjectInstanceOf(String message, Class<?> expected, Object obj) {
+        assertNotNull(message + " - no actual object", obj);
+        
+        Class<?>    actual=obj.getClass();
+        if (!expected.isAssignableFrom(actual)) {
+            fail(message + " - actual object type (" + actual.getName() + ") incompatible with expected (" + expected.getName() + ")");
+        }
+    }
 }

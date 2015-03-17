@@ -23,6 +23,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.sshd.common.util.GenericUtils;
+
 /**
  * A named factory is a factory identified by a name.
  * Such names are used mainly in the algorithm negotiation at the beginning of the SSH connection.
@@ -48,18 +50,19 @@ public interface NamedFactory<T> extends Factory<T> {
     	 * @return A {@link List} of all the factories names - in same order
     	 * as they appear in the input collection
     	 */
-    	public static <T> List<String> getNameList(Collection<NamedFactory<T>> factories) {
-    		if ((factories == null) || factories.isEmpty()) {
-    			return Collections.emptyList();
-    		}
-    		
-    		List<String>	names=new ArrayList<String>(factories.size());
-    		for (NamedFactory<T> f : factories) {
-    			names.add(f.getName());
-    		}
-    		
-    		return names;
-    	}
+        public static List<String> getNameList(Collection<? extends NamedFactory<?>> factories) {
+            if (GenericUtils.isEmpty(factories)) {
+                return Collections.emptyList();
+            }
+
+            List<String> names = new ArrayList<String>(factories.size());
+            for (NamedFactory<?> f : factories) {
+                names.add(f.getName());
+            }
+
+            return names;
+        }
+
         /**
          * Create an instance of the specified name by looking up the needed factory
          * in the list.

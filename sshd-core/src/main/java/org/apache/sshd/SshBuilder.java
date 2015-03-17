@@ -18,10 +18,9 @@
  */
 package org.apache.sshd;
 
-import java.security.InvalidKeyException;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
-import java.util.LinkedList;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.sshd.client.ServerKeyVerifier;
@@ -38,16 +37,7 @@ import org.apache.sshd.common.Random;
 import org.apache.sshd.common.RequestHandler;
 import org.apache.sshd.common.Signature;
 import org.apache.sshd.common.TcpipForwarderFactory;
-import org.apache.sshd.common.cipher.AES128CBC;
-import org.apache.sshd.common.cipher.AES128CTR;
-import org.apache.sshd.common.cipher.AES192CBC;
-import org.apache.sshd.common.cipher.AES192CTR;
-import org.apache.sshd.common.cipher.AES256CBC;
-import org.apache.sshd.common.cipher.AES256CTR;
-import org.apache.sshd.common.cipher.ARCFOUR128;
-import org.apache.sshd.common.cipher.ARCFOUR256;
-import org.apache.sshd.common.cipher.BlowfishCBC;
-import org.apache.sshd.common.cipher.TripleDESCBC;
+import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.compression.CompressionNone;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.file.nativefs.NativeFileSystemFactory;
@@ -89,6 +79,9 @@ public class SshBuilder {
         return new ServerBuilder();
     }
 
+    /**
+     * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+     */
     protected static class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder<T, S>> implements ObjectBuilder<T> {
 
         protected Factory<T> factory = null;
@@ -142,7 +135,7 @@ public class SshBuilder {
             }
 
             if (cipherFactories == null) {
-                cipherFactories = setUpDefaultCiphers();
+                cipherFactories = setUpDefaultCiphers(false);
             }
 
             // Compression is not enabled by default
@@ -260,32 +253,48 @@ public class SshBuilder {
             return (S) this;
         }
 
-        protected static List<NamedFactory<Cipher>> setUpDefaultCiphers() {
-            List<NamedFactory<Cipher>> avail = new LinkedList<NamedFactory<Cipher>>();
-            avail.add(new AES128CTR.Factory());
-            avail.add(new AES192CTR.Factory());
-            avail.add(new AES256CTR.Factory());
-            avail.add(new ARCFOUR128.Factory());
-            avail.add(new ARCFOUR256.Factory());
-            avail.add(new AES128CBC.Factory());
-            avail.add(new TripleDESCBC.Factory());
-            avail.add(new BlowfishCBC.Factory());
-            avail.add(new AES192CBC.Factory());
-            avail.add(new AES256CBC.Factory());
-
-            for (Iterator<NamedFactory<Cipher>> i = avail.iterator(); i.hasNext(); ) {
-                final NamedFactory<Cipher> f = i.next();
-                try {
-                    final Cipher c = f.create();
-                    final byte[] key = new byte[c.getBlockSize()];
-                    final byte[] iv = new byte[c.getIVSize()];
-                    c.init(Cipher.Mode.Encrypt, key, iv);
-                } catch (InvalidKeyException e) {
-                    i.remove();
-                } catch (Exception e) {
-                    i.remove();
+        /**
+         * The default {@link BuiltinCiphers} setup in order of preference
+         * as specified by <A HREF="https://www.freebsd.org/cgi/man.cgi?query=ssh_config&sektion=5">
+         * ssh_config(5)</A> 
+         */
+        public static final List<BuiltinCiphers> DEFAULT_CIPHERS_PREFERENCE =
+                Collections.unmodifiableList(
+                        Arrays.asList(
+                                BuiltinCiphers.aes128ctr,
+                                BuiltinCiphers.aes192ctr,
+                                BuiltinCiphers.aes256ctr,
+                                BuiltinCiphers.arcfour256,
+                                BuiltinCiphers.arcfour128,
+                                BuiltinCiphers.aes128cbc,
+                                BuiltinCiphers.tripledescbc,
+                                BuiltinCiphers.blowfishcbc,
+                                // TODO add support for cast128-cbc cipher
+                                BuiltinCiphers.aes192cbc,
+                                BuiltinCiphers.aes256cbc
+                                // TODO add support for arcfour cipher
+                        ));
+        
+        /**
+         * @param ignoreUnsupported If {@code true} then all the default
+         * ciphers are included, regardless of whether they are currently
+         * supported by the JCE. Otherwise, only the supported ones out of the
+         * list are included
+         * @return A {@link List} of the default {@link NamedFactory}
+         * instances of the {@link Cipher}s according to the preference
+         * order defined by {@link #DEFAULT_CIPHERS_PREFERENCE}.
+         * <B>Note:</B> the list may be filtered to exclude unsupported JCE
+         * ciphers according to the <tt>ignoreUnsupported</tt> parameter
+         * @see BuiltinCiphers#isSupported()
+         */
+        protected static List<NamedFactory<Cipher>> setUpDefaultCiphers(boolean ignoreUnsupported) {
+            List<NamedFactory<Cipher>> avail = new ArrayList<NamedFactory<Cipher>>(DEFAULT_CIPHERS_PREFERENCE.size());
+            for (BuiltinCiphers c : DEFAULT_CIPHERS_PREFERENCE) {
+                if (ignoreUnsupported || c.isSupported()) {
+                    avail.add(c.create());
                 }
             }
+
             return avail;
         }
     }

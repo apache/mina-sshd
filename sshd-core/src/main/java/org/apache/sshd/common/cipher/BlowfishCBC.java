@@ -32,9 +32,16 @@ public class BlowfishCBC extends BaseCipher {
      * Named factory for BlowfishCBC Cipher
      */
     public static class Factory implements NamedFactory<Cipher> {
-        public String getName() {
-            return "blowfish-cbc";
+        public static final String NAME = "blowfish-cbc";
+
+        public Factory() {
+            super();
         }
+
+        public String getName() {
+            return NAME;
+        }
+
         public Cipher create() {
             return new BlowfishCBC();
         }

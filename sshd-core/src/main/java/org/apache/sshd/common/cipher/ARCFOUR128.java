@@ -32,9 +32,16 @@ public class ARCFOUR128 extends BaseRC4Cipher {
      * Named factory for ARCFOUR128 Cipher
      */
     public static class Factory implements NamedFactory<Cipher> {
-        public String getName() {
-            return "arcfour128";
+        public static final String NAME = "arcfour128";
+
+        public Factory() {
+            super();
         }
+
+        public String getName() {
+            return NAME;
+        }
+
         public Cipher create() {
             return new ARCFOUR128();
         }

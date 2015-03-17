@@ -32,9 +32,16 @@ public class TripleDESCBC extends BaseCipher {
      * Named factory for TripleDESCBC Cipher
      */
     public static class Factory implements NamedFactory<Cipher> {
-        public String getName() {
-            return "3des-cbc";
+        public static final String NAME = "3des-cbc";
+
+        public Factory() {
+            super();
         }
+
+        public String getName() {
+            return NAME;
+        }
+
         public Cipher create() {
             return new TripleDESCBC();
         }

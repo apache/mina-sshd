@@ -32,9 +32,16 @@ public class AES256CTR extends BaseCipher {
      * Named factory for AES256CTR Cipher
      */
     public static class Factory implements NamedFactory<Cipher> {
-        public String getName() {
-            return "aes256-ctr";
+        public static final String NAME = "aes256-ctr";
+
+        public Factory() {
+            super();
         }
+
+        public String getName() {
+            return NAME;
+        }
+
         public Cipher create() {
             return new AES256CTR();
         }

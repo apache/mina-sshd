@@ -35,9 +35,16 @@ public class CipherNone implements Cipher {
      * Named factory for the no-op Cipher
      */
     public static class Factory implements NamedFactory<Cipher> {
-        public String getName() {
-            return "none";
+        public static final String NAME = "none";
+
+        public Factory() {
+            super();
         }
+
+        public String getName() {
+            return NAME;
+        }
+
         public Cipher create() {
             return new CipherNone();
         }
@@ -52,9 +59,10 @@ public class CipherNone implements Cipher {
     }
 
     public void init(Mode mode, byte[] bytes, byte[] bytes1) throws Exception {
+        // ignored - always succeeds
     }
 
     public void update(byte[] input, int inputOffset, int inputLen) throws Exception {
+        // ignored - always succeeds
     }
-
 }
