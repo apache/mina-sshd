@@ -21,14 +21,15 @@ package org.apache.sshd.server.command;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.FileSystem;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.nio.file.FileSystem;
 
 import org.apache.sshd.common.file.FileSystemAware;
 import org.apache.sshd.common.scp.ScpHelper;
+import org.apache.sshd.common.scp.ScpTransferEventListener;
 import org.apache.sshd.common.util.ThreadUtils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.Environment;
@@ -65,6 +66,7 @@ public class ScpCommand implements Command, Runnable, FileSystemAware {
     protected Future<?> pendingFuture;
     protected int sendBufferSize;
     protected int receiveBufferSize;
+    protected ScpTransferEventListener listener;
 
     /**
      * @param command         The command to be executed
@@ -76,11 +78,12 @@ public class ScpCommand implements Command, Runnable, FileSystemAware {
      *                        service, which will be shutdown regardless
      * @param sendSize        Size (in bytes) of buffer to use when sending files
      * @param receiveSize     Size (in bytes) of buffer to use when receiving files
+     * @param eventListener   An {@link ScpTransferEventListener} - may be {@code null}
      * @see ThreadUtils#newSingleThreadExecutor(String)
      * @see ScpHelper#MIN_SEND_BUFFER_SIZE
      * @see ScpHelper#MIN_RECEIVE_BUFFER_SIZE
      */
-    public ScpCommand(String command, ExecutorService executorService, boolean shutdownOnExit, int sendSize, int receiveSize) {
+    public ScpCommand(String command, ExecutorService executorService, boolean shutdownOnExit, int sendSize, int receiveSize, ScpTransferEventListener eventListener) {
         name = command;
 
         if ((executors = executorService) == null) {
@@ -98,6 +101,8 @@ public class ScpCommand implements Command, Runnable, FileSystemAware {
         if ((receiveBufferSize = receiveSize) < ScpHelper.MIN_RECEIVE_BUFFER_SIZE) {
             throw new IllegalArgumentException("<ScpCommmand>(" + command + ") receive buffer size (" + sendSize + ") below minimum required (" + ScpHelper.MIN_RECEIVE_BUFFER_SIZE + ")");
         }
+
+        listener = (eventListener == null) ? ScpTransferEventListener.EMPTY : eventListener;
 
         log.debug("Executing command {}", command);
         String[] args = command.split(" ");
@@ -204,7 +209,7 @@ public class ScpCommand implements Command, Runnable, FileSystemAware {
     public void run() {
         int exitValue = ScpHelper.OK;
         String exitMessage = null;
-        ScpHelper helper = new ScpHelper(in, out, fileSystem);
+        ScpHelper helper = new ScpHelper(in, out, fileSystem, listener);
         try {
             if (optT) {
                 helper.receive(fileSystem.getPath(path), optR, optD, optP, receiveBufferSize);

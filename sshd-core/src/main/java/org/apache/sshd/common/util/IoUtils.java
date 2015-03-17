@@ -23,7 +23,10 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.FileSystem;
+import java.nio.file.Files;
 import java.nio.file.LinkOption;
+import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.Arrays;
 import java.util.Collection;
@@ -42,7 +45,7 @@ public class IoUtils {
     public static final LinkOption[] EMPTY_OPTIONS = new LinkOption[0];
 
     private static final LinkOption[] NO_FOLLOW_OPTIONS = new LinkOption[] { LinkOption.NOFOLLOW_LINKS };
-    
+
     public static LinkOption[] getLinkOptions(boolean followLinks) {
         if (followLinks) {
             return EMPTY_OPTIONS;
@@ -97,6 +100,25 @@ public class IoUtils {
     }
 
     /**
+     * If the &quot;posix&quot; view is supported, then it returns
+     * {@link Files#getPosixFilePermissions(Path, LinkOption...)}, otherwise
+     * uses the {@link #getPermissionsFromFile(File)} method
+     * @param path The {@link Path}
+     * @return A {@link Set} of {@link PosixFilePermission}
+     * @throws IOException If failed to access the file system in order to
+     * retrieve the permissions
+     */
+    public static Set<PosixFilePermission> getPermissions(Path path) throws IOException {
+        FileSystem          fs = path.getFileSystem();
+        Collection<String>  views = fs.supportedFileAttributeViews();
+        if (views.contains("posix")) {
+            return Files.getPosixFilePermissions(path, getLinkOptions(false));
+        } else {
+            return getPermissionsFromFile(path.toFile());
+        }
+    }
+
+    /**
      * @param f The {@link File} to be checked
      * @return A {@link Set} of {@link PosixFilePermission}s based on whether
      * the file is readable/writable/executable. If so, then <U>all</U> the
@@ -124,7 +146,25 @@ public class IoUtils {
 
         return perms;
     }
-    
+
+    /**
+     * If the &quot;posix&quot; view is supported, then it invokes
+     * {@link Files#setPosixFilePermissions(Path, Set)}, otherwise
+     * uses the {@link #setPermissionsToFile(File, Collection)} method
+     * @param path The {@link Path}
+     * @param perms The {@link Set} of {@link PosixFilePermission}s
+     * @throws IOException If failed to access the file system
+     */
+    public static void setPermissions(Path path, Set<PosixFilePermission> perms) throws IOException {
+        FileSystem          fs = path.getFileSystem();
+        Collection<String>  views = fs.supportedFileAttributeViews();
+        if (views.contains("posix")) {
+            Files.setPosixFilePermissions(path, perms);
+        } else {
+            setPermissionsToFile(path.toFile(), perms);
+        }
+    }
+
     /**
      * @param f The {@link File}
      * @param perms A {@link Collection} of {@link PosixFilePermission}s to set on it.

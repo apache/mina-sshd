@@ -36,6 +36,7 @@ import org.apache.sshd.common.Session;
 import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFuture;
+import org.apache.sshd.common.scp.ScpTransferEventListener;
 
 /**
  * An authenticated session to a given SSH server
@@ -153,8 +154,35 @@ public interface ClientSession extends Session {
 
     /**
      * Create an SCP client from this session.
+     * @return An {@link ScpClient} instance. <B>Note:</B> uses the currently
+     * registered {@link ScpTransferEventListener} if any
+     * @see #setScpTransferEventListener(ScpTransferEventListener)
      */
     ScpClient createScpClient();
+
+    /**
+     * Create an SCP client from this session.
+     * @param listener A {@link ScpTransferEventListener} that can be used
+     * to receive information about the SCP operations - may be {@code null}
+     * to indicate no more events are required. <B>Note:</B> this listener
+     * is used <U>instead</U> of any listener set via {@link #setScpTransferEventListener(ScpTransferEventListener)}
+     * @return An {@link ScpClient} instance
+     */
+    ScpClient createScpClient(ScpTransferEventListener listener);
+
+    /**
+     * @return The last {@link ScpTransferEventListener} set via
+     * {@link #setScpTransferEventListener(ScpTransferEventListener)}
+     */
+    ScpTransferEventListener getScpTransferEventListener();
+
+    /**
+     * @param listener A default {@link ScpTransferEventListener} that can be used
+     * to receive information about the SCP operations - may be {@code null}
+     * to indicate no more events are required
+     * @see #createScpClient(ScpTransferEventListener)
+     */
+    void setScpTransferEventListener(ScpTransferEventListener listener);
 
     /**
      * Create an SFTP client from this session.

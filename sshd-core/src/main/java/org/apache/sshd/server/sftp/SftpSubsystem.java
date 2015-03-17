@@ -806,7 +806,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
             Path p = resolveFile(path);
             if (!Files.exists(p)) {
                 sendStatus(id, SSH_FX_NO_SUCH_FILE, p.toString());
-            } else if (Files.isDirectory(p, LinkOption.NOFOLLOW_LINKS)) {
+            } else if (Files.isDirectory(p, IoUtils.getLinkOptions(false))) {
                 sendStatus(id, SSH_FX_NO_SUCH_FILE, p.toString());
             } else {
                 Files.delete(p);
@@ -1521,7 +1521,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
             }
             if (view != null && value != null) {
                 try {
-                    Files.setAttribute(file, view + ":" + attribute, value, LinkOption.NOFOLLOW_LINKS);
+                    Files.setAttribute(file, view + ":" + attribute, value, IoUtils.getLinkOptions(false));
                 } catch (UnsupportedOperationException e) {
                     unsupported.add(attribute);
                 }

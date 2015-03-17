@@ -23,7 +23,6 @@ import java.net.SocketAddress;
 import java.nio.file.FileSystem;
 import java.security.KeyPair;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -61,6 +60,7 @@ import org.apache.sshd.common.cipher.CipherNone;
 import org.apache.sshd.common.future.DefaultSshFuture;
 import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.io.IoSession;
+import org.apache.sshd.common.scp.ScpTransferEventListener;
 import org.apache.sshd.common.session.AbstractConnectionService;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.session.ConnectionService;
@@ -85,6 +85,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
     private ServiceFactory nextServiceFactory;
     private final List<Object> identities = new ArrayList<Object>();
     private UserInteraction userInteraction;
+    private ScpTransferEventListener scpListener;
 
     protected AuthFuture authFuture;
 
@@ -164,7 +165,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
 
     public AuthFuture authInteractive(String user, String password) throws IOException {
         return tryAuth(user, new UserAuthKeyboardInteractive(this, nextServiceName(), password));
-   }
+    }
 
     public AuthFuture authPublicKey(String user, KeyPair key) throws IOException {
         return tryAuth(user, new UserAuthPublicKey(this, nextServiceName(), key));
@@ -273,8 +274,20 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         return getService(ConnectionService.class);
     }
 
+    public ScpTransferEventListener getScpTransferEventListener() {
+        return scpListener;
+    }
+
+    public void setScpTransferEventListener(ScpTransferEventListener listener) {
+        scpListener = listener;
+    }
+
     public ScpClient createScpClient() {
-        return new DefaultScpClient(this);
+        return createScpClient(getScpTransferEventListener());
+    }
+
+    public ScpClient createScpClient(ScpTransferEventListener listener) {
+        return new DefaultScpClient(this, listener);
     }
 
     public SftpClient createSftpClient() throws IOException {
@@ -428,7 +441,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
     }
 
     public Map<Object, Object> getMetadataMap() {
-		return metadataMap;
-	}
+        return metadataMap;
+    }
 
 }

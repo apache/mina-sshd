@@ -18,9 +18,13 @@
  */
 package org.apache.sshd.server.command;
 
+import java.util.Collection;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 
 import org.apache.sshd.common.scp.ScpHelper;
+import org.apache.sshd.common.scp.ScpTransferEventListener;
+import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.ObjectBuilder;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.CommandFactory;
@@ -44,7 +48,6 @@ public class ScpCommandFactory implements CommandFactory, Cloneable {
      * A useful {@link ObjectBuilder} for {@link ScpCommandFactory}
      */
     public static class Builder implements ObjectBuilder<ScpCommandFactory> {
-
         private final ScpCommandFactory factory = new ScpCommandFactory();
 
         public Builder() {
@@ -76,8 +79,17 @@ public class ScpCommandFactory implements CommandFactory, Cloneable {
             return this;
         }
 
+        public Builder addEventListener(ScpTransferEventListener listener) {
+            factory.addEventListener(listener);
+            return this;
+        }
+
+        public Builder removeEventListener(ScpTransferEventListener listener) {
+            factory.removeEventListener(listener);
+            return this;
+        }
+
         public ScpCommandFactory build() {
-            // return a clone so that each invocation returns a different instance - avoid shared instances
             return factory.clone();
         }
     }
@@ -91,9 +103,11 @@ public class ScpCommandFactory implements CommandFactory, Cloneable {
     private boolean shutdownExecutor;
     private int sendBufferSize = ScpHelper.MIN_SEND_BUFFER_SIZE;
     private int receiveBufferSize = ScpHelper.MIN_RECEIVE_BUFFER_SIZE;
+    private Collection<ScpTransferEventListener> listeners = new CopyOnWriteArraySet<>();
+    private ScpTransferEventListener listenerProxy;
 
     public ScpCommandFactory() {
-        super();
+        listenerProxy = EventListenerUtils.proxyWrapper(ScpTransferEventListener.class, getClass().getClassLoader(), listeners);
     }
 
     public CommandFactory getDelegateCommandFactory() {
@@ -167,6 +181,34 @@ public class ScpCommandFactory implements CommandFactory, Cloneable {
     }
 
     /**
+     * @param listener The {@link ScpTransferEventListener} to add
+     * @return {@code true} if this is a <U>new</U> listener instance,
+     * {@code false} if the listener is already registered
+     * @throws IllegalArgumentException if {@code null} listener
+     */
+    public boolean addEventListener(ScpTransferEventListener listener) {
+        if (listener == null) {
+            throw new IllegalArgumentException("No listener instance");
+        }
+
+        return listeners.add(listener);
+    }
+
+    /**
+     * @param listener The {@link ScpTransferEventListener} to remove
+     * @return {@code true} if the listener was registered and removed,
+     * {@code false} if the listener was not registered to begin with
+     * @throws IllegalArgumentException if {@code null} listener
+     */
+    public boolean removeEventListener(ScpTransferEventListener listener) {
+        if (listener == null) {
+            throw new IllegalArgumentException("No listener instance");
+        }
+
+        return listeners.remove(listener);
+    }
+
+    /**
      * Parses a command string and verifies that the basic syntax is
      * correct. If parsing fails the responsibility is delegated to
      * the configured {@link CommandFactory} instance; if one exist.
@@ -179,7 +221,7 @@ public class ScpCommandFactory implements CommandFactory, Cloneable {
      */
     public Command createCommand(String command) {
         if (command.startsWith(SCP_COMMAND_PREFIX)) {
-            return new ScpCommand(command, getExecutorService(), isShutdownOnExit(), getSendBufferSize(), getReceiveBufferSize());
+            return new ScpCommand(command, getExecutorService(), isShutdownOnExit(), getSendBufferSize(), getReceiveBufferSize(), listenerProxy);
         }
 
         CommandFactory factory = getDelegateCommandFactory();
@@ -193,7 +235,14 @@ public class ScpCommandFactory implements CommandFactory, Cloneable {
     @Override
     public ScpCommandFactory clone() {
         try {
-            return getClass().cast(super.clone());    // shallow clone is good enough
+            ScpCommandFactory other = getClass().cast(super.clone());
+            // clone the listeners set as well
+            other.listeners = this.listeners.isEmpty()
+                            ? new CopyOnWriteArraySet<ScpTransferEventListener>()
+                            : new CopyOnWriteArraySet<>(this.listeners)
+                            ;
+            other.listenerProxy = EventListenerUtils.proxyWrapper(ScpTransferEventListener.class, getClass().getClassLoader(), other.listeners);
+            return other;
         } catch(CloneNotSupportedException e) {
             throw new RuntimeException(e);    // un-expected...
         }

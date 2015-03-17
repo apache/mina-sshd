@@ -23,10 +23,11 @@ import java.io.InterruptedIOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.sshd.ClientSession;
 import org.apache.sshd.client.ScpClient;
@@ -34,6 +35,7 @@ import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.scp.ScpHelper;
+import org.apache.sshd.common.scp.ScpTransferEventListener;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -41,9 +43,15 @@ import org.apache.sshd.common.scp.ScpHelper;
 public class DefaultScpClient implements ScpClient {
 
     private final ClientSession clientSession;
+    private final ScpTransferEventListener listener;
 
     public DefaultScpClient(ClientSession clientSession) {
+        this(clientSession, ScpTransferEventListener.EMPTY);
+    }
+
+    public DefaultScpClient(ClientSession clientSession, ScpTransferEventListener eventListener) {
         this.clientSession = clientSession;
+        this.listener = (eventListener == null) ? ScpTransferEventListener.EMPTY : eventListener;
     }
 
     public void download(String remote, String local, Option... options) throws IOException {
@@ -55,7 +63,7 @@ public class DefaultScpClient implements ScpClient {
     public void download(String[] remote, String local, Option... options) throws IOException {
         local = checkNotNullAndNotEmpty(local, "Invalid argument local: {}");
         remote = checkNotNullAndNotEmpty(remote, "Invalid argument remote: {}");
-        List<Option> opts = options(options);
+        Set<Option> opts = options(options);
         if (remote.length > 1) {
             opts.add(Option.TargetIsDirectory);
         }
@@ -100,7 +108,7 @@ public class DefaultScpClient implements ScpClient {
                 throw (IOException) new InterruptedIOException().initCause(e);
             }
 
-            ScpHelper helper = new ScpHelper(channel.getInvertedOut(), channel.getInvertedIn(), fs);
+            ScpHelper helper = new ScpHelper(channel.getInvertedOut(), channel.getInvertedIn(), fs, listener);
 
             helper.receive(target,
                            options.contains(Option.Recursive),
@@ -127,7 +135,7 @@ public class DefaultScpClient implements ScpClient {
     public void upload(String[] local, String remote, Option... options) throws IOException {
         local = checkNotNullAndNotEmpty(local, "Invalid argument local: {}");
         remote = checkNotNullAndNotEmpty(remote, "Invalid argument remote: {}");
-        List<Option> opts = options(options);
+        Set<Option> opts = options(options);
         if (local.length > 1) {
             opts.add(Option.TargetIsDirectory);
         }
@@ -161,7 +169,7 @@ public class DefaultScpClient implements ScpClient {
         FileSystemFactory factory = clientSession.getFactoryManager().getFileSystemFactory();
         FileSystem fs = factory.createFileSystem(clientSession);
         try {
-            ScpHelper helper = new ScpHelper(channel.getInvertedOut(), channel.getInvertedIn(), fs);
+            ScpHelper helper = new ScpHelper(channel.getInvertedOut(), channel.getInvertedIn(), fs, listener);
             helper.send(Arrays.asList(local),
                         options.contains(Option.Recursive),
                         options.contains(Option.PreserveAttributes),
@@ -176,8 +184,8 @@ public class DefaultScpClient implements ScpClient {
         channel.close(false);
     }
 
-    private List<Option> options(Option... options) {
-        List<Option> opts = new ArrayList<>();
+    private Set<Option> options(Option... options) {
+        Set<Option> opts = EnumSet.noneOf(Option.class);
         if (options != null) {
             opts.addAll(Arrays.asList(options));
         }

@@ -33,12 +33,14 @@ import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.PosixFilePermission;
+import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.scp.ScpTransferEventListener.FileOperation;
 import org.apache.sshd.common.util.DirectoryScanner;
 import org.apache.sshd.common.util.IoUtils;
 import org.slf4j.Logger;
@@ -82,11 +84,13 @@ public class ScpHelper {
     protected final FileSystem fileSystem;
     protected final InputStream in;
     protected final OutputStream out;
+    protected final ScpTransferEventListener listener;
 
-    public ScpHelper(InputStream in, OutputStream out, FileSystem fileSystem) {
+    public ScpHelper(InputStream in, OutputStream out, FileSystem fileSystem, ScpTransferEventListener eventListener) {
         this.in = in;
         this.out = out;
         this.fileSystem = fileSystem;
+        this.listener = (eventListener == null) ? ScpTransferEventListener.EMPTY : eventListener;
     }
 
     public void receive(Path path, boolean recursive, boolean shouldBeDir, boolean preserve, int bufferSize) throws IOException {
@@ -153,7 +157,7 @@ public class ScpHelper {
             throw new IOException("Expected a D message but got '" + header + "'");
         }
 
-        String perms = header.substring(1, 5);
+        Set<PosixFilePermission> perms = parseOctalPerms(header.substring(1, 5));
         int length = Integer.parseInt(header.substring(6, header.indexOf(' ', 6)));
         String name = header.substring(header.indexOf(' ', 6) + 1);
 
@@ -174,7 +178,7 @@ public class ScpHelper {
         }
 
         if (preserve) {
-            setOctalPerms(file, perms);
+            IoUtils.setPermissions(path, perms);
             if (time != null) {
                 Files.getFileAttributeView(file, BasicFileAttributeView.class)
                         .setTimes(FileTime.from(time[0], TimeUnit.SECONDS),
@@ -186,24 +190,32 @@ public class ScpHelper {
         ack();
 
         time = null;
-        for (;;) {
-            header = readLine();
-            log.debug("Received header: " + header);
-            if (header.startsWith("C")) {
-                receiveFile(header, file, time, preserve, bufferSize);
-                time = null;
-            } else if (header.startsWith("D")) {
-                receiveDir(header, file, time, preserve, bufferSize);
-                time = null;
-            } else if (header.equals("E")) {
-                ack();
-                break;
-            } else if (header.startsWith("T")) {
-                time = parseTime(header);
-                ack();
-            } else {
-                throw new IOException("Unexpected message: '" + header + "'");
+        try {
+            listener.startFolderEvent(FileOperation.RECEIVE, path, perms);
+            for (; ; ) {
+                header = readLine();
+                if (log.isDebugEnabled()) {
+                    log.debug("Received header: " + header);
+                }
+                if (header.startsWith("C")) {
+                    receiveFile(header, file, time, preserve, bufferSize);
+                    time = null;
+                } else if (header.startsWith("D")) {
+                    receiveDir(header, file, time, preserve, bufferSize);
+                    time = null;
+                } else if (header.equals("E")) {
+                    ack();
+                    break;
+                } else if (header.startsWith("T")) {
+                    time = parseTime(header);
+                    ack();
+                } else {
+                    throw new IOException("Unexpected message: '" + header + "'");
+                }
             }
+        } catch (IOException | RuntimeException e) {
+            listener.endFolderEvent(FileOperation.RECEIVE, path, perms, e);
+            throw e;
         }
     }
 
@@ -219,7 +231,7 @@ public class ScpHelper {
             throw new IOException("receiveFile(" + path + ") buffer size (" + bufferSize + ") below minimum (" + MIN_RECEIVE_BUFFER_SIZE + ")");
         }
 
-        String perms = header.substring(1, 5);
+        Set<PosixFilePermission> perms = parseOctalPerms(header.substring(1, 5));
         final long length = Long.parseLong(header.substring(6, header.indexOf(' ', 6)));
         String name = header.substring(header.indexOf(' ', 6) + 1);
         if (length < 0L) { // TODO consider throwing an exception...
@@ -234,7 +246,7 @@ public class ScpHelper {
             }
             bufSize = MIN_RECEIVE_BUFFER_SIZE;
         } else {
-            bufSize= (int) Math.min(length, bufferSize);
+            bufSize = (int) Math.min(length, bufferSize);
         }
 
         if (bufSize < 0) { // TODO consider throwing an exception
@@ -258,15 +270,25 @@ public class ScpHelper {
         } else if (Files.exists(file) && !Files.isWritable(file)) {
             throw new IOException("Can not write to file: " + file);
         }
-        
-        try (InputStream is = new LimitInputStream(this.in, length);
-             OutputStream os = Files.newOutputStream(file)) {
+
+        try (
+                InputStream is = new LimitInputStream(this.in, length);
+                OutputStream os = Files.newOutputStream(file)
+        ) {
             ack();
-            IoUtils.copy(is, os, bufSize);
+
+            try {
+                listener.startFileEvent(FileOperation.RECEIVE, file, length, perms);
+                IoUtils.copy(is, os, bufSize);
+                listener.endFileEvent(FileOperation.RECEIVE, file, length, perms, null);
+            } catch (IOException | RuntimeException e) {
+                listener.endFileEvent(FileOperation.RECEIVE, file, length, perms, e);
+                throw e;
+            }
         }
 
         if (preserve) {
-            setOctalPerms(file, perms);
+            IoUtils.setPermissions(file, perms);
             if (time != null) {
                 Files.getFileAttributeView(file, BasicFileAttributeView.class)
                         .setTimes(FileTime.from(time[0], TimeUnit.SECONDS),
@@ -285,13 +307,13 @@ public class ScpHelper {
 
     public String readLine(boolean canEof) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        for (;;) {
+        for (; ; ) {
             int c = in.read();
             if (c == '\n') {
                 return baos.toString();
             } else if (c == -1) {
                 if (!canEof) {
-                    throw new EOFException();
+                    throw new EOFException("EOF while await end of line");
                 }
                 return null;
             } else {
@@ -370,7 +392,7 @@ public class ScpHelper {
 
         BasicFileAttributes basic = Files.getFileAttributeView(path, BasicFileAttributeView.class).readAttributes();
         if (preserve) {
-            StringBuffer buf = new StringBuffer();
+            StringBuilder buf = new StringBuilder();
             buf.append("T");
             buf.append(basic.lastModifiedTime().to(TimeUnit.SECONDS));
             buf.append(" ");
@@ -385,9 +407,10 @@ public class ScpHelper {
             readAck(false);
         }
 
-        StringBuffer buf = new StringBuffer();
+        Set<PosixFilePermission> perms = IoUtils.getPermissions(path);
+        StringBuilder buf = new StringBuilder();
         buf.append("C");
-        buf.append(preserve ? getOctalPerms(path) : "0644");
+        buf.append(preserve ? getOctalPerms(perms) : "0644");
         buf.append(" ");
         buf.append(basic.size()); // length
         buf.append(" ");
@@ -418,9 +441,15 @@ public class ScpHelper {
             bufSize = MIN_SEND_BUFFER_SIZE;
         }
 
-        // TODO: use bufSize
         try (InputStream in = Files.newInputStream(path)) {
-            IoUtils.copy(in, out, bufSize);
+            try {
+                listener.startFileEvent(FileOperation.SEND, path, fileSize, perms);
+                IoUtils.copy(in, out, bufSize);
+                listener.endFileEvent(FileOperation.SEND, path, fileSize, perms, null);
+            } catch (IOException | RuntimeException e) {
+                listener.endFileEvent(FileOperation.SEND, path, fileSize, perms, e);
+                throw e;
+            }
         }
         ack();
         readAck(false);
@@ -432,7 +461,7 @@ public class ScpHelper {
         }
         BasicFileAttributes basic = Files.getFileAttributeView(path, BasicFileAttributeView.class).readAttributes();
         if (preserve) {
-            StringBuffer buf = new StringBuffer();
+            StringBuilder buf = new StringBuilder();
             buf.append("T");
             buf.append(basic.lastModifiedTime().to(TimeUnit.SECONDS));
             buf.append(" ");
@@ -447,9 +476,10 @@ public class ScpHelper {
             readAck(false);
         }
 
-        StringBuffer buf = new StringBuffer();
+        Set<PosixFilePermission> perms = IoUtils.getPermissions(path);
+        StringBuilder buf = new StringBuilder();
         buf.append("D");
-        buf.append(preserve ? getOctalPerms(path) : "0755");
+        buf.append(preserve ? getOctalPerms(perms) : "0755");
         buf.append(" ");
         buf.append("0"); // length
         buf.append(" ");
@@ -460,12 +490,21 @@ public class ScpHelper {
         readAck(false);
 
         try (DirectoryStream<Path> children = Files.newDirectoryStream(path)) {
-            for (Path child : children) {
-                if (Files.isRegularFile(child)) {
-                    sendFile(child, preserve, bufferSize);
-                } else if (Files.isDirectory(child)) {
-                    sendDir(child, preserve, bufferSize);
+            listener.startFolderEvent(FileOperation.SEND, path, perms);
+
+            try {
+                for (Path child : children) {
+                    if (Files.isRegularFile(child)) {
+                        sendFile(child, preserve, bufferSize);
+                    } else if (Files.isDirectory(child)) {
+                        sendDir(child, preserve, bufferSize);
+                    }
                 }
+
+                listener.endFolderEvent(FileOperation.SEND, path, perms, null);
+            } catch (IOException | RuntimeException e) {
+                listener.endFolderEvent(FileOperation.SEND, path, perms, e);
+                throw e;
             }
         }
 
@@ -476,61 +515,60 @@ public class ScpHelper {
 
     private long[] parseTime(String line) {
         String[] numbers = line.substring(1).split(" ");
-        return new long[] { Long.parseLong(numbers[0]), Long.parseLong(numbers[2]) };
+        return new long[]{Long.parseLong(numbers[0]), Long.parseLong(numbers[2])};
     }
 
     public static String getOctalPerms(Path path) throws IOException {
+        return getOctalPerms(IoUtils.getPermissions(path));
+    }
+
+    public static String getOctalPerms(Collection<PosixFilePermission> perms) {
         int pf = 0;
-        if (path.getFileSystem().supportedFileAttributeViews().contains("posix")) {
-            Set<PosixFilePermission> perms = Files.getPosixFilePermissions(path);
-            for (PosixFilePermission p : perms) {
-                switch (p) {
-                case OWNER_READ:
-                    pf |= S_IRUSR;
-                    break;
-                case OWNER_WRITE:
-                    pf |= S_IWUSR;
-                    break;
-                case OWNER_EXECUTE:
-                    pf |= S_IXUSR;
-                    break;
-                case GROUP_READ:
-                    pf |= S_IRGRP;
-                    break;
-                case GROUP_WRITE:
-                    pf |= S_IWGRP;
-                    break;
-                case GROUP_EXECUTE:
-                    pf |= S_IXGRP;
-                    break;
-                case OTHERS_READ:
-                    pf |= S_IROTH;
-                    break;
-                case OTHERS_WRITE:
-                    pf |= S_IWOTH;
-                    break;
-                case OTHERS_EXECUTE:
-                    pf |= S_IXOTH;
-                    break;
-                }
-            }
-        } else {
-            if (Files.isReadable(path)) {
-                pf |= S_IRUSR | S_IRGRP | S_IROTH;
-            }
-            if (Files.isWritable(path)) {
-                pf |= S_IWUSR | S_IWGRP | S_IWOTH;
-            }
-            if (Files.isExecutable(path)) {
-                pf |= S_IXUSR | S_IXGRP | S_IXOTH;
+
+        for (PosixFilePermission p : perms) {
+            switch (p) {
+            case OWNER_READ:
+                pf |= S_IRUSR;
+                break;
+            case OWNER_WRITE:
+                pf |= S_IWUSR;
+                break;
+            case OWNER_EXECUTE:
+                pf |= S_IXUSR;
+                break;
+            case GROUP_READ:
+                pf |= S_IRGRP;
+                break;
+            case GROUP_WRITE:
+                pf |= S_IWGRP;
+                break;
+            case GROUP_EXECUTE:
+                pf |= S_IXGRP;
+                break;
+            case OTHERS_READ:
+                pf |= S_IROTH;
+                break;
+            case OTHERS_WRITE:
+                pf |= S_IWOTH;
+                break;
+            case OTHERS_EXECUTE:
+                pf |= S_IXOTH;
+                break;
             }
         }
+
         return String.format("%04o", pf);
     }
 
-    public static void setOctalPerms(Path path, String str) throws IOException {
+    public static Set<PosixFilePermission> setOctalPerms(Path path, String str) throws IOException {
+        Set<PosixFilePermission> perms = parseOctalPerms(str);
+        IoUtils.setPermissions(path, perms);
+        return perms;
+    }
+
+    public static Set<PosixFilePermission> parseOctalPerms(String str) {
         int perms = Integer.parseInt(str, 8);
-        EnumSet<PosixFilePermission> p = EnumSet.noneOf(PosixFilePermission.class);
+        Set<PosixFilePermission> p = EnumSet.noneOf(PosixFilePermission.class);
         if ((perms & S_IRUSR) != 0) {
             p.add(PosixFilePermission.OWNER_READ);
         }
@@ -558,11 +596,8 @@ public class ScpHelper {
         if ((perms & S_IXOTH) != 0) {
             p.add(PosixFilePermission.OTHERS_EXECUTE);
         }
-        if (path.getFileSystem().supportedFileAttributeViews().contains("posix")) {
-            Files.setPosixFilePermissions(path, p);
-        } else {
-            log.warn("Unable to set file permissions because the underlying file system does not support posix permissions");
-        }
+
+        return p;
     }
 
     public void ack() throws IOException {
@@ -573,20 +608,20 @@ public class ScpHelper {
     public int readAck(boolean canEof) throws IOException {
         int c = in.read();
         switch (c) {
-            case -1:
-                if (!canEof) {
-                    throw new EOFException();
-                }
-                break;
-            case OK:
-                break;
-            case WARNING:
-                log.warn("Received warning: " + readLine());
-                break;
-            case ERROR:
-                throw new IOException("Received nack: " + readLine());
-            default:
-                break;
+        case -1:
+            if (!canEof) {
+                throw new EOFException("readAck - EOF before ACK");
+            }
+            break;
+        case OK:
+            break;
+        case WARNING:
+            log.warn("Received warning: " + readLine());
+            break;
+        case ERROR:
+            throw new IOException("Received nack: " + readLine());
+        default:
+            break;
         }
         return c;
     }
@@ -605,7 +640,7 @@ public class ScpHelper {
             if (remaining > 0) {
                 remaining--;
                 return super.read();
-            } else{
+            } else {
                 return -1;
             }
         }
