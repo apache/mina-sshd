@@ -26,34 +26,15 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.concurrent.TimeUnit;
 
+import static org.apache.sshd.common.sftp.SftpConstants.S_IFDIR;
+import static org.apache.sshd.common.sftp.SftpConstants.S_IFLNK;
+import static org.apache.sshd.common.sftp.SftpConstants.S_IFMT;
+import static org.apache.sshd.common.sftp.SftpConstants.S_IFREG;
+
 /**
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public interface SftpClient extends AutoCloseable {
-
-    //
-    // Permission flags
-    //
-    int S_IFMT =   0170000;  // bitmask for the file type bitfields
-    int S_IFSOCK = 0140000;  // socket
-    int S_IFLNK =  0120000;  // symbolic link
-    int S_IFREG =  0100000;  // regular file
-    int S_IFBLK =  0060000;  // block device
-    int S_IFDIR =  0040000;  // directory
-    int S_IFCHR =  0020000;  // character device
-    int S_IFIFO =  0010000;  // fifo
-    int S_ISUID =  0004000;  // set UID bit
-    int S_ISGID =  0002000;  // set GID bit
-    int S_ISVTX =  0001000;  // sticky bit
-    int S_IRUSR =  0000400;
-    int S_IWUSR =  0000200;
-    int S_IXUSR =  0000100;
-    int S_IRGRP =  0000040;
-    int S_IWGRP =  0000020;
-    int S_IXGRP =  0000010;
-    int S_IROTH =  0000004;
-    int S_IWOTH =  0000002;
-    int S_IXOTH =  0000001;
 
     enum OpenMode {
         Read,

@@ -37,6 +37,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.sshd.client.SftpClient;
 import org.apache.sshd.client.SftpException;
 
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FX_LOCK_CONFLICT;
+
 public class SftpFileChannel extends FileChannel {
 
     final SftpPath p;
@@ -288,7 +290,7 @@ public class SftpFileChannel extends FileChannel {
         try {
             sftp.lock(handle, position, size, 0);
         } catch (SftpException e) {
-            if (e.getStatus() == DefaultSftpClient.SSH_FX_LOCK_CONFLICT) {
+            if (e.getStatus() == SSH_FX_LOCK_CONFLICT) {
                 throw new OverlappingFileLockException();
             }
             throw e;

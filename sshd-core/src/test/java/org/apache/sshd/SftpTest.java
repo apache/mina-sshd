@@ -33,7 +33,6 @@ import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.SftpException;
 import org.apache.sshd.client.SftpClient;
-import org.apache.sshd.client.sftp.DefaultSftpClient;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.OsUtils;
@@ -52,7 +51,16 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FX_FILE_ALREADY_EXISTS;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FX_NO_SUCH_FILE;
+import static org.apache.sshd.common.sftp.SftpConstants.S_IRUSR;
+import static org.apache.sshd.common.sftp.SftpConstants.S_IWUSR;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class SftpTest extends BaseTest {
 
@@ -143,7 +151,7 @@ public class SftpTest extends BaseTest {
         
                 // NOTE: on Windows files are always readable
                 int	perms=sftp.stat(file).perms;
-                int	permsMask=SftpClient.S_IWUSR | (isWindows ? 0 : SftpClient.S_IRUSR);
+                int	permsMask=S_IWUSR | (isWindows ? 0 : S_IRUSR);
                 Assert.assertEquals("Mismatched permissions - 0x" + Integer.toHexString(perms), 0, (perms & permsMask));
         
                 javaFile.setWritable(true, false);
@@ -474,7 +482,7 @@ public class SftpTest extends BaseTest {
             sftp.rename("target/sftp/test2.txt", "target/sftp/test3.txt");
             fail("Expected an SftpException");
         } catch (org.apache.sshd.client.SftpException e) {
-            assertEquals(DefaultSftpClient.SSH_FX_NO_SUCH_FILE, e.getStatus());
+            assertEquals(SSH_FX_NO_SUCH_FILE, e.getStatus());
         }
 
         try (OutputStream os = sftp.write("target/sftp/test2.txt")) {
@@ -485,7 +493,7 @@ public class SftpTest extends BaseTest {
             sftp.rename("target/sftp/test.txt", "target/sftp/test2.txt");
             fail("Expected an SftpException");
         } catch (org.apache.sshd.client.SftpException e) {
-            assertEquals(DefaultSftpClient.SSH_FX_FILE_ALREADY_EXISTS, e.getStatus());
+            assertEquals(SSH_FX_FILE_ALREADY_EXISTS, e.getStatus());
         }
         sftp.rename("target/sftp/test.txt", "target/sftp/test2.txt", SftpClient.CopyMode.Overwrite);
     }

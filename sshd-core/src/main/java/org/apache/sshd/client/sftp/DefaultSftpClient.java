@@ -41,125 +41,13 @@ import org.apache.sshd.client.SftpException;
 import org.apache.sshd.client.channel.ChannelSubsystem;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.util.Buffer;
-import org.apache.sshd.server.sftp.SftpSubsystem;
+
+import static org.apache.sshd.common.sftp.SftpConstants.*;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class DefaultSftpClient implements SftpClient {
-
-    public static final int SSH_FXP_INIT =             1;
-    public static final int SSH_FXP_VERSION =          2;
-    public static final int SSH_FXP_OPEN =             3;
-    public static final int SSH_FXP_CLOSE =            4;
-    public static final int SSH_FXP_READ =             5;
-    public static final int SSH_FXP_WRITE =            6;
-    public static final int SSH_FXP_LSTAT =            7;
-    public static final int SSH_FXP_FSTAT =            8;
-    public static final int SSH_FXP_SETSTAT =          9;
-    public static final int SSH_FXP_FSETSTAT =        10;
-    public static final int SSH_FXP_OPENDIR =         11;
-    public static final int SSH_FXP_READDIR =         12;
-    public static final int SSH_FXP_REMOVE =          13;
-    public static final int SSH_FXP_MKDIR =           14;
-    public static final int SSH_FXP_RMDIR =           15;
-    public static final int SSH_FXP_REALPATH =        16;
-    public static final int SSH_FXP_STAT =            17;
-    public static final int SSH_FXP_RENAME =          18;
-    public static final int SSH_FXP_READLINK =        19;
-    public static final int SSH_FXP_SYMLINK =         20;
-    public static final int SSH_FXP_LINK =            21; // v6
-    public static final int SSH_FXP_BLOCK =           22; // v6
-    public static final int SSH_FXP_UNBLOCK =         23; // v6
-    public static final int SSH_FXP_STATUS =         101;
-    public static final int SSH_FXP_HANDLE =         102;
-    public static final int SSH_FXP_DATA =           103;
-    public static final int SSH_FXP_NAME =           104;
-    public static final int SSH_FXP_ATTRS =          105;
-    public static final int SSH_FXP_EXTENDED =       200;
-    public static final int SSH_FXP_EXTENDED_REPLY = 201;
-
-    public static final int SSH_FX_OK =                           0;
-    public static final int SSH_FX_EOF =                          1;
-    public static final int SSH_FX_NO_SUCH_FILE =                 2;
-    public static final int SSH_FX_PERMISSION_DENIED =            3;
-    public static final int SSH_FX_FAILURE =                      4;
-    public static final int SSH_FX_BAD_MESSAGE =                  5;
-    public static final int SSH_FX_NO_CONNECTION =                6;
-    public static final int SSH_FX_CONNECTION_LOST =              7;
-    public static final int SSH_FX_OP_UNSUPPORTED =               8;
-    public static final int SSH_FX_FILE_ALREADY_EXISTS =         11;
-    public static final int SSH_FX_LOCK_CONFLICT =               17;
-
-    public static final int SSH_FILEXFER_ATTR_SIZE =            0x00000001;
-    public static final int SSH_FILEXFER_ATTR_UIDGID =          0x00000002;
-    public static final int SSH_FILEXFER_ATTR_PERMISSIONS =     0x00000004;
-    public static final int SSH_FILEXFER_ATTR_ACMODTIME =       0x00000008; // v3 naming convention
-    public static final int SSH_FILEXFER_ATTR_ACCESSTIME =      0x00000008; // v4
-    public static final int SSH_FILEXFER_ATTR_CREATETIME =      0x00000010; // v4
-    public static final int SSH_FILEXFER_ATTR_MODIFYTIME =      0x00000020; // v4
-    public static final int SSH_FILEXFER_ATTR_ACL =             0x00000040; // v4
-    public static final int SSH_FILEXFER_ATTR_OWNERGROUP =      0x00000080; // v4
-    public static final int SSH_FILEXFER_ATTR_SUBSECOND_TIMES = 0x00000100; // v4
-    public static final int SSH_FILEXFER_ATTR_EXTENDED =        0x80000000;
-
-    public static final int SSH_FXF_READ =   0x00000001;
-    public static final int SSH_FXF_WRITE =  0x00000002;
-    public static final int SSH_FXF_APPEND = 0x00000004;
-    public static final int SSH_FXF_CREAT =  0x00000008;
-    public static final int SSH_FXF_TRUNC =  0x00000010;
-    public static final int SSH_FXF_EXCL =   0x00000020;
-
-    public static final int SSH_FILEXFER_TYPE_REGULAR =      1;
-    public static final int SSH_FILEXFER_TYPE_DIRECTORY =    2;
-    public static final int SSH_FILEXFER_TYPE_SYMLINK =      3;
-    public static final int SSH_FILEXFER_TYPE_SPECIAL =      4;
-    public static final int SSH_FILEXFER_TYPE_UNKNOWN =      5;
-    public static final int SSH_FILEXFER_TYPE_SOCKET =       6; // v5
-    public static final int SSH_FILEXFER_TYPE_CHAR_DEVICE =  7; // v5
-    public static final int SSH_FILEXFER_TYPE_BLOCK_DEVICE = 8; // v5
-    public static final int SSH_FILEXFER_TYPE_FIFO         = 9; // v5
-
-    public static final int SSH_FXF_ACCESS_DISPOSITION = 0x00000007;
-    public static final int SSH_FXF_CREATE_NEW =         0x00000000;
-    public static final int SSH_FXF_CREATE_TRUNCATE =    0x00000001;
-    public static final int SSH_FXF_OPEN_EXISTING =      0x00000002;
-    public static final int SSH_FXF_OPEN_OR_CREATE =     0x00000003;
-    public static final int SSH_FXF_TRUNCATE_EXISTING =  0x00000004;
-    public static final int SSH_FXF_APPEND_DATA =        0x00000008;
-    public static final int SSH_FXF_APPEND_DATA_ATOMIC = 0x00000010;
-    public static final int SSH_FXF_TEXT_MODE =          0x00000020;
-    public static final int SSH_FXF_READ_LOCK =          0x00000040;
-    public static final int SSH_FXF_WRITE_LOCK =         0x00000080;
-    public static final int SSH_FXF_DELETE_LOCK =        0x00000100;
-
-    public static final int SSH_FXP_RENAME_OVERWRITE = 0x00000001;
-    public static final int SSH_FXP_RENAME_ATOMIC =    0x00000002;
-    public static final int SSH_FXP_RENAME_NATIVE =    0x00000004;
-
-    public static final int ACE4_READ_DATA            = 0x00000001;
-    public static final int ACE4_LIST_DIRECTORY       = 0x00000001;
-    public static final int ACE4_WRITE_DATA           = 0x00000002;
-    public static final int ACE4_ADD_FILE             = 0x00000002;
-    public static final int ACE4_APPEND_DATA          = 0x00000004;
-    public static final int ACE4_ADD_SUBDIRECTORY     = 0x00000004;
-    public static final int ACE4_READ_NAMED_ATTRS     = 0x00000008;
-    public static final int ACE4_WRITE_NAMED_ATTRS    = 0x00000010;
-    public static final int ACE4_EXECUTE              = 0x00000020;
-    public static final int ACE4_DELETE_CHILD         = 0x00000040;
-    public static final int ACE4_READ_ATTRIBUTES      = 0x00000080;
-    public static final int ACE4_WRITE_ATTRIBUTES     = 0x00000100;
-    public static final int ACE4_DELETE               = 0x00010000;
-    public static final int ACE4_READ_ACL             = 0x00020000;
-    public static final int ACE4_WRITE_ACL            = 0x00040000;
-    public static final int ACE4_WRITE_OWNER          = 0x00080000;
-    public static final int ACE4_SYNCHRONIZE          = 0x00100000;
-
-    public static int SFTP_V3 = 3;
-    public static int SFTP_V4 = 4;
-    public static int SFTP_V5 = 5;
-    public static int SFTP_V6 = 6;
-
     private final ClientSession clientSession;
     private final ChannelSubsystem channel;
     private final Map<Integer, Buffer> messages;
@@ -837,7 +725,7 @@ public class DefaultSftpClient implements SftpClient {
         Buffer buffer = new Buffer();
         buffer.putString(path);
         if (version >= SFTP_V4) {
-            buffer.putInt(SftpSubsystem.SSH_FILEXFER_ATTR_ALL);
+            buffer.putInt(SSH_FILEXFER_ATTR_ALL);
         }
         return checkAttributes(receive(send(SSH_FXP_STAT, buffer)));
     }
@@ -846,7 +734,7 @@ public class DefaultSftpClient implements SftpClient {
         Buffer buffer = new Buffer();
         buffer.putString(path);
         if (version >= SFTP_V4) {
-            buffer.putInt(SftpSubsystem.SSH_FILEXFER_ATTR_ALL);
+            buffer.putInt(SSH_FILEXFER_ATTR_ALL);
         }
         return checkAttributes(receive(send(SSH_FXP_LSTAT, buffer)));
     }
@@ -855,7 +743,7 @@ public class DefaultSftpClient implements SftpClient {
         Buffer buffer = new Buffer();
         buffer.putString(handle.id);
         if (version >= SFTP_V4) {
-            buffer.putInt(SftpSubsystem.SSH_FILEXFER_ATTR_ALL);
+            buffer.putInt(SSH_FILEXFER_ATTR_ALL);
         }
         return checkAttributes(receive(send(SSH_FXP_FSTAT, buffer)));
     }

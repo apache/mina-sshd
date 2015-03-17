@@ -65,11 +65,22 @@ import org.apache.sshd.ClientSession;
 import org.apache.sshd.SshBuilder;
 import org.apache.sshd.SshClient;
 import org.apache.sshd.client.SftpClient;
+import org.apache.sshd.client.SftpClient.Attributes;
 import org.apache.sshd.client.SftpException;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.sftp.SftpConstants;
 import org.apache.sshd.common.util.IoUtils;
 
-import static org.apache.sshd.client.SftpClient.*;
+import static org.apache.sshd.common.sftp.SftpConstants.SFTP_V3;
+import static org.apache.sshd.common.sftp.SftpConstants.S_IRGRP;
+import static org.apache.sshd.common.sftp.SftpConstants.S_IROTH;
+import static org.apache.sshd.common.sftp.SftpConstants.S_IRUSR;
+import static org.apache.sshd.common.sftp.SftpConstants.S_IWGRP;
+import static org.apache.sshd.common.sftp.SftpConstants.S_IWOTH;
+import static org.apache.sshd.common.sftp.SftpConstants.S_IWUSR;
+import static org.apache.sshd.common.sftp.SftpConstants.S_IXGRP;
+import static org.apache.sshd.common.sftp.SftpConstants.S_IXOTH;
+import static org.apache.sshd.common.sftp.SftpConstants.S_IXUSR;
 
 public class SftpFileSystemProvider extends FileSystemProvider {
 
@@ -220,7 +231,8 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             try {
                 sftp.mkdir(dir.toString());
             } catch (SftpException e) {
-                if (sftp.getVersion() == 3 && e.getStatus() == DefaultSftpClient.SSH_FX_FAILURE) {
+                int sftpStatus=e.getStatus();
+                if ((sftp.getVersion() == SFTP_V3) && (sftpStatus == SftpConstants.SSH_FX_FAILURE)) {
                     try {
                         Attributes attributes = sftp.stat(dir.toString());
                         if (attributes != null) {
@@ -230,7 +242,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
                         e.addSuppressed(e2);
                     }
                 }
-                if (e.getStatus() == DefaultSftpClient.SSH_FX_FILE_ALREADY_EXISTS) {
+                if (sftpStatus == SftpConstants.SSH_FX_FILE_ALREADY_EXISTS) {
                     throw new FileAlreadyExistsException(p.toString());
                 }
                 throw e;
@@ -463,7 +475,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
                                 attributes = client.lstat(p.toString());
                             }
                         } catch (SftpException e) {
-                            if (e.getStatus() == DefaultSftpClient.SSH_FX_NO_SUCH_FILE) {
+                            if (e.getStatus() == SftpConstants.SSH_FX_NO_SUCH_FILE) {
                                 throw new NoSuchFileException(p.toString());
                             }
                             throw e;
