@@ -122,15 +122,21 @@ public class ScpTest extends BaseTest {
 
                     File root = new File("target/scp");
                     Utils.deleteRecursive(root);
-                    assertHierarchyTargetFolderExists(new File(root, "local"));
+
+                    File localDir = assertHierarchyTargetFolderExists(new File(root, "local"));
                     assertTrue("Root folder not created", root.exists());
 
-                    writeFile(new File("target/scp/local/out.txt"), data);
-                    assertHierarchyTargetFolderExists(new File(root, "remote"));
-                    scp.upload(new File("target/scp/local/out.txt").getAbsolutePath(), "/" + new File("target/scp/remote/out.txt").getAbsolutePath().replace(File.separatorChar, '/'));
-                    assertFileLength(new File("target/scp/remote/out.txt"), data.length(), 5000);
-                    scp.upload(new File("target/scp/local/out.txt").getAbsolutePath(), new File("target/scp/remote/out2.txt").getAbsolutePath());
-                    assertFileLength(new File("target/scp/remote/out2.txt"), data.length(), 5000);
+                    File localFile = new File(localDir, "out.txt");
+                    writeFile(localFile, data);
+
+                    File remoteDir = assertHierarchyTargetFolderExists(new File(root, "remote"));
+                    File remoteFile = new File(remoteDir, "out.txt");
+                    scp.upload(localFile.getAbsolutePath(), remoteFile.getAbsolutePath().replace(File.separatorChar, '/'));
+                    assertFileLength(remoteFile, data.length(), 5000);
+
+                    File secondRemote = new File(remoteDir, "out2.txt");
+                    scp.upload(localFile.getAbsolutePath(), secondRemote.getAbsolutePath().replace(File.separatorChar, '/'));
+                    assertFileLength(secondRemote, data.length(), 5000);
                 }
             } finally {
                 client.stop();

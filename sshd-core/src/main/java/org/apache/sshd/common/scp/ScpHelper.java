@@ -42,6 +42,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.scp.ScpTransferEventListener.FileOperation;
 import org.apache.sshd.common.util.DirectoryScanner;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.IoUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -265,10 +266,14 @@ public class ScpHelper {
         } else {
             throw new IOException("Can not write to " + path);
         }
-        if (Files.exists(file) && Files.isDirectory(file)) {
-            throw new IOException("File is a directory: " + file);
-        } else if (Files.exists(file) && !Files.isWritable(file)) {
-            throw new IOException("Can not write to file: " + file);
+
+        if (Files.exists(file)) {
+            if (Files.isDirectory(file)) {
+                throw new IOException("File is a directory: " + file);
+            }
+            if (!Files.isWritable(file)) {
+                throw new IOException("Can not write to file: " + file);
+            }
         }
 
         try (
@@ -335,7 +340,7 @@ public class ScpHelper {
                 }
                 String[] included = new DirectoryScanner(basedir, pattern).scan();
                 for (String path : included) {
-                    Path file = resolveLocalPath(basedir + "/" + path);
+                    Path file = resolveLocalPath(basedir, path);
                     if (Files.isRegularFile(file)) {
                         sendFile(file, preserve, bufferSize);
                     } else if (Files.isDirectory(file)) {
@@ -357,7 +362,7 @@ public class ScpHelper {
                     basedir = pattern.substring(0, lastSep);
                     pattern = pattern.substring(lastSep + 1);
                 }
-                Path file = resolveLocalPath(basedir + "/" + pattern);
+                Path file = resolveLocalPath(basedir, pattern);
                 if (!Files.exists(file)) {
                     throw new IOException(file + ": no such file or directory");
                 }
@@ -376,7 +381,15 @@ public class ScpHelper {
         }
     }
 
-    protected Path resolveLocalPath(String path) {
+    public Path resolveLocalPath(String basedir, String subpath) {
+        if (GenericUtils.isEmpty(basedir)) {
+            return resolveLocalPath(subpath);
+        } else {
+            return resolveLocalPath(basedir + "/" + subpath);
+        }
+    }
+
+    public Path resolveLocalPath(String path) {
         String localPath = (path == null) ? null : path.replace('/', File.separatorChar);
         return fileSystem.getPath(localPath);
     }

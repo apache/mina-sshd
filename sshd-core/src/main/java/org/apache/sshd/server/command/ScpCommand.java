@@ -212,7 +212,7 @@ public class ScpCommand implements Command, Runnable, FileSystemAware {
         ScpHelper helper = new ScpHelper(in, out, fileSystem, listener);
         try {
             if (optT) {
-                helper.receive(fileSystem.getPath(path), optR, optD, optP, receiveBufferSize);
+                helper.receive(helper.resolveLocalPath(path), optR, optD, optP, receiveBufferSize);
             } else if (optF) {
                 helper.send(Collections.singletonList(path), optR, optP, sendBufferSize);
             } else {
