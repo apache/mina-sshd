@@ -25,9 +25,12 @@ import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.agent.SshAgentServer;
 import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.Session;
+import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.session.ConnectionService;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.server.session.ServerSession;
 
 public class UnixAgentFactory implements SshAgentFactory {
@@ -37,9 +40,11 @@ public class UnixAgentFactory implements SshAgentFactory {
     }
 
     public SshAgent createClient(FactoryManager manager) throws IOException {
-        String authSocket = manager.getProperties().get(SshAgent.SSH_AUTHSOCKET_ENV_NAME);
-        SshAgent agent = new AgentClient(authSocket);
-        return agent;
+        String authSocket = FactoryManagerUtils.getString(manager, SshAgent.SSH_AUTHSOCKET_ENV_NAME);
+        if (GenericUtils.isEmpty(authSocket)) {
+            throw new SshException("No " + SshAgent.SSH_AUTHSOCKET_ENV_NAME + " value");
+        }
+        return new AgentClient(authSocket);
     }
 
     public SshAgentServer createServer(ConnectionService service) throws IOException {

@@ -27,9 +27,11 @@ import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.agent.SshAgentServer;
 import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.Session;
 import org.apache.sshd.common.session.ConnectionService;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.server.session.ServerSession;
 
 public class ProxyAgentFactory implements SshAgentFactory {
@@ -41,14 +43,16 @@ public class ProxyAgentFactory implements SshAgentFactory {
     }
 
     public SshAgent createClient(FactoryManager manager) throws IOException {
-        String proxyId = manager.getProperties().get(SshAgent.SSH_AUTHSOCKET_ENV_NAME);
-        if (proxyId == null) {
+        String proxyId = FactoryManagerUtils.getString(manager, SshAgent.SSH_AUTHSOCKET_ENV_NAME);
+        if (GenericUtils.isEmpty(proxyId)) {
             throw new IllegalStateException("No " + SshAgent.SSH_AUTHSOCKET_ENV_NAME + " environment variable set");
         }
+
         AgentServerProxy proxy = proxies.get(proxyId);
         if (proxy == null) {
-            throw new IllegalStateException("No ssh agent found");
+            throw new IllegalStateException("No ssh agent found for ID=" + proxyId);
         }
+
         return proxy.createClient();
     }
 
@@ -57,12 +61,14 @@ public class ProxyAgentFactory implements SshAgentFactory {
         if (!(session instanceof ServerSession)) {
             throw new IllegalStateException("The session used to create an agent server proxy must be a server session");
         }
+
         final AgentServerProxy proxy = new AgentServerProxy(service);
         proxies.put(proxy.getId(), proxy);
         return new SshAgentServer() {
             public String getId() {
                 return proxy.getId();
             }
+
             public void close() {
                 proxies.remove(proxy.getId());
                 proxy.close();

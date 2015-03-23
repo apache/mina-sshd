@@ -19,11 +19,11 @@
 
 package org.apache.sshd.common.io;
 
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.util.CloseableUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,15 +78,11 @@ public abstract class AbstractIoServiceFactory extends CloseableUtils.AbstractCl
     }
 
     public static int getNioWorkers(FactoryManager manager) {
-        Map<String, String> properties = manager.getProperties();
-        String nioWorkers = properties.get(FactoryManager.NIO_WORKERS);
-        if ((nioWorkers != null) && (nioWorkers.length() > 0)) {
-            int nb = Integer.parseInt(nioWorkers);
-            if (nb > 0) {
-                return nb;
-            }
+        int nb = FactoryManagerUtils.getIntProperty(manager, FactoryManager.NIO_WORKERS, FactoryManager.DEFAULT_NIO_WORKERS);
+        if (nb > 0) {
+            return nb;
+        } else {
+            return FactoryManager.DEFAULT_NIO_WORKERS;
         }
-
-        return FactoryManager.DEFAULT_NIO_WORKERS;
     }
 }

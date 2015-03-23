@@ -800,6 +800,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
      * @param ident our identification to send
      */
     protected void sendIdentification(String ident) {
+        log.debug("Send identification: {}", ident);
         byte[] data = (ident + "\r\n").getBytes();
         ioSession.write(new Buffer(data));
     }

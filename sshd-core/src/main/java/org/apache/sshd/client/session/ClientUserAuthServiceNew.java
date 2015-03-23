@@ -26,24 +26,17 @@ import java.util.List;
 import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.UserAuth;
 import org.apache.sshd.client.UserInteraction;
-import org.apache.sshd.client.auth.UserAuthKeyboardInteractive;
-import org.apache.sshd.client.auth.UserAuthPassword;
-import org.apache.sshd.client.auth.UserAuthPublicKey;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.DefaultAuthFuture;
+import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.Session;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.future.CloseFuture;
-import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.CloseableUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import static org.apache.sshd.common.util.KeyUtils.getKeyType;
+import org.apache.sshd.common.util.GenericUtils;
 
 /**
  * Client side <code>ssh-auth</code> service.
@@ -63,10 +56,10 @@ public class ClientUserAuthServiceNew extends CloseableUtils.AbstractCloseable i
     private List<Object> identities;
     private String service;
 
-    List<NamedFactory<UserAuth>> authFactories;
-    List<String> clientMethods;
-    List<String> serverMethods;
-    UserAuth userAuth;
+    private List<NamedFactory<UserAuth>> authFactories;
+    private List<String> clientMethods;
+    private List<String> serverMethods;
+    private UserAuth userAuth;
 
     public ClientUserAuthServiceNew(Session s) {
         if (!(s instanceof ClientSessionImpl)) {
@@ -76,11 +69,14 @@ public class ClientUserAuthServiceNew extends CloseableUtils.AbstractCloseable i
         authFuture = new DefaultAuthFuture(session.getLock());
         authFactories = session.getFactoryManager().getUserAuthFactories();
         clientMethods = new ArrayList<String>();
-        String prefs = session.getFactoryManager().getProperties().get(ClientFactoryManager.PREFERRED_AUTHS);
-        if (prefs != null) {
+
+        String prefs = FactoryManagerUtils.getString(session, ClientFactoryManager.PREFERRED_AUTHS);
+        if (!GenericUtils.isEmpty(prefs)) {
             for (String pref : prefs.split(",")) {
                 if (NamedFactory.Utils.get(authFactories, pref) != null) {
                     clientMethods.add(pref);
+                } else {
+                    log.debug("Skip unknown prefered authentication method: {}", pref);
                 }
             }
         } else {
@@ -121,7 +117,7 @@ public class ClientUserAuthServiceNew extends CloseableUtils.AbstractCloseable i
         } else if (cmd == SshConstants.SSH_MSG_USERAUTH_BANNER) {
             String welcome = buffer.getString();
             String lang = buffer.getString();
-            log.debug("Welcome banner: {}", welcome);
+            log.debug("Welcome banner(lang={}): {}", lang, welcome);
             UserInteraction ui = session.getFactoryManager().getUserInteraction();
             if (ui != null) {
                 ui.welcome(welcome);
@@ -132,7 +128,7 @@ public class ClientUserAuthServiceNew extends CloseableUtils.AbstractCloseable i
         }
     }
 
-    int currentMethod;
+    private int currentMethod;
 
     /**
      * execute one step in user authentication.

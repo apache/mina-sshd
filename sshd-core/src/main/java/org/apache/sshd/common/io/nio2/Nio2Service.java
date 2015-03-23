@@ -29,10 +29,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoService;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.util.CloseableUtils;
+import org.apache.sshd.common.util.GenericUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,9 +79,9 @@ public abstract class Nio2Service extends CloseableUtils.AbstractInnerCloseable 
     }
 
     protected <T> void setOption(NetworkChannel socket, String property, SocketOption<T> option, T defaultValue) throws IOException {
-        String valStr = manager.getProperties().get(property);
+        String valStr = FactoryManagerUtils.getString(manager, property);
         T val = defaultValue;
-        if (valStr != null) {
+        if (!GenericUtils.isEmpty(valStr)) {
             Class<T> type = option.type();
             if (type == Integer.class) {
                 val = type.cast(Integer.parseInt(valStr));
@@ -97,5 +99,4 @@ public abstract class Nio2Service extends CloseableUtils.AbstractInnerCloseable 
             }
         }
     }
-
 }

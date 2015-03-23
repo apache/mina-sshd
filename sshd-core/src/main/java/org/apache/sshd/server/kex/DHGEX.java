@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.server.kex;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.net.URL;
@@ -27,6 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.sshd.common.Digest;
+import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.KeyExchange;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.Random;
@@ -39,6 +41,7 @@ import org.apache.sshd.common.kex.DHGroupData;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.BufferUtils;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.session.ServerSession;
@@ -221,21 +224,7 @@ public class DHGEX implements KeyExchange {
     }
 
     private DH chooseDH(int min, int prf, int max) throws Exception {
-        List<Moduli.DhGroup> groups = null;
-        URL moduli;
-        String moduliStr = session.getFactoryManager().getProperties().get(ServerFactoryManager.MODULI_URL);
-        if (moduliStr != null) {
-            try {
-                moduli = new URL(moduliStr);
-                groups = Moduli.parseModuli(moduli);
-            } catch (IOException e) {
-                log.warn("Error loading external moduli", e);
-            }
-        }
-        if (groups == null) {
-            moduli = getClass().getResource("/org/apache/sshd/moduli");
-            groups = Moduli.parseModuli(moduli);
-        }
+        List<Moduli.DhGroup> groups = loadModuliGroups();
 
         min = Math.max(min, 1024);
         prf = Math.max(prf, 1024);
@@ -265,6 +254,38 @@ public class DHGEX implements KeyExchange {
         int which = random.random(selected.size());
         Moduli.DhGroup group = selected.get(which);
         return getDH(group.p, group.g);
+    }
+
+    protected List<Moduli.DhGroup> loadModuliGroups() throws IOException {
+        List<Moduli.DhGroup> groups = null;
+        URL moduli;
+        String moduliStr = FactoryManagerUtils.getString(session, ServerFactoryManager.MODULI_URL);
+        if (!GenericUtils.isEmpty(moduliStr)) {
+            try {
+                moduli = new URL(moduliStr);
+                groups = Moduli.parseModuli(moduli);
+            } catch (IOException e) {   // OK - use internal moduli
+                log.warn("Error (" + e.getClass().getSimpleName() + ") loading external moduli from " + moduliStr + ": " + e.getMessage());
+            }
+        }
+
+        if (groups == null) {
+            moduliStr = "/org/apache/sshd/moduli";
+            try {
+                if ((moduli = getClass().getResource(moduliStr)) == null) {
+                    throw new FileNotFoundException("Missing internal moduli file");
+                }
+
+                moduliStr = moduli.toExternalForm();
+                groups = Moduli.parseModuli(moduli);
+            } catch (IOException e) {
+                log.warn("Error (" + e.getClass().getSimpleName() + ") loading internal moduli from " + moduliStr + ": " + e.getMessage());
+                throw e;    // this time we MUST throw the exception
+            }
+        }
+
+        log.debug("Loaded moduli groups from {}", moduliStr);
+        return groups;
     }
 
     protected DH getDH(BigInteger p, BigInteger g) throws Exception {

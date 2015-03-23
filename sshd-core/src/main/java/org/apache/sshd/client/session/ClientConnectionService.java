@@ -19,21 +19,19 @@
 package org.apache.sshd.client.session;
 
 import java.io.IOException;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.ClientFactoryManager;
-import org.apache.sshd.client.future.OpenFuture;
-import org.apache.sshd.common.Channel;
-import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.Session;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.session.AbstractConnectionService;
 import org.apache.sshd.common.util.Buffer;
-import org.apache.sshd.server.channel.OpenChannelException;
 
 /**
  * Client side <code>ssh-connection</code> service.
@@ -41,6 +39,9 @@ import org.apache.sshd.server.channel.OpenChannelException;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ClientConnectionService extends AbstractConnectionService {
+
+    public static final String DEFAULT_KEEP_ALIVE_HEARTBEAT_STRING = "keepalive@sshd.apache.org";
+    public static final long DEFAULT_HEARTBEAT_INTERVAL = 0L;
 
     public static class Factory implements ServiceFactory {
 
@@ -69,33 +70,28 @@ public class ClientConnectionService extends AbstractConnectionService {
     }
 
     protected void startHeartBeat() {
-        String intervalStr = session.getFactoryManager().getProperties().get(ClientFactoryManager.HEARTBEAT_INTERVAL);
-        try {
-            int interval = intervalStr != null ? Integer.parseInt(intervalStr) : 0;
-            if (interval > 0) {
-                session.getFactoryManager().getScheduledExecutorService().scheduleAtFixedRate(new Runnable() {
-                    public void run() {
-                        sendHeartBeat();
-                    }
-                }, interval, interval, TimeUnit.MILLISECONDS);
-            }
-        } catch (NumberFormatException e) {
-            log.warn("Ignoring bad heartbeat interval: {}", intervalStr);
+        long interval = FactoryManagerUtils.getLongProperty(session, ClientFactoryManager.HEARTBEAT_INTERVAL, DEFAULT_HEARTBEAT_INTERVAL);
+        if (interval > 0L) {
+            FactoryManager manager = session.getFactoryManager();
+            ScheduledExecutorService service = manager.getScheduledExecutorService();
+            service.scheduleAtFixedRate(new Runnable() {
+                public void run() {
+                    sendHeartBeat();
+                }
+            }, interval, interval, TimeUnit.MILLISECONDS);
+            log.debug("startHeartbeat - started at interval={}", interval);
         }
     }
 
     protected void sendHeartBeat() {
+        String request = FactoryManagerUtils.getStringProperty(session, ClientFactoryManager.HEARTBEAT_REQUEST, DEFAULT_KEEP_ALIVE_HEARTBEAT_STRING);
         try {
             Buffer buf = session.createBuffer(SshConstants.SSH_MSG_GLOBAL_REQUEST);
-            String request = session.getFactoryManager().getProperties().get(ClientFactoryManager.HEARTBEAT_REQUEST);
-            if (request == null) {
-                request = "keepalive@sshd.apache.org";
-            }
             buf.putString(request);
             buf.putBoolean(false);
             session.writePacket(buf);
         } catch (IOException e) {
-            log.info("Error sending keepalive message", e);
+            log.info("Error sending keepalive message=" + request, e);
         }
     }
 
@@ -108,5 +104,4 @@ public class ClientConnectionService extends AbstractConnectionService {
     public String createX11Display(boolean singleConnection, String authenticationProtocol, String authenticationCookie, int screen) throws IOException {
         throw new IllegalStateException("Server side operation");
     }
-
 }

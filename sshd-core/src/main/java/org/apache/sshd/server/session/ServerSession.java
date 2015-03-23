@@ -23,6 +23,7 @@ import java.security.KeyPair;
 import java.util.List;
 
 import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.ServiceFactory;
@@ -33,6 +34,7 @@ import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.server.ServerFactoryManager;
 
 /**
@@ -42,6 +44,7 @@ import org.apache.sshd.server.ServerFactoryManager;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ServerSession extends AbstractSession {
+    public static final String  DEFAULT_SSH_VERSION_PREFIX="SSH-2.0-";
 
     protected static final long MAX_PACKETS = (1l << 31);
 
@@ -89,10 +92,12 @@ public class ServerSession extends AbstractSession {
     }
 
     private void sendServerIdentification() {
-        if (getFactoryManager().getProperties() != null && getFactoryManager().getProperties().get(ServerFactoryManager.SERVER_IDENTIFICATION) != null) {
-            serverVersion = "SSH-2.0-" + getFactoryManager().getProperties().get(ServerFactoryManager.SERVER_IDENTIFICATION);
+        FactoryManager manager = getFactoryManager();
+        String ident = FactoryManagerUtils.getString(manager, ServerFactoryManager.SERVER_IDENTIFICATION);
+        if (GenericUtils.isEmpty(ident)) {
+            serverVersion = DEFAULT_SSH_VERSION_PREFIX + manager.getVersion();
         } else {
-            serverVersion = "SSH-2.0-" + getFactoryManager().getVersion();
+            serverVersion = DEFAULT_SSH_VERSION_PREFIX + ident;
         }
         sendIdentification(serverVersion);
     }
@@ -155,7 +160,7 @@ public class ServerSession extends AbstractSession {
             return false;
         }
         log.debug("Client version string: {}", clientVersion);
-        if (!clientVersion.startsWith("SSH-2.0-")) {
+        if (!clientVersion.startsWith(DEFAULT_SSH_VERSION_PREFIX)) {
             String msg = "Unsupported protocol version: " + clientVersion;
             ioSession.write(new Buffer((msg + "\n").getBytes())).addListener(new SshFutureListener<IoWriteFuture>() {
                 @Override

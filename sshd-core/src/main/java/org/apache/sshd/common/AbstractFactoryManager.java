@@ -158,13 +158,10 @@ public abstract class AbstractFactoryManager extends CloseableUtils.AbstractInne
     protected void loadVersion() {
         this.version = "SSHD-UNKNOWN";
         try {
-            InputStream input = getClass().getClassLoader().getResourceAsStream("org/apache/sshd/sshd-version.properties");
-            try {
+            try (InputStream input = getClass().getClassLoader().getResourceAsStream("org/apache/sshd/sshd-version.properties")) {
                 Properties props = new Properties();
                 props.load(input);
                 this.version = props.getProperty("version").toUpperCase();
-            } finally {
-                input.close();
             }
         } catch (Exception e) {
             log.warn("Unable to load version from resources. Missing org/apache/sshd/sshd-version.properties ?", e);
@@ -180,21 +177,19 @@ public abstract class AbstractFactoryManager extends CloseableUtils.AbstractInne
     }
 
     public int getNioWorkers() {
-        String nioWorkers = getProperties().get(NIO_WORKERS);
-        if (nioWorkers != null && nioWorkers.length() > 0) {
-            int nb = Integer.parseInt(nioWorkers);
-            if (nb > 0) {
-                return nb;
-            }
+        int nb=FactoryManagerUtils.getIntProperty(this, NIO_WORKERS, DEFAULT_NIO_WORKERS);
+        if (nb > 0) {
+            return nb;
+        } else {    // it may have been configured to a negative value
+            return DEFAULT_NIO_WORKERS;
         }
-        return DEFAULT_NIO_WORKERS;
     }
 
     public void setNioWorkers(int nioWorkers) {
         if (nioWorkers > 0) {
-            getProperties().put(NIO_WORKERS, Integer.toString(nioWorkers));
+            FactoryManagerUtils.updateProperty(this, NIO_WORKERS, nioWorkers);
         } else {
-            getProperties().remove(NIO_WORKERS);
+            FactoryManagerUtils.updateProperty(this, NIO_WORKERS, null);
         }
     }
 

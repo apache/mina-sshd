@@ -29,16 +29,20 @@ import java.util.Set;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.Closeable;
+import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.ForwardingFilter;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.PtyMode;
 import org.apache.sshd.common.RequestHandler;
+import org.apache.sshd.common.Session;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
 import org.apache.sshd.common.channel.ChannelOutputStream;
@@ -172,7 +176,7 @@ public class ChannelSession extends AbstractServerChannel {
                 synchronized (listeners) {
                     ls = listeners.get(signal);
                     if (ls == null) {
-                        ls = new CopyOnWriteArraySet<SignalListener>();
+                        ls = new CopyOnWriteArraySet<>();
                         listeners.put(signal, ls);
                     }
                 }
@@ -232,17 +236,14 @@ public class ChannelSession extends AbstractServerChannel {
                         commandExitFuture.setClosed();
                     }
                 };
-                long timeout = DEFAULT_COMMAND_EXIT_TIMEOUT;
-                String val = getSession().getFactoryManager().getProperties().get(ServerFactoryManager.COMMAND_EXIT_TIMEOUT);
-                if (val != null) {
-                    try {
-                        timeout = Long.parseLong(val);
-                    } catch (NumberFormatException e) {
-                        // Ignore
-                    }
+
+                FactoryManager manager = getSession().getFactoryManager();
+                long timeout = FactoryManagerUtils.getLongProperty(manager, ServerFactoryManager.COMMAND_EXIT_TIMEOUT, DEFAULT_COMMAND_EXIT_TIMEOUT);
+                if (log.isDebugEnabled()) {
+                    log.debug("Wait {} ms for shell to exit cleanly", timeout);
                 }
-                log.debug("Wait {} ms for shell to exit cleanly", timeout);
-                getSession().getFactoryManager().getScheduledExecutorService().schedule(task, timeout, TimeUnit.MILLISECONDS);
+
+                manager.getScheduledExecutorService().schedule(task, timeout, TimeUnit.MILLISECONDS);
                 commandExitFuture.addListener(new SshFutureListener<CloseFuture>() {
                     public void operationComplete(CloseFuture future) {
                         task.cancel();

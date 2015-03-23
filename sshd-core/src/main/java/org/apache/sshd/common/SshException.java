@@ -27,6 +27,8 @@ import java.io.IOException;
  */
 public class SshException extends IOException {
 
+    private static final long serialVersionUID = -7349477687125144606L;
+
     private final int disconnectCode;
 
     public SshException() {

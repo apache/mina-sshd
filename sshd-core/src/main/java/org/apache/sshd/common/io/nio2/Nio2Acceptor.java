@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoHandler;
@@ -39,18 +40,15 @@ import org.apache.sshd.common.io.IoHandler;
 /**
  */
 public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
+    public static final int DEFAULT_BACKLOG=0;
 
     private final Map<SocketAddress, AsynchronousServerSocketChannel> channels;
-    private int backlog = 0;
+    private int backlog = DEFAULT_BACKLOG;
 
     public Nio2Acceptor(FactoryManager manager, IoHandler handler, AsynchronousChannelGroup group) {
         super(manager, handler, group);
         channels = new ConcurrentHashMap<SocketAddress, AsynchronousServerSocketChannel>();
-
-        String valStr = manager.getProperties().get(FactoryManager.SOCKET_BACKLOG);
-        if (valStr != null) {
-            backlog = Integer.parseInt(valStr);
-        }
+        backlog = FactoryManagerUtils.getIntProperty(manager, FactoryManager.SOCKET_BACKLOG, DEFAULT_BACKLOG);
     }
 
     public void bind(Collection<? extends SocketAddress> addresses) throws IOException {

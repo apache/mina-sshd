@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.RequestHandler;
 import org.apache.sshd.common.Session;
 import org.apache.sshd.common.SshConstants;
@@ -174,15 +175,7 @@ public abstract class AbstractChannel extends CloseableUtils.AbstractInnerClosea
                 Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_CLOSE);
                 buffer.putInt(recipient);
                 try {
-                    long timeout = DEFAULT_CHANNEL_CLOSE_TIMEOUT;
-                    String val = getSession().getFactoryManager().getProperties().get(FactoryManager.CHANNEL_CLOSE_TIMEOUT);
-                    if (val != null) {
-                        try {
-                            timeout = Long.parseLong(val);
-                        } catch (NumberFormatException e) {
-                            // Ignore
-                        }
-                    }
+                    long timeout = FactoryManagerUtils.getLongProperty(getSession(), FactoryManager.CHANNEL_CLOSE_TIMEOUT, DEFAULT_CHANNEL_CLOSE_TIMEOUT);
                     session.writePacket(buffer, timeout, TimeUnit.MILLISECONDS).addListener(new SshFutureListener<IoWriteFuture>() {
                         public void operationComplete(IoWriteFuture future) {
                             if (future.isWritten()) {
