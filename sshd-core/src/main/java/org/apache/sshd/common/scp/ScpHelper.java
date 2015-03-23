@@ -330,10 +330,12 @@ public class ScpHelper {
     public void send(List<String> paths, boolean recursive, boolean preserve, int bufferSize) throws IOException {
         readAck(false);
         for (String pattern : paths) {
+            pattern = pattern.replace('/', File.separatorChar);
+
             int idx = pattern.indexOf('*');
             if (idx >= 0) {
                 String basedir = "";
-                int lastSep = pattern.substring(0, idx).lastIndexOf('/');
+                int lastSep = pattern.substring(0, idx).lastIndexOf(File.separatorChar);
                 if (lastSep >= 0) {
                     basedir = pattern.substring(0, lastSep);
                     pattern = pattern.substring(lastSep + 1);
@@ -346,18 +348,18 @@ public class ScpHelper {
                     } else if (Files.isDirectory(file)) {
                         if (!recursive) {
                             out.write(ScpHelper.WARNING);
-                            out.write((path + " not a regular file\n").getBytes());
+                            out.write((path.toString().replace(File.separatorChar, '/') + " not a regular file\n").getBytes());
                         } else {
                             sendDir(file, preserve, bufferSize);
                         }
                     } else {
                         out.write(ScpHelper.WARNING);
-                        out.write((path + " unknown file type\n").getBytes());
+                        out.write((path.toString().replace(File.separatorChar, '/') + " unknown file type\n").getBytes());
                     }
                 }
             } else {
                 String basedir = "";
-                int lastSep = pattern.lastIndexOf('/');
+                int lastSep = pattern.lastIndexOf(File.separatorChar);
                 if (lastSep >= 0) {
                     basedir = pattern.substring(0, lastSep);
                     pattern = pattern.substring(lastSep + 1);
@@ -385,7 +387,7 @@ public class ScpHelper {
         if (GenericUtils.isEmpty(basedir)) {
             return resolveLocalPath(subpath);
         } else {
-            return resolveLocalPath(basedir + "/" + subpath);
+            return resolveLocalPath(basedir + File.separator + subpath);
         }
     }
 
