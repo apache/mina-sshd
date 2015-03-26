@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.sshd.server.kex;
 
 import java.io.FileNotFoundException;
@@ -23,11 +24,9 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.net.URL;
 import java.security.KeyPair;
-import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.sshd.common.Digest;
 import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.KeyExchange;
 import org.apache.sshd.common.NamedFactory;
@@ -35,8 +34,8 @@ import org.apache.sshd.common.Random;
 import org.apache.sshd.common.Signature;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.digest.SHA1;
-import org.apache.sshd.common.kex.DH;
+import org.apache.sshd.common.kex.DHG;
+import org.apache.sshd.common.kex.DHFactory;
 import org.apache.sshd.common.kex.DHGroupData;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.Buffer;
@@ -44,59 +43,48 @@ import org.apache.sshd.common.util.BufferUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.server.ServerFactoryManager;
-import org.apache.sshd.server.session.ServerSession;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
- * Server side Diffie Hellman Group Exchange
- *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class DHGEX implements KeyExchange {
+public class DHGEXServer extends AbstractDHServerKeyExchange {
 
-    public static class Factory implements NamedFactory<KeyExchange> {
+    protected final DHFactory factory;
+    protected DHG dh;
+    protected int min;
+    protected int prf;
+    protected int max;
+    protected byte expected;
+    protected boolean oldRequest;
 
-        public String getName() {
-            return "diffie-hellman-group-exchange-sha1";
-        }
+    public static NamedFactory<KeyExchange> newFactory(final DHFactory factory) {
+        return new NamedFactory<KeyExchange>() {
+            @Override
+            public KeyExchange create() {
+                return new DHGEXServer(factory);
+            }
 
-        public KeyExchange create() {
-            return new DHGEX();
-        }
+            @Override
+            public String getName() {
+                return factory.getName();
+            }
 
+            @Override
+            public String toString() {
+                return NamedFactory.class.getSimpleName()
+                        + "<" + KeyExchange.class.getSimpleName() + ">"
+                        + "[" + getName() + "]";
+            }
+        };
     }
 
-    private final Logger log = LoggerFactory.getLogger(getClass());
-
-    private ServerSession session;
-    private byte[] V_S;
-    private byte[] V_C;
-    private byte[] I_S;
-    private byte[] I_C;
-    private Digest hash;
-    private DH dh;
-    private byte[] e;
-    private byte[] f;
-    private byte[] K;
-    private byte[] H;
-
-    int min;
-    int prf;
-    int max;
-    private byte expected;
-    boolean oldRequest;
+    protected DHGEXServer(DHFactory factory) {
+        super();
+        this.factory = factory;
+    }
 
     public void init(AbstractSession s, byte[] V_S, byte[] V_C, byte[] I_S, byte[] I_C) throws Exception {
-        if (!(s instanceof ServerSession)) {
-            throw new IllegalStateException("Using a server side KeyExchange on a client");
-        }
-        session = (ServerSession) s;
-        this.V_S = V_S;
-        this.V_C = V_C;
-        this.I_S = I_S;
-        this.I_C = I_C;
-
+        super.init(s, V_S, V_C, I_S, I_C);
         expected = SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST;
     }
 
@@ -133,7 +121,7 @@ public class DHGEX implements KeyExchange {
             min = buffer.getInt();
             prf = buffer.getInt();
             max = buffer.getInt();
-            if (max < min || prf < min || max < prf) {
+            if (prf < min || max < prf) {
                 throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
                         "Protocol error: bad parameters " + min + " !< " + prf + " !< " + max);
             }
@@ -223,7 +211,7 @@ public class DHGEX implements KeyExchange {
         return false;
     }
 
-    private DH chooseDH(int min, int prf, int max) throws Exception {
+    private DHG chooseDH(int min, int prf, int max) throws Exception {
         List<Moduli.DhGroup> groups = loadModuliGroups();
 
         min = Math.max(min, 1024);
@@ -233,7 +221,7 @@ public class DHGEX implements KeyExchange {
         prf = Math.min(prf, SecurityUtils.isBouncyCastleRegistered() ? 8192 : 1024);
         max = Math.min(max, 8192);
         int bestSize = 0;
-        List<Moduli.DhGroup> selected = new ArrayList<Moduli.DhGroup>();
+        List<Moduli.DhGroup> selected = new ArrayList<>();
         for (Moduli.DhGroup group : groups) {
             if (group.size < min || group.size > max) {
                 continue;
@@ -288,27 +276,8 @@ public class DHGEX implements KeyExchange {
         return groups;
     }
 
-    protected DH getDH(BigInteger p, BigInteger g) throws Exception {
-        DH dh = new DH(new SHA1.Factory());
-        dh.setP(p);
-        dh.setG(g);
-        return dh;
-    }
-
-    public Digest getHash() {
-        return hash;
-    }
-
-    public byte[] getH() {
-        return H;
-    }
-
-    public byte[] getK() {
-        return K;
-    }
-
-    public PublicKey getServerKey() {
-        return session.getHostKey().getPublic();
+    protected DHG getDH(BigInteger p, BigInteger g) throws Exception {
+        return (DHG) factory.create(p, g);
     }
 
 }

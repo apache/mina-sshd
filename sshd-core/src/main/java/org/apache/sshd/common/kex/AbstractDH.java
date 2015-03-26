@@ -27,18 +27,12 @@ import org.apache.sshd.common.Digest;
  * 
  */
 public abstract class AbstractDH {
+
     protected BigInteger K; // shared secret key
     private byte[] K_array;
 
     protected AbstractDH() {
-    }
-
-    public static AbstractDH getInstance(String algo) throws Exception {
-        if (algo.startsWith("ecdh-sha2-")) {
-            return new ECDH();
-        } else {
-            return new DH();
-        }
+        super();
     }
 
     public abstract void setF(byte[] e);

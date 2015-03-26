@@ -33,14 +33,7 @@ import org.apache.sshd.common.util.GenericUtils;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface NamedFactory<T> extends Factory<T> {
-
-    /**
-     * Name of this factory
-     * @return the name of this factory
-     */
-    String getName();
-
+public interface NamedFactory<T> extends Factory<T>, NamedResource {
     /**
      * Utility class to help using NamedFactories
      */
@@ -72,15 +65,13 @@ public interface NamedFactory<T> extends Factory<T> {
          * @param <T> type of object to create
          * @return a newly created object or <code>null</code> if the factory is not in the list
          */
-        public static <T> T create(List<NamedFactory<T>> factories, String name) {
-            if (factories != null) {
-                for (NamedFactory<T> f : factories) {
-                    if (f.getName().equals(name)) {
-                        return f.create();
-                    }
-                }
+        public static <T> T create(Collection<? extends NamedFactory<T>> factories, String name) {
+            NamedFactory<? extends T>   f=get(factories, name);
+            if (f != null) {
+                return f.create();
+            } else {
+                return null;
             }
-            return null;
         }
 
         /**
@@ -90,7 +81,7 @@ public interface NamedFactory<T> extends Factory<T> {
          * @param <T> type of object to create
          * @return a comma separated list of factory names
          */
-        public static <T> String getNames(List<NamedFactory<T>> factories) {
+        public static <T> String getNames(Collection<? extends NamedFactory<T>> factories) {
             StringBuilder sb = new StringBuilder();
             for (NamedFactory<T> f : factories) {
                 if (sb.length() > 0) {
@@ -109,14 +100,12 @@ public interface NamedFactory<T> extends Factory<T> {
          * @param <T> type of object to create
          * @return the factory removed from the list or <code>null</code> if not in the list
          */
-        public static <T> NamedFactory<T> remove(List<NamedFactory<T>> factories, String name) {
-            for (NamedFactory<T> f : factories) {
-                if (f.getName().equals(name)) {
-                    factories.remove(f);
-                    return f;
-                }
+        public static <T> NamedFactory<T> remove(Collection<? extends NamedFactory<T>> factories, String name) {
+            NamedFactory<T> f=get(factories, name);
+            if (f != null) {
+                factories.remove(f);
             }
-            return null;
+            return f;
         }
 
         /**
@@ -127,7 +116,11 @@ public interface NamedFactory<T> extends Factory<T> {
          * @param <T> type of object create by the factories
          * @return a factory or <code>null</code> if not found in the list
          */
-        public static <T> NamedFactory<T> get(List<NamedFactory<T>> factories, String name) {
+        public static <T> NamedFactory<T> get(Collection<? extends NamedFactory<T>> factories, String name) {
+            if (GenericUtils.isEmpty(factories)) {
+                return null;
+            }
+
             for (NamedFactory<T> f : factories) {
                 if (f.getName().equals(name)) {
                     return f;
@@ -135,7 +128,6 @@ public interface NamedFactory<T> extends Factory<T> {
             }
             return null;
         }
-
     }
 
 }

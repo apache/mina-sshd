@@ -30,7 +30,6 @@ import javax.crypto.spec.DHPublicKeySpec;
 
 import org.apache.sshd.common.Digest;
 import org.apache.sshd.common.Factory;
-import org.apache.sshd.common.digest.SHA1;
 import org.apache.sshd.common.util.SecurityUtils;
 
 /**
@@ -38,7 +37,7 @@ import org.apache.sshd.common.util.SecurityUtils;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class DH extends AbstractDH {
+public class DHG extends AbstractDH {
 
     private BigInteger p;
     private BigInteger g;
@@ -49,14 +48,16 @@ public class DH extends AbstractDH {
     private KeyAgreement myKeyAgree;
     private Factory<Digest> factory;
 
-    public DH() throws Exception {
-        this(new SHA1.Factory());
+    public DHG(Factory<Digest> digestFactory) throws Exception {
+        this(digestFactory, null, null);
     }
 
-    public DH(Factory<Digest> factory) throws Exception {
+    public DHG(Factory<Digest> digestFactory, BigInteger pValue, BigInteger gValue) throws Exception {
         myKpairGen = SecurityUtils.getKeyPairGenerator("DH");
         myKeyAgree = SecurityUtils.getKeyAgreement("DH");
-        this.factory = factory;
+        factory = digestFactory;
+        p = pValue;
+        g = gValue;
     }
 
     public byte[] getE() throws Exception {

@@ -48,8 +48,13 @@ public class ECDH extends AbstractDH {
     private KeyAgreement myKeyAgree;
 
     public ECDH() throws Exception {
+        this(null);
+    }
+
+    public ECDH(ECParameterSpec paramSpec) throws Exception {
         myKpairGen = SecurityUtils.getKeyPairGenerator("EC");
         myKeyAgree = SecurityUtils.getKeyAgreement("ECDH");
+        params = paramSpec;
     }
 
     @Override
@@ -73,8 +78,8 @@ public class ECDH extends AbstractDH {
         return stripLeadingZeroes(myKeyAgree.generateSecret());
     }
 
-    public void setCurveParameters(ECParameterSpec params) {
-        this.params = params;
+    public void setCurveParameters(ECParameterSpec paramSpec) {
+        params = paramSpec;
     }
 
     @Override

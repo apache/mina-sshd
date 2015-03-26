@@ -18,56 +18,57 @@
  */
 package org.apache.sshd.client.kex;
 
-import java.security.PublicKey;
-
-import org.apache.sshd.client.session.ClientSessionImpl;
-import org.apache.sshd.common.Digest;
 import org.apache.sshd.common.KeyExchange;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.Signature;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.kex.AbstractDH;
-import org.apache.sshd.common.kex.DH;
+import org.apache.sshd.common.kex.DHFactory;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.KeyUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Base class for DHG key exchange algorithms.
  * Implementations will only have to configure the required data on the
- * {@link DH} class in the {@link #getDH()} method.
+ * {@link org.apache.sshd.common.kex.DHG} class in the {@link #getDH()} method.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractDHGClient implements KeyExchange {
+public class DHGClient extends AbstractDHClientKeyExchange {
 
-    private final Logger log = LoggerFactory.getLogger(getClass());
+    protected final DHFactory factory;
+    protected AbstractDH dh;
 
-    private ClientSessionImpl session;
-    private byte[] V_S;
-    private byte[] V_C;
-    private byte[] I_S;
-    private byte[] I_C;
-    private Digest hash;
-    private AbstractDH dh;
-    private byte[] e;
-    private byte[] f;
-    private byte[] K;
-    private byte[] H;
-    private PublicKey serverKey;
+    public static final NamedFactory<KeyExchange> newFactory(final DHFactory delegate) {
+        return new NamedFactory<KeyExchange>() {
+            @Override
+            public String getName() {
+                return delegate.getName();
+            }
+
+            @Override
+            public KeyExchange create() {
+                return new DHGClient(delegate);
+            }
+
+            @Override
+            public String toString() {
+                return NamedFactory.class.getSimpleName()
+                        + "<" + KeyExchange.class.getSimpleName() + ">"
+                        + "[" + getName() + "]";
+            }
+        };
+    }
+
+    protected DHGClient(DHFactory factory) {
+        super();
+        this.factory = factory;
+    }
 
     public void init(AbstractSession s, byte[] V_S, byte[] V_C, byte[] I_S, byte[] I_C) throws Exception {
-        if (!(s instanceof ClientSessionImpl)) {
-            throw new IllegalStateException("Using a client side KeyExchange on a server");
-        }
-        session = (ClientSessionImpl) s;
-        this.V_S = V_S;
-        this.V_C = V_C;
-        this.I_S = I_S;
-        this.I_C = I_C;
+        super.init(s, V_S, V_C, I_S, I_C);
         dh = getDH();
         hash =  dh.getHash();
         hash.init();
@@ -79,7 +80,9 @@ public abstract class AbstractDHGClient implements KeyExchange {
         session.writePacket(buffer);
     }
 
-    protected abstract AbstractDH getDH() throws Exception;
+    protected AbstractDH getDH() throws Exception {
+        return factory.create();
+    }
 
     public boolean next(Buffer buffer) throws Exception {
         byte cmd = buffer.getByte();
@@ -123,22 +126,6 @@ public abstract class AbstractDHGClient implements KeyExchange {
                                    "KeyExchange signature verification failed");
         }
         return true;
-    }
-
-    public Digest getHash() {
-        return hash;
-    }
-
-    public byte[] getH() {
-        return H;
-    }
-
-    public byte[] getK() {
-        return K;
-    }
-
-    public PublicKey getServerKey() {
-        return serverKey;
     }
 
 }

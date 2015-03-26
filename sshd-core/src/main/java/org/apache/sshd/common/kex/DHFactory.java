@@ -16,38 +16,19 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.server.kex;
+package org.apache.sshd.common.kex;
 
-import org.apache.sshd.common.KeyExchange;
-import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.cipher.ECCurves;
-import org.apache.sshd.common.kex.AbstractDH;
-import org.apache.sshd.common.kex.ECDH;
+import java.math.BigInteger;
+
+import org.apache.sshd.common.NamedResource;
 
 /**
- * Elliptic Curve Diffie-Hellman with NIST P-256 curve.
- *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ECDHP256 extends AbstractDHGServer {
+public interface DHFactory extends NamedResource {
 
-    public static class Factory implements NamedFactory<KeyExchange> {
+    boolean isGroupExchange();
 
-        public String getName() {
-            return "ecdh-sha2-nistp256";
-        }
-
-        public KeyExchange create() {
-            return new ECDHP256();
-        }
-
-    }
-
-    @Override
-    protected AbstractDH getDH() throws Exception {
-        ECDH ecdh = new ECDH();
-        ecdh.setCurveParameters(ECCurves.EllipticCurves.nistp256);
-        return ecdh;
-    }
+    AbstractDH create(Object... params) throws Exception;
 
 }

@@ -19,16 +19,11 @@
 package org.apache.sshd.common;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.Collection;
 
-public interface ServiceFactory {
+import org.apache.sshd.common.util.GenericUtils;
 
-    /**
-     * Name of this factory
-     * @return
-     */
-    String getName();
-
+public interface ServiceFactory extends NamedResource {
     Service create(Session session) throws IOException;
 
     /**
@@ -44,14 +39,17 @@ public interface ServiceFactory {
          * @param name the factory name to use
          * @return a newly created object or <code>null</code> if the factory is not in the list
          */
-        public static Service create(List<ServiceFactory> factories, String name, Session session) throws IOException {
-            if (factories != null) {
-                for (ServiceFactory f : factories) {
-                    if (f.getName().equals(name)) {
-                        return f.create(session);
-                    }
+        public static Service create(Collection<? extends ServiceFactory> factories, String name, Session session) throws IOException {
+            if (GenericUtils.isEmpty(factories)) {
+                return null;
+            }
+
+            for (ServiceFactory f : factories) {
+                if (f.getName().equals(name)) {
+                    return f.create(session);
                 }
             }
+
             return null;
         }
     }

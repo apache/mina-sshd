@@ -16,43 +16,35 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.sshd.server.kex;
 
-import org.apache.sshd.common.KeyExchange;
-import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.kex.AbstractDH;
-import org.apache.sshd.common.kex.DH;
-import org.apache.sshd.common.kex.DHGroupData;
+import java.security.PublicKey;
+
+import org.apache.sshd.common.kex.dh.AbstractDHKeyExchange;
+import org.apache.sshd.common.session.AbstractSession;
+import org.apache.sshd.server.session.ServerSession;
 
 /**
- * DHG14 does not work with the default JCE implementation provided by Sun
- * because it does not support 2048 bits encryption.
- * It requires BouncyCastle to be used.
- *
- * TODO Add javadoc
- *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class DHG14 extends AbstractDHGServer {
+public abstract class AbstractDHServerKeyExchange extends AbstractDHKeyExchange {
 
-    public static class Factory implements NamedFactory<KeyExchange> {
+    protected ServerSession session;
 
-        public String getName() {
-            return "diffie-hellman-group14-sha1";
-        }
-
-        public KeyExchange create() {
-            return new DHG14();
-        }
-
+    protected AbstractDHServerKeyExchange() {
+        super();
     }
 
-    @Override
-    protected AbstractDH getDH() throws Exception {
-        DH dh = new DH();
-        dh.setG(DHGroupData.getG());
-        dh.setP(DHGroupData.getP14());
-        return dh;
+    public void init(AbstractSession s, byte[] V_S, byte[] V_C, byte[] I_S, byte[] I_C) throws Exception {
+        super.init(s, V_S, V_C, I_S, I_C);
+        if (!(s instanceof ServerSession)) {
+            throw new IllegalStateException("Using a server side KeyExchange on a client");
+        }
+        session = (ServerSession) s;
     }
 
+    public PublicKey getServerKey() {
+        return session.getHostKey().getPublic();
+    }
 }

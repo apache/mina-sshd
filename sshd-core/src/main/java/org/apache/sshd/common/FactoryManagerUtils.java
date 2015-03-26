@@ -106,15 +106,15 @@ public class FactoryManagerUtils {
     }
 
     public static final String updateProperty(Session session, String name, long value) {
-        return updateProperty(session, name, String.valueOf(value));
+        return updateProperty(session, name, Long.toString(value));
     }
 
     public static final String updateProperty(FactoryManager manager, String name, long value) {
-        return updateProperty(manager, name, String.valueOf(value));
+        return updateProperty(manager, name, Long.toString(value));
     }
 
     public static final String updateProperty(Map<String, String> props, String name, long value) {
-        return updateProperty(props, name, String.valueOf(value));
+        return updateProperty(props, name, Long.toString(value));
     }
 
     public static final int getIntProperty(Session session, String name, int defaultValue) {
@@ -152,15 +152,15 @@ public class FactoryManagerUtils {
     }
 
     public static final String updateProperty(Session session, String name, int value) {
-        return updateProperty(session, name, String.valueOf(value));
+        return updateProperty(session, name, Integer.toString(value));
     }
 
     public static final String updateProperty(FactoryManager manager, String name, int value) {
-        return updateProperty(manager, name, String.valueOf(value));
+        return updateProperty(manager, name, Integer.toString(value));
     }
 
     public static final String updateProperty(Map<String, String> props, String name, int value) {
-        return updateProperty(props, name, String.valueOf(value));
+        return updateProperty(props, name, Integer.toString(value));
     }
 
     public static final boolean getBooleanProperty(Session session, String name, boolean defaultValue) {
@@ -198,15 +198,15 @@ public class FactoryManagerUtils {
     }
 
     public static final String updateProperty(Session session, String name, boolean value) {
-        return updateProperty(session, name, String.valueOf(value));
+        return updateProperty(session, name, Boolean.toString(value));
     }
 
     public static final String updateProperty(FactoryManager manager, String name, boolean value) {
-        return updateProperty(manager, name, String.valueOf(value));
+        return updateProperty(manager, name, Boolean.toString(value));
     }
 
     public static final String updateProperty(Map<String, String> props, String name, boolean value) {
-        return updateProperty(props, name, String.valueOf(value));
+        return updateProperty(props, name, Boolean.toString(value));
     }
 
     public static final String getString(Session session, String name) {

@@ -24,6 +24,8 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.sshd.client.ServerKeyVerifier;
+import org.apache.sshd.client.kex.DHGClient;
+import org.apache.sshd.client.kex.DHGEXClient;
 import org.apache.sshd.client.keyverifier.AcceptAllServerKeyVerifier;
 import org.apache.sshd.common.AbstractFactoryManager;
 import org.apache.sshd.common.Channel;
@@ -43,12 +45,14 @@ import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.file.nativefs.NativeFileSystemFactory;
 import org.apache.sshd.common.forward.DefaultTcpipForwarderFactory;
 import org.apache.sshd.common.forward.TcpipServerChannel;
+import org.apache.sshd.common.kex.BuiltinDHFactories;
 import org.apache.sshd.common.mac.HMACMD5;
 import org.apache.sshd.common.mac.HMACMD596;
 import org.apache.sshd.common.mac.HMACSHA1;
 import org.apache.sshd.common.mac.HMACSHA196;
 import org.apache.sshd.common.mac.HMACSHA256;
 import org.apache.sshd.common.mac.HMACSHA512;
+import org.apache.sshd.common.kex.DHFactory;
 import org.apache.sshd.common.random.BouncyCastleRandom;
 import org.apache.sshd.common.random.JceRandom;
 import org.apache.sshd.common.random.SingletonRandomFactory;
@@ -63,6 +67,8 @@ import org.apache.sshd.server.global.CancelTcpipForwardHandler;
 import org.apache.sshd.server.global.KeepAliveHandler;
 import org.apache.sshd.server.global.NoMoreSessionsHandler;
 import org.apache.sshd.server.global.TcpipForwardHandler;
+import org.apache.sshd.server.kex.DHGEXServer;
+import org.apache.sshd.server.kex.DHGServer;
 
 /**
  * A builder object for creating SshServer instances.
@@ -287,7 +293,7 @@ public class SshBuilder {
          * ciphers according to the <tt>ignoreUnsupported</tt> parameter
          * @see BuiltinCiphers#isSupported()
          */
-        protected static List<NamedFactory<Cipher>> setUpDefaultCiphers(boolean ignoreUnsupported) {
+        public static List<NamedFactory<Cipher>> setUpDefaultCiphers(boolean ignoreUnsupported) {
             List<NamedFactory<Cipher>> avail = new ArrayList<NamedFactory<Cipher>>(DEFAULT_CIPHERS_PREFERENCE.size());
             for (BuiltinCiphers c : DEFAULT_CIPHERS_PREFERENCE) {
                 if (ignoreUnsupported || c.isSupported()) {
@@ -297,6 +303,26 @@ public class SshBuilder {
 
             return avail;
         }
+        
+        /**
+         * The default {@link BuiltinDHFactories} setup in order of preference
+         * as specified by <A HREF="https://www.freebsd.org/cgi/man.cgi?query=ssh_config&sektion=5">
+         * ssh_config(5)</A> 
+         */
+        public static final List<BuiltinDHFactories> DEFAULT_KEX_PREFERENCE=
+                Collections.unmodifiableList(
+                        Arrays.asList(
+                                BuiltinDHFactories.ecdhp521,
+                                BuiltinDHFactories.ecdhp384,
+                                BuiltinDHFactories.ecdhp256,
+                                
+                                BuiltinDHFactories.dhgex256,
+                                BuiltinDHFactories.dhgex,
+                                
+                                BuiltinDHFactories.dhg14,
+                                BuiltinDHFactories.dhg1
+                        ));
+
     }
 
     /**
@@ -314,35 +340,8 @@ public class SshBuilder {
         @Override
         protected ClientBuilder fillWithDefaultValues() {
             super.fillWithDefaultValues();
-            if (SecurityUtils.isBouncyCastleRegistered()) {
-                if (keyExchangeFactories == null) {
-                    keyExchangeFactories = Arrays.asList(
-                            new org.apache.sshd.client.kex.DHGEX256.Factory(),
-                            new org.apache.sshd.client.kex.DHGEX.Factory(),
-                            new org.apache.sshd.client.kex.ECDHP256.Factory(),
-                            new org.apache.sshd.client.kex.ECDHP384.Factory(),
-                            new org.apache.sshd.client.kex.ECDHP521.Factory(),
-                            new org.apache.sshd.client.kex.DHG14.Factory(),
-                            new org.apache.sshd.client.kex.DHG1.Factory());
-                }
-            // EC keys are not supported until OpenJDK 7
-            } else if (SecurityUtils.hasEcc()) {
-                if (keyExchangeFactories == null) {
-                    keyExchangeFactories = Arrays.asList(
-                            new org.apache.sshd.client.kex.DHGEX256.Factory(),
-                            new org.apache.sshd.client.kex.DHGEX.Factory(),
-                            new org.apache.sshd.client.kex.ECDHP256.Factory(),
-                            new org.apache.sshd.client.kex.ECDHP384.Factory(),
-                            new org.apache.sshd.client.kex.ECDHP521.Factory(),
-                            new org.apache.sshd.client.kex.DHG1.Factory());
-                }
-            } else {
-                if (keyExchangeFactories == null) {
-                    keyExchangeFactories = Arrays.asList(
-                            new org.apache.sshd.client.kex.DHGEX256.Factory(),
-                            new org.apache.sshd.client.kex.DHGEX.Factory(),
-                            new org.apache.sshd.client.kex.DHG1.Factory());
-                }
+            if (keyExchangeFactories == null) {
+                keyExchangeFactories = setUpDefaultKeyExchanges(false);
             }
             if (channelFactories == null) {
                 channelFactories = Arrays.<NamedFactory<Channel>>asList(
@@ -363,6 +362,37 @@ public class SshBuilder {
             client.setServerKeyVerifier(serverKeyVerifier);
             return client;
         }
+
+        /**
+         * @param ignoreUnsupported If {@code true} then all the default
+         * key exchanges are included, regardless of whether they are currently
+         * supported by the JCE. Otherwise, only the supported ones out of the
+         * list are included
+         * @return A {@link List} of the default {@link NamedFactory}
+         * instances of the {@link KeyExchange}s according to the preference
+         * order defined by {@link #DEFAULT_KEX_PREFERENCE}.
+         * <B>Note:</B> the list may be filtered to exclude unsupported JCE
+         * key exchanges according to the <tt>ignoreUnsupported</tt> parameter
+         * @see BuiltinDHFactories#isSupported()
+         */
+        public static List<NamedFactory<KeyExchange>> setUpDefaultKeyExchanges(boolean ignoreUnsupported) {
+            List<NamedFactory<KeyExchange>> avail = new ArrayList<>(DEFAULT_KEX_PREFERENCE.size());
+            for (BuiltinDHFactories f : BuiltinDHFactories.VALUES) {
+                if (ignoreUnsupported || f.isSupported()) {
+                    avail.add(getKeyExchangeFactory(f));
+                }
+            }
+            return avail;
+        }
+
+        public static NamedFactory<KeyExchange> getKeyExchangeFactory(DHFactory factory) {
+            if (factory.isGroupExchange()) {
+                return DHGEXClient.newFactory(factory);
+            } else {
+                return DHGClient.newFactory(factory);
+            }
+        }
+
     }
 
     /**
@@ -373,35 +403,8 @@ public class SshBuilder {
         @Override
         protected ServerBuilder fillWithDefaultValues() {
             super.fillWithDefaultValues();
-            if (SecurityUtils.isBouncyCastleRegistered()) {
-                if (keyExchangeFactories == null) {
-                    keyExchangeFactories = Arrays.asList(
-                            new org.apache.sshd.server.kex.DHGEX256.Factory(),
-                            new org.apache.sshd.server.kex.DHGEX.Factory(),
-                            new org.apache.sshd.server.kex.ECDHP256.Factory(),
-                            new org.apache.sshd.server.kex.ECDHP384.Factory(),
-                            new org.apache.sshd.server.kex.ECDHP521.Factory(),
-                            new org.apache.sshd.server.kex.DHG14.Factory(),
-                            new org.apache.sshd.server.kex.DHG1.Factory());
-                }
-            // EC keys are not supported until OpenJDK 7
-            } else if (SecurityUtils.hasEcc()) {
-                if (keyExchangeFactories == null) {
-                    keyExchangeFactories = Arrays.asList(
-                            new org.apache.sshd.server.kex.DHGEX256.Factory(),
-                            new org.apache.sshd.server.kex.DHGEX.Factory(),
-                            new org.apache.sshd.server.kex.ECDHP256.Factory(),
-                            new org.apache.sshd.server.kex.ECDHP384.Factory(),
-                            new org.apache.sshd.server.kex.ECDHP521.Factory(),
-                            new org.apache.sshd.server.kex.DHG1.Factory());
-                }
-            } else {
-                if (keyExchangeFactories == null) {
-                    keyExchangeFactories = Arrays.asList(
-                            new org.apache.sshd.server.kex.DHGEX256.Factory(),
-                            new org.apache.sshd.server.kex.DHGEX.Factory(),
-                            new org.apache.sshd.server.kex.DHG1.Factory());
-                }
+            if (keyExchangeFactories == null) {
+                keyExchangeFactories = setUpDefaultKeyExchanges(false);
             }
             if (channelFactories == null) {
                 channelFactories = Arrays.asList(
@@ -420,6 +423,37 @@ public class SshBuilder {
             }
             return me();
         }
+
+        /**
+         * @param ignoreUnsupported If {@code true} then all the default
+         * key exchanges are included, regardless of whether they are currently
+         * supported by the JCE. Otherwise, only the supported ones out of the
+         * list are included
+         * @return A {@link List} of the default {@link NamedFactory}
+         * instances of the {@link KeyExchange}s according to the preference
+         * order defined by {@link #DEFAULT_KEX_PREFERENCE}.
+         * <B>Note:</B> the list may be filtered to exclude unsupported JCE
+         * key exchanges according to the <tt>ignoreUnsupported</tt> parameter
+         * @see BuiltinDHFactories#isSupported()
+         */
+        public static List<NamedFactory<KeyExchange>> setUpDefaultKeyExchanges(boolean ignoreUnsupported) {
+            List<NamedFactory<KeyExchange>> avail = new ArrayList<>(DEFAULT_KEX_PREFERENCE.size());
+            for (BuiltinDHFactories f : BuiltinDHFactories.VALUES) {
+                if (ignoreUnsupported || f.isSupported()) {
+                    avail.add(getKeyExchangeFactory(f));
+                }
+            }
+            return avail;
+        }
+
+        public static NamedFactory<KeyExchange> getKeyExchangeFactory(DHFactory factory) {
+            if (factory.isGroupExchange()) {
+                return DHGEXServer.newFactory(factory);
+            } else {
+                return DHGServer.newFactory(factory);
+            }
+        }
+
     }
 
 }

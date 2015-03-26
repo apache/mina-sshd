@@ -18,18 +18,23 @@
  */
 package org.apache.sshd;
 
+import static org.junit.Assert.assertArrayEquals;
+
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
-import org.apache.sshd.client.kex.DHG1;
-import org.apache.sshd.common.Cipher;
-import org.apache.sshd.common.KeyExchange;
+import org.apache.sshd.client.kex.DHGClient;
+import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.cipher.BlowfishCBC;
+import org.apache.sshd.common.cipher.BuiltinCiphers;
+import org.apache.sshd.common.kex.AbstractDH;
+import org.apache.sshd.common.kex.BuiltinDHFactories;
 import org.apache.sshd.util.BaseTest;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
@@ -37,8 +42,6 @@ import org.apache.sshd.util.Utils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.assertArrayEquals;
 
 public class LoadTest extends BaseTest {
 
@@ -84,7 +87,7 @@ public class LoadTest extends BaseTest {
     }
 
     protected void test(final String msg, final int nbThreads, final int nbSessionsPerThread) throws Exception {
-        final List<Throwable> errors = new ArrayList<Throwable>();
+        final List<Throwable> errors = new ArrayList<>();
         final CountDownLatch latch = new CountDownLatch(nbThreads);
         for (int i = 0; i < nbThreads; i++) {
             Runnable r = new Runnable() {
@@ -109,37 +112,41 @@ public class LoadTest extends BaseTest {
     }
 
     protected void runClient(String msg) throws Exception {
-        SshClient client = SshClient.setUpDefaultClient();
-        try {
-            client.getProperties().put(SshClient.MAX_PACKET_SIZE, Integer.toString(1024 * 16));
-            client.getProperties().put(SshClient.WINDOW_SIZE, Integer.toString(1024 * 8));
-            client.setKeyExchangeFactories(Arrays.<NamedFactory<KeyExchange>>asList(
-                    new DHG1.Factory()));
-            client.setCipherFactories(Arrays.<NamedFactory<Cipher>>asList(
-                    new BlowfishCBC.Factory()));
+        try(SshClient client = SshClient.setUpDefaultClient()) {
+            Map<String,String>  props=client.getProperties();
+            FactoryManagerUtils.updateProperty(props, FactoryManager.MAX_PACKET_SIZE, 1024 * 16);
+            FactoryManagerUtils.updateProperty(props, FactoryManager.WINDOW_SIZE, 1024 * 8);
+            client.setKeyExchangeFactories(Arrays.asList(
+                    DHGClient.newFactory(BuiltinDHFactories.dhg1)));
+            client.setCipherFactories(Arrays.asList(BuiltinCiphers.blowfishcbc.create()));
             client.start();
-            ClientSession session = client.connect("sshd", "localhost", port).await().getSession();
-            session.addPasswordIdentity("sshd");
-            session.auth().verify();
+            try {
+                ClientSession session = client.connect("sshd", "localhost", port).await().getSession();
+                session.addPasswordIdentity("sshd");
+                session.auth().verify();
+    
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                ByteArrayOutputStream err = new ByteArrayOutputStream();
+                ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
+                channel.setOut(out);
+                channel.setErr(err);
+                try {
+                    channel.open().await();
+                    OutputStream pipedIn = channel.getInvertedIn();
+        
+                    msg += "\nexit\n";
+                    pipedIn.write(msg.getBytes());
+                    pipedIn.flush();
+        
+                    channel.waitFor(ClientChannel.CLOSED, 0);
+                } finally {    
+                    channel.close(false);
+                }
 
-            ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            ByteArrayOutputStream err = new ByteArrayOutputStream();
-            channel.setOut(out);
-            channel.setErr(err);
-            channel.open().await();
-            OutputStream pipedIn = channel.getInvertedIn();
-
-            msg += "\nexit\n";
-            pipedIn.write(msg.getBytes());
-            pipedIn.flush();
-
-            channel.waitFor(ClientChannel.CLOSED, 0);
-
-            channel.close(false);
-            assertArrayEquals(msg.getBytes(), out.toByteArray());
-        } finally {
-            client.stop();
+                assertArrayEquals("Mismatched message data", msg.getBytes(), out.toByteArray());
+            } finally {
+                client.stop();
+            }
         }
     }
 }

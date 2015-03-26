@@ -16,40 +16,29 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.client.kex;
 
-import org.apache.sshd.common.KeyExchange;
-import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.kex.DH;
-import org.apache.sshd.common.kex.DHGroupData;
+package org.apache.sshd.common.kex;
+
+import org.apache.sshd.util.BaseTest;
+import org.junit.Assert;
+import org.junit.Test;
 
 /**
- * TODO Add javadoc
- *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class DHG1 extends AbstractDHGClient {
+public class BuiltinDHFactoriesTest extends BaseTest {
 
-    /**
-     * Named factory for DHG1 key exchange
-     */
-    public static class Factory implements NamedFactory<KeyExchange> {
-
-        public String getName() {
-            return "diffie-hellman-group1-sha1";
-        }
-
-        public KeyExchange create() {
-            return new DHG1();
-        }
-
+    public BuiltinDHFactoriesTest() {
+        super();
     }
 
-    protected DH getDH() throws Exception {
-        DH dh = new DH();
-        dh.setG(DHGroupData.getG());
-        dh.setP(DHGroupData.getP1());
-        return dh;
+    @Test
+    public void testFromName() {
+        for (BuiltinDHFactories expected : BuiltinDHFactories.VALUES) {
+            String name = expected.getName();
+            BuiltinDHFactories actual = BuiltinDHFactories.fromFactoryName(name);
+            Assert.assertSame(name, expected, actual);
+        }
     }
 
 }

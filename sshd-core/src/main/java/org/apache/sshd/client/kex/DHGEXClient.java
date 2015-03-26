@@ -16,80 +16,63 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.sshd.client.kex;
 
 import java.math.BigInteger;
-import java.security.PublicKey;
 
-import org.apache.sshd.client.session.ClientSessionImpl;
-import org.apache.sshd.common.Digest;
 import org.apache.sshd.common.KeyExchange;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.Signature;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.kex.AbstractDH;
-import org.apache.sshd.common.kex.DH;
+import org.apache.sshd.common.kex.DHFactory;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.KeyUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 
 /**
- * Client side Diffie Hellman Group Exchange
- *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class DHGEX implements KeyExchange {
+public class DHGEXClient extends AbstractDHClientKeyExchange {
 
-    /**
-     * Named factory for DHGEX key exchange
-     */
-    public static class Factory implements NamedFactory<KeyExchange> {
+    protected final DHFactory factory;
+    protected byte expected;
+    protected int min = 1024;
+    protected int prf = 4096;
+    protected int max = 8192;
+    protected AbstractDH dh;
+    protected byte[] p;
+    protected byte[] g;
 
-        public String getName() {
-            return "diffie-hellman-group-exchange-sha1";
-        }
+    public static final NamedFactory<KeyExchange> newFactory(final DHFactory delegate) {
+        return new NamedFactory<KeyExchange>() {
+            public String getName() {
+                return delegate.getName();
+            }
 
-        public KeyExchange create() {
-            return new DHGEX();
-        }
+            public KeyExchange create() {
+                return new DHGEXClient(delegate);
+            }
 
+            @Override
+            public String toString() {
+                return NamedFactory.class.getSimpleName()
+                        + "<" + KeyExchange.class.getSimpleName() + ">"
+                        + "[" + getName() + "]";
+            }
+        };
+    }
+    protected DHGEXClient(DHFactory factory) {
+        super();
+        this.factory = factory;
     }
 
-    private final Logger log = LoggerFactory.getLogger(getClass());
-
-    private ClientSessionImpl session;
-    private byte[] V_S;
-    private byte[] V_C;
-    private byte[] I_S;
-    private byte[] I_C;
-    private Digest hash;
-    private AbstractDH dh;
-    private byte[] p;
-    private byte[] g;
-    private byte[] e;
-    private byte[] f;
-    private byte[] K;
-    private byte[] H;
-    private PublicKey serverKey;
-    private byte expected;
-
-    int min = 1024;
-    int prf = 4096;
-    int max = 8192;
-
+    @Override
     public void init(AbstractSession s, byte[] V_S, byte[] V_C, byte[] I_S, byte[] I_C) throws Exception {
-        if (!(s instanceof ClientSessionImpl)) {
-            throw new IllegalStateException("Using a client side KeyExchange on a server");
-        }
-        session = (ClientSessionImpl) s;
-        this.V_S = V_S;
-        this.V_C = V_C;
-        this.I_S = I_S;
-        this.I_C = I_C;
-
+        super.init(s, V_S, V_C, I_S, I_C);
         log.debug("Send SSH_MSG_KEX_DH_GEX_REQUEST");
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST);
         buffer.putInt(min);
@@ -113,7 +96,7 @@ public class DHGEX implements KeyExchange {
             g = buffer.getMPIntAsBytes();
 
             dh = getDH(new BigInteger(p), new BigInteger(g));
-            hash =  dh.getHash();
+            hash = dh.getHash();
             hash.init();
             e = dh.getE();
 
@@ -167,29 +150,11 @@ public class DHGEX implements KeyExchange {
             return true;
         }
 
-        throw new IllegalStateException();
+        throw new IllegalStateException("Unknown command value: " + cmd);
     }
 
-    protected DH getDH(BigInteger p, BigInteger g) throws Exception {
-        DH dh = new DH();
-        dh.setP(p);
-        dh.setG(g);
-        return dh;
+    protected AbstractDH getDH(BigInteger p, BigInteger g) throws Exception {
+        return factory.create(p, g);
     }
 
-    public Digest getHash() {
-        return hash;
-    }
-
-    public byte[] getH() {
-        return H;
-    }
-
-    public byte[] getK() {
-        return K;
-    }
-
-    public PublicKey getServerKey() {
-        return serverKey;
-    }
 }

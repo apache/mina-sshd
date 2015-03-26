@@ -16,38 +16,37 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.server.kex;
 
-import org.apache.sshd.common.KeyExchange;
-import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.cipher.ECCurves;
-import org.apache.sshd.common.kex.AbstractDH;
-import org.apache.sshd.common.kex.ECDH;
+package org.apache.sshd.client.kex;
+
+import java.security.PublicKey;
+
+import org.apache.sshd.client.session.ClientSessionImpl;
+import org.apache.sshd.common.kex.dh.AbstractDHKeyExchange;
+import org.apache.sshd.common.session.AbstractSession;
 
 /**
- * Elliptic Curve Diffie-Hellman with NIST P-256 curve.
- *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ECDHP384 extends AbstractDHGServer {
+public abstract class AbstractDHClientKeyExchange extends AbstractDHKeyExchange {
 
-    public static class Factory implements NamedFactory<KeyExchange> {
+    protected ClientSessionImpl session;
+    protected PublicKey serverKey;
 
-        public String getName() {
-            return "ecdh-sha2-nistp384";
-        }
-
-        public KeyExchange create() {
-            return new ECDHP384();
-        }
-
+    protected AbstractDHClientKeyExchange() {
+        super();
     }
 
     @Override
-    protected AbstractDH getDH() throws Exception {
-        ECDH ecdh = new ECDH();
-        ecdh.setCurveParameters(ECCurves.EllipticCurves.nistp384);
-        return ecdh;
+    public void init(AbstractSession s, byte[] V_S, byte[] V_C, byte[] I_S, byte[] I_C) throws Exception {
+        super.init(s, V_S, V_C, I_S, I_C);
+        if (!(s instanceof ClientSessionImpl)) {
+            throw new IllegalStateException("Using a client side KeyExchange on a server");
+        }
+        session = (ClientSessionImpl) s;
     }
 
+    public PublicKey getServerKey() {
+        return serverKey;
+    }
 }
