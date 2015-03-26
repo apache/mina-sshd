@@ -27,11 +27,7 @@ import org.apache.sshd.common.Cipher;
 import org.apache.sshd.common.Mac;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.Random;
-import org.apache.sshd.common.cipher.AES128CBC;
-import org.apache.sshd.common.cipher.AES192CBC;
-import org.apache.sshd.common.cipher.AES256CBC;
-import org.apache.sshd.common.cipher.BlowfishCBC;
-import org.apache.sshd.common.cipher.TripleDESCBC;
+import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.mac.HMACMD5;
 import org.apache.sshd.common.mac.HMACMD596;
 import org.apache.sshd.common.mac.HMACSHA1;
@@ -39,7 +35,6 @@ import org.apache.sshd.common.mac.HMACSHA196;
 import org.apache.sshd.common.mac.HMACSHA256;
 import org.apache.sshd.common.mac.HMACSHA512;
 import org.apache.sshd.common.random.BouncyCastleRandom;
-import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.util.BaseTest;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
@@ -102,9 +97,9 @@ public class MacTest extends BaseTest {
     @Test
     public void loadTest() throws Exception {
         Random random = new BouncyCastleRandom();
-        loadTest(new AES128CBC.Factory(), random);
-        loadTest(new BlowfishCBC.Factory(), random);
-        loadTest(new TripleDESCBC.Factory(), random);
+        loadTest(BuiltinCiphers.aes128cbc, random);
+        loadTest(BuiltinCiphers.blowfishcbc, random);
+        loadTest(BuiltinCiphers.tripledescbc, random);
     }
 
     protected void loadTest(NamedFactory<Cipher> factory, Random random) throws Exception {

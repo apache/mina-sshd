@@ -26,11 +26,7 @@ import com.jcraft.jsch.JSch;
 import org.apache.sshd.common.Cipher;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.Random;
-import org.apache.sshd.common.cipher.AES128CBC;
-import org.apache.sshd.common.cipher.AES192CBC;
-import org.apache.sshd.common.cipher.AES256CBC;
-import org.apache.sshd.common.cipher.BlowfishCBC;
-import org.apache.sshd.common.cipher.TripleDESCBC;
+import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.random.BouncyCastleRandom;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.util.BaseTest;
@@ -56,14 +52,14 @@ public class CipherTest extends BaseTest {
 
     @Test
     public void testAES128CBC() throws Exception {
-        setUp(new AES128CBC.Factory());
+        setUp(BuiltinCiphers.aes128cbc);
         runTest();
     }
 
     @Test
     public void testAES192CBC() throws Exception {
         if (SecurityUtils.isBouncyCastleRegistered() && checkCipher(com.jcraft.jsch.jce.AES192CBC.class.getName())) {
-            setUp(new AES192CBC.Factory());
+            setUp(BuiltinCiphers.aes192cbc);
             runTest();
         }
     }
@@ -71,29 +67,29 @@ public class CipherTest extends BaseTest {
     @Test
     public void testAES256CBC() throws Exception {
         if (SecurityUtils.isBouncyCastleRegistered() && checkCipher(com.jcraft.jsch.jce.AES256CBC.class.getName())) {
-            setUp(new AES256CBC.Factory());
+            setUp(BuiltinCiphers.aes256cbc);
             runTest();
         }
     }
 
     @Test
     public void testBlowfishCBC() throws Exception {
-        setUp(new BlowfishCBC.Factory());
+        setUp(BuiltinCiphers.blowfishcbc);
         runTest();
     }
 
     @Test
     public void testTripleDESCBC() throws Exception {
-        setUp(new TripleDESCBC.Factory());
+        setUp(BuiltinCiphers.tripledescbc);
         runTest();
     }
 
     @Test
     public void loadTest() throws Exception {
         Random random = new BouncyCastleRandom();
-        loadTest(new AES128CBC.Factory(), random);
-        loadTest(new BlowfishCBC.Factory(), random);
-        loadTest(new TripleDESCBC.Factory(), random);
+        loadTest(BuiltinCiphers.aes128cbc, random);
+        loadTest(BuiltinCiphers.blowfishcbc, random);
+        loadTest(BuiltinCiphers.tripledescbc, random);
     }
 
     protected void loadTest(NamedFactory<Cipher> factory, Random random) throws Exception {

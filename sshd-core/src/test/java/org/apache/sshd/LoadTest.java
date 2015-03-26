@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
 import org.apache.sshd.client.kex.DHGClient;
+import org.apache.sshd.common.Cipher;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.NamedFactory;
@@ -118,7 +119,7 @@ public class LoadTest extends BaseTest {
             FactoryManagerUtils.updateProperty(props, FactoryManager.WINDOW_SIZE, 1024 * 8);
             client.setKeyExchangeFactories(Arrays.asList(
                     DHGClient.newFactory(BuiltinDHFactories.dhg1)));
-            client.setCipherFactories(Arrays.asList(BuiltinCiphers.blowfishcbc.create()));
+            client.setCipherFactories(Arrays.<NamedFactory<Cipher>>asList(BuiltinCiphers.blowfishcbc));
             client.start();
             try {
                 ClientSession session = client.connect("sshd", "localhost", port).await().getSession();

@@ -33,6 +33,6 @@ public class AES192CTRTest extends BaseCipherTest {
 	public void testEncryptDecrypt() throws Exception {
 		// for AES 256 bits we need the JCE unlimited strength policy
 		ensureKeySizeSupported(16, 24, "AES", "AES/CTR/NoPadding");
-		testEncryptDecrypt(new AES192CTR.Factory());
+		testEncryptDecrypt(BuiltinCiphers.aes192ctr);
 	}
 }

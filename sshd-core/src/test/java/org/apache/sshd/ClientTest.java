@@ -51,6 +51,7 @@ import org.apache.sshd.common.Service;
 import org.apache.sshd.common.Session;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.cipher.CipherNone;
 import org.apache.sshd.common.forward.TcpipServerChannel;
 import org.apache.sshd.common.future.CloseFuture;
@@ -747,8 +748,8 @@ public class ClientTest extends BaseTest {
 
     @Test
     public void testSwitchToNoneCipher() throws Exception {
-        sshd.getCipherFactories().add(new CipherNone.Factory());
-        client.getCipherFactories().add(new CipherNone.Factory());
+        sshd.getCipherFactories().add(BuiltinCiphers.none);
+        client.getCipherFactories().add(BuiltinCiphers.none);
         client.start();
         ClientSession session = client.connect("smx", "localhost", port).await().getSession();
         session.addPasswordIdentity("smx");

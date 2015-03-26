@@ -31,25 +31,6 @@ import org.apache.sshd.common.NamedFactory;
  */
 public class CipherNone implements Cipher {
 
-    /**
-     * Named factory for the no-op Cipher
-     */
-    public static class Factory implements NamedFactory<Cipher> {
-        public static final String NAME = "none";
-
-        public Factory() {
-            super();
-        }
-
-        public String getName() {
-            return NAME;
-        }
-
-        public Cipher create() {
-            return new CipherNone();
-        }
-    }
-
     public int getIVSize() {
         return 8;
     }

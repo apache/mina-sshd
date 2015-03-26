@@ -297,7 +297,7 @@ public class SshBuilder {
             List<NamedFactory<Cipher>> avail = new ArrayList<NamedFactory<Cipher>>(DEFAULT_CIPHERS_PREFERENCE.size());
             for (BuiltinCiphers c : DEFAULT_CIPHERS_PREFERENCE) {
                 if (ignoreUnsupported || c.isSupported()) {
-                    avail.add(c.create());
+                    avail.add(c);
                 }
             }
 

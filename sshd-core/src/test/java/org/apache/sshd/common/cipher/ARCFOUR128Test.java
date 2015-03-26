@@ -31,6 +31,6 @@ public class ARCFOUR128Test extends BaseCipherTest {
 
 	@Test
 	public void testEncryptDecrypt() throws Exception {
-		testEncryptDecrypt(new ARCFOUR128.Factory());
+		testEncryptDecrypt(BuiltinCiphers.arcfour128);
 	}
 }

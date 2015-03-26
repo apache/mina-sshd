@@ -33,89 +33,83 @@ import org.apache.sshd.common.util.GenericUtils;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public enum BuiltinCiphers implements NamedFactory<NamedFactory<Cipher>> {
-    none(CipherNone.Factory.NAME, CipherNone.class) {
+public enum BuiltinCiphers implements NamedFactory<Cipher> {
+    none(Constants.NONE) {
         @Override
-        public NamedFactory<Cipher> create() {
-            return new CipherNone.Factory();
+        public Cipher create() {
+            return new CipherNone();
         }
     },
-    aes128cbc(AES128CBC.Factory.NAME, AES128CBC.class) {
+    aes128cbc(Constants.AES128_CBC) {
         @Override
-        public NamedFactory<Cipher> create() {
-            return new AES128CBC.Factory();
+        public Cipher create() {
+            return new BaseCipher(16, 16, "AES", "AES/CBC/NoPadding");
         }
     },
-    aes128ctr(AES128CTR.Factory.NAME, AES128CTR.class) {
+    aes128ctr(Constants.AES128_CTR) {
         @Override
-        public NamedFactory<Cipher> create() {
-            return new AES128CTR.Factory();
+        public Cipher create() {
+            return new BaseCipher(16, 16, "AES", "AES/CTR/NoPadding");
         }
     },
-    aes192cbc(AES192CBC.Factory.NAME, AES192CBC.class) {
+    aes192cbc(Constants.AES192_CBC) {
         @Override
-        public NamedFactory<Cipher> create() {
-            return new AES192CBC.Factory();
+        public Cipher create() {
+            return new BaseCipher(16, 24, "AES", "AES/CBC/NoPadding");
         }
     },
-    aes192ctr(AES192CTR.Factory.NAME, AES192CTR.class) {
+    aes192ctr(Constants.AES192_CTR) {
         @Override
-        public NamedFactory<Cipher> create() {
-            return new AES192CTR.Factory();
+        public Cipher create() {
+            return new BaseCipher(16, 24, "AES", "AES/CTR/NoPadding");
         }
     },
-    aes256cbc(AES256CBC.Factory.NAME, AES256CBC.class) {
+    aes256cbc(Constants.AES256_CBC) {
         @Override
-        public NamedFactory<Cipher> create() {
-            return new AES256CBC.Factory();
+        public Cipher create() {
+            return new BaseCipher(16, 32, "AES", "AES/CBC/NoPadding");
         }
     },
-    aes256ctr(AES256CTR.Factory.NAME, AES256CTR.class) {
+    aes256ctr(Constants.AES256_CTR) {
         @Override
-        public NamedFactory<Cipher> create() {
-            return new AES256CTR.Factory();
+        public Cipher create() {
+            return new BaseCipher(16, 32, "AES", "AES/CTR/NoPadding");
         }
     },
-    arcfour128(ARCFOUR128.Factory.NAME, ARCFOUR128.class) {
+    arcfour128(Constants.ARCFOUR128) {
         @Override
-        public NamedFactory<Cipher> create() {
-            return new ARCFOUR128.Factory();
+        public Cipher create() {
+            return new BaseRC4Cipher(8, 16);
         }
     },
-    arcfour256(ARCFOUR256.Factory.NAME, ARCFOUR256.class) {
+    arcfour256(Constants.ARCFOUR256) {
         @Override
-        public NamedFactory<Cipher> create() {
-            return new ARCFOUR256.Factory();
+        public Cipher create() {
+            return new BaseRC4Cipher(8, 32);
         }
     },
-    blowfishcbc(BlowfishCBC.Factory.NAME, BlowfishCBC.class) {
+    blowfishcbc(Constants.BLOWFISH_CBC) {
         @Override
-        public NamedFactory<Cipher> create() {
-            return new BlowfishCBC.Factory();
+        public Cipher create() {
+            return new BaseCipher(8, 16, "Blowfish", "Blowfish/CBC/NoPadding");
         }
     },
-    tripledescbc(TripleDESCBC.Factory.NAME, TripleDESCBC.class) {
+    tripledescbc(Constants.DES_CBC) {
         @Override
-        public NamedFactory<Cipher> create() {
-            return new TripleDESCBC.Factory();
+        public Cipher create() {
+            return new BaseCipher(8, 24, "DESede", "DESede/CBC/NoPadding");
         }
     };
 
     private final String factoryName;
-    private Class<? extends Cipher> cipherType;
 
     @Override
     public final String getName() {
         return factoryName;
     }
 
-    public final Class<? extends Cipher> getCipherType() {
-        return cipherType;
-    }
-
-    BuiltinCiphers(String facName, Class<? extends Cipher> cipherClass) {
+    BuiltinCiphers(String facName) {
         factoryName = facName;
-        cipherType = cipherClass;
     }
 
     private final AtomicReference<Boolean> _supported = new AtomicReference<>(null);
@@ -199,36 +193,17 @@ public enum BuiltinCiphers implements NamedFactory<NamedFactory<Cipher>> {
         return null;
     }
 
-    /**
-     * @param c The {@link Cipher} instance - ignored if {@code null}
-     * @return The matching {@link BuiltinCiphers} - {@code null} if no match
-     * @see #fromCipherType(Class)
-     */
-    public static BuiltinCiphers fromCipher(Cipher c) {
-        if (c == null) {
-            return null;
-        } else {
-            return fromCipherType(c.getClass());
-        }
-    }
-
-    /**
-     * @param type The cipher type - ignored if {@code null} or not a
-     *             {@link Cipher} derived class
-     * @return The matching {@link BuiltinCiphers} - {@code null} if no match
-     */
-    public static BuiltinCiphers fromCipherType(Class<?> type) {
-        if ((type == null) || (!Cipher.class.isAssignableFrom(type))) {
-            return null;
-        }
-
-        for (BuiltinCiphers c : VALUES) {
-            Class<?> t = c.getCipherType();
-            if (t.isAssignableFrom(type)) {
-                return c;
-            }
-        }
-
-        return null;
+    private static class Constants {
+        public static final String NONE = "none";
+        public static final String AES128_CBC = "aes128-cbc";
+        public static final String AES128_CTR = "aes128-ctr";
+        public static final String AES192_CBC = "aes192-cbc";
+        public static final String AES192_CTR = "aes192-ctr";
+        public static final String AES256_CBC = "aes256-cbc";
+        public static final String AES256_CTR = "aes256-ctr";
+        public static final String ARCFOUR128 = "arcfour128";
+        public static final String ARCFOUR256 = "arcfour256";
+        public static final String BLOWFISH_CBC = "blowfish-cbc";
+        public static final String DES_CBC = "3des-cbc";
     }
 }
