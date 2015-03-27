@@ -40,6 +40,7 @@ import org.apache.sshd.client.SessionFactory;
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.future.AuthFuture;
+import org.apache.sshd.client.session.ClientConnectionService;
 import org.apache.sshd.client.session.ClientSessionImpl;
 import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.NamedFactory;
@@ -50,6 +51,7 @@ import org.apache.sshd.common.channel.WindowClosedException;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.session.AbstractConnectionService;
 import org.apache.sshd.common.session.AbstractSession;
+import org.apache.sshd.deprecated.UserAuthPassword;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.CommandFactory;
 import org.apache.sshd.server.Environment;
@@ -64,6 +66,8 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import org.apache.sshd.deprecated.ClientUserAuthServiceOld;
 
 /**
  * TODO Add javadoc
@@ -106,13 +110,18 @@ public class ServerTest extends BaseTest {
         sshd.getProperties().put(SshServer.MAX_AUTH_REQUESTS, "10");
 
         client = SshClient.setUpDefaultClient();
+        client.setServiceFactories(Arrays.asList(
+                new ClientUserAuthServiceOld.Factory(),
+                new ClientConnectionService.Factory()
+        ));
         client.start();
-        ClientSession s = client.connect("localhost", port).await().getSession();
+        ClientSession s = client.connect("smx", "localhost", port).await().getSession();
         int nbTrials = 0;
         int res = 0;
         while ((res & ClientSession.CLOSED) == 0) {
             nbTrials ++;
-            s.authPassword("smx", "buggy");
+            s.getService(ClientUserAuthServiceOld.class)
+                    .auth(new UserAuthPassword((ClientSessionImpl) s, "ssh-connection", "buggy"));
             res = s.waitFor(ClientSession.CLOSED | ClientSession.WAIT_AUTH, 5000);
             if (res == ClientSession.TIMEOUT) {
                 throw new TimeoutException();
@@ -126,14 +135,19 @@ public class ServerTest extends BaseTest {
         sshd.getProperties().put(SshServer.MAX_AUTH_REQUESTS, "10");
 
         client = SshClient.setUpDefaultClient();
+        client.setServiceFactories(Arrays.asList(
+                new ClientUserAuthServiceOld.Factory(),
+                new ClientConnectionService.Factory()
+        ));
         client.start();
-        ClientSession s = client.connect("localhost", port).await().getSession();
+        ClientSession s = client.connect("smx", "localhost", port).await().getSession();
         int nbTrials = 0;
         AuthFuture authFuture;
         do {
             nbTrials++;
             assertTrue(nbTrials < 100);
-            authFuture = s.authPassword("smx", "buggy");
+            authFuture = s.getService(ClientUserAuthServiceOld.class)
+                    .auth(new UserAuthPassword((ClientSessionImpl) s, "ssh-connection", "buggy"));
             assertTrue(authFuture.await(5000));
             assertTrue(authFuture.isDone());
             assertFalse(authFuture.isSuccess());

@@ -175,10 +175,6 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
         }
     }
 
-    public synchronized void close() {
-        close(true);
-    }
-
     @Override
     protected synchronized Closeable getInnerCloseable() {
         return builder().parallel(dynamicLocal.values()).close(acceptor).build();

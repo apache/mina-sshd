@@ -28,7 +28,6 @@ import org.apache.sshd.ClientSession;
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.client.UserAuth;
-import org.apache.sshd.client.session.ClientUserAuthServiceNew;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.NamedFactory;

@@ -16,28 +16,25 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.client.auth.deprecated;
+package org.apache.sshd.deprecated;
 
-import org.apache.sshd.client.session.ClientSessionImpl;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.io.IOException;
+
+import org.apache.sshd.common.util.Buffer;
 
 /**
+ * TODO Add javadoc
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractUserAuth implements UserAuth {
+public interface UserAuth {
 
-    protected final Logger log = LoggerFactory.getLogger(this.getClass());
-
-    protected final ClientSessionImpl session;
-    protected final String service;
-
-    protected AbstractUserAuth(ClientSessionImpl session, String service) {
-        this.session = session;
-        this.service = service;
+    enum Result {
+        Success,
+        Failure,
+        Continued
     }
 
-    public String getService() {
-        return service;
-    }
+    Result next(Buffer buffer) throws IOException;
 
 }

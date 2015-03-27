@@ -19,24 +19,32 @@
 package org.apache.sshd.client.session;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
-import org.apache.sshd.client.auth.deprecated.UserAuth;
+import org.apache.sshd.client.ClientFactoryManager;
+import org.apache.sshd.client.UserAuth;
+import org.apache.sshd.client.UserInteraction;
 import org.apache.sshd.client.future.AuthFuture;
-import org.apache.sshd.common.Closeable;
+import org.apache.sshd.client.future.DefaultAuthFuture;
+import org.apache.sshd.common.FactoryManagerUtils;
+import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.Session;
-import org.apache.sshd.common.future.DefaultCloseFuture;
+import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.CloseableUtils;
+import org.apache.sshd.common.util.GenericUtils;
 
 /**
  * Client side <code>ssh-auth</code> service.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ClientUserAuthService extends CloseableUtils.AbstractInnerCloseable implements Service {
+public class ClientUserAuthService extends CloseableUtils.AbstractCloseable implements Service {
 
     public static class Factory implements ServiceFactory {
 
@@ -49,17 +57,45 @@ public class ClientUserAuthService extends CloseableUtils.AbstractInnerCloseable
         }
     }
 
+    /**
+     * The AuthFuture that is being used by the current auth request.  This encodes the state.
+     * isSuccess -> authenticated, else if isDone -> server waiting for user auth, else authenticating.
+     */
+    private final AuthFuture authFuture;
+
     protected final ClientSessionImpl session;
-    protected ClientUserAuthServiceNew delegateNew;
-    protected ClientUserAuthServiceOld delegateOld;
-    protected boolean started;
-    protected DefaultCloseFuture future = new DefaultCloseFuture(null);
+
+    private List<Object> identities;
+    private String service;
+
+    private List<NamedFactory<UserAuth>> authFactories;
+    private List<String> clientMethods;
+    private List<String> serverMethods;
+    private UserAuth userAuth;
 
     public ClientUserAuthService(Session s) {
         if (!(s instanceof ClientSessionImpl)) {
             throw new IllegalStateException("Client side service used on server side");
         }
         session = (ClientSessionImpl) s;
+        authFuture = new DefaultAuthFuture(session.getLock());
+        authFactories = session.getFactoryManager().getUserAuthFactories();
+        clientMethods = new ArrayList<>();
+
+        String prefs = FactoryManagerUtils.getString(session, ClientFactoryManager.PREFERRED_AUTHS);
+        if (!GenericUtils.isEmpty(prefs)) {
+            for (String pref : prefs.split(",")) {
+                if (NamedFactory.Utils.get(authFactories, pref) != null) {
+                    clientMethods.add(pref);
+                } else {
+                    log.debug("Skip unknown prefered authentication method: {}", pref);
+                }
+            }
+        } else {
+            for (NamedFactory<UserAuth> factory : authFactories) {
+                clientMethods.add(factory.getName());
+            }
+        }
     }
 
     public ClientSessionImpl getSession() {
@@ -67,57 +103,130 @@ public class ClientUserAuthService extends CloseableUtils.AbstractInnerCloseable
     }
 
     public void start() {
-        if (delegateNew != null) {
-            delegateNew.start();
-        } else if (delegateOld != null) {
-            delegateOld.start();
-        }
-        started = true;
+    }
+
+    public AuthFuture auth(List<Object> identities, String service) throws IOException {
+        log.debug("Start authentication");
+        this.identities = new ArrayList<>(identities);
+        this.service = service;
+
+        log.debug("Send SSH_MSG_USERAUTH_REQUEST for none");
+        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST);
+        buffer.putString(session.getUsername());
+        buffer.putString(service);
+        buffer.putString("none");
+        session.writePacket(buffer);
+
+        return authFuture;
     }
 
     public void process(byte cmd, Buffer buffer) throws Exception {
-        if (delegateNew != null) {
-            delegateNew.process(cmd, buffer);
-        } else if (delegateOld != null) {
-            delegateOld.process(cmd, buffer);
+        if (this.authFuture.isSuccess()) {
+            throw new IllegalStateException("UserAuth message delivered to authenticated client");
+        } else if (this.authFuture.isDone()) {
+            log.debug("Ignoring random message");
+            // ignore for now; TODO: random packets
+        } else if (cmd == SshConstants.SSH_MSG_USERAUTH_BANNER) {
+            String welcome = buffer.getString();
+            String lang = buffer.getString();
+            log.debug("Welcome banner(lang={}): {}", lang, welcome);
+            UserInteraction ui = session.getFactoryManager().getUserInteraction();
+            if (ui != null) {
+                ui.welcome(welcome);
+            }
         } else {
-            throw new IllegalStateException();
+            buffer.rpos(buffer.rpos() - 1);
+            processUserAuth(buffer);
+        }
+    }
+
+    private int currentMethod;
+
+    /**
+     * execute one step in user authentication.
+     * @param buffer
+     * @throws java.io.IOException
+     */
+    private void processUserAuth(Buffer buffer) throws Exception {
+        byte cmd = buffer.getByte();
+        if (cmd == SshConstants.SSH_MSG_USERAUTH_SUCCESS) {
+            log.info("Received SSH_MSG_USERAUTH_SUCCESS");
+            log.debug("Succeeded with {}", userAuth);
+            if (userAuth != null) {
+                userAuth.destroy();
+                userAuth = null;
+            }
+            session.setAuthenticated();
+            session.switchToNextService();
+            // Will wake up anyone sitting in waitFor
+            authFuture.setAuthed(true);
+            return;
+        }
+        if (cmd == SshConstants.SSH_MSG_USERAUTH_FAILURE) {
+            log.info("Received SSH_MSG_USERAUTH_FAILURE");
+            String mths = buffer.getString();
+            boolean partial = buffer.getBoolean();
+            if (partial || serverMethods == null) {
+                serverMethods = Arrays.asList(mths.split(","));
+                if (log.isDebugEnabled()) {
+                    StringBuilder sb = new StringBuilder("Authentications that can continue: ");
+                    for (int i = 0; i < serverMethods.size(); i++) {
+                        if (i > 0) {
+                            sb.append(", ");
+                        }
+                        sb.append(serverMethods.get(i));
+                    }
+                    log.debug(sb.toString());
+                }
+                if (userAuth != null) {
+                    userAuth.destroy();
+                    userAuth = null;
+                }
+            }
+            tryNext();
+            return;
+        }
+        if (userAuth == null) {
+            throw new IllegalStateException("Received unknown packet");
+        }
+        buffer.rpos(buffer.rpos() - 1);
+        if (!userAuth.process(buffer)) {
+            tryNext();
+        }
+    }
+
+    private void tryNext() throws Exception {
+        // Loop until we find something to try
+        while (true) {
+            if (userAuth == null) {
+                currentMethod = 0;
+            } else if (!userAuth.process(null)) {
+                userAuth.destroy();
+                currentMethod++;
+            } else {
+                return;
+            }
+            while (currentMethod < clientMethods.size() && !serverMethods.contains(clientMethods.get(currentMethod))) {
+                currentMethod++;
+            }
+            if (currentMethod >= clientMethods.size()) {
+                // Failure
+                authFuture.setAuthed(false);
+                return;
+            }
+            String method = clientMethods.get(currentMethod);
+            userAuth = NamedFactory.Utils.create(authFactories, method);
+            assert userAuth != null;
+            userAuth.init(session, service, identities);
         }
     }
 
     @Override
-    protected Closeable getInnerCloseable() {
-        if (delegateNew != null) {
-            return delegateNew;
-        } else if (delegateOld != null) {
-            return delegateOld;
-        } else {
-            return builder().build();
+    protected void preClose() {
+        super.preClose();
+        if (!authFuture.isDone()) {
+            authFuture.setException(new SshException("Session is closed"));
         }
-    }
-
-    public AuthFuture auth(UserAuth userAuth) throws IOException {
-        if (delegateNew != null) {
-            throw new IllegalStateException();
-        }
-        if (delegateOld == null) {
-            delegateOld = new ClientUserAuthServiceOld(session);
-            if (started) {
-                delegateOld.start();
-            }
-        }
-        return delegateOld.auth(userAuth);
-    }
-
-    public AuthFuture auth(List<Object> identities, String service) throws IOException {
-        if (delegateOld != null || delegateNew != null) {
-            throw new IllegalStateException();
-        }
-        delegateNew = new ClientUserAuthServiceNew(session);
-        if (started) {
-            delegateNew.start();
-        }
-        return delegateNew.auth(identities, service);
     }
 
 }

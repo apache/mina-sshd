@@ -34,11 +34,6 @@ import org.apache.sshd.client.ScpClient;
 import org.apache.sshd.client.ServerKeyVerifier;
 import org.apache.sshd.client.SftpClient;
 import org.apache.sshd.client.UserInteraction;
-import org.apache.sshd.client.auth.deprecated.UserAuth;
-import org.apache.sshd.client.auth.deprecated.UserAuthAgent;
-import org.apache.sshd.client.auth.deprecated.UserAuthKeyboardInteractive;
-import org.apache.sshd.client.auth.deprecated.UserAuthPassword;
-import org.apache.sshd.client.auth.deprecated.UserAuthPublicKey;
 import org.apache.sshd.client.channel.ChannelDirectTcpip;
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ChannelShell;
@@ -76,14 +71,14 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
     /**
      * For clients to store their own metadata
      */
-    private Map<Object, Object> metadataMap = new HashMap<Object, Object>();
+    private Map<Object, Object> metadataMap = new HashMap<>();
 
     // TODO: clean service support a bit
     private boolean initialServiceRequestSent;
     private ServiceFactory currentServiceFactory;
     private Service nextService;
     private ServiceFactory nextServiceFactory;
-    private final List<Object> identities = new ArrayList<Object>();
+    private final List<Object> identities = new ArrayList<>();
     private UserInteraction userInteraction;
     private ScpTransferEventListener scpListener;
 
@@ -155,36 +150,13 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         }
     }
 
-    public AuthFuture authAgent(String user) throws IOException {
-        return tryAuth(user, new UserAuthAgent(this, nextServiceName()));
-    }
-
-    public AuthFuture authPassword(String user, String password) throws IOException {
-        return tryAuth(user, new UserAuthPassword(this, nextServiceName(), password));
-    }
-
-    public AuthFuture authInteractive(String user, String password) throws IOException {
-        return tryAuth(user, new UserAuthKeyboardInteractive(this, nextServiceName(), password));
-    }
-
-    public AuthFuture authPublicKey(String user, KeyPair key) throws IOException {
-        return tryAuth(user, new UserAuthPublicKey(this, nextServiceName(), key));
-    }
-
-    private AuthFuture tryAuth(String user, UserAuth auth) throws IOException {
-        this.username = user;
-        synchronized (lock) {
-            return authFuture = getUserAuthService().auth(auth);
-        }
-    }
-
     private String nextServiceName() {
         synchronized (lock) {
             return nextServiceFactory.getName();
         }
     }
 
-    protected void switchToNextService() throws IOException {
+    public void switchToNextService() throws IOException {
         synchronized (lock) {
             if (nextService == null) {
                 throw new IllegalStateException("No service available");

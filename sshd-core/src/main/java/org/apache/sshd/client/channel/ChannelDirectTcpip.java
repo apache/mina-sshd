@@ -96,22 +96,6 @@ public class ChannelDirectTcpip extends AbstractClientChannel {
         }
     }
 
-    /**
-     * @deprecated Use {@link #getInvertedOut()} instead
-     */
-    @Deprecated
-    public InputStream getIn() {
-        return in;
-    }
-
-    /**
-     * @deprecated Use {@link #getInvertedIn()} instead
-     */
-    @Deprecated
-    public OutputStream getOut() {
-        return out;
-    }
-
     @Override
     protected void doWriteData(byte[] data, int off, int len) throws IOException {
         pipe.write(data, off, len);

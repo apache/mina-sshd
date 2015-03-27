@@ -121,7 +121,6 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         return invertedErr;
     }
 
-    @Deprecated
     public OutputStream getErr() {
         return err;
     }

@@ -16,20 +16,19 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.client.session;
+package org.apache.sshd.deprecated;
 
 import java.io.IOException;
 
-import org.apache.sshd.client.auth.deprecated.UserAuth;
 import org.apache.sshd.client.UserInteraction;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.DefaultAuthFuture;
+import org.apache.sshd.client.session.ClientSessionImpl;
 import org.apache.sshd.common.Service;
+import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.Session;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.future.CloseFuture;
-import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.CloseableUtils;
 import org.slf4j.Logger;
@@ -41,6 +40,17 @@ import org.slf4j.LoggerFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ClientUserAuthServiceOld extends CloseableUtils.AbstractCloseable implements Service {
+
+    public static class Factory implements ServiceFactory {
+
+        public String getName() {
+            return "ssh-userauth";
+        }
+
+        public Service create(Session session) throws IOException {
+            return new ClientUserAuthServiceOld(session);
+        }
+    }
 
     /** Our logger */
     protected final Logger log = LoggerFactory.getLogger(getClass());

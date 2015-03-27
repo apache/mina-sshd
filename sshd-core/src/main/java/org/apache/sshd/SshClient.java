@@ -86,7 +86,7 @@ import org.bouncycastle.openssl.PasswordFinder;
  * start the client using the {@link #start()} method.
  *
  * Sessions can then be created using on of the
- * {@link #connect(String, int)} or {@link #connect(java.net.SocketAddress)}
+ * {@link #connect(String, String, int)} or {@link #connect(String, java.net.SocketAddress)}
  * methods.
  *
  * The client can be stopped at anytime using the {@link #stop()} method.
@@ -266,14 +266,6 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                 .build();
     }
 
-    /**
-     * @deprecated Use {@link #connect(String, String, int)} instead
-     */
-    @Deprecated
-    public ConnectFuture connect(String host, int port) throws IOException {
-        return connect(null, host, port);
-    }
-
     public ConnectFuture connect(String username, String host, int port) throws IOException {
         assert host != null;
         assert port >= 0;
@@ -282,11 +274,6 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         }
         SocketAddress address = new InetSocketAddress(host, port);
         return connect(username, address);
-    }
-
-    @Deprecated
-    public ConnectFuture connect(SocketAddress address) {
-        return connect(null, address);
     }
 
     public ConnectFuture connect(final String username, SocketAddress address) {

@@ -26,9 +26,6 @@ import org.apache.sshd.common.Closeable;
  */
 public interface IoService extends Closeable {
 
-    @Deprecated
-    void dispose();
-
     /**
      * Returns the map of all sessions which are currently managed by this
      * service.  The key of map is the {@link IoSession#getId() ID} of the

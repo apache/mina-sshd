@@ -16,14 +16,12 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.client.auth.deprecated;
+package org.apache.sshd.deprecated;
 
 import java.io.IOException;
 import java.security.KeyPair;
-import java.security.interfaces.RSAPublicKey;
 
 import org.apache.sshd.client.session.ClientSessionImpl;
-import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.Signature;
 import org.apache.sshd.common.SshConstants;
