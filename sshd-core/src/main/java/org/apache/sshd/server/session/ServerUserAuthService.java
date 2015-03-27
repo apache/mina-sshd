@@ -187,7 +187,7 @@ public class ServerUserAuthService extends CloseableUtils.AbstractCloseable impl
                 Integer maxSessionCount = FactoryManagerUtils.getInteger(manager, ServerFactoryManager.MAX_CONCURRENT_SESSIONS);
                 if (maxSessionCount != null) {
                     int currentSessionCount = session.getActiveSessionCountForUser(username);
-                    if (currentSessionCount >= maxSessionCount.intValue()) {
+                    if (currentSessionCount >= maxSessionCount) {
                         session.disconnect(SshConstants.SSH2_DISCONNECT_SERVICE_NOT_AVAILABLE,
                                 "Too many concurrent connections (" + currentSessionCount + ") - max. allowed: " + maxSessionCount);
                         return;

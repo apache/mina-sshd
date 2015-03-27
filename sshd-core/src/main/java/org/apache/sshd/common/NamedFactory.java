@@ -48,7 +48,7 @@ public interface NamedFactory<T> extends Factory<T>, NamedResource {
                 return Collections.emptyList();
             }
 
-            List<String> names = new ArrayList<String>(factories.size());
+            List<String> names = new ArrayList<>(factories.size());
             for (NamedFactory<?> f : factories) {
                 names.add(f.getName());
             }
@@ -78,12 +78,11 @@ public interface NamedFactory<T> extends Factory<T>, NamedResource {
          * Get a comma separated list of the factory names from the given list.
          *
          * @param factories list of available factories
-         * @param <T> type of object to create
          * @return a comma separated list of factory names
          */
-        public static <T> String getNames(Collection<? extends NamedFactory<T>> factories) {
+        public static String getNames(Collection<? extends NamedFactory<?>> factories) {
             StringBuilder sb = new StringBuilder();
-            for (NamedFactory<T> f : factories) {
+            for (NamedFactory<?> f : factories) {
                 if (sb.length() > 0) {
                     sb.append(",");
                 }

@@ -29,21 +29,6 @@ import org.apache.sshd.common.Signature;
  */
 public class SignatureRSA extends AbstractSignature {
 
-    /**
-     * A named factory for RSA <code>Signature</code>
-     */
-    public static class Factory implements NamedFactory<Signature> {
-
-        public String getName() {
-            return KeyPairProvider.SSH_RSA;
-        }
-
-        public Signature create() {
-            return new SignatureRSA();
-        }
-
-    }
-
     public SignatureRSA() {
         super("SHA1withRSA");
     }

@@ -46,20 +46,13 @@ import org.apache.sshd.common.file.nativefs.NativeFileSystemFactory;
 import org.apache.sshd.common.forward.DefaultTcpipForwarderFactory;
 import org.apache.sshd.common.forward.TcpipServerChannel;
 import org.apache.sshd.common.kex.BuiltinDHFactories;
-import org.apache.sshd.common.mac.HMACMD5;
-import org.apache.sshd.common.mac.HMACMD596;
-import org.apache.sshd.common.mac.HMACSHA1;
-import org.apache.sshd.common.mac.HMACSHA196;
-import org.apache.sshd.common.mac.HMACSHA256;
-import org.apache.sshd.common.mac.HMACSHA512;
 import org.apache.sshd.common.kex.DHFactory;
+import org.apache.sshd.common.mac.BuiltinMacs;
 import org.apache.sshd.common.random.BouncyCastleRandom;
 import org.apache.sshd.common.random.JceRandom;
 import org.apache.sshd.common.random.SingletonRandomFactory;
 import org.apache.sshd.common.session.ConnectionService;
-import org.apache.sshd.common.signature.SignatureDSA;
-import org.apache.sshd.common.signature.SignatureECDSA;
-import org.apache.sshd.common.signature.SignatureRSA;
+import org.apache.sshd.common.signature.BuiltinSignatures;
 import org.apache.sshd.common.util.ObjectBuilder;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.server.channel.ChannelSession;
@@ -106,12 +99,12 @@ public class SshBuilder {
         protected S fillWithDefaultValues() {
             if (SecurityUtils.isBouncyCastleRegistered()) {
                 if (signatureFactories == null) {
-                    signatureFactories = Arrays.asList(
-                            new SignatureECDSA.NISTP256Factory(),
-                            new SignatureECDSA.NISTP384Factory(),
-                            new SignatureECDSA.NISTP521Factory(),
-                            new SignatureDSA.Factory(),
-                            new SignatureRSA.Factory());
+                    signatureFactories = Arrays.<NamedFactory<Signature>>asList(
+                            BuiltinSignatures.nistp256,
+                            BuiltinSignatures.nistp384,
+                            BuiltinSignatures.nistp521,
+                            BuiltinSignatures.dsa,
+                            BuiltinSignatures.rsa);
                 }
                 if (randomFactory == null) {
                     randomFactory = new SingletonRandomFactory(new BouncyCastleRandom.Factory());
@@ -119,21 +112,21 @@ public class SshBuilder {
                 // EC keys are not supported until OpenJDK 7
             } else if (SecurityUtils.hasEcc()) {
                 if (signatureFactories == null) {
-                    signatureFactories = Arrays.asList(
-                            new SignatureECDSA.NISTP256Factory(),
-                            new SignatureECDSA.NISTP384Factory(),
-                            new SignatureECDSA.NISTP521Factory(),
-                            new SignatureDSA.Factory(),
-                            new SignatureRSA.Factory());
+                    signatureFactories = Arrays.<NamedFactory<Signature>>asList(
+                            BuiltinSignatures.nistp256,
+                            BuiltinSignatures.nistp384,
+                            BuiltinSignatures.nistp521,
+                            BuiltinSignatures.dsa,
+                            BuiltinSignatures.rsa);
                 }
                 if (randomFactory == null) {
                     randomFactory = new SingletonRandomFactory(new JceRandom.Factory());
                 }
             } else {
                 if (signatureFactories == null) {
-                    signatureFactories = Arrays.asList(
-                            new SignatureDSA.Factory(),
-                            new SignatureRSA.Factory());
+                    signatureFactories = Arrays.<NamedFactory<Signature>>asList(
+                            BuiltinSignatures.dsa,
+                            BuiltinSignatures.rsa);
                 }
                 if (randomFactory == null) {
                     randomFactory = new SingletonRandomFactory(new JceRandom.Factory());
@@ -156,13 +149,13 @@ public class SshBuilder {
                         new CompressionNone.Factory());
             }
             if (macFactories == null) {
-                macFactories = Arrays.asList(
-                        new HMACSHA256.Factory(),
-                        new HMACSHA512.Factory(),
-                        new HMACSHA1.Factory(),
-                        new HMACMD5.Factory(),
-                        new HMACSHA196.Factory(),
-                        new HMACMD596.Factory());
+                macFactories = Arrays.<NamedFactory<Mac>>asList(
+                        BuiltinMacs.hmacsha256,
+                        BuiltinMacs.hmacsha512,
+                        BuiltinMacs.hmacsha1,
+                        BuiltinMacs.hmacmd5,
+                        BuiltinMacs.hmacsha196,
+                        BuiltinMacs.hmacmd596);
             }
             if (fileSystemFactory == null) {
                 fileSystemFactory = new NativeFileSystemFactory();

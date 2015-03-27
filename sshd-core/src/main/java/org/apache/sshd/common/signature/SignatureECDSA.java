@@ -35,76 +35,8 @@ import org.apache.sshd.common.util.Buffer;
  */
 public class SignatureECDSA extends AbstractSignature {
 
-    /**
-     * Signature algorithm for curves of above 384 bits.
-     */
-    private static final String SIGNATURE_ALGORITHM_512 = "SHA512withECDSA";
-
-    /**
-     * Signature algorithm for curves from 256 to 384 bits.
-     */
-    private static final String SIGNATURE_ALGORITHM_384 = "SHA384withECDSA";
-
-    /**
-     * Signature algorithm for curves of 256 bits and below.
-     */
-    private static final String SIGNATURE_ALGORITHM_256 = "SHA256withECDSA";
-
-    /**
-     * A named factory for ECDSA signatures of NIST P-256
-     */
-    public static class NISTP256Factory implements NamedFactory<Signature> {
-
-        public String getName() {
-            return KeyPairProvider.ECDSA_SHA2_NISTP256;
-        }
-
-        public Signature create() {
-            return new SignatureECDSA(SIGNATURE_ALGORITHM_256);
-        }
-    }
-
-    /**
-     * A named factory for ECDSA signatures of NIST P-384
-     */
-    public static class NISTP384Factory implements NamedFactory<Signature> {
-
-        public String getName() {
-            return KeyPairProvider.ECDSA_SHA2_NISTP384;
-        }
-
-        public Signature create() {
-            return new SignatureECDSA(SIGNATURE_ALGORITHM_384);
-        }
-    }
-
-    /**
-     * A named factory for ECDSA signatures of NIST P-521
-     */
-    public static class NISTP521Factory implements NamedFactory<Signature> {
-
-        public String getName() {
-            return KeyPairProvider.ECDSA_SHA2_NISTP521;
-        }
-
-        public Signature create() {
-            return new SignatureECDSA(SIGNATURE_ALGORITHM_512);
-        }
-    }
-
     protected SignatureECDSA(String algo) {
         super(algo);
-    }
-
-    public static Signature getByCurveSize(ECParameterSpec params) {
-        int curveSize = ECCurves.getCurveSize(params);
-        if (curveSize <= 256) {
-            return new SignatureECDSA(SIGNATURE_ALGORITHM_256);
-        } else if (curveSize <= 384) {
-            return new SignatureECDSA(SIGNATURE_ALGORITHM_384);
-        } else {
-            return new SignatureECDSA(SIGNATURE_ALGORITHM_512);
-        }
     }
 
     public byte[] sign() throws Exception {

@@ -28,12 +28,7 @@ import org.apache.sshd.common.Mac;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.Random;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
-import org.apache.sshd.common.mac.HMACMD5;
-import org.apache.sshd.common.mac.HMACMD596;
-import org.apache.sshd.common.mac.HMACSHA1;
-import org.apache.sshd.common.mac.HMACSHA196;
-import org.apache.sshd.common.mac.HMACSHA256;
-import org.apache.sshd.common.mac.HMACSHA512;
+import org.apache.sshd.common.mac.BuiltinMacs;
 import org.apache.sshd.common.random.BouncyCastleRandom;
 import org.apache.sshd.util.BaseTest;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
@@ -59,38 +54,38 @@ public class MacTest extends BaseTest {
 
     @Test
     public void testHMACMD5() throws Exception {
-        setUp(new HMACMD5.Factory());
+        setUp(BuiltinMacs.hmacmd5);
         runTest();
     }
 
     @Test
     public void testHMACMD596() throws Exception {
-        setUp(new HMACMD596.Factory());
+        setUp(BuiltinMacs.hmacmd596);
         runTest();
     }
 
     @Test
     public void testHMACSHA1() throws Exception {
-        setUp(new HMACSHA1.Factory());
+        setUp(BuiltinMacs.hmacsha1);
         runTest();
     }
 
     @Test
     public void testHMACSHA196() throws Exception {
-        setUp(new HMACSHA196.Factory());
+        setUp(BuiltinMacs.hmacsha196);
         runTest();
     }
 
     @Test
     public void testHMACSHA256() throws Exception {
-        setUp(new HMACSHA256.Factory());
+        setUp(BuiltinMacs.hmacsha256);
         runTest();
     }
 
     @Test
     @Ignore("Lead to ArrayIndexOutOfBoundsException in JSch")
     public void testHMACSHA512() throws Exception {
-        setUp(new HMACSHA512.Factory());
+        setUp(BuiltinMacs.hmacsha512);
         runTest();
     }
 

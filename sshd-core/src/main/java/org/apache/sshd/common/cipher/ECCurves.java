@@ -27,9 +27,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import org.apache.sshd.common.Digest;
-import org.apache.sshd.common.digest.SHA256;
-import org.apache.sshd.common.digest.SHA384;
-import org.apache.sshd.common.digest.SHA512;
+import org.apache.sshd.common.digest.BuiltinDigests;
 
 /**
  * Utilities for working with elliptic curves.
@@ -76,11 +74,11 @@ public class ECCurves {
     public static Digest getDigestForParams(ECParameterSpec params) {
         int size = getCurveSize(params);
         if (size <= 256) {
-            return new SHA256();
+            return BuiltinDigests.sha256.create();
         } else if (size <= 384) {
-            return new SHA384();
+            return BuiltinDigests.sha384.create();
         } else {
-            return new SHA512();
+            return BuiltinDigests.sha512.create();
         }
     }
 

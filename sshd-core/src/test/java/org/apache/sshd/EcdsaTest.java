@@ -18,64 +18,28 @@
  */
 package org.apache.sshd;
 
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.math.BigInteger;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.PublicKey;
 import java.security.SecureRandom;
-import java.security.spec.ECFieldFp;
 import java.security.spec.ECGenParameterSpec;
-import java.security.spec.ECParameterSpec;
-import java.security.spec.EllipticCurve;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
-import org.apache.sshd.client.SessionFactory;
-import org.apache.sshd.client.channel.ChannelShell;
-import org.apache.sshd.client.future.AuthFuture;
-import org.apache.sshd.client.session.ClientSessionImpl;
-import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.RuntimeSshException;
-import org.apache.sshd.common.Session;
-import org.apache.sshd.common.SessionListener;
 import org.apache.sshd.common.Signature;
-import org.apache.sshd.common.SshConstants;
-import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.cipher.ECCurves;
-import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.keyprovider.AbstractKeyPairProvider;
-import org.apache.sshd.common.session.AbstractSession;
-import org.apache.sshd.common.signature.SignatureDSA;
-import org.apache.sshd.common.signature.SignatureECDSA;
-import org.apache.sshd.common.signature.SignatureRSA;
+import org.apache.sshd.common.signature.BuiltinSignatures;
 import org.apache.sshd.common.util.SecurityUtils;
-import org.apache.sshd.server.Command;
 import org.apache.sshd.server.PublickeyAuthenticator;
-import org.apache.sshd.server.command.ScpCommandFactory;
-import org.apache.sshd.server.keyprovider.AbstractGeneratorHostKeyProvider;
 import org.apache.sshd.server.session.ServerSession;
-import org.apache.sshd.server.sftp.SftpSubsystem;
 import org.apache.sshd.util.BaseTest;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
-import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.Utils;
-import org.bouncycastle.jce.ECPointUtil;
-import org.bouncycastle.util.encoders.Hex;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 /**
  * TODO Add javadoc
@@ -128,9 +92,9 @@ public class EcdsaTest extends BaseTest {
 
             client = SshClient.setUpDefaultClient();
             client.setSignatureFactories(Arrays.<NamedFactory<Signature>>asList(
-                    new SignatureECDSA.NISTP256Factory(),
-                    new SignatureECDSA.NISTP384Factory(),
-                    new SignatureECDSA.NISTP521Factory()));
+                    BuiltinSignatures.nistp256,
+                    BuiltinSignatures.nistp384,
+                    BuiltinSignatures.nistp521));
             client.start();
             ClientSession s = client.connect("smx", "localhost", port).await().getSession();
             s.addPasswordIdentity("smx");

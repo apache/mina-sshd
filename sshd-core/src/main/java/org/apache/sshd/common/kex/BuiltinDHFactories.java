@@ -25,8 +25,7 @@ import java.util.EnumSet;
 import java.util.Set;
 
 import org.apache.sshd.common.cipher.ECCurves;
-import org.apache.sshd.common.digest.SHA1;
-import org.apache.sshd.common.digest.SHA256;
+import org.apache.sshd.common.digest.BuiltinDigests;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.SecurityUtils;
 
@@ -41,7 +40,7 @@ public enum BuiltinDHFactories implements DHFactory {
             if (params != null && params.length > 0) {
                 throw new IllegalArgumentException("No accepted parameters for " + getName());
             }
-            return new DHG(new SHA1.Factory(), new BigInteger(DHGroupData.getP1()), new BigInteger(DHGroupData.getG()));
+            return new DHG(BuiltinDigests.sha1, new BigInteger(DHGroupData.getP1()), new BigInteger(DHGroupData.getG()));
         }
     },
     dhg14(Constants.DIFFIE_HELLMAN_GROUP14_SHA1) {
@@ -50,7 +49,7 @@ public enum BuiltinDHFactories implements DHFactory {
             if (params != null && params.length > 0) {
                 throw new IllegalArgumentException("No accepted parameters for " + getName());
             }
-            return new DHG(new SHA1.Factory(), new BigInteger(DHGroupData.getP14()), new BigInteger(DHGroupData.getG()));
+            return new DHG(BuiltinDigests.sha1, new BigInteger(DHGroupData.getP14()), new BigInteger(DHGroupData.getG()));
         }
         @Override
         public boolean isSupported() {
@@ -64,7 +63,7 @@ public enum BuiltinDHFactories implements DHFactory {
                     || !(params[0] instanceof BigInteger) || !(params[1] instanceof BigInteger)) {
                 throw new IllegalArgumentException("Bad parameters for " + getName());
             }
-            return new DHG(new SHA1.Factory(), (BigInteger) params[0], (BigInteger) params[1]);
+            return new DHG(BuiltinDigests.sha1, (BigInteger) params[0], (BigInteger) params[1]);
         }
         @Override
         public boolean isGroupExchange() {
@@ -78,7 +77,7 @@ public enum BuiltinDHFactories implements DHFactory {
                     || !(params[0] instanceof BigInteger) || !(params[1] instanceof BigInteger)) {
                 throw new IllegalArgumentException("Bad parameters for " + getName());
             }
-            return new DHG(new SHA256.Factory(), (BigInteger) params[0], (BigInteger) params[1]);
+            return new DHG(BuiltinDigests.sha256, (BigInteger) params[0], (BigInteger) params[1]);
         }
         @Override
         public boolean isSupported() {  // avoid "Prime size must be multiple of 64, and can only range from 512 to 2048 (inclusive)"

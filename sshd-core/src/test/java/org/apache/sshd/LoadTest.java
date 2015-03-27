@@ -18,8 +18,6 @@
  */
 package org.apache.sshd;
 
-import static org.junit.Assert.assertArrayEquals;
-
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
@@ -28,13 +26,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
-import org.apache.sshd.client.kex.DHGClient;
 import org.apache.sshd.common.Cipher;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
-import org.apache.sshd.common.kex.AbstractDH;
 import org.apache.sshd.common.kex.BuiltinDHFactories;
 import org.apache.sshd.util.BaseTest;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
@@ -43,6 +39,8 @@ import org.apache.sshd.util.Utils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.assertArrayEquals;
 
 public class LoadTest extends BaseTest {
 
@@ -118,7 +116,7 @@ public class LoadTest extends BaseTest {
             FactoryManagerUtils.updateProperty(props, FactoryManager.MAX_PACKET_SIZE, 1024 * 16);
             FactoryManagerUtils.updateProperty(props, FactoryManager.WINDOW_SIZE, 1024 * 8);
             client.setKeyExchangeFactories(Arrays.asList(
-                    DHGClient.newFactory(BuiltinDHFactories.dhg1)));
+                    SshBuilder.ClientBuilder.getKeyExchangeFactory(BuiltinDHFactories.dhg1)));
             client.setCipherFactories(Arrays.<NamedFactory<Cipher>>asList(BuiltinCiphers.blowfishcbc));
             client.start();
             try {

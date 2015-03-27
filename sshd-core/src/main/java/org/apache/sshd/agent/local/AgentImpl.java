@@ -32,9 +32,7 @@ import java.util.List;
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.common.Signature;
 import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.signature.SignatureDSA;
-import org.apache.sshd.common.signature.SignatureECDSA;
-import org.apache.sshd.common.signature.SignatureRSA;
+import org.apache.sshd.common.signature.BuiltinSignatures;
 
 /**
  * A local SSH agent implementation
@@ -66,12 +64,12 @@ public class AgentImpl implements SshAgent {
         try {
             Signature verif;
             if (kp.getFirst().getPublic() instanceof DSAPublicKey) {
-                verif = new SignatureDSA();
+                verif = BuiltinSignatures.dsa.create();
             } else if (kp.getFirst().getPublic() instanceof ECPublicKey) {
                 ECPublicKey pubKey = (ECPublicKey) kp.getFirst().getPublic();
-                verif = SignatureECDSA.getByCurveSize(pubKey.getParams());
+                verif = BuiltinSignatures.getByCurveSize(pubKey.getParams());
             } else if (kp.getFirst().getPublic() instanceof RSAPublicKey) {
-                verif = new SignatureRSA();
+                verif = BuiltinSignatures.rsa.create();
             } else {
                 throw new SshException("Unsupported key type");
             }

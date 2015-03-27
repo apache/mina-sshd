@@ -26,9 +26,10 @@ import java.security.interfaces.ECKey;
 import java.security.interfaces.RSAKey;
 import java.security.spec.ECParameterSpec;
 
+import org.apache.sshd.common.Digest;
 import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.cipher.ECCurves;
-import org.apache.sshd.common.digest.MD5;
+import org.apache.sshd.common.digest.BuiltinDigests;
 
 /**
  * Utility class for keys
@@ -47,7 +48,7 @@ public class KeyUtils {
         try {
             Buffer buffer = new Buffer();
             buffer.putRawPublicKey(key);
-            MD5 md5 = new MD5();
+            Digest md5 = BuiltinDigests.md5.create();
             md5.init();
             md5.update(buffer.array(), 0, buffer.wpos());
             byte[] data = md5.digest();
