@@ -19,6 +19,10 @@
 
 package org.apache.sshd.common.cipher;
 
+import java.lang.reflect.Field;
+import java.util.EnumSet;
+import java.util.Set;
+
 import org.apache.sshd.common.Cipher;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.util.BaseTest;
@@ -73,6 +77,20 @@ public class BuiltinCiphersTest extends BaseTest {
             BuiltinCiphers  actual=BuiltinCiphers.fromFactory(factory);
             Assert.assertSame(expected.getName() + " - mismatched enum values", expected, actual);
         }
+    }
+
+    @Test
+    public void testAllConstantsCovered() throws Exception {
+        Set<BuiltinCiphers> avail=EnumSet.noneOf(BuiltinCiphers.class);
+        Field[]             fields=BuiltinCiphers.Constants.class.getFields();
+        for (Field f : fields) {
+            String          name=(String) f.get(null);
+            BuiltinCiphers  value=BuiltinCiphers.fromFactoryName(name);
+            Assert.assertNotNull("No match found for " + name, value);
+            Assert.assertTrue(name + " re-specified", avail.add(value));
+        }
+        
+        Assert.assertEquals("Incomplete coverage", BuiltinCiphers.VALUES, avail);
     }
 
 //    @Test

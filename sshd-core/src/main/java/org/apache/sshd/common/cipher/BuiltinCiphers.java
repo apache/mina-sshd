@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.Cipher;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.OptionalFeature;
 import org.apache.sshd.common.util.GenericUtils;
 
 /**
@@ -33,7 +34,7 @@ import org.apache.sshd.common.util.GenericUtils;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public enum BuiltinCiphers implements NamedFactory<Cipher> {
+public enum BuiltinCiphers implements NamedFactory<Cipher>, OptionalFeature {
     none(Constants.NONE) {
         @Override
         public Cipher create() {
@@ -119,6 +120,7 @@ public enum BuiltinCiphers implements NamedFactory<Cipher> {
      * cipher - e.g., AES-256 requires the <A HREF="http://www.oracle.com/technetwork/java/javase/downloads/">
      * Java Cryptography Extension (JCE)</A>
      */
+    @Override
     public boolean isSupported() {
         Boolean value;
         synchronized (_supported) {
@@ -193,7 +195,7 @@ public enum BuiltinCiphers implements NamedFactory<Cipher> {
         return null;
     }
 
-    private static class Constants {
+    public static final class Constants {
         public static final String NONE = "none";
         public static final String AES128_CBC = "aes128-cbc";
         public static final String AES128_CTR = "aes128-ctr";

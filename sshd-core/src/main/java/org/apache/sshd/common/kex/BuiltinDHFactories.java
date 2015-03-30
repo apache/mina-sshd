@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
 
+import org.apache.sshd.common.OptionalFeature;
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.digest.BuiltinDigests;
 import org.apache.sshd.common.util.GenericUtils;
@@ -32,12 +33,11 @@ import org.apache.sshd.common.util.SecurityUtils;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public enum BuiltinDHFactories implements DHFactory {
-
+public enum BuiltinDHFactories implements DHFactory, OptionalFeature {
     dhg1(Constants.DIFFIE_HELLMAN_GROUP1_SHA1) {
         @Override
         public DHG create(Object... params) throws Exception {
-            if (params != null && params.length > 0) {
+            if (!GenericUtils.isEmpty(params)) {
                 throw new IllegalArgumentException("No accepted parameters for " + getName());
             }
             return new DHG(BuiltinDigests.sha1, new BigInteger(DHGroupData.getP1()), new BigInteger(DHGroupData.getG()));
@@ -46,11 +46,12 @@ public enum BuiltinDHFactories implements DHFactory {
     dhg14(Constants.DIFFIE_HELLMAN_GROUP14_SHA1) {
         @Override
         public DHG create(Object... params) throws Exception {
-            if (params != null && params.length > 0) {
+            if (!GenericUtils.isEmpty(params)) {
                 throw new IllegalArgumentException("No accepted parameters for " + getName());
             }
             return new DHG(BuiltinDigests.sha1, new BigInteger(DHGroupData.getP14()), new BigInteger(DHGroupData.getG()));
         }
+
         @Override
         public boolean isSupported() {
             return SecurityUtils.isBouncyCastleRegistered();
@@ -59,12 +60,14 @@ public enum BuiltinDHFactories implements DHFactory {
     dhgex(Constants.DIFFIE_HELLMAN_GROUP_EXCHANGE_SHA1) {
         @Override
         public DHG create(Object... params) throws Exception {
-            if (params == null || params.length != 2
-                    || !(params[0] instanceof BigInteger) || !(params[1] instanceof BigInteger)) {
+            if ((GenericUtils.length(params) != 2)
+             || (!(params[0] instanceof BigInteger))
+             || (!(params[1] instanceof BigInteger))) {
                 throw new IllegalArgumentException("Bad parameters for " + getName());
             }
             return new DHG(BuiltinDigests.sha1, (BigInteger) params[0], (BigInteger) params[1]);
         }
+
         @Override
         public boolean isGroupExchange() {
             return true;
@@ -73,16 +76,19 @@ public enum BuiltinDHFactories implements DHFactory {
     dhgex256(Constants.DIFFIE_HELLMAN_GROUP_EXCHANGE_SHA256) {
         @Override
         public AbstractDH create(Object... params) throws Exception {
-            if (params == null || params.length != 2
-                    || !(params[0] instanceof BigInteger) || !(params[1] instanceof BigInteger)) {
+            if ((GenericUtils.length(params) != 2)
+             || (!(params[0] instanceof BigInteger))
+             || (!(params[1] instanceof BigInteger))) {
                 throw new IllegalArgumentException("Bad parameters for " + getName());
             }
             return new DHG(BuiltinDigests.sha256, (BigInteger) params[0], (BigInteger) params[1]);
         }
+
         @Override
         public boolean isSupported() {  // avoid "Prime size must be multiple of 64, and can only range from 512 to 2048 (inclusive)"
             return SecurityUtils.isBouncyCastleRegistered();
         }
+
         @Override
         public boolean isGroupExchange() {
             return true;
@@ -91,11 +97,12 @@ public enum BuiltinDHFactories implements DHFactory {
     ecdhp256(Constants.ECDH_SHA2_NISTP256) {
         @Override
         public ECDH create(Object... params) throws Exception {
-            if (params != null && params.length > 0) {
+            if (!GenericUtils.isEmpty(params)) {
                 throw new IllegalArgumentException("No accepted parameters for " + getName());
             }
             return new ECDH(ECCurves.EllipticCurves.nistp256);
         }
+
         @Override
         public boolean isSupported() {
             return SecurityUtils.hasEcc();
@@ -104,11 +111,12 @@ public enum BuiltinDHFactories implements DHFactory {
     ecdhp384(Constants.ECDH_SHA2_NISTP384) {
         @Override
         public ECDH create(Object... params) throws Exception {
-            if (params != null && params.length > 0) {
+            if (!GenericUtils.isEmpty(params)) {
                 throw new IllegalArgumentException("No accepted parameters for " + getName());
             }
             return new ECDH(ECCurves.EllipticCurves.nistp384);
         }
+
         @Override
         public boolean isSupported() {
             return SecurityUtils.hasEcc();
@@ -117,11 +125,12 @@ public enum BuiltinDHFactories implements DHFactory {
     ecdhp521(Constants.ECDH_SHA2_NISTP521) {
         @Override
         public ECDH create(Object... params) throws Exception {
-            if (params != null && params.length > 0) {
+            if (!GenericUtils.isEmpty(params)) {
                 throw new IllegalArgumentException("No accepted parameters for " + getName());
             }
             return new ECDH(ECCurves.EllipticCurves.nistp521);
         }
+
         @Override
         public boolean isSupported() {
             return SecurityUtils.hasEcc();
@@ -135,6 +144,7 @@ public enum BuiltinDHFactories implements DHFactory {
         return factoryName;
     }
 
+    @Override
     public boolean isSupported() {
         return true;
     }
@@ -170,7 +180,7 @@ public enum BuiltinDHFactories implements DHFactory {
         return false;
     }
 
-    public static class Constants {
+    public static final class Constants {
         public static final String DIFFIE_HELLMAN_GROUP1_SHA1 = "diffie-hellman-group1-sha1";
         public static final String DIFFIE_HELLMAN_GROUP14_SHA1 = "diffie-hellman-group14-sha1";
         public static final String DIFFIE_HELLMAN_GROUP_EXCHANGE_SHA1 = "diffie-hellman-group-exchange-sha1";
@@ -179,5 +189,4 @@ public enum BuiltinDHFactories implements DHFactory {
         public static final String ECDH_SHA2_NISTP384 = "ecdh-sha2-nistp384";
         public static final String ECDH_SHA2_NISTP521 = "ecdh-sha2-nistp521";
     }
-
 }

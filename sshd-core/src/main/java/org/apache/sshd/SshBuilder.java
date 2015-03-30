@@ -35,6 +35,7 @@ import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.KeyExchange;
 import org.apache.sshd.common.Mac;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.NamedFactory.Utils;
 import org.apache.sshd.common.Random;
 import org.apache.sshd.common.RequestHandler;
 import org.apache.sshd.common.Signature;
@@ -82,9 +83,7 @@ public class SshBuilder {
      * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
      */
     protected static class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder<T, S>> implements ObjectBuilder<T> {
-
         protected Factory<T> factory = null;
-
         protected List<NamedFactory<KeyExchange>> keyExchangeFactories = null;
         protected List<NamedFactory<Cipher>> cipherFactories = null;
         protected List<NamedFactory<Compression>> compressionFactories = null;
@@ -97,38 +96,14 @@ public class SshBuilder {
         protected List<RequestHandler<ConnectionService>> globalRequestHandlers = null;
 
         protected S fillWithDefaultValues() {
-            if (SecurityUtils.isBouncyCastleRegistered()) {
-                if (signatureFactories == null) {
-                    signatureFactories = Arrays.<NamedFactory<Signature>>asList(
-                            BuiltinSignatures.nistp256,
-                            BuiltinSignatures.nistp384,
-                            BuiltinSignatures.nistp521,
-                            BuiltinSignatures.dsa,
-                            BuiltinSignatures.rsa);
-                }
-                if (randomFactory == null) {
+            if (signatureFactories == null) {
+                signatureFactories = setUpDefaultSignatures(false);
+            }
+
+            if (randomFactory == null) {
+                if (SecurityUtils.isBouncyCastleRegistered()) {
                     randomFactory = new SingletonRandomFactory(new BouncyCastleRandom.Factory());
-                }
-                // EC keys are not supported until OpenJDK 7
-            } else if (SecurityUtils.hasEcc()) {
-                if (signatureFactories == null) {
-                    signatureFactories = Arrays.<NamedFactory<Signature>>asList(
-                            BuiltinSignatures.nistp256,
-                            BuiltinSignatures.nistp384,
-                            BuiltinSignatures.nistp521,
-                            BuiltinSignatures.dsa,
-                            BuiltinSignatures.rsa);
-                }
-                if (randomFactory == null) {
-                    randomFactory = new SingletonRandomFactory(new JceRandom.Factory());
-                }
-            } else {
-                if (signatureFactories == null) {
-                    signatureFactories = Arrays.<NamedFactory<Signature>>asList(
-                            BuiltinSignatures.dsa,
-                            BuiltinSignatures.rsa);
-                }
-                if (randomFactory == null) {
+                } else {
                     randomFactory = new SingletonRandomFactory(new JceRandom.Factory());
                 }
             }
@@ -149,14 +124,9 @@ public class SshBuilder {
                         new CompressionNone.Factory());
             }
             if (macFactories == null) {
-                macFactories = Arrays.<NamedFactory<Mac>>asList(
-                        BuiltinMacs.hmacsha256,
-                        BuiltinMacs.hmacsha512,
-                        BuiltinMacs.hmacsha1,
-                        BuiltinMacs.hmacmd5,
-                        BuiltinMacs.hmacsha196,
-                        BuiltinMacs.hmacmd596);
+                macFactories = setUpDefaultMacs(false);
             }
+
             if (fileSystemFactory == null) {
                 fileSystemFactory = new NativeFileSystemFactory();
             }
@@ -287,14 +257,7 @@ public class SshBuilder {
          * @see BuiltinCiphers#isSupported()
          */
         public static List<NamedFactory<Cipher>> setUpDefaultCiphers(boolean ignoreUnsupported) {
-            List<NamedFactory<Cipher>> avail = new ArrayList<NamedFactory<Cipher>>(DEFAULT_CIPHERS_PREFERENCE.size());
-            for (BuiltinCiphers c : DEFAULT_CIPHERS_PREFERENCE) {
-                if (ignoreUnsupported || c.isSupported()) {
-                    avail.add(c);
-                }
-            }
-
-            return avail;
+            return Utils.setUpBuiltinFactories(ignoreUnsupported, DEFAULT_CIPHERS_PREFERENCE);
         }
         
         /**
@@ -316,6 +279,65 @@ public class SshBuilder {
                                 BuiltinDHFactories.dhg1
                         ));
 
+        /**
+         * The default {@link BuiltinMacs} setup in order of preference
+         * as specified by <A HREF="https://www.freebsd.org/cgi/man.cgi?query=ssh_config&sektion=5">
+         * ssh_config(5)</A> 
+         */
+        public static final List<BuiltinMacs>   DEFAULT_MAC_PREFERENCE=
+                Collections.unmodifiableList(
+                        Arrays.asList(
+                                BuiltinMacs.hmacmd5,
+                                BuiltinMacs.hmacsha1,
+                                BuiltinMacs.hmacsha256,
+                                BuiltinMacs.hmacsha512,
+                                BuiltinMacs.hmacsha196,
+                                BuiltinMacs.hmacmd596
+                        ));
+        /**
+         * @param ignoreUnsupported If {@code true} all the available built-in
+         * {@link Mac} factories are added, otherwise only those that are supported
+         * by the current JDK setup
+         * @return A {@link List} of the default {@link NamedFactory}
+         * instances of the {@link Mac}s according to the preference
+         * order defined by {@link #DEFAULT_MAC_PREFERENCE}.
+         * <B>Note:</B> the list may be filtered to exclude unsupported JCE
+         * MACs according to the <tt>ignoreUnsupported</tt> parameter
+         * @see BuiltinMacs#isSupported()
+         */
+        public static final List<NamedFactory<Mac>> setUpDefaultMacs(boolean ignoreUnsupported) {
+            return Utils.setUpBuiltinFactories(ignoreUnsupported, DEFAULT_MAC_PREFERENCE);
+        }
+        
+        /**
+         * Preferred {@link BuiltinSignatures} according to
+         * <A HREF="https://www.freebsd.org/cgi/man.cgi?query=ssh_config&sektion=5>sshd_config(5)</A>
+         * {@code HostKeyAlgorithms} recommendation
+         */
+        public static final List<BuiltinSignatures> DEFAULT_SIGNATURE_PREFERENCE=
+                Collections.unmodifiableList(
+                        Arrays.asList(
+                                BuiltinSignatures.nistp256,
+                                BuiltinSignatures.nistp384,
+                                BuiltinSignatures.nistp521,
+                                BuiltinSignatures.rsa,
+                                BuiltinSignatures.dsa
+                        ));
+
+        /**
+         * @param ignoreUnsupported If {@code true} all the available built-in
+         * {@link Signature} factories are added, otherwise only those that are supported
+         * by the current JDK setup
+         * @return A {@link List} of the default {@link NamedFactory}
+         * instances of the {@link Signature}s according to the preference
+         * order defined by {@link #DEFAULT_SIGNATURE_PREFERENCE}.
+         * <B>Note:</B> the list may be filtered to exclude unsupported JCE
+         * signatures according to the <tt>ignoreUnsupported</tt> parameter
+         * @see BuiltinSignatures#isSupported()
+         */
+        public static final List<NamedFactory<Signature>> setUpDefaultSignatures(boolean ignoreUnsupported) {
+            return Utils.setUpBuiltinFactories(ignoreUnsupported, DEFAULT_SIGNATURE_PREFERENCE);
+        }
     }
 
     /**
@@ -385,7 +407,6 @@ public class SshBuilder {
                 return DHGClient.newFactory(factory);
             }
         }
-
     }
 
     /**
@@ -446,7 +467,5 @@ public class SshBuilder {
                 return DHGServer.newFactory(factory);
             }
         }
-
     }
-
 }

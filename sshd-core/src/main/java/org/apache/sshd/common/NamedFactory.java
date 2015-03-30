@@ -127,6 +127,18 @@ public interface NamedFactory<T> extends Factory<T>, NamedResource {
             }
             return null;
         }
+        
+        
+        public static final <T,E extends NamedFactory<T> & OptionalFeature> List<NamedFactory<T>> setUpBuiltinFactories(
+                boolean ignoreUnsupported, Collection<? extends E> preferred) {
+            List<NamedFactory<T>>   avail=new ArrayList<>(preferred.size());
+            for (E f : preferred) {
+                if (ignoreUnsupported || f.isSupported()) {
+                    avail.add(f);
+                }
+            }
+            
+            return avail;
+        }
     }
-
 }

@@ -19,12 +19,18 @@
 
 package org.apache.sshd;
 
+import java.util.Collection;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.sshd.SshBuilder.BaseBuilder;
 import org.apache.sshd.common.Cipher;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
+import org.apache.sshd.common.kex.BuiltinDHFactories;
+import org.apache.sshd.common.mac.BuiltinMacs;
+import org.apache.sshd.common.signature.BuiltinSignatures;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.BaseTest;
 import org.junit.Assert;
@@ -36,6 +42,52 @@ import org.junit.Test;
 public class SshBuilderTest extends BaseTest {
     public SshBuilderTest() {
         super();
+    }
+
+    /**
+     * Make sure that all values in {@link BuiltinCiphers} are
+     * listed in {@link BaseBuilder#DEFAULT_CIPHERS_PREFERENCE}
+     */
+    @Test
+    public void testAllBuiltinCiphersListed() {
+        Set<BuiltinCiphers> all=EnumSet.allOf(BuiltinCiphers.class);
+        // The 'none' cipher is not listed as preferred - it is implied
+        Assert.assertTrue("Missing " + BuiltinCiphers.Constants.NONE + " cipher in all values", all.remove(BuiltinCiphers.none));
+        testAllInstancesListed(all, BaseBuilder.DEFAULT_CIPHERS_PREFERENCE);
+    }
+
+    /**
+     * Make sure that all values in {@link BuiltinMacs} are
+     * listed in {@link BaseBuilder#DEFAULT_MAC_PREFERENCE}
+     */
+    @Test
+    public void testAllBuiltinMacsListed() {
+        testAllInstancesListed(BuiltinMacs.VALUES, BaseBuilder.DEFAULT_MAC_PREFERENCE);
+    }
+
+    /**
+     * Make sure that all values in {@link BuiltinSignatures} are
+     * listed in {@link BaseBuilder#DEFAULT_SIGNATURE_PREFERENCE}
+     */
+    @Test
+    public void testAllBuiltinSignaturesListed() {
+        testAllInstancesListed(BuiltinSignatures.VALUES, BaseBuilder.DEFAULT_SIGNATURE_PREFERENCE);
+    }
+
+    /**
+     * Make sure that all values in {@link BuiltinDHFactories} are
+     * listed in {@link BaseBuilder#DEFAULT_KEX_PREFERENCE}
+     */
+    @Test
+    public void testAllBuiltinDHFactoriesListed() {
+        testAllInstancesListed(BuiltinDHFactories.VALUES, BaseBuilder.DEFAULT_KEX_PREFERENCE);
+    }
+
+    private static <E extends Enum<E>> void testAllInstancesListed(Set<? extends E> expValues, Collection<? extends E> actValues) {
+        Assert.assertEquals("Mismatched actual values size", expValues.size(), actValues.size());
+        for (E expected : expValues) {
+            Assert.assertTrue(expected.name() + " not found in actual values", actValues.contains(expected));
+        }
     }
 
     /**

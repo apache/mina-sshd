@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.sshd.common.kex;
+package org.apache.sshd.common.mac;
 
 import java.lang.reflect.Field;
 import java.util.EnumSet;
@@ -30,31 +30,31 @@ import org.junit.Test;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class BuiltinDHFactoriesTest extends BaseTest {
-    public BuiltinDHFactoriesTest() {
+public class BuiltinMacsTest extends BaseTest {
+    public BuiltinMacsTest() {
         super();
     }
 
     @Test
     public void testFromName() {
-        for (BuiltinDHFactories expected : BuiltinDHFactories.VALUES) {
+        for (BuiltinMacs expected : BuiltinMacs.VALUES) {
             String name = expected.getName();
-            BuiltinDHFactories actual = BuiltinDHFactories.fromFactoryName(name);
+            BuiltinMacs actual = BuiltinMacs.fromFactoryName(name);
             Assert.assertSame(name, expected, actual);
         }
     }
 
     @Test
     public void testAllConstantsCovered() throws Exception {
-        Set<BuiltinDHFactories> avail=EnumSet.noneOf(BuiltinDHFactories.class);
-        Field[]             fields=BuiltinDHFactories.Constants.class.getFields();
+        Set<BuiltinMacs> avail=EnumSet.noneOf(BuiltinMacs.class);
+        Field[]             fields=BuiltinMacs.Constants.class.getFields();
         for (Field f : fields) {
             String          name=(String) f.get(null);
-            BuiltinDHFactories  value=BuiltinDHFactories.fromFactoryName(name);
+            BuiltinMacs  value=BuiltinMacs.fromFactoryName(name);
             Assert.assertNotNull("No match found for " + name, value);
             Assert.assertTrue(name + " re-specified", avail.add(value));
         }
         
-        Assert.assertEquals("Incomplete coverage", BuiltinDHFactories.VALUES, avail);
+        Assert.assertEquals("Incomplete coverage", BuiltinMacs.VALUES, avail);
     }
 }

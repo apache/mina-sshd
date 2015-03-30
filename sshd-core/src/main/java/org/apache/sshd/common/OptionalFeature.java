@@ -16,15 +16,12 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.kex;
 
-import org.apache.sshd.common.NamedResource;
+package org.apache.sshd.common;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface DHFactory extends NamedResource {
-    boolean isGroupExchange();
-
-    AbstractDH create(Object... params) throws Exception;
+public interface OptionalFeature {
+    boolean isSupported();
 }

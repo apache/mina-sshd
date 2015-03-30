@@ -27,16 +27,18 @@ import java.util.Set;
 import org.apache.sshd.common.Digest;
 import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.OptionalFeature;
 import org.apache.sshd.common.Signature;
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.SecurityUtils;
 
 /**
  * Provides easy access to the currently implemented macs
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public enum BuiltinSignatures implements NamedFactory<Signature> {
+public enum BuiltinSignatures implements NamedFactory<Signature>, OptionalFeature {
     dsa(KeyPairProvider.SSH_DSS) {
         @Override
         public Signature create() {
@@ -54,17 +56,32 @@ public enum BuiltinSignatures implements NamedFactory<Signature> {
         public Signature create() {
             return new SignatureECDSA("SHA256withECDSA");
         }
+        
+        @Override
+        public boolean isSupported() {
+            return SecurityUtils.isBouncyCastleRegistered() || SecurityUtils.hasEcc();
+        }
     },
     nistp384(KeyPairProvider.ECDSA_SHA2_NISTP384) {
         @Override
         public Signature create() {
             return new SignatureECDSA("SHA384withECDSA");
         }
+        
+        @Override
+        public boolean isSupported() {
+            return SecurityUtils.isBouncyCastleRegistered() || SecurityUtils.hasEcc();
+        }
     },
     nistp521(KeyPairProvider.ECDSA_SHA2_NISTP521) {
         @Override
         public Signature create() {
             return new SignatureECDSA("SHA512withECDSA");
+        }
+        
+        @Override
+        public boolean isSupported() {
+            return SecurityUtils.isBouncyCastleRegistered() || SecurityUtils.hasEcc();
         }
     };
 
@@ -90,6 +107,10 @@ public enum BuiltinSignatures implements NamedFactory<Signature> {
         factoryName = facName;
     }
 
+    @Override
+    public boolean isSupported() {
+        return true;
+    }
 
     public static final Set<BuiltinSignatures> VALUES =
             Collections.unmodifiableSet(EnumSet.allOf(BuiltinSignatures.class));
@@ -145,5 +166,4 @@ public enum BuiltinSignatures implements NamedFactory<Signature> {
 
         return null;
     }
-
 }

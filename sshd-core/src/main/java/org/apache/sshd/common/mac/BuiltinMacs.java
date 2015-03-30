@@ -26,6 +26,7 @@ import java.util.Set;
 import org.apache.sshd.common.Digest;
 import org.apache.sshd.common.Mac;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.OptionalFeature;
 import org.apache.sshd.common.util.GenericUtils;
 
 /**
@@ -33,7 +34,7 @@ import org.apache.sshd.common.util.GenericUtils;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public enum BuiltinMacs implements NamedFactory<Mac> {
+public enum BuiltinMacs implements NamedFactory<Mac>, OptionalFeature {
     hmacmd5(Constants.HMAC_MD5) {
         @Override
         public Mac create() {
@@ -78,10 +79,14 @@ public enum BuiltinMacs implements NamedFactory<Mac> {
         return factoryName;
     }
 
+    @Override
+    public final boolean isSupported() {
+        return true;
+    }
+
     BuiltinMacs(String facName) {
         factoryName = facName;
     }
-
 
     public static final Set<BuiltinMacs> VALUES =
             Collections.unmodifiableSet(EnumSet.allOf(BuiltinMacs.class));
@@ -138,7 +143,7 @@ public enum BuiltinMacs implements NamedFactory<Mac> {
         return null;
     }
 
-    private static class Constants {
+    public static final class Constants {
         public static final String HMAC_MD5 = "hmac-md5";
         public static final String HMAC_MD5_96 = "hmac-md5-96";
         public static final String HMAC_SHA1 = "hmac-sha1";
