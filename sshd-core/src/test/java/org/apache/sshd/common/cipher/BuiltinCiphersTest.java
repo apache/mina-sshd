@@ -93,20 +93,17 @@ public class BuiltinCiphersTest extends BaseTest {
         Assert.assertEquals("Incomplete coverage", BuiltinCiphers.VALUES, avail);
     }
 
-//    @Test
-//    public void testFromCipher() {
-//        for (BuiltinCiphers expected : BuiltinCiphers.VALUES) {
-//            if (!expected.isSupported()) {
-//                System.out.append("Skip unsupported cipher: ").println(expected);
-//                continue;
-//            }
-//
-//            NamedFactory<Cipher>    factory=expected;
-//            Cipher                  cipher=factory.create();
-//            assertObjectInstanceOf(expected.name() + " - mismatched cipher type", expected.getCipherType(), cipher);
-//
-//            BuiltinCiphers  actual=BuiltinCiphers.fromCipher(cipher);
-//            Assert.assertSame(expected.getName() + " - mismatched enum values", expected, actual);
-//        }
-//    }
+    @Test
+    public void testSupportedCipher() throws Exception {
+        for (BuiltinCiphers expected : BuiltinCiphers.VALUES) {
+            if (!expected.isSupported()) {
+                System.out.append("Skip unsupported cipher: ").println(expected);
+                continue;
+            }
+            Cipher cipher = expected.create();
+            byte[] key = new byte[cipher.getBlockSize()];
+            byte[] iv = new byte[cipher.getIVSize()];
+            cipher.init(Cipher.Mode.Encrypt, key, iv);
+        }
+    }
 }

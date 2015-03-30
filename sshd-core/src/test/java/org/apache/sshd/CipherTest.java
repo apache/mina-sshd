@@ -28,7 +28,6 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.Random;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.random.BouncyCastleRandom;
-import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.util.BaseTest;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
@@ -52,13 +51,17 @@ public class CipherTest extends BaseTest {
 
     @Test
     public void testAES128CBC() throws Exception {
-        setUp(BuiltinCiphers.aes128cbc);
-        runTest();
+        if (BuiltinCiphers.aes128cbc.isSupported()
+                && checkCipher(com.jcraft.jsch.jce.AES128CBC.class.getName())) {
+            setUp(BuiltinCiphers.aes128cbc);
+            runTest();
+        }
     }
 
     @Test
     public void testAES192CBC() throws Exception {
-        if (SecurityUtils.isBouncyCastleRegistered() && checkCipher(com.jcraft.jsch.jce.AES192CBC.class.getName())) {
+        if (BuiltinCiphers.aes192cbc.isSupported()
+                && checkCipher(com.jcraft.jsch.jce.AES192CBC.class.getName())) {
             setUp(BuiltinCiphers.aes192cbc);
             runTest();
         }
@@ -66,7 +69,8 @@ public class CipherTest extends BaseTest {
 
     @Test
     public void testAES256CBC() throws Exception {
-        if (SecurityUtils.isBouncyCastleRegistered() && checkCipher(com.jcraft.jsch.jce.AES256CBC.class.getName())) {
+        if (BuiltinCiphers.aes256cbc.isSupported()
+                && checkCipher(com.jcraft.jsch.jce.AES256CBC.class.getName())) {
             setUp(BuiltinCiphers.aes256cbc);
             runTest();
         }
@@ -74,14 +78,20 @@ public class CipherTest extends BaseTest {
 
     @Test
     public void testBlowfishCBC() throws Exception {
-        setUp(BuiltinCiphers.blowfishcbc);
-        runTest();
+        if (BuiltinCiphers.blowfishcbc.isSupported()
+                && checkCipher(com.jcraft.jsch.jce.BlowfishCBC.class.getName())) {
+            setUp(BuiltinCiphers.blowfishcbc);
+            runTest();
+        }
     }
 
     @Test
     public void testTripleDESCBC() throws Exception {
-        setUp(BuiltinCiphers.tripledescbc);
-        runTest();
+        if (BuiltinCiphers.tripledescbc.isSupported()
+                && checkCipher(com.jcraft.jsch.jce.TripleDESCBC.class.getName())) {
+            setUp(BuiltinCiphers.tripledescbc);
+            runTest();
+        }
     }
 
     @Test

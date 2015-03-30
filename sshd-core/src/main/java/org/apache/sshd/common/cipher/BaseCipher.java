@@ -22,6 +22,7 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.apache.sshd.common.Cipher;
+import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.util.SecurityUtils;
 
 /**
@@ -63,7 +64,7 @@ public class BaseCipher implements Cipher {
         }
         catch (Exception e) {
             cipher = null;
-            throw e;
+            throw new SshException("Unable to initialize cipher " + this, e);
         }
     }
 
@@ -80,4 +81,8 @@ public class BaseCipher implements Cipher {
         return data;
     }
 
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "[" + algorithm + "," + ivsize + "," + bsize + "," + transformation + "]";
+    }
 }
