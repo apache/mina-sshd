@@ -53,6 +53,7 @@ public final class SelectorUtils {
      * Private Constructor
      */
     private SelectorUtils() {
+        throw new UnsupportedOperationException("No instance allowed");
     }
 
     /**
@@ -555,16 +556,67 @@ public final class SelectorUtils {
         }
 
         // serialize
-        StringBuffer buffer = new StringBuffer(path.length());
-
+        StringBuilder buffer = new StringBuilder(path.length());
         for (int i = 0; i < tokens.size(); i++) {
             if (i > 0 || (i == 0 && startsWithSeparator)) buffer.append(separator);
             buffer.append(tokens.get(i));
         }
 
+        // for root Windows drive we need to return "C:/" or we get errors from the local file system
+        if (OsUtils.isWin32() && (buffer.length() == 2) && isWindowsDriveSpecified(buffer)) {
+            buffer.append(separator);
+        }
+
         return buffer.toString();
     }
 
+    /**
+     * Converts a possibly '/' separated path to a local path. <B>Note:</B>
+     * takes special care of Windows drive paths - e.g., {@code C:}
+     * by converting them to &quot;C:\&quot;
+     * @param path The original path
+     * @return The local path
+     */
+    public static String translateToLocalPath(String path) {
+        if (GenericUtils.isEmpty(path) || (File.separatorChar == '/')) {
+            return path;
+        }
+        
+        // this means we are running on Windows
+        String  localPath=path.replace('/', File.separatorChar);
+        if ((localPath.length() < 2) || (localPath.charAt(1) != ':')) {
+            return localPath;   // assume a relative path
+        }
+
+        /*
+         * Here we know that we have at least a "C:" string - make sure it
+         * is followed by the local file separator. Note: if all we have is
+         * just the drive, we will create a "C:\" path since this is the
+         * preferred Windows way to refer to root drives in the file system
+         */
+        if (localPath.length() == 2) {
+            return localPath + File.separator;  // all we have is "C:"
+        } else if (localPath.charAt(2) != File.separatorChar) {
+            // be nice and add the missing file separator - C:foo => C:\foo
+            return localPath.substring(0, 2) + File.separator + localPath.substring(2);
+        } else {
+            return localPath;
+        }
+    }
+
+    public static boolean isWindowsDriveSpecified(CharSequence cs) {
+        if ((GenericUtils.length(cs) < 2) || (cs.charAt(1) != ':')) {
+            return false;
+        }
+        
+        char    drive=cs.charAt(0);
+        if (((drive >= 'a') && (drive <= 'z'))
+         || ((drive >= 'A') && (drive <= 'Z'))) {
+            return true;
+        } else {
+            return false;
+        }
+    }
 
     /**
      * Returns dependency information on these two files. If src has been

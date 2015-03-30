@@ -16,32 +16,18 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.util;
+
+package org.apache.sshd;
 
 /**
- * Operating system dependent utility methods.
- *
+ * Just a test class used to invoke {@link SshServer#main(String[])} in
+ * order to have logging - which is in {@code test} scope
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class OsUtils {
-    private static final boolean win32;
+public class SshServerMain {
 
-    static {
-        String os = System.getProperty("os.name").toLowerCase();
-        win32 = 0 <= os.indexOf("windows");
+    public static void main(String[] args) throws Exception {
+        SshServer.main(args);
     }
 
-    /** @return true if the host is a UNIX system (and not Windows). */
-    public static boolean isUNIX() {
-        return !win32;
-    }
-
-    /** @return true if the host is Windows (and not UNIX). */
-    public static boolean isWin32() {
-        return win32;
-    }
-
-    private OsUtils () {
-        throw new UnsupportedOperationException("No instance allowed");
-    }
 }

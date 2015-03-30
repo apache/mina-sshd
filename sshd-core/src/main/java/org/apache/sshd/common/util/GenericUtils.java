@@ -26,6 +26,15 @@ import java.util.Map;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class GenericUtils {
+
+    public static final String trimToEmpty(String s) {
+        if (s == null) {
+            return "";
+        } else {
+            return s.trim();
+        }
+    }
+
     public static final int length(CharSequence cs) {
         if (cs == null) {
             return 0;

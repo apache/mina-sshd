@@ -63,6 +63,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -75,8 +76,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.file.FileSystemAware;
 import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.IoUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.SelectorUtils;
@@ -226,6 +229,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
             case SSH_FXF_TRUNCATE_EXISTING:
                 options.add(StandardOpenOption.TRUNCATE_EXISTING);
                 break;
+            default:    // ignored
             }
             if ((flags & SSH_FXF_APPEND_DATA) != 0) {
                 options.add(StandardOpenOption.APPEND);
@@ -559,7 +563,10 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
     protected void doTextSeek(Buffer buffer, int id) throws IOException {
         String handle = buffer.getString();
         long line = buffer.getLong();
-        log.debug("Received SSH_FXP_EXTENDED(text-seek) (handle={}, line={})", handle, line);
+        if (log.isDebugEnabled()) {
+            log.debug("Received SSH_FXP_EXTENDED(text-seek) (handle={}, line={})", handle, line);
+        }
+
         // TODO : implement text-seek
         sendStatus(id, SSH_FX_OP_UNSUPPORTED, "Command SSH_FXP_EXTENDED(text-seek) is unsupported or not implemented");
     }
@@ -587,7 +594,11 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         long offset = buffer.getLong();
         long length = buffer.getLong();
         int mask = buffer.getInt();
-        log.debug("Received SSH_FXP_BLOCK (handle={}, offset={}, length={}, mask={})", new Object[] { handle, offset, length, mask });
+        
+        if (log.isDebugEnabled()) {
+            log.debug("Received SSH_FXP_BLOCK (handle={}, offset={}, length={}, mask={})", new Object[] { handle, offset, length, "0x" + Integer.toHexString(mask) });
+        }
+
         try {
             Handle p = handles.get(handle);
             if (!(p instanceof FileHandle)) {
@@ -606,7 +617,10 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         String handle = buffer.getString();
         long offset = buffer.getLong();
         long length = buffer.getLong();
-        log.debug("Received SSH_FXP_UNBLOCK (handle={}, offset={}, length={})", new Object[] { handle, offset, length });
+        if (log.isDebugEnabled()) {
+            log.debug("Received SSH_FXP_UNBLOCK (handle={}, offset={}, length={})", new Object[] { handle, offset, length });
+        }
+
         try {
             Handle p = handles.get(handle);
             if (!(p instanceof FileHandle)) {
@@ -625,7 +639,10 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         String targetpath = buffer.getString();
         String linkpath = buffer.getString();
         boolean symLink = buffer.getBoolean();
-        log.debug("Received SSH_FXP_LINK (linkpath={}, targetpath={}, symlink={})", new Object[] { linkpath, targetpath, symLink });
+        if (log.isDebugEnabled()) {
+            log.debug("Received SSH_FXP_LINK (linkpath={}, targetpath={}, symlink={})", new Object[] { linkpath, targetpath, symLink });
+        }
+
         try {
             Path link = resolveFile(linkpath);
             Path target = fileSystem.getPath(targetpath);
@@ -679,7 +696,9 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         if (version >= SFTP_V5) {
             flags = buffer.getInt();
         }
-        log.debug("Received SSH_FXP_RENAME (oldPath={}, newPath={}, flags={})", new Object[] { oldPath, newPath, flags });
+        if (log.isDebugEnabled()) {
+            log.debug("Received SSH_FXP_RENAME (oldPath={}, newPath={}, flags={})", new Object[] { oldPath, newPath, flags });
+        }
         try {
             List<CopyOption> opts = new ArrayList<>();
             if ((flags & SSH_FXP_RENAME_ATOMIC) != 0) {
@@ -703,7 +722,9 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         if (version >= SFTP_V4) {
             flags = buffer.getInt();
         }
-        log.debug("Received SSH_FXP_STAT (path={}, flags={})", path, flags);
+        if (log.isDebugEnabled()) {
+            log.debug("Received SSH_FXP_STAT (path={}, flags={})", path, "0x" + Integer.toHexString(flags));
+        }
         try {
             Path p = resolveFile(path);
             sendAttrs(id, p, flags, true);
@@ -715,13 +736,15 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
     protected void doRealPath(Buffer buffer, int id) throws IOException {
         String path = buffer.getString();
         log.debug("Received SSH_FXP_REALPATH (path={})", path);
-        if (path.trim().length() == 0) {
+        path = GenericUtils.trimToEmpty(path);
+        if (GenericUtils.isEmpty(path)) {
             path = ".";
         }
+
         try {
             if (version < SFTP_V6) {
                 Path p = resolveFile(path).toAbsolutePath().normalize();
-                if (!Files.exists(p)) {
+                if (!Files.exists(p, IoUtils.EMPTY_OPTIONS)) {
                     throw new FileNotFoundException(p.toString());
                 }
                 sendPath(id, p, Collections.<String, Object>emptyMap());
@@ -741,6 +764,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                     p = p.resolve(p2);
                 }
                 p = p.toAbsolutePath().normalize();
+
                 Map<String, Object> attrs = Collections.emptyMap();
                 if (control == SSH_FXP_REALPATH_STAT_IF) {
                     try {
@@ -913,7 +937,9 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         if (version >= SFTP_V4) {
             flags = buffer.getInt();
         }
-        log.debug("Received SSH_FXP_FSTAT (handle={}, flags={})", handle, flags);
+        if (log.isDebugEnabled()) {
+            log.debug("Received SSH_FXP_FSTAT (handle={}, flags={})", handle, "0x" + Integer.toHexString(flags));
+        }
         try {
             Handle p = handles.get(handle);
             if (p == null) {
@@ -932,7 +958,9 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         if (version >= SFTP_V4) {
             flags = buffer.getInt();
         }
-        log.debug("Received SSH_FXP_LSTAT (path={}, flags={})", path, flags);
+        if (log.isDebugEnabled()) {
+            log.debug("Received SSH_FXP_LSTAT (path={}, flags={})", path, "0x" + Integer.toHexString(flags));
+        }
         try {
             Path p = resolveFile(path);
             sendAttrs(id, p, flags, false);
@@ -953,7 +981,9 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         }
         byte[] data = buffer.array();
         int doff = buffer.rpos();
-        log.debug("Received SSH_FXP_WRITE (handle={}, offset={}, data=byte[{}])", new Object[] { handle, offset, length });
+        if (log.isDebugEnabled()) {
+            log.debug("Received SSH_FXP_WRITE (handle={}, offset={}, data=byte[{}])", new Object[] { handle, offset, length });
+        }
         try {
             Handle p = handles.get(handle);
             if (!(p instanceof FileHandle)) {
@@ -972,7 +1002,9 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         String handle = buffer.getString();
         long offset = buffer.getLong();
         int len = buffer.getInt();
-        log.debug("Received SSH_FXP_READ (handle={}, offset={}, length={})", new Object[]{handle, offset, len});
+        if (log.isDebugEnabled()) {
+            log.debug("Received SSH_FXP_READ (handle={}, offset={}, length={})", new Object[]{handle, offset, len});
+        }
         try {
             Handle p = handles.get(handle);
             if (!(p instanceof FileHandle)) {
@@ -1070,7 +1102,9 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
             }
         }
         Map<String, Object> attrs = readAttrs(buffer);
-        log.debug("Received SSH_FXP_OPEN (path={}, access={}, pflags={}, attrs={})", new Object[]{path, access, pflags, attrs});
+        if (log.isDebugEnabled()) {
+            log.debug("Received SSH_FXP_OPEN (path={}, access={}, pflags={}, attrs={})", new Object[]{path, access, pflags, attrs});
+        }
         try {
             Path file = resolveFile(path);
             String handle = UUID.randomUUID().toString();
@@ -1082,7 +1116,9 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
     }
 
     protected void doInit(Buffer buffer, int id) throws IOException {
-        log.debug("Received SSH_FXP_INIT (version={})", id);
+        if (log.isDebugEnabled()) {
+            log.debug("Received SSH_FXP_INIT (version={})", id);
+        }
         version = id;
         while (buffer.available() > 0) {
             String name = buffer.getString();
@@ -1094,13 +1130,13 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         int hig = HIGHER_SFTP_IMPL;
         String all = ALL_SFTP_IMPL;
 
-        if (session.getFactoryManager().getProperties() != null) {
-            String sftpVersion = session.getFactoryManager().getProperties().get(SFTP_VERSION);
-            if (sftpVersion != null) {
-                low = hig = Integer.parseInt(sftpVersion);
-                all = sftpVersion;
-            }
+        // check if specific version forced
+        Integer sftpVersion = FactoryManagerUtils.getInteger(session, SFTP_VERSION);
+        if (sftpVersion != null) {
+            low = hig = sftpVersion.intValue();
+            all = sftpVersion.toString();
         }
+
         if (version >= low) {
             version = Math.min(version, hig);
             buffer.clear();
@@ -1204,17 +1240,14 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         }
         buffer.putString(normalizedPath, StandardCharsets.UTF_8);
 
-        f = resolveFile(normalizedPath);
-        if (f.getFileName() == null) {
-            f = resolveFile(".");
-        }
         if (version == SFTP_V3) {
+            f = resolveFile(normalizedPath);
             buffer.putString(getLongName(f, attrs), StandardCharsets.UTF_8); // Format specified in the specs
             buffer.putInt(0);
         } else if (version >= SFTP_V4) {
             writeAttrs(buffer, attrs);
         } else {
-            throw new IllegalStateException();
+            throw new IllegalStateException("sendPath(" + f + ") unsupported version: " + version);
         }
         send(buffer);
     }
@@ -1240,7 +1273,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         int nb = 0;
         while (files.hasNext() && buffer.wpos() < MAX_PACKET_LENGTH) {
             Path f = files.next();
-            buffer.putString(f.getFileName().toString(), StandardCharsets.UTF_8);
+            buffer.putString(getShortName(f), StandardCharsets.UTF_8);
             if (version == SFTP_V3) {
                 buffer.putString(getLongName(f), StandardCharsets.UTF_8); // Format specified in the specs
             }
@@ -1296,7 +1329,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
             }
         }
 
-        Long length = (Long) attributes.get("size");
+        Number length = (Number) attributes.get("size");
         if (length == null) {
             length = 0l;
         }
@@ -1304,17 +1337,17 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
 
         Boolean isDirectory = (Boolean) attributes.get("isDirectory");
         Boolean isLink = (Boolean) attributes.get("isSymbolicLink");
+        @SuppressWarnings("unchecked")
         Set<PosixFilePermission> perms = (Set<PosixFilePermission>) attributes.get("permissions");
         if (perms == null) {
-            perms = new HashSet<>();
+            perms = EnumSet.noneOf(PosixFilePermission.class);
         }
 
         StringBuilder sb = new StringBuilder();
-        sb.append((isDirectory != null && isDirectory) ? "d" : (isLink != null && isLink) ? "l" : "-");
+        sb.append((isDirectory != null && isDirectory.booleanValue()) ? "d" : (isLink != null && isLink.booleanValue()) ? "l" : "-");
         sb.append(PosixFilePermissions.toString(perms));
         sb.append("  ");
-        sb.append(attributes.containsKey("nlink")
-                ? attributes.get("nlink") : "1");
+        sb.append(attributes.containsKey("nlink") ? attributes.get("nlink") : "1");
         sb.append(" ");
         sb.append(username);
         sb.append(" ");
@@ -1324,9 +1357,36 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         sb.append(" ");
         sb.append(getUnixDate((FileTime) attributes.get("lastModifiedTime")));
         sb.append(" ");
-        sb.append(f.getFileName().toString());
+        sb.append(getShortName(f));
 
         return sb.toString();
+    }
+
+    protected String getShortName(Path f) {
+        if (OsUtils.isUNIX()) {
+            Path    name=f.getFileName();
+            if (name == null) {
+                Path    p=resolveFile(".");
+                name = p.getFileName();
+            }
+            
+            return name.toString();
+        } else {    // need special handling for Windows root drives
+            Path    abs=f.toAbsolutePath().normalize();
+            int     count=abs.getNameCount();
+            /*
+             * According to the javadoc:
+             * 
+             *      The number of elements in the path, or 0 if this path only
+             *      represents a root component
+             */
+            if (count > 0) {
+                Path    name=abs.getFileName();
+                return name.toString();
+            } else {
+                return abs.toString().replace(File.separatorChar, '/');
+            }
+        }
     }
 
     protected int attributesToPermissions(boolean isReg, boolean isDir, boolean isLnk, Collection<PosixFilePermission> perms) {
@@ -1361,6 +1421,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                 case OTHERS_EXECUTE:
                     pf |= S_IXOTH;
                     break;
+                default: // ignored
                 }
             }
         }
@@ -1518,6 +1579,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
             case "creationTime":     view = "basic"; break;
             case "lastModifiedTime": view = "basic"; break;
             case "lastAccessTime":   view = "basic"; break;
+            default:    // ignored
             }
             if (view != null && value != null) {
                 try {
@@ -1547,6 +1609,8 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                 break;
             case ThrowException:
                 throw new UnsupportedOperationException("Unsupported attributes: " + sb.toString());
+            default:
+                log.warn("Unknown policy for attributes=" + sb.toString() + ": " + unsupportedAttributePolicy);
             }
         }
     }
@@ -1590,6 +1654,8 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
             break;
         case ThrowException:
             throw e;
+        default:
+            log.warn("Unknown policy for principal=" + principalType.getSimpleName() + "[" + name + "]: " + unsupportedAttributePolicy);
         }
     }
 
@@ -1643,6 +1709,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
             case SSH_FILEXFER_TYPE_UNKNOWN:
                 attrs.put("isOther", true);
                 break;
+            default:    // ignored
             }
         }
         if ((flags & SSH_FILEXFER_ATTR_SIZE) != 0) {
@@ -1855,7 +1922,10 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
     }
 
     protected void sendStatus(int id, int substatus, String msg, String lang) throws IOException {
-        log.debug("Send SSH_FXP_STATUS (substatus={}, msg={})", substatus, msg);
+        if (log.isDebugEnabled()) {
+            log.debug("Send SSH_FXP_STATUS (substatus={}, lang={}, msg={})", new Object[] { substatus, lang, msg });
+        }
+
         Buffer buffer = new Buffer();
         buffer.putByte((byte) SSH_FXP_STATUS);
         buffer.putInt(id);
@@ -1912,7 +1982,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
 
     private Path resolveFile(String path) {
         //in case we are running on Windows
-        String localPath = (path == null) ? null : path.replace('/', File.separatorChar);
+        String localPath = SelectorUtils.translateToLocalPath(path);
         return defaultDir.resolve(localPath);
     }
 
