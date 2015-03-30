@@ -30,6 +30,8 @@ import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultSshFuture;
@@ -45,7 +47,9 @@ import org.apache.sshd.common.util.Readable;
  */
 public class Nio2Session extends CloseableUtils.AbstractCloseable implements IoSession {
 
-    private static final AtomicLong sessionIdGenerator = new AtomicLong(100);
+    public static final int DEFAULT_READBUF_SIZE = 32 * 1024;
+
+    private static final AtomicLong sessionIdGenerator = new AtomicLong(100L);
 
     private final long id = sessionIdGenerator.incrementAndGet();
     private final Nio2Service service;
@@ -54,12 +58,13 @@ public class Nio2Session extends CloseableUtils.AbstractCloseable implements IoS
     private final Map<Object, Object> attributes = new HashMap<Object, Object>();
     private final SocketAddress localAddress;
     private final SocketAddress remoteAddress;
-
+    private final FactoryManager manager;
     private final Queue<DefaultIoWriteFuture> writes = new LinkedTransferQueue<DefaultIoWriteFuture>();
     private final AtomicReference<DefaultIoWriteFuture> currentWrite = new AtomicReference<DefaultIoWriteFuture>();
 
-    public Nio2Session(Nio2Service service, IoHandler handler, AsynchronousSocketChannel socket) throws IOException {
+    public Nio2Session(Nio2Service service, FactoryManager manager, IoHandler handler, AsynchronousSocketChannel socket) throws IOException {
         this.service = service;
+        this.manager = manager;
         this.handler = handler;
         this.socket = socket;
         this.localAddress = socket.getLocalAddress();
@@ -166,24 +171,45 @@ public class Nio2Session extends CloseableUtils.AbstractCloseable implements IoS
     }
 
     public void startReading() {
-        final ByteBuffer buffer = ByteBuffer.allocate(32 * 1024);
-        socket.read(buffer, null, new Nio2CompletionHandler<Integer, Object>() {
+        startReading(FactoryManagerUtils.getIntProperty(manager, FactoryManager.NIO2_READ_BUFFER_SIZE, DEFAULT_READBUF_SIZE));
+    }
+
+    public void startReading(int bufSize) {
+        startReading(new byte[bufSize]);
+    }
+
+    public void startReading(byte[] buf) {
+        startReading(buf, 0, buf.length);
+    }
+    
+    public void startReading(byte[] buf, int offset, int len) {
+        startReading(ByteBuffer.wrap(buf, offset, len));
+    }
+
+    public void startReading(final ByteBuffer buffer) {
+        doReadCycle(buffer, new Readable() {
+                public int available() {
+                    return buffer.remaining();
+                }
+                public void getRawBytes(byte[] data, int offset, int len) {
+                    buffer.get(data, offset, len);
+                }
+            });
+    }
+
+    protected void doReadCycle(final ByteBuffer buffer, final Readable bufReader) {
+        final Nio2CompletionHandler<Integer, Object> completion = new Nio2CompletionHandler<Integer, Object>() {
+            @SuppressWarnings("synthetic-access")
             protected void onCompleted(Integer result, Object attachment) {
                 try {
                     if (result >= 0) {
                         log.debug("Read {} bytes", result);
                         buffer.flip();
-                        Readable buf = new Readable() {
-                            public int available() {
-                                return buffer.remaining();
-                            }
-                            public void getRawBytes(byte[] data, int offset, int len) {
-                                buffer.get(data, offset, len);
-                            }
-                        };
-                        handler.messageReceived(Nio2Session.this, buf);
+                        handler.messageReceived(Nio2Session.this, bufReader);
                         if (!closeFuture.isClosed()) {
-                            startReading();
+                            // re-use reference for next iteration since we finished processing it
+                            buffer.clear();
+                            doReadCycle(buffer, this);
                         } else {
                             log.debug("IoSession has been closed, stop reading");
                         }
@@ -195,10 +221,17 @@ public class Nio2Session extends CloseableUtils.AbstractCloseable implements IoS
                     failed(exc, attachment);
                 }
             }
+
+            @SuppressWarnings("synthetic-access")
             protected void onFailed(Throwable exc, Object attachment) {
                 exceptionCaught(exc);
             }
-        });
+        };
+        doReadCycle(buffer, completion);
+    }
+
+    protected void doReadCycle(ByteBuffer buffer, Nio2CompletionHandler<Integer, Object> completion) {
+        socket.read(buffer, null, completion);
     }
 
     private void startWriting() {

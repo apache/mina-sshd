@@ -128,6 +128,12 @@ public interface FactoryManager {
     public static final String TCP_NODELAY = "tcp-nodelay";
 
     /**
+     * Read buffer size for NIO2 sessions
+     * See {@link org.apache.sshd.common.io.nio2.Nio2Session}
+     */
+    public static final String NIO2_READ_BUFFER_SIZE = "nio2-read-buf-size";
+
+    /**
      * A map of properties that can be used to configure the SSH server
      * or client.  This map will never be changed by either the server or
      * client and is not supposed to be changed at runtime (changes are not

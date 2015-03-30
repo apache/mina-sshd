@@ -127,7 +127,7 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
             }
             try {
                 // Create a session
-                Nio2Session session = new Nio2Session(Nio2Acceptor.this, handler, result);
+                Nio2Session session = new Nio2Session(Nio2Acceptor.this, manager, handler, result);
                 handler.sessionCreated(session);
                 sessions.put(session.getId(), session);
                 session.startReading();
