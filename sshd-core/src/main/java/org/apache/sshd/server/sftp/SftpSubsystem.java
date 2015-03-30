@@ -113,10 +113,21 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
      */
     public static final String SFTP_VERSION = "sftp-version";
 
-    public static final int LOWER_SFTP_IMPL = 3; // Working implementation from v3
-    public static final int HIGHER_SFTP_IMPL = 6; //  .. up to
-    public static final String ALL_SFTP_IMPL = "3,4,5,6";
+    public static final int LOWER_SFTP_IMPL = SFTP_V3; // Working implementation from v3
+    public static final int HIGHER_SFTP_IMPL = SFTP_V6; //  .. up to
+    public static final String ALL_SFTP_IMPL;
     public static final int  MAX_PACKET_LENGTH = 1024 * 16;
+
+    static {
+        StringBuilder sb = new StringBuilder(2 * (1 + (HIGHER_SFTP_IMPL - LOWER_SFTP_IMPL)));
+        for (int v = LOWER_SFTP_IMPL; v <= HIGHER_SFTP_IMPL; v++) {
+            if (sb.length() > 0) {
+                sb.append(',');
+            }
+            sb.append(v);
+        }
+        ALL_SFTP_IMPL = sb.toString();
+    }
 
     private ExitCallback callback;
     private InputStream in;
@@ -574,19 +585,63 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
     protected void doVersionSelect(Buffer buffer, int id) throws IOException {
         String ver = buffer.getString();
         log.debug("Received SSH_FXP_EXTENDED(version-select) (version={})", version);
-        if (Integer.toString(SFTP_V3).equals(ver)) {
-            version = SFTP_V3;
-        } else if (Integer.toString(SFTP_V4).equals(ver)) {
-            version = SFTP_V4;
-        } else if (Integer.toString(SFTP_V5).equals(ver)) {
-            version = SFTP_V5;
-        } else if (Integer.toString(SFTP_V6).equals(ver)) {
-            version = SFTP_V6;
-        } else {
-            sendStatus(id, SSH_FX_FAILURE, "Unsupported version " + ver);
-            return;
+        
+        if (GenericUtils.length(ver) == 1) {
+            char digit = ver.charAt(0);
+            if ((digit >= '0') && (digit <= '9')) {
+                int value = digit - '0';
+                String all = checkVersionCompatibility(id, value, SSH_FX_FAILURE);
+                if (GenericUtils.isEmpty(all)) {    // validation failed
+                    return;
+                }
+
+                version = value;
+                sendStatus(id, SSH_FX_OK, "");
+                return;
+            }
         }
-        sendStatus(id, SSH_FX_OK, "");
+
+        sendStatus(id, SSH_FX_FAILURE, "Unsupported version " + ver);
+    }
+
+    /**
+     * Checks if a proposed version is within supported range. <B>Note:</B>
+     * if the user forced a specific value via the {@link #SFTP_VERSION}
+     * property, then it is used to validate the proposed value
+     * @param id The SSH message ID to be used to send the failure message
+     * if required
+     * @param proposed The proposed version value
+     * @param failureOpcode The failure opcode to send if validation fails
+     * @return A {@link String} of comma separated values representing all
+     * the supported version - {@code null} if validation failed and an
+     * appropriate status message was sent
+     * @throws IOException If failed to send the failure status message
+     */
+    protected String checkVersionCompatibility(int id, int proposed, int failureOpcode) throws IOException {
+        int low = LOWER_SFTP_IMPL;
+        int hig = HIGHER_SFTP_IMPL;
+        String available = ALL_SFTP_IMPL;
+        // check if user wants to use a specific version
+        Integer sftpVersion = FactoryManagerUtils.getInteger(session, SFTP_VERSION);
+        if (sftpVersion != null) {
+            int forcedValue = sftpVersion.intValue();
+            if ((forcedValue < LOWER_SFTP_IMPL) || (forcedValue > HIGHER_SFTP_IMPL)) {
+                throw new IllegalStateException("Forced SFTP version (" + sftpVersion + ") not within supported values: " + available);
+            }
+            low = hig = sftpVersion.intValue();
+            available = sftpVersion.toString();
+        }
+
+        if (log.isTraceEnabled()) {
+            log.trace("checkVersionCompatibility(id={}) - proposed={}, available={}", new Object[] { id, proposed, available });
+        }
+
+        if ((proposed < low) || (proposed > hig)) {
+            sendStatus(id, failureOpcode, "Proposed version (" + proposed + ") not in supported range: " + available);
+            return null;
+        }
+
+        return available;
     }
 
     protected void doBlock(Buffer buffer, int id) throws IOException {
@@ -1119,6 +1174,11 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         if (log.isDebugEnabled()) {
             log.debug("Received SSH_FXP_INIT (version={})", id);
         }
+
+        String all = checkVersionCompatibility(id, id, SSH_FX_OP_UNSUPPORTED);
+        if (GenericUtils.isEmpty(all)) { // i.e. validation failed
+            return;
+        }
         version = id;
         while (buffer.available() > 0) {
             String name = buffer.getString();
@@ -1126,86 +1186,69 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
             extensions.put(name, data);
         }
 
-        int low = LOWER_SFTP_IMPL;
-        int hig = HIGHER_SFTP_IMPL;
-        String all = ALL_SFTP_IMPL;
+        buffer.clear();
+        buffer.putByte((byte) SSH_FXP_VERSION);
+        buffer.putInt(version);
 
-        // check if specific version forced
-        Integer sftpVersion = FactoryManagerUtils.getInteger(session, SFTP_VERSION);
-        if (sftpVersion != null) {
-            low = hig = sftpVersion.intValue();
-            all = sftpVersion.toString();
-        }
+        // newline
+        buffer.putString("newline");
+        buffer.putString(System.getProperty("line.separator"));
 
-        if (version >= low) {
-            version = Math.min(version, hig);
-            buffer.clear();
-            buffer.putByte((byte) SSH_FXP_VERSION);
-            buffer.putInt(version);
+        // versions
+        buffer.putString("versions");
+        buffer.putString(all);
 
-            // newline
-            buffer.putString("newline");
-            buffer.putString(System.getProperty("line.separator"));
+        // supported
+        buffer.putString("supported");
+        buffer.putInt(5 * 4); // length of 5 integers
+        // supported-attribute-mask
+        buffer.putInt(SSH_FILEXFER_ATTR_SIZE | SSH_FILEXFER_ATTR_PERMISSIONS
+                | SSH_FILEXFER_ATTR_ACCESSTIME | SSH_FILEXFER_ATTR_CREATETIME
+                | SSH_FILEXFER_ATTR_MODIFYTIME | SSH_FILEXFER_ATTR_OWNERGROUP
+                | SSH_FILEXFER_ATTR_BITS);
+        // TODO: supported-attribute-bits
+        buffer.putInt(0);
+        // supported-open-flags
+        buffer.putInt(SSH_FXF_READ | SSH_FXF_WRITE | SSH_FXF_APPEND
+                | SSH_FXF_CREAT | SSH_FXF_TRUNC | SSH_FXF_EXCL);
+        // TODO: supported-access-mask
+        buffer.putInt(0);
+        // max-read-size
+        buffer.putInt(0);
 
-            // versions
-            buffer.putString("versions");
-            buffer.putString(all);
+        // supported2
+        buffer.putString("supported2");
+        buffer.putInt(8 * 4); // length of 7 integers + 2 shorts
+        // supported-attribute-mask
+        buffer.putInt(SSH_FILEXFER_ATTR_SIZE | SSH_FILEXFER_ATTR_PERMISSIONS
+                | SSH_FILEXFER_ATTR_ACCESSTIME | SSH_FILEXFER_ATTR_CREATETIME
+                | SSH_FILEXFER_ATTR_MODIFYTIME | SSH_FILEXFER_ATTR_OWNERGROUP
+                | SSH_FILEXFER_ATTR_BITS);
+        // TODO: supported-attribute-bits
+        buffer.putInt(0);
+        // supported-open-flags
+        buffer.putInt(SSH_FXF_ACCESS_DISPOSITION | SSH_FXF_APPEND_DATA);
+        // TODO: supported-access-mask
+        buffer.putInt(0);
+        // max-read-size
+        buffer.putInt(0);
+        // supported-open-block-vector
+        buffer.putShort(0);
+        // supported-block-vector
+        buffer.putShort(0);
+        // attrib-extension-count
+        buffer.putInt(0);
+        // extension-count
+        buffer.putInt(0);
 
-            // supported
-            buffer.putString("supported");
-            buffer.putInt(5 * 4); // length of 5 integers
-            // supported-attribute-mask
-            buffer.putInt(SSH_FILEXFER_ATTR_SIZE | SSH_FILEXFER_ATTR_PERMISSIONS
-                    | SSH_FILEXFER_ATTR_ACCESSTIME | SSH_FILEXFER_ATTR_CREATETIME
-                    | SSH_FILEXFER_ATTR_MODIFYTIME | SSH_FILEXFER_ATTR_OWNERGROUP
-                    | SSH_FILEXFER_ATTR_BITS);
-            // TODO: supported-attribute-bits
-            buffer.putInt(0);
-            // supported-open-flags
-            buffer.putInt(SSH_FXF_READ | SSH_FXF_WRITE | SSH_FXF_APPEND
-                    | SSH_FXF_CREAT | SSH_FXF_TRUNC | SSH_FXF_EXCL);
-            // TODO: supported-access-mask
-            buffer.putInt(0);
-            // max-read-size
-            buffer.putInt(0);
+        /*
+        buffer.putString("acl-supported");
+        buffer.putInt(4);
+        // capabilities
+        buffer.putInt(0);
+        */
 
-            // supported2
-            buffer.putString("supported2");
-            buffer.putInt(8 * 4); // length of 7 integers + 2 shorts
-            // supported-attribute-mask
-            buffer.putInt(SSH_FILEXFER_ATTR_SIZE | SSH_FILEXFER_ATTR_PERMISSIONS
-                    | SSH_FILEXFER_ATTR_ACCESSTIME | SSH_FILEXFER_ATTR_CREATETIME
-                    | SSH_FILEXFER_ATTR_MODIFYTIME | SSH_FILEXFER_ATTR_OWNERGROUP
-                    | SSH_FILEXFER_ATTR_BITS);
-            // TODO: supported-attribute-bits
-            buffer.putInt(0);
-            // supported-open-flags
-            buffer.putInt(SSH_FXF_ACCESS_DISPOSITION | SSH_FXF_APPEND_DATA);
-            // TODO: supported-access-mask
-            buffer.putInt(0);
-            // max-read-size
-            buffer.putInt(0);
-            // supported-open-block-vector
-            buffer.putShort(0);
-            // supported-block-vector
-            buffer.putShort(0);
-            // attrib-extension-count
-            buffer.putInt(0);
-            // extension-count
-            buffer.putInt(0);
-
-                /*
-                buffer.putString("acl-supported");
-                buffer.putInt(4);
-                // capabilities
-                buffer.putInt(0);
-                */
-
-            send(buffer);
-        } else {
-            // We only support version >= 3 (Version 1 and 2 are not common)
-            sendStatus(id, SSH_FX_OP_UNSUPPORTED, "SFTP server only support versions " + all);
-        }
+        send(buffer);
     }
 
     protected void sendHandle(int id, String handle) throws IOException {
