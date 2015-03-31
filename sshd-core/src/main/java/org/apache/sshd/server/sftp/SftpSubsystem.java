@@ -18,6 +18,8 @@
  */
 package org.apache.sshd.server.sftp;
 
+import static org.apache.sshd.common.sftp.SftpConstants.*;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.EOFException;
@@ -70,6 +72,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
@@ -91,8 +94,6 @@ import org.apache.sshd.server.SessionAware;
 import org.apache.sshd.server.session.ServerSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.sshd.common.sftp.SftpConstants.*;
 
 /**
  * SFTP subsystem
@@ -163,20 +164,23 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         public void close() throws IOException {
             // ignored
         }
+
+        @Override
+        public String toString() {
+            return Objects.toString(getFile());
+        }
     }
 
     protected static class DirectoryHandle extends Handle implements Iterator<Path> {
-        boolean done;
+        private boolean done;
         // the directory should be read once at "open directory"
-        DirectoryStream<Path> ds;
-        Iterator<Path> fileList = null;
-        int fileIndex;
+        private DirectoryStream<Path> ds;
+        private Iterator<Path> fileList;
 
         public DirectoryHandle(Path file) throws IOException {
             super(file);
             ds = Files.newDirectoryStream(file);
             fileList = ds.iterator();
-            fileIndex = 0;
         }
 
         public boolean isDone() {
@@ -196,7 +200,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         }
 
         public void remove() {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("Not allowed to remove " + toString());
         }
 
         public void clearFileList() {
@@ -798,8 +802,13 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
 
         try {
             if (version < SFTP_V6) {
-                Path p = resolveFile(path).toAbsolutePath().normalize();
-                if (!Files.exists(p, IoUtils.EMPTY_OPTIONS)) {
+                Path f = resolveFile(path);
+                Path abs = f.toAbsolutePath();
+                Path p = abs.normalize();
+                Boolean status = IoUtils.checkFileExists(p, IoUtils.EMPTY_OPTIONS);
+                if (status == null) {
+                    p = handleUnknownRealPathStatus(path, abs, p);
+                } else if (!status.booleanValue()) {
                     throw new FileNotFoundException(p.toString());
                 }
                 sendPath(id, p, Collections.<String, Object>emptyMap());
@@ -837,13 +846,31 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         }
     }
 
+    protected Path handleUnknownRealPathStatus(String path, Path absolute, Path normalized) throws IOException {
+        switch(unsupportedAttributePolicy) {
+            case Ignore:
+                break;
+            case Warn:
+                log.warn("handleUnknownRealPathStatus(" + path + ") abs=" + absolute + ", normal=" + normalized);
+                break;
+            case ThrowException:
+                throw new AccessDeniedException("Cannot determine existence status of real path: " + normalized);
+            
+            default:
+                log.warn("handleUnknownRealPathStatus(" + path + ") abs=" + absolute + ", normal=" + normalized
+                       + " - unknown policy: " + unsupportedAttributePolicy);
+        }
+        
+        return absolute;
+    }
+
     protected void doRemoveDirectory(Buffer buffer, int id) throws IOException {
         String path = buffer.getString();
         log.debug("Received SSH_FXP_RMDIR (path={})", path);
         // attrs
         try {
             Path p = resolveFile(path);
-            if (Files.isDirectory(p)) {
+            if (Files.isDirectory(p, IoUtils.getLinkOptions(false))) {
                 Files.delete(p);
                 sendStatus(id, SSH_FX_OK, "");
             } else {
@@ -861,9 +888,14 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         log.debug("Received SSH_FXP_MKDIR (path={})", path);
         // attrs
         try {
-            Path p = resolveFile(path);
-            if (Files.exists(p)) {
-                if (Files.isDirectory(p)) {
+            Path            p = resolveFile(path);
+            LinkOption[]    options = IoUtils.getLinkOptions(false);
+            Boolean         status = IoUtils.checkFileExists(p, options);
+            if (status == null) {
+                throw new AccessDeniedException("Cannot make-directory existence for " + p);
+            }
+            if (status.booleanValue()) {
+                if (Files.isDirectory(p, options)) {
                     sendStatus(id, SSH_FX_FILE_ALREADY_EXISTS, p.toString());
                 } else {
                     sendStatus(id, SSH_FX_NO_SUCH_FILE, p.toString());
@@ -882,10 +914,15 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         String path = buffer.getString();
         log.debug("Received SSH_FXP_REMOVE (path={})", path);
         try {
-            Path p = resolveFile(path);
-            if (!Files.exists(p)) {
+            Path            p = resolveFile(path);
+            LinkOption[]    options = IoUtils.getLinkOptions(false);
+            Boolean         status = IoUtils.checkFileExists(p, options);
+            if (status == null) {
+                throw new AccessDeniedException("Cannot determine existence of remove candidate: " + p);
+            }
+            if (!status.booleanValue()) {
                 sendStatus(id, SSH_FX_NO_SUCH_FILE, p.toString());
-            } else if (Files.isDirectory(p, IoUtils.getLinkOptions(false))) {
+            } else if (Files.isDirectory(p, options)) {
                 sendStatus(id, SSH_FX_NO_SUCH_FILE, p.toString());
             } else {
                 Files.delete(p);
@@ -899,18 +936,31 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
     protected void doReadDir(Buffer buffer, int id) throws IOException {
         String handle = buffer.getString();
         log.debug("Received SSH_FXP_READDIR (handle={})", handle);
+        Handle p = handles.get(handle);
         try {
-            Handle p = handles.get(handle);
             if (!(p instanceof DirectoryHandle)) {
                 sendStatus(id, SSH_FX_INVALID_HANDLE, handle);
-            } else if (((DirectoryHandle) p).isDone()) {
+                return;
+            }
+            
+            if (((DirectoryHandle) p).isDone()) {
                 sendStatus(id, SSH_FX_EOF, "", "");
-            } else if (!Files.exists(p.getFile())) {
-                sendStatus(id, SSH_FX_NO_SUCH_FILE, p.getFile().toString());
-            } else if (!Files.isDirectory(p.getFile())) {
-                sendStatus(id, SSH_FX_NOT_A_DIRECTORY, p.getFile().toString());
-            } else if (!Files.isReadable(p.getFile())) {
-                sendStatus(id, SSH_FX_PERMISSION_DENIED, p.getFile().toString());
+                return;
+            }
+
+            Path            file = p.getFile();
+            LinkOption[]    options = IoUtils.getLinkOptions(false);
+            Boolean         status = IoUtils.checkFileExists(file, options);
+            if (status == null) {
+                throw new AccessDeniedException("Cannot determine existence of read-dir for " + file);
+            }
+
+            if (!status.booleanValue()) {
+                sendStatus(id, SSH_FX_NO_SUCH_FILE, file.toString());
+            } else if (!Files.isDirectory(file, options)) {
+                sendStatus(id, SSH_FX_NOT_A_DIRECTORY, file.toString());
+            } else if (!Files.isReadable(file)) {
+                sendStatus(id, SSH_FX_PERMISSION_DENIED, file.toString());
             } else {
                 DirectoryHandle dh = (DirectoryHandle) p;
                 if (dh.hasNext()) {
@@ -939,10 +989,16 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         String path = buffer.getString();
         log.debug("Received SSH_FXP_OPENDIR (path={})", path);
         try {
-            Path p = resolveFile(path);
-            if (!Files.exists(p)) {
+            Path            p = resolveFile(path);
+            LinkOption[]    options = IoUtils.getLinkOptions(false);
+            Boolean         status = IoUtils.checkFileExists(p, options);
+            if (status == null) {
+                throw new AccessDeniedException("Cannot determine open-dir existence of " + p);
+            }
+
+            if (!status.booleanValue()) {
                 sendStatus(id, SSH_FX_NO_SUCH_FILE, path);
-            } else if (!Files.isDirectory(p)) {
+            } else if (!Files.isDirectory(p, options)) {
                 sendStatus(id, SSH_FX_NOT_A_DIRECTORY, path);
             } else if (!Files.isReadable(p)) {
                 sendStatus(id, SSH_FX_PERMISSION_DENIED, path);
@@ -1314,15 +1370,25 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         int wpos = buffer.wpos();
         buffer.putInt(0);
         int nb = 0;
-        while (files.hasNext() && buffer.wpos() < MAX_PACKET_LENGTH) {
-            Path f = files.next();
-            buffer.putString(getShortName(f), StandardCharsets.UTF_8);
+        while (files.hasNext() && (buffer.wpos() < MAX_PACKET_LENGTH)) {
+            Path    f = files.next();
+            String  shortName = getShortName(f);
+            buffer.putString(shortName, StandardCharsets.UTF_8);
             if (version == SFTP_V3) {
-                buffer.putString(getLongName(f), StandardCharsets.UTF_8); // Format specified in the specs
+                String  longName = getLongName(f);
+                buffer.putString(longName, StandardCharsets.UTF_8); // Format specified in the specs
+                if (log.isTraceEnabled()) {
+                    log.trace("sendName(id=" + id + ")[" + nb + "] - " + shortName + " [" + longName + "]");
+                }
+            } else {
+                if (log.isTraceEnabled()) {
+                    log.trace("sendName(id=" + id + ")[" + nb + "] - " + shortName);
+                }
             }
             writeAttrs(buffer, f, SSH_FILEXFER_ATTR_ALL, false);
             nb++;
         }
+
         int oldpos = buffer.wpos();
         buffer.wpos(wpos);
         buffer.putInt(nb);
@@ -1475,11 +1541,17 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
     }
 
     protected void writeAttrs(Buffer buffer, Path file, int flags, boolean followLinks) throws IOException {
-        LinkOption[] options = IoUtils.getLinkOptions(followLinks);
-        if (!Files.exists(file, options)) {
+        LinkOption[]    options = IoUtils.getLinkOptions(followLinks);
+        Boolean         status = IoUtils.checkFileExists(file, options);
+        Map<String, Object> attributes;
+        if (status == null) {
+            attributes = handleUnknownStatusFileAttributes(file, flags, followLinks);
+        } else if (!status.booleanValue()) {
             throw new FileNotFoundException(file.toString());
+        } else {
+            attributes = getAttributes(file, flags, followLinks);
         }
-        Map<String, Object> attributes = getAttributes(file, flags, followLinks);
+
         writeAttrs(buffer, attributes);
     }
 
@@ -1571,25 +1643,80 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         return getAttributes(file, SSH_FILEXFER_ATTR_ALL, followLinks);
     }
 
-    protected Map<String, Object> getAttributes(Path file, int flags, boolean followLinks) throws IOException {
-        FileSystem fs = file.getFileSystem();
-        Collection<String> views = fs.supportedFileAttributeViews();
-        LinkOption[] opts = IoUtils.getLinkOptions(followLinks);
-        // TODO: support flags
-        if (views.contains("unix")) {
-            return Files.readAttributes(file, "unix:*", opts);
-        } else {
-            Map<String, Object> a = new HashMap<>();
-            for (String view : views) {
-                Map<String, Object> ta = Files.readAttributes(file, view + ":*", opts);
-                a.putAll(ta);
-            }
-            if (OsUtils.isWin32() && (!a.containsKey("permissions"))) {
-                Set<PosixFilePermission> perms = IoUtils.getPermissionsFromFile(file.toFile());
-                a.put("permissions", perms);
-            }
-            return a;
+    public static final List<String>    DEFAULT_UNIX_VIEW=Collections.singletonList("unix:*");
+
+    protected Map<String, Object> handleUnknownStatusFileAttributes(Path file, int flags, boolean followLinks) throws IOException {
+        switch(unsupportedAttributePolicy) {
+            case Ignore:
+                break;
+            case ThrowException:
+                throw new AccessDeniedException("Cannot determine existence for attributes of " + file);
+            case Warn:
+                log.warn("handleUnknownStatusFileAttributes(" + file + ") cannot determine existence");
+                break;
+            default:
+                log.warn("handleUnknownStatusFileAttributes(" + file + ") unknown policy: " + unsupportedAttributePolicy);
         }
+        
+        return getAttributes(file, flags, followLinks);
+    }
+
+    protected Map<String, Object> getAttributes(Path file, int flags, boolean followLinks) throws IOException {
+        FileSystem          fs=file.getFileSystem();
+        Collection<String>  supportedViews=fs.supportedFileAttributeViews();
+        LinkOption[]        opts=IoUtils.getLinkOptions(followLinks);
+        Map<String,Object>  attrs=new HashMap<>();
+        Collection<String>  views;
+
+        if (GenericUtils.isEmpty(supportedViews)) {
+            views = Collections.<String>emptyList();
+        } else if (supportedViews.contains("unix")) {
+            views = DEFAULT_UNIX_VIEW;
+        } else {
+            views = new ArrayList<String>(supportedViews.size());
+            for (String v : supportedViews) {
+                views.add(v + ":*");
+            }
+        }
+
+        for (String v : views) {
+            Map<String, Object> ta=readFileAttributes(file, v, opts);
+            attrs.putAll(ta);
+        }
+
+        // if did not get permissions from the supported views return a best approximation
+        if (!attrs.containsKey("permissions")) {
+            Set<PosixFilePermission> perms=IoUtils.getPermissionsFromFile(file.toFile());
+            attrs.put("permissions", perms);
+        }
+
+        return attrs;
+    }
+
+    protected Map<String, Object> readFileAttributes(Path file, String view, LinkOption ... opts) throws IOException {
+        try {
+            return Files.readAttributes(file, view, opts);
+        } catch(IOException e) {
+            return handleReadFileAttributesException(file, view, opts, e);
+        }
+    }
+
+    protected Map<String, Object> handleReadFileAttributesException(Path file, String view, LinkOption[] opts, IOException e) throws IOException {
+        switch(unsupportedAttributePolicy) {
+            case Ignore:
+                break;
+            case Warn:
+                log.warn("handleReadFileAttributesException(" + file + ")[" + view + "] " + e.getClass().getSimpleName() + ": " + e.getMessage());
+                break;
+            case ThrowException:
+                throw e;
+            default:
+                log.warn("handleReadFileAttributesException(" + file + ")[" + view + "]"
+                       + " Unknown policy (" + unsupportedAttributePolicy + ")"
+                       + " for " + e.getClass().getSimpleName() + ": " + e.getMessage());
+        }
+        
+        return Collections.emptyMap();
     }
 
     protected void setAttributes(Path file, Map<String, Object>  attributes) throws IOException {
@@ -1645,15 +1772,15 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                 sb.append(attr);
             }
             switch (unsupportedAttributePolicy) {
-            case Ignore:
-                break;
-            case Warn:
-                log.warn("Unsupported attributes: " + sb.toString());
-                break;
-            case ThrowException:
-                throw new UnsupportedOperationException("Unsupported attributes: " + sb.toString());
-            default:
-                log.warn("Unknown policy for attributes=" + sb.toString() + ": " + unsupportedAttributePolicy);
+                case Ignore:
+                    break;
+                case Warn:
+                    log.warn("Unsupported attributes: " + sb.toString());
+                    break;
+                case ThrowException:
+                    throw new UnsupportedOperationException("Unsupported attributes: " + sb.toString());
+                default:
+                    log.warn("Unknown policy for attributes=" + sb.toString() + ": " + unsupportedAttributePolicy);
             }
         }
     }
@@ -1682,23 +1809,23 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         }
     }
 
-    private void handleUserPrincipalLookupServiceException(Class<? extends Principal> principalType, String name, IOException e) throws IOException {
+    protected void handleUserPrincipalLookupServiceException(Class<? extends Principal> principalType, String name, IOException e) throws IOException {
         /* According to Javadoc:
          * 
          *      "Where an implementation does not support any notion of group
          *      or user then this method always throws UserPrincipalNotFoundException."
          */
         switch (unsupportedAttributePolicy) {
-        case Ignore:
-            break;
-        case Warn:
-            log.warn("handleUserPrincipalLookupServiceException(" + principalType.getSimpleName() + "[" + name + "])"
-                   + " failed (" + e.getClass().getSimpleName() + "): " + e.getMessage());
-            break;
-        case ThrowException:
-            throw e;
-        default:
-            log.warn("Unknown policy for principal=" + principalType.getSimpleName() + "[" + name + "]: " + unsupportedAttributePolicy);
+            case Ignore:
+                break;
+            case Warn:
+                log.warn("handleUserPrincipalLookupServiceException(" + principalType.getSimpleName() + "[" + name + "])"
+                       + " failed (" + e.getClass().getSimpleName() + "): " + e.getMessage());
+                break;
+            case ThrowException:
+                throw e;
+            default:
+                log.warn("Unknown policy for principal=" + principalType.getSimpleName() + "[" + name + "]: " + unsupportedAttributePolicy);
         }
     }
 
@@ -2088,74 +2215,57 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         return sb.toString();
     }
 
-    protected static class DefaultUserPrincipal implements UserPrincipal {
-
+    protected static class PrincipalBase implements Principal {
         private final String name;
 
+        public PrincipalBase(String name) {
+            if (name == null) {
+                throw new IllegalArgumentException("name is null");
+            }
+            this.name = name;
+        }
+
+        public final String getName() {
+            return name;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if ((o == null) || (getClass() != o.getClass())) {
+                return false;
+            }
+
+            Principal that = (Principal) o;
+            if (Objects.equals(getName(),that.getName())) {
+                return true;
+            } else {
+                return false;    // debug breakpoint
+            }
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hashCode(getName());
+        }
+
+        @Override
+        public String toString() {
+            return getName();
+        }
+    }
+
+    protected static class DefaultUserPrincipal extends PrincipalBase implements UserPrincipal {
         public DefaultUserPrincipal(String name) {
-            if (name == null) {
-                throw new IllegalArgumentException("name is null");
-            }
-            this.name = name;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            DefaultGroupPrincipal that = (DefaultGroupPrincipal) o;
-            if (!name.equals(that.name)) return false;
-            return true;
-        }
-
-        @Override
-        public int hashCode() {
-            return name.hashCode();
-        }
-
-        @Override
-        public String toString() {
-            return name;
+            super(name);
         }
     }
 
-    protected static class DefaultGroupPrincipal implements GroupPrincipal {
-
-        private final String name;
-
+    protected static class DefaultGroupPrincipal extends PrincipalBase implements GroupPrincipal {
         public DefaultGroupPrincipal(String name) {
-            if (name == null) {
-                throw new IllegalArgumentException("name is null");
-            }
-            this.name = name;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            DefaultGroupPrincipal that = (DefaultGroupPrincipal) o;
-            if (!name.equals(that.name)) return false;
-            return true;
-        }
-
-        @Override
-        public int hashCode() {
-            return name.hashCode();
-        }
-
-        @Override
-        public String toString() {
-            return name;
+            super(name);
         }
     }
-
 }

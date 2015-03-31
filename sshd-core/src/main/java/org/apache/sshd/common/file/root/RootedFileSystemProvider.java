@@ -48,6 +48,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
+import org.apache.sshd.common.util.IoUtils;
+
 /**
  * File system provider which provides a rooted file system.
  * The file system only gives access to files under the root directory.
@@ -89,9 +91,10 @@ public class RootedFileSystemProvider extends FileSystemProvider {
             try {
                 fileSystem = fileSystems.get(uriToPath(uri).toRealPath());
             } catch (IOException ignore) {
+                // ignored
             }
             if (fileSystem == null) {
-                throw new FileSystemNotFoundException();
+                throw new FileSystemNotFoundException(uri.toString());
             }
             return fileSystem;
         }
@@ -121,7 +124,7 @@ public class RootedFileSystemProvider extends FileSystemProvider {
     }
 
     private boolean ensureDirectory(Path path) {
-        if (!Files.isDirectory(path)) {
+        if (!Files.isDirectory(path, IoUtils.getLinkOptions(false))) {
             throw new UnsupportedOperationException();
         }
         return true;

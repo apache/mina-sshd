@@ -272,7 +272,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         SftpPath src = toSftpPath(source);
         SftpPath dst = toSftpPath(target);
         if (src.getFileSystem() != dst.getFileSystem()) {
-            throw new ProviderMismatchException();
+            throw new ProviderMismatchException("Mismatched file system providers");
         }
         checkAccess(src);
 
@@ -294,10 +294,18 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             throw new IOException("Copying of symbolic links not supported");
 
         // delete target if it exists and REPLACE_EXISTING is specified
+        Boolean status=IoUtils.checkFileExists(target, linkOptions);
+        if (status == null) {
+            throw new AccessDeniedException("Existence cannot be determined for copy target: " + target);
+        }
+
         if (replaceExisting) {
             deleteIfExists(target);
-        } else if (Files.exists(target))
-            throw new FileAlreadyExistsException(target.toString());
+        } else {
+            if (status.booleanValue()) {
+                throw new FileAlreadyExistsException(target.toString());
+            }
+        }
 
         // create directory or copy file
         if (attrs.isDirectory()) {
@@ -355,9 +363,14 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             throw new IOException("Copying of symbolic links not supported");
 
         // delete target if it exists and REPLACE_EXISTING is specified
+        Boolean status=IoUtils.checkFileExists(target, linkOptions);
+        if (status == null) {
+            throw new AccessDeniedException("Existence cannot be determined for move target " + target);
+        }
+
         if (replaceExisting) {
             deleteIfExists(target);
-        } else if (Files.exists(target))
+        } else if (status.booleanValue())
             throw new FileAlreadyExistsException(target.toString());
 
         try (SftpClient sftp = src.getFileSystem().getClient()) {
@@ -432,16 +445,16 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         boolean x = false;
         for (AccessMode mode : modes) {
             switch (mode) {
-            case READ:
-                break;
-            case WRITE:
-                w = true;
-                break;
-            case EXECUTE:
-                x = true;
-                break;
-            default:
-                throw new UnsupportedOperationException();
+                case READ:
+                    break;
+                case WRITE:
+                    w = true;
+                    break;
+                case EXECUTE:
+                    x = true;
+                    break;
+                default:
+                    throw new UnsupportedOperationException("Unsupported mode: " + mode);
             }
         }
         BasicFileAttributes attrs = getFileAttributeView(p, BasicFileAttributeView.class).readAttributes();

@@ -431,7 +431,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         SshServer sshd = SshServer.setUpDefaultServer();
         sshd.getProperties().putAll(options);
         sshd.setPort(port);
-        sshd.getProperties().put(SshServer.WELCOME_BANNER, "Welcome to SSHD\n");
+        sshd.getProperties().put(ServerFactoryManager.WELCOME_BANNER, "Welcome to SSHD\n");
         if (SecurityUtils.isBouncyCastleRegistered()) {
             sshd.setKeyPairProvider(new PEMGeneratorHostKeyProvider("key.pem"));
         } else {

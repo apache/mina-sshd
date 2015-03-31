@@ -25,9 +25,11 @@ import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -61,7 +63,7 @@ public class ScpHelper {
     /**
      * Default size (in bytes) of send / receive buffer size
      */
-    public static final int DEFAULT_COPY_BUFFER_SIZE = 8192;
+    public static final int DEFAULT_COPY_BUFFER_SIZE = IoUtils.DEFAULT_COPY_SIZE;
     public static final int DEFAULT_RECEIVE_BUFFER_SIZE = DEFAULT_COPY_BUFFER_SIZE;
     public static final int DEFAULT_SEND_BUFFER_SIZE = DEFAULT_COPY_BUFFER_SIZE;
 
@@ -96,13 +98,19 @@ public class ScpHelper {
 
     public void receive(Path path, boolean recursive, boolean shouldBeDir, boolean preserve, int bufferSize) throws IOException {
         if (shouldBeDir) {
-            if (!Files.exists(path)) {
-                throw new SshException("Target directory " + path.toString() + " does not exists");
+            LinkOption[]    options=IoUtils.getLinkOptions(false);
+            Boolean         status=IoUtils.checkFileExists(path, options);
+            if (status == null) {
+                throw new SshException("Target directory " + path.toString() + " is most like inaccessible");
             }
-            if (!Files.isDirectory(path)) {
+            if (!status.booleanValue()) {
+                throw new SshException("Target directory " + path.toString() + " does not exist");
+            }
+            if (!Files.isDirectory(path, options)) {
                 throw new SshException("Target directory " + path.toString() + " is not a directory");
             }
         }
+
         ack();
         long[] time = null;
         for (;;)
@@ -165,16 +173,40 @@ public class ScpHelper {
         if (length != 0) {
             throw new IOException("Expected 0 length for directory but got " + length);
         }
-        Path file;
-        if (Files.exists(path) && Files.isDirectory(path)) {
+
+        LinkOption[]    options=IoUtils.getLinkOptions(false);
+        Boolean         status=IoUtils.checkFileExists(path, options);
+        if (status == null) {
+            throw new AccessDeniedException("Receive directory existence status cannot be determined: " + path);
+        }
+
+        Path file=null;
+        if (status.booleanValue() && Files.isDirectory(path, options)) {
             String localName = name.replace('/', File.separatorChar);
             file = path.resolve(localName);
-        } else if (!Files.exists(path) && Files.exists(path.getParent()) && Files.isDirectory(path.getParent())) {
-            file = path;
-        } else {
-            throw new IOException("Can not write to " + path);
+        } else if (!status.booleanValue()) {
+            Path    parent=path.getParent();
+
+            status = IoUtils.checkFileExists(parent, options);
+            if (status == null) {
+                throw new AccessDeniedException("Receive directory parent (" + parent + ") existence status cannot be determined for " + path);
+            }
+                
+            if (status.booleanValue() && Files.isDirectory(parent, options)) { 
+                file = path;
+            }
         }
-        if (!(Files.exists(file) && Files.isDirectory(file))) {
+
+        if (file == null) {
+            throw new IOException("Cannot write to " + path);
+        }
+
+        status = IoUtils.checkFileExists(file, options);
+        if (status == null) {
+            throw new AccessDeniedException("Receive directory file existence status cannot be determined: " + file);
+        }
+
+        if (!(status.booleanValue() && Files.isDirectory(file, options))) {
             Files.createDirectory(file);
         }
 
@@ -255,22 +287,45 @@ public class ScpHelper {
             bufSize = MIN_RECEIVE_BUFFER_SIZE;
         }
 
-        Path file;
-        if (Files.exists(path) && Files.isDirectory(path)) {
-            String localName = name.replace('/', File.separatorChar);
-            file = path.resolve(localName);
-        } else if (Files.exists(path) && Files.isRegularFile(path)) {
-            file = path;
-        } else if (!Files.exists(path) && Files.exists(path.getParent()) && Files.isDirectory(path.getParent())) {
-            file = path;
-        } else {
-            throw new IOException("Can not write to " + path);
+        LinkOption[]    options=IoUtils.getLinkOptions(false);
+        Boolean         status=IoUtils.checkFileExists(path, options);
+        if (status == null) {
+            throw new AccessDeniedException("Receive target file path existence status cannot be determined: " + path);
         }
 
-        if (Files.exists(file)) {
-            if (Files.isDirectory(file)) {
+        Path file=null;
+        if (status.booleanValue() && Files.isDirectory(path, options)) {
+            String localName = name.replace('/', File.separatorChar);
+            file = path.resolve(localName);
+        } else if (status.booleanValue() && Files.isRegularFile(path, options)) {
+            file = path;
+        } else if (!status.booleanValue()) {
+            Path    parent=path.getParent();
+            
+            status = IoUtils.checkFileExists(parent, options);
+            if (status == null) {
+                throw new AccessDeniedException("Receive file parent (" + parent + ") existence status cannot be determined for " + path);
+            }
+
+            if (status.booleanValue() && Files.isDirectory(parent, options)) {
+                file = path;
+            }
+        }
+        
+        if (file == null) {
+            throw new IOException("Can not write to " + path);
+        }
+        
+        status = IoUtils.checkFileExists(file, options);
+        if (status == null) {
+            throw new AccessDeniedException("Receive file existence status cannot be determined: " + file);
+        }
+
+        if (status.booleanValue()) {
+            if (Files.isDirectory(file, options)) {
                 throw new IOException("File is a directory: " + file);
             }
+
             if (!Files.isWritable(file)) {
                 throw new IOException("Can not write to file: " + file);
             }
@@ -329,6 +384,8 @@ public class ScpHelper {
 
     public void send(List<String> paths, boolean recursive, boolean preserve, int bufferSize) throws IOException {
         readAck(false);
+        
+        LinkOption[]    options=IoUtils.getLinkOptions(false);
         for (String pattern : paths) {
             pattern = pattern.replace('/', File.separatorChar);
 
@@ -343,9 +400,9 @@ public class ScpHelper {
                 String[] included = new DirectoryScanner(basedir, pattern).scan();
                 for (String path : included) {
                     Path file = resolveLocalPath(basedir, path);
-                    if (Files.isRegularFile(file)) {
+                    if (Files.isRegularFile(file, options)) {
                         sendFile(file, preserve, bufferSize);
-                    } else if (Files.isDirectory(file)) {
+                    } else if (Files.isDirectory(file, options)) {
                         if (!recursive) {
                             out.write(ScpHelper.WARNING);
                             out.write((path.toString().replace(File.separatorChar, '/') + " not a regular file\n").getBytes());
@@ -364,13 +421,19 @@ public class ScpHelper {
                     basedir = pattern.substring(0, lastSep);
                     pattern = pattern.substring(lastSep + 1);
                 }
-                Path file = resolveLocalPath(basedir, pattern);
-                if (!Files.exists(file)) {
+
+                Path    file = resolveLocalPath(basedir, pattern);
+                Boolean status = IoUtils.checkFileExists(file, options);
+                if (status == null) {
+                    throw new AccessDeniedException("Send file existence status cannot be determined: " + file);
+                }
+                if (!status.booleanValue()) {
                     throw new IOException(file + ": no such file or directory");
                 }
-                if (Files.isRegularFile(file)) {
+
+                if (Files.isRegularFile(file, options)) {
                     sendFile(file, preserve, bufferSize);
-                } else if (Files.isDirectory(file)) {
+                } else if (Files.isDirectory(file, options)) {
                     if (!recursive) {
                         throw new IOException(file + " not a regular file");
                     } else {
@@ -508,10 +571,11 @@ public class ScpHelper {
             listener.startFolderEvent(FileOperation.SEND, path, perms);
 
             try {
+                LinkOption[]    options = IoUtils.getLinkOptions(false);
                 for (Path child : children) {
-                    if (Files.isRegularFile(child)) {
+                    if (Files.isRegularFile(child, options)) {
                         sendFile(child, preserve, bufferSize);
-                    } else if (Files.isDirectory(child)) {
+                    } else if (Files.isDirectory(child, options)) {
                         sendDir(child, preserve, bufferSize);
                     }
                 }
@@ -542,33 +606,34 @@ public class ScpHelper {
 
         for (PosixFilePermission p : perms) {
             switch (p) {
-            case OWNER_READ:
-                pf |= S_IRUSR;
-                break;
-            case OWNER_WRITE:
-                pf |= S_IWUSR;
-                break;
-            case OWNER_EXECUTE:
-                pf |= S_IXUSR;
-                break;
-            case GROUP_READ:
-                pf |= S_IRGRP;
-                break;
-            case GROUP_WRITE:
-                pf |= S_IWGRP;
-                break;
-            case GROUP_EXECUTE:
-                pf |= S_IXGRP;
-                break;
-            case OTHERS_READ:
-                pf |= S_IROTH;
-                break;
-            case OTHERS_WRITE:
-                pf |= S_IWOTH;
-                break;
-            case OTHERS_EXECUTE:
-                pf |= S_IXOTH;
-                break;
+                case OWNER_READ:
+                    pf |= S_IRUSR;
+                    break;
+                case OWNER_WRITE:
+                    pf |= S_IWUSR;
+                    break;
+                case OWNER_EXECUTE:
+                    pf |= S_IXUSR;
+                    break;
+                case GROUP_READ:
+                    pf |= S_IRGRP;
+                    break;
+                case GROUP_WRITE:
+                    pf |= S_IWGRP;
+                    break;
+                case GROUP_EXECUTE:
+                    pf |= S_IXGRP;
+                    break;
+                case OTHERS_READ:
+                    pf |= S_IROTH;
+                    break;
+                case OTHERS_WRITE:
+                    pf |= S_IWOTH;
+                    break;
+                case OTHERS_EXECUTE:
+                    pf |= S_IXOTH;
+                    break;
+                default:    // ignored
             }
         }
 

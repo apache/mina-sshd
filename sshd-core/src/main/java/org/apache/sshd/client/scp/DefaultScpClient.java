@@ -22,11 +22,11 @@ import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
-import java.util.List;
 import java.util.Set;
 
 import org.apache.sshd.ClientSession;
@@ -36,6 +36,7 @@ import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.scp.ScpHelper;
 import org.apache.sshd.common.scp.ScpTransferEventListener;
+import org.apache.sshd.common.util.IoUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -93,10 +94,15 @@ public class DefaultScpClient implements ScpClient {
         try {
             Path target = fs.getPath(local);
             if (options.contains(Option.TargetIsDirectory)) {
-                if (!Files.exists(target)) {
-                    throw new SshException("Target directory " + target.toString() + " does not exists");
+                LinkOption[]    opts = IoUtils.getLinkOptions(false);
+                Boolean         status = IoUtils.checkFileExists(target, opts);
+                if (status == null) {
+                    throw new SshException("Target directory " + target.toString() + " is probaly inaccesible");
                 }
-                if (!Files.isDirectory(target)) {
+                if (!status.booleanValue()) {
+                    throw new SshException("Target directory " + target.toString() + " does not exist");
+                }
+                if (!Files.isDirectory(target, opts)) {
                     throw new SshException("Target directory " + target.toString() + " is not a directory");
                 }
             }

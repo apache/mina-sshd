@@ -43,7 +43,6 @@ import java.util.Set;
 public class IoUtils {
 
     public static final LinkOption[] EMPTY_OPTIONS = new LinkOption[0];
-
     private static final LinkOption[] NO_FOLLOW_OPTIONS = new LinkOption[] { LinkOption.NOFOLLOW_LINKS };
 
     public static LinkOption[] getLinkOptions(boolean followLinks) {
@@ -54,8 +53,10 @@ public class IoUtils {
         }
     }
 
+    public static final int DEFAULT_COPY_SIZE=8192;
+
     public static long copy(InputStream source, OutputStream sink) throws IOException {
-        return copy(source, sink, 8192);
+        return copy(source, sink, DEFAULT_COPY_SIZE);
     }
 
     public static long copy(InputStream source, OutputStream sink, int bufferSize) throws IOException {
@@ -191,4 +192,38 @@ public class IoUtils {
         f.setExecutable(executable, false);
     }
 
+    /**
+     * <P>Checks if a file exists - <B>Note:</B> according to the
+     * <A HREF="http://docs.oracle.com/javase/tutorial/essential/io/check.html">Java tutorial - Checking a File or Directory</A>:
+     * </P></BR>
+     * <PRE>
+     *      The methods in the Path class are syntactic, meaning that they operate
+     *      on the Path instance. But eventually you must access the file system
+     *      to verify that a particular Path exists, or does not exist. You can do
+     *      so with the exists(Path, LinkOption...) and the notExists(Path, LinkOption...)
+     *      methods. Note that !Files.exists(path) is not equivalent to Files.notExists(path).
+     *      When you are testing a file's existence, three results are possible:
+     *
+     *      - The file is verified to exist.
+     *      - The file is verified to not exist.
+     *      - The file's status is unknown.
+     *      
+     *      This result can occur when the program does not have access to the file.
+     *      If both exists and notExists return false, the existence of the file cannot
+     *      be verified.
+     * </PRE>
+     * @param path The {@link Path} to be tested
+     * @param options The {@link LinkOption}s to use
+     * @return {@link Boolean#TRUE}/{@link Boolean#FALSE} or {@code null}
+     * according to the file status as explained above
+     */
+    public static Boolean checkFileExists(Path path, LinkOption ... options) {
+        if (Files.exists(path, options)) {
+            return Boolean.TRUE;
+        } else if (Files.notExists(path, options)) {
+            return Boolean.FALSE;
+        } else {
+            return null;
+        }
+    }
 }
