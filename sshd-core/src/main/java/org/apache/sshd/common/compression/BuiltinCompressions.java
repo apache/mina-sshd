@@ -51,11 +51,17 @@ public enum BuiltinCompressions implements NamedFactory<Compression>, OptionalFe
         };
     
     private final String    name;
+
     @Override
     public final String getName() {
         return name;
     }
-    
+
+    @Override
+    public final String toString() {
+        return getName();
+    }
+
     public final boolean isSupported() {
         return true;
     }

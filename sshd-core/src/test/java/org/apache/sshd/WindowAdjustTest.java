@@ -25,6 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Deque;
 import java.util.LinkedList;
+
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoInputStream;
@@ -32,7 +33,7 @@ import org.apache.sshd.common.io.IoOutputStream;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.io.WritePendingException;
 import org.apache.sshd.common.util.Buffer;
-import org.apache.sshd.common.util.NoCloseOutputStream;
+import org.apache.sshd.common.util.io.NoCloseOutputStream;
 import org.apache.sshd.server.AsyncCommand;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.Environment;

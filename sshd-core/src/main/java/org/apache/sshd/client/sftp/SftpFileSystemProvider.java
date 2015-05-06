@@ -68,6 +68,7 @@ import org.apache.sshd.client.SftpClient;
 import org.apache.sshd.client.SftpClient.Attributes;
 import org.apache.sshd.client.SftpException;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.config.SshConfigFileReader;
 import org.apache.sshd.common.sftp.SftpConstants;
 import org.apache.sshd.common.util.IoUtils;
 
@@ -124,7 +125,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             String[] ui = userInfo.split(":");
             ClientSession session;
             try {
-                session = client.connect(ui[0], host, uri.getPort() > 0 ? uri.getPort() : 22)
+                session = client.connect(ui[0], host, uri.getPort() > 0 ? uri.getPort() : SshConfigFileReader.DEFAULT_PORT)
                         .await().getSession();
             } catch (InterruptedException e) {
                 throw new InterruptedIOException();

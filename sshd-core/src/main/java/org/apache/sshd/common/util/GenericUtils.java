@@ -23,13 +23,18 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class GenericUtils {
+    public static final String[]    EMPTY_STRING_ARRAY={ };
+    public static final Object[]    EMPTY_OBJECT_ARRAY={ };
 
     public static final String trimToEmpty(String s) {
         if (s == null) {
@@ -53,6 +58,91 @@ public class GenericUtils {
         } else {
             return false;
         }
+    }
+
+    // a List would be better, but we want to be compatible with String.split(...)
+    public static final String[] split(String s, char ch) {
+        if (isEmpty(s)) {
+            return EMPTY_STRING_ARRAY;
+        }
+        
+        int lastPos=0, curPos=s.indexOf(ch);
+        if (curPos < 0) {
+            return new String[] { s };
+        }
+        
+        Collection<String>  values=new LinkedList<String>();
+        do {
+            String  v=s.substring(lastPos, curPos);
+            values.add(v);
+            
+            // skip separator
+            if ((lastPos = curPos + 1) >= s.length()) {
+                break;
+            }
+            
+            if ((curPos = s.indexOf(ch, lastPos)) < lastPos) {
+                break;  // no more separators
+            }
+        } while(curPos < s.length());
+        
+        // check if any leftovers
+        if (lastPos < s.length()) {
+            String  v=s.substring(lastPos);
+            values.add(v);
+        }
+
+        return values.toArray(new String[values.size()]);
+    }
+
+    public static final <T> String join(T[] values, char ch) {
+        return join(isEmpty(values) ? Collections.<T>emptyList() : Arrays.asList(values), ch);
+    }
+
+    public static final String join(Iterable<?> iter, char ch) {
+        return join((iter == null) ? null : iter.iterator(), ch);
+    }
+    
+    public static final String join(Iterator<?> iter, char ch) {
+        if ((iter == null) || (!iter.hasNext())) {
+            return "";
+        }
+        
+        StringBuilder   sb=new StringBuilder();
+        do {    // we already asked hasNext...
+            Object  o=iter.next();
+            if (sb.length() > 0) {
+                sb.append(ch);
+            }
+            sb.append(Objects.toString(o));
+        } while(iter.hasNext());
+        
+        return sb.toString();
+    }
+
+    public static final <T> String join(T[] values, CharSequence sep) {
+        return join(isEmpty(values) ? Collections.<T>emptyList() : Arrays.asList(values), sep);
+    }
+
+    public static final String join(Iterable<?> iter, CharSequence sep) {
+        return join((iter == null) ? null : iter.iterator(), sep);
+    }
+    
+    public static final String join(Iterator<?> iter, CharSequence sep) {
+        if ((iter == null) || (!iter.hasNext())) {
+            return "";
+        }
+        
+        StringBuilder   sb=new StringBuilder();
+        do {    // we already asked hasNext...
+            Object  o=iter.next();
+            if (sb.length() > 0) {
+                sb.append(sep);
+            }
+            sb.append(Objects.toString(o));
+        } while(iter.hasNext());
+        
+        return sb.toString();
     }
     
     public static final int size(Collection<?> c) {

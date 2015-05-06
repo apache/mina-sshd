@@ -25,7 +25,7 @@ import java.io.OutputStream;
 import org.apache.sshd.common.channel.ChannelPipedInputStream;
 import org.apache.sshd.common.channel.ChannelPipedOutputStream;
 import org.apache.sshd.common.channel.Window;
-import org.apache.sshd.common.util.LoggingFilterOutputStream;
+import org.apache.sshd.common.util.io.LoggingFilterOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

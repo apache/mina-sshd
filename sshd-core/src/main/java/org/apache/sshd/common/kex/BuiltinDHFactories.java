@@ -20,8 +20,12 @@
 package org.apache.sshd.common.kex;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.sshd.common.OptionalFeature;
@@ -29,6 +33,7 @@ import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.digest.BuiltinDigests;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.SecurityUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -149,6 +154,11 @@ public enum BuiltinDHFactories implements DHFactory, OptionalFeature {
         return true;
     }
 
+    @Override
+    public final String toString() {
+        return getName();
+    }
+
     BuiltinDHFactories(String name) {
         factoryName = name;
     }
@@ -178,6 +188,38 @@ public enum BuiltinDHFactories implements DHFactory, OptionalFeature {
     @Override
     public boolean isGroupExchange() {
         return false;
+    }
+
+    /**
+     * @param factories A comma-separated list of ciphers' names - ignored
+     * if {@code null}/empty
+     * @return A {@link List} of all the {@link DHFactory}-ies whose
+     * name appears in the string and represent a built-in value. Any
+     * unknown name is <U>ignored</U>. The order of the returned result
+     * is the same as the original order - bar the unknown ones.
+     * <B>Note:</B> it is up to caller to ensure that the list does not
+     * contain duplicates
+     */
+    public static final List<DHFactory> parseDHFactoriesList(String factories) {
+        return parseDHFactoriesList(GenericUtils.split(factories, ','));
+    }
+
+    public static final List<DHFactory> parseDHFactoriesList(String ... factories) {
+        return parseDHFactoriesList(GenericUtils.isEmpty((Object[]) factories) ? Collections.<String>emptyList() : Arrays.asList(factories));
+    }
+
+    public static final List<DHFactory> parseDHFactoriesList(Collection<String> factories) {
+        if (GenericUtils.isEmpty(factories)) {
+            return Collections.emptyList();
+        }
+        
+        List<DHFactory>    result=new ArrayList<DHFactory>(factories.size());
+        for (String name : factories) {
+            DHFactory  c=ValidateUtils.checkNotNull(fromFactoryName(name), "Unknown factory name (%s) in %s", name, factories);
+            result.add(c);
+        }
+        
+        return result;
     }
 
     public static final class Constants {

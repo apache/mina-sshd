@@ -55,7 +55,7 @@ public class DefaultScpClient extends AbstractScpClient {
 
     @Override
     public void download(String remote, String local, Collection<Option> options) throws IOException {
-        local = ValidateUtils.checkNotNullAndNotEmpty(local, "Invalid argument local: %s");
+        local = ValidateUtils.checkNotNullAndNotEmpty(local, "Invalid argument local: %s", local);
 
         FileSystemFactory factory = clientSession.getFactoryManager().getFileSystemFactory();
         FileSystem fs = factory.createFileSystem(clientSession);
@@ -72,13 +72,13 @@ public class DefaultScpClient extends AbstractScpClient {
 
     @Override
     public void download(String remote, Path local, Collection<Option> options) throws IOException {
-        local = ValidateUtils.checkNotNull(local, "Invalid argument local: %s");
+        local = ValidateUtils.checkNotNull(local, "Invalid argument local: %s", local);
         download(remote, local.getFileSystem(), local, options);
     }
 
     protected void download(String remote, FileSystem fs, Path local, Collection<Option> options) throws IOException {
-        local = ValidateUtils.checkNotNull(local, "Invalid argument local: %s");
-        remote = ValidateUtils.checkNotNullAndNotEmpty(remote, "Invalid argument remote: %s");
+        local = ValidateUtils.checkNotNull(local, "Invalid argument local: %s", local);
+        remote = ValidateUtils.checkNotNullAndNotEmpty(remote, "Invalid argument remote: %s", remote);
 
         LinkOption[]    opts = IoUtils.getLinkOptions(false);
         if (Files.isDirectory(local, opts)) {
@@ -133,7 +133,7 @@ public class DefaultScpClient extends AbstractScpClient {
 
     @Override
     public void upload(String[] local, String remote, Collection<Option> options) throws IOException {
-        final Collection<String>    paths=Arrays.asList(ValidateUtils.checkNotNullAndNotEmpty(local, "Invalid argument local: %s"));
+        final Collection<String>    paths=Arrays.asList(ValidateUtils.checkNotNullAndNotEmpty(local, "Invalid argument local: %s", (Object) local));
         runUpload(remote, options, paths, new ScpOperationExecutor<String>() {
             public void execute(ScpHelper helper, Collection<String> local, Collection<Option> options) throws IOException {
                 helper.send(local,
@@ -146,7 +146,7 @@ public class DefaultScpClient extends AbstractScpClient {
 
     @Override
     public void upload(Path[] local, String remote, Collection<Option> options) throws IOException {
-        final Collection<Path>    paths=Arrays.asList(ValidateUtils.checkNotNullAndNotEmpty(local, "Invalid argument local: %s"));
+        final Collection<Path>    paths=Arrays.asList(ValidateUtils.checkNotNullAndNotEmpty(local, "Invalid argument local: %s", local));
         runUpload(remote, options, paths, new ScpOperationExecutor<Path>() {
             public void execute(ScpHelper helper, Collection<Path> local, Collection<Option> options) throws IOException {
                 helper.sendPaths(local,
@@ -158,8 +158,8 @@ public class DefaultScpClient extends AbstractScpClient {
     }
 
     protected <T> void runUpload(String remote, Collection<Option> options, Collection<T> local, ScpOperationExecutor<T> executor) throws IOException {
-        local = ValidateUtils.checkNotNullAndNotEmpty(local, "Invalid argument local: %s");
-        remote = ValidateUtils.checkNotNullAndNotEmpty(remote, "Invalid argument remote: %s");
+        local = ValidateUtils.checkNotNullAndNotEmpty(local, "Invalid argument local: %s", local);
+        remote = ValidateUtils.checkNotNullAndNotEmpty(remote, "Invalid argument remote: %s", remote);
         if (local.size() > 1) {
             options = addTargetIsDirectory(options);
         }

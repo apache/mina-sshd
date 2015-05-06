@@ -54,7 +54,7 @@ import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.IoUtils;
-import org.apache.sshd.common.util.LoggingFilterOutputStream;
+import org.apache.sshd.common.util.io.LoggingFilterOutputStream;
 import org.apache.sshd.server.AsyncCommand;
 import org.apache.sshd.server.ChannelSessionAware;
 import org.apache.sshd.server.Command;

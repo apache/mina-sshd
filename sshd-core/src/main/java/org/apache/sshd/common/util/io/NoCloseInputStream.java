@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.util;
+package org.apache.sshd.common.util.io;
 
 import java.io.FilterInputStream;
 import java.io.IOException;
@@ -28,12 +28,20 @@ import java.io.InputStream;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class NoCloseInputStream extends FilterInputStream {
-
     public NoCloseInputStream(InputStream in) {
         super(in);
     }
 
     @Override
     public void close() throws IOException {
+        // ignored
+    }
+
+    public static final InputStream resolveInputStream(InputStream input, boolean okToClose) {
+        if ((input == null) || okToClose) {
+            return input;
+        } else {
+            return new NoCloseInputStream(input);
+        }
     }
 }

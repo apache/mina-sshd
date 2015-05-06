@@ -19,8 +19,12 @@
 
 package org.apache.sshd.common.mac;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.sshd.common.Digest;
@@ -28,6 +32,7 @@ import org.apache.sshd.common.Mac;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.OptionalFeature;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * Provides easy access to the currently implemented macs
@@ -84,6 +89,11 @@ public enum BuiltinMacs implements NamedFactory<Mac>, OptionalFeature {
         return true;
     }
 
+    @Override
+    public final String toString() {
+        return getName();
+    }
+    
     BuiltinMacs(String facName) {
         factoryName = facName;
     }
@@ -111,7 +121,7 @@ public enum BuiltinMacs implements NamedFactory<Mac>, OptionalFeature {
     }
 
     /**
-     * @param factory The {@link org.apache.sshd.common.NamedFactory} for the cipher - ignored if {@code null}
+     * @param factory The {@link org.apache.sshd.common.NamedFactory} for the Mac - ignored if {@code null}
      * @return The matching {@link org.apache.sshd.common.mac.BuiltinMacs} whose factory name matches
      * (case <U>insensitive</U>) the digest factory name
      * @see #fromFactoryName(String)
@@ -141,6 +151,38 @@ public enum BuiltinMacs implements NamedFactory<Mac>, OptionalFeature {
         }
 
         return null;
+    }
+
+    /**
+     * @param macs A comma-separated list of MACs' names - ignored
+     * if {@code null}/empty
+     * @return A {@link List} of all the {@link NamedFactory}-ies whose
+     * name appears in the string and represent a built-in MAC. Any
+     * unknown name is <U>ignored</U>. The order of the returned result
+     * is the same as the original order - bar the unknown MACs.
+     * <B>Note:</B> it is up to caller to ensure that the list does not
+     * contain duplicates
+     */
+    public static final List<NamedFactory<Mac>> parseMacsList(String macs) {
+        return parseMacsList(GenericUtils.split(macs, ','));
+    }
+
+    public static final List<NamedFactory<Mac>> parseMacsList(String ... macs) {
+        return parseMacsList(GenericUtils.isEmpty((Object[]) macs) ? Collections.<String>emptyList() : Arrays.asList(macs));
+    }
+
+    public static final List<NamedFactory<Mac>> parseMacsList(Collection<String> macs) {
+        if (GenericUtils.isEmpty(macs)) {
+            return Collections.emptyList();
+        }
+        
+        List<NamedFactory<Mac>>    result=new ArrayList<NamedFactory<Mac>>(macs.size());
+        for (String name : macs) {
+            BuiltinMacs  m=ValidateUtils.checkNotNull(fromFactoryName(name), "Bad factory name (%s) in %s", name, macs);
+            result.add(m);
+        }
+        
+        return result;
     }
 
     public static final class Constants {

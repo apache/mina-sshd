@@ -20,8 +20,12 @@
 package org.apache.sshd.common.signature;
 
 import java.security.spec.ECParameterSpec;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.sshd.common.Digest;
@@ -32,10 +36,10 @@ import org.apache.sshd.common.Signature;
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.SecurityUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 
 /**
- * Provides easy access to the currently implemented macs
- *
+ * Provides easy access to the currently implemented signatures
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public enum BuiltinSignatures implements NamedFactory<Signature>, OptionalFeature {
@@ -103,6 +107,11 @@ public enum BuiltinSignatures implements NamedFactory<Signature>, OptionalFeatur
         return factoryName;
     }
 
+    @Override
+    public final String toString() {
+        return getName();
+    }
+
     BuiltinSignatures(String facName) {
         factoryName = facName;
     }
@@ -165,5 +174,37 @@ public enum BuiltinSignatures implements NamedFactory<Signature>, OptionalFeatur
         }
 
         return null;
+    }
+    
+    /**
+     * @param sigs A comma-separated list of signatures' names - ignored
+     * if {@code null}/empty
+     * @return A {@link List} of all the {@link NamedFactory} whose
+     * name appears in the string and represent a built-in signature. Any
+     * unknown name is <U>ignored</I>. The order of the returned result
+     * is the same as the original order - bar the unknown signatures.
+     * <B>Note:</B> it is up to caller to ensure that the list does not
+     * contain duplicates
+     */
+    public static final List<NamedFactory<Signature>> parseSignatureList(String sigs) {
+        return parseSignatureList(GenericUtils.split(sigs, ','));
+    }
+
+    public static final List<NamedFactory<Signature>> parseSignatureList(String ... sigs) {
+        return parseSignatureList(GenericUtils.isEmpty((Object[]) sigs) ? Collections.<String>emptyList() : Arrays.asList(sigs));
+    }
+
+    public static final List<NamedFactory<Signature>> parseSignatureList(Collection<String> sigs) {
+        if (GenericUtils.isEmpty(sigs)) {
+            return Collections.emptyList();
+        }
+        
+        List<NamedFactory<Signature>>    result=new ArrayList<NamedFactory<Signature>>(sigs.size());
+        for (String name : sigs) {
+            BuiltinSignatures  s=ValidateUtils.checkNotNull(fromFactoryName(name), "Bad factory name (%s) in %s", name, sigs);
+            result.add(s);
+        }
+        
+        return result;
     }
 }

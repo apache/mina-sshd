@@ -16,42 +16,40 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.util;
 
-import java.io.FilterOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
+package org.apache.sshd.common.config;
 
-import org.slf4j.Logger;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.Set;
+
+import org.apache.sshd.common.util.GenericUtils;
 
 /**
- * TODO Add javadoc
- *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @see <A HREF="http://manpages.ubuntu.com/manpages/precise/en/man5/sshd_config.5.html"><I>LogLevel</I> configuration value</A>
  */
-public class LoggingFilterOutputStream extends FilterOutputStream {
+public enum LogLevelValue {
+    /*
+     * NOTE(s):
+     * 1. DEBUG and DEBUG1 are EQUIVALENT
+     * 2. Order is important (!!!)
+     */
+    QUIET, FATAL, ERROR, INFO, VERBOSE, DEBUG, DEBUG1, DEBUG2, DEBUG3;
 
-    private final String msg;
-    private final Logger log;
-
-    public LoggingFilterOutputStream(OutputStream out, String msg, Logger log) {
-        super(out);
-        this.msg = msg;
-        this.log = log;
-    }
-
-    @Override
-    public void write(int b) throws IOException {
-	    byte[] d = new byte[1];
-        d[0] = (byte) b;
-        write(d, 0, 1);
-    }
-
-    @Override
-    public void write(byte[] b, int off, int len) throws IOException {
-        if (log != null && log.isTraceEnabled()) {
-            log.trace("{} {}", msg, BufferUtils.printHex(b, off, len));
+    public static final Set<LogLevelValue> VALUES=
+            Collections.unmodifiableSet(EnumSet.allOf(LogLevelValue.class));
+    public static final LogLevelValue fromName(String n) {
+        if (GenericUtils.isEmpty(n)) {
+            return null;
         }
-        out.write(b, off, len);
+
+        for (LogLevelValue l : VALUES) {
+            if (n.equalsIgnoreCase(l.name())) {
+                return l;
+            }
+        }
+
+        return null;
     }
 }

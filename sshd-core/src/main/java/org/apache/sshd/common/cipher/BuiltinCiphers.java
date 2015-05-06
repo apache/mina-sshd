@@ -19,14 +19,19 @@
 
 package org.apache.sshd.common.cipher;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.sshd.common.Cipher;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.OptionalFeature;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * Provides easy access to the currently implemented ciphers
@@ -70,6 +75,11 @@ public enum BuiltinCiphers implements NamedFactory<Cipher>, OptionalFeature {
     @Override
     public final String getName() {
         return factoryName;
+    }
+
+    @Override
+    public final String toString() {
+        return getName();
     }
 
     BuiltinCiphers(String factoryName, int ivsize, int blocksize, String algorithm, String transformation) {
@@ -190,6 +200,38 @@ public enum BuiltinCiphers implements NamedFactory<Cipher>, OptionalFeature {
         }
 
         return null;
+    }
+
+    /**
+     * @param ciphers A comma-separated list of ciphers' names - ignored
+     * if {@code null}/empty
+     * @return A {@link List} of all the {@link NamedFactory}-ies whose
+     * name appears in the string and represent a built-in cipher. Any
+     * unknown name is <U>ignored</U>. The order of the returned result
+     * is the same as the original order - bar the unknown ciphers.
+     * <B>Note:</B> it is up to caller to ensure that the list does not
+     * contain duplicates
+     */
+    public static final List<NamedFactory<Cipher>> parseCiphersList(String ciphers) {
+        return parseCiphersList(GenericUtils.split(ciphers, ','));
+    }
+
+    public static final List<NamedFactory<Cipher>> parseCiphersList(String ... ciphers) {
+        return parseCiphersList(GenericUtils.isEmpty((Object[]) ciphers) ? Collections.<String>emptyList() : Arrays.asList(ciphers));
+    }
+
+    public static final List<NamedFactory<Cipher>> parseCiphersList(Collection<String> ciphers) {
+        if (GenericUtils.isEmpty(ciphers)) {
+            return Collections.emptyList();
+        }
+        
+        List<NamedFactory<Cipher>>    result=new ArrayList<NamedFactory<Cipher>>(ciphers.size());
+        for (String name : ciphers) {
+            BuiltinCiphers  c=ValidateUtils.checkNotNull(fromFactoryName(name), "Bad factory name (%s) in %s", name, ciphers);
+            result.add(c);
+        }
+        
+        return result;
     }
 
     public static final class Constants {

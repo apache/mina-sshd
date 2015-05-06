@@ -71,10 +71,14 @@ public enum BuiltinDigests implements NamedFactory<Digest> {
         return factoryName;
     }
 
+    @Override
+    public final String toString() {
+        return getName();
+    }
+
     BuiltinDigests(String facName) {
         factoryName = facName;
     }
-
 
     public static final Set<BuiltinDigests> VALUES =
             Collections.unmodifiableSet(EnumSet.allOf(BuiltinDigests.class));

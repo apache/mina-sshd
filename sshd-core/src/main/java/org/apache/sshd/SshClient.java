@@ -61,16 +61,17 @@ import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshdSocketAddress;
+import org.apache.sshd.common.config.SshConfigFileReader;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.DefaultIoServiceFactoryFactory;
 import org.apache.sshd.common.io.IoConnectFuture;
 import org.apache.sshd.common.io.IoConnector;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.common.session.AbstractSession;
-import org.apache.sshd.common.util.NoCloseInputStream;
-import org.apache.sshd.common.util.NoCloseOutputStream;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ThreadUtils;
+import org.apache.sshd.common.util.io.NoCloseInputStream;
+import org.apache.sshd.common.util.io.NoCloseOutputStream;
 import org.bouncycastle.openssl.PasswordFinder;
 
 /**
@@ -349,7 +350,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         }
         root.addHandler(fh);
 
-        int port = 22;
+        int port = SshConfigFileReader.DEFAULT_PORT;
         String host = null;
         String login = System.getProperty("user.name");
         boolean agentForward = false;

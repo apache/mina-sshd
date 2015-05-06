@@ -49,8 +49,8 @@ public abstract class AbstractScpClient implements ScpClient {
 
     @Override
     public void download(String[] remote, String local, Collection<Option> options) throws IOException {
-        local = ValidateUtils.checkNotNullAndNotEmpty(local, "Invalid argument local: %s");
-        remote = ValidateUtils.checkNotNullAndNotEmpty(remote, "Invalid argument remote: %s");
+        local = ValidateUtils.checkNotNullAndNotEmpty(local, "Invalid argument local: %s", local);
+        remote = ValidateUtils.checkNotNullAndNotEmpty(remote, "Invalid argument remote: %s", (Object) remote);
 
         if (remote.length > 1) {
             options = addTargetIsDirectory(options);
@@ -68,7 +68,7 @@ public abstract class AbstractScpClient implements ScpClient {
 
     @Override
     public void download(String[] remote, Path local, Collection<Option> options) throws IOException {
-        remote = ValidateUtils.checkNotNullAndNotEmpty(remote, "Invalid argument remote: %s");
+        remote = ValidateUtils.checkNotNullAndNotEmpty(remote, "Invalid argument remote: %s", (Object) remote);
 
         if (remote.length > 1) {
             options = addTargetIsDirectory(options);
@@ -91,7 +91,7 @@ public abstract class AbstractScpClient implements ScpClient {
 
     @Override
     public void upload(String local, String remote, Collection<Option> options) throws IOException {
-        upload(new String[] { ValidateUtils.checkNotNullAndNotEmpty(local, "Invalid argument local: %s") }, remote, options);
+        upload(new String[] { ValidateUtils.checkNotNullAndNotEmpty(local, "Invalid argument local: %s", local) }, remote, options);
     }
 
     @Override
@@ -106,7 +106,7 @@ public abstract class AbstractScpClient implements ScpClient {
     
     @Override
     public void upload(Path local, String remote, Collection<Option> options) throws IOException {
-        upload(new Path[] { ValidateUtils.checkNotNull(local, "Invalid local argument: %s") }, remote, GenericUtils.isEmpty(options) ? Collections.<Option>emptySet() : GenericUtils.of(options));
+        upload(new Path[] { ValidateUtils.checkNotNull(local, "Invalid local argument: %s", local) }, remote, GenericUtils.isEmpty(options) ? Collections.<Option>emptySet() : GenericUtils.of(options));
     }
 
     @Override

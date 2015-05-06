@@ -82,7 +82,7 @@ public class SshBuilder {
     /**
      * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
      */
-    protected static class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder<T, S>> implements ObjectBuilder<T> {
+    public static class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder<T, S>> implements ObjectBuilder<T> {
         protected Factory<T> factory = null;
         protected List<NamedFactory<KeyExchange>> keyExchangeFactories = null;
         protected List<NamedFactory<Cipher>> cipherFactories = null;
