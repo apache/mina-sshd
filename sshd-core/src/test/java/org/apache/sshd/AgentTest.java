@@ -18,6 +18,12 @@
  */
 package org.apache.sshd;
 
+import static org.apache.sshd.util.Utils.createTestKeyPairProvider;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assume.assumeThat;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -42,13 +48,6 @@ import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.Utils;
 import org.junit.Test;
 
-import static org.apache.sshd.util.Utils.createTestKeyPairProvider;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeThat;
-
 public class AgentTest extends BaseTest {
 
     @Test
@@ -58,37 +57,35 @@ public class AgentTest extends BaseTest {
             return;
         }
 
-        AgentServer agent = new AgentServer();
-        String authSocket;
-        try {
-            authSocket = agent.start();
-        } catch (UnsatisfiedLinkError e) {
-            // the native library is not available, so these tests should be skipped
-            authSocket = null;
+        try(AgentServer agent = new AgentServer()) {
+            String authSocket;
+            try {
+                authSocket = agent.start();
+            } catch (UnsatisfiedLinkError e) {
+                // the native library is not available, so these tests should be skipped
+                authSocket = null;
+            }
+            assumeThat(authSocket, notNullValue());
+    
+            try(SshAgent client = new AgentClient(authSocket)) {
+                List<SshAgent.Pair<PublicKey, String>> keys = client.getIdentities();
+                assertNotNull(keys);
+                assertEquals(0, keys.size());
+        
+                KeyPair k = Utils.createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
+                client.addIdentity(k, "");
+                keys = client.getIdentities();
+                assertNotNull(keys);
+                assertEquals(1, keys.size());
+        
+                client.removeIdentity(k.getPublic());
+                keys = client.getIdentities();
+                assertNotNull(keys);
+                assertEquals(0, keys.size());
+        
+                client.removeAllIdentities();
+            }    
         }
-        assumeThat(authSocket, notNullValue());
-
-        SshAgent client = new AgentClient(authSocket);
-        List<SshAgent.Pair<PublicKey, String>> keys = client.getIdentities();
-        assertNotNull(keys);
-        assertEquals(0, keys.size());
-
-        KeyPair k = Utils.createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
-        client.addIdentity(k, "");
-        keys = client.getIdentities();
-        assertNotNull(keys);
-        assertEquals(1, keys.size());
-
-        client.removeIdentity(k.getPublic());
-        keys = client.getIdentities();
-        assertNotNull(keys);
-        assertEquals(0, keys.size());
-
-        client.removeAllIdentities();
-
-        client.close();
-
-        agent.close();
     }
 
     @Test

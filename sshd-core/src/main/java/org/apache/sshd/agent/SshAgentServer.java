@@ -18,10 +18,11 @@
  */
 package org.apache.sshd.agent;
 
-public interface SshAgentServer {
+import java.io.Closeable;
 
+public interface SshAgentServer extends Closeable {
+    /**
+     * @return Agent server identifier
+     */
     String getId();
-
-    void close();
-
 }

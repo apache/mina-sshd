@@ -21,6 +21,7 @@ package org.apache.sshd.client.channel;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.ClientChannel;
 import org.apache.sshd.client.future.DefaultOpenFuture;
@@ -45,7 +46,7 @@ import org.apache.sshd.common.util.IoUtils;
  */
 public abstract class AbstractClientChannel extends AbstractChannel implements ClientChannel {
 
-    protected volatile boolean opened;
+    protected final AtomicBoolean opened=new AtomicBoolean();
     protected final String type;
 
     protected Streaming streaming;
@@ -66,6 +67,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     protected String openFailureMsg;
     protected OpenFuture openFuture;
 
+    @SuppressWarnings("synthetic-access")
     protected AbstractClientChannel(String type) {
         this.type = type;
         this.streaming = Streaming.Sync;
@@ -229,7 +231,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         this.remoteWindow.init(rwsize, rmpsize);
         try {
             doOpen();
-            this.opened = true;
+            this.opened.set(true);
             this.openFuture.setOpened();
         } catch (Exception e) {
             this.openFuture.setException(e);

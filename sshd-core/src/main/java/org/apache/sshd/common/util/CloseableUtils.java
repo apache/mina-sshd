@@ -125,6 +125,7 @@ public class CloseableUtils {
             return this;
         }
 
+        @SuppressWarnings("synthetic-access")
         public Builder parallel(Iterable<? extends Closeable> closeables) {
             return close(new ParallelCloseable(lock, closeables));
         }
@@ -150,6 +151,7 @@ public class CloseableUtils {
 
     public static abstract class IoBaseCloseable implements Closeable {
         // TODO once JDK 8+ becomes the minimum for this project, make it a default method instead of this class
+        @Override
         public void close() throws IOException {
             CloseableUtils.close(this);
         }
@@ -343,6 +345,7 @@ public class CloseableUtils {
          * When preClose() is called, isClosing() == true
          */
         protected void preClose() {
+            // nothing
         }
 
         protected CloseFuture doCloseGracefully() {
@@ -361,6 +364,7 @@ public class CloseableUtils {
             state.set(State.Closed);
         }
 
+        @SuppressWarnings("synthetic-access")
         protected Builder builder() {
             return new Builder(lock);
         }
@@ -379,6 +383,8 @@ public class CloseableUtils {
         @Override
         protected void doCloseImmediately() {
             getInnerCloseable().close(true).addListener(new SshFutureListener<CloseFuture>() {
+                @Override
+                @SuppressWarnings("synthetic-access")
                 public void operationComplete(CloseFuture future) {
                     AbstractInnerCloseable.super.doCloseImmediately();
                 }
@@ -387,5 +393,6 @@ public class CloseableUtils {
     }
 
     private CloseableUtils() {
+        throw new UnsupportedOperationException("No instance allowed");
     }
 }

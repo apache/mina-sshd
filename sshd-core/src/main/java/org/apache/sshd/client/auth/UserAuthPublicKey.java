@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.client.auth;
 
+import java.io.IOException;
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.ArrayList;
@@ -148,7 +149,11 @@ public class UserAuthPublicKey implements UserAuth {
 
     public void destroy() {
         if (agent != null) {
-            agent.close();
+            try {
+                agent.close();  
+            } catch(IOException e) {
+                throw new RuntimeException("Failed (" + e.getClass().getSimpleName() + ") to close agent: " + e.getMessage(), e); 
+            }
         }
     }
 

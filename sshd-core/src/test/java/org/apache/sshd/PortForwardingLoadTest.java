@@ -139,24 +139,24 @@ public class PortForwardingLoadTest extends BaseTest {
             public void run() {
                 try {
                     for (int i = 0; i < NUM_ITERATIONS; ++i) {
-                        Socket s = ss.accept();
-                        conCount.incrementAndGet();
-                        InputStream is = s.getInputStream();
-                        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                        byte[] buf = new byte[8192];
-                        int l;
-                        while (baos.size() < PAYLOAD.length() && (l = is.read(buf)) > 0) {
-                            baos.write(buf, 0, l);
+                        try(Socket s = ss.accept()) {
+                            conCount.incrementAndGet();
+                            InputStream is = s.getInputStream();
+                            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                            byte[] buf = new byte[8192];
+                            int l;
+                            while (baos.size() < PAYLOAD.length() && (l = is.read(buf)) > 0) {
+                                baos.write(buf, 0, l);
+                            }
+                            if (!PAYLOAD.equals(baos.toString())) {
+                                assertEquals(PAYLOAD, baos.toString());
+                            }
+                            is = new ByteArrayInputStream(baos.toByteArray());
+                            OutputStream os = s.getOutputStream();
+                            while ((l = is.read(buf)) > 0) {
+                                os.write(buf, 0, l);
+                            }
                         }
-                        if (!PAYLOAD.equals(baos.toString())) {
-                            assertEquals(PAYLOAD, baos.toString());
-                        }
-                        is = new ByteArrayInputStream(baos.toByteArray());
-                        OutputStream os = s.getOutputStream();
-                        while ((l = is.read(buf)) > 0) {
-                            os.write(buf, 0, l);
-                        }
-                        s.close();
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -216,11 +216,11 @@ public class PortForwardingLoadTest extends BaseTest {
                 started[0] = true;
                 try {
                     for (int i = 0; i < NUM_ITERATIONS; ++i) {
-                        Socket s = ss.accept();
-                        conCount.incrementAndGet();
-                        s.getOutputStream().write(PAYLOAD.getBytes());
-                        s.getOutputStream().flush();
-                        s.close();
+                        try(Socket s = ss.accept()) {
+                            conCount.incrementAndGet();
+                            s.getOutputStream().write(PAYLOAD.getBytes());
+                            s.getOutputStream().flush();
+                        }
                     }
                 } catch (Exception e) {
                     e.printStackTrace();

@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.agent.unix;
 
+import java.io.Closeable;
 import java.io.IOException;
 
 import org.apache.sshd.agent.SshAgent;
@@ -33,7 +34,7 @@ import org.apache.tomcat.jni.Status;
 /**
  * A server for an SSH Agent
  */
-public class AgentServer {
+public class AgentServer implements Closeable {
 
     private final SshAgent agent;
     private String authSocket;
@@ -83,7 +84,8 @@ public class AgentServer {
         return authSocket;
     }
 
-    public void close() {
+    @Override
+    public void close() throws IOException {
         agent.close();
         Socket.close(handle);
     }

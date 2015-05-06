@@ -99,7 +99,9 @@ public abstract class AbstractAgentProxy implements SshAgent {
         }
     }
 
-    public void close() {
+    @Override
+    public void close() throws IOException {
+        // nothing
     }
 
     protected Buffer createBuffer(byte cmd) {

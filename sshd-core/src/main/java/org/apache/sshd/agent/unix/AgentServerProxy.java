@@ -71,6 +71,7 @@ public class AgentServerProxy implements SshAgentServer {
                 throwException(result);
             }
             thread = new Thread("sshd-AgentServerProxy-PIPE-" + authSocket) {
+                @SuppressWarnings("synthetic-access")
                 @Override
                 public void run() {
                     try {
@@ -110,11 +111,13 @@ public class AgentServerProxy implements SshAgentServer {
         }
     }
 
+    @Override
     public String getId() {
         return authSocket;
     }
 
-    public synchronized void close() {
+    @Override
+    public synchronized void close() throws IOException {
         if (closed) {
             return;
         }

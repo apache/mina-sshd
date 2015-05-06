@@ -19,7 +19,6 @@
 package org.apache.sshd.common.util;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -229,7 +228,7 @@ public class DirectoryScanner {
             throw new IllegalStateException("No includes set ");
         }
 
-        filesIncluded = new ArrayList();
+        filesIncluded = new ArrayList<String>();
 
         scandir(basedir, "");
 

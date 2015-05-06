@@ -18,21 +18,22 @@
  */
 package org.apache.sshd;
 
+import static org.apache.sshd.util.Utils.getFreePort;
+import static org.junit.Assert.assertEquals;
+
 import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.HashSet;
 import java.util.Set;
 
-import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.JSchException;
-import com.jcraft.jsch.Session;
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.service.IoAcceptor;
 import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 import org.apache.sshd.client.channel.ChannelDirectTcpip;
+import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.util.BaseTest;
 import org.apache.sshd.util.BogusForwardingFilter;
@@ -47,8 +48,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.sshd.util.Utils.getFreePort;
-import static org.junit.Assert.assertEquals;
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.Session;
 
 /**
  * Port forwarding tests
@@ -66,8 +68,8 @@ public class PortForwardingTest extends BaseTest {
     @Before
     public void setUp() throws Exception {
         sshd = SshServer.setUpDefaultServer();
-        sshd.getProperties().put(SshServer.WINDOW_SIZE, "2048");
-        sshd.getProperties().put(SshServer.MAX_PACKET_SIZE, "256");
+        sshd.getProperties().put(FactoryManager.WINDOW_SIZE, "2048");
+        sshd.getProperties().put(FactoryManager.MAX_PACKET_SIZE, "256");
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setShellFactory(new EchoShellFactory());
         sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
@@ -114,14 +116,14 @@ public class PortForwardingTest extends BaseTest {
         session.setPortForwardingR(forwardedPort, "localhost", echoPort);
         Thread.sleep(100);
 
-        Socket s = new Socket("localhost", forwardedPort);
-        s.getOutputStream().write("Hello".getBytes());
-        s.getOutputStream().flush();
-        byte[] buf = new byte[1024];
-        int n = s.getInputStream().read(buf);
-        String res = new String(buf, 0, n);
-        assertEquals("Hello", res);
-        s.close();
+        try(Socket s = new Socket("localhost", forwardedPort)) {
+            s.getOutputStream().write("Hello".getBytes());
+            s.getOutputStream().flush();
+            byte[] buf = new byte[1024];
+            int n = s.getInputStream().read(buf);
+            String res = new String(buf, 0, n);
+            assertEquals("Hello", res);
+        }
 
         session.delPortForwardingR(forwardedPort);
         session.disconnect();
@@ -129,49 +131,47 @@ public class PortForwardingTest extends BaseTest {
 
     @Test
     public void testRemoteForwardingNative() throws Exception {
-        ClientSession session = createNativeSession();
+        try(ClientSession session = createNativeSession()) {
+            SshdSocketAddress remote = new SshdSocketAddress("", 0);
+            SshdSocketAddress local = new SshdSocketAddress("localhost", echoPort);
+            SshdSocketAddress bound = session.startRemotePortForwarding(remote, local);
+    
+            try(Socket s = new Socket(bound.getHostName(), bound.getPort())) {
+                s.getOutputStream().write("Hello".getBytes());
+                s.getOutputStream().flush();
+                byte[] buf = new byte[1024];
+                int n = s.getInputStream().read(buf);
+                String res = new String(buf, 0, n);
+                assertEquals("Hello", res);
+            }
 
-        SshdSocketAddress remote = new SshdSocketAddress("", 0);
-        SshdSocketAddress local = new SshdSocketAddress("localhost", echoPort);
-
-        SshdSocketAddress bound = session.startRemotePortForwarding(remote, local);
-
-        Socket s = new Socket(bound.getHostName(), bound.getPort());
-        s.getOutputStream().write("Hello".getBytes());
-        s.getOutputStream().flush();
-        byte[] buf = new byte[1024];
-        int n = s.getInputStream().read(buf);
-        String res = new String(buf, 0, n);
-        assertEquals("Hello", res);
-        s.close();
-
-        session.stopRemotePortForwarding(remote);
-        session.close(false).await();
+            session.stopRemotePortForwarding(remote);
+            session.close(false).await();
+        }
     }
 
     @Test
     public void testRemoteForwardingNativeBigPayload() throws Exception {
-        ClientSession session = createNativeSession();
+        try(ClientSession session = createNativeSession()) {
+            SshdSocketAddress remote = new SshdSocketAddress("", 0);
+            SshdSocketAddress local = new SshdSocketAddress("localhost", echoPort);
+            SshdSocketAddress bound = session.startRemotePortForwarding(remote, local);
 
-        SshdSocketAddress remote = new SshdSocketAddress("", 0);
-        SshdSocketAddress local = new SshdSocketAddress("localhost", echoPort);
-
-        SshdSocketAddress bound = session.startRemotePortForwarding(remote, local);
-
-        byte[] buf = new byte[1024];
-
-        Socket s = new Socket(bound.getHostName(), bound.getPort());
-        for (int i = 0; i < 1000; i++) {
-            s.getOutputStream().write("0123456789".getBytes());
-            s.getOutputStream().flush();
-            int n = s.getInputStream().read(buf);
-            String res = new String(buf, 0, n);
-            assertEquals("0123456789", res);
+            byte[] buf = new byte[1024];
+    
+            try(Socket s = new Socket(bound.getHostName(), bound.getPort())) {
+                for (int i = 0; i < 1000; i++) {
+                    s.getOutputStream().write("0123456789".getBytes());
+                    s.getOutputStream().flush();
+                    int n = s.getInputStream().read(buf);
+                    String res = new String(buf, 0, n);
+                    assertEquals("0123456789", res);
+                }
+            }
+    
+            session.stopRemotePortForwarding(remote);
+            session.close(false).await();
         }
-        s.close();
-
-        session.stopRemotePortForwarding(remote);
-        session.close(false).await();
     }
 
     @Test
@@ -181,14 +181,14 @@ public class PortForwardingTest extends BaseTest {
         int forwardedPort = getFreePort();
         session.setPortForwardingL(forwardedPort, "localhost", echoPort);
 
-        Socket s = new Socket("localhost", forwardedPort);
-        s.getOutputStream().write("Hello".getBytes());
-        s.getOutputStream().flush();
-        byte[] buf = new byte[1024];
-        int n = s.getInputStream().read(buf);
-        String res = new String(buf, 0, n);
-        assertEquals("Hello", res);
-        s.close();
+        try(Socket s = new Socket("localhost", forwardedPort)) {
+            s.getOutputStream().write("Hello".getBytes());
+            s.getOutputStream().flush();
+            byte[] buf = new byte[1024];
+            int n = s.getInputStream().read(buf);
+            String res = new String(buf, 0, n);
+            assertEquals("Hello", res);
+        }
 
         session.delPortForwardingL(forwardedPort);
         session.disconnect();
@@ -196,85 +196,84 @@ public class PortForwardingTest extends BaseTest {
 
     @Test
     public void testLocalForwardingNative() throws Exception {
-        ClientSession session = createNativeSession();
+        try(ClientSession session = createNativeSession()) {
+            SshdSocketAddress local = new SshdSocketAddress("", 0);
+            SshdSocketAddress remote = new SshdSocketAddress("localhost", echoPort);
+            SshdSocketAddress bound = session.startLocalPortForwarding(local, remote);
 
-        SshdSocketAddress local = new SshdSocketAddress("", 0);
-        SshdSocketAddress remote = new SshdSocketAddress("localhost", echoPort);
+            try(Socket s = new Socket(bound.getHostName(), bound.getPort())) {
+                s.getOutputStream().write("Hello".getBytes());
+                s.getOutputStream().flush();
+                byte[] buf = new byte[1024];
+                int n = s.getInputStream().read(buf);
+                String res = new String(buf, 0, n);
+                assertEquals("Hello", res);
+            }
 
-        SshdSocketAddress bound = session.startLocalPortForwarding(local, remote);
-
-        Socket s = new Socket(bound.getHostName(), bound.getPort());
-        s.getOutputStream().write("Hello".getBytes());
-        s.getOutputStream().flush();
-        byte[] buf = new byte[1024];
-        int n = s.getInputStream().read(buf);
-        String res = new String(buf, 0, n);
-        assertEquals("Hello", res);
-        s.close();
-
-        session.stopLocalPortForwarding(bound);
-        session.close(false).await();
+            session.stopLocalPortForwarding(bound);
+            session.close(false).await();
+        }
     }
 
     @Test
     public void testLocalForwardingNativeReuse() throws Exception {
-        ClientSession session = createNativeSession();
+        try(ClientSession session = createNativeSession()) {
+            SshdSocketAddress local = new SshdSocketAddress("", 0);
+            SshdSocketAddress remote = new SshdSocketAddress("localhost", echoPort);
+            SshdSocketAddress bound = session.startLocalPortForwarding(local, remote);
 
-        SshdSocketAddress local = new SshdSocketAddress("", 0);
-        SshdSocketAddress remote = new SshdSocketAddress("localhost", echoPort);
-
-        SshdSocketAddress bound = session.startLocalPortForwarding(local, remote);
-        session.stopLocalPortForwarding(bound);
-
-        SshdSocketAddress bound2 = session.startLocalPortForwarding(local, remote);
-        session.stopLocalPortForwarding(bound2);
-
-        session.close(false).await();
+            session.stopLocalPortForwarding(bound);
+    
+            SshdSocketAddress bound2 = session.startLocalPortForwarding(local, remote);
+            session.stopLocalPortForwarding(bound2);
+    
+            session.close(false).await();
+        }
     }
 
     @Test
     public void testLocalForwardingNativeBigPayload() throws Exception {
-        ClientSession session = createNativeSession();
+        try(ClientSession session = createNativeSession()) {
+            SshdSocketAddress local = new SshdSocketAddress("", 0);
+            SshdSocketAddress remote = new SshdSocketAddress("localhost", echoPort);
+            SshdSocketAddress bound = session.startLocalPortForwarding(local, remote);
 
-        SshdSocketAddress local = new SshdSocketAddress("", 0);
-        SshdSocketAddress remote = new SshdSocketAddress("localhost", echoPort);
-
-        SshdSocketAddress bound = session.startLocalPortForwarding(local, remote);
-
-        byte[] buf = new byte[1024];
-        Socket s = new Socket(bound.getHostName(), bound.getPort());
-        for (int i = 0; i < 1000; i++) {
-            s.getOutputStream().write("Hello".getBytes());
-            s.getOutputStream().flush();
-            int n = s.getInputStream().read(buf);
-            String res = new String(buf, 0, n);
-            assertEquals("Hello", res);
+            byte[] buf = new byte[1024];
+            try(Socket s = new Socket(bound.getHostName(), bound.getPort())) {
+                for (int i = 0; i < 1000; i++) {
+                    s.getOutputStream().write("Hello".getBytes());
+                    s.getOutputStream().flush();
+                    int n = s.getInputStream().read(buf);
+                    String res = new String(buf, 0, n);
+                    assertEquals("Hello", res);
+                }
+            }
+    
+            session.stopLocalPortForwarding(bound);
+            session.close(false).await();
         }
-        s.close();
-
-        session.stopLocalPortForwarding(bound);
-        session.close(false).await();
     }
 
     @Test
     public void testForwardingChannel() throws Exception {
-        ClientSession session = createNativeSession();
+        try(ClientSession session = createNativeSession()) {
+            SshdSocketAddress local = new SshdSocketAddress("", 0);
+            SshdSocketAddress remote = new SshdSocketAddress("localhost", echoPort);
 
-        SshdSocketAddress local = new SshdSocketAddress("", 0);
-        SshdSocketAddress remote = new SshdSocketAddress("localhost", echoPort);
+            try(ChannelDirectTcpip channel = session.createDirectTcpipChannel(local, remote)) {
+                channel.open().await();
+        
+                channel.getInvertedIn().write("Hello".getBytes());
+                channel.getInvertedIn().flush();
+                byte[] buf = new byte[1024];
+                int n = channel.getInvertedOut().read(buf);
+                String res = new String(buf, 0, n);
+                assertEquals("Hello", res);
+                channel.close(false);
+            }
 
-        ChannelDirectTcpip channel = session.createDirectTcpipChannel(local, remote);
-        channel.open().await();
-
-        channel.getInvertedIn().write("Hello".getBytes());
-        channel.getInvertedIn().flush();
-        byte[] buf = new byte[1024];
-        int n = channel.getInvertedOut().read(buf);
-        String res = new String(buf, 0, n);
-        assertEquals("Hello", res);
-        channel.close(false);
-
-        session.close(false).await();
+            session.close(false).await();
+        }
     }
 
     @Test(timeout = 20000)
@@ -286,39 +285,37 @@ public class PortForwardingTest extends BaseTest {
         session.setPortForwardingR(forwardedPort, "localhost", echoPort);
 
         // 2. Establish a connection through it
-        Socket s = new Socket("localhost", forwardedPort);
-
-        // 3. Simulate the client going away
-        rudelyDisconnectJschSession(session);
-
-        // 4. Make sure the NIOprocessor is not stuck
-        {
-            Thread.sleep(1000);
-            // from here, we need to check all the threads running and find a
-            // "NioProcessor-"
-            // that is stuck on a PortForward.dispose
-            ThreadGroup root = Thread.currentThread().getThreadGroup().getParent();
-            while (root.getParent() != null) {
-                root = root.getParent();
+        try(Socket s = new Socket("localhost", forwardedPort)) {
+            // 3. Simulate the client going away
+            rudelyDisconnectJschSession(session);
+    
+            // 4. Make sure the NIOprocessor is not stuck
+            {
+                Thread.sleep(1000);
+                // from here, we need to check all the threads running and find a
+                // "NioProcessor-"
+                // that is stuck on a PortForward.dispose
+                ThreadGroup root = Thread.currentThread().getThreadGroup().getParent();
+                while (root.getParent() != null) {
+                    root = root.getParent();
+                }
+                boolean stuck;
+                do {
+                    stuck = false;
+                    for (Thread t : findThreads(root, "NioProcessor-")) {
+                        stuck = true;
+                    }
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        // ignored
+                    }
+                } while (stuck);
             }
-            boolean stuck;
-            do {
-                stuck = false;
-                for (Thread t : findThreads(root, "NioProcessor-")) {
-                    stuck = true;
-                }
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-
-                }
-            } while (stuck);
+    
+            session.delPortForwardingR(forwardedPort);
+            session.disconnect();
         }
-
-        session.delPortForwardingR(forwardedPort);
-        session.disconnect();
-
-        s.close();
     }
 
     /**
@@ -332,12 +329,13 @@ public class PortForwardingTest extends BaseTest {
     private void rudelyDisconnectJschSession(Session session) throws Exception {
         Field fSocket = session.getClass().getDeclaredField("socket");
         fSocket.setAccessible(true);
-        Socket socket = (Socket) fSocket.get(session);
-
-        Assert.assertTrue("socket is not connected", socket.isConnected());
-        Assert.assertFalse("socket should not be closed", socket.isClosed());
-        socket.close();
-        Assert.assertTrue("socket has not closed", socket.isClosed());
+        
+        try(Socket socket = (Socket) fSocket.get(session)) {
+            Assert.assertTrue("socket is not connected", socket.isConnected());
+            Assert.assertFalse("socket should not be closed", socket.isClosed());
+            socket.close();
+            Assert.assertTrue("socket has not closed", socket.isClosed());
+        }
     }
 
     private Set<Thread> findThreads(ThreadGroup group, String name) {
@@ -406,8 +404,8 @@ public class PortForwardingTest extends BaseTest {
 
     protected ClientSession createNativeSession() throws Exception {
         client = SshClient.setUpDefaultClient();
-        client.getProperties().put(SshServer.WINDOW_SIZE, "2048");
-        client.getProperties().put(SshServer.MAX_PACKET_SIZE, "256");
+        client.getProperties().put(FactoryManager.WINDOW_SIZE, "2048");
+        client.getProperties().put(FactoryManager.MAX_PACKET_SIZE, "256");
         client.setTcpipForwardingFilter(new BogusForwardingFilter());
         client.start();
 

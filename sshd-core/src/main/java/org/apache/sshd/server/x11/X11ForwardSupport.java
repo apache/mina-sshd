@@ -40,7 +40,7 @@ import org.apache.sshd.common.util.Readable;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class X11ForwardSupport extends CloseableUtils.AbstractInnerCloseable implements IoHandler, Closeable {
+public class X11ForwardSupport extends CloseableUtils.AbstractInnerCloseable implements IoHandler {
 
     private static String xauthCommand = System.getProperty("sshd.xauthCommand", "xauth");
 
@@ -60,7 +60,8 @@ public class X11ForwardSupport extends CloseableUtils.AbstractInnerCloseable imp
         this.service = service;
     }
 
-    public void close() {
+    @Override
+    public void close() throws IOException {
         close(true);
     }
 

@@ -63,11 +63,14 @@ public class AgentServerProxy implements SshAgentServer {
         }
     }
 
+    @Override
     public String getId() {
         return id;
     }
 
-    public void close() {
+    @Override
+    public void close() throws IOException {
+        // nothing
     }
 
 }

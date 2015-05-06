@@ -65,11 +65,14 @@ public class ProxyAgentFactory implements SshAgentFactory {
         final AgentServerProxy proxy = new AgentServerProxy(service);
         proxies.put(proxy.getId(), proxy);
         return new SshAgentServer() {
+            @Override
             public String getId() {
                 return proxy.getId();
             }
 
-            public void close() {
+            @SuppressWarnings("synthetic-access")
+            @Override
+            public void close() throws IOException {
                 proxies.remove(proxy.getId());
                 proxy.close();
             }

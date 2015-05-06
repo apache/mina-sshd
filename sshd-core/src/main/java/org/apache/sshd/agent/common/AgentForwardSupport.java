@@ -52,7 +52,7 @@ public class AgentForwardSupport extends CloseableUtils.AbstractCloseable {
         }
     }
 
-    public synchronized void close() {
+    public synchronized void close() throws IOException {
         if (agentId != null) {
             agentId = null;
             agentServer.close();
@@ -62,7 +62,11 @@ public class AgentForwardSupport extends CloseableUtils.AbstractCloseable {
 
     @Override
     protected void doCloseImmediately() {
-        close();
+        try {
+            close();
+        } catch(IOException e) {
+            throw new RuntimeException("Failed (" + e.getClass().getSimpleName() + ") to close agent: " + e.getMessage(), e); 
+        }
         super.doCloseImmediately();
     }
 

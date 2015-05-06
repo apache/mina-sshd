@@ -108,7 +108,8 @@ public class AgentImpl implements SshAgent {
         keys.clear();
     }
 
-    public void close() {
+    @Override
+    public void close() throws IOException {
         closed = true;
         keys.clear();
     }

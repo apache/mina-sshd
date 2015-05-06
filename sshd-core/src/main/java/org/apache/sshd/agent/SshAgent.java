@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.agent;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.security.KeyPair;
 import java.security.PublicKey;
@@ -26,7 +27,7 @@ import java.util.List;
 /**
  * SSH key agent server
  */
-public interface SshAgent {
+public interface SshAgent extends Closeable {
 
     public static final String SSH_AUTHSOCKET_ENV_NAME = "SSH_AUTH_SOCK";
 
@@ -57,8 +58,4 @@ public interface SshAgent {
     void removeIdentity(PublicKey key) throws IOException;
 
     void removeAllIdentities() throws IOException;
-
-    void close();
-
-
 }

@@ -18,19 +18,20 @@
  */
 package org.apache.sshd;
 
-import java.io.IOError;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.net.Socket;
-import java.net.URL;
-import java.net.URLConnection;
 
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.service.IoAcceptor;
 import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
+import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.util.BaseTest;
 import org.apache.sshd.util.BogusForwardingFilter;
@@ -40,18 +41,11 @@ import org.apache.sshd.util.Utils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.slf4j.LoggerFactory;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
 /**
  * Port forwarding tests
  */
 public class ProxyTest extends BaseTest {
-
-    private final org.slf4j.Logger log = LoggerFactory.getLogger(getClass());
-
     private SshServer sshd;
     private int sshPort;
     private int echoPort;
@@ -61,8 +55,8 @@ public class ProxyTest extends BaseTest {
     @Before
     public void setUp() throws Exception {
         sshd = SshServer.setUpDefaultServer();
-        sshd.getProperties().put(SshServer.WINDOW_SIZE, "2048");
-        sshd.getProperties().put(SshServer.MAX_PACKET_SIZE, "256");
+        sshd.getProperties().put(FactoryManager.WINDOW_SIZE, "2048");
+        sshd.getProperties().put(FactoryManager.MAX_PACKET_SIZE, "256");
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setShellFactory(new EchoShellFactory());
         sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
@@ -103,39 +97,40 @@ public class ProxyTest extends BaseTest {
 
     @Test
     public void testSocksProxy() throws Exception {
-        ClientSession session = createNativeSession();
+        try(ClientSession session = createNativeSession()) {
+            SshdSocketAddress dynamic = session.startDynamicPortForwarding(new SshdSocketAddress("localhost", 0));
 
-        SshdSocketAddress dynamic = session.startDynamicPortForwarding(new SshdSocketAddress("localhost", 0));
-
-        for (int i = 0; i < 10; i++) {
-            Socket s = new Socket(new Proxy(Proxy.Type.SOCKS, new InetSocketAddress("localhost", dynamic.getPort())));
-            s.connect(new InetSocketAddress("localhost", echoPort));
-            s.getOutputStream().write("foo".getBytes());
-            s.getOutputStream().flush();
             byte[] buf = new byte[1024];
-            int l = s.getInputStream().read(buf);
-            s.close();
-            assertEquals("foo", new String(buf, 0, l));
+            for (int i = 0, l = 0; i < 10; i++) {
+                try(Socket s = new Socket(new Proxy(Proxy.Type.SOCKS, new InetSocketAddress("localhost", dynamic.getPort())))) {
+                    s.connect(new InetSocketAddress("localhost", echoPort));
+                    s.getOutputStream().write("foo".getBytes());
+                    s.getOutputStream().flush();
+                    l = s.getInputStream().read(buf);
+                }
+                assertEquals("foo", new String(buf, 0, l));
+            }
+
+            session.stopDynamicPortForwarding(dynamic);
+    
+            try {
+                try(Socket s = new Socket(new Proxy(Proxy.Type.SOCKS, new InetSocketAddress("localhost", dynamic.getPort())))) {
+                    s.connect(new InetSocketAddress("localhost", echoPort));
+                    s.getOutputStream().write("foo".getBytes());
+                    fail("Expected IOException");
+                }
+            } catch (IOException e) {
+                // expected
+            }
+    
+            session.close(false).await();
         }
-
-        session.stopDynamicPortForwarding(dynamic);
-
-        try {
-            Socket s = new Socket(new Proxy(Proxy.Type.SOCKS, new InetSocketAddress("localhost", dynamic.getPort())));
-            s.connect(new InetSocketAddress("localhost", echoPort));
-            s.getOutputStream().write("foo".getBytes());
-            fail("Expected IOException");
-        } catch (IOException e) {
-            // expected
-        }
-
-        session.close(false).await();
     }
 
     protected ClientSession createNativeSession() throws Exception {
         client = SshClient.setUpDefaultClient();
-        client.getProperties().put(SshServer.WINDOW_SIZE, "2048");
-        client.getProperties().put(SshServer.MAX_PACKET_SIZE, "256");
+        client.getProperties().put(FactoryManager.WINDOW_SIZE, "2048");
+        client.getProperties().put(FactoryManager.MAX_PACKET_SIZE, "256");
         client.setTcpipForwardingFilter(new BogusForwardingFilter());
         client.start();
 
@@ -144,8 +139,6 @@ public class ProxyTest extends BaseTest {
         session.auth().verify();
         return session;
     }
-
-
 }
 
 

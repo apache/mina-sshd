@@ -18,14 +18,15 @@
  */
 package org.apache.sshd;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
 import org.apache.sshd.client.future.OpenFuture;
+import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.io.IoInputStream;
 import org.apache.sshd.common.io.IoOutputStream;
-import org.apache.sshd.common.future.CloseFuture;
 
 /**
  * A client channel used to communicate with
@@ -34,7 +35,7 @@ import org.apache.sshd.common.future.CloseFuture;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface ClientChannel {
+public interface ClientChannel extends Closeable {
 
     String CHANNEL_EXEC = "exec";
     String CHANNEL_SHELL = "shell";

@@ -33,7 +33,9 @@ public class AgentDelegate implements SshAgent {
         this.agent = agent;
     }
 
-    public void close() {
+    @Override
+    public void close() throws IOException {
+        // ignored
     }
 
     public List<Pair<PublicKey, String>> getIdentities() throws IOException {

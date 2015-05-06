@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.common.forward;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -84,7 +85,7 @@ public class SocksProxy extends CloseableUtils.AbstractCloseable implements IoHa
         ioSession.close(false);
     }
 
-    public abstract class Proxy {
+    public abstract class Proxy implements Closeable {
 
         IoSession session;
         TcpipClientChannel channel;
@@ -98,7 +99,8 @@ public class SocksProxy extends CloseableUtils.AbstractCloseable implements IoHa
             channel.getInvertedIn().flush();
         }
 
-        public void close() {
+        @Override
+        public void close() throws IOException {
             if (channel != null) {
                 channel.close(false);
             }

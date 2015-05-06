@@ -45,7 +45,8 @@ public class AgentForwardedChannel extends AbstractClientChannel {
             protected Buffer request(Buffer buffer) throws IOException {
                 return AgentForwardedChannel.this.request(buffer);
             }
-            public void close() {
+            @Override
+            public void close() throws IOException {
                 AgentForwardedChannel.this.close(false);
             }
 

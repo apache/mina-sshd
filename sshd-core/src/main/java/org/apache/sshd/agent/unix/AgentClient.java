@@ -77,7 +77,11 @@ public class AgentClient extends AbstractAgentProxy implements Runnable {
                 e.printStackTrace();
             }
         } finally {
-            close();
+            try {
+                close();
+            } catch(IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -103,12 +107,14 @@ public class AgentClient extends AbstractAgentProxy implements Runnable {
         }
     }
 
-    public void close() {
+    @Override
+    public void close() throws IOException {
         if (!closed) {
             closed = true;
             Socket.close(handle);
         }
     }
+
     protected synchronized Buffer request(Buffer buffer) throws IOException {
         int wpos = buffer.wpos();
         buffer.wpos(0);
