@@ -137,6 +137,10 @@ public class ScpTest extends BaseTest {
                     File secondRemote = new File(remoteDir, "out2.txt");
                     scp.upload(localFile.getAbsolutePath(), secondRemote.getAbsolutePath().replace(File.separatorChar, '/'));
                     assertFileLength(secondRemote, data.length(), 5000);
+                    
+                    File pathRemote = new File(remoteDir, "path.txt");
+                    scp.upload(localFile.toPath(), pathRemote.getAbsolutePath().replace(File.separatorChar, '/'));
+                    assertFileLength(pathRemote, data.length(), 5000);
                 }
             } finally {
                 client.stop();
@@ -275,26 +279,37 @@ public class ScpTest extends BaseTest {
 
                     String data = "0123456789\n";
 
-                    File root = new File("target/scp");
+                    File root = new File("target" + File.separator + "scp");
                     Utils.deleteRecursive(root);
-                    root.mkdirs();
-                    new File(root, "local").mkdirs();
-                    assertTrue(root.exists());
+                    assertTrue("Failed to create root: " + root.getAbsolutePath(), root.mkdirs());
+                    
+                    File    local=new File(root, "local"); 
+                    assertTrue("Failed to create local folder: " + local.getAbsolutePath(), local.mkdirs());
 
+                    File    remote=new File(root, "remote");
+                    File    localOutFile=new File(local, "out.txt");
+                    File    remoteOutFile=new File(remote, localOutFile.getName());
+                    String  remoteOutPath=remoteOutFile.getAbsolutePath().replace(File.separatorChar, '/');
+                    writeFile(localOutFile, data);
 
-                    writeFile(new File("target/scp/local/out.txt"), data);
                     try {
-                        scp.upload("target/scp/local/out.txt", "target/scp/remote/out.txt");
-                        fail("Expected IOException");
-                    } catch (IOException e) {
+                        scp.upload(localOutFile.getAbsolutePath(), remoteOutPath);
+                        fail("Expected IOException for 1st time " + remoteOutPath);
+                    } catch(IOException e) {
                         // ok
                     }
-                    new File(root, "remote").mkdirs();
-                    scp.upload("target/scp/local/out.txt", "target/scp/remote/out.txt");
-                    assertFileLength(new File("target/scp/remote/out.txt"), data.length(), 5000);
+                    
+                    assertTrue("Failed to create remote folder: " + remote.getAbsolutePath(), remote.mkdirs());
+                    scp.upload(localOutFile.getAbsolutePath(), remoteOutPath);
+                    assertFileLength(remoteOutFile, data.length(), 5000);
 
-                    scp.download("target/scp/remote/out.txt", "target/scp/local/out2.txt");
-                    assertFileLength(new File("target/scp/local/out2.txt"), data.length(), 5000);
+                    File    secondLocal=new File(local, "out2.txt");
+                    scp.download(remoteOutPath, secondLocal.getAbsolutePath());
+                    assertFileLength(secondLocal, data.length(), 5000);
+                    
+                    File    localPath=new File(local, "path.txt");
+                    scp.download(remoteOutPath, localPath.toPath());
+                    assertFileLength(localPath, data.length(), 5000);
                 }
             } finally {
                 client.stop();

@@ -37,7 +37,6 @@ import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.Collection;
 import java.util.EnumSet;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -382,7 +381,7 @@ public class ScpHelper {
         }
     }
 
-    public void send(List<String> paths, boolean recursive, boolean preserve, int bufferSize) throws IOException {
+    public void send(Collection<String> paths, boolean recursive, boolean preserve, int bufferSize) throws IOException {
         readAck(false);
         
         LinkOption[]    options=IoUtils.getLinkOptions(false);
@@ -397,6 +396,7 @@ public class ScpHelper {
                     basedir = pattern.substring(0, lastSep);
                     pattern = pattern.substring(lastSep + 1);
                 }
+
                 String[] included = new DirectoryScanner(basedir, pattern).scan();
                 for (String path : included) {
                     Path file = resolveLocalPath(basedir, path);
@@ -422,27 +422,39 @@ public class ScpHelper {
                     pattern = pattern.substring(lastSep + 1);
                 }
 
-                Path    file = resolveLocalPath(basedir, pattern);
-                Boolean status = IoUtils.checkFileExists(file, options);
-                if (status == null) {
-                    throw new AccessDeniedException("Send file existence status cannot be determined: " + file);
-                }
-                if (!status.booleanValue()) {
-                    throw new IOException(file + ": no such file or directory");
-                }
-
-                if (Files.isRegularFile(file, options)) {
-                    sendFile(file, preserve, bufferSize);
-                } else if (Files.isDirectory(file, options)) {
-                    if (!recursive) {
-                        throw new IOException(file + " not a regular file");
-                    } else {
-                        sendDir(file, preserve, bufferSize);
-                    }
-                } else {
-                    throw new IOException(file + ": unknown file type");
-                }
+                send(resolveLocalPath(basedir, pattern), recursive, preserve, bufferSize, options);
             }
+        }
+    }
+
+    public void sendPaths(Collection<? extends Path> paths, boolean recursive, boolean preserve, int bufferSize) throws IOException {
+        readAck(false);
+        
+        LinkOption[]    options=IoUtils.getLinkOptions(false);
+        for (Path file : paths) {
+            send(file, recursive, preserve, bufferSize, options);
+        }
+    }
+
+    protected void send(Path file, boolean recursive, boolean preserve, int bufferSize, LinkOption ... options) throws IOException {
+        Boolean status = IoUtils.checkFileExists(file, options);
+        if (status == null) {
+            throw new AccessDeniedException("Send file existence status cannot be determined: " + file);
+        }
+        if (!status.booleanValue()) {
+            throw new IOException(file + ": no such file or directory");
+        }
+
+        if (Files.isRegularFile(file, options)) {
+            sendFile(file, preserve, bufferSize);
+        } else if (Files.isDirectory(file, options)) {
+            if (!recursive) {
+                throw new IOException(file + " not a regular file");
+            } else {
+                sendDir(file, preserve, bufferSize);
+            }
+        } else {
+            throw new IOException(file + ": unknown file type");
         }
     }
 

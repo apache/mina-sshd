@@ -19,6 +19,8 @@
 package org.apache.sshd.client;
 
 import java.io.IOException;
+import java.nio.file.Path;
+import java.util.Collection;
 
 /**
  */
@@ -31,11 +33,26 @@ public interface ScpClient {
     }
 
     void download(String remote, String local, Option... options) throws IOException;
+    void download(String remote, String local, Collection<Option> options) throws IOException;
 
-    void download(String[] remote, String local, Option... options) throws Exception;
+    void download(String remote, Path local, Option... options) throws IOException;
+    void download(String remote, Path local, Collection<Option> options) throws IOException;
+
+    void download(String[] remote, String local, Option... options) throws IOException;
+    void download(String[] remote, String local, Collection<Option> options) throws IOException;
+
+    void download(String[] remote, Path local, Option... options) throws IOException;
+    void download(String[] remote, Path local, Collection<Option> options) throws IOException;
 
     void upload(String local, String remote, Option... options) throws IOException;
+    void upload(String local, String remote, Collection<Option> options) throws IOException;
+
+    void upload(Path local, String remote, Option... options) throws IOException;
+    void upload(Path local, String remote, Collection<Option> options) throws IOException;
 
     void upload(String[] local, String remote, Option... options) throws IOException;
-
+    void upload(String[] local, String remote, Collection<Option> options) throws IOException;
+    
+    void upload(Path[] local, String remote, Option... options) throws IOException;
+    void upload(Path[] local, String remote, Collection<Option> options) throws IOException;
 }

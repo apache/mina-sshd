@@ -26,22 +26,20 @@ import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.EnumSet;
-import java.util.Set;
 
 import org.apache.sshd.ClientSession;
-import org.apache.sshd.client.ScpClient;
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.scp.ScpHelper;
 import org.apache.sshd.common.scp.ScpTransferEventListener;
 import org.apache.sshd.common.util.IoUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class DefaultScpClient implements ScpClient {
+public class DefaultScpClient extends AbstractScpClient {
 
     private final ClientSession clientSession;
     private final ScpTransferEventListener listener;
@@ -55,27 +53,51 @@ public class DefaultScpClient implements ScpClient {
         this.listener = (eventListener == null) ? ScpTransferEventListener.EMPTY : eventListener;
     }
 
-    public void download(String remote, String local, Option... options) throws IOException {
-        local = checkNotNullAndNotEmpty(local, "Invalid argument local: {}");
-        remote = checkNotNullAndNotEmpty(remote, "Invalid argument remote: {}");
-        download(remote, local, Arrays.asList(options));
+    @Override
+    public void download(String remote, String local, Collection<Option> options) throws IOException {
+        local = ValidateUtils.checkNotNullAndNotEmpty(local, "Invalid argument local: %s");
+
+        FileSystemFactory factory = clientSession.getFactoryManager().getFileSystemFactory();
+        FileSystem fs = factory.createFileSystem(clientSession);
+        try {
+            download(remote, fs, fs.getPath(local), options);
+        } finally {
+            try {
+                fs.close();
+            } catch (UnsupportedOperationException e) {
+                // Ignore
+            }
+        }
     }
 
-    public void download(String[] remote, String local, Option... options) throws IOException {
-        local = checkNotNullAndNotEmpty(local, "Invalid argument local: {}");
-        remote = checkNotNullAndNotEmpty(remote, "Invalid argument remote: {}");
-        Set<Option> opts = options(options);
-        if (remote.length > 1) {
-            opts.add(Option.TargetIsDirectory);
-        }
-        for (String r : remote) {
-            download(r, local, opts);
-        }
+    @Override
+    public void download(String remote, Path local, Collection<Option> options) throws IOException {
+        local = ValidateUtils.checkNotNull(local, "Invalid argument local: %s");
+        download(remote, local.getFileSystem(), local, options);
     }
 
-    protected void download(String remote, String local, Collection<Option> options) throws IOException {
-        local = checkNotNullAndNotEmpty(local, "Invalid argument local: {}");
-        remote = checkNotNullAndNotEmpty(remote, "Invalid argument remote: {}");
+    protected void download(String remote, FileSystem fs, Path local, Collection<Option> options) throws IOException {
+        local = ValidateUtils.checkNotNull(local, "Invalid argument local: %s");
+        remote = ValidateUtils.checkNotNullAndNotEmpty(remote, "Invalid argument remote: %s");
+
+        LinkOption[]    opts = IoUtils.getLinkOptions(false);
+        if (Files.isDirectory(local, opts)) {
+            options = addTargetIsDirectory(options);
+        }
+
+        if (options.contains(Option.TargetIsDirectory)) {
+            Boolean         status = IoUtils.checkFileExists(local, opts);
+            if (status == null) {
+                throw new SshException("Target directory " + local.toString() + " is probaly inaccesible");
+            }
+
+            if (!status.booleanValue()) {
+                throw new SshException("Target directory " + local.toString() + " does not exist");
+            }
+            if (!Files.isDirectory(local, opts)) {
+                throw new SshException("Target directory " + local.toString() + " is not a directory");
+            }
+        }
 
         StringBuilder sb = new StringBuilder("scp");
         if (options.contains(Option.Recursive)) {
@@ -89,25 +111,8 @@ public class DefaultScpClient implements ScpClient {
         sb.append(" ");
         sb.append(remote);
 
-        FileSystemFactory factory = clientSession.getFactoryManager().getFileSystemFactory();
-        FileSystem fs = factory.createFileSystem(clientSession);
+        ChannelExec channel = clientSession.createExecChannel(sb.toString());
         try {
-            Path target = fs.getPath(local);
-            if (options.contains(Option.TargetIsDirectory)) {
-                LinkOption[]    opts = IoUtils.getLinkOptions(false);
-                Boolean         status = IoUtils.checkFileExists(target, opts);
-                if (status == null) {
-                    throw new SshException("Target directory " + target.toString() + " is probaly inaccesible");
-                }
-                if (!status.booleanValue()) {
-                    throw new SshException("Target directory " + target.toString() + " does not exist");
-                }
-                if (!Files.isDirectory(target, opts)) {
-                    throw new SshException("Target directory " + target.toString() + " is not a directory");
-                }
-            }
-
-            ChannelExec channel = clientSession.createExecChannel(sb.toString());
             try {
                 channel.open().await();
             } catch (InterruptedException e) {
@@ -116,41 +121,49 @@ public class DefaultScpClient implements ScpClient {
 
             ScpHelper helper = new ScpHelper(channel.getInvertedOut(), channel.getInvertedIn(), fs, listener);
 
-            helper.receive(target,
+            helper.receive(local,
                            options.contains(Option.Recursive),
                            options.contains(Option.TargetIsDirectory),
                            options.contains(Option.PreserveAttributes),
                            ScpHelper.DEFAULT_RECEIVE_BUFFER_SIZE);
-
-            channel.close(false);
         } finally {
-            try {
-                fs.close();
-            } catch (UnsupportedOperationException e) {
-                // Ignore
+            channel.close(false);
+        }
+    }
+
+    @Override
+    public void upload(String[] local, String remote, Collection<Option> options) throws IOException {
+        final Collection<String>    paths=Arrays.asList(ValidateUtils.checkNotNullAndNotEmpty(local, "Invalid argument local: %s"));
+        runUpload(remote, options, paths, new ScpOperationExecutor<String>() {
+            public void execute(ScpHelper helper, Collection<String> local, Collection<Option> options) throws IOException {
+                helper.send(local,
+                        options.contains(Option.Recursive),
+                        options.contains(Option.PreserveAttributes),
+                        ScpHelper.DEFAULT_SEND_BUFFER_SIZE);
             }
+        });
+    }
+
+    @Override
+    public void upload(Path[] local, String remote, Collection<Option> options) throws IOException {
+        final Collection<Path>    paths=Arrays.asList(ValidateUtils.checkNotNullAndNotEmpty(local, "Invalid argument local: %s"));
+        runUpload(remote, options, paths, new ScpOperationExecutor<Path>() {
+            public void execute(ScpHelper helper, Collection<Path> local, Collection<Option> options) throws IOException {
+                helper.sendPaths(local,
+                        options.contains(Option.Recursive),
+                        options.contains(Option.PreserveAttributes),
+                        ScpHelper.DEFAULT_SEND_BUFFER_SIZE);
+            }
+        });
+    }
+
+    protected <T> void runUpload(String remote, Collection<Option> options, Collection<T> local, ScpOperationExecutor<T> executor) throws IOException {
+        local = ValidateUtils.checkNotNullAndNotEmpty(local, "Invalid argument local: %s");
+        remote = ValidateUtils.checkNotNullAndNotEmpty(remote, "Invalid argument remote: %s");
+        if (local.size() > 1) {
+            options = addTargetIsDirectory(options);
         }
-    }
-
-    public void upload(String local, String remote, Option... options) throws IOException {
-        local = checkNotNullAndNotEmpty(local, "Invalid argument local: {}");
-        remote = checkNotNullAndNotEmpty(remote, "Invalid argument remote: {}");
-        upload(new String[] { local }, remote, options(options));
-    }
-
-    public void upload(String[] local, String remote, Option... options) throws IOException {
-        local = checkNotNullAndNotEmpty(local, "Invalid argument local: {}");
-        remote = checkNotNullAndNotEmpty(remote, "Invalid argument remote: {}");
-        Set<Option> opts = options(options);
-        if (local.length > 1) {
-            opts.add(Option.TargetIsDirectory);
-        }
-        upload(local, remote, opts);
-    }
-
-    protected void upload(String[] local, String remote, Collection<Option> options) throws IOException {
-        local = checkNotNullAndNotEmpty(local, "Invalid argument local: {}");
-        remote = checkNotNullAndNotEmpty(remote, "Invalid argument remote: {}");
+        
         StringBuilder sb = new StringBuilder("scp");
         if (options.contains(Option.Recursive)) {
             sb.append(" -r");
@@ -165,6 +178,7 @@ public class DefaultScpClient implements ScpClient {
         sb.append(" --");
         sb.append(" ");
         sb.append(remote);
+
         ChannelExec channel = clientSession.createExecChannel(sb.toString());
         try {
             channel.open().await();
@@ -172,52 +186,25 @@ public class DefaultScpClient implements ScpClient {
             throw (IOException) new InterruptedIOException().initCause(e);
         }
 
-        FileSystemFactory factory = clientSession.getFactoryManager().getFileSystemFactory();
-        FileSystem fs = factory.createFileSystem(clientSession);
         try {
-            ScpHelper helper = new ScpHelper(channel.getInvertedOut(), channel.getInvertedIn(), fs, listener);
-            helper.send(Arrays.asList(local),
-                        options.contains(Option.Recursive),
-                        options.contains(Option.PreserveAttributes),
-                        ScpHelper.DEFAULT_SEND_BUFFER_SIZE);
-        } finally {
+            FileSystemFactory factory = clientSession.getFactoryManager().getFileSystemFactory();
+            FileSystem fs = factory.createFileSystem(clientSession);
             try {
-                fs.close();
-            } catch (UnsupportedOperationException e) {
-                // Ignore
+                ScpHelper helper = new ScpHelper(channel.getInvertedOut(), channel.getInvertedIn(), fs, listener);
+                executor.execute(helper, local, options);
+            } finally {
+                try {
+                    fs.close();
+                } catch (UnsupportedOperationException e) {
+                    // Ignore
+                }
             }
+        } finally {
+            channel.close(false);
         }
-        channel.close(false);
     }
-
-    private Set<Option> options(Option... options) {
-        Set<Option> opts = EnumSet.noneOf(Option.class);
-        if (options != null) {
-            opts.addAll(Arrays.asList(options));
-        }
-        return opts;
-    }
-
-    private <T> T checkNotNull(T t, String message) {
-        if (t == null) {
-            throw new IllegalStateException(String.format(message, t));
-        }
-        return t;
-    }
-
-    private String checkNotNullAndNotEmpty(String t, String message) {
-        t = checkNotNull(t, message).trim();
-        if (t.isEmpty()) {
-            throw new IllegalArgumentException(String.format(message, t));
-        }
-        return t;
-    }
-
-    private <T> T[] checkNotNullAndNotEmpty(T[] t, String message) {
-        t = checkNotNull(t, message);
-        if (t.length == 0) {
-            throw new IllegalArgumentException(String.format(message, t));
-        }
-        return t;
+    
+    public static interface ScpOperationExecutor<T> {
+        void execute(ScpHelper helper, Collection<T> local, Collection<Option> options) throws IOException;
     }
 }
