@@ -78,7 +78,32 @@
         <developerConnection>scm:git:http://git-wip-us.apache.org/repos/asf/mina-sshd.git</developerConnection>
         <url>https://git-wip-us.apache.org/repos/asf?p=mina-sshd.git</url>
       <tag>HEAD</tag>
-  </scm>
+    </scm>
+
+	<properties>
+        <projectRoot>${basedir}</projectRoot>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        
+		<javac.source>1.7</javac.source>
+        <project.build.java.source>${javac.source}</project.build.java.source>
+        <maven.compiler.source>${javac.source}</maven.compiler.source>
+		<ant.build.javac.source>${javac.source}</ant.build.javac.source>
+
+        <javac.target>${javac.source}</javac.target>
+        <project.build.java.target>${javac.target}</project.build.java.target>
+        <maven.compiler.target>${javac.target}</maven.compiler.target>
+		<ant.build.javac.target>${javac.target}</ant.build.javac.target>
+
+        <min.required.maven.version>3.0</min.required.maven.version>
+
+		<bouncycastle.version>1.51</bouncycastle.version>
+		<slf4j.version>1.7.12</slf4j.version>
+		<spring.version>3.0.6.RELEASE</spring.version>
+		<jgit.version>3.4.1.201406201815-r</jgit.version>
+		<junit.version>4.12</junit.version>
+        <surefire.plugin.version>2.18.1</surefire.plugin.version>
+		<httpcomps.version>4.4.1</httpcomps.version>
+	</properties>
 
     <dependencyManagement>
         <dependencies>
@@ -115,42 +140,78 @@
             <dependency>
                 <groupId>org.bouncycastle</groupId>
                 <artifactId>bcpg-jdk15on</artifactId>
-                <version>1.51</version>
+                <version>${bouncycastle.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.bouncycastle</groupId>
                 <artifactId>bcpkix-jdk15on</artifactId>
-                <version>1.51</version>
+                <version>${bouncycastle.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcprov-jdk15on</artifactId>
+                <version>${bouncycastle.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-api</artifactId>
-                <version>1.6.4</version>
+                <version>${slf4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>jcl-over-slf4j</artifactId>
+                <version>${slf4j.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-log4j12</artifactId>
-                <version>1.6.4</version>
+                <version>${slf4j.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-jdk14</artifactId>
-                <version>1.6.4</version>
+                <version>${slf4j.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-simple</artifactId>
-                <version>1.6.4</version>
+                <version>${slf4j.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.jcraft</groupId>
                 <artifactId>jsch</artifactId>
                 <version>0.1.50</version>
             </dependency>
+			<dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-asm</artifactId>
+                <version>${spring.version}</version>
+            </dependency>
+			<dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-beans</artifactId>
+                <version>${spring.version}</version>
+            </dependency>
+			<dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-core</artifactId>
+                <version>${spring.version}</version>
+				<exclusions>
+					<exclusion>	<!-- we are using jcl-over-slf4j -->
+						<groupId>commons-logging</groupId>
+						<artifactId>commons-logging</artifactId>
+					</exclusion>
+				</exclusions>
+            </dependency>
+			<dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-expression</artifactId>
+                <version>${spring.version}</version>
+            </dependency>
             <dependency>
                 <groupId>org.springframework</groupId>
                 <artifactId>spring-context</artifactId>
-                <version>3.0.6.RELEASE</version>
+                <version>${spring.version}</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.springframework</groupId>
@@ -163,10 +224,41 @@
                 <artifactId>commons-logging</artifactId>
                 <version>1.1.1</version>
             </dependency>
+			<dependency>
+				<groupId>log4j</groupId>
+				<artifactId>log4j</artifactId>
+				<version>1.2.17</version>
+				<exclusions>
+					<exclusion>
+						<groupId>javax.jms</groupId>
+						<artifactId>jms</artifactId>
+					</exclusion>
+					<exclusion>
+						<groupId>com.sun.jmx</groupId>
+						<artifactId>jmxri</artifactId>
+					</exclusion>
+					<exclusion>
+						<groupId>com.sun.jdmk</groupId>
+						<artifactId>jmxtools</artifactId>
+					</exclusion>
+					<exclusion>
+						<groupId>ant</groupId>
+						<artifactId>ant-nodeps</artifactId>
+					</exclusion>
+					<exclusion>
+						<groupId>ant</groupId>
+						<artifactId>ant-junit</artifactId>
+					</exclusion>
+					<exclusion>
+						<groupId>ant-contrib</groupId>
+						<artifactId>ant-contrib</artifactId>
+					</exclusion>
+				</exclusions>
+			</dependency>
             <dependency>
                 <groupId>junit</groupId>
                 <artifactId>junit</artifactId>
-                <version>4.11</version>
+                <version>${junit.version}</version>
             </dependency>
 			<dependency>
 				<groupId>org.mockito</groupId>
@@ -182,6 +274,28 @@
                 <groupId>commons-httpclient</groupId>
                 <artifactId>commons-httpclient</artifactId>
                 <version>3.1</version>
+				<exclusions>
+					<exclusion>	<!-- we are using jcl-over-slf4j -->
+						<groupId>commons-logging</groupId>
+						<artifactId>commons-logging</artifactId>
+					</exclusion>
+				</exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpclient</artifactId>
+                <version>${httpcomps.version}</version>
+				<exclusions>
+					<exclusion>	<!-- we are using jcl-over-slf4j -->
+						<groupId>commons-logging</groupId>
+						<artifactId>commons-logging</artifactId>
+					</exclusion>
+				</exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpcore</artifactId>
+                <version>${httpcomps.version}</version>
             </dependency>
             <dependency>
                 <groupId>ch.ethz.ganymed</groupId>
@@ -191,19 +305,75 @@
             <dependency>
                 <groupId>org.eclipse.jgit</groupId>
                 <artifactId>org.eclipse.jgit</artifactId>
-                <version>3.4.1.201406201815-r</version>
+                <version>${jgit.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.eclipse.jgit</groupId>
                 <artifactId>org.eclipse.jgit.pgm</artifactId>
-                <version>3.4.1.201406201815-r</version>
+                <version>${jgit.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
 
     <build>
         <pluginManagement>
-            <plugins>
+			<plugins>
+				<!--This plugin's configuration is used to store Eclipse 
+					m2e settings only and overcome integration problems.
+					It has no influence on the Maven build itself. -->
+				<plugin>
+					<groupId>org.eclipse.m2e</groupId>
+					<artifactId>lifecycle-mapping</artifactId>
+					<version>1.0.0</version>
+					<configuration>
+						<lifecycleMappingMetadata>
+							<pluginExecutions>
+								<pluginExecution>
+									<pluginExecutionFilter>
+										<groupId>org.apache.maven.plugins</groupId>
+										<artifactId>maven-dependency-plugin</artifactId>
+										<versionRange>[1.0,)</versionRange>
+										<goals>
+											<goal>copy</goal>
+											<goal>copy-dependencies</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<execute />
+									</action>
+								</pluginExecution>
+								<pluginExecution>
+									<pluginExecutionFilter>
+                                        <groupId>org.codehaus.gmaven</groupId>
+                                        <artifactId>gmaven-plugin</artifactId>
+										<versionRange>[1.0,)</versionRange>
+										<goals>
+											<goal>compile</goal>
+											<goal>execute</goal>
+											<goal>testCompile</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<execute />
+									</action>
+								</pluginExecution>
+								<pluginExecution>
+									<pluginExecutionFilter>
+								        <groupId>org.apache.rat</groupId>
+										<artifactId>apache-rat-plugin</artifactId>
+										<versionRange>[0.1,)</versionRange>
+										<goals>
+											<goal>check</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<execute />
+									</action>
+								</pluginExecution>
+							</pluginExecutions>
+						</lifecycleMappingMetadata>
+					</configuration>
+				</plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-release-plugin</artifactId>
@@ -216,13 +386,38 @@
         </pluginManagement>
 
         <plugins>
+           <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>1.4</version>
+                <executions>
+                    <execution>
+                        <id>enforce-versions</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <rules>
+                        <requireMavenVersion>
+                            <version>[${min.required.maven.version},)</version>
+                        </requireMavenVersion>
+                        <requireJavaVersion>
+                            <version>[${javac.target},)</version>
+                        </requireJavaVersion>
+                    </rules>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.2</version>
+                <version>3.3</version>
                 <configuration>
-                    <source>1.7</source>
-                    <target>1.7</target>
+					<source>${javac.source}</source>
+					<target>${javac.target}</target>
+					<compilerArgument>-g</compilerArgument>
+					<compilerArgument>-Xlint:-serial</compilerArgument>
                 </configuration>
             </plugin>
             <plugin>
@@ -266,6 +461,13 @@
                                 <exclude>**/big-msg.txt</exclude>
                                 <exclude>sshd-sftp/**</exclude>
                                 <exclude>sshd-pam/**</exclude>
+									<!-- Eclipse files -->
+								<exclude>.metadata/**</exclude>
+								<exclude>RemoteSystemsTempFiles/**</exclude>
+								<exclude>.project</exclude>
+								<exclude>.classpath</exclude>
+								<exclude>.springBeans</exclude>
+								<exclude>.settings/**</exclude>
                             </excludes>
                         </configuration>
                     </execution>
@@ -312,11 +514,58 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.17</version>
+                <version>${surefire.plugin.version}</version>
                 <configuration>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
+                    <includes>
+                        <include>**/*Test.java</include>
+                    </includes>
+                    <runOrder>alphabetical</runOrder>
+                    <forkCount>1</forkCount>
+					<reuseForks>true</reuseForks>
+                        <!-- avoid inherent multi-threaded tests -->
+                    <perCoreThreadCount>false</perCoreThreadCount>
+                    <threadCount>1</threadCount>
+                    <systemPropertyVariables>
+                        <!-- java.io.tmpdir>${project.build.directory}${file.separator}temp</java.io.tmpdir -->
+                        <java.awt.headless>true</java.awt.headless>
+                        <org.slf4j.simpleLogger.logFile>System.out</org.slf4j.simpleLogger.logFile>
+                    </systemPropertyVariables>
                 </configuration>
+                <dependencies>
+                    <!-- make sure using OUR version -->
+                    <dependency>
+                        <groupId>junit</groupId>
+                        <artifactId>junit</artifactId>
+                        <version>${junit.version}</version>
+                    </dependency>
+
+                    <!-- need to include it to ensure grouping detection -->
+                    <dependency>
+                        <groupId>org.apache.maven.surefire</groupId>
+                        <artifactId>surefire-junit47</artifactId>
+                        <version>${surefire.plugin.version}</version>
+                    </dependency>
+                </dependencies>
             </plugin>
+				<!-- Automatically remove artifacts from local repository on clean -->
+			<plugin>
+		        <groupId>org.codehaus.mojo</groupId>
+		        <artifactId>build-helper-maven-plugin</artifactId>
+		        <version>1.9.1</version>
+				 <executions>
+	          		<execution>
+			        	<id>remove-previous-artifact</id>
+						<phase>clean</phase>
+			            <goals>
+			            	<goal>remove-project-artifact</goal>
+			            </goals>
+			            <configuration>
+			            	<removeAll>true</removeAll>
+			            </configuration>
+			          </execution>
+		        </executions>
+			</plugin>
         </plugins>
     </build>
 
@@ -327,10 +576,6 @@
             <url />
         </repository>
     </distributionManagement>
-
-    <properties>
-        <projectRoot>${basedir}</projectRoot>
-    </properties>
 
     <profiles>
         <profile>
