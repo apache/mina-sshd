@@ -34,7 +34,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.Cipher;
 import org.apache.sshd.common.Closeable;
-import org.apache.sshd.common.Compression;
 import org.apache.sshd.common.Digest;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.KeyExchange;
@@ -46,6 +45,7 @@ import org.apache.sshd.common.Session;
 import org.apache.sshd.common.SessionListener;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.compression.Compression;
 import org.apache.sshd.common.future.DefaultSshFuture;
 import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.future.SshFutureListener;

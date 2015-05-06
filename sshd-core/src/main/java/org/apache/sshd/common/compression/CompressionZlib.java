@@ -23,8 +23,6 @@ import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
-import org.apache.sshd.common.Compression;
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.util.Buffer;
 
 /**
@@ -33,20 +31,6 @@ import org.apache.sshd.common.util.Buffer;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class CompressionZlib implements Compression {
-
-    /**
-     * Named factory for the ZLib Compression.
-     */
-    public static class Factory implements NamedFactory<Compression> {
-        public String getName() {
-            return "zlib";
-        }
-
-        public Compression create() {
-            return new CompressionZlib();
-        }
-    }
-
     static private final int BUF_SIZE = 4096;
 
     private byte[] tmpbuf = new byte[BUF_SIZE];

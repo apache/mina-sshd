@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.apache.sshd.agent.SshAgentFactory;
+import org.apache.sshd.common.compression.Compression;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.session.ConnectionService;

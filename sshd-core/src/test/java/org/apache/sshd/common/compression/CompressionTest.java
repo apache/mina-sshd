@@ -16,17 +16,17 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd;
+package org.apache.sshd.common.compression;
+
+import static org.junit.Assert.assertEquals;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-import com.jcraft.jsch.JSch;
+import org.apache.sshd.SshServer;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.compression.CompressionDelayedZlib;
-import org.apache.sshd.common.compression.CompressionNone;
-import org.apache.sshd.common.compression.CompressionZlib;
 import org.apache.sshd.util.BaseTest;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
@@ -36,7 +36,7 @@ import org.apache.sshd.util.Utils;
 import org.junit.After;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
+import com.jcraft.jsch.JSch;
 
 /**
  * Test compression algorithms.
@@ -49,27 +49,26 @@ public class CompressionTest extends BaseTest {
 
     @Test
     public void testCompNone() throws Exception {
-        setUp(new CompressionNone.Factory());
+        setUp(BuiltinCompressions.none);
         runTest();
     }
 
     @Test
     public void testCompZlib() throws Exception {
-        setUp(new CompressionZlib.Factory());
+        setUp(BuiltinCompressions.zlib);
         runTest();
     }
 
     @Test
     public void testCompDelayedZlib() throws Exception {
-        setUp(new CompressionDelayedZlib.Factory());
+        setUp(BuiltinCompressions.delayedZlib);
         runTest();
     }
 
-
-    protected void setUp(NamedFactory<org.apache.sshd.common.Compression> compression) throws Exception {
+    protected void setUp(NamedFactory<org.apache.sshd.common.compression.Compression> compression) throws Exception {
         sshd = SshServer.setUpDefaultServer();
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
-        sshd.setCompressionFactories(Arrays.<NamedFactory<org.apache.sshd.common.Compression>>asList(compression));
+        sshd.setCompressionFactories(Arrays.<NamedFactory<org.apache.sshd.common.compression.Compression>>asList(compression));
         sshd.setShellFactory(new EchoShellFactory());
         sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
         sshd.start();
@@ -93,22 +92,28 @@ public class CompressionTest extends BaseTest {
         JSch sch = new JSch();
         com.jcraft.jsch.Session s = sch.getSession("smx", "localhost", sshd.getPort());
         s.setUserInfo(new SimpleUserInfo("smx"));
+
         s.connect();
-        com.jcraft.jsch.Channel c = s.openChannel("shell");
         try {
+            com.jcraft.jsch.Channel c = s.openChannel("shell");
             c.connect();
-            OutputStream os = c.getOutputStream();
-            InputStream is = c.getInputStream();
-            for (int i = 0; i < 10; i++) {
-                os.write("this is my command\n".getBytes());
-                os.flush();
-                byte[] data = new byte[512];
-                int len = is.read(data);
-                String str = new String(data, 0, len);
-                assertEquals("this is my command\n", str);
-            }
+            try(OutputStream os = c.getOutputStream();
+                 InputStream is = c.getInputStream()) {
+                final String    STR="this is my command\n";
+                final byte[]    bytes=STR.getBytes(StandardCharsets.UTF_8);
+                byte[]          data=new byte[bytes.length + Long.SIZE];
+                for (int i = 0; i < 10; i++) {
+                    os.write(bytes);
+                    os.flush();
+
+                    int len = is.read(data);
+                    String str = new String(data, 0, len, StandardCharsets.UTF_8);
+                    assertEquals("Mismatched read data at iteration #" + i, STR, str);
+                }
+            } finally {
+                c.disconnect();
+            } 
         } finally {
-            c.disconnect();
             s.disconnect();
         }
     }

@@ -18,8 +18,6 @@
  */
 package org.apache.sshd.common.compression;
 
-import org.apache.sshd.common.Compression;
-import org.apache.sshd.common.NamedFactory;
 
 /**
  * ZLib delayed compression.
@@ -29,28 +27,14 @@ import org.apache.sshd.common.NamedFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class CompressionDelayedZlib extends CompressionZlib {
-
-    /**
-     * Named factory for the ZLib Delayed Compression.
-     */
-    public static class Factory implements NamedFactory<Compression> {
-        public String getName() {
-            return "zlib@openssh.com";
-        }
-
-        public Compression create() {
-            return new CompressionDelayedZlib();
-        }
-    }
-
     /**
      * Create a new instance of a delayed ZLib compression
      */
     public CompressionDelayedZlib() {
+        super();
     }
 
     public boolean isDelayed() {
         return true;
     }
-
 }

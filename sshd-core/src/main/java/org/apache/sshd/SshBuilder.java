@@ -30,7 +30,6 @@ import org.apache.sshd.client.keyverifier.AcceptAllServerKeyVerifier;
 import org.apache.sshd.common.AbstractFactoryManager;
 import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.Cipher;
-import org.apache.sshd.common.Compression;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.KeyExchange;
 import org.apache.sshd.common.Mac;
@@ -41,7 +40,8 @@ import org.apache.sshd.common.RequestHandler;
 import org.apache.sshd.common.Signature;
 import org.apache.sshd.common.TcpipForwarderFactory;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
-import org.apache.sshd.common.compression.CompressionNone;
+import org.apache.sshd.common.compression.BuiltinCompressions;
+import org.apache.sshd.common.compression.Compression;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.file.nativefs.NativeFileSystemFactory;
 import org.apache.sshd.common.forward.DefaultTcpipForwarderFactory;
@@ -120,8 +120,7 @@ public class SshBuilder {
             //            new CompressionDelayedZlib.Factory());
             //}
             if (compressionFactories == null) {
-                compressionFactories = Arrays.<NamedFactory<Compression>>asList(
-                        new CompressionNone.Factory());
+                compressionFactories = Arrays.<NamedFactory<Compression>>asList(BuiltinCompressions.none);
             }
             if (macFactories == null) {
                 macFactories = setUpDefaultMacs(false);
