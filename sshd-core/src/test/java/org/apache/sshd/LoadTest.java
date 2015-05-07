@@ -90,6 +90,7 @@ public class LoadTest extends BaseTest {
         final CountDownLatch latch = new CountDownLatch(nbThreads);
         for (int i = 0; i < nbThreads; i++) {
             Runnable r = new Runnable() {
+                @Override
                 public void run() {
                     try {
                         for (int i = 0; i < nbSessionsPerThread; i++) {
@@ -116,7 +117,7 @@ public class LoadTest extends BaseTest {
             FactoryManagerUtils.updateProperty(props, FactoryManager.MAX_PACKET_SIZE, 1024 * 16);
             FactoryManagerUtils.updateProperty(props, FactoryManager.WINDOW_SIZE, 1024 * 8);
             client.setKeyExchangeFactories(Arrays.asList(
-                    SshBuilder.ClientBuilder.getKeyExchangeFactory(BuiltinDHFactories.dhg1)));
+                    SshBuilder.ClientBuilder.DH2KEX.transform(BuiltinDHFactories.dhg1)));
             client.setCipherFactories(Arrays.<NamedFactory<Cipher>>asList(BuiltinCiphers.blowfishcbc));
             client.start();
             try {

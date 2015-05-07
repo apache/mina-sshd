@@ -30,6 +30,7 @@ public class SignatureDSA extends AbstractSignature {
 	    super(algorithm);
     }
 
+    @Override
     public byte[] sign() throws Exception {
         byte[] sig = signature.sign();
 
@@ -63,6 +64,7 @@ public class SignatureDSA extends AbstractSignature {
         return result;
     }
 
+    @Override
     public boolean verify(byte[] sig) throws Exception {
         sig = extractSig(sig);
 

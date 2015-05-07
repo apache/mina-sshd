@@ -34,6 +34,7 @@ public class CompressionDelayedZlib extends CompressionZlib {
         super();
     }
 
+    @Override
     public boolean isDelayed() {
         return true;
     }

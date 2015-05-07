@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
+import org.apache.sshd.common.Mac;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.mac.BuiltinMacs.ParseResult;
@@ -35,6 +36,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.BaseTest;
 import org.junit.Assert;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -101,5 +103,73 @@ public class BuiltinMacsTest extends BaseTest {
             assertListEquals(fullList + "[parsed]", builtin, parsed);
             assertListEquals(fullList + "[unsupported]", unknown, missing);
         }
+    }
+
+    @Test
+    public void testResolveFactoryOnBuiltinValues() {
+        for (MacFactory expected : BuiltinMacs.VALUES) {
+            String       name=expected.getName();
+            MacFactory   actual=BuiltinMacs.resolveFactory(name);
+            Assert.assertSame(name, expected, actual);
+        }
+    }
+
+    @Test
+    public void testNotAllowedToRegisterBuiltinFactories() {
+        for (MacFactory expected : BuiltinMacs.VALUES) {
+            try {
+                BuiltinMacs.registerExtension(expected);
+                Assert.fail("Unexpected sucess for " + expected.getName());
+            } catch(IllegalArgumentException e) {
+                // expected - ignored
+            }
+        }
+    }
+
+    @Test(expected=IllegalArgumentException.class)
+    public void testNotAllowedToOverrideRegisteredFactories() {
+        MacFactory    expected=Mockito.mock(MacFactory.class);
+        Mockito.when(expected.getName()).thenReturn(getCurrentTestName());
+
+        String  name=expected.getName();
+        try {
+            for (int index=1; index <= Byte.SIZE; index++) {
+                BuiltinMacs.registerExtension(expected);
+                Assert.assertEquals("Unexpected success at attempt #" + index, 1, index);
+            }
+        } finally {
+            BuiltinMacs.unregisterExtension(name);
+        }
+    }
+
+    @Test
+    public void testResolveFactoryOnRegisteredExtension() {
+        MacFactory  expected=Mockito.mock(MacFactory.class);
+        Mockito.when(expected.getName()).thenReturn(getCurrentTestName());
+
+        String  name=expected.getName();
+        try {
+            Assert.assertNull("Extension already registered", BuiltinMacs.resolveFactory(name));
+            BuiltinMacs.registerExtension(expected);
+
+            MacFactory  actual=BuiltinMacs.resolveFactory(name);
+            Assert.assertSame("Mismatched resolved instance", expected, actual);
+        } finally {
+            MacFactory  actual=BuiltinMacs.unregisterExtension(name);
+            Assert.assertSame("Mismatched unregistered instance", expected, actual);
+            Assert.assertNull("Extension not un-registered", BuiltinMacs.resolveFactory(name));
+        }
+    }
+
+    @Test
+    public void testFac2NamedTransformer() {
+        Assert.assertNull("Invalid null transformation", MacFactory.FAC2NAMED.transform(null));
+        for (MacFactory expected : BuiltinMacs.VALUES) {
+            NamedFactory<Mac>   actual=MacFactory.FAC2NAMED.transform(expected);
+            Assert.assertSame("Mismatched transformed instance for " + expected.getName(), expected, actual);
+        }
+        
+        MacFactory   mock=Mockito.mock(MacFactory.class);
+        Assert.assertSame("Mismatched transformed mocked instance", mock, MacFactory.FAC2NAMED.transform(mock));
     }
 }

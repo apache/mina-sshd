@@ -36,6 +36,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.BaseTest;
 import org.junit.Assert;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -149,5 +150,73 @@ public class BuiltinCiphersTest extends BaseTest {
             assertListEquals(fullList + "[parsed]", builtin, parsed);
             assertListEquals(fullList + "[unsupported]", unknown, missing);
         }
+    }
+
+    @Test
+    public void testResolveFactoryOnBuiltinValues() {
+        for (NamedFactory<Cipher> expected : BuiltinCiphers.VALUES) {
+            String                  name=expected.getName();
+            NamedFactory<Cipher>    actual=BuiltinCiphers.resolveFactory(name);
+            Assert.assertSame(name, expected, actual);
+        }
+    }
+
+    @Test
+    public void testNotAllowedToRegisterBuiltinFactories() {
+        for (CipherFactory expected : BuiltinCiphers.VALUES) {
+            try {
+                BuiltinCiphers.registerExtension(expected);
+                Assert.fail("Unexpected sucess for " + expected.getName());
+            } catch(IllegalArgumentException e) {
+                // expected - ignored
+            }
+        }
+    }
+
+    @Test(expected=IllegalArgumentException.class)
+    public void testNotAllowedToOverrideRegisteredFactories() {
+        CipherFactory    expected=Mockito.mock(CipherFactory.class);
+        Mockito.when(expected.getName()).thenReturn(getCurrentTestName());
+
+        String  name=expected.getName();
+        try {
+            for (int index=1; index <= Byte.SIZE; index++) {
+                BuiltinCiphers.registerExtension(expected);
+                Assert.assertEquals("Unexpected success at attempt #" + index, 1, index);
+            }
+        } finally {
+            BuiltinCiphers.unregisterExtension(name);
+        }
+    }
+
+    @Test
+    public void testResolveFactoryOnRegisteredExtension() {
+        CipherFactory    expected=Mockito.mock(CipherFactory.class);
+        Mockito.when(expected.getName()).thenReturn(getCurrentTestName());
+
+        String  name=expected.getName();
+        try {
+            Assert.assertNull("Extension already registered", BuiltinCiphers.resolveFactory(name));
+            BuiltinCiphers.registerExtension(expected);
+
+            NamedFactory<Cipher>    actual=BuiltinCiphers.resolveFactory(name);
+            Assert.assertSame("Mismatched resolved instance", expected, actual);
+        } finally {
+            NamedFactory<Cipher>    actual=BuiltinCiphers.unregisterExtension(name);
+            Assert.assertSame("Mismatched unregistered instance", expected, actual);
+            Assert.assertNull("Extension not un-registered", BuiltinCiphers.resolveFactory(name));
+        }
+    }
+
+    @Test
+    public void testFac2NamedTransformer() {
+        Assert.assertNull("Invalid null transformation", CipherFactory.FAC2NAMED.transform(null));
+        for (CipherFactory expected : BuiltinCiphers.VALUES) {
+            NamedFactory<Cipher>   actual=CipherFactory.FAC2NAMED.transform(expected);
+            Assert.assertSame("Mismatched transformed instance for " + expected.getName(), expected, actual);
+        }
+        
+        CipherFactory   mock=Mockito.mock(CipherFactory.class);
+        Assert.assertSame("Mismatched transformed mocked instance", mock, CipherFactory.FAC2NAMED.transform(mock));
     }
 }

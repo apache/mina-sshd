@@ -43,10 +43,12 @@ public class BaseMac implements Mac {
         this.tmp = new byte[defbsize];
     }
 
+    @Override
     public int getBlockSize() {
         return bsize;
     }
 
+    @Override
     public void init(byte[] key) throws Exception {
         if (key.length > defbsize) {
             byte[] tmp = new byte[defbsize];
@@ -59,6 +61,7 @@ public class BaseMac implements Mac {
         mac.init(skey);
     }
 
+    @Override
     public void updateUInt(long i) {
         tmp[0] = (byte) (i >>> 24);
         tmp[1] = (byte) (i >>> 16);
@@ -67,10 +70,12 @@ public class BaseMac implements Mac {
         update(tmp, 0, 4);
     }
 
+    @Override
     public void update(byte foo[], int s, int l) {
         mac.update(foo, s, l);
     }
 
+    @Override
     public void doFinal(byte[] buf, int offset) throws Exception {
         if (bsize != defbsize) {
             mac.doFinal(tmp, 0);

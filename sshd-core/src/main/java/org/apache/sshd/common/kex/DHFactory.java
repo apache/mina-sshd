@@ -19,11 +19,12 @@
 package org.apache.sshd.common.kex;
 
 import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.common.OptionalFeature;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface DHFactory extends NamedResource {
+public interface DHFactory extends NamedResource, OptionalFeature {
     boolean isGroupExchange();
 
     AbstractDH create(Object... params) throws Exception;

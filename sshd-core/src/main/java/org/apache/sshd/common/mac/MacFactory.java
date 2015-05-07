@@ -16,28 +16,23 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.signature;
+
+package org.apache.sshd.common.mac;
+
+import org.apache.sshd.common.Mac;
+import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.OptionalFeature;
+import org.apache.sshd.common.Transformer;
 
 /**
- * RSA <code>Signature</code>
- *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SignatureRSA extends AbstractSignature {
-
-    public SignatureRSA() {
-        super("SHA1withRSA");
-    }
-
-    @Override
-    public byte[] sign() throws Exception {
-        return signature.sign();
-    }
-
-    @Override
-    public boolean verify(byte[] sig) throws Exception {
-        sig = extractSig(sig);
-        return signature.verify(sig);
-    }
-
+public interface MacFactory extends NamedFactory<Mac>, OptionalFeature {
+    // required because of generics issues
+    Transformer<MacFactory,NamedFactory<Mac>> FAC2NAMED=new Transformer<MacFactory,NamedFactory<Mac>>() {
+        @Override
+        public NamedFactory<Mac> transform(MacFactory input) {
+            return input;
+        }
+    };
 }

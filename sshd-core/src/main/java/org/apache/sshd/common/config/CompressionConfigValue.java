@@ -26,6 +26,7 @@ import java.util.Set;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.compression.BuiltinCompressions;
 import org.apache.sshd.common.compression.Compression;
+import org.apache.sshd.common.compression.CompressionFactory;
 import org.apache.sshd.common.util.GenericUtils;
 
 /**
@@ -33,12 +34,12 @@ import org.apache.sshd.common.util.GenericUtils;
  * actual {@link NamedFactory} for the {@link Compression}.
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public enum CompressionConfigValue implements NamedFactory<Compression> {
+public enum CompressionConfigValue implements CompressionFactory {
     YES(BuiltinCompressions.zlib),
     NO(BuiltinCompressions.none),
     DELAYED(BuiltinCompressions.delayedZlib);
 
-    private final NamedFactory<Compression> factory;
+    private final CompressionFactory factory;
 
     @Override
     public final String getName() { 
@@ -51,11 +52,16 @@ public enum CompressionConfigValue implements NamedFactory<Compression> {
     }
 
     @Override
+    public boolean isSupported() {
+        return factory.isSupported();
+    }
+
+    @Override
     public final String toString() {
         return getName();
     }
 
-    CompressionConfigValue(NamedFactory<Compression> delegate) {
+    CompressionConfigValue(CompressionFactory delegate) {
         factory = delegate;
     }
 

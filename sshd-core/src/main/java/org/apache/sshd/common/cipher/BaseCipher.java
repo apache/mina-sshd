@@ -45,14 +45,17 @@ public class BaseCipher implements Cipher {
         this.transformation = transformation;
     }
 
+    @Override
     public int getIVSize() {
         return ivsize;
     }
 
+    @Override
     public int getBlockSize() {
         return bsize;
     }
 
+    @Override
     public void init(Mode mode, byte[] key, byte[] iv) throws Exception {
         key = resize(key, bsize);
         iv = resize(iv, ivsize);
@@ -68,6 +71,7 @@ public class BaseCipher implements Cipher {
         }
     }
 
+    @Override
     public void update(byte[] input, int inputOffset, int inputLen) throws Exception {
         cipher.update(input, inputOffset, inputLen, input, inputOffset);
     }

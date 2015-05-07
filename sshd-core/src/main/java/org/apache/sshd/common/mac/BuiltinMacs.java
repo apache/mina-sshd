@@ -25,20 +25,25 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeMap;
 
 import org.apache.sshd.common.Digest;
 import org.apache.sshd.common.Mac;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.OptionalFeature;
+import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.common.config.NamedFactoriesListParseResult;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * Provides easy access to the currently implemented macs
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public enum BuiltinMacs implements NamedFactory<Mac>, OptionalFeature {
+public enum BuiltinMacs implements MacFactory {
     hmacmd5(Constants.HMAC_MD5) {
         @Override
         public Mac create() {
@@ -99,6 +104,52 @@ public enum BuiltinMacs implements NamedFactory<Mac>, OptionalFeature {
 
     public static final Set<BuiltinMacs> VALUES =
             Collections.unmodifiableSet(EnumSet.allOf(BuiltinMacs.class));
+    private static final Map<String,MacFactory>   extensions =
+            new TreeMap<String,MacFactory>(String.CASE_INSENSITIVE_ORDER);
+
+    /**
+     * Registered a {@link NamedFactory} to be available besides the built-in
+     * ones when parsing configuration
+     * @param extension The factory to register
+     * @throws IllegalArgumentException if factory instance is {@code null},
+     * or overrides a built-in one or overrides another registered factory
+     * with the same name (case <U>insensitive</U>).
+     */
+    public static final void registerExtension(MacFactory extension) {
+        String  name=ValidateUtils.checkNotNull(extension, "No extension provided", GenericUtils.EMPTY_OBJECT_ARRAY).getName();
+        ValidateUtils.checkTrue(fromFactoryName(name) == null, "Extension overrides built-in: %s", name);
+
+        synchronized(extensions) {
+            ValidateUtils.checkTrue(!extensions.containsKey(name), "Extension overrides existinh: %s", name);
+            extensions.put(name, extension);
+        }
+    }
+
+    /**
+     * @return A {@link SortedSet} of the currently registered extensions, sorted
+     * according to the factory name (case <U>insensitive</U>)
+     */
+    public static final SortedSet<MacFactory> getRegisteredExtensions() {
+        // TODO for JDK-8 return Collections.emptySortedSet()
+        synchronized(extensions) {
+            return GenericUtils.asSortedSet(NamedResource.BY_NAME_COMPARATOR, extensions.values());
+        }
+    }
+
+    /**
+     * Unregisters specified extension
+     * @param name The factory name - ignored if {@code null}/empty
+     * @return The registered extension - {@code null} if not found
+     */
+    public static final MacFactory unregisterExtension(String name) {
+        if (GenericUtils.isEmpty(name)) {
+            return null;
+        }
+        
+        synchronized(extensions) {
+            return extensions.remove(name);
+        }
+    }
 
     /**
      * @param s The {@link Enum}'s name - ignored if {@code null}/empty
@@ -172,10 +223,10 @@ public enum BuiltinMacs implements NamedFactory<Mac>, OptionalFeature {
             return ParseResult.EMPTY;
         }
         
-        List<NamedFactory<Mac>> factories=new ArrayList<NamedFactory<Mac>>(macs.size());
+        List<MacFactory> factories=new ArrayList<MacFactory>(macs.size());
         List<String>            unknown=Collections.<String>emptyList();
         for (String name : macs) {
-            BuiltinMacs  m=fromFactoryName(name);
+            MacFactory   m=resolveFactory(name);
             if (m != null) {
                 factories.add(m);
             } else {
@@ -190,22 +241,31 @@ public enum BuiltinMacs implements NamedFactory<Mac>, OptionalFeature {
         return new ParseResult(factories, unknown);
     }
 
-    public static final class ParseResult {
-        public static final ParseResult EMPTY=new ParseResult(Collections.<NamedFactory<Mac>>emptyList(), Collections.<String>emptyList());
-        private final List<NamedFactory<Mac>> parsed;
-        private final List<String> unsupported;
-        
-        public ParseResult(List<NamedFactory<Mac>> parsed, List<String> unsupported) {
-            this.parsed = parsed;
-            this.unsupported = unsupported;
+    /**
+     * @param name The factory name
+     * @return The factory or {@code null} if it is neither a built-in one
+     * or a registered extension 
+     */
+    public static final MacFactory resolveFactory(String name) {
+        if (GenericUtils.isEmpty(name)) {
+            return null;
+        }
+
+        MacFactory  m=fromFactoryName(name);
+        if (m != null) {
+            return m;
         }
         
-        public List<NamedFactory<Mac>> getParsedFactories() {
-            return parsed;
+        synchronized(extensions) {
+            return extensions.get(name);
         }
+    }
+
+    public static final class ParseResult extends NamedFactoriesListParseResult<Mac,MacFactory> {
+        public static final ParseResult EMPTY=new ParseResult(Collections.<MacFactory>emptyList(), Collections.<String>emptyList());
         
-        public List<String> getUnsupportedFactories() {
-            return unsupported;
+        public ParseResult(List<MacFactory> parsed, List<String> unsupported) {
+            super(parsed, unsupported);
         }
     }
 

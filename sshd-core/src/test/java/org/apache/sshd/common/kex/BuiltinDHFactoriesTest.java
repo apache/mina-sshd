@@ -34,6 +34,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.BaseTest;
 import org.junit.Assert;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -99,6 +100,62 @@ public class BuiltinDHFactoriesTest extends BaseTest {
             // makes sure not only that the contents are the same but also the order
             assertListEquals(fullList + "[parsed]", builtin, parsed);
             assertListEquals(fullList + "[unsupported]", unknown, missing);
+        }
+    }
+
+    @Test
+    public void testResolveFactoryOnBuiltinValues() {
+        for (DHFactory expected : BuiltinDHFactories.VALUES) {
+            String              name=expected.getName();
+            DHFactory   actual=BuiltinDHFactories.resolveFactory(name);
+            Assert.assertSame(name, expected, actual);
+        }
+    }
+
+    @Test
+    public void testNotAllowedToRegisterBuiltinFactories() {
+        for (DHFactory expected : BuiltinDHFactories.VALUES) {
+            try {
+                BuiltinDHFactories.registerExtension(expected);
+                Assert.fail("Unexpected sucess for " + expected.getName());
+            } catch(IllegalArgumentException e) {
+                // expected - ignored
+            }
+        }
+    }
+
+    @Test(expected=IllegalArgumentException.class)
+    public void testNotAllowedToOverrideRegisteredFactories() {
+        DHFactory    expected=Mockito.mock(DHFactory.class);
+        Mockito.when(expected.getName()).thenReturn(getCurrentTestName());
+
+        String  name=expected.getName();
+        try {
+            for (int index=1; index <= Byte.SIZE; index++) {
+                BuiltinDHFactories.registerExtension(expected);
+                Assert.assertEquals("Unexpected success at attempt #" + index, 1, index);
+            }
+        } finally {
+            BuiltinDHFactories.unregisterExtension(name);
+        }
+    }
+
+    @Test
+    public void testResolveFactoryOnRegisteredExtension() {
+        DHFactory    expected=Mockito.mock(DHFactory.class);
+        Mockito.when(expected.getName()).thenReturn(getCurrentTestName());
+
+        String  name=expected.getName();
+        try {
+            Assert.assertNull("Extension already registered", BuiltinDHFactories.resolveFactory(name));
+            BuiltinDHFactories.registerExtension(expected);
+
+            DHFactory    actual=BuiltinDHFactories.resolveFactory(name);
+            Assert.assertSame("Mismatched resolved instance", expected, actual);
+        } finally {
+            DHFactory    actual=BuiltinDHFactories.unregisterExtension(name);
+            Assert.assertSame("Mismatched unregistered instance", expected, actual);
+            Assert.assertNull("Extension not un-registered", BuiltinDHFactories.resolveFactory(name));
         }
     }
 }

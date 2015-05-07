@@ -43,15 +43,18 @@ public class CompressionZlib implements Compression {
     public CompressionZlib() {
     }
 
+    @Override
     public boolean isDelayed() {
         return false;
     }
 
+    @Override
     public void init(Type type, int level) {
         compresser = new Deflater(level);
         decompresser = new Inflater();
     }
 
+    @Override
     public void compress(Buffer buffer) throws IOException {
         compresser.setInput(buffer.array(), buffer.rpos(), buffer.available());
         buffer.wpos(buffer.rpos());
@@ -61,6 +64,7 @@ public class CompressionZlib implements Compression {
         }
     }
 
+    @Override
     public void uncompress(Buffer from, Buffer to) throws IOException {
         decompresser.setInput(from.array(), from.rpos(), from.available());
         int len;

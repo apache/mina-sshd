@@ -26,19 +26,24 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeMap;
 
-import org.apache.sshd.common.OptionalFeature;
+import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.NamedResourceListParseResult;
 import org.apache.sshd.common.digest.BuiltinDigests;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.SecurityUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public enum BuiltinDHFactories implements DHFactory, OptionalFeature {
+public enum BuiltinDHFactories implements DHFactory {
     dhg1(Constants.DIFFIE_HELLMAN_GROUP1_SHA1) {
         @Override
         public DHG create(Object... params) throws Exception {
@@ -165,6 +170,52 @@ public enum BuiltinDHFactories implements DHFactory, OptionalFeature {
 
     public static final Set<BuiltinDHFactories> VALUES =
             Collections.unmodifiableSet(EnumSet.allOf(BuiltinDHFactories.class));
+    private static final Map<String,DHFactory>   extensions = 
+            new TreeMap<String,DHFactory>(String.CASE_INSENSITIVE_ORDER);
+
+    /**
+     * Registered a {@link NamedFactory} to be available besides the built-in
+     * ones when parsing configuration
+     * @param extension The factory to register
+     * @throws IllegalArgumentException if factory instance is {@code null},
+     * or overrides a built-in one or overrides another registered factory
+     * with the same name (case <U>insensitive</U>).
+     */
+    public static final void registerExtension(DHFactory extension) {
+        String  name=ValidateUtils.checkNotNull(extension, "No extension provided", GenericUtils.EMPTY_OBJECT_ARRAY).getName();
+        ValidateUtils.checkTrue(fromFactoryName(name) == null, "Extension overrides built-in: %s", name);
+
+        synchronized(extensions) {
+            ValidateUtils.checkTrue(!extensions.containsKey(name), "Extension overrides existinh: %s", name);
+            extensions.put(name, extension);
+        }
+    }
+
+    /**
+     * @return A {@link SortedSet} of the currently registered extensions, sorted
+     * according to the factory name (case <U>insensitive</U>)
+     */
+    public static final SortedSet<DHFactory> getRegisteredExtensions() {
+        // TODO for JDK-8 return Collections.emptySortedSet()
+        synchronized(extensions) {
+            return GenericUtils.asSortedSet(NamedResource.BY_NAME_COMPARATOR, extensions.values());
+        }
+    }
+
+    /**
+     * Unregisters specified extension
+     * @param name The factory name - ignored if {@code null}/empty
+     * @return The registered extension - {@code null} if not found
+     */
+    public static final DHFactory unregisterExtension(String name) {
+        if (GenericUtils.isEmpty(name)) {
+            return null;
+        }
+        
+        synchronized(extensions) {
+            return extensions.remove(name);
+        }
+    }
 
     /**
      * @param name The factory name - ignored if {@code null}/empty
@@ -216,7 +267,7 @@ public enum BuiltinDHFactories implements DHFactory, OptionalFeature {
         List<DHFactory> factories=new ArrayList<DHFactory>(dhList.size());
         List<String>    unknown=Collections.<String>emptyList();
         for (String name : dhList) {
-            DHFactory  f=fromFactoryName(name);
+            DHFactory  f=resolveFactory(name);
             if (f != null) {
                 factories.add(f);
             } else {
@@ -229,6 +280,25 @@ public enum BuiltinDHFactories implements DHFactory, OptionalFeature {
         }
         
         return new ParseResult(factories, unknown);
+    }
+    /**
+     * @param name The factory name
+     * @return The factory or {@code null} if it is neither a built-in one
+     * or a registered extension 
+     */
+    public static final DHFactory resolveFactory(String name) {
+        if (GenericUtils.isEmpty(name)) {
+            return null;
+        }
+
+        DHFactory  s=fromFactoryName(name);
+        if (s != null) {
+            return s;
+        }
+        
+        synchronized(extensions) {
+            return extensions.get(name);
+        }
     }
 
     /**

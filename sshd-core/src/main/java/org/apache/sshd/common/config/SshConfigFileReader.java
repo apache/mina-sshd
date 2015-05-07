@@ -31,21 +31,33 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.sshd.SshBuilder.ClientBuilder;
+import org.apache.sshd.SshBuilder.ServerBuilder;
+import org.apache.sshd.SshClient;
+import org.apache.sshd.SshServer;
 import org.apache.sshd.common.AbstractFactoryManager;
 import org.apache.sshd.common.Cipher;
+import org.apache.sshd.common.KeyExchange;
 import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.Mac;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.Signature;
+import org.apache.sshd.common.Transformer;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
+import org.apache.sshd.common.cipher.CipherFactory;
+import org.apache.sshd.common.compression.BuiltinCompressions;
 import org.apache.sshd.common.compression.Compression;
+import org.apache.sshd.common.compression.CompressionFactory;
 import org.apache.sshd.common.kex.BuiltinDHFactories;
 import org.apache.sshd.common.kex.DHFactory;
 import org.apache.sshd.common.mac.BuiltinMacs;
+import org.apache.sshd.common.mac.MacFactory;
 import org.apache.sshd.common.signature.BuiltinSignatures;
+import org.apache.sshd.common.signature.SignatureFactory;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
@@ -408,10 +420,22 @@ public class SshConfigFileReader {
      * @return The matching {@link NamedFactory} for the configured value.
      * {@code null} if no configuration or unknown name specified 
      */
-    public static final NamedFactory<Compression> getCompression(Properties props) {
+    public static final CompressionFactory getCompression(Properties props) {
         return CompressionConfigValue.fromName((props == null) ? null : props.getProperty(COMPRESSION_PROP));
     }
     
+    public static final <S extends SshServer> S configure(S server, Properties props, boolean lenient, boolean ignoreUnsupported) {
+        configure((AbstractFactoryManager) server, props, lenient, ignoreUnsupported);
+        configureKeyExchanges(server, props, lenient, ServerBuilder.DH2KEX, ignoreUnsupported);
+        return server;
+    }
+
+    public static final <C extends SshClient> C configure(C client, Properties props, boolean lenient, boolean ignoreUnsupported) {
+        configure((AbstractFactoryManager) client, props, lenient, ignoreUnsupported);
+        configureKeyExchanges(client, props, lenient, ClientBuilder.DH2KEX, ignoreUnsupported);
+        return client;
+    }
+
     /**
      * <P>Configures an {@link AbstractFactoryManager} with the values read from
      * some configuration. Currently it configures:</P></BR>
@@ -425,77 +449,157 @@ public class SshConfigFileReader {
      * @param props The {@link Properties} to use for configuration - <B>Note:</B>
      * if any known configuration value has a default and does not appear in the
      * properties, the default is used
-     * @param lenient If {@code true} then any unknown/unsupported configuration
-     * values are ignored. Otherwise an {@link IllegalArgumentException} is thrown
+     * @param lenient If {@code true} then any unknown configuration values are ignored.
+     * Otherwise an {@link IllegalArgumentException} is thrown
+     * @param ignoreUnsupported filter out unsupported configuration values (e.g., ciphers,
+     * key exchanges, etc..). <B>Note:</B> if after filtering out all the unknown
+     * or unsupported values there is an empty configuration exception is thrown
      * @return The configured manager
      */
-    public static final <M extends AbstractFactoryManager> M configure(M manager, Properties props, boolean lenient) {
-        configureCiphers(manager, props, lenient);
-        configureSignatures(manager, props, lenient);
-        configureMacs(manager, props, lenient);
-        configureCompression(manager, props, lenient);
+    public static final <M extends AbstractFactoryManager> M configure(M manager, Properties props, boolean lenient, boolean ignoreUnsupported) {
+        configureCiphers(manager, props, lenient, ignoreUnsupported);
+        configureSignatures(manager, props, lenient, ignoreUnsupported);
+        configureMacs(manager, props, lenient, ignoreUnsupported);
+        configureCompression(manager, props, lenient, ignoreUnsupported);
 
         return manager;
     }
 
-    public static final <M extends AbstractFactoryManager> M configureCiphers(M manager, Properties props, boolean lenient) {
+    public static final <M extends AbstractFactoryManager> M configureCiphers(M manager, Properties props, boolean lenient, boolean ignoreUnsupported) {
         ValidateUtils.checkNotNull(props, "No properties to configure", GenericUtils.EMPTY_OBJECT_ARRAY);
-        return configureCiphers(manager, props.getProperty(CIPHERS_CONFIG_PROP, DEFAULT_CIPHERS), lenient);
+        return configureCiphers(manager, props.getProperty(CIPHERS_CONFIG_PROP, DEFAULT_CIPHERS), lenient, ignoreUnsupported);
     }
 
-    public static final <M extends AbstractFactoryManager> M configureCiphers(M manager, String value, boolean lenient) {
+    public static final <M extends AbstractFactoryManager> M configureCiphers(M manager, String value, boolean lenient, boolean ignoreUnsupported) {
         ValidateUtils.checkNotNull(manager, "No manager to configure", GenericUtils.EMPTY_OBJECT_ARRAY);
 
         BuiltinCiphers.ParseResult  result=BuiltinCiphers.parseCiphersList(value);
         Collection<String>          unsupported=result.getUnsupportedFactories();
         ValidateUtils.checkTrue(lenient || GenericUtils.isEmpty(unsupported), "Unsupported cipher(s) (%s) in %s", unsupported, value);
-        manager.setCipherFactories(ValidateUtils.checkNotNullAndNotEmpty(result.getParsedFactories(), "No known ciphers(s): %s", value));
+
+        List<NamedFactory<Cipher>>  factories =
+                NamedFactory.Utils.setUpTransformedFactories(ignoreUnsupported, result.getParsedFactories(), CipherFactory.FAC2NAMED);
+        manager.setCipherFactories(ValidateUtils.checkNotNullAndNotEmpty(factories, "No known/unsupported ciphers(s): %s", value));
         return manager;
     }
 
-    public static final <M extends AbstractFactoryManager> M configureSignatures(M manager, Properties props, boolean lenient) {
+    public static final <M extends AbstractFactoryManager> M configureSignatures(M manager, Properties props, boolean lenient, boolean ignoreUnsupported) {
         ValidateUtils.checkNotNull(props, "No properties to configure", GenericUtils.EMPTY_OBJECT_ARRAY);
-        return configureSignatures(manager, props.getProperty(HOST_KEY_ALGORITHMS_CONFIG_PROP, DEFAULT_HOST_KEY_ALGORITHMS), lenient);
+        return configureSignatures(manager, props.getProperty(HOST_KEY_ALGORITHMS_CONFIG_PROP, DEFAULT_HOST_KEY_ALGORITHMS), lenient, ignoreUnsupported);
     }
 
-    public static final <M extends AbstractFactoryManager> M configureSignatures(M manager, String value, boolean lenient) {
+    public static final <M extends AbstractFactoryManager> M configureSignatures(M manager, String value, boolean lenient, boolean ignoreUnsupported) {
         ValidateUtils.checkNotNull(manager, "No manager to configure", GenericUtils.EMPTY_OBJECT_ARRAY);
 
         BuiltinSignatures.ParseResult   result=BuiltinSignatures.parseSignatureList(value);
         Collection<String>              unsupported=result.getUnsupportedFactories();
         ValidateUtils.checkTrue(lenient || GenericUtils.isEmpty(unsupported), "Unsupported signatures (%s) in %s", unsupported, value);
-        manager.setSignatureFactories(ValidateUtils.checkNotNullAndNotEmpty(result.getParsedFactories(), "No known signatures: %s", value));
+        
+        List<NamedFactory<Signature>>   factories =
+                NamedFactory.Utils.setUpTransformedFactories(ignoreUnsupported, result.getParsedFactories(), SignatureFactory.FAC2NAMED);
+        manager.setSignatureFactories(ValidateUtils.checkNotNullAndNotEmpty(factories, "No known/supported signatures: %s", value));
         return manager;
     }
     
-    public static final <M extends AbstractFactoryManager> M configureMacs(M manager, Properties props, boolean lenient) {
+    public static final <M extends AbstractFactoryManager> M configureMacs(M manager, Properties props, boolean lenient, boolean ignoreUnsupported) {
         ValidateUtils.checkNotNull(props, "No properties to configure", GenericUtils.EMPTY_OBJECT_ARRAY);
-        return configureMacs(manager, props.getProperty(MACS_CONFIG_PROP, DEFAULT_MACS), lenient);
+        return configureMacs(manager, props.getProperty(MACS_CONFIG_PROP, DEFAULT_MACS), lenient, ignoreUnsupported);
     }
 
-    public static final <M extends AbstractFactoryManager> M configureMacs(M manager, String value, boolean lenient) {
+    public static final <M extends AbstractFactoryManager> M configureMacs(M manager, String value, boolean lenient, boolean ignoreUnsupported) {
         ValidateUtils.checkNotNull(manager, "No manager to configure", GenericUtils.EMPTY_OBJECT_ARRAY);
 
         BuiltinMacs.ParseResult result=BuiltinMacs.parseMacsList(value);
         Collection<String>      unsupported=result.getUnsupportedFactories();
         ValidateUtils.checkTrue(lenient || GenericUtils.isEmpty(unsupported), "Unsupported MAC(s) (%s) in %s", unsupported, value);
-        manager.setMacFactories(ValidateUtils.checkNotNullAndNotEmpty(result.getParsedFactories(), "No known MAC(s): %s", value));
+        
+        List<NamedFactory<Mac>> factories =
+                NamedFactory.Utils.setUpTransformedFactories(ignoreUnsupported, result.getParsedFactories(), MacFactory.FAC2NAMED);
+        manager.setMacFactories(ValidateUtils.checkNotNullAndNotEmpty(factories, "No known/supported MAC(s): %s", value));
         return manager;
     }
 
-    // NOTE: if no compression is resolved it is OK since SSH can function without it
-    public static final <M extends AbstractFactoryManager> M configureCompression(M manager, Properties props, boolean lenient) {
+    /**
+     * @param manager The {@link AbstractFactoryManager} to set up (may not be {@code null})
+     * @param props The (non-{@code null}) {@link Properties} containing the configuration
+     * @param lenient If {@code true} then any unknown/unsupported configuration
+     * values are ignored. Otherwise an {@link IllegalArgumentException} is thrown
+     * @param xformer A {@link Transformer} to convert the configured {@link DHFactory}-ies
+     * to {@link NamedFactory}-ies of {@link KeyExchange}
+     * @param ignoreUnsupported Filter out any un-supported configurations - <B>Note:</B>
+     * if after ignoring the unknown and un-supported values the result is an empty
+     * list of factories and exception is thrown
+     * @return The configured manager
+     * @see #KEX_ALGORITHMS_CONFIG_PROP
+     * @see #DEFAULT_KEX_ALGORITHMS
+     */
+    public static final <M extends AbstractFactoryManager> M configureKeyExchanges(
+            M manager, Properties props, boolean lenient, Transformer<? super DHFactory, ? extends NamedFactory<KeyExchange>> xformer, boolean ignoreUnsupported) {
         ValidateUtils.checkNotNull(props, "No properties to configure", GenericUtils.EMPTY_OBJECT_ARRAY);
-        return configureCompression(manager, props.getProperty(COMPRESSION_PROP, DEFAULT_COMPRESSION), lenient);
+        return configureKeyExchanges(manager, props.getProperty(KEX_ALGORITHMS_CONFIG_PROP, DEFAULT_KEX_ALGORITHMS), lenient, xformer, ignoreUnsupported);
     }
 
-    public static final <M extends AbstractFactoryManager> M configureCompression(M manager, String value, boolean lenient) {
+    public static final <M extends AbstractFactoryManager> M configureKeyExchanges(
+            M manager, String value, boolean lenient, Transformer<? super DHFactory, ? extends NamedFactory<KeyExchange>> xformer, boolean ignoreUnsupported) {
+        ValidateUtils.checkNotNull(manager, "No manager to configure", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkNotNull(xformer, "No DHFactory transformer", GenericUtils.EMPTY_OBJECT_ARRAY);
+
+        BuiltinDHFactories.ParseResult  result=BuiltinDHFactories.parseDHFactoriesList(value);
+        Collection<String>              unsupported=result.getUnsupportedFactories();
+        ValidateUtils.checkTrue(lenient || GenericUtils.isEmpty(unsupported), "Unsupported KEX(s) (%s) in %s", unsupported, value);
+        
+        List<NamedFactory<KeyExchange>> factories =
+                NamedFactory.Utils.setUpTransformedFactories(ignoreUnsupported, result.getParsedFactories(), xformer);
+        manager.setKeyExchangeFactories(ValidateUtils.checkNotNullAndNotEmpty(factories, "No known/supported KEXS(s): %s", value));
+        return manager;
+    }
+
+    /**
+     * Configure the factory manager using one of the known {@link CompressionConfigValue}s.
+     * @param manager The {@link AbstractFactoryManager} to configure
+     * @param props The configuration {@link Properties}
+     * @param lenient If {@code true} and an unknown value is provided then
+     * it is ignored
+     * @param ignoreUnsupported If {@code false} then check if the compression
+     * is currently supported before setting it
+     * @return The configured manager - <B>Note:</B> if the result of filtering due
+     * to lenient mode or ignored unsupported value is empty then no factories are set
+     */
+    public static final <M extends AbstractFactoryManager> M configureCompression(M manager, Properties props, boolean lenient, boolean ignoreUnsupported) {
+        ValidateUtils.checkNotNull(manager, "No manager to configure", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkNotNull(props, "No properties to configure", GenericUtils.EMPTY_OBJECT_ARRAY);
+        
+        String               value=props.getProperty(COMPRESSION_PROP, DEFAULT_COMPRESSION);
+        CompressionFactory   factory=CompressionConfigValue.fromName(value);
+        ValidateUtils.checkTrue(lenient || (factory != null), "Unsupported compression value: %s", value);
+        if ((factory != null) && factory.isSupported()) {
+            manager.setCompressionFactories(Collections.<NamedFactory<Compression>>singletonList(factory));
+        }
+        
+        return manager;
+    }
+
+    // accepts BOTH CompressionConfigValue(s) and/or BuiltinCompressions - including extensions
+    public static final <M extends AbstractFactoryManager> M configureCompression(M manager, String value, boolean lenient, boolean ignoreUnsupported) {
         ValidateUtils.checkNotNull(manager, "No manager to configure", GenericUtils.EMPTY_OBJECT_ARRAY);
 
-        NamedFactory<Compression>   factory=CompressionConfigValue.fromName(value);
-        ValidateUtils.checkTrue(lenient || (factory != null), "Unsupported compression value: %s", value);
+        CompressionFactory   factory=CompressionConfigValue.fromName(value);
         if (factory != null) {
-            manager.setCompressionFactories(Collections.<NamedFactory<Compression>>singletonList(factory));
+            // SSH can work without compression
+            if (ignoreUnsupported || factory.isSupported()) {
+                manager.setCompressionFactories(Collections.<NamedFactory<Compression>>singletonList(factory));
+            }
+        } else { 
+            BuiltinCompressions.ParseResult result=BuiltinCompressions.parseCompressionsList(value);
+            Collection<String>              unsupported=result.getUnsupportedFactories();
+            ValidateUtils.checkTrue(lenient || GenericUtils.isEmpty(unsupported), "Unsupported compressions(s) (%s) in %s", unsupported, value);
+        
+            List<NamedFactory<Compression>> factories =
+                NamedFactory.Utils.setUpTransformedFactories(ignoreUnsupported, result.getParsedFactories(), CompressionFactory.FAC2NAMED);
+            // SSH can work without compression
+            if (GenericUtils.size(factories) > 0) {
+                manager.setCompressionFactories(factories);
+            }
         }
 
         return manager;

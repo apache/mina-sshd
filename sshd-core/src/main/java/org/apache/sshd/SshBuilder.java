@@ -18,7 +18,6 @@
  */
 package org.apache.sshd;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -39,6 +38,7 @@ import org.apache.sshd.common.Random;
 import org.apache.sshd.common.RequestHandler;
 import org.apache.sshd.common.Signature;
 import org.apache.sshd.common.TcpipForwarderFactory;
+import org.apache.sshd.common.Transformer;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.compression.BuiltinCompressions;
 import org.apache.sshd.common.compression.Compression;
@@ -83,17 +83,17 @@ public class SshBuilder {
      * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
      */
     public static class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder<T, S>> implements ObjectBuilder<T> {
-        protected Factory<T> factory = null;
-        protected List<NamedFactory<KeyExchange>> keyExchangeFactories = null;
-        protected List<NamedFactory<Cipher>> cipherFactories = null;
-        protected List<NamedFactory<Compression>> compressionFactories = null;
-        protected List<NamedFactory<Mac>> macFactories = null;
-        protected List<NamedFactory<Signature>> signatureFactories = null;
-        protected Factory<Random> randomFactory = null;
-        protected List<NamedFactory<Channel>> channelFactories = null;
-        protected FileSystemFactory fileSystemFactory = null;
-        protected TcpipForwarderFactory tcpipForwarderFactory = null;
-        protected List<RequestHandler<ConnectionService>> globalRequestHandlers = null;
+        protected Factory<T> factory;
+        protected List<NamedFactory<KeyExchange>> keyExchangeFactories;
+        protected List<NamedFactory<Cipher>> cipherFactories;
+        protected List<NamedFactory<Compression>> compressionFactories;
+        protected List<NamedFactory<Mac>> macFactories;
+        protected List<NamedFactory<Signature>> signatureFactories;
+        protected Factory<Random> randomFactory;
+        protected List<NamedFactory<Channel>> channelFactories;
+        protected FileSystemFactory fileSystemFactory;
+        protected TcpipForwarderFactory tcpipForwarderFactory;
+        protected List<RequestHandler<ConnectionService>> globalRequestHandlers;
 
         protected S fillWithDefaultValues() {
             if (signatureFactories == null) {
@@ -212,6 +212,7 @@ public class SshBuilder {
             return ssh;
         }
 
+        @Override
         public T build() {
             return build(true);
         }
@@ -343,7 +344,19 @@ public class SshBuilder {
      * SshClient builder
      */
     public static class ClientBuilder extends BaseBuilder<SshClient, ClientBuilder> {
-
+        public static final Transformer<DHFactory,NamedFactory<KeyExchange>> DH2KEX =
+                new Transformer<DHFactory, NamedFactory<KeyExchange>>() {
+                    @Override
+                    public NamedFactory<KeyExchange> transform(DHFactory factory) {
+                        if (factory == null) {
+                            return null;
+                        } else if (factory.isGroupExchange()) {
+                            return DHGEXClient.newFactory(factory);
+                        } else {
+                            return DHGClient.newFactory(factory);
+                        }
+                    }
+                };
         protected ServerKeyVerifier serverKeyVerifier;
 
         public ClientBuilder serverKeyVerifier(ServerKeyVerifier serverKeyVerifier) {
@@ -390,21 +403,7 @@ public class SshBuilder {
          * @see BuiltinDHFactories#isSupported()
          */
         public static List<NamedFactory<KeyExchange>> setUpDefaultKeyExchanges(boolean ignoreUnsupported) {
-            List<NamedFactory<KeyExchange>> avail = new ArrayList<>(DEFAULT_KEX_PREFERENCE.size());
-            for (BuiltinDHFactories f : BuiltinDHFactories.VALUES) {
-                if (ignoreUnsupported || f.isSupported()) {
-                    avail.add(getKeyExchangeFactory(f));
-                }
-            }
-            return avail;
-        }
-
-        public static NamedFactory<KeyExchange> getKeyExchangeFactory(DHFactory factory) {
-            if (factory.isGroupExchange()) {
-                return DHGEXClient.newFactory(factory);
-            } else {
-                return DHGClient.newFactory(factory);
-            }
+            return NamedFactory.Utils.setUpTransformedFactories(ignoreUnsupported, DEFAULT_KEX_PREFERENCE, DH2KEX);
         }
     }
 
@@ -412,6 +411,19 @@ public class SshBuilder {
      * SshServer builder
      */
     public static class ServerBuilder extends BaseBuilder<SshServer, ServerBuilder> {
+        public static final Transformer<DHFactory,NamedFactory<KeyExchange>>    DH2KEX = 
+                new Transformer<DHFactory, NamedFactory<KeyExchange>>() {
+                    @Override
+                    public NamedFactory<KeyExchange> transform(DHFactory factory) {
+                        if (factory == null) {
+                            return null;
+                        } else if (factory.isGroupExchange()) {
+                            return DHGEXServer.newFactory(factory);
+                        } else {
+                            return DHGServer.newFactory(factory);
+                        }
+                    }
+                };
 
         @Override
         protected ServerBuilder fillWithDefaultValues() {
@@ -450,21 +462,7 @@ public class SshBuilder {
          * @see BuiltinDHFactories#isSupported()
          */
         public static List<NamedFactory<KeyExchange>> setUpDefaultKeyExchanges(boolean ignoreUnsupported) {
-            List<NamedFactory<KeyExchange>> avail = new ArrayList<>(DEFAULT_KEX_PREFERENCE.size());
-            for (BuiltinDHFactories f : BuiltinDHFactories.VALUES) {
-                if (ignoreUnsupported || f.isSupported()) {
-                    avail.add(getKeyExchangeFactory(f));
-                }
-            }
-            return avail;
-        }
-
-        public static NamedFactory<KeyExchange> getKeyExchangeFactory(DHFactory factory) {
-            if (factory.isGroupExchange()) {
-                return DHGEXServer.newFactory(factory);
-            } else {
-                return DHGServer.newFactory(factory);
-            }
+            return NamedFactory.Utils.setUpTransformedFactories(ignoreUnsupported, DEFAULT_KEX_PREFERENCE, DH2KEX);
         }
     }
 }

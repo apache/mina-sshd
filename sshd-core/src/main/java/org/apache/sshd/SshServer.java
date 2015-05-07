@@ -93,6 +93,7 @@ import org.apache.sshd.server.shell.ProcessShellFactory;
 public class SshServer extends AbstractFactoryManager implements ServerFactoryManager, Closeable {
 
     public static final Factory<SshServer> DEFAULT_SSH_SERVER_FACTORY = new Factory<SshServer>() {
+        @Override
         public SshServer create() {
             return new SshServer();
         }

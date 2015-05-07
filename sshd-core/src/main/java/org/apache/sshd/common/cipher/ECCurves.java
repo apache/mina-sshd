@@ -45,9 +45,9 @@ public class ECCurves {
 
     private static final Map<Integer, String> CURVE_SIZES = new TreeMap<Integer, String>();
     static {
-        CURVE_SIZES.put(256, NISTP256);
-        CURVE_SIZES.put(384, NISTP384);
-        CURVE_SIZES.put(521, NISTP521);
+        CURVE_SIZES.put(Integer.valueOf(256), NISTP256);
+        CURVE_SIZES.put(Integer.valueOf(384), NISTP384);
+        CURVE_SIZES.put(Integer.valueOf(521), NISTP521);
     }
 
     public static String getCurveName(ECParameterSpec params) {
@@ -60,11 +60,7 @@ public class ECCurves {
     }
 
     public static String getCurveName(int fieldSize) {
-        String curveName = CURVE_SIZES.get(fieldSize);
-        if (curveName == null) {
-            return null;
-        }
-        return curveName;
+        return CURVE_SIZES.get(Integer.valueOf(fieldSize));
     }
 
     public static int getCurveSize(ECParameterSpec params) {

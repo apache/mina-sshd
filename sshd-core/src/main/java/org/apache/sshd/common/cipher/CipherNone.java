@@ -19,7 +19,6 @@
 package org.apache.sshd.common.cipher;
 
 import org.apache.sshd.common.Cipher;
-import org.apache.sshd.common.NamedFactory;
 
 /**
  * Represents a no-op cipher.
@@ -31,18 +30,22 @@ import org.apache.sshd.common.NamedFactory;
  */
 public class CipherNone implements Cipher {
 
+    @Override
     public int getIVSize() {
         return 8;
     }
 
+    @Override
     public int getBlockSize() {
         return 16;
     }
 
+    @Override
     public void init(Mode mode, byte[] bytes, byte[] bytes1) throws Exception {
         // ignored - always succeeds
     }
 
+    @Override
     public void update(byte[] input, int inputOffset, int inputLen) throws Exception {
         // ignored - always succeeds
     }

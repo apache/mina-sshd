@@ -20,12 +20,6 @@ package org.apache.sshd.common.signature;
 
 import java.io.IOException;
 import java.math.BigInteger;
-import java.security.spec.ECParameterSpec;
-
-import org.apache.sshd.common.KeyPairProvider;
-import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.Signature;
-import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.util.Buffer;
 
 /**
@@ -39,6 +33,7 @@ public class SignatureECDSA extends AbstractSignature {
         super(algo);
     }
 
+    @Override
     public byte[] sign() throws Exception {
         byte[] sig = signature.sign();
 
@@ -73,6 +68,7 @@ public class SignatureECDSA extends AbstractSignature {
         return rsBuf.getCompactData();
     }
 
+    @Override
     public boolean verify(byte[] sig) throws Exception {
         sig = extractSig(sig);
 

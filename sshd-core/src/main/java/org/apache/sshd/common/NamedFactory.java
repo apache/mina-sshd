@@ -112,7 +112,19 @@ public interface NamedFactory<T> extends Factory<T>, NamedResource {
             }
             return null;
         }
-        
+
+        public static final <S extends OptionalFeature,T,E extends NamedFactory<T>> List<NamedFactory<T>> setUpTransformedFactories(
+                boolean ignoreUnsupported, Collection<? extends S> preferred, Transformer<? super S,? extends E> xform) {
+            List<NamedFactory<T>>   avail=new ArrayList<>(preferred.size());
+            for (S f : preferred) {
+                if (ignoreUnsupported || f.isSupported()) {
+                    avail.add(xform.transform(f));
+                }
+            }
+            
+            return avail;
+        }
+
         public static final <T,E extends NamedFactory<T> & OptionalFeature> List<NamedFactory<T>> setUpBuiltinFactories(
                 boolean ignoreUnsupported, Collection<? extends E> preferred) {
             List<NamedFactory<T>>   avail=new ArrayList<>(preferred.size());
@@ -125,5 +137,4 @@ public interface NamedFactory<T> extends Factory<T>, NamedResource {
             return avail;
         }
     }
-
 }

@@ -42,7 +42,8 @@ public abstract class BaseCipherTest extends BaseTest {
 		super();
 	}
 
-	protected void ensureKeySizeSupported(int bsize, String algorithm, String transformation) throws GeneralSecurityException {
+	@SuppressWarnings("deprecation")
+    protected void ensureKeySizeSupported(int bsize, String algorithm, String transformation) throws GeneralSecurityException {
 		try {
 	        javax.crypto.Cipher	cipher=SecurityUtils.getCipher(transformation);
 	        byte[]				key=new byte[bsize];

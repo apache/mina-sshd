@@ -35,8 +35,11 @@ import org.apache.sshd.common.Mac;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.Signature;
+import org.apache.sshd.common.Transformer;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
+import org.apache.sshd.common.compression.BuiltinCompressions;
 import org.apache.sshd.common.compression.Compression;
+import org.apache.sshd.common.compression.CompressionFactory;
 import org.apache.sshd.common.kex.BuiltinDHFactories;
 import org.apache.sshd.common.mac.BuiltinMacs;
 import org.apache.sshd.common.signature.BuiltinSignatures;
@@ -124,7 +127,7 @@ public class SshConfigFileReaderTest extends BaseTest {
                 }
             };
         // must be lenient since we do not cover the full default spectrum
-        AbstractFactoryManager  actual=SshConfigFileReader.configure(expected, props, true);
+        AbstractFactoryManager  actual=SshConfigFileReader.configure(expected, props, true, true);
         Assert.assertSame("Mismatched configured result", expected, actual);
         validateAbstractFactoryManagerConfiguration(expected, props, true);
     }
@@ -139,7 +142,8 @@ public class SshConfigFileReaderTest extends BaseTest {
                     }
                 },
                 getCurrentTestName(),
-                false);
+                false,
+                true);
         Assert.fail("Unexpected success: " + NamedResource.Utils.getNames(manager.getCipherFactories()));
     }
 
@@ -153,7 +157,8 @@ public class SshConfigFileReaderTest extends BaseTest {
                     }
                 },
                 getCurrentTestName(),
-                false);
+                false,
+                true);
         Assert.fail("Unexpected success: " + NamedResource.Utils.getNames(manager.getSignatureFactories()));
     }
 
@@ -167,10 +172,38 @@ public class SshConfigFileReaderTest extends BaseTest {
                     }
                 },
                 getCurrentTestName(),
-                false);
+                false,
+                true);
         Assert.fail("Unexpected success: " + NamedResource.Utils.getNames(manager.getMacFactories()));
     }
-    
+
+    @Test
+    public void testConfigureCompressionFromStringAcceptsCombinedValues() {
+        testConfigureCompressionFromStringAcceptsCombinedValues(CompressionConfigValue.class, Transformer.ENUM_NAME_EXTRACTOR);
+        testConfigureCompressionFromStringAcceptsCombinedValues(BuiltinCompressions.class, NamedResource.NAME_EXTRACTOR);
+    }
+
+    private static <E extends Enum<E> & CompressionFactory> void testConfigureCompressionFromStringAcceptsCombinedValues(
+            Class<E> facs, Transformer<? super E,String> configValueXformer) {
+        for (E expected : facs.getEnumConstants()) {
+            String          value=configValueXformer.transform(expected);
+            String          prefix=facs.getSimpleName() + "[" + expected.name() + "][" + value + "]";
+            FactoryManager  manager=SshConfigFileReader.configureCompression(
+                    new AbstractFactoryManager() {
+                        @Override
+                        protected Closeable getInnerCloseable() {
+                            return null;
+                        }
+                    },
+                    value,
+                    false,
+                    true);
+            List<NamedFactory<Compression>> compressions=manager.getCompressionFactories();
+            Assert.assertEquals(prefix + "(size)", 1, GenericUtils.size(compressions));
+            Assert.assertSame(prefix + "[instance]", expected, compressions.get(0));
+        }
+    }
+
     private static <M extends FactoryManager> M validateAbstractFactoryManagerConfiguration(M manager, Properties props, boolean lenient) {
         validateFactoryManagerCiphers(manager, props);
         validateFactoryManagerSignatures(manager, props);

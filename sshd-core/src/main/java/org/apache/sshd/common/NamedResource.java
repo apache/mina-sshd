@@ -22,6 +22,7 @@ package org.apache.sshd.common;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import org.apache.sshd.common.util.GenericUtils;
@@ -34,6 +35,33 @@ public interface NamedResource {
      * @return The resource name
      */
     String getName();
+    
+    /**
+     * Compares 2 {@link NamedResource}s according to their {@link #getName()}
+     * value case <U>insensitive</U>
+     */
+    Comparator<NamedResource> BY_NAME_COMPARATOR=new Comparator<NamedResource>() {
+            @Override
+            public int compare(NamedResource r1, NamedResource r2) {
+                String  n1=r1.getName(), n2=r2.getName();
+                return String.CASE_INSENSITIVE_ORDER.compare(n1, n2);
+            }
+        };
+
+    /**
+     * Returns the value of {@link #getName()} - or {@code null} if argument is {@code null}
+     */
+    Transformer<NamedResource,String> NAME_EXTRACTOR=new Transformer<NamedResource,String>() {
+            @Override
+            public String transform(NamedResource input) {
+                if (input == null) {
+                    return null;
+                } else {
+                    return input.getName();
+                }
+            }
+        };
+
     /**
      * Utility class to help using {@link NamedResource}s
      */

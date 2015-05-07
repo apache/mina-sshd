@@ -22,12 +22,15 @@ package org.apache.sshd.common.util;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -219,5 +222,42 @@ public class GenericUtils {
         }
 
         return result;
+    }
+
+    @SuppressWarnings("rawtypes")
+    private static final Comparator<Comparable> naturalOrderComparator=new Comparator<Comparable>() {
+        // TODO for JDK-8 use Comparator.naturalOrder() 
+        @Override
+        @SuppressWarnings("unchecked")
+        public int compare(Comparable c1, Comparable c2) {
+            return c1.compareTo(c2);
+        }
+    };
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    public static final <V extends Comparable<V>> Comparator<V> naturalComparator() {
+        // TODO for JDK-8 use Comparator.naturalOrder() 
+        return (Comparator) naturalOrderComparator;
+    }
+
+    public static final <V extends Comparable<V>> SortedSet<V> asSortedSet(Collection<? extends V> values) {
+        // TODO for JDK-8 use Comparator.naturalOrder() 
+        return asSortedSet(GenericUtils.<V>naturalComparator(), values);
+    }
+
+    /**
+     * @param comp The (non-{@code null}) {@link Comparator} to use
+     * @param values The values to be added (ignored if {@code null))
+     * @return A {@link SortedSet} containing the values (if any) sorted
+     * using the provided comparator
+     */
+    public static final <V> SortedSet<V> asSortedSet(Comparator<? super V> comp, Collection<? extends V> values) {
+        // TODO for JDK-8 return Collections.emptySortedSet()
+        SortedSet<V>    set=new TreeSet<V>(ValidateUtils.checkNotNull(comp, "No comparator", EMPTY_OBJECT_ARRAY));
+        if (size(values) > 0) {
+            set.addAll(values);
+        }
+        
+        return set;
     }
 }

@@ -38,6 +38,7 @@ public abstract class AbstractSignature implements Signature {
         this.algorithm = algorithm;
     }
 
+    @Override
     public void init(PublicKey pubkey, PrivateKey prvkey) throws Exception {
         signature = SecurityUtils.getSignature(algorithm);
         if (pubkey != null) {
@@ -48,6 +49,7 @@ public abstract class AbstractSignature implements Signature {
         }
     }
 
+    @Override
     public void update(byte[] foo, int off, int len) throws Exception {
         signature.update(foo, off, len);
     }

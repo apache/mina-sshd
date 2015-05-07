@@ -25,20 +25,24 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeMap;
 
 import org.apache.sshd.common.Cipher;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.OptionalFeature;
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.config.NamedFactoriesListParseResult;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * Provides easy access to the currently implemented ciphers
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public enum BuiltinCiphers implements NamedFactory<Cipher>, OptionalFeature {
+public enum BuiltinCiphers implements CipherFactory {
     none(Constants.NONE, 0, 0, "None", "None") {
         @Override
         public Cipher create() {
@@ -149,6 +153,52 @@ public enum BuiltinCiphers implements NamedFactory<Cipher>, OptionalFeature {
 
     public static final Set<BuiltinCiphers> VALUES =
             Collections.unmodifiableSet(EnumSet.allOf(BuiltinCiphers.class));
+    private static final Map<String,CipherFactory>   extensions =
+            new TreeMap<String,CipherFactory>(String.CASE_INSENSITIVE_ORDER);
+
+    /**
+     * Registered a {@link NamedFactory} to be available besides the built-in
+     * ones when parsing configuration
+     * @param extension The factory to register
+     * @throws IllegalArgumentException if factory instance is {@code null},
+     * or overrides a built-in one or overrides another registered factory
+     * with the same name (case <U>insensitive</U>).
+     */
+    public static final void registerExtension(CipherFactory extension) {
+        String  name=ValidateUtils.checkNotNull(extension, "No extension provided", GenericUtils.EMPTY_OBJECT_ARRAY).getName();
+        ValidateUtils.checkTrue(fromFactoryName(name) == null, "Extension overrides built-in: %s", name);
+
+        synchronized(extensions) {
+            ValidateUtils.checkTrue(!extensions.containsKey(name), "Extension overrides existinh: %s", name);
+            extensions.put(name, extension);
+        }
+    }
+
+    /**
+     * @return A {@link SortedSet} of the currently registered extensions, sorted
+     * according to the factory name (case <U>insensitive</U>)
+     */
+    public static final SortedSet<CipherFactory> getRegisteredExtensions() {
+        // TODO for JDK-8 return Collections.emptySortedSet()
+        synchronized(extensions) {
+            return GenericUtils.asSortedSet(NamedResource.BY_NAME_COMPARATOR, extensions.values());
+        }
+    }
+
+    /**
+     * Unregisters specified extension
+     * @param name The factory name - ignored if {@code null}/empty
+     * @return The registered extension - {@code null} if not found
+     */
+    public static final NamedFactory<Cipher> unregisterExtension(String name) {
+        if (GenericUtils.isEmpty(name)) {
+            return null;
+        }
+        
+        synchronized(extensions) {
+            return extensions.remove(name);
+        }
+    }
 
     /**
      * @param s The {@link Enum}'s name - ignored if {@code null}/empty
@@ -222,10 +272,10 @@ public enum BuiltinCiphers implements NamedFactory<Cipher>, OptionalFeature {
             return ParseResult.EMPTY;
         }
         
-        List<NamedFactory<Cipher>>  factories=new ArrayList<NamedFactory<Cipher>>(ciphers.size());
-        List<String>                unknown=Collections.<String>emptyList();
+        List<CipherFactory> factories=new ArrayList<CipherFactory>(ciphers.size());
+        List<String>        unknown=Collections.<String>emptyList();
         for (String name : ciphers) {
-            BuiltinCiphers  c=fromFactoryName(name);
+            CipherFactory  c=resolveFactory(name);
             if (c != null) {
                 factories.add(c);
             } else {
@@ -241,13 +291,33 @@ public enum BuiltinCiphers implements NamedFactory<Cipher>, OptionalFeature {
     }
 
     /**
+     * @param name The factory name
+     * @return The factory or {@code null} if it is neither a built-in one
+     * or a registered extension 
+     */
+    public static final CipherFactory resolveFactory(String name) {
+        if (GenericUtils.isEmpty(name)) {
+            return null;
+        }
+
+        CipherFactory  c=fromFactoryName(name);
+        if (c != null) {
+            return c;
+        }
+        
+        synchronized(extensions) {
+            return extensions.get(name);
+        }
+    }
+
+    /**
      * Holds the result of {@link BuiltinCiphers#parseCiphersList(String)}
      * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
      */
-    public static final class ParseResult extends NamedFactoriesListParseResult<Cipher,NamedFactory<Cipher>> {
-        public static final ParseResult EMPTY=new ParseResult(Collections.<NamedFactory<Cipher>>emptyList(), Collections.<String>emptyList());
+    public static final class ParseResult extends NamedFactoriesListParseResult<Cipher,CipherFactory> {
+        public static final ParseResult EMPTY=new ParseResult(Collections.<CipherFactory>emptyList(), Collections.<String>emptyList());
         
-        public ParseResult(List<NamedFactory<Cipher>> parsed, List<String> unsupported) {
+        public ParseResult(List<CipherFactory> parsed, List<String> unsupported) {
             super(parsed, unsupported);
         }
     }

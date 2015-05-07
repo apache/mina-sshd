@@ -93,7 +93,7 @@ public class KexTest extends BaseTest {
     }
 
     private void testClient(DHFactory factory) throws Exception {
-        testClient(SshBuilder.ClientBuilder.getKeyExchangeFactory(factory));
+        testClient(SshBuilder.ClientBuilder.DH2KEX.transform(factory));
     }
 
     private void testClient(NamedFactory<KeyExchange> kex) throws Exception {
