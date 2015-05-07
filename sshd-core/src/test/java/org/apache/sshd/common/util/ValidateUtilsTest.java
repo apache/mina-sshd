@@ -16,20 +16,17 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common;
 
+package org.apache.sshd.common.util;
+
+import org.apache.sshd.util.BaseTest;
 
 /**
- * Fatory is a simple interface that is used to create other objects.
- *
- * @param <T> type of objets this factory will create
- *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface Factory<T> {
+public class ValidateUtilsTest extends BaseTest {
+    public ValidateUtilsTest() {
+        super();
+    }
 
-    /**
-     * @return A new instance
-     */
-    T create();
 }

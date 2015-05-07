@@ -16,20 +16,34 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common;
 
+package org.apache.sshd.common.config;
+
+import java.util.List;
+
+import org.apache.sshd.common.Factory;
 
 /**
- * Fatory is a simple interface that is used to create other objects.
- *
- * @param <T> type of objets this factory will create
- *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface Factory<T> {
+public abstract class FactoriesListParseResult<T,F extends Factory<T>> extends ListParseResult<F> {
+    protected FactoriesListParseResult(List<F> parsed, List<String> unsupported) {
+        super(parsed, unsupported);
+    }
+    
+    /**
+     * @return The {@link List} of successfully parsed {@link Factory} instances
+     * in the <U>same order</U> as they were encountered during parsing
+     */
+    public final List<F> getParsedFactories() {
+        return getParsedValues();
+    }
 
     /**
-     * @return A new instance
+     * @return A {@link List} of unknown/unsupported configuration values for
+     * the factories
      */
-    T create();
+    public List<String> getUnsupportedFactories() {
+        return getUnsupportedValues();
+    }
 }

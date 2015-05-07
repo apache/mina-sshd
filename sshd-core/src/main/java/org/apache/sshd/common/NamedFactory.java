@@ -20,7 +20,6 @@ package org.apache.sshd.common;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 
 import org.apache.sshd.common.util.GenericUtils;
@@ -28,32 +27,23 @@ import org.apache.sshd.common.util.GenericUtils;
 /**
  * A named factory is a factory identified by a name.
  * Such names are used mainly in the algorithm negotiation at the beginning of the SSH connection.
- *
- * @param <T>
- *
+ * @param <T> The create object instance type
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface NamedFactory<T> extends Factory<T>, NamedResource {
     /**
      * Utility class to help using NamedFactories
      */
-    public static class Utils {
+    public static final class Utils {
     	/**
     	 * @param factories The named factories
     	 * @return A {@link List} of all the factories names - in same order
     	 * as they appear in the input collection
+    	 * @deprecated Use {@link NamedResource.Utils#getNameList(Collection)}
     	 */
+        @Deprecated
         public static List<String> getNameList(Collection<? extends NamedFactory<?>> factories) {
-            if (GenericUtils.isEmpty(factories)) {
-                return Collections.emptyList();
-            }
-
-            List<String> names = new ArrayList<>(factories.size());
-            for (NamedFactory<?> f : factories) {
-                names.add(f.getName());
-            }
-
-            return names;
+            return NamedResource.Utils.getNameList(factories);
         }
 
         /**
@@ -79,16 +69,11 @@ public interface NamedFactory<T> extends Factory<T>, NamedResource {
          *
          * @param factories list of available factories
          * @return a comma separated list of factory names
+         * @deprecated Use {@link NamedResource.Utils#getNames(Collection)}
          */
+        @Deprecated
         public static String getNames(Collection<? extends NamedFactory<?>> factories) {
-            StringBuilder sb = new StringBuilder();
-            for (NamedFactory<?> f : factories) {
-                if (sb.length() > 0) {
-                    sb.append(",");
-                }
-                sb.append(f.getName());
-            }
-            return sb.toString();
+            return NamedResource.Utils.getNames(factories);
         }
 
         /**
@@ -128,7 +113,6 @@ public interface NamedFactory<T> extends Factory<T>, NamedResource {
             return null;
         }
         
-        
         public static final <T,E extends NamedFactory<T> & OptionalFeature> List<NamedFactory<T>> setUpBuiltinFactories(
                 boolean ignoreUnsupported, Collection<? extends E> preferred) {
             List<NamedFactory<T>>   avail=new ArrayList<>(preferred.size());
@@ -141,4 +125,5 @@ public interface NamedFactory<T> extends Factory<T>, NamedResource {
             return avail;
         }
     }
+
 }

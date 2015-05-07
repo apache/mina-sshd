@@ -45,6 +45,7 @@ import org.apache.sshd.client.sftp.DefaultSftpClient;
 import org.apache.sshd.client.sftp.SftpFileSystem;
 import org.apache.sshd.client.sftp.SftpFileSystemProvider;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.SessionListener;
@@ -360,7 +361,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
     }
 
     protected void sendKexInit() throws IOException {
-        String algs = NamedFactory.Utils.getNames(getFactoryManager().getSignatureFactories());
+        String algs = NamedResource.Utils.getNames(getFactoryManager().getSignatureFactories());
         clientProposal = createProposal(algs);
         I_C = sendKexInit(clientProposal);
     }

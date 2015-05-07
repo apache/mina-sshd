@@ -71,6 +71,7 @@ public abstract class AbstractFactoryManager extends CloseableUtils.AbstractInne
         loadVersion();
     }
 
+    @Override
     public IoServiceFactory getIoServiceFactory() {
         synchronized (ioServiceFactoryFactory) {
             if (ioServiceFactory == null) {
@@ -88,6 +89,7 @@ public abstract class AbstractFactoryManager extends CloseableUtils.AbstractInne
         this.ioServiceFactoryFactory = ioServiceFactory;
     }
 
+    @Override
     public List<NamedFactory<KeyExchange>> getKeyExchangeFactories() {
         return keyExchangeFactories;
     }
@@ -96,6 +98,7 @@ public abstract class AbstractFactoryManager extends CloseableUtils.AbstractInne
         this.keyExchangeFactories = keyExchangeFactories;
     }
 
+    @Override
     public List<NamedFactory<Cipher>> getCipherFactories() {
         return cipherFactories;
     }
@@ -104,6 +107,7 @@ public abstract class AbstractFactoryManager extends CloseableUtils.AbstractInne
         this.cipherFactories = cipherFactories;
     }
 
+    @Override
     public List<NamedFactory<Compression>> getCompressionFactories() {
         return compressionFactories;
     }
@@ -112,6 +116,7 @@ public abstract class AbstractFactoryManager extends CloseableUtils.AbstractInne
         this.compressionFactories = compressionFactories;
     }
 
+    @Override
     public List<NamedFactory<Mac>> getMacFactories() {
         return macFactories;
     }
@@ -120,6 +125,7 @@ public abstract class AbstractFactoryManager extends CloseableUtils.AbstractInne
         this.macFactories = macFactories;
     }
 
+    @Override
     public List<NamedFactory<Signature>> getSignatureFactories() {
         return signatureFactories;
     }
@@ -128,6 +134,7 @@ public abstract class AbstractFactoryManager extends CloseableUtils.AbstractInne
         this.signatureFactories = signatureFactories;
     }
 
+    @Override
     public Factory<Random> getRandomFactory() {
         return randomFactory;
     }
@@ -136,6 +143,7 @@ public abstract class AbstractFactoryManager extends CloseableUtils.AbstractInne
         this.randomFactory = randomFactory;
     }
 
+    @Override
     public KeyPairProvider getKeyPairProvider() {
         return keyPairProvider;
     }
@@ -144,6 +152,7 @@ public abstract class AbstractFactoryManager extends CloseableUtils.AbstractInne
         this.keyPairProvider = keyPairProvider;
     }
 
+    @Override
     public Map<String, String> getProperties() {
         return properties;
     }
@@ -152,6 +161,7 @@ public abstract class AbstractFactoryManager extends CloseableUtils.AbstractInne
         this.properties = properties;
     }
 
+    @Override
     public String getVersion() {
         return version;
     }
@@ -169,6 +179,7 @@ public abstract class AbstractFactoryManager extends CloseableUtils.AbstractInne
         }
     }
 
+    @Override
     public List<NamedFactory<Channel>> getChannelFactories() {
         return channelFactories;
     }
@@ -194,6 +205,7 @@ public abstract class AbstractFactoryManager extends CloseableUtils.AbstractInne
         }
     }
 
+    @Override
     public SshAgentFactory getAgentFactory() {
         return agentFactory;
     }
@@ -202,6 +214,7 @@ public abstract class AbstractFactoryManager extends CloseableUtils.AbstractInne
         this.agentFactory = agentFactory;
     }
 
+    @Override
     public ScheduledExecutorService getScheduledExecutorService() {
         return executor;
     }
@@ -215,6 +228,7 @@ public abstract class AbstractFactoryManager extends CloseableUtils.AbstractInne
         this.shutdownExecutor = shutdownExecutor;
     }
 
+    @Override
     public TcpipForwarderFactory getTcpipForwarderFactory() {
         return tcpipForwarderFactory;
     }
@@ -223,6 +237,7 @@ public abstract class AbstractFactoryManager extends CloseableUtils.AbstractInne
         this.tcpipForwarderFactory = tcpipForwarderFactory;
     }
 
+    @Override
     public ForwardingFilter getTcpipForwardingFilter() {
         return tcpipForwardingFilter;
     }
@@ -231,6 +246,7 @@ public abstract class AbstractFactoryManager extends CloseableUtils.AbstractInne
         this.tcpipForwardingFilter = tcpipForwardingFilter;
     }
 
+    @Override
     public FileSystemFactory getFileSystemFactory() {
         return fileSystemFactory;
     }
@@ -239,6 +255,7 @@ public abstract class AbstractFactoryManager extends CloseableUtils.AbstractInne
         this.fileSystemFactory = fileSystemFactory;
     }
 
+    @Override
     public List<ServiceFactory> getServiceFactories() {
         return serviceFactories;
     }
@@ -247,6 +264,7 @@ public abstract class AbstractFactoryManager extends CloseableUtils.AbstractInne
         this.serviceFactories = serviceFactories;
     }
 
+    @Override
     public List<RequestHandler<ConnectionService>> getGlobalRequestHandlers() {
         return globalRequestHandlers;
     }

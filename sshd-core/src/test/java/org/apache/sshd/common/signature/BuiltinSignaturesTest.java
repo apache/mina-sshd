@@ -19,6 +19,16 @@
 
 package org.apache.sshd.common.signature;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
+
+import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.common.signature.BuiltinSignatures.ParseResult;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.BaseTest;
 import org.junit.Assert;
 import org.junit.Test;
@@ -37,6 +47,42 @@ public class BuiltinSignaturesTest extends BaseTest {
             String name = expected.getName();
             BuiltinSignatures actual = BuiltinSignatures.fromFactoryName(name);
             Assert.assertSame(name, expected, actual);
+        }
+    }
+
+    @Test
+    public void testParseSignaturesList() {
+        List<String>    builtin=NamedResource.Utils.getNameList(BuiltinSignatures.VALUES);
+        List<String>    unknown=Arrays.asList(getClass().getPackage().getName(), getClass().getSimpleName(), getCurrentTestName());
+        Random          rnd=new Random();
+        for (int index=0; index < (builtin.size() + unknown.size()); index++) {
+            Collections.shuffle(builtin, rnd);
+            Collections.shuffle(unknown, rnd);
+            
+            List<String>    weavedList=new ArrayList<String>(builtin.size() + unknown.size());
+            for (int bIndex=0, uIndex=0; (bIndex < builtin.size()) || (uIndex < unknown.size()); ) {
+                boolean useBuiltin=false;
+                if (bIndex < builtin.size()) {
+                    useBuiltin = (uIndex < unknown.size()) ? rnd.nextBoolean() : true;
+                }
+
+                if (useBuiltin) {
+                    weavedList.add(builtin.get(bIndex));
+                    bIndex++;
+                } else if (uIndex < unknown.size()){
+                    weavedList.add(unknown.get(uIndex));
+                    uIndex++;
+                }
+            }
+
+            String          fullList=GenericUtils.join(weavedList, ',');
+            ParseResult     result=BuiltinSignatures.parseSignatureList(fullList);
+            List<String>    parsed=NamedResource.Utils.getNameList(result.getParsedFactories());
+            List<String>    missing=result.getUnsupportedFactories();
+            
+            // makes sure not only that the contents are the same but also the order
+            assertListEquals(fullList + "[parsed]", builtin, parsed);
+            assertListEquals(fullList + "[unsupported]", unknown, missing);
         }
     }
 }

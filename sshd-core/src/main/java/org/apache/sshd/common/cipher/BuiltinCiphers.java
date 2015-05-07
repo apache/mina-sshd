@@ -30,8 +30,8 @@ import java.util.Set;
 import org.apache.sshd.common.Cipher;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.OptionalFeature;
+import org.apache.sshd.common.config.NamedFactoriesListParseResult;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * Provides easy access to the currently implemented ciphers
@@ -205,33 +205,51 @@ public enum BuiltinCiphers implements NamedFactory<Cipher>, OptionalFeature {
     /**
      * @param ciphers A comma-separated list of ciphers' names - ignored
      * if {@code null}/empty
-     * @return A {@link List} of all the {@link NamedFactory}-ies whose
-     * name appears in the string and represent a built-in cipher. Any
-     * unknown name is <U>ignored</U>. The order of the returned result
-     * is the same as the original order - bar the unknown ciphers.
-     * <B>Note:</B> it is up to caller to ensure that the list does not
-     * contain duplicates
+     * @return A {@link ParseResult} containing the successfully parsed
+     * factories and the unknown ones. <B>Note:</B> it is up to caller to
+     * ensure that the lists do not contain duplicates
      */
-    public static final List<NamedFactory<Cipher>> parseCiphersList(String ciphers) {
+    public static final ParseResult parseCiphersList(String ciphers) {
         return parseCiphersList(GenericUtils.split(ciphers, ','));
     }
 
-    public static final List<NamedFactory<Cipher>> parseCiphersList(String ... ciphers) {
+    public static final ParseResult parseCiphersList(String ... ciphers) {
         return parseCiphersList(GenericUtils.isEmpty((Object[]) ciphers) ? Collections.<String>emptyList() : Arrays.asList(ciphers));
     }
 
-    public static final List<NamedFactory<Cipher>> parseCiphersList(Collection<String> ciphers) {
+    public static final ParseResult parseCiphersList(Collection<String> ciphers) {
         if (GenericUtils.isEmpty(ciphers)) {
-            return Collections.emptyList();
+            return ParseResult.EMPTY;
         }
         
-        List<NamedFactory<Cipher>>    result=new ArrayList<NamedFactory<Cipher>>(ciphers.size());
+        List<NamedFactory<Cipher>>  factories=new ArrayList<NamedFactory<Cipher>>(ciphers.size());
+        List<String>                unknown=Collections.<String>emptyList();
         for (String name : ciphers) {
-            BuiltinCiphers  c=ValidateUtils.checkNotNull(fromFactoryName(name), "Bad factory name (%s) in %s", name, ciphers);
-            result.add(c);
+            BuiltinCiphers  c=fromFactoryName(name);
+            if (c != null) {
+                factories.add(c);
+            } else {
+                // replace the (unmodifiable) empty list with a real one
+                if (unknown.isEmpty()) {
+                    unknown = new ArrayList<String>();
+                }
+                unknown.add(name);
+            }
         }
         
-        return result;
+        return new ParseResult(factories, unknown);
+    }
+
+    /**
+     * Holds the result of {@link BuiltinCiphers#parseCiphersList(String)}
+     * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+     */
+    public static final class ParseResult extends NamedFactoriesListParseResult<Cipher,NamedFactory<Cipher>> {
+        public static final ParseResult EMPTY=new ParseResult(Collections.<NamedFactory<Cipher>>emptyList(), Collections.<String>emptyList());
+        
+        public ParseResult(List<NamedFactory<Cipher>> parsed, List<String> unsupported) {
+            super(parsed, unsupported);
+        }
     }
 
     public static final class Constants {

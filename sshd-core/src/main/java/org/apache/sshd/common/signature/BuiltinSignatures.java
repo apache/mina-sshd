@@ -36,7 +36,6 @@ import org.apache.sshd.common.Signature;
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.SecurityUtils;
-import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * Provides easy access to the currently implemented signatures
@@ -179,32 +178,60 @@ public enum BuiltinSignatures implements NamedFactory<Signature>, OptionalFeatur
     /**
      * @param sigs A comma-separated list of signatures' names - ignored
      * if {@code null}/empty
-     * @return A {@link List} of all the {@link NamedFactory} whose
+     * @return A {@link ParseResult} of all the {@link NamedFactory} whose
      * name appears in the string and represent a built-in signature. Any
      * unknown name is <U>ignored</I>. The order of the returned result
      * is the same as the original order - bar the unknown signatures.
      * <B>Note:</B> it is up to caller to ensure that the list does not
      * contain duplicates
      */
-    public static final List<NamedFactory<Signature>> parseSignatureList(String sigs) {
+    public static final ParseResult parseSignatureList(String sigs) {
         return parseSignatureList(GenericUtils.split(sigs, ','));
     }
 
-    public static final List<NamedFactory<Signature>> parseSignatureList(String ... sigs) {
+    public static final ParseResult parseSignatureList(String ... sigs) {
         return parseSignatureList(GenericUtils.isEmpty((Object[]) sigs) ? Collections.<String>emptyList() : Arrays.asList(sigs));
     }
 
-    public static final List<NamedFactory<Signature>> parseSignatureList(Collection<String> sigs) {
+    public static final ParseResult parseSignatureList(Collection<String> sigs) {
         if (GenericUtils.isEmpty(sigs)) {
-            return Collections.emptyList();
+            return ParseResult.EMPTY;
         }
         
-        List<NamedFactory<Signature>>    result=new ArrayList<NamedFactory<Signature>>(sigs.size());
+        List<NamedFactory<Signature>>   factories=new ArrayList<NamedFactory<Signature>>(sigs.size());
+        List<String>                    unknown=Collections.<String>emptyList();
         for (String name : sigs) {
-            BuiltinSignatures  s=ValidateUtils.checkNotNull(fromFactoryName(name), "Bad factory name (%s) in %s", name, sigs);
-            result.add(s);
+            BuiltinSignatures  s=fromFactoryName(name);
+            if (s != null) {
+                factories.add(s);
+            } else {
+                // replace the (unmodifiable) empty list with a real one
+                if (unknown.isEmpty()) {
+                    unknown = new ArrayList<String>();
+                }
+                unknown.add(name);
+            }
         }
         
-        return result;
+        return new ParseResult(factories, unknown);
+    }
+
+    public static final class ParseResult {
+        public static final ParseResult EMPTY=new ParseResult(Collections.<NamedFactory<Signature>>emptyList(), Collections.<String>emptyList());
+        private final List<NamedFactory<Signature>> parsed;
+        private final List<String> unsupported;
+        
+        public ParseResult(List<NamedFactory<Signature>> parsed, List<String> unsupported) {
+            this.parsed = parsed;
+            this.unsupported = unsupported;
+        }
+        
+        public List<NamedFactory<Signature>> getParsedFactories() {
+            return parsed;
+        }
+        
+        public List<String> getUnsupportedFactories() {
+            return unsupported;
+        }
     }
 }

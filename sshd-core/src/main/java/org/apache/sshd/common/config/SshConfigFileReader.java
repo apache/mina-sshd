@@ -29,8 +29,8 @@ import java.io.Reader;
 import java.io.StreamCorruptedException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
@@ -347,23 +347,23 @@ public class SshConfigFileReader {
     
     /**
      * @param props The {@link Properties} - ignored if {@code null}/empty
-     * @return A {@link List} of all the {@link NamedFactory}-ies whose
-     * name appears in the string and represent a built-in cipher. Any
-     * unknown name is <U>ignored</U>. The order of the returned result
+     * @return A {@BuiltinCiphers.ParseResult} of all the {@link NamedFactory}-ies
+     * whose name appears in the string and represent a built-in cipher.
+     * Any unknown name is <U>ignored</U>. The order of the returned result
      * is the same as the original order - bar the unknown ciphers.
-     * <B>Note:</B> it is up to caller to ensure that the list does not
+     * <B>Note:</B> it is up to caller to ensure that the lists do not
      * contain duplicates
      * @see #CIPHERS_CONFIG_PROP
      * @see BuiltinCiphers#parseCiphersList(String)
      */
-    public static final List<NamedFactory<Cipher>> getCiphers(Properties props) {
+    public static final BuiltinCiphers.ParseResult getCiphers(Properties props) {
         return BuiltinCiphers.parseCiphersList((props == null) ? null : props.getProperty(CIPHERS_CONFIG_PROP));
     }
     
     /**
      * @param props The {@link Properties} - ignored if {@code null}/empty
-     * @return A {@link List} of all the {@link NamedFactory}-ies whose
-     * name appears in the string and represent a built-in MAC. Any
+     * @return A {@link BuiltinMacs.ParseResult} of all the {@link NamedFactory}-ies
+     * whose name appears in the string and represent a built-in MAC. Any
      * unknown name is <U>ignored</U>. The order of the returned result
      * is the same as the original order - bar the unknown MACs.
      * <B>Note:</B> it is up to caller to ensure that the list does not
@@ -371,37 +371,35 @@ public class SshConfigFileReader {
      * @see #MACS_CONFIG_PROP
      * @see BuiltinMacs#parseMacsList(String)
      */
-    public static final List<NamedFactory<Mac>> getMacs(Properties props) {
+    public static final BuiltinMacs.ParseResult getMacs(Properties props) {
         return BuiltinMacs.parseMacsList((props == null) ? null : props.getProperty(MACS_CONFIG_PROP));
     }
     
     /**
      * @param props The {@link Properties} - ignored if {@code null}/empty
-     * @return A {@link List} of all the {@link NamedFactory} whose
-     * name appears in the string and represent a built-in signature. Any
-     * unknown name is <U>ignored</I>. The order of the returned result
-     * is the same as the original order - bar the unknown signatures.
-     * <B>Note:</B> it is up to caller to ensure that the list does not
-     * contain duplicates
+     * @return A {@link BuiltinSignatures.ParseResult} of all the {@link NamedFactory}
+     * whose name appears in the string and represent a built-in signature. Any
+     * unknown name is <U>ignored</I>. The order of the returned result is the
+     * same as the original order - bar the unknown signatures. <B>Note:</B> it
+     * is up to caller to ensure that the list does not contain duplicates
      * @see #HOST_KEY_ALGORITHMS_CONFIG_PROP
      * @see BuiltinSignatures#parseSignatureList(String)
      */
-    public static final List<NamedFactory<Signature>> getSignatures(Properties props) {
+    public static final BuiltinSignatures.ParseResult getSignatures(Properties props) {
         return BuiltinSignatures.parseSignatureList((props == null) ? null : props.getProperty(HOST_KEY_ALGORITHMS_CONFIG_PROP));
     }
     
     /**
      * @param props The {@link Properties} - ignored if {@code null}/empty
-     * @return A {@link List} of all the {@link DHFactory}-ies whose
-     * name appears in the string and represent a built-in value. Any
-     * unknown name is <U>ignored</U>. The order of the returned result
-     * is the same as the original order - bar the unknown ones.
-     * <B>Note:</B> it is up to caller to ensure that the list does not
-     * contain duplicates
+     * @return A {@link BuiltinDHFactories.ParseResult} of all the {@link DHFactory}-ies
+     * whose name appears in the string and represent a built-in value. Any
+     * unknown name is <U>ignored</U>. The order of the returned result is the
+     * same as the original order - bar the unknown ones. <B>Note:</B> it is
+     * up to caller to ensure that the list does not contain duplicates
      * @see #KEX_ALGORITHMS_CONFIG_PROP
      * @see BuiltinDHFactories#parseDHFactoriesList(String)
      */
-    public static final List<DHFactory> getKexFactories(Properties props) {
+    public static final BuiltinDHFactories.ParseResult getKexFactories(Properties props) {
         return BuiltinDHFactories.parseDHFactoriesList((props == null) ? null : props.getProperty(KEX_ALGORITHMS_CONFIG_PROP));
     }
     
@@ -427,32 +425,77 @@ public class SshConfigFileReader {
      * @param props The {@link Properties} to use for configuration - <B>Note:</B>
      * if any known configuration value has a default and does not appear in the
      * properties, the default is used
+     * @param lenient If {@code true} then any unknown/unsupported configuration
+     * values are ignored. Otherwise an {@link IllegalArgumentException} is thrown
      * @return The configured manager
      */
-    public static final <M extends AbstractFactoryManager> M configure(M manager, Properties props) {
-        ValidateUtils.checkNotNull(manager, "No manager to configure", GenericUtils.EMPTY_OBJECT_ARRAY);
+    public static final <M extends AbstractFactoryManager> M configure(M manager, Properties props, boolean lenient) {
+        configureCiphers(manager, props, lenient);
+        configureSignatures(manager, props, lenient);
+        configureMacs(manager, props, lenient);
+        configureCompression(manager, props, lenient);
+
+        return manager;
+    }
+
+    public static final <M extends AbstractFactoryManager> M configureCiphers(M manager, Properties props, boolean lenient) {
         ValidateUtils.checkNotNull(props, "No properties to configure", GenericUtils.EMPTY_OBJECT_ARRAY);
-        
-        {
-            String  value=props.getProperty(HOST_KEY_ALGORITHMS_CONFIG_PROP, DEFAULT_HOST_KEY_ALGORITHMS);
-            manager.setSignatureFactories(ValidateUtils.checkNotNullAndNotEmpty(BuiltinSignatures.parseSignatureList(value), "Bad signatures: %s", value));
-        }
+        return configureCiphers(manager, props.getProperty(CIPHERS_CONFIG_PROP, DEFAULT_CIPHERS), lenient);
+    }
 
-        {
-            String  value=props.getProperty(MACS_CONFIG_PROP, DEFAULT_MACS);
-            manager.setMacFactories(ValidateUtils.checkNotNullAndNotEmpty(BuiltinMacs.parseMacsList(value), "Bad MAC(s): %s", value));
-        }
+    public static final <M extends AbstractFactoryManager> M configureCiphers(M manager, String value, boolean lenient) {
+        ValidateUtils.checkNotNull(manager, "No manager to configure", GenericUtils.EMPTY_OBJECT_ARRAY);
 
-        {
-            String  value=props.getProperty(CIPHERS_CONFIG_PROP, DEFAULT_CIPHERS);
-            manager.setCipherFactories(ValidateUtils.checkNotNullAndNotEmpty(BuiltinCiphers.parseCiphersList(value), "Bad ciphers(s): %s", value));
-        }
+        BuiltinCiphers.ParseResult  result=BuiltinCiphers.parseCiphersList(value);
+        Collection<String>          unsupported=result.getUnsupportedFactories();
+        ValidateUtils.checkTrue(lenient || GenericUtils.isEmpty(unsupported), "Unsupported cipher(s) (%s) in %s", unsupported, value);
+        manager.setCipherFactories(ValidateUtils.checkNotNullAndNotEmpty(result.getParsedFactories(), "No known ciphers(s): %s", value));
+        return manager;
+    }
 
-        {
-            String  value=props.getProperty(COMPRESSION_PROP, DEFAULT_COMPRESSION);
-            manager.setCompressionFactories(
-                    Collections.<NamedFactory<Compression>>singletonList(
-                            ValidateUtils.checkNotNull(CompressionConfigValue.fromName(value), "Bad compression: %s", value)));
+    public static final <M extends AbstractFactoryManager> M configureSignatures(M manager, Properties props, boolean lenient) {
+        ValidateUtils.checkNotNull(props, "No properties to configure", GenericUtils.EMPTY_OBJECT_ARRAY);
+        return configureSignatures(manager, props.getProperty(HOST_KEY_ALGORITHMS_CONFIG_PROP, DEFAULT_HOST_KEY_ALGORITHMS), lenient);
+    }
+
+    public static final <M extends AbstractFactoryManager> M configureSignatures(M manager, String value, boolean lenient) {
+        ValidateUtils.checkNotNull(manager, "No manager to configure", GenericUtils.EMPTY_OBJECT_ARRAY);
+
+        BuiltinSignatures.ParseResult   result=BuiltinSignatures.parseSignatureList(value);
+        Collection<String>              unsupported=result.getUnsupportedFactories();
+        ValidateUtils.checkTrue(lenient || GenericUtils.isEmpty(unsupported), "Unsupported signatures (%s) in %s", unsupported, value);
+        manager.setSignatureFactories(ValidateUtils.checkNotNullAndNotEmpty(result.getParsedFactories(), "No known signatures: %s", value));
+        return manager;
+    }
+    
+    public static final <M extends AbstractFactoryManager> M configureMacs(M manager, Properties props, boolean lenient) {
+        ValidateUtils.checkNotNull(props, "No properties to configure", GenericUtils.EMPTY_OBJECT_ARRAY);
+        return configureMacs(manager, props.getProperty(MACS_CONFIG_PROP, DEFAULT_MACS), lenient);
+    }
+
+    public static final <M extends AbstractFactoryManager> M configureMacs(M manager, String value, boolean lenient) {
+        ValidateUtils.checkNotNull(manager, "No manager to configure", GenericUtils.EMPTY_OBJECT_ARRAY);
+
+        BuiltinMacs.ParseResult result=BuiltinMacs.parseMacsList(value);
+        Collection<String>      unsupported=result.getUnsupportedFactories();
+        ValidateUtils.checkTrue(lenient || GenericUtils.isEmpty(unsupported), "Unsupported MAC(s) (%s) in %s", unsupported, value);
+        manager.setMacFactories(ValidateUtils.checkNotNullAndNotEmpty(result.getParsedFactories(), "No known MAC(s): %s", value));
+        return manager;
+    }
+
+    // NOTE: if no compression is resolved it is OK since SSH can function without it
+    public static final <M extends AbstractFactoryManager> M configureCompression(M manager, Properties props, boolean lenient) {
+        ValidateUtils.checkNotNull(props, "No properties to configure", GenericUtils.EMPTY_OBJECT_ARRAY);
+        return configureCompression(manager, props.getProperty(COMPRESSION_PROP, DEFAULT_COMPRESSION), lenient);
+    }
+
+    public static final <M extends AbstractFactoryManager> M configureCompression(M manager, String value, boolean lenient) {
+        ValidateUtils.checkNotNull(manager, "No manager to configure", GenericUtils.EMPTY_OBJECT_ARRAY);
+
+        NamedFactory<Compression>   factory=CompressionConfigValue.fromName(value);
+        ValidateUtils.checkTrue(lenient || (factory != null), "Unsupported compression value: %s", value);
+        if (factory != null) {
+            manager.setCompressionFactories(Collections.<NamedFactory<Compression>>singletonList(factory));
         }
 
         return manager;

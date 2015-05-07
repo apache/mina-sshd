@@ -23,8 +23,10 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.File;
+import java.util.List;
 
 import org.apache.sshd.common.util.GenericUtils;
+import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.rules.TestName;
 import org.junit.rules.TestWatcher;
@@ -98,6 +100,16 @@ public abstract class BaseTest extends TestWatcher {
         Class<?>    actual=obj.getClass();
         if (!expected.isAssignableFrom(actual)) {
             fail(message + " - actual object type (" + actual.getName() + ") incompatible with expected (" + expected.getName() + ")");
+        }
+    }
+    
+    public static <E> void assertListEquals(String message, List<? extends E> expected, List<? extends E> actual) {
+        int expSize=GenericUtils.size(expected), actSize=GenericUtils.size(actual);
+        Assert.assertEquals(message + "[size]", expSize, actSize);
+        
+        for (int index=0; index < expSize; index++) {
+            E expValue=expected.get(index), actValue=actual.get(index);
+            Assert.assertEquals(message + "[" + index + "]", expValue, actValue);
         }
     }
 }

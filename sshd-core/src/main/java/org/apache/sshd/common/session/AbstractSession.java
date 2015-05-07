@@ -18,6 +18,15 @@
  */
 package org.apache.sshd.common.session;
 
+import static org.apache.sshd.common.SshConstants.SSH_MSG_DEBUG;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_DISCONNECT;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_IGNORE;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_KEXINIT;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_NEWKEYS;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_SERVICE_ACCEPT;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_SERVICE_REQUEST;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_UNIMPLEMENTED;
+
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.util.LinkedList;
@@ -39,6 +48,7 @@ import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.KeyExchange;
 import org.apache.sshd.common.Mac;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.Random;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.Session;
@@ -56,15 +66,6 @@ import org.apache.sshd.common.util.BufferUtils;
 import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.Readable;
-
-import static org.apache.sshd.common.SshConstants.SSH_MSG_DEBUG;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_DISCONNECT;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_IGNORE;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_KEXINIT;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_NEWKEYS;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_SERVICE_ACCEPT;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_SERVICE_REQUEST;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_UNIMPLEMENTED;
 
 /**
  * The AbstractSession handles all the basic SSH protocol such as key exchange, authentication,
@@ -873,14 +874,14 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
      */
     protected String[] createProposal(String hostKeyTypes) {
         return new String[] {
-                NamedFactory.Utils.getNames(factoryManager.getKeyExchangeFactories()),
+                NamedResource.Utils.getNames(factoryManager.getKeyExchangeFactories()),
                 hostKeyTypes,
-                NamedFactory.Utils.getNames(factoryManager.getCipherFactories()),
-                NamedFactory.Utils.getNames(factoryManager.getCipherFactories()),
-                NamedFactory.Utils.getNames(factoryManager.getMacFactories()),
-                NamedFactory.Utils.getNames(factoryManager.getMacFactories()),
-                NamedFactory.Utils.getNames(factoryManager.getCompressionFactories()),
-                NamedFactory.Utils.getNames(factoryManager.getCompressionFactories()),
+                NamedResource.Utils.getNames(factoryManager.getCipherFactories()),
+                NamedResource.Utils.getNames(factoryManager.getCipherFactories()),
+                NamedResource.Utils.getNames(factoryManager.getMacFactories()),
+                NamedResource.Utils.getNames(factoryManager.getMacFactories()),
+                NamedResource.Utils.getNames(factoryManager.getCompressionFactories()),
+                NamedResource.Utils.getNames(factoryManager.getCompressionFactories()),
                 "",
                 ""
         };

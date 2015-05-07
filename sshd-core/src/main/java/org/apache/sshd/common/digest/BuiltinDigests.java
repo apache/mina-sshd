@@ -135,7 +135,7 @@ public enum BuiltinDigests implements NamedFactory<Digest> {
         return null;
     }
 
-    private static class Constants {
+    public static final class Constants {
         public static final String MD5 = "md5";
         public static final String SHA1 = "sha1";
         public static final String SHA256 = "sha256";

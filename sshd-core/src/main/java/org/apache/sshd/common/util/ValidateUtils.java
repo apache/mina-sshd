@@ -27,43 +27,37 @@ import java.util.Map;
  */
 public class ValidateUtils {
     public static final <T> T checkNotNull(T t, String message, Object ... args) {
-        if (t == null) {
-            throw new IllegalStateException(String.format(message, args));
-        }
+        checkTrue(t != null, message, args);
         return t;
     }
 
     public static final String checkNotNullAndNotEmpty(String t, String message, Object ... args) {
         t = checkNotNull(t, message, args).trim();
-        if (t.isEmpty()) {
-            throw new IllegalArgumentException(String.format(message, args));
-        }
+        checkTrue(GenericUtils.length(t) > 0, message, args);
         return t;
     }
 
     public static final <K,V,M extends Map<K,V>> M checkNotNullAndNotEmpty(M t, String message, Object ... args) {
         t = checkNotNull(t, message, args);
-        if (GenericUtils.size(t) <= 0) {
-            throw new IllegalArgumentException(String.format(message, args));
-        }
-        
+        checkTrue(GenericUtils.size(t) > 0, message, args);
         return t;
     }
 
     public static final <T,C extends Collection<T>> C checkNotNullAndNotEmpty(C t, String message, Object ... args) {
         t = checkNotNull(t, message, args);
-        if (GenericUtils.size(t) <= 0) {
-            throw new IllegalArgumentException(String.format(message, args));
-        }
-        
+        checkTrue(GenericUtils.size(t) > 0, message, args);
         return t;
     }
 
     public static final <T> T[] checkNotNullAndNotEmpty(T[] t, String message, Object ... args) {
         t = checkNotNull(t, message, args);
-        if (GenericUtils.length(t) <= 0) {
-            throw new IllegalArgumentException(String.format(message, t, args));
-        }
+        checkTrue(GenericUtils.length(t) > 0, message, args);
         return t;
+    }
+    
+    public static final void checkTrue(boolean flag, String message, Object ... args) {
+        if (!flag) {
+            throw new IllegalArgumentException(String.format(message, args));
+        }
     }
 }

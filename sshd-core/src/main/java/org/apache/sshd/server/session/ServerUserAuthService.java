@@ -28,6 +28,7 @@ import org.apache.sshd.SshServer;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.Session;
@@ -81,7 +82,7 @@ public class ServerUserAuthService extends CloseableUtils.AbstractCloseable impl
         authMethods = new ArrayList<>();
         
         ServerFactoryManager  manager=getFactoryManager();
-        String mths = FactoryManagerUtils.getString(manager, SshServer.AUTH_METHODS);
+        String mths = FactoryManagerUtils.getString(manager, ServerFactoryManager.AUTH_METHODS);
         if (GenericUtils.isEmpty(mths)) {
             for (NamedFactory<UserAuth> uaf : manager.getUserAuthFactories()) {
                 authMethods.add(new ArrayList<>(Collections.singletonList(uaf.getName())));
@@ -101,11 +102,12 @@ public class ServerUserAuthService extends CloseableUtils.AbstractCloseable impl
         }
         
         if (log.isDebugEnabled()) {
-            log.debug("Authorized authentication methods: {}", NamedFactory.Utils.getNames(userAuthFactories));
+            log.debug("Authorized authentication methods: {}", NamedResource.Utils.getNames(userAuthFactories));
         }
     }
 
     public void start() {
+        // do nothing
     }
 
     public ServerSession getSession() {

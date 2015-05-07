@@ -27,6 +27,7 @@ import java.util.Set;
 import org.apache.sshd.SshBuilder.BaseBuilder;
 import org.apache.sshd.common.Cipher;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.kex.BuiltinDHFactories;
 import org.apache.sshd.common.mac.BuiltinMacs;
@@ -114,7 +115,7 @@ public class SshBuilderTest extends BaseTest {
             }
             
             // make sure order is according to the default preference list
-            List<String>    cipherNames=NamedFactory.Utils.getNameList(ciphers);
+            List<String>    cipherNames=NamedResource.Utils.getNameList(ciphers);
             int             nameIndex=0;
             for (BuiltinCiphers c : BaseBuilder.DEFAULT_CIPHERS_PREFERENCE) {
                 if ((!c.isSupported()) && (!ignoreUnsupported)) {

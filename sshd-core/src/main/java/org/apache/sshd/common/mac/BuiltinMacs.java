@@ -32,7 +32,6 @@ import org.apache.sshd.common.Mac;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.OptionalFeature;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * Provides easy access to the currently implemented macs
@@ -156,33 +155,58 @@ public enum BuiltinMacs implements NamedFactory<Mac>, OptionalFeature {
     /**
      * @param macs A comma-separated list of MACs' names - ignored
      * if {@code null}/empty
-     * @return A {@link List} of all the {@link NamedFactory}-ies whose
-     * name appears in the string and represent a built-in MAC. Any
-     * unknown name is <U>ignored</U>. The order of the returned result
-     * is the same as the original order - bar the unknown MACs.
-     * <B>Note:</B> it is up to caller to ensure that the list does not
-     * contain duplicates
+     * @return A {@link ParseResult} containing the successfully parsed
+     * factories and the unknown ones. <B>Note:</B> it is up to caller to
+     * ensure that the lists do not contain duplicates
      */
-    public static final List<NamedFactory<Mac>> parseMacsList(String macs) {
+    public static final ParseResult parseMacsList(String macs) {
         return parseMacsList(GenericUtils.split(macs, ','));
     }
 
-    public static final List<NamedFactory<Mac>> parseMacsList(String ... macs) {
+    public static final ParseResult parseMacsList(String ... macs) {
         return parseMacsList(GenericUtils.isEmpty((Object[]) macs) ? Collections.<String>emptyList() : Arrays.asList(macs));
     }
 
-    public static final List<NamedFactory<Mac>> parseMacsList(Collection<String> macs) {
+    public static final ParseResult parseMacsList(Collection<String> macs) {
         if (GenericUtils.isEmpty(macs)) {
-            return Collections.emptyList();
+            return ParseResult.EMPTY;
         }
         
-        List<NamedFactory<Mac>>    result=new ArrayList<NamedFactory<Mac>>(macs.size());
+        List<NamedFactory<Mac>> factories=new ArrayList<NamedFactory<Mac>>(macs.size());
+        List<String>            unknown=Collections.<String>emptyList();
         for (String name : macs) {
-            BuiltinMacs  m=ValidateUtils.checkNotNull(fromFactoryName(name), "Bad factory name (%s) in %s", name, macs);
-            result.add(m);
+            BuiltinMacs  m=fromFactoryName(name);
+            if (m != null) {
+                factories.add(m);
+            } else {
+                // replace the (unmodifiable) empty list with a real one
+                if (unknown.isEmpty()) {
+                    unknown = new ArrayList<String>();
+                }
+                unknown.add(name);
+            }
         }
         
-        return result;
+        return new ParseResult(factories, unknown);
+    }
+
+    public static final class ParseResult {
+        public static final ParseResult EMPTY=new ParseResult(Collections.<NamedFactory<Mac>>emptyList(), Collections.<String>emptyList());
+        private final List<NamedFactory<Mac>> parsed;
+        private final List<String> unsupported;
+        
+        public ParseResult(List<NamedFactory<Mac>> parsed, List<String> unsupported) {
+            this.parsed = parsed;
+            this.unsupported = unsupported;
+        }
+        
+        public List<NamedFactory<Mac>> getParsedFactories() {
+            return parsed;
+        }
+        
+        public List<String> getUnsupportedFactories() {
+            return unsupported;
+        }
     }
 
     public static final class Constants {

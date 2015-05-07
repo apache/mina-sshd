@@ -562,7 +562,7 @@
 			            	<goal>remove-project-artifact</goal>
 			            </goals>
 			            <configuration>
-			            	<removeAll>true</removeAll>
+			            	<removeAll>false</removeAll>
 			            </configuration>
 			          </execution>
 		        </executions>

@@ -20,11 +20,19 @@
 package org.apache.sshd.common.cipher;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumSet;
+import java.util.List;
+import java.util.Random;
 import java.util.Set;
 
 import org.apache.sshd.common.Cipher;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.common.cipher.BuiltinCiphers.ParseResult;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.BaseTest;
 import org.junit.Assert;
 import org.junit.Test;
@@ -104,6 +112,42 @@ public class BuiltinCiphersTest extends BaseTest {
             byte[] key = new byte[cipher.getBlockSize()];
             byte[] iv = new byte[cipher.getIVSize()];
             cipher.init(Cipher.Mode.Encrypt, key, iv);
+        }
+    }
+
+    @Test
+    public void testParseCiphersList() {
+        List<String>    builtin=NamedResource.Utils.getNameList(BuiltinCiphers.VALUES);
+        List<String>    unknown=Arrays.asList(getClass().getPackage().getName(), getClass().getSimpleName(), getCurrentTestName());
+        Random          rnd=new Random();
+        for (int index=0; index < (builtin.size() + unknown.size()); index++) {
+            Collections.shuffle(builtin, rnd);
+            Collections.shuffle(unknown, rnd);
+            
+            List<String>    weavedList=new ArrayList<String>(builtin.size() + unknown.size());
+            for (int bIndex=0, uIndex=0; (bIndex < builtin.size()) || (uIndex < unknown.size()); ) {
+                boolean useBuiltin=false;
+                if (bIndex < builtin.size()) {
+                    useBuiltin = (uIndex < unknown.size()) ? rnd.nextBoolean() : true;
+                }
+
+                if (useBuiltin) {
+                    weavedList.add(builtin.get(bIndex));
+                    bIndex++;
+                } else if (uIndex < unknown.size()){
+                    weavedList.add(unknown.get(uIndex));
+                    uIndex++;
+                }
+            }
+
+            String          fullList=GenericUtils.join(weavedList, ',');
+            ParseResult     result=BuiltinCiphers.parseCiphersList(fullList);
+            List<String>    parsed=NamedResource.Utils.getNameList(result.getParsedFactories());
+            List<String>    missing=result.getUnsupportedFactories();
+            
+            // makes sure not only that the contents are the same but also the order
+            assertListEquals(fullList + "[parsed]", builtin, parsed);
+            assertListEquals(fullList + "[unsupported]", unknown, missing);
         }
     }
 }

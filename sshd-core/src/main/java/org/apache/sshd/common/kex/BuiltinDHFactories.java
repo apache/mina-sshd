@@ -30,10 +30,10 @@ import java.util.Set;
 
 import org.apache.sshd.common.OptionalFeature;
 import org.apache.sshd.common.cipher.ECCurves;
+import org.apache.sshd.common.config.NamedResourceListParseResult;
 import org.apache.sshd.common.digest.BuiltinDigests;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.SecurityUtils;
-import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -191,35 +191,64 @@ public enum BuiltinDHFactories implements DHFactory, OptionalFeature {
     }
 
     /**
-     * @param factories A comma-separated list of ciphers' names - ignored
+     * @param dhList A comma-separated list of ciphers' names - ignored
      * if {@code null}/empty
-     * @return A {@link List} of all the {@link DHFactory}-ies whose
+     * @return A {@link ParseResult} of all the {@link DHFactory}-ies whose
      * name appears in the string and represent a built-in value. Any
      * unknown name is <U>ignored</U>. The order of the returned result
      * is the same as the original order - bar the unknown ones.
      * <B>Note:</B> it is up to caller to ensure that the list does not
      * contain duplicates
      */
-    public static final List<DHFactory> parseDHFactoriesList(String factories) {
-        return parseDHFactoriesList(GenericUtils.split(factories, ','));
+    public static final ParseResult parseDHFactoriesList(String dhList) {
+        return parseDHFactoriesList(GenericUtils.split(dhList, ','));
     }
 
-    public static final List<DHFactory> parseDHFactoriesList(String ... factories) {
-        return parseDHFactoriesList(GenericUtils.isEmpty((Object[]) factories) ? Collections.<String>emptyList() : Arrays.asList(factories));
+    public static final ParseResult parseDHFactoriesList(String ... dhList) {
+        return parseDHFactoriesList(GenericUtils.isEmpty((Object[]) dhList) ? Collections.<String>emptyList() : Arrays.asList(dhList));
     }
 
-    public static final List<DHFactory> parseDHFactoriesList(Collection<String> factories) {
-        if (GenericUtils.isEmpty(factories)) {
-            return Collections.emptyList();
+    public static final ParseResult parseDHFactoriesList(Collection<String> dhList) {
+        if (GenericUtils.isEmpty(dhList)) {
+            return ParseResult.EMPTY;
         }
         
-        List<DHFactory>    result=new ArrayList<DHFactory>(factories.size());
-        for (String name : factories) {
-            DHFactory  c=ValidateUtils.checkNotNull(fromFactoryName(name), "Unknown factory name (%s) in %s", name, factories);
-            result.add(c);
+        List<DHFactory> factories=new ArrayList<DHFactory>(dhList.size());
+        List<String>    unknown=Collections.<String>emptyList();
+        for (String name : dhList) {
+            DHFactory  f=fromFactoryName(name);
+            if (f != null) {
+                factories.add(f);
+            } else {
+                // replace the (unmodifiable) empty list with a real one
+                if (unknown.isEmpty()) {
+                    unknown = new ArrayList<String>();
+                }
+                unknown.add(name);
+            }
         }
         
-        return result;
+        return new ParseResult(factories, unknown);
+    }
+
+    /**
+     * Represents the result of {@link BuiltinDHFactories#parseDHFactoriesList(String)}
+     * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+     */
+    public static final class ParseResult extends NamedResourceListParseResult<DHFactory> {
+        public static final ParseResult EMPTY=new ParseResult(Collections.<DHFactory>emptyList(), Collections.<String>emptyList());
+        
+        public ParseResult(List<DHFactory> parsed, List<String> unsupported) {
+            super(parsed, unsupported);
+        }
+        
+        public List<DHFactory> getParsedFactories() {
+            return getParsedResources();
+        }
+        
+        public List<String> getUnsupportedFactories() {
+            return getUnsupportedResources();
+        }
     }
 
     public static final class Constants {

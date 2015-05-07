@@ -25,7 +25,7 @@ import java.util.List;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.KeyPairProvider;
-import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
@@ -109,8 +109,8 @@ public class ServerSession extends AbstractSession {
         FactoryManager manager = getFactoryManager();
         KeyPairProvider kpp = manager.getKeyPairProvider();
         String hostKeyTypes = kpp.getKeyTypes();
-        List<String> supported = NamedFactory.Utils.getNameList(manager.getSignatureFactories());
-        String[] provided = hostKeyTypes.split(",");
+        List<String> supported = NamedResource.Utils.getNameList(manager.getSignatureFactories());
+        String[] provided = GenericUtils.split(hostKeyTypes, ',');
         StringBuilder resolvedHostKeys = null;
         for (int index = 0; index < provided.length; index++) {
             String keyType = provided[index];
