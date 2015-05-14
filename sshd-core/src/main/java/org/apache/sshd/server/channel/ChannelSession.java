@@ -204,6 +204,7 @@ public class ChannelSession extends AbstractServerChannel {
     protected Buffer tempBuffer;
     protected final CloseFuture commandExitFuture = new DefaultCloseFuture(lock);
 
+    @SuppressWarnings("synthetic-access")
     public ChannelSession() {
         addRequestHandler(new ChannelSessionRequestHandler());
         addRequestHandler(new PuttyRequestHandler());
@@ -250,7 +251,7 @@ public class ChannelSession extends AbstractServerChannel {
                 FactoryManager manager = getSession().getFactoryManager();
                 long timeout = FactoryManagerUtils.getLongProperty(manager, ServerFactoryManager.COMMAND_EXIT_TIMEOUT, DEFAULT_COMMAND_EXIT_TIMEOUT);
                 if (log.isDebugEnabled()) {
-                    log.debug("Wait {} ms for shell to exit cleanly", timeout);
+                    log.debug("Wait {} ms for shell to exit cleanly", Long.valueOf(timeout));
                 }
 
                 manager.getScheduledExecutorService().schedule(task, timeout, TimeUnit.MILLISECONDS);
@@ -308,49 +309,49 @@ public class ChannelSession extends AbstractServerChannel {
 
     public Boolean handleRequest(String type, Buffer buffer) throws IOException {
         if ("env".equals(type)) {
-            return handleEnv(buffer);
+            return Boolean.valueOf(handleEnv(buffer));
         }
         if ("pty-req".equals(type)) {
-            return handlePtyReq(buffer);
+            return Boolean.valueOf(handlePtyReq(buffer));
         }
         if ("window-change".equals(type)) {
-            return handleWindowChange(buffer);
+            return Boolean.valueOf(handleWindowChange(buffer));
         }
         if ("signal".equals(type)) {
-            return handleSignal(buffer);
+            return Boolean.valueOf(handleSignal(buffer));
         }
         if ("break".equals(type)) {
-            return handleBreak(buffer);
+            return Boolean.valueOf(handleBreak(buffer));
         }
         if ("shell".equals(type)) {
             if (this.type == null && handleShell(buffer)) {
                 this.type = type;
-                return true;
+                return Boolean.TRUE;
             } else {
-                return false;
+                return Boolean.FALSE;
             }
         }
         if ("exec".equals(type)) {
             if (this.type == null && handleExec(buffer)) {
                 this.type = type;
-                return true;
+                return Boolean.TRUE;
             } else {
-                return false;
+                return Boolean.FALSE;
             }
         }
         if ("subsystem".equals(type)) {
             if (this.type == null && handleSubsystem(buffer)) {
                 this.type = type;
-                return true;
+                return Boolean.TRUE;
             } else {
-                return false;
+                return Boolean.FALSE;
             }
         }
         if ("auth-agent-req@openssh.com".equals(type)) {
-            return handleAgentForwarding(buffer);
+            return Boolean.valueOf(handleAgentForwarding(buffer));
         }
         if ("x11-req".equals(type)) {
-            return handleX11Forwarding(buffer);
+            return Boolean.valueOf(handleX11Forwarding(buffer));
         }
         return null;
     }
@@ -359,7 +360,9 @@ public class ChannelSession extends AbstractServerChannel {
         String name = buffer.getString();
         String value = buffer.getString();
         addEnvVariable(name, value);
-        log.debug("env for channel {}: {} = {}", new Object[] { id, name, value });
+        if (log.isDebugEnabled()) {
+            log.debug("env for channel {}: {} = {}", new Object[] { Integer.valueOf(id), name, value });
+        }
         return true;
     }
 
@@ -387,10 +390,14 @@ public class ChannelSession extends AbstractServerChannel {
                        ((modes[i++] << 16) & 0x00ff0000) |
                        ((modes[i++] <<  8) & 0x0000ff00) |
                        ((modes[i++]) & 0x000000ff);
-            ptyModes.put(mode, val);
+            ptyModes.put(mode, Integer.valueOf(val));
         }
         if (log.isDebugEnabled()) {
-            log.debug("pty for channel {}: term={}, size=({} - {}), pixels=({}, {}), modes=[{}]", new Object[] { id, term, tColumns, tRows, tWidth, tHeight, ptyModes });
+            log.debug("pty for channel {}: term={}, size=({} - {}), pixels=({}, {}), modes=[{}]",
+                      new Object[] { Integer.valueOf(id), term, 
+                                     Integer.valueOf(tColumns), Integer.valueOf(tRows),
+                                     Integer.valueOf(tWidth), Integer.valueOf(tHeight),
+                                     ptyModes });
         }
         addEnvVariable(Environment.ENV_TERM, term);
         addEnvVariable(Environment.ENV_COLUMNS, Integer.toString(tColumns));
@@ -403,7 +410,12 @@ public class ChannelSession extends AbstractServerChannel {
         int tRows = buffer.getInt();
         int tWidth = buffer.getInt();
         int tHeight = buffer.getInt();
-        log.debug("window-change for channel {}: ({} - {}), ({}, {})", new Object[] { id, tColumns, tRows, tWidth, tHeight });
+        if (log.isDebugEnabled()) {
+            log.debug("window-change for channel {}: ({} - {}), ({}, {})",
+                      new Object[] { Integer.valueOf(id),
+                                     Integer.valueOf(tColumns), Integer.valueOf(tRows),
+                                     Integer.valueOf(tWidth), Integer.valueOf(tHeight) });
+        }
 
         final StandardEnvironment e = getEnvironment();
         e.set(Environment.ENV_COLUMNS, Integer.toString(tColumns));
@@ -414,7 +426,9 @@ public class ChannelSession extends AbstractServerChannel {
 
     protected boolean handleSignal(Buffer buffer) throws IOException {
         String name = buffer.getString();
-        log.debug("Signal received on channel {}: {}", id, name);
+        if (log.isDebugEnabled()) {
+            log.debug("Signal received on channel {}: {}", Integer.valueOf(id), name);
+        }
 
         final Signal signal = Signal.get(name);
         if (signal != null) {
@@ -427,7 +441,9 @@ public class ChannelSession extends AbstractServerChannel {
 
     protected boolean handleBreak(Buffer buffer) throws IOException {
         String name = buffer.getString();
-        log.debug("Break received on channel {}: {}", id, name);
+        if (log.isDebugEnabled()) {
+            log.debug("Break received on channel {}: {}", Integer.valueOf(id), name);
+        }
 
         getEnvironment().signal(Signal.INT);
         return true;
@@ -553,6 +569,7 @@ public class ChannelSession extends AbstractServerChannel {
             doWriteData(buffer.array(), buffer.rpos(), buffer.available());
         }
         command.setExitCallback(new ExitCallback() {
+            @SuppressWarnings("synthetic-access")
             @Override
             public void onExit(int exitValue) {
                 try {
@@ -569,8 +586,8 @@ public class ChannelSession extends AbstractServerChannel {
     }
 
     protected int getPtyModeValue(PtyMode mode) {
-        Integer v = getEnvironment().getPtyModes().get(mode);
-        return v != null ? v : 0;
+        Number v = getEnvironment().getPtyModes().get(mode);
+        return v != null ? v.intValue() : 0;
     }
 
     protected boolean handleAgentForwarding(Buffer buffer) throws IOException {
@@ -629,7 +646,7 @@ public class ChannelSession extends AbstractServerChannel {
             if (r == null) {
                 return Result.Unsupported;
             } else {
-                return r ? Result.ReplySuccess : Result.ReplyFailure;
+                return r.booleanValue() ? Result.ReplySuccess : Result.ReplyFailure;
             }
         }
     }

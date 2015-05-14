@@ -53,6 +53,7 @@ public class DefaultSshFuture<T extends SshFuture> implements SshFuture<T> {
     /**
      * {@inheritDoc}
      */
+    @Override
     public T await() throws InterruptedException {
         synchronized (lock) {
             while (result == null) {
@@ -65,6 +66,7 @@ public class DefaultSshFuture<T extends SshFuture> implements SshFuture<T> {
     /**
      * {@inheritDoc}
      */
+    @Override
     public boolean await(long timeout, TimeUnit unit) throws InterruptedException {
         return await(unit.toMillis(timeout));
     }
@@ -72,6 +74,7 @@ public class DefaultSshFuture<T extends SshFuture> implements SshFuture<T> {
     /**
      * {@inheritDoc}
      */
+    @Override
     public boolean await(long timeoutMillis) throws InterruptedException {
         return await0(timeoutMillis, true);
     }
@@ -79,6 +82,7 @@ public class DefaultSshFuture<T extends SshFuture> implements SshFuture<T> {
     /**
      * {@inheritDoc}
      */
+    @Override
     public T awaitUninterruptibly() {
         try {
             await0(Long.MAX_VALUE, false);
@@ -92,6 +96,7 @@ public class DefaultSshFuture<T extends SshFuture> implements SshFuture<T> {
     /**
      * {@inheritDoc}
      */
+    @Override
     public boolean awaitUninterruptibly(long timeout, TimeUnit unit) {
         return awaitUninterruptibly(unit.toMillis(timeout));
     }
@@ -99,6 +104,7 @@ public class DefaultSshFuture<T extends SshFuture> implements SshFuture<T> {
     /**
      * {@inheritDoc}
      */
+    @Override
     public boolean awaitUninterruptibly(long timeoutMillis) {
         try {
             return await0(timeoutMillis, false);
@@ -150,6 +156,7 @@ public class DefaultSshFuture<T extends SshFuture> implements SshFuture<T> {
     /**
      * {@inheritDoc}
      */
+    @Override
     public boolean isDone() {
         synchronized (lock) {
             return result != null;
@@ -185,6 +192,7 @@ public class DefaultSshFuture<T extends SshFuture> implements SshFuture<T> {
     /**
      * {@inheritDoc}
      */
+    @Override
     public T addListener(SshFutureListener<T> listener) {
         if (listener == null) {
             throw new NullPointerException("listener");
@@ -219,6 +227,7 @@ public class DefaultSshFuture<T extends SshFuture> implements SshFuture<T> {
     /**
      * {@inheritDoc}
      */
+    @Override
     public T removeListener(SshFutureListener<T> listener) {
         if (listener == null) {
             throw new NullPointerException("listener");

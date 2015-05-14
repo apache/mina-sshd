@@ -192,6 +192,7 @@ public abstract class AbstractChannel extends CloseableUtils.AbstractInnerClosea
                 try {
                     long timeout = FactoryManagerUtils.getLongProperty(getSession(), FactoryManager.CHANNEL_CLOSE_TIMEOUT, DEFAULT_CHANNEL_CLOSE_TIMEOUT);
                     session.writePacket(buffer, timeout, TimeUnit.MILLISECONDS).addListener(new SshFutureListener<IoWriteFuture>() {
+                        @SuppressWarnings("synthetic-access")
                         @Override
                         public void operationComplete(IoWriteFuture future) {
                             if (future.isWritten()) {
@@ -303,7 +304,9 @@ public abstract class AbstractChannel extends CloseableUtils.AbstractInnerClosea
     }
 
     protected void sendWindowAdjust(int len) throws IOException {
-        log.debug("Send SSH_MSG_CHANNEL_WINDOW_ADJUST on channel {}", id);
+        if (log.isDebugEnabled()) {
+            log.debug("Send SSH_MSG_CHANNEL_WINDOW_ADJUST on channel {}", Integer.valueOf(id));
+        }
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_WINDOW_ADJUST);
         buffer.putInt(recipient);
         buffer.putInt(len);

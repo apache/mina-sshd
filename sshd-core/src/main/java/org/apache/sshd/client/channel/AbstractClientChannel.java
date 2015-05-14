@@ -148,6 +148,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         return builder()
                 .when(openFuture)
                 .run(new Runnable() {
+                    @SuppressWarnings("synthetic-access")
                     @Override
                     public void run() {
                         // If the channel has not been opened yet,
@@ -192,7 +193,10 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
                     cond |= ClientChannel.EXIT_SIGNAL;
                 }
                 if ((cond & mask) != 0) {
-                    log.trace("WaitFor call returning on channel {}, mask={}, cond={}", new Object[] { this, mask, cond });
+                    if (log.isTraceEnabled()) {
+                        log.trace("WaitFor call returning on channel {}, mask={}, cond={}",
+                                  new Object[] { this, Integer.valueOf(mask), Integer.valueOf(cond) });
+                    }
                     return cond;
                 }
                 if (timeout > 0) {
@@ -207,7 +211,10 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
                     }
                 }
                 try {
-                    log.trace("Waiting for lock on channel {}, mask={}, cond={}", new Object[] { this, mask, cond });
+                    if (log.isTraceEnabled()) {
+                        log.trace("Waiting for lock on channel {}, mask={}, cond={}",
+                                  new Object[] { this, Integer.valueOf(mask), Integer.valueOf(cond) });
+                    }
                     if (timeout > 0) {
                         lock.wait(timeout);
                     } else {
@@ -325,10 +332,11 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     }
 
     private class ExitStatusChannelRequestHandler implements RequestHandler<Channel> {
+        @SuppressWarnings("synthetic-access")
         @Override
         public Result process(Channel channel, String request, boolean wantReply, Buffer buffer) throws Exception {
             if (request.equals("exit-status")) {
-                exitStatus = buffer.getInt();
+                exitStatus = Integer.valueOf(buffer.getInt());
                 notifyStateChanged();
                 return Result.ReplySuccess;
             }
@@ -337,6 +345,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     }
 
     private class ExitSignalChannelRequestHandler implements RequestHandler<Channel> {
+        @SuppressWarnings("synthetic-access")
         @Override
         public Result process(Channel channel, String request, boolean wantReply, Buffer buffer) throws Exception {
             if (request.equals("exit-signal")) {

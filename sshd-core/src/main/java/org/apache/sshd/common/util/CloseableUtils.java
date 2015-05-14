@@ -151,6 +151,13 @@ public class CloseableUtils {
     }
 
     public static abstract class IoBaseCloseable implements Closeable {
+        /** Our logger */
+        protected final Logger log = LoggerFactory.getLogger(getClass());
+        
+        protected IoBaseCloseable() {
+            super();
+        }
+        
         // TODO once JDK 8+ becomes the minimum for this project, make it a default method instead of this class
         @Override
         public void close() throws IOException {
@@ -295,8 +302,6 @@ public class CloseableUtils {
         protected enum State {
             Opened, Graceful, Immediate, Closed
         }
-        /** Our logger */
-        protected final Logger log = LoggerFactory.getLogger(getClass());
         /** Lock object for this session state */
         protected final Object lock = new Object();
         /** State of this object */

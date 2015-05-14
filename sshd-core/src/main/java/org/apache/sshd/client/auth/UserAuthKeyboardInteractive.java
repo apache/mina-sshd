@@ -19,6 +19,7 @@
 package org.apache.sshd.client.auth;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
@@ -28,6 +29,7 @@ import org.apache.sshd.client.UserAuth;
 import org.apache.sshd.client.UserInteraction;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,9 +45,11 @@ import static org.apache.sshd.common.SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE
 public class UserAuthKeyboardInteractive implements UserAuth {
 
     public static class Factory implements NamedFactory<UserAuth> {
+        @Override
         public String getName() {
             return "keyboard-interactive";
         }
+        @Override
         public UserAuth create() {
             return new UserAuthKeyboardInteractive();
         }
@@ -59,6 +63,7 @@ public class UserAuthKeyboardInteractive implements UserAuth {
     private int nbTrials;
     private int maxTrials;
 
+    @Override
     public void init(ClientSession session, String service, List<Object> identities) throws Exception {
         this.session = session;
         this.service = service;
@@ -72,6 +77,7 @@ public class UserAuthKeyboardInteractive implements UserAuth {
         this.maxTrials = session.getIntProperty(ClientFactoryManager.PASSWORD_PROMPTS, 3);
     }
 
+    @Override
     public boolean process(Buffer buffer) throws Exception {
         if (buffer == null) {
             if (passwords.hasNext()) {
@@ -105,12 +111,15 @@ public class UserAuthKeyboardInteractive implements UserAuth {
                 prompt[i] = buffer.getString();
                 echo[i] = (buffer.getByte() != 0);
             }
-            log.debug("Promt: {}", prompt);
-            log.debug("Echo: {}", echo);
+            
+            if (log.isDebugEnabled()) {
+                log.debug("Promt: {}", Arrays.toString(prompt));
+                log.debug("Echo: {}", echo);
+            }
 
             String[] rep = null;
             if (num == 0) {
-                rep = new String[0];
+                rep = GenericUtils.EMPTY_STRING_ARRAY;
             } else if (num == 1 && current != null && !echo[0] && prompt[0].toLowerCase().startsWith("password:")) {
                 rep = new String[] { current };
             } else {
@@ -138,6 +147,8 @@ public class UserAuthKeyboardInteractive implements UserAuth {
         throw new IllegalStateException("Received unknown packet");
     }
 
+    @Override
     public void destroy() {
+        // nothing
     }
 }

@@ -143,7 +143,10 @@ public class ServerUserAuthService extends CloseableUtils.AbstractCloseable impl
                 return;
             }
 
-            log.debug("Authenticating user '{}' with service '{}' and method '{}'", new Object[] { username, service, method });
+            if (log.isDebugEnabled()) {
+                log.debug("Authenticating user '{}' with service '{}' and method '{}'",
+                          new Object[] { username, service, method });
+            }
             NamedFactory<UserAuth> factory = NamedFactory.Utils.get(userAuthFactories, method);
             if (factory != null) {
                 currentAuth = factory.create();

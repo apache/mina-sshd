@@ -99,7 +99,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
         String originatorIpAddress = buffer.getString();
         int originatorPort = buffer.getInt();
         log.info("Receiving request for direct tcpip: hostToConnect={}, portToConnect={}, originatorIpAddress={}, originatorPort={}",
-                new Object[] { hostToConnect, portToConnect, originatorIpAddress, originatorPort });
+                new Object[] { hostToConnect, Integer.valueOf(portToConnect), originatorIpAddress, Integer.valueOf(originatorPort) });
 
 
         SshdSocketAddress address = null;
@@ -117,10 +117,13 @@ public class TcpipServerChannel extends AbstractServerChannel {
         // TODO: revisit for better threading. Use async io ?
         out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA);
         IoHandler handler = new IoHandler() {
+            @SuppressWarnings("synthetic-access")
             @Override
             public void messageReceived(IoSession session, Readable message) throws Exception {
                 if (isClosing()) {
-                    log.debug("Ignoring write to channel {} in CLOSING state", id);
+                    if (log.isDebugEnabled()) {
+                        log.debug("Ignoring write to channel {} in CLOSING state", Integer.valueOf(id));
+                    }
                 } else {
                     Buffer buffer = new ByteArrayBuffer();
                     buffer.putBuffer(message);
@@ -130,6 +133,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
             }
             @Override
             public void sessionCreated(IoSession session) throws Exception {
+                // ignored
             }
             @Override
             public void sessionClosed(IoSession session) throws Exception {
@@ -144,6 +148,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
                 .createConnector(handler);
         IoConnectFuture future = connector.connect(address.toInetSocketAddress());
         future.addListener(new SshFutureListener<IoConnectFuture>() {
+            @SuppressWarnings("synthetic-access")
             @Override
             public void operationComplete(IoConnectFuture future) {
                 if (future.isConnected()) {
@@ -180,6 +185,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
         // connector in the background.
         //
         new Thread("TcpIpServerChannel-ConnectorCleanup") {
+            @SuppressWarnings("synthetic-access")
             @Override
             public void run() {
                 connector.close(true);
@@ -190,6 +196,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
     @Override
     public CloseFuture close(boolean immediately) {
         return super.close(immediately).addListener(new SshFutureListener<CloseFuture>() {
+            @SuppressWarnings("synthetic-access")
             @Override
             public void operationComplete(CloseFuture sshFuture) {
                 closeImmediately0();
@@ -203,6 +210,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
         Buffer buf = new ByteArrayBuffer(data, off, len);
         buf = new ByteArrayBuffer(buf.getCompactData());
         ioSession.write(buf).addListener(new SshFutureListener<IoWriteFuture>() {
+            @SuppressWarnings("synthetic-access")
             @Override
             public void operationComplete(IoWriteFuture future) {
                 try {

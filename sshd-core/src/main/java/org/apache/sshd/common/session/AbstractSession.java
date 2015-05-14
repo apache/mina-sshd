@@ -340,7 +340,9 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
             case SSH_MSG_DISCONNECT: {
                 int code = buffer.getInt();
                 String msg = buffer.getString();
-                log.debug("Received SSH_MSG_DISCONNECT (reason={}, msg={})", code, msg);
+                if (log.isDebugEnabled()) {
+                    log.debug("Received SSH_MSG_DISCONNECT (reason={}, msg={})", Integer.valueOf(code), msg);
+                }
                 close(true);
                 break;
             }
@@ -350,13 +352,17 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
             }
             case SSH_MSG_UNIMPLEMENTED: {
                 int code = buffer.getInt();
-                log.debug("Received SSH_MSG_UNIMPLEMENTED #{}", code);
+                if (log.isDebugEnabled()) {
+                    log.debug("Received SSH_MSG_UNIMPLEMENTED #{}", Integer.valueOf(code));
+                }
                 break;
             }
             case SSH_MSG_DEBUG: {
                 boolean display = buffer.getBoolean();
                 String msg = buffer.getString();
-                log.debug("Received SSH_MSG_DEBUG (display={}) '{}'", display, msg);
+                if (log.isDebugEnabled()) {
+                    log.debug("Received SSH_MSG_DEBUG (display={}) '{}'", Boolean.valueOf(display), msg);
+                }
                 break;
             }
             case SSH_MSG_SERVICE_REQUEST:
@@ -404,7 +410,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
                 }
                 receiveNewKeys();
                 if (reexchangeFuture != null) {
-                    reexchangeFuture.setValue(true);
+                    reexchangeFuture.setValue(Boolean.TRUE);
                 }
                 sendEvent(SessionListener.Event.KeyEstablished);
                 synchronized (pendingPackets) {
@@ -546,6 +552,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
         final IoWriteFuture writeFuture = writePacket(buffer);
         final DefaultSshFuture<IoWriteFuture> future = (DefaultSshFuture<IoWriteFuture>) writeFuture;
         final ScheduledFuture<?> sched = factoryManager.getScheduledExecutorService().schedule(new Runnable() {
+            @SuppressWarnings("synthetic-access")
             @Override
             public void run() {
                 log.info("Timeout writing packet.");
@@ -659,7 +666,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
             int off = buffer.rpos() - 5;
             // Debug log the packet
             if (log.isTraceEnabled()) {
-                log.trace("Sending packet #{}: {}", seqo, buffer.printHex());
+                log.trace("Sending packet #{}: {}", Long.valueOf(seqo), buffer.printHex());
             }
             // Compress the packet if needed
             if (outCompression != null && (authed || !outCompression.isDelayed())) {
@@ -731,7 +738,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
                     decoderLength = decoderBuffer.getInt();
                     // Check packet length validity
                     if (decoderLength < 5 || decoderLength > (256 * 1024)) {
-                        log.info("Error decoding packet (invalid length) {}", decoderBuffer.printHex());
+                        log.warn("Error decoding packet (invalid length) {}", decoderBuffer.printHex());
                         throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
                                                "Invalid packet length: " + decoderLength);
                     }
@@ -787,7 +794,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
                         buf = decoderBuffer;
                     }
                     if (log.isTraceEnabled()) {
-                        log.trace("Received packet #{}: {}", seqi, buf.printHex());
+                        log.trace("Received packet #{}: {}", Long.valueOf(seqi), buf.printHex());
                     }
                     // Update stats
                     inPackets ++;
@@ -1189,14 +1196,16 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
         }
         negotiated = guess;
 
-        log.debug("Kex: server->client {} {} {}",
-                new Object[]{negotiated[SshConstants.PROPOSAL_ENC_ALGS_STOC],
-                        negotiated[SshConstants.PROPOSAL_MAC_ALGS_STOC],
-                        negotiated[SshConstants.PROPOSAL_COMP_ALGS_STOC]});
-        log.debug("Kex: client->server {} {} {}",
-                new Object[]{negotiated[SshConstants.PROPOSAL_ENC_ALGS_CTOS],
-                        negotiated[SshConstants.PROPOSAL_MAC_ALGS_CTOS],
-                        negotiated[SshConstants.PROPOSAL_COMP_ALGS_CTOS]});
+        if (log.isDebugEnabled()) {
+            log.debug("Kex: server->client {} {} {}",
+                      new Object[]{negotiated[SshConstants.PROPOSAL_ENC_ALGS_STOC],
+                            negotiated[SshConstants.PROPOSAL_MAC_ALGS_STOC],
+                            negotiated[SshConstants.PROPOSAL_COMP_ALGS_STOC]});
+            log.debug("Kex: client->server {} {} {}",
+                      new Object[]{negotiated[SshConstants.PROPOSAL_ENC_ALGS_CTOS],
+                            negotiated[SshConstants.PROPOSAL_MAC_ALGS_CTOS],
+                            negotiated[SshConstants.PROPOSAL_COMP_ALGS_CTOS]});
+        }
     }
 
     protected void requestSuccess(Buffer buffer) throws Exception{
@@ -1318,6 +1327,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     }
 
     protected void checkRekey() throws IOException {
+        // nothing
     }
 
     protected abstract void sendKexInit() throws IOException;
@@ -1327,6 +1337,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     protected abstract void receiveKexInit(Buffer buffer) throws IOException;
 
     protected void serviceAccept() throws IOException {
+        // nothing
     }
 
     public abstract void startService(String name) throws Exception;
