@@ -60,7 +60,7 @@ import org.apache.sshd.common.scp.ScpTransferEventListener;
 import org.apache.sshd.common.session.AbstractConnectionService;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.session.ConnectionService;
-import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
  * TODO Add javadoc

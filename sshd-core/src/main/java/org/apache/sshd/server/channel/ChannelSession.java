@@ -29,7 +29,6 @@ import java.util.Set;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.agent.SshAgent;
@@ -42,7 +41,6 @@ import org.apache.sshd.common.ForwardingFilter;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.PtyMode;
 import org.apache.sshd.common.RequestHandler;
-import org.apache.sshd.common.Session;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
 import org.apache.sshd.common.channel.ChannelOutputStream;
@@ -51,9 +49,10 @@ import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
-import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.IoUtils;
+import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.LoggingFilterOutputStream;
 import org.apache.sshd.server.AsyncCommand;
 import org.apache.sshd.server.ChannelSessionAware;
@@ -78,10 +77,12 @@ public class ChannelSession extends AbstractServerChannel {
 
     public static class Factory implements NamedFactory<Channel> {
 
+        @Override
         public String getName() {
             return "session";
         }
 
+        @Override
         public Channel create() {
             return new ChannelSession();
         }
@@ -99,6 +100,7 @@ public class ChannelSession extends AbstractServerChannel {
             ptyModes = new ConcurrentHashMap<PtyMode, Integer>();
         }
 
+        @Override
         public void addSignalListener(SignalListener listener, Signal... signals) {
             if (signals == null) {
                 throw new IllegalArgumentException("signals may not be null");
@@ -107,6 +109,7 @@ public class ChannelSession extends AbstractServerChannel {
             addSignalListener(listener, Arrays.asList(signals));
         }
 
+        @Override
         public void addSignalListener(SignalListener listener) {
             addSignalListener(listener, Signal.SIGNALS);
         }
@@ -116,6 +119,7 @@ public class ChannelSession extends AbstractServerChannel {
          * we hold the listeners inside a Set, so even if we add several times
          * the same listener to the same signal set, it is harmless
          */
+        @Override
         public void addSignalListener(SignalListener listener, Collection<Signal> signals) {
             if (listener == null) {
                 throw new IllegalArgumentException("listener may not be null");
@@ -130,14 +134,17 @@ public class ChannelSession extends AbstractServerChannel {
             }
         }
 
+        @Override
         public Map<String, String> getEnv() {
             return env;
         }
 
+        @Override
         public Map<PtyMode, Integer> getPtyModes() {
             return ptyModes;
         }
 
+        @Override
         public void removeSignalListener(SignalListener listener) {
             if (listener == null) {
                 throw new IllegalArgumentException("listener may not be null");
@@ -219,12 +226,15 @@ public class ChannelSession extends AbstractServerChannel {
     }
 
     public class CommandCloseable extends CloseableUtils.IoBaseCloseable {
+        @Override
         public boolean isClosed() {
             return commandExitFuture.isClosed();
         }
+        @Override
         public boolean isClosing() {
             return isClosed();
         }
+        @Override
         public CloseFuture close(boolean immediately) {
             if (immediately || command == null) {
                 commandExitFuture.setClosed();
@@ -245,6 +255,7 @@ public class ChannelSession extends AbstractServerChannel {
 
                 manager.getScheduledExecutorService().schedule(task, timeout, TimeUnit.MILLISECONDS);
                 commandExitFuture.addListener(new SshFutureListener<CloseFuture>() {
+                    @Override
                     public void operationComplete(CloseFuture future) {
                         task.cancel();
                     }
@@ -271,6 +282,7 @@ public class ChannelSession extends AbstractServerChannel {
         IoUtils.closeQuietly(receiver);
     }
 
+    @Override
     protected void doWriteData(byte[] data, int off, int len) throws IOException {
         // If we're already closing, ignore incoming data
         if (isClosing()) {
@@ -283,12 +295,13 @@ public class ChannelSession extends AbstractServerChannel {
             }
         } else {
             if (tempBuffer == null) {
-                tempBuffer = new Buffer(len);
+                tempBuffer = new ByteArrayBuffer(len);
             }
             tempBuffer.putRawBytes(data, off, len);
         }
     }
 
+    @Override
     protected void doWriteExtendedData(byte[] data, int off, int len) throws IOException {
         throw new UnsupportedOperationException("Server channel does not support extended data");
     }
@@ -540,6 +553,7 @@ public class ChannelSession extends AbstractServerChannel {
             doWriteData(buffer.array(), buffer.rpos(), buffer.available());
         }
         command.setExitCallback(new ExitCallback() {
+            @Override
             public void onExit(int exitValue) {
                 try {
                     closeShell(exitValue);
@@ -547,6 +561,7 @@ public class ChannelSession extends AbstractServerChannel {
                     log.info("Error closing shell", e);
                 }
             }
+            @Override
             public void onExit(int exitValue, String exitMessage) {
                 onExit(exitValue);
             }
@@ -608,6 +623,7 @@ public class ChannelSession extends AbstractServerChannel {
     }
 
     private class ChannelSessionRequestHandler implements RequestHandler<Channel> {
+        @Override
         public Result process(Channel channel, String request, boolean wantReply, Buffer buffer) throws Exception {
             Boolean r = handleRequest(request, buffer);
             if (r == null) {

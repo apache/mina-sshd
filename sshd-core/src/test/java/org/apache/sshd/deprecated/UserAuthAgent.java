@@ -25,8 +25,9 @@ import java.util.Iterator;
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.client.session.ClientSessionImpl;
 import org.apache.sshd.common.SshConstants;
-import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.KeyUtils;
+import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
 /**
  * Authentication delegating to an SSH agent
@@ -59,8 +60,8 @@ public class UserAuthAgent extends AbstractUserAuth {
             buffer.putPublicKey(key);
 
 
-            Buffer bs = new Buffer();
-            bs.putString(session.getKex().getH());
+            Buffer bs = new ByteArrayBuffer();
+            bs.putBytes(session.getKex().getH());
             bs.putByte(SshConstants.SSH_MSG_USERAUTH_REQUEST);
             bs.putString(session.getUsername());
             bs.putString(service);
@@ -69,7 +70,7 @@ public class UserAuthAgent extends AbstractUserAuth {
             bs.putString(KeyUtils.getKeyType(key));
             bs.putPublicKey(key);
 
-            Buffer bs2 = new Buffer();
+            Buffer bs2 = new ByteArrayBuffer();
             bs2.putString(KeyUtils.getKeyType(key));
             bs2.putBytes(agent.sign(key, bs.getCompactData()));
             buffer.putBytes(bs2.array(), bs2.rpos(), bs2.available());
@@ -82,6 +83,7 @@ public class UserAuthAgent extends AbstractUserAuth {
         }
     }
 
+    @Override
     public Result next(Buffer buffer) throws IOException {
         if (buffer == null) {
             if (keys.hasNext()) {
@@ -108,7 +110,7 @@ public class UserAuthAgent extends AbstractUserAuth {
                 }
             } else {
                 // TODO: check packets
-                log.info("Received unknown packet: {}", cmd);
+                log.info("Received unknown packet: {}", Byte.valueOf(cmd));
                 return Result.Continued;
             }
         }

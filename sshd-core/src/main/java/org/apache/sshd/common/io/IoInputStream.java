@@ -19,7 +19,7 @@
 package org.apache.sshd.common.io;
 
 import org.apache.sshd.common.Closeable;
-import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.buffer.Buffer;
 
 public interface IoInputStream extends Closeable {
 

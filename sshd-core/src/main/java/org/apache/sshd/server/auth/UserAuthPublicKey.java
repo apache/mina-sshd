@@ -23,7 +23,8 @@ import java.security.PublicKey;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.Signature;
 import org.apache.sshd.common.SshConstants;
-import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.server.PublickeyAuthenticator;
 import org.apache.sshd.server.UserAuth;
 
@@ -35,14 +36,17 @@ import org.apache.sshd.server.UserAuth;
 public class UserAuthPublicKey extends AbstractUserAuth {
 
     public static class Factory implements NamedFactory<UserAuth> {
+        @Override
         public String getName() {
             return "publickey";
         }
+        @Override
         public UserAuth create() {
             return new UserAuthPublicKey();
         }
     }
 
+    @Override
     public Boolean doAuth(Buffer buffer, boolean init) throws Exception {
         if (!init) {
             throw new IllegalStateException();
@@ -70,7 +74,7 @@ public class UserAuthPublicKey extends AbstractUserAuth {
         }
 
         if (!authenticator.authenticate(username, key, session)) {
-            return false;
+            return Boolean.FALSE;
         }
         if (!hasSig) {
             Buffer buf = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_PK_OK);
@@ -79,8 +83,8 @@ public class UserAuthPublicKey extends AbstractUserAuth {
             session.writePacket(buf);
             return null;
         } else {
-            Buffer buf = new Buffer();
-            buf.putString(session.getKex().getH());
+            Buffer buf = new ByteArrayBuffer();
+            buf.putBytes(session.getKex().getH());
             buf.putByte(SshConstants.SSH_MSG_USERAUTH_REQUEST);
             buf.putString(username);
             buf.putString(service);
@@ -94,7 +98,7 @@ public class UserAuthPublicKey extends AbstractUserAuth {
             if (!verif.verify(sig)) {
                 throw new Exception("Key verification failed");
             }
-            return true;
+            return Boolean.TRUE;
         }
     }
 }

@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.util;
+package org.apache.sshd.common.util.buffer;
 
 /**
  * TODO Add javadoc
@@ -70,4 +70,12 @@ public class BufferUtils {
 	    '6' , '7' , '8' , '9' , 'a' , 'b' ,
 	    'c' , 'd' , 'e' , 'f'
     };
+
+    public static final int getNextPowerOf2(int i) {
+        int j = 1;
+        while (j < i) {
+            j <<= 1;
+        }
+        return j;
+    }
 }

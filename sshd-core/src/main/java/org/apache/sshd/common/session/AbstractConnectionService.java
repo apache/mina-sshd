@@ -37,8 +37,8 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.TcpipForwarder;
 import org.apache.sshd.common.future.SshFutureListener;
-import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.CloseableUtils;
+import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.server.channel.OpenChannelException;
 import org.apache.sshd.server.x11.X11ForwardSupport;
 

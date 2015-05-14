@@ -25,8 +25,9 @@ import org.apache.sshd.client.session.ClientSessionImpl;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.Signature;
 import org.apache.sshd.common.SshConstants;
-import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.KeyUtils;
+import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,6 +47,7 @@ public class UserAuthPublicKey extends AbstractUserAuth {
         this.key = key;
     }
 
+    @Override
     public Result next(Buffer buffer) throws IOException {
         if (buffer == null) {
             try {
@@ -64,8 +66,8 @@ public class UserAuthPublicKey extends AbstractUserAuth {
                 Signature verif = NamedFactory.Utils.create(session.getFactoryManager().getSignatureFactories(), alg);
                 verif.init(key.getPublic(), key.getPrivate());
 
-                Buffer bs = new Buffer();
-                bs.putString(session.getKex().getH());
+                Buffer bs = new ByteArrayBuffer();
+                bs.putBytes(session.getKex().getH());
                 bs.putByte(SshConstants.SSH_MSG_USERAUTH_REQUEST);
                 bs.putString(session.getUsername());
                 bs.putString(service);
@@ -75,7 +77,7 @@ public class UserAuthPublicKey extends AbstractUserAuth {
                 bs.putPublicKey(key.getPublic());
                 verif.update(bs.array(), bs.rpos(), bs.available());
 
-                bs = new Buffer();
+                bs = new ByteArrayBuffer();
                 bs.putString(alg);
                 bs.putBytes(verif.sign());
                 buffer.putBytes(bs.array(), bs.rpos(), bs.available());
@@ -96,7 +98,7 @@ public class UserAuthPublicKey extends AbstractUserAuth {
                 log.debug("Received SSH_MSG_USERAUTH_FAILURE");
                 return Result.Failure;
             } else {
-                log.debug("Received unknown packet {}", cmd);
+                log.debug("Received unknown packet {}", Byte.valueOf(cmd));
                 // TODO: check packets
                 return Result.Continued;
             }

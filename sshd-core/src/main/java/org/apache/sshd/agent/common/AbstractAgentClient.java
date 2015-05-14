@@ -18,14 +18,6 @@
  */
 package org.apache.sshd.agent.common;
 
-import java.io.IOException;
-import java.security.PublicKey;
-import java.util.List;
-
-import org.apache.sshd.agent.SshAgent;
-import org.apache.sshd.common.util.Buffer;
-import org.apache.sshd.common.util.KeyUtils;
-
 import static org.apache.sshd.agent.SshAgentConstants.SSH2_AGENTC_ADD_IDENTITY;
 import static org.apache.sshd.agent.SshAgentConstants.SSH2_AGENTC_REMOVE_ALL_IDENTITIES;
 import static org.apache.sshd.agent.SshAgentConstants.SSH2_AGENTC_REMOVE_IDENTITY;
@@ -36,9 +28,18 @@ import static org.apache.sshd.agent.SshAgentConstants.SSH2_AGENT_IDENTITIES_ANSW
 import static org.apache.sshd.agent.SshAgentConstants.SSH2_AGENT_SIGN_RESPONSE;
 import static org.apache.sshd.agent.SshAgentConstants.SSH_AGENT_SUCCESS;
 
+import java.io.IOException;
+import java.security.PublicKey;
+import java.util.List;
+
+import org.apache.sshd.agent.SshAgent;
+import org.apache.sshd.common.util.KeyUtils;
+import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+
 public abstract class AbstractAgentClient {
 
-    private final Buffer buffer = new Buffer();
+    private final Buffer buffer = new ByteArrayBuffer();
     private final SshAgent agent;
 
     public AbstractAgentClient(SshAgent agent) {
@@ -56,11 +57,11 @@ public abstract class AbstractAgentClient {
         if (buffer.available() < len + 4) {
             return;
         }
-        Buffer rep = new Buffer();
+        Buffer rep = new ByteArrayBuffer();
         rep.putInt(0);
         rep.rpos(rep.wpos());
         try {
-            process(new Buffer(buffer.getBytes()), rep);
+            process(new ByteArrayBuffer(buffer.getBytes()), rep);
         } catch (Exception e) {
             rep.clear();
             rep.putInt(0);
@@ -90,7 +91,7 @@ public abstract class AbstractAgentClient {
                 PublicKey key = req.getPublicKey();
                 byte[] data = req.getBytes();
                 int flags = req.getInt();
-                Buffer sig = new Buffer();
+                Buffer sig = new ByteArrayBuffer();
                 sig.putString(KeyUtils.getKeyType(key));
                 sig.putBytes(agent.sign(key, data));
                 rep.putByte(SSH2_AGENT_SIGN_RESPONSE);

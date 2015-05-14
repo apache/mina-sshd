@@ -32,7 +32,8 @@ import org.apache.sshd.common.io.IoInputStream;
 import org.apache.sshd.common.io.IoOutputStream;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.io.WritePendingException;
-import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.NoCloseOutputStream;
 import org.apache.sshd.server.AsyncCommand;
 import org.apache.sshd.server.Command;
@@ -141,9 +142,9 @@ public class WindowAdjustTest {
             new Thread(new Runnable() {
                 public void run() {
                     for (int i = 0; i < sendCount; i++) {
-                        a.write(new Buffer(msg));
+                        a.write(new ByteArrayBuffer(msg));
                     }
-                    a.write(new Buffer((lastMsg.getBytes())));
+                    a.write(new ByteArrayBuffer((lastMsg.getBytes())));
                 }
             }).start();
         }

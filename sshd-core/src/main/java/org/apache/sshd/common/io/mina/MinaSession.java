@@ -31,8 +31,8 @@ import org.apache.sshd.common.future.DefaultSshFuture;
 import org.apache.sshd.common.io.IoService;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
-import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.CloseableUtils;
+import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
  */

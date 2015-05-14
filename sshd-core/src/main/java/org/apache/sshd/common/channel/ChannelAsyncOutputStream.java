@@ -30,8 +30,8 @@ import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoOutputStream;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.io.WritePendingException;
-import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.CloseableUtils;
+import org.apache.sshd.common.util.buffer.Buffer;
 
 public class ChannelAsyncOutputStream extends CloseableUtils.AbstractCloseable implements IoOutputStream {
 

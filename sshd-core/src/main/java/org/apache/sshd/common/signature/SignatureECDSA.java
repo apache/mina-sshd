@@ -20,7 +20,9 @@ package org.apache.sshd.common.signature;
 
 import java.io.IOException;
 import java.math.BigInteger;
-import org.apache.sshd.common.util.Buffer;
+
+import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
 /**
  * Signature algorithm for EC keys using ECDSA. There 
@@ -61,7 +63,7 @@ public class SignatureECDSA extends AbstractSignature {
         BigInteger s = new BigInteger(sArray);
 
         // Write the <r,s> to its own types writer.
-        Buffer rsBuf = new Buffer();
+        Buffer rsBuf = new ByteArrayBuffer();
         rsBuf.putMPInt(r);
         rsBuf.putMPInt(s);
 
@@ -72,7 +74,7 @@ public class SignatureECDSA extends AbstractSignature {
     public boolean verify(byte[] sig) throws Exception {
         sig = extractSig(sig);
 
-        Buffer rsBuf = new Buffer(sig);
+        Buffer rsBuf = new ByteArrayBuffer(sig);
         byte[] rArray = rsBuf.getMPIntAsBytes();
         byte[] sArray = rsBuf.getMPIntAsBytes();
 

@@ -30,9 +30,9 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.future.CloseFuture;
-import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.future.SshFutureListener;
-import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.server.channel.AbstractServerChannel;
 
 /**
@@ -42,10 +42,12 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
 
     public static class Factory implements NamedFactory<Channel> {
 
+        @Override
         public String getName() {
             return "auth-agent@openssh.com";
         }
 
+        @Override
         public Channel create() {
             return new ChannelAgentForwarding();
         }
@@ -62,6 +64,7 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
     public ChannelAgentForwarding() {
     }
 
+    @Override
     protected OpenFuture doInit(Buffer buffer) {
         final OpenFuture f = new DefaultOpenFuture(this);
         try {
@@ -89,8 +92,10 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
 //        Socket.close(handle);
     }
 
+    @Override
     public CloseFuture close(boolean immediately) {
         return super.close(immediately).addListener(new SshFutureListener<CloseFuture>() {
+            @Override
             public void operationComplete(CloseFuture sshFuture) {
                 closeImmediately0();
             }
@@ -103,10 +108,12 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
 //        close(true);
     }
 
+    @Override
     protected void doWriteData(byte[] data, int off, int len) throws IOException {
-        client.messageReceived(new Buffer(data, off, len));
+        client.messageReceived(new ByteArrayBuffer(data, off, len));
     }
 
+    @Override
     protected void doWriteExtendedData(byte[] data, int off, int len) throws IOException {
         throw new UnsupportedOperationException("AgentForward channel does not support extended data");
     }

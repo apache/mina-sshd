@@ -28,7 +28,7 @@ import org.apache.sshd.client.session.ClientSessionImpl;
 import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.session.AbstractSession;
-import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.deprecated.ClientUserAuthServiceOld;
 import org.apache.sshd.deprecated.UserAuthKeyboardInteractive;
 import org.apache.sshd.deprecated.UserAuthPassword;

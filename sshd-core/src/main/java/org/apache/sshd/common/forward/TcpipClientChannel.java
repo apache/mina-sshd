@@ -29,12 +29,9 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.channel.ChannelOutputStream;
-import org.apache.sshd.common.future.CloseFuture;
-import org.apache.sshd.common.future.DefaultCloseFuture;
-import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoSession;
-import org.apache.sshd.common.util.Buffer;
-import org.apache.sshd.common.util.CloseableUtils;
+import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
 /**
  * TODO Add javadoc
@@ -64,6 +61,7 @@ public class TcpipClientChannel extends AbstractClientChannel {
         return openFuture;
     }
 
+    @Override
     public synchronized OpenFuture open() throws IOException {
         InetSocketAddress src = null, dst = null;
         switch (typeEnum) {
@@ -107,10 +105,11 @@ public class TcpipClientChannel extends AbstractClientChannel {
         return builder().sequential(serverSession, super.getInnerCloseable()).build();
     }
 
+    @Override
     protected synchronized void doWriteData(byte[] data, int off, int len) throws IOException {
         // Make sure we copy the data as the incoming buffer may be reused
-        Buffer buf = new Buffer(data, off, len);
-        buf = new Buffer(buf.getCompactData());
+        Buffer buf = new ByteArrayBuffer(data, off, len);
+        buf = new ByteArrayBuffer(buf.getCompactData());
         localWindow.consumeAndCheck(len);
         serverSession.write(buf);
     }

@@ -21,7 +21,7 @@ package org.apache.sshd.common;
 import java.security.PublicKey;
 
 import org.apache.sshd.common.session.AbstractSession;
-import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
  * Key exchange algorithm.

@@ -18,6 +18,17 @@
  */
 package org.apache.sshd;
 
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FX_FILE_ALREADY_EXISTS;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FX_NO_SUCH_FILE;
+import static org.apache.sshd.common.sftp.SftpConstants.S_IRUSR;
+import static org.apache.sshd.common.sftp.SftpConstants.S_IWUSR;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -29,13 +40,10 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Vector;
 
-import com.jcraft.jsch.ChannelSftp;
-import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.SftpException;
 import org.apache.sshd.client.SftpClient;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.OsUtils;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.command.ScpCommandFactory;
 import org.apache.sshd.server.sftp.SftpSubsystemFactory;
@@ -46,21 +54,13 @@ import org.apache.sshd.util.JSchLogger;
 import org.apache.sshd.util.SimpleUserInfo;
 import org.apache.sshd.util.Utils;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FX_FILE_ALREADY_EXISTS;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FX_NO_SUCH_FILE;
-import static org.apache.sshd.common.sftp.SftpConstants.S_IRUSR;
-import static org.apache.sshd.common.sftp.SftpConstants.S_IWUSR;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import com.jcraft.jsch.ChannelSftp;
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.SftpException;
 
 public class SftpTest extends BaseTest {
 
@@ -291,14 +291,14 @@ public class SftpTest extends BaseTest {
 
         uploadAndVerifyFile(sftp, 0, "emptyFile.txt");
         uploadAndVerifyFile(sftp, 1000, "smallFile.txt");
-        uploadAndVerifyFile(sftp, Buffer.MAX_LEN - 1, "bufferMaxLenMinusOneFile.txt");
-        uploadAndVerifyFile(sftp, Buffer.MAX_LEN, "bufferMaxLenFile.txt");
+        uploadAndVerifyFile(sftp, ByteArrayBuffer.MAX_LEN - 1, "bufferMaxLenMinusOneFile.txt");
+        uploadAndVerifyFile(sftp, ByteArrayBuffer.MAX_LEN, "bufferMaxLenFile.txt");
         // were chunking not implemented, these would fail. these sizes should invoke our internal chunking mechanism
-        uploadAndVerifyFile(sftp, Buffer.MAX_LEN + 1, "bufferMaxLenPlusOneFile.txt");
-        uploadAndVerifyFile(sftp, (int)(1.5 * Buffer.MAX_LEN), "1point5BufferMaxLenFile.txt");
-        uploadAndVerifyFile(sftp, (2 * Buffer.MAX_LEN) - 1, "2TimesBufferMaxLenMinusOneFile.txt");
-        uploadAndVerifyFile(sftp, 2 * Buffer.MAX_LEN, "2TimesBufferMaxLenFile.txt");
-        uploadAndVerifyFile(sftp, (2 * Buffer.MAX_LEN) + 1, "2TimesBufferMaxLenPlusOneFile.txt");
+        uploadAndVerifyFile(sftp, ByteArrayBuffer.MAX_LEN + 1, "bufferMaxLenPlusOneFile.txt");
+        uploadAndVerifyFile(sftp, (int)(1.5 * ByteArrayBuffer.MAX_LEN), "1point5BufferMaxLenFile.txt");
+        uploadAndVerifyFile(sftp, (2 * ByteArrayBuffer.MAX_LEN) - 1, "2TimesBufferMaxLenMinusOneFile.txt");
+        uploadAndVerifyFile(sftp, 2 * ByteArrayBuffer.MAX_LEN, "2TimesBufferMaxLenFile.txt");
+        uploadAndVerifyFile(sftp, (2 * ByteArrayBuffer.MAX_LEN) + 1, "2TimesBufferMaxLenPlusOneFile.txt");
         uploadAndVerifyFile(sftp, 200000, "largerFile.txt");
 
         // test erroneous calls that check for negative values

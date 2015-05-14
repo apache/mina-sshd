@@ -18,14 +18,15 @@
  */
 package org.apache.sshd.server.channel;
 
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.util.Collection;
 
 import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
-import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.server.Signal;
 import org.apache.sshd.server.SignalListener;
 import org.apache.sshd.util.BaseTest;
@@ -41,7 +42,7 @@ public class ChannelSessionTest extends BaseTest {
      */
     @Test
     public void testHandleWindowAdjust() throws Exception {
-        final Buffer buffer = new Buffer();
+        final Buffer buffer = new ByteArrayBuffer();
         buffer.putInt(1234);
 
         final ChannelSession channelSession = new ChannelSession();
@@ -60,6 +61,7 @@ public class ChannelSessionTest extends BaseTest {
     public void testAddSignalListenerOnDuplicateSignals() {
         ChannelSession.StandardEnvironment environ = new ChannelSession.StandardEnvironment();
         SignalListener listener = new SignalListener() {
+            @Override
             public void signal(Signal signal) {
                 // ignored
             }

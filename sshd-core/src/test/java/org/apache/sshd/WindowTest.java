@@ -18,6 +18,9 @@
  */
 package org.apache.sshd;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -31,6 +34,7 @@ import java.util.concurrent.CountDownLatch;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.Channel;
+import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.Service;
@@ -38,7 +42,8 @@ import org.apache.sshd.common.Session;
 import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.common.forward.TcpipServerChannel;
 import org.apache.sshd.common.io.IoReadFuture;
-import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.CommandFactory;
 import org.apache.sshd.server.channel.ChannelSession;
@@ -54,9 +59,6 @@ import org.apache.sshd.util.Utils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 
 /**
  * TODO Add javadoc
@@ -80,6 +82,7 @@ public class WindowTest extends BaseTest {
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setShellFactory(new TestEchoShellFactory());
         sshd.setCommandFactory(new CommandFactory() {
+            @Override
             public Command createCommand(String command) {
                 return new UnknownCommand(command);
             }
@@ -143,8 +146,8 @@ public class WindowTest extends BaseTest {
     @Test
     public void testWindowConsumptionWithInvertedStreams() throws Exception {
         sshd.setShellFactory(new AsyncEchoShellFactory());
-        sshd.getProperties().put(SshServer.WINDOW_SIZE, "1024");
-        client.getProperties().put(SshClient.WINDOW_SIZE, "1024");
+        sshd.getProperties().put(FactoryManager.WINDOW_SIZE, "1024");
+        client.getProperties().put(FactoryManager.WINDOW_SIZE, "1024");
         client.start();
         ClientSession session = client.connect("smx", "localhost", port).await().getSession();
         session.addPasswordIdentity("smx");
@@ -183,8 +186,8 @@ public class WindowTest extends BaseTest {
     @Test
     public void testWindowConsumptionWithDirectStreams() throws Exception {
         sshd.setShellFactory(new AsyncEchoShellFactory());
-        sshd.getProperties().put(SshServer.WINDOW_SIZE, "1024");
-        client.getProperties().put(SshClient.WINDOW_SIZE, "1024");
+        sshd.getProperties().put(FactoryManager.WINDOW_SIZE, "1024");
+        client.getProperties().put(FactoryManager.WINDOW_SIZE, "1024");
         client.start();
         ClientSession session = client.connect("smx", "localhost", port).await().getSession();
         session.addPasswordIdentity("smx");
@@ -210,28 +213,29 @@ public class WindowTest extends BaseTest {
         final String message = "0123456789";
         final int nbMessages = 500;
 
-        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(inPos));
-        BufferedReader reader = new BufferedReader(new InputStreamReader(outPis));
-        for (int i = 0; i < nbMessages; i++) {
-            writer.write(message);
-            writer.write("\n");
-            writer.flush();
-
-            waitForWindowEquals(clientLocal, serverRemote, "client local", "server remote");
-
-            String line = reader.readLine();
-            assertEquals(message, line);
-
-            waitForWindowEquals(clientLocal, serverRemote, "client local", "server remote");
-            waitForWindowEquals(clientRemote, serverLocal, "client remote", "server local");
+        try(BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(inPos));
+            BufferedReader reader = new BufferedReader(new InputStreamReader(outPis))) {
+            for (int i = 0; i < nbMessages; i++) {
+                writer.write(message);
+                writer.write("\n");
+                writer.flush();
+    
+                waitForWindowEquals(clientLocal, serverRemote, "client local", "server remote");
+    
+                String line = reader.readLine();
+                assertEquals(message, line);
+    
+                waitForWindowEquals(clientLocal, serverRemote, "client local", "server remote");
+                waitForWindowEquals(clientRemote, serverLocal, "client remote", "server local");
+            }
         }
     }
 
     @Test
     public void testWindowConsumptionWithAsyncStreams() throws Exception {
         sshd.setShellFactory(new AsyncEchoShellFactory());
-        sshd.getProperties().put(SshServer.WINDOW_SIZE, "1024");
-        client.getProperties().put(SshClient.WINDOW_SIZE, "1024");
+        sshd.getProperties().put(FactoryManager.WINDOW_SIZE, "1024");
+        client.getProperties().put(FactoryManager.WINDOW_SIZE, "1024");
         client.start();
         ClientSession session = client.connect("smx", "localhost", port).await().getSession();
         session.addPasswordIdentity("smx");
@@ -253,12 +257,12 @@ public class WindowTest extends BaseTest {
 
         for (int i = 0; i < nbMessages; i++) {
 
-            Buffer buffer = new Buffer((message + "\n").getBytes());
+            Buffer buffer = new ByteArrayBuffer((message + "\n").getBytes());
             channel.getAsyncIn().write(buffer).verify();
 
             waitForWindowNotEquals(clientLocal, serverRemote, "client local", "server remote");
 
-            Buffer buf = new Buffer(16);
+            Buffer buf = new ByteArrayBuffer(16);
             IoReadFuture future = channel.getAsyncOut().read(buf);
             future.verify();
             assertEquals(11, buf.available());

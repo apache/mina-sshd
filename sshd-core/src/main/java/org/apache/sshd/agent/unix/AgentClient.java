@@ -25,7 +25,8 @@ import java.util.concurrent.ArrayBlockingQueue;
 
 import org.apache.sshd.agent.common.AbstractAgentProxy;
 import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.tomcat.jni.Local;
 import org.apache.tomcat.jni.Pool;
 import org.apache.tomcat.jni.Socket;
@@ -52,7 +53,7 @@ public class AgentClient extends AbstractAgentProxy implements Runnable {
             if (result != Status.APR_SUCCESS) {
                 throwException(result);
             }
-            receiveBuffer = new Buffer();
+            receiveBuffer = new ByteArrayBuffer();
             messages = new ArrayBlockingQueue<Buffer>(10);
             new Thread(this).start();
         } catch (IOException e) {
@@ -62,6 +63,7 @@ public class AgentClient extends AbstractAgentProxy implements Runnable {
         }
     }
 
+    @Override
     public void run() {
         try {
             byte[] buf = new byte[1024];
@@ -70,7 +72,7 @@ public class AgentClient extends AbstractAgentProxy implements Runnable {
                 if (result < Status.APR_SUCCESS) {
                     throwException(result);
                 }
-                messageReceived(new Buffer(buf, 0, result));
+                messageReceived(new ByteArrayBuffer(buf, 0, result));
             }
         } catch (Exception e) {
             if (!closed) {
@@ -94,7 +96,7 @@ public class AgentClient extends AbstractAgentProxy implements Runnable {
                 int len = receiveBuffer.getInt();
                 receiveBuffer.rpos(rpos);
                 if (receiveBuffer.available() >= 4 + len) {
-                    message = new Buffer(receiveBuffer.getBytes());
+                    message = new ByteArrayBuffer(receiveBuffer.getBytes());
                     receiveBuffer.compact();
                 }
             }
@@ -115,6 +117,7 @@ public class AgentClient extends AbstractAgentProxy implements Runnable {
         }
     }
 
+    @Override
     protected synchronized Buffer request(Buffer buffer) throws IOException {
         int wpos = buffer.wpos();
         buffer.wpos(0);

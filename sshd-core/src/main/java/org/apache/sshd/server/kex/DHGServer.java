@@ -28,8 +28,9 @@ import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.kex.AbstractDH;
 import org.apache.sshd.common.kex.DHFactory;
 import org.apache.sshd.common.session.AbstractSession;
-import org.apache.sshd.common.util.Buffer;
-import org.apache.sshd.common.util.BufferUtils;
+import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.BufferUtils;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -74,6 +75,7 @@ public class DHGServer extends AbstractDHServerKeyExchange {
         f = dh.getE();
     }
 
+    @Override
     public boolean next(Buffer buffer) throws Exception {
         byte cmd = buffer.getByte();
         if (cmd != SshConstants.SSH_MSG_KEXDH_INIT) {
@@ -91,16 +93,16 @@ public class DHGServer extends AbstractDHServerKeyExchange {
         Signature sig = NamedFactory.Utils.create(session.getFactoryManager().getSignatureFactories(), algo);
         sig.init(kp.getPublic(), kp.getPrivate());
 
-        buffer = new Buffer();
+        buffer = new ByteArrayBuffer();
         buffer.putRawPublicKey(kp.getPublic());
         K_S = buffer.getCompactData();
 
         buffer.clear();
-        buffer.putString(V_C);
-        buffer.putString(V_S);
-        buffer.putString(I_C);
-        buffer.putString(I_S);
-        buffer.putString(K_S);
+        buffer.putBytes(V_C);
+        buffer.putBytes(V_S);
+        buffer.putBytes(I_C);
+        buffer.putBytes(I_S);
+        buffer.putBytes(K_S);
         buffer.putMPInt(e);
         buffer.putMPInt(f);
         buffer.putMPInt(K);
@@ -111,7 +113,7 @@ public class DHGServer extends AbstractDHServerKeyExchange {
         buffer.clear();
         sig.update(H, 0, H.length);
         buffer.putString(algo);
-        buffer.putString(sig.sign());
+        buffer.putBytes(sig.sign());
         sigH = buffer.getCompactData();
 
         if (log.isDebugEnabled()) {
@@ -126,9 +128,9 @@ public class DHGServer extends AbstractDHServerKeyExchange {
         buffer.rpos(5);
         buffer.wpos(5);
         buffer.putByte(SshConstants.SSH_MSG_KEXDH_REPLY);
-        buffer.putString(K_S);
-        buffer.putString(f);
-        buffer.putString(sigH);
+        buffer.putBytes(K_S);
+        buffer.putBytes(f);
+        buffer.putBytes(sigH);
         session.writePacket(buffer);
         return true;
     }

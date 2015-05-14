@@ -23,7 +23,7 @@ import java.security.PublicKey;
 
 import org.apache.sshd.ClientSession;
 import org.apache.sshd.client.ServerKeyVerifier;
-import org.apache.sshd.common.util.BufferUtils;
+import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

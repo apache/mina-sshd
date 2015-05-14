@@ -18,6 +18,75 @@
  */
 package org.apache.sshd.client.sftp;
 
+import static org.apache.sshd.common.sftp.SftpConstants.ACE4_APPEND_DATA;
+import static org.apache.sshd.common.sftp.SftpConstants.ACE4_READ_ATTRIBUTES;
+import static org.apache.sshd.common.sftp.SftpConstants.ACE4_READ_DATA;
+import static org.apache.sshd.common.sftp.SftpConstants.ACE4_WRITE_ATTRIBUTES;
+import static org.apache.sshd.common.sftp.SftpConstants.ACE4_WRITE_DATA;
+import static org.apache.sshd.common.sftp.SftpConstants.SFTP_V3;
+import static org.apache.sshd.common.sftp.SftpConstants.SFTP_V4;
+import static org.apache.sshd.common.sftp.SftpConstants.SFTP_V5;
+import static org.apache.sshd.common.sftp.SftpConstants.SFTP_V6;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FILEXFER_ATTR_ACCESSTIME;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FILEXFER_ATTR_ACMODTIME;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FILEXFER_ATTR_ALL;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FILEXFER_ATTR_CREATETIME;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FILEXFER_ATTR_MODIFYTIME;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FILEXFER_ATTR_OWNERGROUP;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FILEXFER_ATTR_PERMISSIONS;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FILEXFER_ATTR_SIZE;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FILEXFER_ATTR_SUBSECOND_TIMES;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FILEXFER_ATTR_UIDGID;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FILEXFER_TYPE_DIRECTORY;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FILEXFER_TYPE_REGULAR;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FILEXFER_TYPE_SYMLINK;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXF_APPEND;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXF_CREAT;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXF_CREATE_NEW;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXF_CREATE_TRUNCATE;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXF_EXCL;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXF_OPEN_EXISTING;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXF_OPEN_OR_CREATE;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXF_READ;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXF_TRUNC;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXF_TRUNCATE_EXISTING;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXF_WRITE;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_ATTRS;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_BLOCK;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_CLOSE;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_DATA;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_FSETSTAT;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_FSTAT;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_HANDLE;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_INIT;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_LINK;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_LSTAT;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_MKDIR;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_NAME;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_OPEN;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_OPENDIR;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_READ;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_READDIR;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_READLINK;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_REALPATH;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_REMOVE;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_RENAME;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_RENAME_ATOMIC;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_RENAME_OVERWRITE;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_RMDIR;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_SETSTAT;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_STAT;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_STATUS;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_SYMLINK;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_UNBLOCK;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_VERSION;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_WRITE;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FX_EOF;
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FX_OK;
+import static org.apache.sshd.common.sftp.SftpConstants.S_IFDIR;
+import static org.apache.sshd.common.sftp.SftpConstants.S_IFLNK;
+import static org.apache.sshd.common.sftp.SftpConstants.S_IFREG;
+
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -40,9 +109,8 @@ import org.apache.sshd.client.SftpClient;
 import org.apache.sshd.client.SftpException;
 import org.apache.sshd.client.channel.ChannelSubsystem;
 import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.util.Buffer;
-
-import static org.apache.sshd.common.sftp.SftpConstants.*;
+import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -52,7 +120,7 @@ public class DefaultSftpClient implements SftpClient {
     private final ChannelSubsystem channel;
     private final Map<Integer, Buffer> messages;
     private final AtomicInteger cmdId = new AtomicInteger(100);
-    private final Buffer receiveBuffer = new Buffer();
+    private final Buffer receiveBuffer = new ByteArrayBuffer();
     private boolean closing;
     private int version;
     private final Map<String, byte[]> extensions = new HashMap<>();
@@ -78,6 +146,7 @@ public class DefaultSftpClient implements SftpClient {
             throw (IOException) new InterruptedIOException().initCause(e);
         }
         this.channel.onClose(new Runnable() {
+            @Override
             public void run() {
                 synchronized (messages) {
                     closing = true;
@@ -93,10 +162,12 @@ public class DefaultSftpClient implements SftpClient {
         return version;
     }
 
+    @Override
     public boolean isClosing() {
         return closing;
     }
 
+    @Override
     public void close() throws IOException {
         this.channel.close(false);
     }
@@ -105,7 +176,7 @@ public class DefaultSftpClient implements SftpClient {
      * Receive binary data
      */
     protected int data(byte[] buf, int start, int len) throws IOException {
-        Buffer incoming = new Buffer(buf,  start, len);
+        Buffer incoming = new ByteArrayBuffer(buf,  start, len);
         // If we already have partial data, we need to append it to the buffer and use it
         if (receiveBuffer.available() > 0) {
             receiveBuffer.putBuffer(incoming);
@@ -152,7 +223,7 @@ public class DefaultSftpClient implements SftpClient {
      * Process an SFTP packet
      */
     protected void process(Buffer incoming) throws IOException {
-        Buffer buffer = new Buffer();
+        Buffer buffer = new ByteArrayBuffer();
         buffer.putBuffer(incoming);
         buffer.rpos(5);
         int id = buffer.getInt();
@@ -200,7 +271,7 @@ public class DefaultSftpClient implements SftpClient {
         if (length < 5) {
             throw new IllegalArgumentException();
         }
-        Buffer buffer = new Buffer(length + 4);
+        Buffer buffer = new ByteArrayBuffer(length + 4);
         buffer.putInt(length);
         int nb = length;
         while (nb > 0) {
@@ -516,8 +587,9 @@ public class DefaultSftpClient implements SftpClient {
         }
     }
 
+    @Override
     public Handle open(String path, Collection<OpenMode> options) throws IOException {
-        Buffer buffer = new Buffer();
+        Buffer buffer = new ByteArrayBuffer();
         buffer.putString(path);
         if (version == SFTP_V3) {
             int mode = 0;
@@ -576,24 +648,28 @@ public class DefaultSftpClient implements SftpClient {
         return checkHandle(receive(send(SSH_FXP_OPEN, buffer)));
     }
 
+    @Override
     public void close(Handle handle) throws IOException {
-        Buffer buffer = new Buffer();
+        Buffer buffer = new ByteArrayBuffer();
         buffer.putString(handle.id);
         checkStatus(receive(send(SSH_FXP_CLOSE, buffer)));
     }
 
+    @Override
     public void remove(String path) throws IOException {
-        Buffer buffer = new Buffer();
+        Buffer buffer = new ByteArrayBuffer();
         buffer.putString(path);
         checkStatus(receive(send(SSH_FXP_REMOVE, buffer)));
     }
 
+    @Override
     public void rename(String oldPath, String newPath) throws IOException {
         rename(oldPath, newPath, new CopyMode[0]);
     }
 
+    @Override
     public void rename(String oldPath, String newPath, CopyMode... options) throws IOException {
-        Buffer buffer = new Buffer();
+        Buffer buffer = new ByteArrayBuffer();
         buffer.putString(oldPath);
         buffer.putString(newPath);
         if (version >= SFTP_V5) {
@@ -615,8 +691,9 @@ public class DefaultSftpClient implements SftpClient {
         checkStatus(receive(send(SSH_FXP_RENAME, buffer)));
     }
 
+    @Override
     public int read(Handle handle, long fileOffset, byte[] dst, int dstoff, int len) throws IOException {
-        Buffer buffer = new Buffer();
+        Buffer buffer = new ByteArrayBuffer();
         buffer.putString(handle.id);
         buffer.putLong(fileOffset);
         buffer.putInt(len);
@@ -645,6 +722,7 @@ public class DefaultSftpClient implements SftpClient {
         }
     }
 
+    @Override
     public void write(Handle handle, long fileOffset, byte[] src, int srcoff, int len) throws IOException {
         // do some bounds checking first
         if (fileOffset < 0 || srcoff < 0 || len < 0) {
@@ -653,15 +731,16 @@ public class DefaultSftpClient implements SftpClient {
         if (srcoff + len > src.length) {
             throw new IllegalArgumentException("cannot read bytes " + srcoff + " to " + (srcoff + len) + " when array is only of length " + src.length);
         }
-        Buffer buffer = new Buffer();
+        Buffer buffer = new ByteArrayBuffer();
         buffer.putString(handle.id);
         buffer.putLong(fileOffset);
         buffer.putBytes(src, srcoff, len);
         checkStatus(receive(send(SSH_FXP_WRITE, buffer)));
     }
 
+    @Override
     public void mkdir(String path) throws IOException {
-        Buffer buffer = new Buffer();
+        Buffer buffer = new ByteArrayBuffer();
         buffer.putString(path, StandardCharsets.UTF_8);
         buffer.putInt(0);
         if (version != SFTP_V3) {
@@ -670,20 +749,23 @@ public class DefaultSftpClient implements SftpClient {
         checkStatus(receive(send(SSH_FXP_MKDIR, buffer)));
     }
 
+    @Override
     public void rmdir(String path) throws IOException {
-        Buffer buffer = new Buffer();
+        Buffer buffer = new ByteArrayBuffer();
         buffer.putString(path);
         checkStatus(receive(send(SSH_FXP_RMDIR, buffer)));
     }
 
+    @Override
     public Handle openDir(String path) throws IOException {
-        Buffer buffer = new Buffer();
+        Buffer buffer = new ByteArrayBuffer();
         buffer.putString(path);
         return checkHandle(receive(send(SSH_FXP_OPENDIR, buffer)));
     }
 
+    @Override
     public DirEntry[] readDir(Handle handle) throws IOException {
-        Buffer buffer = new Buffer();
+        Buffer buffer = new ByteArrayBuffer();
         buffer.putString(handle.id);
         return checkDir(receive(send(SSH_FXP_READDIR, buffer)));
     }
@@ -715,14 +797,16 @@ public class DefaultSftpClient implements SftpClient {
         }
     }
 
+    @Override
     public String canonicalPath(String path) throws IOException {
-        Buffer buffer = new Buffer();
+        Buffer buffer = new ByteArrayBuffer();
         buffer.putString(path);
         return checkOneName(receive(send(SSH_FXP_REALPATH, buffer)));
     }
 
+    @Override
     public Attributes stat(String path) throws IOException {
-        Buffer buffer = new Buffer();
+        Buffer buffer = new ByteArrayBuffer();
         buffer.putString(path);
         if (version >= SFTP_V4) {
             buffer.putInt(SSH_FILEXFER_ATTR_ALL);
@@ -730,8 +814,9 @@ public class DefaultSftpClient implements SftpClient {
         return checkAttributes(receive(send(SSH_FXP_STAT, buffer)));
     }
 
+    @Override
     public Attributes lstat(String path) throws IOException {
-        Buffer buffer = new Buffer();
+        Buffer buffer = new ByteArrayBuffer();
         buffer.putString(path);
         if (version >= SFTP_V4) {
             buffer.putInt(SSH_FILEXFER_ATTR_ALL);
@@ -739,8 +824,9 @@ public class DefaultSftpClient implements SftpClient {
         return checkAttributes(receive(send(SSH_FXP_LSTAT, buffer)));
     }
 
+    @Override
     public Attributes stat(Handle handle) throws IOException {
-        Buffer buffer = new Buffer();
+        Buffer buffer = new ByteArrayBuffer();
         buffer.putString(handle.id);
         if (version >= SFTP_V4) {
             buffer.putInt(SSH_FILEXFER_ATTR_ALL);
@@ -748,41 +834,46 @@ public class DefaultSftpClient implements SftpClient {
         return checkAttributes(receive(send(SSH_FXP_FSTAT, buffer)));
     }
 
+    @Override
     public void setStat(String path, Attributes attributes) throws IOException {
-        Buffer buffer = new Buffer();
+        Buffer buffer = new ByteArrayBuffer();
         buffer.putString(path);
         writeAttributes(buffer, attributes);
         checkStatus(receive(send(SSH_FXP_SETSTAT, buffer)));
     }
 
+    @Override
     public void setStat(Handle handle, Attributes attributes) throws IOException {
-        Buffer buffer = new Buffer();
+        Buffer buffer = new ByteArrayBuffer();
         buffer.putString(handle.id);
         writeAttributes(buffer, attributes);
         checkStatus(receive(send(SSH_FXP_FSETSTAT, buffer)));
     }
 
+    @Override
     public String readLink(String path) throws IOException {
-        Buffer buffer = new Buffer();
+        Buffer buffer = new ByteArrayBuffer();
         buffer.putString(path);
         return checkOneName(receive(send(SSH_FXP_READLINK, buffer)));
     }
 
+    @Override
     public void symLink(String linkPath, String targetPath) throws IOException {
         link(linkPath, targetPath, true);
     }
 
+    @Override
     public void link(String linkPath, String targetPath, boolean symbolic) throws IOException {
         if (version < SFTP_V6) {
             if (!symbolic) {
                 throw new UnsupportedOperationException("Hard links are not supported in sftp v" + version);
             }
-            Buffer buffer = new Buffer();
+            Buffer buffer = new ByteArrayBuffer();
             buffer.putString(targetPath);
             buffer.putString(linkPath);
             checkStatus(receive(send(SSH_FXP_SYMLINK, buffer)));
         } else {
-            Buffer buffer = new Buffer();
+            Buffer buffer = new ByteArrayBuffer();
             buffer.putString(targetPath);
             buffer.putString(linkPath);
             buffer.putBoolean(symbolic);
@@ -792,7 +883,7 @@ public class DefaultSftpClient implements SftpClient {
 
     @Override
     public void lock(Handle handle, long offset, long length, int mask) throws IOException {
-        Buffer buffer = new Buffer();
+        Buffer buffer = new ByteArrayBuffer();
         buffer.putString(handle.id);
         buffer.putLong(offset);
         buffer.putLong(length);
@@ -802,15 +893,17 @@ public class DefaultSftpClient implements SftpClient {
 
     @Override
     public void unlock(Handle handle, long offset, long length) throws IOException {
-        Buffer buffer = new Buffer();
+        Buffer buffer = new ByteArrayBuffer();
         buffer.putString(handle.id);
         buffer.putLong(offset);
         buffer.putLong(length);
         checkStatus(receive(send(SSH_FXP_UNBLOCK, buffer)));
     }
 
+    @Override
     public Iterable<DirEntry> readDir(final String path) throws IOException {
         return new Iterable<DirEntry>() {
+            @Override
             public Iterator<DirEntry> iterator() {
                 return new Iterator<DirEntry>() {
                     Handle handle;
@@ -820,9 +913,11 @@ public class DefaultSftpClient implements SftpClient {
                         open();
                         load();
                     }
+                    @Override
                     public boolean hasNext() {
                         return entries != null && index < entries.length;
                     }
+                    @Override
                     public DirEntry next() {
                         DirEntry entry = entries[index++];
                         if (index >= entries.length) {
@@ -854,6 +949,7 @@ public class DefaultSftpClient implements SftpClient {
                             throw new RuntimeException(e);
                         }
                     }
+                    @Override
                     public void remove() {
                         throw new UnsupportedOperationException();
                     }
@@ -862,10 +958,12 @@ public class DefaultSftpClient implements SftpClient {
         };
     }
 
+    @Override
     public InputStream read(final String path) throws IOException {
         return read(path, EnumSet.of(OpenMode.Read));
     }
 
+    @Override
     public InputStream read(final String path, final EnumSet<OpenMode> mode) throws IOException {
         return new InputStream() {
             byte[] buffer = new byte[32 * 1024];
@@ -922,10 +1020,12 @@ public class DefaultSftpClient implements SftpClient {
         };
     }
 
+    @Override
     public OutputStream write(final String path) throws IOException {
         return write(path, EnumSet.of(OpenMode.Write, OpenMode.Create, OpenMode.Truncate));
     }
 
+    @Override
     public OutputStream write(final String path, final EnumSet<OpenMode> mode) throws IOException {
         return new OutputStream() {
             byte[] buffer = new byte[32 * 1024];

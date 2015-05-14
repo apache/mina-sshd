@@ -18,7 +18,7 @@
  */
 package org.apache.sshd.server.auth;
 
-import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.server.UserAuth;
 import org.apache.sshd.server.session.ServerSession;
 import org.slf4j.Logger;

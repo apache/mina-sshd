@@ -30,8 +30,9 @@ import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.session.ConnectionService;
-import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.CloseableUtils;
+import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
 /**
  * SOCKS proxy server, supporting simple socks4/5 protocols.
@@ -47,12 +48,14 @@ public class SocksProxy extends CloseableUtils.AbstractCloseable implements IoHa
         this.service = service;
     }
 
+    @Override
     public void sessionCreated(IoSession session) throws Exception {
         if (isClosing()) {
             throw new SshException("SocksProxy is closing or closed");
         }
     }
 
+    @Override
     public void sessionClosed(IoSession session) throws Exception {
         Proxy proxy = proxies.remove(session);
         if (proxy != null) {
@@ -60,8 +63,9 @@ public class SocksProxy extends CloseableUtils.AbstractCloseable implements IoHa
         }
     }
 
+    @Override
     public void messageReceived(final IoSession session, org.apache.sshd.common.util.Readable message) throws Exception {
-        Buffer buffer = new Buffer(message.available());
+        Buffer buffer = new ByteArrayBuffer(message.available());
         buffer.putBuffer(message);
         Proxy proxy = proxies.get(session);
         if (proxy == null) {
@@ -80,6 +84,7 @@ public class SocksProxy extends CloseableUtils.AbstractCloseable implements IoHa
         }
     }
 
+    @Override
     public void exceptionCaught(IoSession ioSession, Throwable cause) throws Exception {
         log.warn("Exception caught, closing socks proxy", cause);
         ioSession.close(false);
@@ -142,6 +147,7 @@ public class SocksProxy extends CloseableUtils.AbstractCloseable implements IoHa
                 channel = new TcpipClientChannel(TcpipClientChannel.Type.Direct, session, remote);
                 service.registerChannel(channel);
                 channel.open().addListener(new SshFutureListener<OpenFuture>() {
+                    @Override
                     public void operationComplete(OpenFuture future) {
                         onChannelOpened(future);
                     }
@@ -152,7 +158,7 @@ public class SocksProxy extends CloseableUtils.AbstractCloseable implements IoHa
         }
 
         protected void onChannelOpened(OpenFuture future) {
-            Buffer buffer = new Buffer(8);
+            Buffer buffer = new ByteArrayBuffer(8);
             buffer.putByte((byte) 0x00);
             Throwable t = future.getException();
             if (t != null) {
@@ -201,7 +207,7 @@ public class SocksProxy extends CloseableUtils.AbstractCloseable implements IoHa
                 for (int i = 0; i < nbAuthMethods; i++) {
                     foundNoAuth |= authMethods[i] == 0;
                 }
-                buffer = new Buffer(8);
+                buffer = new ByteArrayBuffer(8);
                 buffer.putByte((byte) 0x05);
                 buffer.putByte((byte) (foundNoAuth ? 0x00 : 0xFF));
                 session.write(buffer);
@@ -248,6 +254,7 @@ public class SocksProxy extends CloseableUtils.AbstractCloseable implements IoHa
                 channel = new TcpipClientChannel(TcpipClientChannel.Type.Direct, session, remote);
                 service.registerChannel(channel);
                 channel.open().addListener(new SshFutureListener<OpenFuture>() {
+                    @Override
                     public void operationComplete(OpenFuture future) {
                         onChannelOpened(future);
                     }

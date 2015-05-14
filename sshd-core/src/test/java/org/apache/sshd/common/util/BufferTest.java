@@ -18,13 +18,15 @@
  */
 package org.apache.sshd.common.util;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 
+import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.util.BaseTest;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
 
 public class BufferTest extends BaseTest {
 
@@ -33,7 +35,7 @@ public class BufferTest extends BaseTest {
         long v = 1234567890123456789L;
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
         new DataOutputStream(stream).writeLong(v);
-        Buffer buffer = new Buffer(stream.toByteArray());
+        Buffer buffer = new ByteArrayBuffer(stream.toByteArray());
         assertEquals(v, buffer.getLong());
     }
 }

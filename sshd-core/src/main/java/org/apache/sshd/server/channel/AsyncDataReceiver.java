@@ -23,7 +23,7 @@ import java.io.IOException;
 import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.channel.ChannelAsyncInputStream;
 import org.apache.sshd.common.io.IoInputStream;
-import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
 public class AsyncDataReceiver implements ChannelDataReceiver {
 
@@ -37,11 +37,13 @@ public class AsyncDataReceiver implements ChannelDataReceiver {
         return in;
     }
 
+    @Override
     public int data(ChannelSession channel, byte[] buf, int start, int len) throws IOException {
-        in.write(new Buffer(buf, start, len));
+        in.write(new ByteArrayBuffer(buf, start, len));
         return 0;
     }
 
+    @Override
     public void close() throws IOException {
         in.close(false);
     }

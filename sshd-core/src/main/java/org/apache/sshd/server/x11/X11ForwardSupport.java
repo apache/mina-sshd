@@ -33,9 +33,10 @@ import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.session.ConnectionService;
-import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.Readable;
+import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -128,6 +129,7 @@ public class X11ForwardSupport extends CloseableUtils.AbstractInnerCloseable imp
         }
     }
 
+    @Override
     public void sessionCreated(IoSession session) throws Exception {
         ChannelForwardedX11 channel = new ChannelForwardedX11(session);
         session.setAttribute(ChannelForwardedX11.class, channel);
@@ -141,6 +143,7 @@ public class X11ForwardSupport extends CloseableUtils.AbstractInnerCloseable imp
         }
     }
 
+    @Override
     public void sessionClosed(IoSession session) throws Exception {
         ChannelForwardedX11 channel = (ChannelForwardedX11) session.getAttribute(ChannelForwardedX11.class);
         if ( channel != null ){
@@ -148,14 +151,16 @@ public class X11ForwardSupport extends CloseableUtils.AbstractInnerCloseable imp
         }
     }
 
+    @Override
     public void messageReceived(IoSession session, Readable message) throws Exception {
         ChannelForwardedX11 channel = (ChannelForwardedX11) session.getAttribute(ChannelForwardedX11.class);
-        Buffer buffer = new Buffer();
+        Buffer buffer = new ByteArrayBuffer();
         buffer.putBuffer(message);
         channel.getInvertedIn().write(buffer.array(), buffer.rpos(), buffer.available());
         channel.getInvertedIn().flush();
     }
 
+    @Override
     public void exceptionCaught(IoSession session, Throwable cause) throws Exception {
         cause.printStackTrace();
         session.close(false);
@@ -169,6 +174,7 @@ public class X11ForwardSupport extends CloseableUtils.AbstractInnerCloseable imp
             this.serverSession = serverSession;
         }
 
+        @Override
         public synchronized OpenFuture open() throws IOException {
             InetSocketAddress remote = (InetSocketAddress) serverSession.getRemoteAddress();
             if (closeFuture.isClosed()) {
@@ -200,9 +206,10 @@ public class X11ForwardSupport extends CloseableUtils.AbstractInnerCloseable imp
             return builder().sequential(serverSession, super.getInnerCloseable()).build();
         }
 
+        @Override
         protected synchronized void doWriteData(byte[] data, int off, int len) throws IOException {
             localWindow.consumeAndCheck(len);
-            serverSession.write(new Buffer(data, off, len));
+            serverSession.write(new ByteArrayBuffer(data, off, len));
         }
 
         @Override

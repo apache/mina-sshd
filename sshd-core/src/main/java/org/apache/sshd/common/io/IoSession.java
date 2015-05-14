@@ -22,7 +22,7 @@ import java.net.SocketAddress;
 
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.future.CloseFuture;
-import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.buffer.Buffer;
 
 public interface IoSession extends Closeable {
 

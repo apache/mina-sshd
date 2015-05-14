@@ -61,17 +61,18 @@ import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
-import org.apache.sshd.common.util.Buffer;
-import org.apache.sshd.common.util.BufferUtils;
 import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.Readable;
+import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.BufferUtils;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
 /**
  * The AbstractSession handles all the basic SSH protocol such as key exchange, authentication,
  * encoding and decoding. Both server side and client side sessions should inherit from this
  * abstract class. Some basic packet processing methods are defined but the actual call to these
- * methods should be done from the {@link #handleMessage(org.apache.sshd.common.util.Buffer)}
+ * methods should be done from the {@link #handleMessage(org.apache.sshd.common.util.buffer.Buffer)}
  * method, which is dependant on the state and side of this session.
  *
  * TODO: if there is any very big packet, decoderBuffer and uncompressBuffer will get quite big
@@ -139,7 +140,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     protected Compression inCompression;
     protected long seqi;
     protected long seqo;
-    protected Buffer decoderBuffer = new Buffer();
+    protected Buffer decoderBuffer = new ByteArrayBuffer();
     protected Buffer uncompressBuffer;
     protected int decoderState;
     protected int decoderLength;
@@ -228,10 +229,12 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
         ioSession.setAttribute(SESSION, session);
     }
 
+    @Override
     public String getServerVersion() {
         return serverVersion;
     }
 
+    @Override
     public String getClientVersion() {
         return clientVersion;
     }
@@ -250,6 +253,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
      *  
      * @return the mina session
      */
+    @Override
     public IoSession getIoSession() {
         return ioSession;
     }
@@ -259,10 +263,12 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
      *
      * @return the factory manager for this session
      */
+    @Override
     public FactoryManager getFactoryManager() {
         return factoryManager;
     }
 
+    @Override
     public String getNegotiatedKexParameter(int paramType) {
     	if ((paramType < 0) || (negotiated == null) || (paramType >= negotiated.length)) {
     		return null;
@@ -447,6 +453,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
      * 
      * @param t the exception to process
      */
+    @Override
     public void exceptionCaught(Throwable t) {
         // Ignore exceptions that happen while closing
         synchronized (lock) {
@@ -488,6 +495,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
         return currentService != null ? new Service[] { currentService } : new Service[0];
     }
 
+    @Override
     public <T extends Service> T getService(Class<T> clazz) {
         for (Service s : getServices()) {
             if (clazz.isInstance(s)) {
@@ -506,6 +514,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
      * @return a future that can be used to check when the packet has actually been sent
      * @throws java.io.IOException if an error occured when encoding sending the packet
      */
+    @Override
     public IoWriteFuture writePacket(Buffer buffer) throws IOException {
         // While exchanging key, queue high level packets
         if (kexState.get() != KEX_STATE_DONE) {
@@ -571,6 +580,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
      * @return <code>true</code> if the request was successful, <code>false</code> otherwise.
      * @throws java.io.IOException if an error occured when encoding sending the packet
      */
+    @Override
     public Buffer request(Buffer buffer) throws IOException {
         synchronized (requestLock) {
             try {
@@ -585,6 +595,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
         }
     }
 
+    @Override
     public Buffer createBuffer(byte cmd) {
         return createBuffer(cmd, 0);
     }
@@ -597,10 +608,11 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
      * @param len estimated number of bytes the buffer will hold, 0 if unknown.
      * @return a new buffer ready for write
      */
+    @Override
     public Buffer createBuffer(byte cmd, int len) {
         Buffer buffer;
         if (len <= 0) {
-            buffer = new Buffer();
+            buffer = new ByteArrayBuffer();
         } else {
             // Since the caller claims to know how many bytes they will need
             // increase their request to account for our headers/footers if
@@ -616,7 +628,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
             if (outMac != null) {
                 len += outMac.getBlockSize();
             }
-            buffer = new Buffer(new byte[Math.max(len, Buffer.DEFAULT_SIZE)], false);
+            buffer = new ByteArrayBuffer(new byte[Math.max(len, ByteArrayBuffer.DEFAULT_SIZE)], false);
         }
         buffer.rpos(5);
         buffer.wpos(5);
@@ -637,7 +649,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
             if (buffer.rpos() < 5) {
                 log.warn("Performance cost: when sending a packet, ensure that "
                            + "5 bytes are available in front of the buffer");
-                Buffer nb = new Buffer();
+                Buffer nb = new ByteArrayBuffer();
                 nb.wpos(5);
                 nb.putBuffer(buffer);
                 buffer = nb;
@@ -763,7 +775,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
                     // Decompress if needed
                     if (inCompression != null && (authed || !inCompression.isDelayed())) {
                         if (uncompressBuffer == null) {
-                            uncompressBuffer = new Buffer();
+                            uncompressBuffer = new ByteArrayBuffer();
                         } else {
                             uncompressBuffer.clear();
                         }
@@ -803,13 +815,13 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     protected void sendIdentification(String ident) {
         log.debug("Send identification: {}", ident);
         byte[] data = (ident + "\r\n").getBytes();
-        ioSession.write(new Buffer(data));
+        ioSession.write(new ByteArrayBuffer(data));
     }
 
     /**
      * Read the other side identification.
      * This method is specific to the client or server side, but both should call
-     * {@link #doReadIdentification(org.apache.sshd.common.util.Buffer,boolean)} and
+     * {@link #doReadIdentification(org.apache.sshd.common.util.buffer.Buffer,boolean)} and
      * store the result in the needed property.
      *
      * @param buffer the buffer containing the remote identification
@@ -983,7 +995,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
             System.arraycopy(H, 0, sessionId, 0, H.length);
         }
 
-        Buffer buffer = new Buffer();
+        Buffer buffer = new ByteArrayBuffer();
         buffer.putMPInt(K);
         buffer.putRawBytes(H);
         buffer.putByte((byte) 0x41);
@@ -1079,7 +1091,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
      */
     private byte[] resizeKey(byte[] E, int blockSize, Digest hash, byte[] K, byte[] H) throws Exception {
         while (blockSize > E.length) {
-            Buffer buffer = new Buffer();
+            Buffer buffer = new ByteArrayBuffer();
             buffer.putMPInt(K);
             buffer.putRawBytes(H);
             buffer.putRawBytes(E);
@@ -1111,6 +1123,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
         // Write the packet with a timeout to ensure a timely close of the session
         // in case the consumer does not read packets anymore.
         writePacket(buffer, disconnectTimeoutMs, TimeUnit.MILLISECONDS).addListener(new SshFutureListener<IoWriteFuture>() {
+            @Override
             public void operationComplete(IoWriteFuture future) {
                 close(true);
             }
@@ -1188,7 +1201,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
 
     protected void requestSuccess(Buffer buffer) throws Exception{
         synchronized (requestResult) {
-            requestResult.set(new Buffer(buffer.getCompactData()));
+            requestResult.set(new ByteArrayBuffer(buffer.getCompactData()));
             resetIdleTimeout();
             requestResult.notify();
         }
@@ -1209,6 +1222,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
      * @param defaultValue the default value
      * @return the value of the configuration property or the default value if not found
      */
+    @Override
     public int getIntProperty(String name, int defaultValue) {
         try {
             String v = factoryManager.getProperties().get(name);
@@ -1239,6 +1253,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
      * @param key the key of the attribute; must not be null.
      * @return <tt>null</tt> if there is no attribute with the specified key
      */
+    @Override
     @SuppressWarnings("unchecked")
     public <T> T getAttribute(AttributeKey<T> key) {
         return (T)attributes.get(key);
@@ -1251,11 +1266,13 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
      * @param value the value of the attribute; must not be null.
      * @return The old value of the attribute.  <tt>null</tt> if it is new.
      */
+    @Override
     @SuppressWarnings("unchecked")
     public <T, E extends T> T setAttribute(AttributeKey<T> key, E value) {
         return (T)attributes.put(key, value);
     }
 
+    @Override
     public String getUsername() {
         return username;
     }
@@ -1267,6 +1284,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     /**
      * {@inheritDoc}
      */
+    @Override
     public void addListener(SessionListener listener) {
         if (listener == null) {
             throw new IllegalArgumentException();
@@ -1277,6 +1295,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     /**
      * {@inheritDoc}
      */
+    @Override
     public void removeListener(SessionListener listener) {
         this.listeners.remove(listener);
     }
@@ -1288,6 +1307,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     /**
      * {@inheritDoc}
      */
+    @Override
     public SshFuture reExchangeKeys() throws IOException {
         if (kexState.compareAndSet(KEX_STATE_DONE, KEX_STATE_INIT)) {
             log.info("Initiating key re-exchange");
@@ -1331,6 +1351,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
         }
     }
 
+    @Override
     public void resetIdleTimeout() {
         this.idleTimeoutTimestamp = System.currentTimeMillis() + idleTimeoutMs;
     }
@@ -1339,6 +1360,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
      * Check if timeout has occurred.
      * @return
      */
+    @Override
     public TimeoutStatus getTimeoutStatus() {
         return timeoutStatus.get();
     }
@@ -1347,6 +1369,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
      * What is timeout value in milliseconds for authentication stage
      * @return
      */
+    @Override
     public long getAuthTimeout() {
         return authTimeoutMs;
     }
@@ -1355,6 +1378,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
      * What is timeout value in milliseconds for communication
      * @return
      */
+    @Override
     public long getIdleTimeout() {
         return idleTimeoutMs;
     }
@@ -1376,6 +1400,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
             return buffer;
         }
 
+        @Override
         public void verify() throws SshException {
             try {
                 await();
@@ -1388,10 +1413,12 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
             }
         }
 
+        @Override
         public boolean isWritten() {
             return getValue() instanceof Boolean;
         }
 
+        @Override
         public Throwable getException() {
             Object v = getValue();
             return v instanceof Throwable ? (Throwable) v : null;
@@ -1408,6 +1435,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
             setValue(cause);
         }
 
+        @Override
         public void operationComplete(IoWriteFuture future) {
             if (future.isWritten()) {
                 setWritten();
@@ -1417,6 +1445,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
         }
     }
 
+    @Override
     public String toString() {
         return getClass().getSimpleName() + "[" + getUsername() + "@" + getIoSession().getRemoteAddress() + "]";
     }

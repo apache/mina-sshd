@@ -18,6 +18,8 @@
  */
 package org.apache.sshd.client.auth;
 
+import static org.apache.sshd.common.util.KeyUtils.getKeyType;
+
 import java.io.IOException;
 import java.security.KeyPair;
 import java.security.PublicKey;
@@ -35,11 +37,10 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.Signature;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.session.AbstractSession;
-import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.sshd.common.util.KeyUtils.getKeyType;
 
 /**
  * TODO Add javadoc
@@ -124,8 +125,8 @@ public class UserAuthPublicKey implements UserAuth {
             buffer.putString(algo);
             buffer.putPublicKey(key);
 
-            Buffer bs = new Buffer();
-            bs.putString(((AbstractSession) session).getKex().getH());
+            Buffer bs = new ByteArrayBuffer();
+            bs.putBytes(((AbstractSession) session).getKex().getH());
             bs.putByte(SshConstants.SSH_MSG_USERAUTH_REQUEST);
             bs.putString(session.getUsername());
             bs.putString(service);
@@ -135,7 +136,7 @@ public class UserAuthPublicKey implements UserAuth {
             bs.putPublicKey(key);
             byte[] sig = current.sign(bs.getCompactData());
 
-            bs = new Buffer();
+            bs = new ByteArrayBuffer();
             bs.putString(algo);
             bs.putBytes(sig);
             buffer.putBytes(bs.array(), bs.rpos(), bs.available());

@@ -21,7 +21,7 @@ package org.apache.sshd.common;
 import java.io.IOException;
 
 import org.apache.sshd.common.future.CloseFuture;
-import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
  * See RFC 4253 [SSH-TRANS] and the SSH_MSG_SERVICE_REQUEST packet.  Examples include ssh-userauth

@@ -30,6 +30,9 @@ import org.apache.sshd.common.Digest;
 import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.digest.BuiltinDigests;
+import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.BufferUtils;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
 /**
  * Utility class for keys
@@ -46,7 +49,7 @@ public class KeyUtils {
      */
     public static String getFingerPrint(PublicKey key) {
         try {
-            Buffer buffer = new Buffer();
+            Buffer buffer = new ByteArrayBuffer();
             buffer.putRawPublicKey(key);
             Digest md5 = BuiltinDigests.md5.create();
             md5.init();

@@ -36,8 +36,9 @@ import org.apache.sshd.common.channel.ChannelAsyncInputStream;
 import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
 import org.apache.sshd.common.io.IoInputStream;
 import org.apache.sshd.common.io.IoOutputStream;
-import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.IoUtils;
+import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
 /**
  * TODO Add javadoc
@@ -75,26 +76,32 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         addRequestHandler(new ExitSignalChannelRequestHandler());
     }
 
+    @Override
     public Streaming getStreaming() {
         return streaming;
     }
 
+    @Override
     public void setStreaming(Streaming streaming) {
         this.streaming = streaming;
     }
 
+    @Override
     public IoOutputStream getAsyncIn() {
         return asyncIn;
     }
 
+    @Override
     public IoInputStream getAsyncOut() {
         return asyncOut;
     }
 
+    @Override
     public IoInputStream getAsyncErr() {
         return asyncErr;
     }
 
+    @Override
     public OutputStream getInvertedIn() {
         return invertedIn;
     }
@@ -103,10 +110,12 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         return in;
     }
 
+    @Override
     public void setIn(InputStream in) {
         this.in = in;
     }
 
+    @Override
     public InputStream getInvertedOut() {
         return invertedOut;
     }
@@ -115,10 +124,12 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         return out;
     }
 
+    @Override
     public void setOut(OutputStream out) {
         this.out = out;
     }
 
+    @Override
     public InputStream getInvertedErr() {
         return invertedErr;
     }
@@ -127,6 +138,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         return err;
     }
 
+    @Override
     public void setErr(OutputStream err) {
         this.err = err;
     }
@@ -136,6 +148,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         return builder()
                 .when(openFuture)
                 .run(new Runnable() {
+                    @Override
                     public void run() {
                         // If the channel has not been opened yet,
                         // skip the SSH_MSG_CHANNEL_CLOSE exchange
@@ -157,6 +170,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
                 .build();
     }
 
+    @Override
     public int waitFor(int mask, long timeout) {
         long t = 0;
         synchronized (lock) {
@@ -207,6 +221,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         }
     }
 
+    @Override
     public synchronized OpenFuture open() throws IOException {
         if (isClosing()) {
             throw new SshException("Session has been closed");
@@ -222,10 +237,12 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         return openFuture;
     }
 
+    @Override
     public OpenFuture open(int recipient, int rwsize, int rmpsize, Buffer buffer) {
         throw new IllegalStateException();
     }
 
+    @Override
     public void handleOpenSuccess(int recipient, int rwsize, int rmpsize, Buffer buffer) {
         this.recipient = recipient;
         this.remoteWindow.init(rwsize, rmpsize);
@@ -244,6 +261,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
 
     protected abstract void doOpen() throws IOException;
 
+    @Override
     public void handleOpenFailure(Buffer buffer) {
         int reason = buffer.getInt();
         String msg = buffer.getString();
@@ -255,13 +273,14 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         notifyStateChanged();
     }
 
+    @Override
     protected void doWriteData(byte[] data, int off, int len) throws IOException {
         // If we're already closing, ignore incoming data
         if (isClosing()) {
             return;
         }
         if (asyncOut != null) {
-            asyncOut.write(new Buffer(data, off, len));
+            asyncOut.write(new ByteArrayBuffer(data, off, len));
         } else if (out != null) {
             out.write(data, off, len);
             out.flush();
@@ -273,13 +292,14 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         }
     }
 
+    @Override
     protected void doWriteExtendedData(byte[] data, int off, int len) throws IOException {
         // If we're already closing, ignore incoming data
         if (isClosing()) {
             return;
         }
         if (asyncErr != null) {
-            asyncErr.write(new Buffer(data, off, len));
+            asyncErr.write(new ByteArrayBuffer(data, off, len));
         } else if (err != null) {
             err.write(data, off, len);
             err.flush();
@@ -299,11 +319,13 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         }
     }
 
+    @Override
     public Integer getExitStatus() {
         return exitStatus;
     }
 
     private class ExitStatusChannelRequestHandler implements RequestHandler<Channel> {
+        @Override
         public Result process(Channel channel, String request, boolean wantReply, Buffer buffer) throws Exception {
             if (request.equals("exit-status")) {
                 exitStatus = buffer.getInt();
@@ -315,6 +337,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     }
 
     private class ExitSignalChannelRequestHandler implements RequestHandler<Channel> {
+        @Override
         public Result process(Channel channel, String request, boolean wantReply, Buffer buffer) throws Exception {
             if (request.equals("exit-signal")) {
                 exitSignal = buffer.getString();

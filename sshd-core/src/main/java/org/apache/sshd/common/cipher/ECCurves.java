@@ -28,6 +28,7 @@ import java.util.TreeMap;
 
 import org.apache.sshd.common.Digest;
 import org.apache.sshd.common.digest.BuiltinDigests;
+import org.apache.sshd.common.util.GenericUtils;
 
 /**
  * Utilities for working with elliptic curves.
@@ -53,7 +54,7 @@ public class ECCurves {
     public static String getCurveName(ECParameterSpec params) {
         int fieldSize = getCurveSize(params);
         final String curveName = getCurveName(fieldSize);
-        if (curveName == null) {
+        if (GenericUtils.isEmpty(curveName)) {
             throw new RuntimeException("invalid curve size " + fieldSize);
         }
         return curveName;

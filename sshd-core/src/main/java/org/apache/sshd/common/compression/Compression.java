@@ -20,7 +20,7 @@ package org.apache.sshd.common.compression;
 
 import java.io.IOException;
 
-import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
  * Interface used to compress the stream of data between the

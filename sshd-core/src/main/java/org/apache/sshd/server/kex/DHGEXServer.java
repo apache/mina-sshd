@@ -34,14 +34,15 @@ import org.apache.sshd.common.Random;
 import org.apache.sshd.common.Signature;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.kex.DHG;
 import org.apache.sshd.common.kex.DHFactory;
+import org.apache.sshd.common.kex.DHG;
 import org.apache.sshd.common.kex.DHGroupData;
 import org.apache.sshd.common.session.AbstractSession;
-import org.apache.sshd.common.util.Buffer;
-import org.apache.sshd.common.util.BufferUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.SecurityUtils;
+import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.BufferUtils;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.server.ServerFactoryManager;
 
 /**
@@ -83,11 +84,13 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
         this.factory = factory;
     }
 
+    @Override
     public void init(AbstractSession s, byte[] V_S, byte[] V_C, byte[] I_S, byte[] I_C) throws Exception {
         super.init(s, V_S, V_C, I_S, I_C);
         expected = SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST;
     }
 
+    @Override
     public boolean next(Buffer buffer) throws Exception {
         byte cmd = buffer.getByte();
 
@@ -157,16 +160,16 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
             Signature sig = NamedFactory.Utils.create(session.getFactoryManager().getSignatureFactories(), algo);
             sig.init(kp.getPublic(), kp.getPrivate());
 
-            buffer = new Buffer();
+            buffer = new ByteArrayBuffer();
             buffer.putRawPublicKey(kp.getPublic());
             K_S = buffer.getCompactData();
 
             buffer.clear();
-            buffer.putString(V_C);
-            buffer.putString(V_S);
-            buffer.putString(I_C);
-            buffer.putString(I_S);
-            buffer.putString(K_S);
+            buffer.putBytes(V_C);
+            buffer.putBytes(V_S);
+            buffer.putBytes(I_C);
+            buffer.putBytes(I_S);
+            buffer.putBytes(K_S);
             if (oldRequest) {
                 buffer.putInt(prf);
             } else {
@@ -186,7 +189,7 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
             buffer.clear();
             sig.update(H, 0, H.length);
             buffer.putString(algo);
-            buffer.putString(sig.sign());
+            buffer.putBytes(sig.sign());
             sigH = buffer.getCompactData();
 
             if (log.isDebugEnabled()) {
@@ -201,9 +204,9 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
             buffer.rpos(5);
             buffer.wpos(5);
             buffer.putByte(SshConstants.SSH_MSG_KEX_DH_GEX_REPLY);
-            buffer.putString(K_S);
-            buffer.putString(f);
-            buffer.putString(sigH);
+            buffer.putBytes(K_S);
+            buffer.putBytes(f);
+            buffer.putBytes(sigH);
             session.writePacket(buffer);
             return true;
         }

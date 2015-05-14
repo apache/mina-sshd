@@ -16,17 +16,18 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.util;
+package org.apache.sshd.common.util.buffer;
 
 import java.math.BigInteger;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.interfaces.DSAParams;
 import java.security.interfaces.DSAPrivateKey;
 import java.security.interfaces.DSAPublicKey;
 import java.security.interfaces.ECPrivateKey;
@@ -44,111 +45,53 @@ import java.security.spec.RSAPrivateCrtKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 
 import org.apache.sshd.common.KeyPairProvider;
-import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.cipher.ECCurves;
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.Readable;
+import org.apache.sshd.common.util.SecurityUtils;
 
 /**
- * TODO Add javadoc
- *
+ * Provides an abstract message buffer for encoding SSH messages
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public final class Buffer implements Readable {
+public abstract class Buffer implements Readable {
 
-    public static final int DEFAULT_SIZE = 256;
-    public static final int MAX_LEN = 65536;
+    // TODO use Long.BYTES in JDK-8
+    protected final byte[]  workBuf = new byte[Long.SIZE / Byte.SIZE];
 
-    private byte[] data;
-    private int rpos;
-    private int wpos;
-
-    public Buffer() {
-        this(DEFAULT_SIZE);
-    }
-
-    public Buffer(int size) {
-        this(new byte[getNextPowerOf2(size)], false);
-    }
-
-    public Buffer(byte[] data) {
-        this(data, 0, data.length, true);
-    }
-
-    public Buffer(byte[] data, boolean read) {
-        this(data, 0, data.length, read);
-    }
-
-    public Buffer(byte[] data, int off, int len) {
-        this(data, off, len, true);
-    }
-
-    public Buffer(byte[] data, int off, int len, boolean read) {
-        this.data = data;
-        this.rpos = off;
-        this.wpos = (read ? len : 0) + off;
-    }
-
-    @Override
-    public String toString() {
-        return "Buffer [rpos=" + rpos + ", wpos=" + wpos + ", size=" + data.length + "]";
+    protected Buffer() {
+        super();
     }
 
     /*======================
       Global methods
     ======================*/
 
-    public int rpos() {
-        return rpos;
-    }
+    public abstract int rpos();
+    public abstract void rpos(int rpos);
 
-    public void rpos(int rpos) {
-        this.rpos = rpos;
-    }
+    public abstract int wpos();
 
-    public int wpos() {
-        return wpos;
-    }
+    public abstract void wpos(int wpos);
 
-    public void wpos(int wpos) {
-        ensureCapacity(wpos - this.wpos);
-        this.wpos = wpos;
-    }
+    public abstract int capacity();
+    public abstract byte[] array();
 
-    public int available() {
-        return wpos - rpos;
-    }
-
-    public int capacity() {
-        return data.length - wpos;
-    }
-
-    public byte[] array() {
-        return data;
-    }
-
-    public void compact() {
-        if (available() > 0) {
-            System.arraycopy(data, rpos, data, 0, wpos - rpos);
-        }
-        wpos -= rpos;
-        rpos = 0;
-    }
+    public abstract void compact();
 
     public byte[] getCompactData() {
         int l = available();
         if (l > 0) {
             byte[] b = new byte[l];
-            System.arraycopy(data, rpos, b, 0, l);
+            System.arraycopy(array(), rpos(), b, 0, l);
             return b;
         } else {
-            return new byte[0];
+            return GenericUtils.EMPTY_BYTE_ARRAY;
         }
     }
 
-    public void clear() {
-        rpos = 0;
-        wpos = 0;
-    }
+    public abstract void clear();
 
     public String printHex() {
         return BufferUtils.printHex(array(), rpos(), available());
@@ -159,35 +102,40 @@ public final class Buffer implements Readable {
      ======================*/
 
     public byte getByte() {
-        ensureAvailable(1);
-        return data[rpos++];
+        // TODO use Byte.BYTES for JDK-8
+        ensureAvailable(Byte.SIZE / Byte.SIZE);
+        getRawBytes(workBuf, 0, Byte.SIZE / Byte.SIZE);
+        return workBuf[0];
     }
 
     public int getInt() {
         return (int) getUInt();
     }
 
-    public long getUInt()
-    {
-        ensureAvailable(4);
-        long l = ((data[rpos++] << 24) & 0xff000000L)|
-                 ((data[rpos++] << 16) & 0x00ff0000L)|
-                 ((data[rpos++] <<  8) & 0x0000ff00L)|
-                 ((data[rpos++]      ) & 0x000000ffL);
+    public long getUInt() {
+        // TODO use Integer.BYTES for JDK-8
+        ensureAvailable(Integer.SIZE / Byte.SIZE);
+        getRawBytes(workBuf, 0, Integer.SIZE / Byte.SIZE);
+        long l = ((workBuf[0] << 24) & 0xff000000L)|
+                 ((workBuf[1] << 16) & 0x00ff0000L)|
+                 ((workBuf[2] <<  8) & 0x0000ff00L)|
+                 ((workBuf[3]      ) & 0x000000ffL);
         return l;        
     }
 
-    public long getLong()
-    {
-        ensureAvailable(8);
-        long l = (((long) data[rpos++] << 56) & 0xff00000000000000L)|
-                 (((long) data[rpos++] << 48) & 0x00ff000000000000L)|
-                 (((long) data[rpos++] << 40) & 0x0000ff0000000000L)|
-                 (((long) data[rpos++] << 32) & 0x000000ff00000000L)|
-                 (((long) data[rpos++] << 24) & 0x00000000ff000000L)|
-                 (((long) data[rpos++] << 16) & 0x0000000000ff0000L)|
-                 (((long) data[rpos++] <<  8) & 0x000000000000ff00L)|
-                 (((long) data[rpos++]      ) & 0x00000000000000ffL);
+    public long getLong() {
+        // TODO use Long.BYTES for JDK-8
+        ensureAvailable(Long.SIZE / Byte.SIZE);
+        getRawBytes(workBuf, 0, Long.SIZE / Byte.SIZE);
+        @SuppressWarnings("cast")
+        long l = (((long) workBuf[0] << 56) & 0xff00000000000000L)|
+                 (((long) workBuf[1] << 48) & 0x00ff000000000000L)|
+                 (((long) workBuf[2] << 40) & 0x0000ff0000000000L)|
+                 (((long) workBuf[3] << 32) & 0x000000ff00000000L)|
+                 (((long) workBuf[4] << 24) & 0x00000000ff000000L)|
+                 (((long) workBuf[5] << 16) & 0x0000000000ff0000L)|
+                 (((long) workBuf[6] <<  8) & 0x000000000000ff00L)|
+                 (((long) workBuf[7]      ) & 0x00000000000000ffL);
         return l;
     }
 
@@ -199,16 +147,7 @@ public final class Buffer implements Readable {
         return getString(StandardCharsets.UTF_8);
     }
 
-    public String getString(Charset charset) {
-        int len = getInt();
-        if (len < 0) {
-            throw new IllegalStateException("Bad item length: " + len);
-        }
-        ensureAvailable(len);
-        String s = new String(data, rpos, len, charset);
-        rpos += len;
-        return s;
-    }
+    public abstract String getString(Charset charset);
 
     public byte[] getStringAsBytes() {
         return getBytes();
@@ -225,7 +164,7 @@ public final class Buffer implements Readable {
     public byte[] getBytes() {
         int len = getInt();
         if (len < 0) {
-            throw new IllegalStateException("Bad item length: " + len);
+            throw new BufferException("Bad item length: " + len);
         }
         ensureAvailable(len);
         byte[] b = new byte[len];
@@ -237,20 +176,14 @@ public final class Buffer implements Readable {
         getRawBytes(buf, 0, buf.length);
     }
 
-    public void getRawBytes(byte[] buf, int off, int len) {
-        ensureAvailable(len);
-        System.arraycopy(data, rpos, buf, off, len);
-        rpos += len;
-    }
-
     public PublicKey getPublicKey() throws SshException {
-        int ow = wpos;
+        int ow = wpos();
         int len = getInt();
-        wpos = rpos + len;
+        wpos(rpos() + len);
         try {
             return getRawPublicKey();
         } finally {
-            wpos = ow;
+            wpos(ow);
         }
     }
 
@@ -277,20 +210,15 @@ public final class Buffer implements Readable {
             } else if (KeyPairProvider.ECDSA_SHA2_NISTP521.equals(keyAlg)) {
                 key = getRawECKey("nistp521", ECCurves.EllipticCurves.nistp521);
             } else {
-                throw new IllegalStateException("Unsupported algorithm: " + keyAlg);
+                throw new NoSuchAlgorithmException("Unsupported raw public algorithm: " + keyAlg);
             }
             return key;
-        } catch (InvalidKeySpecException e) {
-            throw new SshException(e);
-        } catch (NoSuchAlgorithmException e) {
-            throw new SshException(e);
-        } catch (NoSuchProviderException e) {
+        } catch (GeneralSecurityException e) {
             throw new SshException(e);
         }
     }
 
-    private PublicKey getRawECKey(String expectedCurve, ECParameterSpec spec) throws InvalidKeySpecException,
-            SshException, NoSuchAlgorithmException, NoSuchProviderException {
+    protected PublicKey getRawECKey(String expectedCurve, ECParameterSpec spec) throws GeneralSecurityException, SshException {
         String curveName = getString();
         if (!expectedCurve.equals(curveName)) {
             throw new InvalidKeySpecException("Curve name does not match expected: " + curveName + " vs "
@@ -334,20 +262,15 @@ public final class Buffer implements Readable {
             } else if (KeyPairProvider.ECDSA_SHA2_NISTP521.equals(keyAlg)) {
                 return extractEC("nistp521", ECCurves.EllipticCurves.nistp521);
             } else {
-                throw new IllegalStateException("Unsupported algorithm: " + keyAlg);
+                throw new NoSuchAlgorithmException("Unsupported key pair algorithm: " + keyAlg);
             }
             return new KeyPair(pub, prv);
-        } catch (InvalidKeySpecException e) {
-            throw new SshException(e);
-        } catch (NoSuchAlgorithmException e) {
-            throw new SshException(e);
-        } catch (NoSuchProviderException e) {
+        } catch (GeneralSecurityException e) {
             throw new SshException(e);
         }
     }
 
-    private KeyPair extractEC(String expectedCurveName, ECParameterSpec spec) throws NoSuchAlgorithmException,
-            NoSuchProviderException, InvalidKeySpecException, SshException {
+    protected KeyPair extractEC(String expectedCurveName, ECParameterSpec spec) throws GeneralSecurityException, SshException {
         String curveName = getString();
         byte[] groupBytes = getStringAsBytes();
         BigInteger exponent = getMPInt();
@@ -367,7 +290,7 @@ public final class Buffer implements Readable {
         return new KeyPair(pubKey, privKey);
     }
 
-    private void ensureAvailable(int a) {
+    public void ensureAvailable(int a) throws BufferException {
         if (available() < a) {
             throw new BufferException("Underflow");
         }
@@ -378,30 +301,28 @@ public final class Buffer implements Readable {
      ======================*/
 
     public void putByte(byte b) {
-        ensureCapacity(1);
-        data[wpos++] = b;
+        // TODO use Byte.BYTES in JDK-8
+        ensureCapacity(Byte.SIZE / Byte.SIZE);
+        workBuf[0] = b;
+        putRawBytes(workBuf, 0, Byte.SIZE / Byte.SIZE);
     }
 
     public void putBuffer(Readable buffer) {
         putBuffer(buffer, true);
     }
 
-    public int putBuffer(Readable buffer, boolean expand) {
-        int r = expand ? buffer.available() : Math.min(buffer.available(), capacity());
-        ensureCapacity(r);
-        buffer.getRawBytes(data, wpos, r);
-        wpos += r;
-        return r;
-    }
+    public abstract int putBuffer(Readable buffer, boolean expand);
 
     /**
      * Writes 16 bits
      * @param i
      */
     public void putShort(int i) {
-        ensureCapacity(2);
-        data[wpos++] = (byte) (i >>  8);
-        data[wpos++] = (byte) (i      );
+        // TODO use Short.BYTES for JDK-8
+        ensureCapacity(Short.SIZE / Byte.SIZE);
+        workBuf[0] = (byte) (i >>  8);
+        workBuf[1] = (byte) (i      );
+        putRawBytes(workBuf, 0, Short.SIZE / Byte.SIZE);
     }
 
     /**
@@ -409,11 +330,13 @@ public final class Buffer implements Readable {
      * @param i
      */
     public void putInt(long i) {
-        ensureCapacity(4);
-        data[wpos++] = (byte) (i >> 24);
-        data[wpos++] = (byte) (i >> 16);
-        data[wpos++] = (byte) (i >>  8);
-        data[wpos++] = (byte) (i      );
+        // TODO use Integer.BYTES for JDK-8
+        ensureCapacity(Integer.SIZE / Byte.SIZE);
+        workBuf[0] = (byte) (i >> 24);
+        workBuf[1] = (byte) (i >> 16);
+        workBuf[2] = (byte) (i >>  8);
+        workBuf[3] = (byte) (i      );
+        putRawBytes(workBuf, 0, Integer.SIZE / Byte.SIZE);
     }
 
     /**
@@ -421,15 +344,17 @@ public final class Buffer implements Readable {
      * @param i
      */
     public void putLong(long i) {
-        ensureCapacity(8);
-        data[wpos++] = (byte) (i >> 56);
-        data[wpos++] = (byte) (i >> 48);
-        data[wpos++] = (byte) (i >> 40);
-        data[wpos++] = (byte) (i >> 32);
-        data[wpos++] = (byte) (i >> 24);
-        data[wpos++] = (byte) (i >> 16);
-        data[wpos++] = (byte) (i >>  8);
-        data[wpos++] = (byte) (i      );
+        // TODO use Long.BYTES for JDK-8
+        ensureCapacity(Long.SIZE / Byte.SIZE);
+        workBuf[0] = (byte) (i >> 56);
+        workBuf[1] = (byte) (i >> 48);
+        workBuf[2] = (byte) (i >> 40);
+        workBuf[3] = (byte) (i >> 32);
+        workBuf[4] = (byte) (i >> 24);
+        workBuf[5] = (byte) (i >> 16);
+        workBuf[6] = (byte) (i >>  8);
+        workBuf[7] = (byte) (i      );
+        putRawBytes(workBuf, 0, Long.SIZE / Byte.SIZE);
     }
 
     public void putBoolean(boolean b) {
@@ -442,22 +367,15 @@ public final class Buffer implements Readable {
 
     public void putBytes(byte[] b, int off, int len) {
         putInt(len);
-        ensureCapacity(len);
-        System.arraycopy(b, off, data, wpos, len);
-        wpos += len;
+        putRawBytes(b, off, len);
     }
 
     public void putString(String string) {
-        putString(string, Charset.defaultCharset());
+        putString(string, StandardCharsets.UTF_8);
     }
 
     public void putString(String string, Charset charset) {
-        putString(string.getBytes(charset));
-    }
-
-    public void putString(byte[] str) {
-        putInt(str.length);
-        putRawBytes(str);
+        putBytes(string.getBytes(charset));
     }
 
     public void putMPInt(BigInteger bi) {
@@ -480,98 +398,92 @@ public final class Buffer implements Readable {
         putRawBytes(d, 0, d.length);
     }
 
-    public void putRawBytes(byte[] d, int off, int len) {
-        ensureCapacity(len);
-        System.arraycopy(d, off, data, wpos, len);
-        wpos += len;
-    }
+    public abstract void putRawBytes(byte[] d, int off, int len);
 
     public void putPublicKey(PublicKey key) {
-        int ow = wpos;
+        int ow = wpos();
         putInt(0);
-        int ow1 = wpos;
+        int ow1 = wpos();
         putRawPublicKey(key);
-        int ow2 = wpos;
-        wpos = ow;
+        int ow2 = wpos();
+        wpos(ow);
         putInt(ow2 - ow1);
-        wpos = ow2;
+        wpos(ow2);
     }
 
     public void putRawPublicKey(PublicKey key) {
         if (key instanceof RSAPublicKey) {
+            RSAPublicKey rsaPub = (RSAPublicKey) key;
+
             putString(KeyPairProvider.SSH_RSA);
-            putMPInt(((RSAPublicKey) key).getPublicExponent());
-            putMPInt(((RSAPublicKey) key).getModulus());
+            putMPInt(rsaPub.getPublicExponent());
+            putMPInt(rsaPub.getModulus());
         } else if (key instanceof DSAPublicKey) {
+            DSAPublicKey    dsaPub = (DSAPublicKey) key;
+            DSAParams       dsaParams = dsaPub.getParams();
+
             putString(KeyPairProvider.SSH_DSS);
-            putMPInt(((DSAPublicKey) key).getParams().getP());
-            putMPInt(((DSAPublicKey) key).getParams().getQ());
-            putMPInt(((DSAPublicKey) key).getParams().getG());
-            putMPInt(((DSAPublicKey) key).getY());
+            putMPInt(dsaParams.getP());
+            putMPInt(dsaParams.getQ());
+            putMPInt(dsaParams.getG());
+            putMPInt(dsaPub.getY());
         } else if (key instanceof ECPublicKey) {
-            ECPublicKey ecKey = (ECPublicKey) key;
+            ECPublicKey     ecKey = (ECPublicKey) key;
             ECParameterSpec ecParams = ecKey.getParams();
-            String curveName = ECCurves.getCurveName(ecParams);
+            String          curveName = ECCurves.getCurveName(ecParams);
             putString(ECCurves.ECDSA_SHA2_PREFIX + curveName);
             putString(curveName);
             putBytes(ECCurves.encodeECPoint(ecKey.getW(), ecParams.getCurve()));
         } else {
-            throw new IllegalStateException("Unsupported algorithm: " + key.getAlgorithm());
+            throw new BufferException("Unsupported raw public key algorithm: " + key.getAlgorithm());
         }
     }
 
-    public void putKeyPair(KeyPair key) {
-        if (key.getPrivate() instanceof RSAPrivateCrtKey) {
+    public void putKeyPair(KeyPair kp) {
+        PublicKey   pubKey = kp.getPublic();
+        PrivateKey  prvKey = kp.getPrivate();
+        if (prvKey instanceof RSAPrivateCrtKey) {
+            RSAPublicKey        rsaPub = (RSAPublicKey) pubKey;
+            RSAPrivateCrtKey    rsaPrv = (RSAPrivateCrtKey) prvKey;
+
             putString(KeyPairProvider.SSH_RSA);
-            putMPInt(((RSAPublicKey) key.getPublic()).getPublicExponent());
-            putMPInt(((RSAPublicKey) key.getPublic()).getModulus());
-            putMPInt(((RSAPrivateCrtKey) key.getPrivate()).getPrivateExponent());
-            putMPInt(((RSAPrivateCrtKey) key.getPrivate()).getCrtCoefficient());
-            putMPInt(((RSAPrivateCrtKey) key.getPrivate()).getPrimeQ());
-            putMPInt(((RSAPrivateCrtKey) key.getPrivate()).getPrimeP());
-        } else if (key.getPublic() instanceof DSAPublicKey) {
+            putMPInt(rsaPub.getPublicExponent());
+            putMPInt(rsaPub.getModulus());
+            putMPInt(rsaPrv.getPrivateExponent());
+            putMPInt(rsaPrv.getCrtCoefficient());
+            putMPInt(rsaPrv.getPrimeQ());
+            putMPInt(rsaPrv.getPrimeP());
+        } else if (pubKey instanceof DSAPublicKey) {
+            DSAPublicKey    dsaPub = (DSAPublicKey) pubKey;
+            DSAParams       dsaParams = dsaPub.getParams();
+            DSAPrivateKey   dsaPrv = (DSAPrivateKey) prvKey;
+
             putString(KeyPairProvider.SSH_DSS);
-            putMPInt(((DSAPublicKey) key.getPublic()).getParams().getP());
-            putMPInt(((DSAPublicKey) key.getPublic()).getParams().getQ());
-            putMPInt(((DSAPublicKey) key.getPublic()).getParams().getG());
-            putMPInt(((DSAPublicKey) key.getPublic()).getY());
-            putMPInt(((DSAPrivateKey) key.getPrivate()).getX());
-        } else if (key.getPublic() instanceof ECPublicKey) {
-            ECPublicKey ecPub = (ECPublicKey) key.getPublic();
-            ECPrivateKey ecPriv = (ECPrivateKey) key.getPrivate();
+            putMPInt(dsaParams.getP());
+            putMPInt(dsaParams.getQ());
+            putMPInt(dsaParams.getG());
+            putMPInt(dsaPub.getY());
+            putMPInt(dsaPrv.getX());
+        } else if (pubKey instanceof ECPublicKey) {
+            ECPublicKey     ecPub = (ECPublicKey) pubKey;
+            ECPrivateKey    ecPriv = (ECPrivateKey) prvKey;
             ECParameterSpec ecParams = ecPub.getParams();
-            String curveName = ECCurves.getCurveName(ecParams);
+            String          curveName = ECCurves.getCurveName(ecParams);
 
             putString(ECCurves.ECDSA_SHA2_PREFIX + curveName);
             putString(curveName);
-            putString(ECCurves.encodeECPoint(ecPub.getW(), ecParams.getCurve()));
+            putBytes(ECCurves.encodeECPoint(ecPub.getW(), ecParams.getCurve()));
             putMPInt(ecPriv.getS());
         } else {
-            throw new IllegalStateException("Unsupported algorithm: " + key.getPublic().getAlgorithm());
+            throw new BufferException("Unsupported key pair algorithm: " + kp.getPublic().getAlgorithm());
         }
     }
 
-    private void ensureCapacity(int capacity) {
-        if (data.length - wpos < capacity) {
-            int cw = wpos + capacity;
-            byte[] tmp = new byte[getNextPowerOf2(cw)];
-            System.arraycopy(data, 0, tmp, 0, data.length);
-            data = tmp;
-        }
-    }
+    protected abstract void ensureCapacity(int capacity);
+    protected abstract int size();
 
-    public static class BufferException extends RuntimeException {
-        public BufferException(String message) {
-            super(message);
-        }
+    @Override
+    public String toString() {
+        return "Buffer [rpos=" + rpos() + ", wpos=" + wpos() + ", size=" + size() + "]";
     }
-
-    private static int getNextPowerOf2(int i) {
-        int j = 1;
-        while (j < i) {
-            j <<= 1;
-        }
-        return j;
-    }
-
 }

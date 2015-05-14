@@ -18,16 +18,17 @@
  */
 package org.apache.sshd.client.channel;
 
-import org.apache.sshd.common.PtyMode;
-import org.apache.sshd.common.SshConstants;
-import org.apache.sshd.common.util.Buffer;
-import org.apache.sshd.common.util.OsUtils;
-import org.apache.sshd.common.util.SttySupport;
-
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+
+import org.apache.sshd.common.PtyMode;
+import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.util.OsUtils;
+import org.apache.sshd.common.util.SttySupport;
+import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
 /**
  * TODO Add javadoc
@@ -171,7 +172,7 @@ public class PtyCapableChannelSession extends ChannelSession {
             buffer.putInt(ptyLines);
             buffer.putInt(ptyHeight);
             buffer.putInt(ptyWidth);
-            Buffer modes = new Buffer();
+            Buffer modes = new ByteArrayBuffer();
             for (PtyMode mode : ptyModes.keySet()) {
                 modes.putByte((byte) mode.toInt());
                 modes.putInt(ptyModes.get(mode));

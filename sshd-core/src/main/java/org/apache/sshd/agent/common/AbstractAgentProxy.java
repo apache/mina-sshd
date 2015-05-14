@@ -18,16 +18,6 @@
  */
 package org.apache.sshd.agent.common;
 
-import java.io.IOException;
-import java.security.KeyPair;
-import java.security.PublicKey;
-import java.util.ArrayList;
-import java.util.List;
-
-import org.apache.sshd.agent.SshAgent;
-import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.util.Buffer;
-
 import static org.apache.sshd.agent.SshAgentConstants.SSH2_AGENTC_ADD_IDENTITY;
 import static org.apache.sshd.agent.SshAgentConstants.SSH2_AGENTC_REMOVE_ALL_IDENTITIES;
 import static org.apache.sshd.agent.SshAgentConstants.SSH2_AGENTC_REMOVE_IDENTITY;
@@ -37,8 +27,20 @@ import static org.apache.sshd.agent.SshAgentConstants.SSH2_AGENT_IDENTITIES_ANSW
 import static org.apache.sshd.agent.SshAgentConstants.SSH2_AGENT_SIGN_RESPONSE;
 import static org.apache.sshd.agent.SshAgentConstants.SSH_AGENT_SUCCESS;
 
+import java.io.IOException;
+import java.security.KeyPair;
+import java.security.PublicKey;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.sshd.agent.SshAgent;
+import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+
 public abstract class AbstractAgentProxy implements SshAgent {
 
+    @Override
     public List<Pair<PublicKey, String>> getIdentities() throws IOException {
         Buffer buffer = createBuffer(SSH2_AGENTC_REQUEST_IDENTITIES);
         buffer = request(prepare(buffer));
@@ -58,6 +60,7 @@ public abstract class AbstractAgentProxy implements SshAgent {
         return keys;
     }
 
+    @Override
     public byte[] sign(PublicKey key, byte[] data) throws IOException {
         Buffer buffer = createBuffer(SSH2_AGENTC_SIGN_REQUEST);
         buffer.putPublicKey(key);
@@ -67,11 +70,12 @@ public abstract class AbstractAgentProxy implements SshAgent {
         if (buffer.getByte() != SSH2_AGENT_SIGN_RESPONSE) {
             throw new SshException("SSH agent failure");
         }
-        Buffer buf = new Buffer(buffer.getBytes());
+        Buffer buf = new ByteArrayBuffer(buffer.getBytes());
         buf.getString(); // algo
         return buf.getBytes();
     }
 
+    @Override
     public void addIdentity(KeyPair key, String comment) throws IOException {
         Buffer buffer = createBuffer(SSH2_AGENTC_ADD_IDENTITY);
         buffer.putKeyPair(key);
@@ -82,6 +86,7 @@ public abstract class AbstractAgentProxy implements SshAgent {
         }
     }
 
+    @Override
     public void removeIdentity(PublicKey key) throws IOException {
         Buffer buffer = createBuffer(SSH2_AGENTC_REMOVE_IDENTITY);
         buffer.putPublicKey(key);
@@ -91,6 +96,7 @@ public abstract class AbstractAgentProxy implements SshAgent {
         }
     }
 
+    @Override
     public void removeAllIdentities() throws IOException {
         Buffer buffer = createBuffer(SSH2_AGENTC_REMOVE_ALL_IDENTITIES);
         buffer = request(prepare(buffer));
@@ -105,7 +111,7 @@ public abstract class AbstractAgentProxy implements SshAgent {
     }
 
     protected Buffer createBuffer(byte cmd) {
-        Buffer buffer = new Buffer();
+        Buffer buffer = new ByteArrayBuffer();
         buffer.putInt(0);
         buffer.putByte(cmd);
         return buffer;

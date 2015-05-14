@@ -20,7 +20,7 @@ package org.apache.sshd.common.io;
 
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.SshFuture;
-import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.buffer.Buffer;
 
 public interface IoReadFuture extends SshFuture<IoReadFuture> {
 

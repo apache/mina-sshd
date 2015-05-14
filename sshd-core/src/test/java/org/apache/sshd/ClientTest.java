@@ -18,6 +18,12 @@
  */
 package org.apache.sshd;
 
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -44,6 +50,7 @@ import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.Channel;
+import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.RuntimeSshException;
@@ -52,7 +59,6 @@ import org.apache.sshd.common.Session;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
-import org.apache.sshd.common.cipher.CipherNone;
 import org.apache.sshd.common.forward.TcpipServerChannel;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
@@ -63,8 +69,9 @@ import org.apache.sshd.common.io.mina.MinaSession;
 import org.apache.sshd.common.io.nio2.Nio2Session;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.session.ConnectionService;
-import org.apache.sshd.common.util.Buffer;
-import org.apache.sshd.common.util.BufferUtils;
+import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.BufferUtils;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.NoCloseOutputStream;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.CommandFactory;
@@ -85,12 +92,6 @@ import org.apache.sshd.util.Utils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 /**
  * TODO Add javadoc
@@ -114,6 +115,7 @@ public class ClientTest extends BaseTest {
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setShellFactory(new TestEchoShellFactory());
         sshd.setCommandFactory(new CommandFactory() {
+            @Override
             public Command createCommand(String command) {
                 return new UnknownCommand(command);
             }
@@ -176,10 +178,10 @@ public class ClientTest extends BaseTest {
 
     @Test
     public void testAsyncClient() throws Exception {
-        sshd.getProperties().put(SshServer.WINDOW_SIZE, "1024");
+        sshd.getProperties().put(FactoryManager.WINDOW_SIZE, "1024");
         sshd.setShellFactory(new AsyncEchoShellFactory());
 
-        client.getProperties().put(SshClient.WINDOW_SIZE, "1024");
+        client.getProperties().put(FactoryManager.WINDOW_SIZE, "1024");
         client.start();
         ClientSession session = client.connect("smx", "localhost", port).await().getSession();
         session.addPasswordIdentity("smx");
@@ -196,13 +198,14 @@ public class ClientTest extends BaseTest {
         final ByteArrayOutputStream baosErr = new ByteArrayOutputStream();
         final AtomicInteger writes = new AtomicInteger(nbMessages);
 
-        channel.getAsyncIn().write(new Buffer(message))
+        channel.getAsyncIn().write(new ByteArrayBuffer(message))
                 .addListener(new SshFutureListener<IoWriteFuture>() {
+                    @Override
                     public void operationComplete(IoWriteFuture future) {
                         try {
                             if (future.isWritten()) {
                                 if (writes.decrementAndGet() > 0) {
-                                    channel.getAsyncIn().write(new Buffer(message)).addListener(this);
+                                    channel.getAsyncIn().write(new ByteArrayBuffer(message)).addListener(this);
                                 } else {
                                     channel.getAsyncIn().close(false);
                                 }
@@ -217,8 +220,9 @@ public class ClientTest extends BaseTest {
                         }
                     }
                 });
-        channel.getAsyncOut().read(new Buffer())
+        channel.getAsyncOut().read(new ByteArrayBuffer())
                 .addListener(new SshFutureListener<IoReadFuture>() {
+                    @Override
                     public void operationComplete(IoReadFuture future) {
                         try {
                             future.verify();
@@ -235,8 +239,9 @@ public class ClientTest extends BaseTest {
                         }
                     }
                 });
-        channel.getAsyncErr().read(new Buffer())
+        channel.getAsyncErr().read(new ByteArrayBuffer())
                 .addListener(new SshFutureListener<IoReadFuture>() {
+                    @Override
                     public void operationComplete(IoReadFuture future) {
                         try {
                             future.verify();
@@ -280,7 +285,7 @@ public class ClientTest extends BaseTest {
         } catch (SshException e) {
             // That's ok, the channel is being closed by the other side
         }
-        assertEquals(ChannelExec.CLOSED, channel.waitFor(ChannelExec.CLOSED, 0) & ChannelExec.CLOSED);
+        assertEquals(ClientChannel.CLOSED, channel.waitFor(ClientChannel.CLOSED, 0) & ClientChannel.CLOSED);
         session.close(false).await();
         client.stop();
     }
@@ -568,6 +573,7 @@ public class ClientTest extends BaseTest {
     public void testPublicKeyAuthNewWithFailureOnFirstIdentity() throws Exception {
         final KeyPair pair = Utils.createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
         sshd.setPublickeyAuthenticator(new PublickeyAuthenticator() {
+            @Override
             public boolean authenticate(String username, PublicKey key, ServerSession session) {
                 return key.equals(pair.getPublic());
             }
@@ -624,8 +630,10 @@ public class ClientTest extends BaseTest {
         client.getProperties().put(ClientFactoryManager.PASSWORD_PROMPTS, "3");
         client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthKeyboardInteractive.Factory()));
         client.setUserInteraction(new UserInteraction() {
+            @Override
             public void welcome(String banner) {
             }
+            @Override
             public String[] interactive(String destination, String name, String instruction, String[] prompt, boolean[] echo) {
                 count.incrementAndGet();
                 return new String[] { "bad" };
@@ -649,9 +657,11 @@ public class ClientTest extends BaseTest {
         client.start();
         ClientSession session = client.connect("smx", "localhost", port).await().getSession();
         session.setUserInteraction(new UserInteraction() {
+            @Override
             public void welcome(String banner) {
             }
 
+            @Override
             public String[] interactive(String destination, String name, String instruction,
                                         String[] prompt, boolean[] echo) {
                 count.incrementAndGet();
@@ -674,9 +684,11 @@ public class ClientTest extends BaseTest {
         client.start();
         ClientSession session = client.connect("smx", "localhost", port).await().getSession();
         session.setUserInteraction(new UserInteraction() {
+            @Override
             public void welcome(String banner) {
             }
 
+            @Override
             public String[] interactive(String destination, String name, String instruction,
                                         String[] prompt, boolean[] echo) {
                 count.incrementAndGet();
@@ -728,6 +740,7 @@ public class ClientTest extends BaseTest {
         final AtomicBoolean ok = new AtomicBoolean();
         client.setServerKeyVerifier(
                 new ServerKeyVerifier() {
+                    @Override
                     public boolean verifyServerKey(
                             ClientSession sshClientSession,
                             SocketAddress remoteAddress,

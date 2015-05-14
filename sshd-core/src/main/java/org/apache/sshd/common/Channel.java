@@ -24,7 +24,7 @@ import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.channel.Window;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.session.ConnectionService;
-import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
  * TODO Add javadoc

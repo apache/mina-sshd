@@ -22,7 +22,7 @@ import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
-import org.apache.sshd.common.util.BufferUtils;
+import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.slf4j.Logger;
 
 /**

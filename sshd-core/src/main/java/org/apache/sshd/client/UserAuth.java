@@ -21,7 +21,7 @@ package org.apache.sshd.client;
 import java.util.List;
 
 import org.apache.sshd.ClientSession;
-import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
  * TODO Add javadoc

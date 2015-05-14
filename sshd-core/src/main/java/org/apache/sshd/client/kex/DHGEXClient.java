@@ -29,8 +29,9 @@ import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.kex.AbstractDH;
 import org.apache.sshd.common.kex.DHFactory;
 import org.apache.sshd.common.session.AbstractSession;
-import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.KeyUtils;
+import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
 
 /**
@@ -49,10 +50,12 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
 
     public static final NamedFactory<KeyExchange> newFactory(final DHFactory delegate) {
         return new NamedFactory<KeyExchange>() {
+            @Override
             public String getName() {
                 return delegate.getName();
             }
 
+            @Override
             public KeyExchange create() {
                 return new DHGEXClient(delegate);
             }
@@ -83,6 +86,7 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
         expected = SshConstants.SSH_MSG_KEX_DH_GEX_GROUP;
     }
 
+    @Override
     public boolean next(Buffer buffer) throws Exception {
         byte cmd = buffer.getByte();
         if (cmd != expected) {
@@ -116,19 +120,19 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
             dh.setF(f);
             K = dh.getK();
 
-            buffer = new Buffer(K_S);
+            buffer = new ByteArrayBuffer(K_S);
             serverKey = buffer.getRawPublicKey();
             final String keyAlg = KeyUtils.getKeyType(serverKey);
             if (keyAlg == null) {
                 throw new SshException("Unsupported server key type");
             }
 
-            buffer = new Buffer();
-            buffer.putString(V_C);
-            buffer.putString(V_S);
-            buffer.putString(I_C);
-            buffer.putString(I_S);
-            buffer.putString(K_S);
+            buffer = new ByteArrayBuffer();
+            buffer.putBytes(V_C);
+            buffer.putBytes(V_S);
+            buffer.putBytes(I_C);
+            buffer.putBytes(I_S);
+            buffer.putBytes(K_S);
             buffer.putInt(min);
             buffer.putInt(prf);
             buffer.putInt(max);

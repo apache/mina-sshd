@@ -18,16 +18,17 @@
  */
 package org.apache.sshd;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
 import java.io.IOException;
 
 import org.apache.sshd.common.session.AbstractSession;
-import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.util.BaseTest;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 /**
  * Test basic stuff on AbstractSession.
@@ -45,28 +46,28 @@ public class AbstractSessionTest extends BaseTest {
 
     @Test
     public void testReadIdentSimple() {
-        Buffer buf = new Buffer("SSH-2.0-software\r\n".getBytes());
+        Buffer buf = new ByteArrayBuffer("SSH-2.0-software\r\n".getBytes());
         String ident = session.doReadIdentification(buf);
         assertEquals("SSH-2.0-software", ident);
     }
 
     @Test
     public void testReadIdentWithoutCR() {
-        Buffer buf = new Buffer("SSH-2.0-software\n".getBytes());
+        Buffer buf = new ByteArrayBuffer("SSH-2.0-software\n".getBytes());
         String ident = session.doReadIdentification(buf);
         assertEquals("SSH-2.0-software", ident);
     }
 
     @Test
     public void testReadIdentWithHeaders() {
-        Buffer buf = new Buffer(("a header line\r\nSSH-2.0-software\r\n").getBytes());
+        Buffer buf = new ByteArrayBuffer(("a header line\r\nSSH-2.0-software\r\n").getBytes());
         String ident = session.doReadIdentification(buf);
         assertEquals("SSH-2.0-software", ident);
     }
 
     @Test
     public void testReadIdentWithSplitPackets() {
-        Buffer buf = new Buffer("header line\r\nSSH".getBytes());
+        Buffer buf = new ByteArrayBuffer("header line\r\nSSH".getBytes());
         String ident = session.doReadIdentification(buf);
         assertNull(ident);
         buf.putRawBytes("-2.0-software\r\n".getBytes());
@@ -76,13 +77,13 @@ public class AbstractSessionTest extends BaseTest {
 
     @Test(expected = IllegalStateException.class)
     public void testReadIdentBadLineEnding() {
-        Buffer buf = new Buffer(("SSH-2.0-software\ra").getBytes());
+        Buffer buf = new ByteArrayBuffer(("SSH-2.0-software\ra").getBytes());
         String ident = session.doReadIdentification(buf);
     }
 
     @Test(expected = IllegalStateException.class)
     public void testReadIdentLongLine() {
-        Buffer buf = new Buffer(("SSH-2.0-software" +
+        Buffer buf = new ByteArrayBuffer(("SSH-2.0-software" +
                 "01234567890123456789012345678901234567890123456789" +
                 "01234567890123456789012345678901234567890123456789" +
                 "01234567890123456789012345678901234567890123456789" +
@@ -99,7 +100,7 @@ public class AbstractSessionTest extends BaseTest {
             sb.append("01234567890123456789012345678901234567890123456789\r\n");
         }
         sb.append("SSH-2.0-software\r\n");
-        Buffer buf = new Buffer(sb.toString().getBytes());
+        Buffer buf = new ByteArrayBuffer(sb.toString().getBytes());
         String ident = session.doReadIdentification(buf);
     }
 

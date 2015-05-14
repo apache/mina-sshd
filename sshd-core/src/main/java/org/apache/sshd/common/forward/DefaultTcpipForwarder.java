@@ -40,9 +40,10 @@ import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.session.ConnectionService;
-import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.Readable;
+import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
 /**
  * TODO Add javadoc
@@ -68,6 +69,7 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
     // TcpIpForwarder implementation
     //
 
+    @Override
     public synchronized SshdSocketAddress startLocalPortForwarding(SshdSocketAddress local, SshdSocketAddress remote) throws IOException {
         if (local == null) {
             throw new IllegalArgumentException("Local address is null");
@@ -89,12 +91,14 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
         return bound;
     }
 
+    @Override
     public synchronized void stopLocalPortForwarding(SshdSocketAddress local) throws IOException {
         if (localToRemote.remove(local.getPort()) != null && acceptor != null) {
             acceptor.unbind(local.toInetSocketAddress());
         }
     }
 
+    @Override
     public synchronized SshdSocketAddress startRemotePortForwarding(SshdSocketAddress remote, SshdSocketAddress local) throws IOException {
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_GLOBAL_REQUEST);
         buffer.putString("tcpip-forward");
@@ -111,6 +115,7 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
         return new SshdSocketAddress(remote.getHostName(), port);
     }
 
+    @Override
     public synchronized void stopRemotePortForwarding(SshdSocketAddress remote) throws IOException {
         if (remoteToLocal.remove(remote.getPort()) != null) {
             Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_GLOBAL_REQUEST);
@@ -122,6 +127,7 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
         }
     }
 
+    @Override
     public synchronized SshdSocketAddress startDynamicPortForwarding(SshdSocketAddress local) throws IOException {
         if (local == null) {
             throw new IllegalArgumentException("Local address is null");
@@ -141,6 +147,7 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
         return bound;
     }
 
+    @Override
     public synchronized void stopDynamicPortForwarding(SshdSocketAddress local) throws IOException {
         Closeable obj = dynamicLocal.remove(local.getPort());
         if (obj != null) {
@@ -149,10 +156,12 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
         }
     }
 
+    @Override
     public synchronized SshdSocketAddress getForwardedPort(int remotePort) {
         return remoteToLocal.get(remotePort);
     }
 
+    @Override
     public synchronized SshdSocketAddress localPortForwardingRequested(SshdSocketAddress local) throws IOException {
         if (local == null) {
             throw new IllegalArgumentException("Local address is null");
@@ -169,6 +178,7 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
         return bound;
     }
 
+    @Override
     public synchronized void localPortForwardingCancelled(SshdSocketAddress local) throws IOException {
         if (localForwards.remove(local) && acceptor != null) {
             acceptor.unbind(local.toInetSocketAddress());
@@ -209,6 +219,7 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
         }
     }
 
+    @Override
     public String toString() {
         return getClass().getSimpleName() + "[" + session + "]";
     }
@@ -219,6 +230,7 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
 
     class StaticIoHandler implements IoHandler {
 
+        @Override
         public void sessionCreated(final IoSession session) throws Exception {
             final TcpipClientChannel channel;
             int localPort = ((InetSocketAddress) session.getLocalAddress()).getPort();
@@ -231,6 +243,7 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
             session.setAttribute(TcpipClientChannel.class, channel);
             service.registerChannel(channel);
             channel.open().addListener(new SshFutureListener<OpenFuture>() {
+                @Override
                 public void operationComplete(OpenFuture future) {
                     Throwable t = future.getException();
                     if (t != null) {
@@ -241,6 +254,7 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
             });
         }
 
+        @Override
         public void sessionClosed(IoSession session) throws Exception {
             TcpipClientChannel channel = (TcpipClientChannel) session.getAttribute(TcpipClientChannel.class);
             if (channel != null) {
@@ -249,15 +263,17 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
             }
         }
 
+        @Override
         public void messageReceived(IoSession session, Readable message) throws Exception {
             TcpipClientChannel channel = (TcpipClientChannel) session.getAttribute(TcpipClientChannel.class);
-            Buffer buffer = new Buffer();
+            Buffer buffer = new ByteArrayBuffer();
             buffer.putBuffer(message);
             channel.waitFor(ClientChannel.OPENED | ClientChannel.CLOSED, Long.MAX_VALUE);
             channel.getInvertedIn().write(buffer.array(), buffer.rpos(), buffer.available());
             channel.getInvertedIn().flush();
         }
 
+        @Override
         public void exceptionCaught(IoSession session, Throwable cause) throws Exception {
             cause.printStackTrace();
             session.close(false);

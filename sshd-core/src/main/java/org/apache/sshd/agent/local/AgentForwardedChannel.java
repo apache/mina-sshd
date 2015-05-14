@@ -28,12 +28,13 @@ import org.apache.sshd.agent.common.AbstractAgentProxy;
 import org.apache.sshd.client.channel.AbstractClientChannel;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.ChannelOutputStream;
-import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
 public class AgentForwardedChannel extends AbstractClientChannel {
 
     private final Queue<Buffer> messages = new ArrayBlockingQueue<Buffer>(10);
-    private final Buffer receiveBuffer = new Buffer();
+    private final Buffer receiveBuffer = new ByteArrayBuffer();
 
     public AgentForwardedChannel() {
         super("auth-agent@openssh.com");
@@ -77,16 +78,17 @@ public class AgentForwardedChannel extends AbstractClientChannel {
         invertedIn = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA);
     }
 
+    @Override
     protected void doWriteData(byte[] data, int off, int len) throws IOException {
         Buffer message = null;
         synchronized (receiveBuffer) {
-            receiveBuffer.putBuffer(new Buffer(data, off, len));
+            receiveBuffer.putBuffer(new ByteArrayBuffer(data, off, len));
             if (receiveBuffer.available() >= 4) {
                 off = receiveBuffer.rpos();
                 len = receiveBuffer.getInt();
                 receiveBuffer.rpos(off);
                 if (receiveBuffer.available() >= 4 + len) {
-                    message = new Buffer(receiveBuffer.getBytes());
+                    message = new ByteArrayBuffer(receiveBuffer.getBytes());
                     receiveBuffer.compact();
                 }
             }

@@ -36,6 +36,7 @@ import java.util.TreeSet;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class GenericUtils {
+    public static final byte[]      EMPTY_BYTE_ARRAY={ };
     public static final String[]    EMPTY_STRING_ARRAY={ };
     public static final Object[]    EMPTY_OBJECT_ARRAY={ };
 

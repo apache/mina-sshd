@@ -37,8 +37,9 @@ import org.apache.sshd.common.io.IoConnector;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
-import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.Readable;
+import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.server.channel.AbstractServerChannel;
 import org.apache.sshd.server.channel.OpenChannelException;
 
@@ -51,10 +52,12 @@ public class TcpipServerChannel extends AbstractServerChannel {
 
     public static class DirectTcpipFactory implements NamedFactory<Channel> {
 
+        @Override
         public String getName() {
             return "direct-tcpip";
         }
 
+        @Override
         public Channel create() {
             return new TcpipServerChannel(Type.Direct);
         }
@@ -62,10 +65,12 @@ public class TcpipServerChannel extends AbstractServerChannel {
 
     public static class ForwardedTcpipFactory implements NamedFactory<Channel> {
 
+        @Override
         public String getName() {
             return "forwarded-tcpip";
         }
 
+        @Override
         public Channel create() {
             return new TcpipServerChannel(Type.Forwarded);
         }
@@ -85,6 +90,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
         this.type = type;
     }
 
+    @Override
     protected OpenFuture doInit(Buffer buffer) {
         final OpenFuture f = new DefaultOpenFuture(this);
 
@@ -111,21 +117,25 @@ public class TcpipServerChannel extends AbstractServerChannel {
         // TODO: revisit for better threading. Use async io ?
         out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA);
         IoHandler handler = new IoHandler() {
+            @Override
             public void messageReceived(IoSession session, Readable message) throws Exception {
                 if (isClosing()) {
                     log.debug("Ignoring write to channel {} in CLOSING state", id);
                 } else {
-                    Buffer buffer = new Buffer();
+                    Buffer buffer = new ByteArrayBuffer();
                     buffer.putBuffer(message);
                     out.write(buffer.array(), buffer.rpos(), buffer.available());
                     out.flush();
                 }
             }
+            @Override
             public void sessionCreated(IoSession session) throws Exception {
             }
+            @Override
             public void sessionClosed(IoSession session) throws Exception {
                 close(false);
             }
+            @Override
             public void exceptionCaught(IoSession ioSession, Throwable cause) throws Exception {
                 close(true);
             }
@@ -134,6 +144,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
                 .createConnector(handler);
         IoConnectFuture future = connector.connect(address.toInetSocketAddress());
         future.addListener(new SshFutureListener<IoConnectFuture>() {
+            @Override
             public void operationComplete(IoConnectFuture future) {
                 if (future.isConnected()) {
                     ioSession = future.getSession();
@@ -176,19 +187,23 @@ public class TcpipServerChannel extends AbstractServerChannel {
         }.start();
     }
 
+    @Override
     public CloseFuture close(boolean immediately) {
         return super.close(immediately).addListener(new SshFutureListener<CloseFuture>() {
+            @Override
             public void operationComplete(CloseFuture sshFuture) {
                 closeImmediately0();
             }
         });
     }
 
+    @Override
     protected void doWriteData(byte[] data, int off, final int len) throws IOException {
         // Make sure we copy the data as the incoming buffer may be reused
-        Buffer buf = new Buffer(data, off, len);
-        buf = new Buffer(buf.getCompactData());
+        Buffer buf = new ByteArrayBuffer(data, off, len);
+        buf = new ByteArrayBuffer(buf.getCompactData());
         ioSession.write(buf).addListener(new SshFutureListener<IoWriteFuture>() {
+            @Override
             public void operationComplete(IoWriteFuture future) {
                 try {
                     localWindow.consumeAndCheck(len);
@@ -199,6 +214,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
         });
     }
 
+    @Override
     protected void doWriteExtendedData(byte[] data, int off, int len) throws IOException {
         throw new UnsupportedOperationException(type + "Tcpip channel does not support extended data");
     }

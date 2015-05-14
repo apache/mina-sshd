@@ -56,6 +56,7 @@ import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.Utils;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -186,8 +187,9 @@ public class SftpFileSystemTest extends BaseTest {
             Files.write(file, "Hello world\n".getBytes());
     
             Map<String, Object> attrs = Files.readAttributes(file, "posix:*");
+            Assert.assertNotNull("NO attributes read for " + file, attrs);
     
-            Files.setAttribute(file, "basic:size", 2l);
+            Files.setAttribute(file, "basic:size", Long.valueOf(2l));
             Files.setAttribute(file, "posix:permissions", PosixFilePermissions.fromString("rwxr-----"));
             Files.setAttribute(file, "basic:lastModifiedTime", FileTime.fromMillis(100000l));
 

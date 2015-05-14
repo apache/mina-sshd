@@ -28,14 +28,15 @@ import org.apache.sshd.common.future.DefaultSshFuture;
 import org.apache.sshd.common.io.IoInputStream;
 import org.apache.sshd.common.io.IoReadFuture;
 import org.apache.sshd.common.io.ReadPendingException;
-import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.Readable;
+import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
 public class ChannelAsyncInputStream extends CloseableUtils.AbstractCloseable implements IoInputStream {
 
     private final Channel channel;
-    private final Buffer buffer = new Buffer();
+    private final Buffer buffer = new ByteArrayBuffer();
     private IoReadFutureImpl pending;
 
     public ChannelAsyncInputStream(Channel channel) {
@@ -49,6 +50,7 @@ public class ChannelAsyncInputStream extends CloseableUtils.AbstractCloseable im
         doRead(true);
     }
 
+    @Override
     public IoReadFuture read(Buffer buf) {
         IoReadFutureImpl future = new IoReadFutureImpl(buf);
         if (isClosing()) {
@@ -127,10 +129,12 @@ public class ChannelAsyncInputStream extends CloseableUtils.AbstractCloseable im
             this.buffer = buffer;
         }
 
+        @Override
         public Buffer getBuffer() {
             return buffer;
         }
 
+        @Override
         public void verify() throws SshException {
             try {
                 await();
@@ -142,6 +146,7 @@ public class ChannelAsyncInputStream extends CloseableUtils.AbstractCloseable im
                 throw new SshException("Write failed", getException());
             }
         }
+        @Override
         public int getRead() {
             Object v = getValue();
             if (v instanceof RuntimeException) {
@@ -157,6 +162,7 @@ public class ChannelAsyncInputStream extends CloseableUtils.AbstractCloseable im
             }
         }
 
+        @Override
         public Throwable getException() {
             Object v = getValue();
             if (v instanceof Throwable) {

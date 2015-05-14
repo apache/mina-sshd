@@ -27,7 +27,8 @@ import java.util.EnumSet;
 import java.util.Map;
 
 import org.apache.sshd.common.Factory;
-import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.server.Command;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,6 +74,7 @@ public class ProcessShellFactory implements Factory<Command> {
         this.command = command;
     }
 
+    @Override
     public Command create() {
         return new InvertedShellWrapper(new ProcessShell());
     }
@@ -84,6 +86,7 @@ public class ProcessShellFactory implements Factory<Command> {
         private TtyFilterInputStream out;
         private TtyFilterInputStream err;
 
+        @Override
         public void start(Map<String,String> env) throws IOException {
             String[] cmds = new String[command.length];
             for (int i = 0; i < cmds.length; i++) {
@@ -108,18 +111,22 @@ public class ProcessShellFactory implements Factory<Command> {
             in = new TtyFilterOutputStream(process.getOutputStream(), err);
         }
 
+        @Override
         public OutputStream getInputStream() {
             return in;
         }
 
+        @Override
         public InputStream getOutputStream() {
             return out;
         }
 
+        @Override
         public InputStream getErrorStream() {
             return err;
         }
 
+        @Override
         public boolean isAlive() {
             try {
                 process.exitValue();
@@ -129,6 +136,7 @@ public class ProcessShellFactory implements Factory<Command> {
             }
         }
 
+        @Override
         public int exitValue() {
             try {
                 return process.waitFor();
@@ -137,6 +145,7 @@ public class ProcessShellFactory implements Factory<Command> {
             }
         }
 
+        @Override
         public void destroy() {
             if (process != null) {
                 process.destroy();
@@ -148,7 +157,7 @@ public class ProcessShellFactory implements Factory<Command> {
             private int lastChar;
             public TtyFilterInputStream(InputStream in) {
                 super(in);
-                buffer = new Buffer(32);
+                buffer = new ByteArrayBuffer(32);
             }
             synchronized void write(int c) {
                 buffer.putByte((byte) c);
@@ -171,7 +180,7 @@ public class ProcessShellFactory implements Factory<Command> {
                 }
                 if (c == '\n' && ttyOptions.contains(TtyOptions.ONlCr) && lastChar != '\r') {
                     c = '\r';
-                    Buffer buf = new Buffer();
+                    Buffer buf = new ByteArrayBuffer();
                     buf.putByte((byte) '\n');
                     buf.putBuffer(buffer);
                     buffer = buf;

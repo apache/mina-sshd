@@ -81,12 +81,13 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.file.FileSystemAware;
-import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.IoUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.SelectorUtils;
 import org.apache.sshd.common.util.ThreadUtils;
+import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
@@ -161,6 +162,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
             return file;
         }
 
+        @Override
         public void close() throws IOException {
             // ignored
         }
@@ -191,14 +193,17 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
             this.done = done;
         }
 
+        @Override
         public boolean hasNext() {
             return fileList.hasNext();
         }
 
+        @Override
         public Path next() {
             return fileList.next();
         }
 
+        @Override
         public void remove() {
             throw new UnsupportedOperationException("Not allowed to remove " + toString());
         }
@@ -364,10 +369,12 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         return unsupportedAttributePolicy;
     }
 
+    @Override
     public void setSession(ServerSession session) {
         this.session = session;
     }
 
+    @Override
     public void setFileSystem(FileSystem fileSystem) {
         if (fileSystem != this.fileSystem) {
             this.fileSystem = fileSystem;
@@ -375,22 +382,27 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         }
     }
 
+    @Override
     public void setExitCallback(ExitCallback callback) {
         this.callback = callback;
     }
 
+    @Override
     public void setInputStream(InputStream in) {
         this.in = in;
     }
 
+    @Override
     public void setOutputStream(OutputStream out) {
         this.out = out;
     }
 
+    @Override
     public void setErrorStream(OutputStream err) {
         this.err = err;
     }
 
+    @Override
     public void start(Environment env) throws IOException {
         this.env = env;
         try {
@@ -401,6 +413,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         }
     }
 
+    @Override
     public void run() {
         DataInputStream dis = null;
         try {
@@ -410,7 +423,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                 if (length < 5) {
                     throw new IllegalArgumentException();
                 }
-                Buffer buffer = new Buffer(length + 4);
+                Buffer buffer = new ByteArrayBuffer(length + 4);
                 buffer.putInt(length);
                 int nb = length;
                 while (nb > 0) {
@@ -1122,7 +1135,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                 sendStatus(id, SSH_FX_INVALID_HANDLE, handle);
             } else {
                 FileHandle fh = (FileHandle) p;
-                Buffer buf = new Buffer(len + 9);
+                Buffer buf = new ByteArrayBuffer(len + 9);
                 buf.putByte((byte) SSH_FXP_DATA);
                 buf.putInt(id);
                 int pos = buf.wpos();
@@ -1308,7 +1321,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
     }
 
     protected void sendHandle(int id, String handle) throws IOException {
-        Buffer buffer = new Buffer();
+        Buffer buffer = new ByteArrayBuffer();
         buffer.putByte((byte) SSH_FXP_HANDLE);
         buffer.putInt(id);
         buffer.putString(handle);
@@ -1316,7 +1329,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
     }
 
     protected void sendAttrs(int id, Path file, int flags, boolean followLinks) throws IOException {
-        Buffer buffer = new Buffer();
+        Buffer buffer = new ByteArrayBuffer();
         buffer.putByte((byte) SSH_FXP_ATTRS);
         buffer.putInt(id);
         writeAttrs(buffer, file, flags, followLinks);
@@ -1324,7 +1337,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
     }
 
     protected void sendPath(int id, Path f, Map<String, Object> attrs) throws IOException {
-        Buffer buffer = new Buffer();
+        Buffer buffer = new ByteArrayBuffer();
         buffer.putByte((byte) SSH_FXP_NAME);
         buffer.putInt(id);
         buffer.putInt(1);
@@ -1352,7 +1365,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
     }
 
     protected void sendLink(int id, String link) throws IOException {
-        Buffer buffer = new Buffer();
+        Buffer buffer = new ByteArrayBuffer();
         buffer.putByte((byte) SSH_FXP_NAME);
         buffer.putInt(id);
         buffer.putInt(1);
@@ -1364,7 +1377,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
     }
 
     protected void sendName(int id, Iterator<Path> files) throws IOException {
-        Buffer buffer = new Buffer();
+        Buffer buffer = new ByteArrayBuffer();
         buffer.putByte((byte) SSH_FXP_NAME);
         buffer.putInt(id);
         int wpos = buffer.wpos();
@@ -1732,10 +1745,20 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                 }
                 continue;
             }
-            case "uid":              view = "unix"; break;
-            case "gid":              view = "unix"; break;
-            case "owner":            view = "posix"; value = toUser(file, (UserPrincipal) value); break;
-            case "group":            view = "posix"; value = toGroup(file, (GroupPrincipal) value); break;
+            case "uid":
+                view = "unix";
+                break;
+            case "gid":
+                view = "unix";
+                break;
+            case "owner":
+                view = "posix";
+                value = toUser(file, (UserPrincipal) value);
+                break;
+            case "group":
+                view = "posix";
+                value = toGroup(file, (GroupPrincipal) value);
+                break;
             case "permissions":
                 if (OsUtils.isWin32()) {
                     @SuppressWarnings("unchecked")
@@ -1746,9 +1769,15 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
                 view = "posix";
                 break;
 
-            case "creationTime":     view = "basic"; break;
-            case "lastModifiedTime": view = "basic"; break;
-            case "lastAccessTime":   view = "basic"; break;
+            case "creationTime":
+                view = "basic";
+                break;
+            case "lastModifiedTime":
+                view = "basic";
+                break;
+            case "lastAccessTime":
+                view = "basic";
+                break;
             default:    // ignored
             }
             if (view != null && value != null) {
@@ -2096,7 +2125,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
             log.debug("Send SSH_FXP_STATUS (substatus={}, lang={}, msg={})", new Object[] { substatus, lang, msg });
         }
 
-        Buffer buffer = new Buffer();
+        Buffer buffer = new ByteArrayBuffer();
         buffer.putByte((byte) SSH_FXP_STATUS);
         buffer.putInt(id);
         buffer.putInt(substatus);
@@ -2112,6 +2141,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
         dos.flush();
     }
 
+    @Override
     public void destroy() {
         if (!closed) {
             if (log.isDebugEnabled()) {
@@ -2225,6 +2255,7 @@ public class SftpSubsystem implements Command, Runnable, SessionAware, FileSyste
             this.name = name;
         }
 
+        @Override
         public final String getName() {
             return name;
         }

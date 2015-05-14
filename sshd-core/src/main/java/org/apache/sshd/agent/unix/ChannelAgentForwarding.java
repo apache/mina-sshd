@@ -31,7 +31,7 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
-import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.server.channel.AbstractServerChannel;
 import org.apache.tomcat.jni.Local;
 import org.apache.tomcat.jni.Pool;

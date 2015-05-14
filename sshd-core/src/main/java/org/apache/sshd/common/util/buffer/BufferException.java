@@ -16,37 +16,15 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common;
-
-import org.apache.sshd.common.session.ConnectionService;
-import org.apache.sshd.common.util.buffer.Buffer;
+package org.apache.sshd.common.util.buffer;
 
 /**
- * A global request handler.
- *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface RequestHandler<T> {
+public class BufferException extends RuntimeException {
+    private static final long serialVersionUID = 658645233475011039L;
 
-    enum Result {
-        Unsupported,
-        Replied,
-        ReplySuccess,
-        ReplyFailure
+    public BufferException(String message) {
+        super(message);
     }
-
-    /**
-     * Process the ssh-connection global request.
-     * If an exception is thrown, the ConnectionService will send a failure message if needed
-     * and the request will be considered handled.
-     *
-     * @param t
-     * @param request
-     * @param wantReply
-     * @param buffer
-     * @return
-     * @throws Exception
-     */
-    Result process(T t, String request, boolean wantReply, Buffer buffer) throws Exception;
-
 }

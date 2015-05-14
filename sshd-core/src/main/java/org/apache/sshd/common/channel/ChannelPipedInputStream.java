@@ -27,7 +27,8 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
 /**
  * TODO Add javadoc
@@ -37,7 +38,7 @@ import org.apache.sshd.common.util.Buffer;
 public class ChannelPipedInputStream extends InputStream {
 
     private final Window localWindow;
-    private final Buffer buffer = new Buffer();
+    private final Buffer buffer = new ByteArrayBuffer();
     private final byte[] b = new byte[1];
     private boolean closed;
     private boolean eofSent;
@@ -80,13 +81,14 @@ public class ChannelPipedInputStream extends InputStream {
         }
     }
 
+    @Override
     public int read() throws IOException {
         synchronized (b) {
             int l = read(b, 0, 1);
             if (l == -1) {
                 return -1;
             }
-            return ((int) b[0] & 0xff);
+            return (b[0] & 0xff);
         }
     }
 

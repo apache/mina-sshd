@@ -21,7 +21,8 @@ package org.apache.sshd.server.auth.gss;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.server.UserAuth;
 import org.apache.sshd.server.auth.AbstractUserAuth;
 import org.apache.sshd.server.session.ServerSession;
@@ -54,6 +55,7 @@ public class UserAuthGSS extends AbstractUserAuth {
     /**
      * Handle the first authentication step.
      */
+    @Override
     protected Boolean doAuth(Buffer buffer, boolean initial) throws Exception {
         GSSAuthenticator auth = getAuthenticator(session);
 
@@ -120,11 +122,11 @@ public class UserAuthGSS extends AbstractUserAuth {
 
                 // Make the MIC message so the token can be verified
 
-                Buffer msgbuf = new Buffer();
+                Buffer msgbuf = new ByteArrayBuffer();
 
-                msgbuf.putString(session.getSessionId());
+                msgbuf.putBytes(session.getSessionId());
                 msgbuf.putByte(SshConstants.SSH_MSG_USERAUTH_REQUEST);
-                msgbuf.putString(username.getBytes("UTF-8"));
+                msgbuf.putString(username);
                 msgbuf.putString(service);
                 msgbuf.putString("gssapi-with-mic");
 
@@ -180,6 +182,7 @@ public class UserAuthGSS extends AbstractUserAuth {
      *
      * @return The user name
      */
+    @Override
     public String getUserName() {
         return identity != null ? identity : username;
     }
@@ -187,6 +190,7 @@ public class UserAuthGSS extends AbstractUserAuth {
     /**
      * Free any system resources used by the module.
      */
+    @Override
     public void destroy() {
         if (context != null) {
             try {
@@ -241,6 +245,7 @@ public class UserAuthGSS extends AbstractUserAuth {
          *
          * @return Tge name, always 'gssapi-with-mic' here.
          */
+        @Override
         public String getName() {
             return "gssapi-with-mic";
         }
@@ -250,6 +255,7 @@ public class UserAuthGSS extends AbstractUserAuth {
          *
          * @return The instance
          */
+        @Override
         public UserAuth create() {
             return new UserAuthGSS();
         }

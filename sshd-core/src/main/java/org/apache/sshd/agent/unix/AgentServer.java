@@ -24,7 +24,8 @@ import java.io.IOException;
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.common.AbstractAgentClient;
 import org.apache.sshd.agent.local.AgentImpl;
-import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.tomcat.jni.Local;
 import org.apache.tomcat.jni.Pool;
 import org.apache.tomcat.jni.Socket;
@@ -68,6 +69,7 @@ public class AgentServer implements Closeable {
             throwException(result);
         }
         thread = new Thread() {
+            @Override
             public void run() {
                 try {
                     while (true) {
@@ -100,6 +102,7 @@ public class AgentServer implements Closeable {
             new Thread(this).start();
         }
 
+        @Override
         public void run() {
             try {
                 byte[] buf = new byte[1024];
@@ -110,7 +113,7 @@ public class AgentServer implements Closeable {
                     } else if (result < Status.APR_SUCCESS) {
                         throwException(result);
                     }
-                    messageReceived(new Buffer(buf, 0, result));
+                    messageReceived(new ByteArrayBuffer(buf, 0, result));
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -119,6 +122,7 @@ public class AgentServer implements Closeable {
             }
         }
 
+        @Override
         protected void reply(Buffer buf) throws IOException {
             int result = Socket.send(socket, buf.array(), buf.rpos(), buf.available());
             if (result < Status.APR_SUCCESS) {

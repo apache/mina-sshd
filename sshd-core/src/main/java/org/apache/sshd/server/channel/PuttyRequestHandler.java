@@ -20,7 +20,7 @@ package org.apache.sshd.server.channel;
 
 import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.RequestHandler;
-import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.buffer.Buffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

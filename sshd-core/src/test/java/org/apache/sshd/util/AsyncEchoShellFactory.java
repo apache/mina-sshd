@@ -29,7 +29,7 @@ import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoInputStream;
 import org.apache.sshd.common.io.IoOutputStream;
 import org.apache.sshd.common.io.IoWriteFuture;
-import org.apache.sshd.common.util.Buffer;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.server.AsyncCommand;
 import org.apache.sshd.server.ChannelSessionAware;
 import org.apache.sshd.server.Command;
@@ -45,6 +45,7 @@ import org.apache.sshd.server.channel.ChannelSession;
  */
 public class AsyncEchoShellFactory implements Factory<Command> {
 
+    @Override
     public Command create() {
         return new EchoShell();
     }
@@ -70,57 +71,71 @@ public class AsyncEchoShellFactory implements Factory<Command> {
             return environment;
         }
 
+        @Override
         public void setInputStream(InputStream in) {
         }
 
+        @Override
         public void setOutputStream(OutputStream out) {
         }
 
+        @Override
         public void setErrorStream(OutputStream err) {
         }
 
+        @Override
         public void setIoInputStream(IoInputStream in) {
         }
 
+        @Override
         public void setIoOutputStream(IoOutputStream out) {
             this.out = new BufferedIoOutputStream(out);
         }
 
+        @Override
         public void setIoErrorStream(IoOutputStream err) {
             this.err = new BufferedIoOutputStream(err);
         }
 
+        @Override
         public void setExitCallback(ExitCallback callback) {
             this.callback = callback;
         }
 
+        @Override
         public void setChannelSession(ChannelSession session) {
             this.session = session;
         }
 
+        @Override
         public void start(Environment env) throws IOException {
             environment = env;
             session.setDataReceiver(this);
         }
 
+        @Override
         public void close() throws IOException {
             out.close(false).addListener(new SshFutureListener<CloseFuture>() {
+                @Override
                 public void operationComplete(CloseFuture future) {
                     callback.onExit(0);
                 }
             });
         }
 
+        @Override
         public void destroy() {
         }
 
+        @Override
         public int data(final ChannelSession channel, byte[] buf, int start, int len) throws IOException {
             buffer.append(new String(buf, start, len));
             for (int i = 0; i < buffer.length(); i++) {
                 if (buffer.charAt(i) == '\n') {
                     final String s = buffer.substring(0, i + 1);
                     final byte[] bytes = s.getBytes();
-                    out.write(new Buffer(bytes)).addListener(new SshFutureListener<IoWriteFuture>() {
+                    out.write(new ByteArrayBuffer(bytes)).addListener(new SshFutureListener<IoWriteFuture>() {
+                        @Override
                         public void operationComplete(IoWriteFuture future) {
                             try {
                                 channel.getLocalWindow().consumeAndCheck(bytes.length);

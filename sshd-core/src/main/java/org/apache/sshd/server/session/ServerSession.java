@@ -33,8 +33,9 @@ import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.AbstractSession;
-import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.server.ServerFactoryManager;
 
 /**
@@ -63,13 +64,17 @@ public class ServerSession extends AbstractSession {
         return negotiated[index];
     }
 
+    @Override
     public ServerFactoryManager getFactoryManager() {
         return (ServerFactoryManager) factoryManager;
     }
 
+    @Override
     protected void checkKeys() {
+        // nothing
     }
 
+    @Override
     public void startService(String name) throws Exception {
         currentService = ServiceFactory.Utils.create(getFactoryManager().getServiceFactories(), name, this);
     }
@@ -80,6 +85,7 @@ public class ServerSession extends AbstractSession {
         disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "Unsupported packet: SSH_MSG_SERVICE_ACCEPT");
     }
 
+    @Override
     protected void checkRekey() throws IOException {
         if (kexState.get() == KEX_STATE_DONE) {
             if (   inPackets > MAX_PACKETS || outPackets > MAX_PACKETS
@@ -102,6 +108,7 @@ public class ServerSession extends AbstractSession {
         sendIdentification(serverVersion);
     }
 
+    @Override
     protected void sendKexInit() throws IOException {
     	/*
     	 * Make sure that the provided host keys have at least one supported signature factory
@@ -154,6 +161,7 @@ public class ServerSession extends AbstractSession {
         I_S = sendKexInit(serverProposal);
     }
 
+    @Override
     protected boolean readIdentification(Buffer buffer) throws IOException {
         clientVersion = doReadIdentification(buffer, true);
         if (clientVersion == null) {
@@ -162,7 +170,7 @@ public class ServerSession extends AbstractSession {
         log.debug("Client version string: {}", clientVersion);
         if (!clientVersion.startsWith(DEFAULT_SSH_VERSION_PREFIX)) {
             String msg = "Unsupported protocol version: " + clientVersion;
-            ioSession.write(new Buffer((msg + "\n").getBytes())).addListener(new SshFutureListener<IoWriteFuture>() {
+            ioSession.write(new ByteArrayBuffer((msg + "\n").getBytes())).addListener(new SshFutureListener<IoWriteFuture>() {
                 @Override
                 public void operationComplete(IoWriteFuture future) {
                     close(true);
@@ -176,6 +184,7 @@ public class ServerSession extends AbstractSession {
         return true;
     }
 
+    @Override
     protected void receiveKexInit(Buffer buffer) throws IOException {
         clientProposal = new String[SshConstants.PROPOSAL_MAX];
         I_C = receiveKexInit(buffer, clientProposal);

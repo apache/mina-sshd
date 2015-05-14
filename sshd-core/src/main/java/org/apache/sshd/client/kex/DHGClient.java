@@ -26,8 +26,9 @@ import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.kex.AbstractDH;
 import org.apache.sshd.common.kex.DHFactory;
 import org.apache.sshd.common.session.AbstractSession;
-import org.apache.sshd.common.util.Buffer;
 import org.apache.sshd.common.util.KeyUtils;
+import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
 /**
  * Base class for DHG key exchange algorithms.
@@ -67,6 +68,7 @@ public class DHGClient extends AbstractDHClientKeyExchange {
         this.factory = factory;
     }
 
+    @Override
     public void init(AbstractSession s, byte[] V_S, byte[] V_C, byte[] I_S, byte[] I_C) throws Exception {
         super.init(s, V_S, V_C, I_S, I_C);
         dh = getDH();
@@ -84,6 +86,7 @@ public class DHGClient extends AbstractDHClientKeyExchange {
         return factory.create();
     }
 
+    @Override
     public boolean next(Buffer buffer) throws Exception {
         byte cmd = buffer.getByte();
         if (cmd != SshConstants.SSH_MSG_KEXDH_REPLY) {
@@ -99,19 +102,19 @@ public class DHGClient extends AbstractDHClientKeyExchange {
         dh.setF(f);
         K = dh.getK();
 
-        buffer = new Buffer(K_S);
+        buffer = new ByteArrayBuffer(K_S);
         serverKey = buffer.getRawPublicKey();
         final String keyAlg = KeyUtils.getKeyType(serverKey);
         if (keyAlg == null) {
             throw new SshException("Unsupported server key type");
         }
 
-        buffer = new Buffer();
-        buffer.putString(V_C);
-        buffer.putString(V_S);
-        buffer.putString(I_C);
-        buffer.putString(I_S);
-        buffer.putString(K_S);
+        buffer = new ByteArrayBuffer();
+        buffer.putBytes(V_C);
+        buffer.putBytes(V_S);
+        buffer.putBytes(I_C);
+        buffer.putBytes(I_S);
+        buffer.putBytes(K_S);
         buffer.putMPInt(e);
         buffer.putMPInt(f);
         buffer.putMPInt(K);

@@ -36,9 +36,10 @@ import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.ConnectionService;
-import org.apache.sshd.common.util.Buffer;
-import org.apache.sshd.common.util.BufferUtils;
 import org.apache.sshd.common.util.CloseableUtils;
+import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.BufferUtils;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
 /**
  * TODO Add javadoc
@@ -71,30 +72,38 @@ public abstract class AbstractChannel extends CloseableUtils.AbstractInnerClosea
         handlers.add(handler);
     }
 
+    @Override
     public int getId() {
         return id;
     }
 
+    @Override
     public int getRecipient() {
         return recipient;
     }
 
+    @Override
     public Window getLocalWindow() {
         return localWindow;
     }
 
+    @Override
     public Window getRemoteWindow() {
         return remoteWindow;
     }
 
+    @Override
     public Session getSession() {
         return session;
     }
 
+    @Override
     public void handleRequest(Buffer buffer) throws IOException {
         String req = buffer.getString();
         boolean wantReply = buffer.getBoolean();
-        log.debug("Received SSH_MSG_CHANNEL_REQUEST {} on channel {} (wantReply {})", new Object[] { req, this, wantReply });
+        if (log.isDebugEnabled()) {
+            log.debug("Received SSH_MSG_CHANNEL_REQUEST {} on channel {} (wantReply {})", new Object[] { req, this, Boolean.valueOf(wantReply) });
+        }
         for (RequestHandler<Channel> handler : handlers) {
             RequestHandler.Result result;
             try {
@@ -130,6 +139,7 @@ public abstract class AbstractChannel extends CloseableUtils.AbstractInnerClosea
         }
     }
 
+    @Override
     public void init(ConnectionService service, Session session, int id) {
         this.service = service;
         this.session = session;
@@ -143,6 +153,7 @@ public abstract class AbstractChannel extends CloseableUtils.AbstractInnerClosea
         }
     }
 
+    @Override
     public void handleClose() throws IOException {
         log.debug("Received SSH_MSG_CHANNEL_CLOSE on channel {}", this);
         if (gracefulState.compareAndSet(GracefulState.Opened, GracefulState.CloseReceived)) {
@@ -152,6 +163,7 @@ public abstract class AbstractChannel extends CloseableUtils.AbstractInnerClosea
         }
     }
 
+    @Override
     protected Closeable getInnerCloseable() {
         return new GracefulChannelCloseable();
     }
@@ -160,12 +172,15 @@ public abstract class AbstractChannel extends CloseableUtils.AbstractInnerClosea
 
         protected volatile boolean closing;
 
+        @Override
         public boolean isClosing() {
             return closing;
         }
+        @Override
         public boolean isClosed() {
             return gracefulFuture.isClosed();
         }
+        @Override
         public CloseFuture close(boolean immediately) {
             closing = true;
             if (immediately) {
@@ -177,6 +192,7 @@ public abstract class AbstractChannel extends CloseableUtils.AbstractInnerClosea
                 try {
                     long timeout = FactoryManagerUtils.getLongProperty(getSession(), FactoryManager.CHANNEL_CLOSE_TIMEOUT, DEFAULT_CHANNEL_CLOSE_TIMEOUT);
                     session.writePacket(buffer, timeout, TimeUnit.MILLISECONDS).addListener(new SshFutureListener<IoWriteFuture>() {
+                        @Override
                         public void operationComplete(IoWriteFuture future) {
                             if (future.isWritten()) {
                                 log.debug("Message SSH_MSG_CHANNEL_CLOSE written on channel {}", AbstractChannel.this);
@@ -214,9 +230,10 @@ public abstract class AbstractChannel extends CloseableUtils.AbstractInnerClosea
         }
     }
 
+    @Override
     public void handleData(Buffer buffer) throws IOException {
         int len = buffer.getInt();
-        if (len < 0 || len > Buffer.MAX_LEN) {
+        if (len < 0 || len > ByteArrayBuffer.MAX_LEN) {
             throw new IllegalStateException("Bad item length: " + len);
         }
         log.debug("Received SSH_MSG_CHANNEL_DATA on channel {}", this);
@@ -226,6 +243,7 @@ public abstract class AbstractChannel extends CloseableUtils.AbstractInnerClosea
         doWriteData(buffer.array(), buffer.rpos(), len);
     }
 
+    @Override
     public void handleExtendedData(Buffer buffer) throws IOException {
         int ex = buffer.getInt();
         // Only accept extended data for stderr
@@ -237,7 +255,7 @@ public abstract class AbstractChannel extends CloseableUtils.AbstractInnerClosea
             return;
         }
         int len = buffer.getInt();
-        if (len < 0 || len > Buffer.MAX_LEN) {
+        if (len < 0 || len > ByteArrayBuffer.MAX_LEN) {
             throw new IllegalStateException("Bad item length: " + len);
         }
         log.debug("Received SSH_MSG_CHANNEL_EXTENDED_DATA on channel {}", this);
@@ -247,18 +265,21 @@ public abstract class AbstractChannel extends CloseableUtils.AbstractInnerClosea
         doWriteExtendedData(buffer.array(), buffer.rpos(), len);
     }
 
+    @Override
     public void handleEof() throws IOException {
         log.debug("Received SSH_MSG_CHANNEL_EOF on channel {}", this);
         eof = true;
         notifyStateChanged();
     }
 
+    @Override
     public void handleWindowAdjust(Buffer buffer) throws IOException {
         log.debug("Received SSH_MSG_CHANNEL_WINDOW_ADJUST on channel {}", this);
         int window = buffer.getInt();
         remoteWindow.expand(window);
     }
 
+    @Override
     public void handleFailure() throws IOException {
         log.debug("Received SSH_MSG_CHANNEL_FAILURE on channel {}", this);
         // TODO: do something to report failed requests?
@@ -289,6 +310,7 @@ public abstract class AbstractChannel extends CloseableUtils.AbstractInnerClosea
         writePacket(buffer);
     }
 
+    @Override
     public String toString() {
         return getClass().getSimpleName() + "[id=" + id + ", recipient=" + recipient + "]";
     }
