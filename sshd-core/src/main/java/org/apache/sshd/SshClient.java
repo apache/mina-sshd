@@ -113,6 +113,7 @@ import org.bouncycastle.openssl.PasswordFinder;
 public class SshClient extends AbstractFactoryManager implements ClientFactoryManager, Closeable {
 
     public static final Factory<SshClient> DEFAULT_SSH_CLIENT_FACTORY = new Factory<SshClient>() {
+        @Override
         public SshClient create() {
             return new SshClient();
         }
@@ -136,6 +137,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         this.sessionFactory = sessionFactory;
     }
 
+    @Override
     public ServerKeyVerifier getServerKeyVerifier() {
         return serverKeyVerifier;
     }
@@ -144,6 +146,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         this.serverKeyVerifier = serverKeyVerifier;
     }
 
+    @Override
     public UserInteraction getUserInteraction() {
         return userInteraction;
     }
@@ -152,6 +155,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         this.userInteraction = userInteraction;
     }
 
+    @Override
     public List<NamedFactory<UserAuth>> getUserAuthFactories() {
         return userAuthFactories;
     }
@@ -244,12 +248,14 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     protected Closeable getInnerCloseable() {
         return builder()
                 .run(new Runnable() {
+                    @Override
                     public void run() {
                         removeSessionTimeout(sessionFactory);
                     }
                 })
                 .sequential(connector, ioServiceFactory)
                 .run(new Runnable() {
+                    @Override
                     public void run() {
                         connector = null;
                         ioServiceFactory = null;
@@ -279,6 +285,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         }
         final ConnectFuture connectFuture = new DefaultConnectFuture(null);
         connector.connect(address).addListener(new SshFutureListener<IoConnectFuture>() {
+            @Override
             public void operationComplete(IoConnectFuture future) {
                 if (future.isCanceled()) {
                     connectFuture.cancel();
@@ -467,8 +474,10 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             try {
                 if (SecurityUtils.isBouncyCastleRegistered()) {
                     class KeyPairProviderLoader implements Callable<KeyPairProvider> {
+                        @Override
                         public KeyPairProvider call() throws Exception {
                             return new FileKeyPairProvider(files.toArray(new String[files.size()]), new PasswordFinder() {
+                                @Override
                                 public char[] getPassword() {
                                     try {
                                         System.out.println("Enter password for private key: ");
@@ -494,10 +503,12 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         client.start();
         client.setKeyPairProvider(provider);
         client.setUserInteraction(new UserInteraction() {
+            @Override
             public void welcome(String banner) {
                 System.out.println(banner);
             }
 
+            @Override
             public String[] interactive(String destination, String name, String instruction, String[] prompt, boolean[] echo) {
                 String[] answers = new String[prompt.length];
                 try {

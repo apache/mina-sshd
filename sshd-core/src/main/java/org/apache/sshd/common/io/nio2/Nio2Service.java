@@ -70,12 +70,13 @@ public abstract class Nio2Service extends CloseableUtils.AbstractInnerCloseable 
         return builder().parallel(sessions.values()).build();
     }
 
+    @Override
     public Map<Long, IoSession> getManagedSessions() {
         return Collections.unmodifiableMap(sessions);
     }
 
     public void sessionClosed(Nio2Session session) {
-        sessions.remove(session.getId());
+        sessions.remove(Long.valueOf(session.getId()));
     }
 
     protected <T> void setOption(NetworkChannel socket, String property, SocketOption<T> option, T defaultValue) throws IOException {
@@ -84,9 +85,9 @@ public abstract class Nio2Service extends CloseableUtils.AbstractInnerCloseable 
         if (!GenericUtils.isEmpty(valStr)) {
             Class<T> type = option.type();
             if (type == Integer.class) {
-                val = type.cast(Integer.parseInt(valStr));
+                val = type.cast(Integer.valueOf(valStr));
             } else if (type == Boolean.class) {
-                val = type.cast(Boolean.parseBoolean(valStr));
+                val = type.cast(Boolean.valueOf(valStr));
             } else {
                 throw new IllegalStateException("Unsupported socket option type " + type);
             }

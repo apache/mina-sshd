@@ -51,6 +51,7 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
         backlog = FactoryManagerUtils.getIntProperty(manager, FactoryManager.SOCKET_BACKLOG, DEFAULT_BACKLOG);
     }
 
+    @Override
     public void bind(Collection<? extends SocketAddress> addresses) throws IOException {
         for (SocketAddress address : addresses) {
             logger.debug("Binding Nio2Acceptor to address {}", address);
@@ -68,15 +69,18 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
         }
     }
 
+    @Override
     public void bind(SocketAddress address) throws IOException {
         bind(Collections.singleton(address));
     }
 
+    @Override
     public void unbind() {
         logger.debug("Unbinding");
         unbind(getBoundAddresses());
     }
 
+    @Override
     public void unbind(Collection<? extends SocketAddress> addresses) {
         for (SocketAddress address : addresses) {
             AsynchronousServerSocketChannel channel = channels.remove(address);
@@ -90,10 +94,12 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
         }
     }
 
+    @Override
     public void unbind(SocketAddress address) {
         unbind(Collections.singleton(address));
     }
 
+    @Override
     public Set<SocketAddress> getBoundAddresses() {
         return new HashSet<SocketAddress>(channels.keySet());
     }
@@ -104,6 +110,7 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
         return super.close(immediately);
     }
 
+    @Override
     public void doCloseImmediately() {
         for (SocketAddress address : channels.keySet()) {
             try {
@@ -120,26 +127,53 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
         AcceptCompletionHandler(AsynchronousServerSocketChannel socket) {
             this.socket = socket;
         }
+        @SuppressWarnings("synthetic-access")
+        @Override
         protected void onCompleted(AsynchronousSocketChannel result, SocketAddress address) {
             // Verify that the address has not been unbound
             if (!channels.containsKey(address)) {
                 return;
             }
+
+            Nio2Session session=null;
             try {
                 // Create a session
-                Nio2Session session = new Nio2Session(Nio2Acceptor.this, manager, handler, result);
+                session = new Nio2Session(Nio2Acceptor.this, manager, handler, result);
                 handler.sessionCreated(session);
-                sessions.put(session.getId(), session);
+                sessions.put(Long.valueOf(session.getId()), session);
                 session.startReading();
+            } catch (Throwable exc) {
+                failed(exc, address);
+
+                // fail fast the accepted connection
+                if (session != null) {
+                    try {
+                        session.close();
+                    } catch(Throwable t) {
+                        log.warn("Failed (" + t.getClass().getSimpleName() + ")"
+                                + " to close accepted connection from " + address
+                                + ": " + t.getMessage(),
+                                 t);
+                    }
+                }
+            }
+            
+            try {
                 // Accept new connections
                 socket.accept(address, this);
             } catch (Throwable exc) {
                 failed(exc, address);
             }
         }
+
+        @SuppressWarnings("synthetic-access")
+        @Override
         protected void onFailed(final Throwable exc, final SocketAddress address) {
             if (channels.containsKey(address) && !disposing.get()) {
-                logger.warn("Caught exception while accepting incoming connection", exc);
+                logger.warn("Caught " + exc.getClass().getSimpleName()
+                          + " while accepting incoming connection from " + address
+                          + ": " + exc.getMessage(),
+                            exc);
             }
         }
     }

@@ -29,13 +29,15 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
+import java.net.SocketAddress;
 import java.util.Arrays;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.log4j.Logger;
 import org.apache.sshd.client.SessionFactory;
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ChannelShell;
@@ -43,6 +45,8 @@ import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.session.ClientConnectionService;
 import org.apache.sshd.client.session.ClientSessionImpl;
 import org.apache.sshd.common.Channel;
+import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.Session;
 import org.apache.sshd.common.SessionListener;
@@ -51,11 +55,13 @@ import org.apache.sshd.common.channel.WindowClosedException;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.session.AbstractConnectionService;
 import org.apache.sshd.common.session.AbstractSession;
+import org.apache.sshd.deprecated.ClientUserAuthServiceOld;
 import org.apache.sshd.deprecated.UserAuthPassword;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.CommandFactory;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
+import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.command.ScpCommandFactory;
 import org.apache.sshd.server.sftp.SftpSubsystemFactory;
 import org.apache.sshd.util.BaseTest;
@@ -66,8 +72,8 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
-import org.apache.sshd.deprecated.ClientUserAuthServiceOld;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * TODO Add javadoc
@@ -107,7 +113,8 @@ public class ServerTest extends BaseTest {
      */
     @Test
     public void testFailAuthenticationWithWaitFor() throws Exception {
-        sshd.getProperties().put(SshServer.MAX_AUTH_REQUESTS, "10");
+        final int   MAX_AUTH_REQUESTS=10;
+        FactoryManagerUtils.updateProperty(sshd, ServerFactoryManager.MAX_AUTH_REQUESTS, MAX_AUTH_REQUESTS);
 
         client = SshClient.setUpDefaultClient();
         client.setServiceFactories(Arrays.asList(
@@ -115,24 +122,27 @@ public class ServerTest extends BaseTest {
                 new ClientConnectionService.Factory()
         ));
         client.start();
-        ClientSession s = client.connect("smx", "localhost", port).await().getSession();
-        int nbTrials = 0;
-        int res = 0;
-        while ((res & ClientSession.CLOSED) == 0) {
-            nbTrials ++;
-            s.getService(ClientUserAuthServiceOld.class)
-                    .auth(new UserAuthPassword((ClientSessionImpl) s, "ssh-connection", "buggy"));
-            res = s.waitFor(ClientSession.CLOSED | ClientSession.WAIT_AUTH, 5000);
-            if (res == ClientSession.TIMEOUT) {
-                throw new TimeoutException();
+        
+        try(ClientSession s = client.connect("smx", "localhost", port).await().getSession()) {
+            int nbTrials = 0;
+            int res = 0;
+            while ((res & ClientSession.CLOSED) == 0) {
+                nbTrials ++;
+                s.getService(ClientUserAuthServiceOld.class)
+                        .auth(new UserAuthPassword((ClientSessionImpl) s, "ssh-connection", "buggy"));
+                res = s.waitFor(ClientSession.CLOSED | ClientSession.WAIT_AUTH, 5000);
+                if (res == ClientSession.TIMEOUT) {
+                    throw new TimeoutException();
+                }
             }
+            assertTrue("Number trials (" + nbTrials + ") below min.=" + MAX_AUTH_REQUESTS, nbTrials > MAX_AUTH_REQUESTS);
         }
-        assertTrue(nbTrials > 10);
     }
 
     @Test
     public void testFailAuthenticationWithFuture() throws Exception {
-        sshd.getProperties().put(SshServer.MAX_AUTH_REQUESTS, "10");
+        final int   MAX_AUTH_REQUESTS=10;
+        FactoryManagerUtils.updateProperty(sshd, ServerFactoryManager.MAX_AUTH_REQUESTS, MAX_AUTH_REQUESTS);
 
         client = SshClient.setUpDefaultClient();
         client.setServiceFactories(Arrays.asList(
@@ -140,47 +150,54 @@ public class ServerTest extends BaseTest {
                 new ClientConnectionService.Factory()
         ));
         client.start();
-        ClientSession s = client.connect("smx", "localhost", port).await().getSession();
-        int nbTrials = 0;
-        AuthFuture authFuture;
-        do {
-            nbTrials++;
-            assertTrue(nbTrials < 100);
-            authFuture = s.getService(ClientUserAuthServiceOld.class)
-                    .auth(new UserAuthPassword((ClientSessionImpl) s, "ssh-connection", "buggy"));
-            assertTrue(authFuture.await(5000));
-            assertTrue(authFuture.isDone());
-            assertFalse(authFuture.isSuccess());
+        try(ClientSession s = client.connect("smx", "localhost", port).await().getSession()) {
+            int nbTrials = 0;
+            AuthFuture authFuture;
+            do {
+                nbTrials++;
+                assertTrue(nbTrials < 100);
+                authFuture = s.getService(ClientUserAuthServiceOld.class)
+                        .auth(new UserAuthPassword((ClientSessionImpl) s, "ssh-connection", "buggy"));
+                assertTrue(authFuture.await(5000));
+                assertTrue(authFuture.isDone());
+                assertFalse(authFuture.isSuccess());
+            }
+            while (authFuture.isFailure());
+            assertNotNull("Missing auth future exception", authFuture.getException());
+            assertTrue("Number trials (" + nbTrials + ") below min.=" + MAX_AUTH_REQUESTS, nbTrials > MAX_AUTH_REQUESTS);
         }
-        while (authFuture.isFailure());
-        assertNotNull(authFuture.getException());
-        assertTrue(nbTrials > 10);
     }
 
     @Test
     public void testAuthenticationTimeout() throws Exception {
-        sshd.getProperties().put(SshServer.AUTH_TIMEOUT, "5000");
+        final int   AUTH_TIMEOUT=5000;
+        FactoryManagerUtils.updateProperty(sshd, FactoryManager.AUTH_TIMEOUT, AUTH_TIMEOUT);
 
         client = SshClient.setUpDefaultClient();
         client.start();
-        ClientSession s = client.connect("test", "localhost", port).await().getSession();
-        int res = s.waitFor(ClientSession.CLOSED, 10000);
-        assertEquals("Session should be closed", ClientSession.CLOSED | ClientSession.WAIT_AUTH, res);
+        try(ClientSession s = client.connect("test", "localhost", port).await().getSession()) {
+            int res = s.waitFor(ClientSession.CLOSED, 2 * AUTH_TIMEOUT);
+            assertEquals("Session should be closed", ClientSession.CLOSED | ClientSession.WAIT_AUTH, res);
+        }
     }
 
     @Test
     public void testIdleTimeout() throws Exception {
         final CountDownLatch latch = new CountDownLatch(1);
         TestEchoShellFactory.TestEchoShell.latch = new CountDownLatch(1);
+        final int   IDLE_TIMEOUT=2500;
+        FactoryManagerUtils.updateProperty(sshd, FactoryManager.IDLE_TIMEOUT, IDLE_TIMEOUT);
 
-        sshd.getProperties().put(SshServer.IDLE_TIMEOUT, "2500");
         sshd.getSessionFactory().addListener(new SessionListener() {
+            @Override
             public void sessionCreated(Session session) {
                 System.out.println("Session created");
             }
+            @Override
             public void sessionEvent(Session session, Event event) {
                 System.out.println("Session event: " + event);
             }
+            @Override
             public void sessionClosed(Session session) {
                 System.out.println("Session closed");
                 latch.countDown();
@@ -189,17 +206,19 @@ public class ServerTest extends BaseTest {
 
         client = SshClient.setUpDefaultClient();
         client.start();
-        ClientSession s = client.connect("test", "localhost", port).await().getSession();
-        s.addPasswordIdentity("test");
-        s.auth().verify();
-        ChannelShell shell = s.createShellChannel();
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        ByteArrayOutputStream err = new ByteArrayOutputStream();
-        shell.setOut(out);
-        shell.setErr(err);
-        shell.open().await();
-        int res = s.waitFor(ClientSession.CLOSED, 5000);
-        assertEquals("Session should be closed", ClientSession.CLOSED | ClientSession.AUTHED, res);
+        try(ClientSession s = client.connect("test", "localhost", port).await().getSession()) {
+            s.addPasswordIdentity("test");
+            s.auth().verify();
+            try(ChannelShell shell = s.createShellChannel();
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                ByteArrayOutputStream err = new ByteArrayOutputStream()) {
+                shell.setOut(out);
+                shell.setErr(err);
+                shell.open().await();
+                int res = s.waitFor(ClientSession.CLOSED, 2 * IDLE_TIMEOUT);
+                assertEquals("Session should be closed", ClientSession.CLOSED | ClientSession.AUTHED, res);
+            }
+        }
         assertTrue(latch.await(1, TimeUnit.SECONDS));
         assertTrue(TestEchoShellFactory.TestEchoShell.latch.await(1, TimeUnit.SECONDS));
     }
@@ -216,17 +235,20 @@ public class ServerTest extends BaseTest {
         final CountDownLatch latch = new CountDownLatch(1);
 
         sshd.setCommandFactory(new StreamCommand.Factory());
-        sshd.getProperties().put(SshServer.IDLE_TIMEOUT, "5000");
-        sshd.getProperties().put(SshServer.DISCONNECT_TIMEOUT, "2000");
+        sshd.getProperties().put(FactoryManager.IDLE_TIMEOUT, "5000");
+        sshd.getProperties().put(FactoryManager.DISCONNECT_TIMEOUT, "2000");
         sshd.getSessionFactory().addListener(new SessionListener() {
+            @Override
             public void sessionCreated(Session session) {
                 System.out.println("Session created");
             }
 
+            @Override
             public void sessionEvent(Session session, Event event) {
                 System.out.println("Session event: " + event);
             }
 
+            @Override
             public void sessionClosed(Session session) {
                 System.out.println("Session closed");
                 latch.countDown();
@@ -236,29 +258,32 @@ public class ServerTest extends BaseTest {
         client = SshClient.setUpDefaultClient();
         client.start();
 
-        ClientSession s = client.connect("test", "localhost", port).await().getSession();
-        s.addPasswordIdentity("test");
-        s.auth().verify();
-        ChannelExec shell = s.createExecChannel("normal");
-        // Create a pipe that will block reading when the buffer is full
-        PipedInputStream pis = new PipedInputStream();
-        PipedOutputStream pos = new PipedOutputStream(pis);
-        shell.setOut(pos);
-        shell.open().await();
-
-        AbstractSession serverSession = sshd.getActiveSessions().iterator().next();
-        Channel channel = serverSession.getService(AbstractConnectionService.class).getChannels().iterator().next();
-        while (channel.getRemoteWindow().getSize() > 0) {
-            Thread.sleep(1);
+        try(ClientSession s = client.connect("test", "localhost", port).await().getSession()) {
+            s.addPasswordIdentity("test");
+            s.auth().verify();
+            try(ChannelExec shell = s.createExecChannel("normal");
+                // Create a pipe that will block reading when the buffer is full
+                PipedInputStream pis = new PipedInputStream();
+                PipedOutputStream pos = new PipedOutputStream(pis)) {
+                shell.setOut(pos);
+                shell.open().await();
+        
+                try(AbstractSession serverSession = sshd.getActiveSessions().iterator().next();
+                    Channel channel = serverSession.getService(AbstractConnectionService.class).getChannels().iterator().next()) {
+                    while (channel.getRemoteWindow().getSize() > 0) {
+                        Thread.sleep(1);
+                    }
+        
+                    LoggerFactory.getLogger(getClass()).info("Waiting for session idle timeouts");
+            
+                    long t0 = System.currentTimeMillis();
+                    latch.await(1, TimeUnit.MINUTES);
+                    long t1 = System.currentTimeMillis();
+                    assertTrue(t1 - t0 > 7000);
+                    assertTrue(t1 - t0 < 10000);
+                }
+            }
         }
-
-        Logger.getLogger(getClass()).info("Waiting for session idle timeouts");
-
-        long t0 = System.currentTimeMillis();
-        latch.await(1, TimeUnit.MINUTES);
-        long t1 = System.currentTimeMillis();
-        assertTrue(t1 - t0 > 7000);
-        assertTrue(t1 - t0 < 10000);
     }
 
     @Test
@@ -279,25 +304,29 @@ public class ServerTest extends BaseTest {
             }
         });
         client.start();
-        ClientSession s = client.connect("test", "localhost", port).await().getSession();
-        s.close(false);
+        try(ClientSession s = client.connect("test", "localhost", port).await().getSession()) {
+            s.close(false);
+        }
     }
 
     @Test
     public void testKexCompletedEvent() throws Exception {
     	final AtomicInteger	serverEventCount=new AtomicInteger(0);
         sshd.getSessionFactory().addListener(new SessionListener() {
-	            public void sessionCreated(Session session) {
+	            @Override
+                public void sessionCreated(Session session) {
 	            	// ignored
 	            }
 	
-	            public void sessionEvent(Session session, Event event) {
+	            @Override
+                public void sessionEvent(Session session, Event event) {
 	            	if (event == Event.KexCompleted) {
 	            		serverEventCount.incrementAndGet();
 	            	}
 	            }
 	
-	            public void sessionClosed(Session session) {
+	            @Override
+                public void sessionClosed(Session session) {
 	            	// ignored
 	            }
 	        });
@@ -306,27 +335,98 @@ public class ServerTest extends BaseTest {
         client.start();
     	final AtomicInteger	clientEventCount=new AtomicInteger(0);
         client.getSessionFactory().addListener(new SessionListener() {
-	            public void sessionCreated(Session session) {
+	            @Override
+                public void sessionCreated(Session session) {
 	            	// ignored
 	            }
 	
-	            public void sessionEvent(Session session, Event event) {
+	            @Override
+                public void sessionEvent(Session session, Event event) {
 	            	if (event == Event.KexCompleted) {
 	            		clientEventCount.incrementAndGet();
 	            	}
 	            }
 	
-	            public void sessionClosed(Session session) {
+	            @Override
+                public void sessionClosed(Session session) {
 	            	// ignored
 	            }
 	        });
 
-        ClientSession s = client.connect("test", "localhost", port).await().getSession();
-        s.addPasswordIdentity("test");
-        s.auth().verify();
-        Assert.assertEquals("Mismatched client events count", 1, clientEventCount.get());
-        Assert.assertEquals("Mismatched server events count", 1, serverEventCount.get());
-        s.close(false);
+        try(ClientSession s = client.connect("test", "localhost", port).await().getSession()) {
+            s.addPasswordIdentity("test");
+            s.auth().verify();
+            Assert.assertEquals("Mismatched client events count", 1, clientEventCount.get());
+            Assert.assertEquals("Mismatched server events count", 1, serverEventCount.get());
+            s.close(false);
+        }
+    }
+
+    @Test   // see https://issues.apache.org/jira/browse/SSHD-456
+    public void testServerStillListensIfSessionListenerThrowsException() throws InterruptedException {
+        final Map<String,SocketAddress> eventsMap = new TreeMap<String, SocketAddress>(String.CASE_INSENSITIVE_ORDER);
+        sshd.getSessionFactory().addListener(new SessionListener() {
+            private final Logger log=LoggerFactory.getLogger(getClass());
+            @Override
+            public void sessionCreated(Session session) {
+                throwException("SessionCreated", session);
+            }
+
+            @Override
+            public void sessionEvent(Session session, Event event) {
+                throwException("SessionEvent", session);
+            }
+
+            @Override
+            public void sessionClosed(Session session) {
+                throwException("SessionClosed", session);
+            }
+            
+            private void throwException(String phase, Session session) {
+                IoSession       ioSession = session.getIoSession();
+                SocketAddress   addr = ioSession.getRemoteAddress();
+                synchronized (eventsMap) {
+                    if (eventsMap.put(phase, addr) != null) {
+                        return; // already generated an event for this phase
+                    }
+                }
+                
+                RuntimeException e = new RuntimeException("Synthetic exception at phase=" + phase + ": " + addr);
+                log.info(e.getMessage());
+                throw e;
+            }
+        });
+        
+        client = SshClient.setUpDefaultClient();
+        client.start();
+        
+        int curCount=0;
+        for (int retryCount=0; retryCount < Byte.SIZE; retryCount++){
+            synchronized(eventsMap) {
+                if ((curCount=eventsMap.size()) >= 3) {
+                    return;
+                }
+            }
+            
+            try {
+                try(ClientSession s = client.connect("test", "localhost", port).await().getSession()) {
+                    s.addPasswordIdentity("test");
+                    s.auth().verify();
+                }
+                
+                synchronized(eventsMap) {
+                    assertTrue("Unexpected premature success: " + eventsMap, eventsMap.size() >= 3);
+                }
+            } catch(IOException e) {
+                // expected - ignored
+                synchronized(eventsMap) {
+                    int nextCount=eventsMap.size();
+                    assertTrue("No session event generated", nextCount > curCount);
+                }
+            }
+        }
+        
+        Assert.fail("No success to authenticate");
     }
 
     public static class TestEchoShellFactory extends EchoShellFactory {
@@ -368,7 +468,7 @@ public class ServerTest extends BaseTest {
 
         @Override
         public void setInputStream(InputStream in) {
-
+            // ignored
         }
 
         @Override
@@ -378,12 +478,12 @@ public class ServerTest extends BaseTest {
 
         @Override
         public void setErrorStream(OutputStream err) {
-
+            // ignored
         }
 
         @Override
         public void setExitCallback(ExitCallback callback) {
-
+            // ignored
         }
 
         @Override
@@ -426,11 +526,9 @@ public class ServerTest extends BaseTest {
         }
     }
 
-
-
     public static void main(String[] args) throws Exception {
         SshServer sshd = SshServer.setUpDefaultServer();
-        sshd.getProperties().put(SshServer.IDLE_TIMEOUT, "10000");
+        sshd.getProperties().put(FactoryManager.IDLE_TIMEOUT, "10000");
         sshd.setPort(8001);
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(new SftpSubsystemFactory()));
@@ -440,5 +538,4 @@ public class ServerTest extends BaseTest {
         sshd.start();
         Thread.sleep(100000);
     }
-
 }

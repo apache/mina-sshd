@@ -18,7 +18,6 @@
  */
 package org.apache.sshd.common.io;
 
-import java.io.IOException;
 import java.net.SocketAddress;
 
 /**

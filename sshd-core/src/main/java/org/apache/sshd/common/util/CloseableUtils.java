@@ -97,7 +97,7 @@ public class CloseableUtils {
             return this;
         }
 
-        public <T extends SshFuture> Builder when(SshFuture<T>... futures) {
+        public <T extends SshFuture> Builder when(@SuppressWarnings("unchecked") SshFuture<T>... futures) {
             return when(Arrays.asList(futures));
         }
 
@@ -137,6 +137,7 @@ public class CloseableUtils {
             return this;
         }
 
+        @Override
         public Closeable build() {
             if (closeables.isEmpty()) {
                 return new SimpleCloseable(lock);
@@ -167,12 +168,15 @@ public class CloseableUtils {
             closing = new AtomicBoolean();
         }
 
+        @Override
         public boolean isClosed() {
             return future.isClosed();
         }
+        @Override
         public boolean isClosing() {
             return closing.get();
         }
+        @Override
         public CloseFuture close(boolean immediately) {
             if (closing.compareAndSet(false, true)) {
                 doClose(immediately);
@@ -194,9 +198,11 @@ public class CloseableUtils {
             this.closeables = closeables;
         }
 
+        @Override
         protected void doClose(final boolean immediately) {
             final AtomicInteger count = new AtomicInteger(1);
             SshFutureListener<CloseFuture> listener = new SshFutureListener<CloseFuture>() {
+                @Override
                 public void operationComplete(CloseFuture f) {
                     if (count.decrementAndGet() == 0) {
                         future.setClosed();
@@ -222,9 +228,11 @@ public class CloseableUtils {
             this.closeables = closeables;
         }
 
+        @Override
         protected void doClose(final boolean immediately) {
             final Iterator<? extends Closeable> iterator = closeables.iterator();
             SshFutureListener<CloseFuture> listener = new SshFutureListener<CloseFuture>() {
+                @Override
                 public void operationComplete(CloseFuture previousFuture) {
                     while (iterator.hasNext()) {
                         Closeable c = iterator.next();
@@ -252,6 +260,7 @@ public class CloseableUtils {
             this.futures = futures;
         }
 
+        @Override
         protected void doClose(boolean immediately) {
             if (immediately) {
                 for (SshFuture<?> f : futures) {
@@ -263,6 +272,7 @@ public class CloseableUtils {
             } else {
                 final AtomicInteger count = new AtomicInteger(1);
                 SshFutureListener<T> listener = new SshFutureListener<T>() {
+                    @Override
                     public void operationComplete(T f) {
                         if (count.decrementAndGet() == 0) {
                             future.setClosed();
@@ -294,6 +304,7 @@ public class CloseableUtils {
         /** A future that will be set 'closed' when the object is actually closed */
         protected final CloseFuture closeFuture = new DefaultCloseFuture(lock);
 
+        @Override
         public CloseFuture close(boolean immediately) {
             if (immediately) {
                 if (state.compareAndSet(State.Opened, State.Immediate)
@@ -312,6 +323,7 @@ public class CloseableUtils {
                     SshFuture<CloseFuture> grace = doCloseGracefully();
                     if (grace != null) {
                         grace.addListener(new SshFutureListener<CloseFuture>() {
+                            @Override
                             public void operationComplete(CloseFuture future) {
                                 if (state.compareAndSet(State.Graceful, State.Immediate)) {
                                     doCloseImmediately();
@@ -332,10 +344,12 @@ public class CloseableUtils {
             return closeFuture;
         }
 
+        @Override
         public boolean isClosed() {
             return state.get() == State.Closed;
         }
 
+        @Override
         public boolean isClosing() {
             return state.get() != State.Opened;
         }

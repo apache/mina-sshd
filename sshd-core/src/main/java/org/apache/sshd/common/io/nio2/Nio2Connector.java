@@ -39,6 +39,7 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
         super(manager, handler, group);
     }
 
+    @Override
     public IoConnectFuture connect(SocketAddress address) {
         logger.debug("Connecting to {}", address);
         final IoConnectFuture future = new DefaultIoConnectFuture(null);
@@ -51,11 +52,12 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
             setOption(socket, FactoryManager.SOCKET_SNDBUF, StandardSocketOptions.SO_SNDBUF, null);
             setOption(socket, FactoryManager.TCP_NODELAY, StandardSocketOptions.TCP_NODELAY, null);
             socket.connect(address, null, new Nio2CompletionHandler<Void, Object>() {
+                @Override
                 protected void onCompleted(Void result, Object attachment) {
                     try {
                         Nio2Session session = new Nio2Session(Nio2Connector.this, manager, handler, socket);
                         handler.sessionCreated(session);
-                        sessions.put(session.getId(), session);
+                        sessions.put(Long.valueOf(session.getId()), session);
                         future.setSession(session);
                         session.startReading();
                     } catch (Throwable e) {
@@ -67,6 +69,7 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
                         future.setException(e);
                     }
                 }
+                @Override
                 protected void onFailed(final Throwable exc, final Object attachment) {
                     future.setException(exc);
                 }
@@ -81,20 +84,25 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
         DefaultIoConnectFuture(Object lock) {
             super(lock);
         }
+        @Override
         public IoSession getSession() {
             Object v = getValue();
             return v instanceof IoSession ? (IoSession) v : null;
         }
+        @Override
         public Throwable getException() {
             Object v = getValue();
             return v instanceof Throwable ? (Throwable) v : null;
         }
+        @Override
         public boolean isConnected() {
             return getValue() instanceof IoSession;
         }
+        @Override
         public void setSession(IoSession session) {
             setValue(session);
         }
+        @Override
         public void setException(Throwable exception) {
             setValue(exception);
         }

@@ -72,22 +72,27 @@ public class Nio2Session extends CloseableUtils.AbstractCloseable implements IoS
         log.debug("Creating IoSession on {} from {}", localAddress, remoteAddress);
     }
 
+    @Override
     public long getId() {
         return id;
     }
 
+    @Override
     public Object getAttribute(Object key) {
         return attributes.get(key);
     }
 
+    @Override
     public Object setAttribute(Object key, Object value) {
         return attributes.put(key, value);
     }
 
+    @Override
     public SocketAddress getRemoteAddress() {
         return remoteAddress;
     }
 
+    @Override
     public SocketAddress getLocalAddress() {
         return localAddress;
     }
@@ -105,8 +110,12 @@ public class Nio2Session extends CloseableUtils.AbstractCloseable implements IoS
         }
     }
 
+    @Override
     public IoWriteFuture write(Buffer buffer) {
-        log.debug("Writing {} bytes", buffer.available());
+        if (log.isDebugEnabled()) {
+            log.debug("Writing {} bytes", Integer.valueOf(buffer.available()));
+        }
+
         ByteBuffer buf = ByteBuffer.wrap(buffer.array(), buffer.rpos(), buffer.available());
         final DefaultIoWriteFuture future = new DefaultIoWriteFuture(null, buf);
         if (isClosing()) {
@@ -166,6 +175,7 @@ public class Nio2Session extends CloseableUtils.AbstractCloseable implements IoS
         }
     }
 
+    @Override
     public IoService getService() {
         return service;
     }
@@ -188,9 +198,11 @@ public class Nio2Session extends CloseableUtils.AbstractCloseable implements IoS
 
     public void startReading(final ByteBuffer buffer) {
         doReadCycle(buffer, new Readable() {
+                @Override
                 public int available() {
                     return buffer.remaining();
                 }
+                @Override
                 public void getRawBytes(byte[] data, int offset, int len) {
                     buffer.get(data, offset, len);
                 }
@@ -199,10 +211,11 @@ public class Nio2Session extends CloseableUtils.AbstractCloseable implements IoS
 
     protected void doReadCycle(final ByteBuffer buffer, final Readable bufReader) {
         final Nio2CompletionHandler<Integer, Object> completion = new Nio2CompletionHandler<Integer, Object>() {
+            @Override
             @SuppressWarnings("synthetic-access")
             protected void onCompleted(Integer result, Object attachment) {
                 try {
-                    if (result >= 0) {
+                    if (result.intValue() >= 0) {
                         log.debug("Read {} bytes", result);
                         buffer.flip();
                         handler.messageReceived(Nio2Session.this, bufReader);
@@ -222,6 +235,7 @@ public class Nio2Session extends CloseableUtils.AbstractCloseable implements IoS
                 }
             }
 
+            @Override
             @SuppressWarnings("synthetic-access")
             protected void onFailed(Throwable exc, Object attachment) {
                 exceptionCaught(exc);
@@ -240,6 +254,7 @@ public class Nio2Session extends CloseableUtils.AbstractCloseable implements IoS
             if (currentWrite.compareAndSet(null, future)) {
                 try {
                     socket.write(future.buffer, null, new Nio2CompletionHandler<Integer, Object>() {
+                        @Override
                         protected void onCompleted(Integer result, Object attachment) {
                             if (future.buffer.hasRemaining()) {
                                 try {
@@ -255,6 +270,7 @@ public class Nio2Session extends CloseableUtils.AbstractCloseable implements IoS
                                 finishWrite();
                             }
                         }
+                        @Override
                         protected void onFailed(Throwable exc, Object attachment) {
                             future.setException(exc);
                             exceptionCaught(exc);
@@ -280,6 +296,7 @@ public class Nio2Session extends CloseableUtils.AbstractCloseable implements IoS
             super(lock);
             this.buffer = buffer;
         }
+        @Override
         public void verify() throws SshException {
             try {
                 await();
@@ -292,12 +309,14 @@ public class Nio2Session extends CloseableUtils.AbstractCloseable implements IoS
             }
         }
 
+        @Override
         public boolean isWritten() {
             return getValue() instanceof Boolean;
         }
         public void setWritten() {
             setValue(Boolean.TRUE);
         }
+        @Override
         public Throwable getException() {
             Object v = getValue();
             return v instanceof Throwable ? (Throwable) v : null;
@@ -310,6 +329,7 @@ public class Nio2Session extends CloseableUtils.AbstractCloseable implements IoS
         }
     }
 
+    @Override
     public String toString() {
         return getClass().getSimpleName() + "[local=" + localAddress + ", remote=" + remoteAddress + "]";
     }

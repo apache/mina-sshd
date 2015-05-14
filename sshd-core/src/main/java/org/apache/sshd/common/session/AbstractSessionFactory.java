@@ -38,6 +38,7 @@ public abstract class AbstractSessionFactory extends AbstractSessionIoHandler {
     	super();
     }
 
+    @Override
     protected AbstractSession createSession(IoSession ioSession) throws Exception {
         AbstractSession session = doCreateSession(ioSession);
 
