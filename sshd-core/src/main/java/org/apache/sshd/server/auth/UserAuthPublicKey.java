@@ -35,7 +35,13 @@ import org.apache.sshd.server.UserAuth;
  */
 public class UserAuthPublicKey extends AbstractUserAuth {
 
-    public static class Factory implements NamedFactory<UserAuth> {
+    public static class UserAuthPublicKeyFactory implements NamedFactory<UserAuth> {
+        public static final UserAuthPublicKeyFactory INSTANCE = new UserAuthPublicKeyFactory();
+
+        public UserAuthPublicKeyFactory() {
+            super();
+        }
+
         @Override
         public String getName() {
             return "publickey";

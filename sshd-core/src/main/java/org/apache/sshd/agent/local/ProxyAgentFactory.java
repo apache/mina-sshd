@@ -39,7 +39,7 @@ public class ProxyAgentFactory implements SshAgentFactory {
     private final Map<String, AgentServerProxy> proxies = new ConcurrentHashMap<String, AgentServerProxy>();
 
     public NamedFactory<Channel> getChannelForwardingFactory() {
-        return new ChannelAgentForwarding.Factory();
+        return new ChannelAgentForwarding.ChannelAgentForwardingFactory();
     }
 
     public SshAgent createClient(FactoryManager manager) throws IOException {

@@ -35,10 +35,12 @@ import org.apache.sshd.server.session.ServerSession;
 
 public class UnixAgentFactory implements SshAgentFactory {
 
+    @Override
     public NamedFactory<Channel> getChannelForwardingFactory() {
-        return new ChannelAgentForwarding.Factory();
+        return ChannelAgentForwarding.ChannelAgentForwardingFactory.INSTANCE;
     }
 
+    @Override
     public SshAgent createClient(FactoryManager manager) throws IOException {
         String authSocket = FactoryManagerUtils.getString(manager, SshAgent.SSH_AUTHSOCKET_ENV_NAME);
         if (GenericUtils.isEmpty(authSocket)) {
@@ -47,6 +49,7 @@ public class UnixAgentFactory implements SshAgentFactory {
         return new AgentClient(authSocket);
     }
 
+    @Override
     public SshAgentServer createServer(ConnectionService service) throws IOException {
         Session session = service.getSession();
         if (!(session instanceof ServerSession)) {

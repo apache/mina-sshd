@@ -37,10 +37,18 @@ import org.slf4j.LoggerFactory;
  */
 public class UserAuthPassword implements UserAuth {
 
-    public static class Factory implements NamedFactory<UserAuth> {
+    public static class UserAuthPasswordFactory implements NamedFactory<UserAuth> {
+        public static final UserAuthPasswordFactory INSTANCE = new UserAuthPasswordFactory();
+
+        public UserAuthPasswordFactory() {
+            super();
+        }
+
+        @Override
         public String getName() {
             return "password";
         }
+        @Override
         public UserAuth create() {
             return new UserAuthPassword();
         }
@@ -52,6 +60,7 @@ public class UserAuthPassword implements UserAuth {
     private Iterator<String> passwords;
     private String current;
 
+    @Override
     public void init(ClientSession session, String service, List<Object> identities) throws Exception {
         this.session = session;
         this.service = service;
@@ -64,6 +73,7 @@ public class UserAuthPassword implements UserAuth {
         this.passwords = pwds.iterator();
     }
 
+    @Override
     public boolean process(Buffer buffer) throws Exception {
         // Send next key
         if (buffer == null) {
@@ -86,12 +96,14 @@ public class UserAuthPassword implements UserAuth {
             String prompt = buffer.getString();
             String lang = buffer.getString();
             // TODO: prompt user for password change
-            log.warn("Password change requested, but not supported");
+            log.warn(prompt + " - Password change requested, but not supported for lang=" + lang);
             return false;
         }
         throw new IllegalStateException("Received unknown packet");
     }
 
+    @Override
     public void destroy() {
+        // ignored
     }
 }

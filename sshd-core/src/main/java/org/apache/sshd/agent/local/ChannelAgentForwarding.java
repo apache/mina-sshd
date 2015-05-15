@@ -40,7 +40,12 @@ import org.apache.sshd.server.channel.AbstractServerChannel;
  */
 public class ChannelAgentForwarding extends AbstractServerChannel {
 
-    public static class Factory implements NamedFactory<Channel> {
+    public static class ChannelAgentForwardingFactory implements NamedFactory<Channel> {
+        public static final ChannelAgentForwardingFactory INSTANCE = new ChannelAgentForwardingFactory();
+
+        public ChannelAgentForwardingFactory() {
+            super();
+        }
 
         @Override
         public String getName() {

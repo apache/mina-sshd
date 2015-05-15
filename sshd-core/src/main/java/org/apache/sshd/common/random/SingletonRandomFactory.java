@@ -37,18 +37,22 @@ public class SingletonRandomFactory implements Random, NamedFactory<Random> {
         this.random = factory.create();
     }
 
+    @Override
     public void fill(byte[] bytes, int start, int len) {
         random.fill(bytes, start, len);
     }
 
+    @Override
     public int random(int max) {
         return random.random(max);
     }
 
+    @Override
     public String getName() {
         return factory.getName();
     }
 
+    @Override
     public Random create() {
         return this;
     }

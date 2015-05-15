@@ -44,7 +44,13 @@ import static org.apache.sshd.common.SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE
  */
 public class UserAuthKeyboardInteractive implements UserAuth {
 
-    public static class Factory implements NamedFactory<UserAuth> {
+    public static class UserAuthKeyboardInteractiveFactory implements NamedFactory<UserAuth> {
+        public static final UserAuthKeyboardInteractiveFactory INSTANCE = new UserAuthKeyboardInteractiveFactory();
+
+        public UserAuthKeyboardInteractiveFactory() {
+            super();
+        }
+
         @Override
         public String getName() {
             return "keyboard-interactive";

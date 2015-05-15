@@ -38,12 +38,19 @@ public class BouncyCastleRandom implements Random {
     /**
      * Named factory for the BouncyCastle <code>Random</code>
      */
-    public static class Factory implements NamedFactory<Random> {
+    public static class BouncyCastleRandomFactory implements NamedFactory<Random> {
+        public static final BouncyCastleRandomFactory INSTANCE = new BouncyCastleRandomFactory();
 
+        public BouncyCastleRandomFactory() {
+            super();
+        }
+
+        @Override
         public String getName() {
             return "bouncycastle";
         }
 
+        @Override
         public Random create() {
             return new BouncyCastleRandom();
         }
@@ -58,6 +65,7 @@ public class BouncyCastleRandom implements Random {
         this.random.addSeedMaterial(seed);
     }
 
+    @Override
     public void fill(byte[] bytes, int start, int len) {
         this.random.nextBytes(bytes, start, len);
     }
@@ -66,6 +74,7 @@ public class BouncyCastleRandom implements Random {
      * Returns a pseudo-random uniformly distributed {@code int}
      * in the half-open range [0, n).
      */
+    @Override
     public int random(int n) {
         if (n > 0) {
             if ((n & -n) == n) {

@@ -33,10 +33,19 @@ import org.apache.sshd.server.session.ServerSession;
  */
 public class UserAuthKeyboardInteractive extends AbstractUserAuth {
 
-    public static class Factory implements NamedFactory<UserAuth> {
+    public static class UserAuthKeyboardInteractiveFactory implements NamedFactory<UserAuth> {
+        public static final UserAuthKeyboardInteractiveFactory INSTANCE = new UserAuthKeyboardInteractiveFactory();
+
+        public UserAuthKeyboardInteractiveFactory() {
+            super();
+        }
+
+        @Override
         public String getName() {
             return "keyboard-interactive";
         }
+
+        @Override
         public UserAuth create() {
             return new UserAuthKeyboardInteractive();
         }
@@ -65,7 +74,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
                 throw new SshException("Expected 1 response from user but received " + num);
             }
             String password = buffer.getString();
-            return checkPassword(session, username, password);
+            return Boolean.valueOf(checkPassword(session, username, password));
         }
     }
 

@@ -49,30 +49,46 @@ import org.apache.sshd.server.channel.OpenChannelException;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class TcpipServerChannel extends AbstractServerChannel {
+    public abstract static class TcpipFactory implements NamedFactory<Channel> {
+        private final Type type;
 
-    public static class DirectTcpipFactory implements NamedFactory<Channel> {
+        protected TcpipFactory(Type type) {
+            this.type = type;
+        }
+        
+        public final Type getType() {
+            return type;
+        }
+        
+        @Override
+        public Channel create() {
+            return new TcpipServerChannel(getType());
+        }
+    }
+
+    public static class DirectTcpipFactory extends TcpipFactory {
+        public static final DirectTcpipFactory  INSTANCE = new DirectTcpipFactory();
+
+        public DirectTcpipFactory() {
+            super(Type.Direct);
+        }
 
         @Override
         public String getName() {
             return "direct-tcpip";
         }
-
-        @Override
-        public Channel create() {
-            return new TcpipServerChannel(Type.Direct);
-        }
     }
 
-    public static class ForwardedTcpipFactory implements NamedFactory<Channel> {
+    public static class ForwardedTcpipFactory extends TcpipFactory {
+        public static final ForwardedTcpipFactory INSTANCE = new ForwardedTcpipFactory();
+        
+        public ForwardedTcpipFactory() {
+            super(Type.Forwarded);
+        }
 
         @Override
         public String getName() {
             return "forwarded-tcpip";
-        }
-
-        @Override
-        public Channel create() {
-            return new TcpipServerChannel(Type.Forwarded);
         }
     }
 

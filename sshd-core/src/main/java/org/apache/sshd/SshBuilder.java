@@ -102,9 +102,9 @@ public class SshBuilder {
 
             if (randomFactory == null) {
                 if (SecurityUtils.isBouncyCastleRegistered()) {
-                    randomFactory = new SingletonRandomFactory(new BouncyCastleRandom.Factory());
+                    randomFactory = new SingletonRandomFactory(BouncyCastleRandom.BouncyCastleRandomFactory.INSTANCE);
                 } else {
-                    randomFactory = new SingletonRandomFactory(new JceRandom.Factory());
+                    randomFactory = new SingletonRandomFactory(JceRandom.JceRandomFactory.INSTANCE);
                 }
             }
 
@@ -372,7 +372,7 @@ public class SshBuilder {
             }
             if (channelFactories == null) {
                 channelFactories = Arrays.<NamedFactory<Channel>>asList(
-                        new TcpipServerChannel.ForwardedTcpipFactory());
+                        TcpipServerChannel.ForwardedTcpipFactory.INSTANCE);
             }
             if (serverKeyVerifier == null) {
                 serverKeyVerifier = AcceptAllServerKeyVerifier.INSTANCE;
@@ -433,8 +433,8 @@ public class SshBuilder {
             }
             if (channelFactories == null) {
                 channelFactories = Arrays.asList(
-                        new ChannelSession.Factory(),
-                        new TcpipServerChannel.DirectTcpipFactory());
+                        ChannelSession.ChannelSessionFactory.INSTANCE,
+                        TcpipServerChannel.DirectTcpipFactory.INSTANCE);
             }
             if (globalRequestHandlers == null) {
                 globalRequestHandlers = Arrays.asList(

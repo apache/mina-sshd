@@ -27,7 +27,6 @@ import org.apache.sshd.agent.common.AgentDelegate;
 import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.Session;
 import org.apache.sshd.common.session.ConnectionService;
 
 public class LocalAgentFactory implements SshAgentFactory {
@@ -46,14 +45,17 @@ public class LocalAgentFactory implements SshAgentFactory {
         return agent;
     }
 
+    @Override
     public NamedFactory<Channel> getChannelForwardingFactory() {
-        return new ChannelAgentForwarding.Factory();
+        return ChannelAgentForwarding.ChannelAgentForwardingFactory.INSTANCE;
     }
 
+    @Override
     public SshAgent createClient(FactoryManager manager) throws IOException {
         return new AgentDelegate(agent);
     }
 
+    @Override
     public SshAgentServer createServer(ConnectionService service) throws IOException {
         return null;
     }

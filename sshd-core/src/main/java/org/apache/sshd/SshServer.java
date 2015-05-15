@@ -135,6 +135,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         this.port = port;
     }
 
+    @Override
     public List<NamedFactory<UserAuth>> getUserAuthFactories() {
         return userAuthFactories;
     }
@@ -143,6 +144,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         this.userAuthFactories = userAuthFactories;
     }
 
+    @Override
     public Factory<Command> getShellFactory() {
         return shellFactory;
     }
@@ -159,6 +161,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         this.sessionFactory = sessionFactory;
     }
 
+    @Override
     public CommandFactory getCommandFactory() {
         return commandFactory;
     }
@@ -167,6 +170,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         this.commandFactory = commandFactory;
     }
 
+    @Override
     public List<NamedFactory<Command>> getSubsystemFactories() {
         return subsystemFactories;
     }
@@ -175,6 +179,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         this.subsystemFactories = subsystemFactories;
     }
 
+    @Override
     public PasswordAuthenticator getPasswordAuthenticator() {
         return passwordAuthenticator;
     }
@@ -183,6 +188,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         this.passwordAuthenticator = passwordAuthenticator;
     }
 
+    @Override
     public PublickeyAuthenticator getPublickeyAuthenticator() {
         return publickeyAuthenticator;
     }
@@ -191,6 +197,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         this.publickeyAuthenticator = publickeyAuthenticator;
     }
 
+    @Override
     public GSSAuthenticator getGSSAuthenticator() {
       return gssAuthenticator;
     }
@@ -199,6 +206,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
       this.gssAuthenticator = gssAuthenticator;
     }
 
+    @Override
     public void setTcpipForwardingFilter(ForwardingFilter forwardingFilter) {
         this.tcpipForwardingFilter = forwardingFilter;
     }
@@ -213,14 +221,14 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         if (getUserAuthFactories() == null) {
             List<NamedFactory<UserAuth>> factories = new ArrayList<NamedFactory<UserAuth>>();
             if (getPasswordAuthenticator() != null) {
-                factories.add(new UserAuthPassword.Factory());
-                factories.add(new UserAuthKeyboardInteractive.Factory());
+                factories.add(UserAuthPassword.UserAuthPasswordFactory.INSTANCE);
+                factories.add(UserAuthKeyboardInteractive.UserAuthKeyboardInteractiveFactory.INSTANCE);
             }
             if (getPublickeyAuthenticator() != null) {
-                factories.add(new UserAuthPublicKey.Factory());
+                factories.add(UserAuthPublicKey.UserAuthPublicKeyFactory.INSTANCE);
             }
             if (getGSSAuthenticator() != null) {
-              factories.add(new UserAuthGSS.Factory());
+              factories.add(UserAuthGSS.UserAuthGSSFactory.INSTANCE);
             }
             if (factories.size() > 0) {
                 setUserAuthFactories(factories);
@@ -318,12 +326,14 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     protected Closeable getInnerCloseable() {
         return builder()
                 .run(new Runnable() {
+                    @Override
                     public void run() {
                         removeSessionTimeout(sessionFactory);
                     }
                 })
                 .sequential(acceptor, ioServiceFactory)
                 .run(new Runnable() {
+                    @Override
                     public void run() {
                         acceptor = null;
                         ioServiceFactory = null;
@@ -446,34 +456,41 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
                                  EnumSet.of(ProcessShellFactory.TtyOptions.Echo, ProcessShellFactory.TtyOptions.ICrNl, ProcessShellFactory.TtyOptions.ONlCr)));
         }
         sshd.setPasswordAuthenticator(new PasswordAuthenticator() {
+            @Override
             public boolean authenticate(String username, String password, ServerSession session) {
                 return username != null && username.equals(password);
             }
         });
         sshd.setPublickeyAuthenticator(new PublickeyAuthenticator() {
+            @Override
             public boolean authenticate(String username, PublicKey key, ServerSession session) {
                 //File f = new File("/Users/" + username + "/.ssh/authorized_keys");
                 return true;
             }
         });
         sshd.setTcpipForwardingFilter(new ForwardingFilter() {
+            @Override
             public boolean canForwardAgent(Session session) {
                 return true;
             }
 
+            @Override
             public boolean canForwardX11(Session session) {
                 return true;
             }
 
+            @Override
             public boolean canListen(SshdSocketAddress address, Session session) {
                 return true;
             }
 
+            @Override
             public boolean canConnect(SshdSocketAddress address, Session session) {
                 return true;
             }
         });
         sshd.setCommandFactory(new ScpCommandFactory.Builder().withDelegate(new CommandFactory() {
+            @Override
             public Command createCommand(String command) {
                 EnumSet<ProcessShellFactory.TtyOptions> ttyOptions;
                 if (OsUtils.isUNIX()) {

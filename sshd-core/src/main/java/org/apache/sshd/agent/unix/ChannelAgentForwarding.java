@@ -43,12 +43,19 @@ import org.apache.tomcat.jni.Status;
  */
 public class ChannelAgentForwarding extends AbstractServerChannel {
 
-    public static class Factory implements NamedFactory<Channel> {
+    public static class ChannelAgentForwardingFactory implements NamedFactory<Channel> {
+        public static final ChannelAgentForwardingFactory INSTANCE = new ChannelAgentForwardingFactory();
+        
+        public ChannelAgentForwardingFactory() {
+            super();
+        }
 
+        @Override
         public String getName() {
             return "auth-agent@openssh.com";
         }
 
+        @Override
         public Channel create() {
             return new ChannelAgentForwarding();
         }
@@ -63,6 +70,7 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
     public ChannelAgentForwarding() {
     }
 
+    @Override
     protected OpenFuture doInit(Buffer buffer) {
         final OpenFuture f = new DefaultOpenFuture(this);
         try {
@@ -75,6 +83,7 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
                 throwException(result);
             }
             thread = new Thread() {
+                @Override
                 public void run() {
                     try {
                         byte[] buf = new byte[1024];
@@ -112,8 +121,10 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
         Socket.close(handle);
     }
 
+    @Override
     public CloseFuture close(boolean immediately) {
         return super.close(immediately).addListener(new SshFutureListener<CloseFuture>() {
+            @Override
             public void operationComplete(CloseFuture sshFuture) {
                 closeImmediately0();
             }
@@ -126,6 +137,7 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
 //        close(true);
     }
 
+    @Override
     protected void doWriteData(byte[] data, int off, int len) throws IOException {
         int result = Socket.send(handle, data, off, len);
         if (result < Status.APR_SUCCESS) {
@@ -133,6 +145,7 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
         }
     }
 
+    @Override
     protected void doWriteExtendedData(byte[] data, int off, int len) throws IOException {
         throw new UnsupportedOperationException("AgentForward channel does not support extended data");
     }

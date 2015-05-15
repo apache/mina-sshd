@@ -213,9 +213,9 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         }
         if (getUserAuthFactories() == null) {
             setUserAuthFactories(Arrays.asList(
-                    new UserAuthPublicKey.Factory(),
-                    new UserAuthKeyboardInteractive.Factory(),
-                    new UserAuthPassword.Factory()
+                    UserAuthPublicKey.UserAuthPublicKeyFactory.INSTANCE,
+                    UserAuthKeyboardInteractive.UserAuthKeyboardInteractiveFactory.INSTANCE,
+                    UserAuthPassword.UserAuthPasswordFactory.INSTANCE
             ));
         }
     }
@@ -518,6 +518,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                         answers[i] = r.readLine();
                     }
                 } catch (IOException e) {
+                    // ignored
                 }
                 return answers;
             }

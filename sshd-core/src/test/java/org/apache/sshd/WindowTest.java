@@ -105,7 +105,7 @@ public class WindowTest extends BaseTest {
                 new ServerConnectionService.Factory()
         ));
         sshd.setChannelFactories(Arrays.<NamedFactory<Channel>>asList(
-                new ChannelSession.Factory() {
+                new ChannelSession.ChannelSessionFactory() {
                     @Override
                     public Channel create() {
                         return new ChannelSession() {
@@ -126,7 +126,7 @@ public class WindowTest extends BaseTest {
                         };
                     }
                 },
-                new TcpipServerChannel.DirectTcpipFactory()));
+                TcpipServerChannel.DirectTcpipFactory.INSTANCE));
         sshd.start();
         port = sshd.getPort();
 

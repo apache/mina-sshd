@@ -75,7 +75,12 @@ public class ChannelSession extends AbstractServerChannel {
 
     public static final long DEFAULT_COMMAND_EXIT_TIMEOUT = 5000;
 
-    public static class Factory implements NamedFactory<Channel> {
+    public static class ChannelSessionFactory implements NamedFactory<Channel> {
+        public static final ChannelSessionFactory   INSTANCE = new ChannelSessionFactory();
+
+        public ChannelSessionFactory() {
+            super();
+        }
 
         @Override
         public String getName() {

@@ -33,12 +33,19 @@ public class JceRandom implements Random {
     /**
      * Named factory for the BouncyCastle <code>Random</code>
      */
-    public static class Factory implements NamedFactory<Random> {
+    public static class JceRandomFactory implements NamedFactory<Random> {
+        public static final JceRandomFactory INSTANCE = new JceRandomFactory();
 
+        public JceRandomFactory () {
+            super();
+        }
+
+        @Override
         public String getName() {
             return "default";
         }
 
+        @Override
         public Random create() {
             return new JceRandom();
         }
@@ -52,6 +59,7 @@ public class JceRandom implements Random {
       random = new SecureRandom();
     }
 
+    @Override
     public synchronized void fill(byte[] foo, int start, int len) {
         if (start == 0 && len == foo.length) {
             random.nextBytes(foo);
@@ -66,6 +74,7 @@ public class JceRandom implements Random {
         }
     }
 
+    @Override
     public synchronized int random(int n) {
         return random.nextInt(n);
     }

@@ -49,10 +49,18 @@ import org.slf4j.LoggerFactory;
  */
 public class UserAuthPublicKey implements UserAuth {
 
-    public static class Factory implements NamedFactory<UserAuth> {
+    public static class UserAuthPublicKeyFactory implements NamedFactory<UserAuth> {
+        public static final UserAuthPublicKeyFactory INSTANCE = new UserAuthPublicKeyFactory();
+
+        public UserAuthPublicKeyFactory() {
+            super();
+        }
+
+        @Override
         public String getName() {
             return "publickey";
         }
+        @Override
         public UserAuth create() {
             return new UserAuthPublicKey();
         }
@@ -65,6 +73,7 @@ public class UserAuthPublicKey implements UserAuth {
     private Iterator<PublicKeyIdentity> keys;
     private PublicKeyIdentity current;
 
+    @Override
     public void init(ClientSession session, String service, List<Object> identities) throws Exception {
         this.session = session;
         this.service = service;
@@ -92,6 +101,7 @@ public class UserAuthPublicKey implements UserAuth {
         this.keys = ids.iterator();
     }
 
+    @Override
     public boolean process(Buffer buffer) throws Exception {
         // Send next key
         if (buffer == null) {
@@ -148,6 +158,7 @@ public class UserAuthPublicKey implements UserAuth {
         throw new IllegalStateException("Received unknown packet");
     }
 
+    @Override
     public void destroy() {
         if (agent != null) {
             try {
@@ -172,10 +183,12 @@ public class UserAuthPublicKey implements UserAuth {
             this.key = key;
         }
 
+        @Override
         public PublicKey getPublicKey() {
             return key;
         }
 
+        @Override
         public byte[] sign(byte[] data) throws Exception {
             return agent.sign(key, data);
         }
@@ -190,10 +203,12 @@ public class UserAuthPublicKey implements UserAuth {
             this.pair = pair;
         }
 
+        @Override
         public PublicKey getPublicKey() {
             return pair.getPublic();
         }
 
+        @Override
         public byte[] sign(byte[] data) throws Exception {
             Signature verif = NamedFactory.Utils.create(manager.getSignatureFactories(), getKeyType(pair));
             verif.init(pair.getPublic(), pair.getPrivate());

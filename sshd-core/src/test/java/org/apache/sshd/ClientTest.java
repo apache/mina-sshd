@@ -138,7 +138,7 @@ public class ClientTest extends BaseTest {
                 new ServerConnectionService.Factory()
         ));
         sshd.setChannelFactories(Arrays.<NamedFactory<Channel>>asList(
-                new ChannelSession.Factory() {
+                new ChannelSession.ChannelSessionFactory() {
                     @Override
                     public Channel create() {
                         return new ChannelSession() {
@@ -159,7 +159,7 @@ public class ClientTest extends BaseTest {
                         };
                     }
                 },
-                new TcpipServerChannel.DirectTcpipFactory()));
+                TcpipServerChannel.DirectTcpipFactory.INSTANCE));
         sshd.start();
         port = sshd.getPort();
 
@@ -562,7 +562,7 @@ public class ClientTest extends BaseTest {
 
     @Test
     public void testPublicKeyAuthNew() throws Exception {
-        client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthPublicKey.Factory()));
+        client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(UserAuthPublicKey.UserAuthPublicKeyFactory.INSTANCE));
         client.start();
         ClientSession session = client.connect("smx", "localhost", port).await().getSession();
         session.addPublicKeyIdentity(Utils.createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA));
@@ -578,7 +578,7 @@ public class ClientTest extends BaseTest {
                 return key.equals(pair.getPublic());
             }
         });
-        client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthPublicKey.Factory()));
+        client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(UserAuthPublicKey.UserAuthPublicKeyFactory.INSTANCE));
         client.start();
         ClientSession session = client.connect("smx", "localhost", port).await().getSession();
         session.addPublicKeyIdentity(new SimpleGeneratorHostKeyProvider(null, "RSA").loadKey(KeyPairProvider.SSH_RSA));
@@ -588,7 +588,7 @@ public class ClientTest extends BaseTest {
 
     @Test
     public void testPasswordAuthNew() throws Exception {
-        client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthPassword.Factory()));
+        client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthPassword.UserAuthPasswordFactory()));
         client.start();
         ClientSession session = client.connect("smx", "localhost", port).await().getSession();
         session.addPasswordIdentity("smx");
@@ -597,7 +597,7 @@ public class ClientTest extends BaseTest {
 
     @Test
     public void testPasswordAuthNewWithFailureOnFirstIdentity() throws Exception {
-        client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthPassword.Factory()));
+        client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthPassword.UserAuthPasswordFactory()));
         client.start();
         ClientSession session = client.connect("smx", "localhost", port).await().getSession();
         session.addPasswordIdentity("bad");
@@ -607,7 +607,7 @@ public class ClientTest extends BaseTest {
 
     @Test
     public void testKeyboardInteractiveAuthNew() throws Exception {
-        client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthKeyboardInteractive.Factory()));
+        client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(UserAuthKeyboardInteractive.UserAuthKeyboardInteractiveFactory.INSTANCE));
         client.start();
         ClientSession session = client.connect("smx", "localhost", port).await().getSession();
         session.addPasswordIdentity("smx");
@@ -616,7 +616,7 @@ public class ClientTest extends BaseTest {
 
     @Test
     public void testKeyboardInteractiveAuthNewWithFailureOnFirstIdentity() throws Exception {
-        client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthKeyboardInteractive.Factory()));
+        client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(UserAuthKeyboardInteractive.UserAuthKeyboardInteractiveFactory.INSTANCE));
         client.start();
         ClientSession session = client.connect("smx", "localhost", port).await().getSession();
         session.addPasswordIdentity("bad");
@@ -628,7 +628,7 @@ public class ClientTest extends BaseTest {
     public void testKeyboardInteractiveWithFailures() throws Exception {
         final AtomicInteger count = new AtomicInteger();
         client.getProperties().put(ClientFactoryManager.PASSWORD_PROMPTS, "3");
-        client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthKeyboardInteractive.Factory()));
+        client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthKeyboardInteractive.UserAuthKeyboardInteractiveFactory()));
         client.setUserInteraction(new UserInteraction() {
             @Override
             public void welcome(String banner) {
@@ -653,7 +653,7 @@ public class ClientTest extends BaseTest {
         final AtomicInteger count = new AtomicInteger();
         client.getProperties().put(ClientFactoryManager.PASSWORD_PROMPTS, "3");
         client.setUserAuthFactories(Arrays
-                        .<NamedFactory<UserAuth>> asList(new UserAuthKeyboardInteractive.Factory()));
+                        .<NamedFactory<UserAuth>> asList(UserAuthKeyboardInteractive.UserAuthKeyboardInteractiveFactory.INSTANCE));
         client.start();
         ClientSession session = client.connect("smx", "localhost", port).await().getSession();
         session.setUserInteraction(new UserInteraction() {
@@ -680,7 +680,7 @@ public class ClientTest extends BaseTest {
         final AtomicInteger count = new AtomicInteger();
         client.getProperties().put(ClientFactoryManager.PASSWORD_PROMPTS, "3");
         client.setUserAuthFactories(Arrays
-                        .<NamedFactory<UserAuth>> asList(new UserAuthKeyboardInteractive.Factory()));
+                        .<NamedFactory<UserAuth>> asList(new UserAuthKeyboardInteractive.UserAuthKeyboardInteractiveFactory()));
         client.start();
         ClientSession session = client.connect("smx", "localhost", port).await().getSession();
         session.setUserInteraction(new UserInteraction() {

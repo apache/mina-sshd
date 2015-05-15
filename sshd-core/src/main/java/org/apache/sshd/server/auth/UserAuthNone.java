@@ -21,7 +21,6 @@ package org.apache.sshd.server.auth;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.server.UserAuth;
-import org.apache.sshd.server.session.ServerSession;
 
 /**
  * TODO Add javadoc
@@ -30,17 +29,26 @@ import org.apache.sshd.server.session.ServerSession;
  */
 public class UserAuthNone extends AbstractUserAuth {
 
-    public static class Factory implements NamedFactory<UserAuth> {
+    public static class UserAuthNoneFactory implements NamedFactory<UserAuth> {
+        public static final UserAuthNoneFactory INSTANCE = new UserAuthNoneFactory();
+
+        public UserAuthNoneFactory() {
+            super();
+        }
+
+        @Override
         public String getName() {
             return "none";
         }
+        @Override
         public UserAuth create() {
             return new UserAuthNone();
         }
     }
 
+    @Override
     public Boolean doAuth(Buffer buffer, boolean init) {
-        return true;
+        return Boolean.TRUE;
     }
 
 }

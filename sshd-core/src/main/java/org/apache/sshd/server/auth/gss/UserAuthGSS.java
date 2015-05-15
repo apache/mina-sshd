@@ -170,7 +170,7 @@ public class UserAuthGSS extends AbstractUserAuth {
                     session.writePacket(b);
                     return null;
                 } else {
-                    return established;
+                    return Boolean.valueOf(established);
                 }
             }
         }
@@ -238,7 +238,12 @@ public class UserAuthGSS extends AbstractUserAuth {
     /**
      * Factory class.
      */
-    public static class Factory implements NamedFactory<UserAuth> {
+    public static class UserAuthGSSFactory implements NamedFactory<UserAuth> {
+        public static final UserAuthGSSFactory INSTANCE = new UserAuthGSSFactory();
+        
+        public UserAuthGSSFactory() {
+            super();
+        }
 
         /**
          * Get the name of the authentication method.

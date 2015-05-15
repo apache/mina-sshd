@@ -19,8 +19,6 @@
 package org.apache.sshd.server.auth;
 
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.SshConstants;
-import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.server.PasswordAuthenticator;
 import org.apache.sshd.server.UserAuth;
@@ -33,15 +31,24 @@ import org.apache.sshd.server.session.ServerSession;
  */
 public class UserAuthPassword extends AbstractUserAuth {
 
-    public static class Factory implements NamedFactory<UserAuth> {
+    public static class UserAuthPasswordFactory implements NamedFactory<UserAuth> {
+        public static final UserAuthPasswordFactory INSTANCE = new UserAuthPasswordFactory();
+        
+        public UserAuthPasswordFactory() {
+            super();
+        }
+
+        @Override
         public String getName() {
             return "password";
         }
+        @Override
         public UserAuth create() {
             return new UserAuthPassword();
         }
     }
 
+    @Override
     public Boolean doAuth(Buffer buffer, boolean init) throws Exception {
         if (!init) {
             throw new IllegalStateException();
@@ -51,7 +58,7 @@ public class UserAuthPassword extends AbstractUserAuth {
             throw new IllegalStateException("Password changes are not supported");
         }
         String password = buffer.getString();
-        return checkPassword(session, username, password);
+        return Boolean.valueOf(checkPassword(session, username, password));
     }
 
     private boolean checkPassword(ServerSession session, String username, String password) throws Exception {
