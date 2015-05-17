@@ -27,6 +27,7 @@ import static org.junit.Assert.assertTrue;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
@@ -35,6 +36,7 @@ import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -51,6 +53,7 @@ import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.RuntimeSshException;
@@ -69,8 +72,8 @@ import org.apache.sshd.common.io.mina.MinaSession;
 import org.apache.sshd.common.io.nio2.Nio2Session;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.session.ConnectionService;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
-import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.NoCloseOutputStream;
 import org.apache.sshd.server.Command;
@@ -127,6 +130,7 @@ public class ClientTest extends BaseTest {
                     @Override
                     public Service create(Session session) throws IOException {
                         return new ServerUserAuthService(session) {
+                            @SuppressWarnings("synthetic-access")
                             @Override
                             public void process(byte cmd, Buffer buffer) throws Exception {
                                 authLatch.await();
@@ -142,6 +146,7 @@ public class ClientTest extends BaseTest {
                     @Override
                     public Channel create() {
                         return new ChannelSession() {
+                            @SuppressWarnings("synthetic-access")
                             @Override
                             public OpenFuture open(int recipient, int rwsize, int rmpsize, Buffer buffer) {
                                 try {
@@ -183,248 +188,277 @@ public class ClientTest extends BaseTest {
 
         client.getProperties().put(FactoryManager.WINDOW_SIZE, "1024");
         client.start();
-        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
-        session.addPasswordIdentity("smx");
-        session.auth().verify();
-        final ChannelShell channel = session.createShellChannel();
-        channel.setStreaming(ClientChannel.Streaming.Async);
-        channel.open().verify();
 
+        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
+            session.addPasswordIdentity("smx");
+            session.auth().verify(5L, TimeUnit.SECONDS);
 
-        final byte[] message = "0123456789\n".getBytes();
-        final int nbMessages = 1000;
-
-        final ByteArrayOutputStream baosOut = new ByteArrayOutputStream();
-        final ByteArrayOutputStream baosErr = new ByteArrayOutputStream();
-        final AtomicInteger writes = new AtomicInteger(nbMessages);
-
-        channel.getAsyncIn().write(new ByteArrayBuffer(message))
-                .addListener(new SshFutureListener<IoWriteFuture>() {
-                    @Override
-                    public void operationComplete(IoWriteFuture future) {
-                        try {
-                            if (future.isWritten()) {
-                                if (writes.decrementAndGet() > 0) {
-                                    channel.getAsyncIn().write(new ByteArrayBuffer(message)).addListener(this);
-                                } else {
-                                    channel.getAsyncIn().close(false);
+            try(final ChannelShell channel = session.createShellChannel()) {
+                channel.setStreaming(ClientChannel.Streaming.Async);
+                channel.open().verify(5L, TimeUnit.SECONDS);
+        
+                final byte[] message = "0123456789\n".getBytes();
+                final int nbMessages = 1000;
+        
+                try(final ByteArrayOutputStream baosOut = new ByteArrayOutputStream();
+                    final ByteArrayOutputStream baosErr = new ByteArrayOutputStream()) {
+                    final AtomicInteger writes = new AtomicInteger(nbMessages);
+            
+                    channel.getAsyncIn().write(new ByteArrayBuffer(message))
+                            .addListener(new SshFutureListener<IoWriteFuture>() {
+                                @Override
+                                public void operationComplete(IoWriteFuture future) {
+                                    try {
+                                        if (future.isWritten()) {
+                                            if (writes.decrementAndGet() > 0) {
+                                                channel.getAsyncIn().write(new ByteArrayBuffer(message)).addListener(this);
+                                            } else {
+                                                channel.getAsyncIn().close(false);
+                                            }
+                                        } else {
+                                            throw new SshException("Error writing", future.getException());
+                                        }
+                                    } catch (IOException e) {
+                                        if (!channel.isClosing()) {
+                                            e.printStackTrace();
+                                            channel.close(true);
+                                        }
+                                    }
                                 }
-                            } else {
-                                throw new SshException("Error writing", future.getException());
-                            }
-                        } catch (IOException e) {
-                            if (!channel.isClosing()) {
-                                e.printStackTrace();
-                                channel.close(true);
-                            }
-                        }
-                    }
-                });
-        channel.getAsyncOut().read(new ByteArrayBuffer())
-                .addListener(new SshFutureListener<IoReadFuture>() {
-                    @Override
-                    public void operationComplete(IoReadFuture future) {
-                        try {
-                            future.verify();
-                            Buffer buffer = future.getBuffer();
-                            baosOut.write(buffer.array(), buffer.rpos(), buffer.available());
-                            buffer.rpos(buffer.rpos() + buffer.available());
-                            buffer.compact();
-                            channel.getAsyncOut().read(buffer).addListener(this);
-                        } catch (IOException e) {
-                            if (!channel.isClosing()) {
-                                e.printStackTrace();
-                                channel.close(true);
-                            }
-                        }
-                    }
-                });
-        channel.getAsyncErr().read(new ByteArrayBuffer())
-                .addListener(new SshFutureListener<IoReadFuture>() {
-                    @Override
-                    public void operationComplete(IoReadFuture future) {
-                        try {
-                            future.verify();
-                            Buffer buffer = future.getBuffer();
-                            baosErr.write(buffer.array(), buffer.rpos(), buffer.available());
-                            buffer.rpos(buffer.rpos() + buffer.available());
-                            buffer.compact();
-                            channel.getAsyncErr().read(buffer).addListener(this);
-                        } catch (IOException e) {
-                            if (!channel.isClosing()) {
-                                e.printStackTrace();
-                                channel.close(true);
-                            }
-                        }
-                    }
-                });
+                            });
+                    channel.getAsyncOut().read(new ByteArrayBuffer())
+                            .addListener(new SshFutureListener<IoReadFuture>() {
+                                @Override
+                                public void operationComplete(IoReadFuture future) {
+                                    try {
+                                        future.verify(5L, TimeUnit.SECONDS);
+                                        Buffer buffer = future.getBuffer();
+                                        baosOut.write(buffer.array(), buffer.rpos(), buffer.available());
+                                        buffer.rpos(buffer.rpos() + buffer.available());
+                                        buffer.compact();
+                                        channel.getAsyncOut().read(buffer).addListener(this);
+                                    } catch (IOException e) {
+                                        if (!channel.isClosing()) {
+                                            e.printStackTrace();
+                                            channel.close(true);
+                                        }
+                                    }
+                                }
+                            });
+                    channel.getAsyncErr().read(new ByteArrayBuffer())
+                            .addListener(new SshFutureListener<IoReadFuture>() {
+                                @Override
+                                public void operationComplete(IoReadFuture future) {
+                                    try {
+                                        future.verify(5L, TimeUnit.SECONDS);
+                                        Buffer buffer = future.getBuffer();
+                                        baosErr.write(buffer.array(), buffer.rpos(), buffer.available());
+                                        buffer.rpos(buffer.rpos() + buffer.available());
+                                        buffer.compact();
+                                        channel.getAsyncErr().read(buffer).addListener(this);
+                                    } catch (IOException e) {
+                                        if (!channel.isClosing()) {
+                                            e.printStackTrace();
+                                            channel.close(true);
+                                        }
+                                    }
+                                }
+                            });
+        
+                    channel.waitFor(ClientChannel.CLOSED, 0);
+        
+                    assertEquals(nbMessages * message.length, baosOut.size());
+                }
+            }    
 
-        channel.waitFor(ClientChannel.CLOSED, 0);
-
-        assertEquals(nbMessages * message.length, baosOut.size());
-
-        client.close(true);
+            client.close(true);
+        }
     }
 
     @Test
     public void testCommandDeadlock() throws Exception {
         client.start();
-        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
-        session.addPasswordIdentity("smx");
-        session.auth().verify();
-        ChannelExec channel = session.createExecChannel("test");
-        channel.setOut(new NoCloseOutputStream(System.out));
-        channel.setErr(new NoCloseOutputStream(System.err));
-        channel.open().await();
-        Thread.sleep(100);
-        try {
-            for (int i = 0; i < 100; i++) {
-                channel.getInvertedIn().write("a".getBytes());
-                channel.getInvertedIn().flush();
+        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
+            session.addPasswordIdentity("smx");
+            session.auth().verify(5L, TimeUnit.SECONDS);
+            
+            try(ChannelExec channel = session.createExecChannel("test");
+                OutputStream stdout = new NoCloseOutputStream(System.out);
+                OutputStream stderr = new NoCloseOutputStream(System.err)) {
+
+                channel.setOut(stdout);
+                channel.setErr(stderr);
+                channel.open().await();
+                Thread.sleep(100);
+                try {
+                    for (int i = 0; i < 100; i++) {
+                        channel.getInvertedIn().write("a".getBytes());
+                        channel.getInvertedIn().flush();
+                    }
+                } catch (SshException e) {
+                    // That's ok, the channel is being closed by the other side
+                }
+                assertEquals(ClientChannel.CLOSED, channel.waitFor(ClientChannel.CLOSED, 0) & ClientChannel.CLOSED);
+                session.close(false).await();
             }
-        } catch (SshException e) {
-            // That's ok, the channel is being closed by the other side
+        } finally {
+            client.stop();
         }
-        assertEquals(ClientChannel.CLOSED, channel.waitFor(ClientChannel.CLOSED, 0) & ClientChannel.CLOSED);
-        session.close(false).await();
-        client.stop();
     }
 
     @Test
     public void testClient() throws Exception {
         client.start();
-        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
-        session.addPasswordIdentity("smx");
-        session.auth().verify();
-        ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
 
-        ByteArrayOutputStream sent = new ByteArrayOutputStream();
-        PipedOutputStream pipedIn = new PipedOutputStream();
-        channel.setIn(new PipedInputStream(pipedIn));
-        OutputStream teeOut = new TeeOutputStream(sent, pipedIn);
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        ByteArrayOutputStream err = new ByteArrayOutputStream();
-        channel.setOut(out);
-        channel.setErr(err);
-        channel.open();
+        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
+            session.addPasswordIdentity("smx");
+            session.auth().verify(5L, TimeUnit.SECONDS);
+            
+            try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
+                ByteArrayOutputStream sent = new ByteArrayOutputStream();
+                PipedOutputStream pipedIn = new PipedOutputStream();
+                PipedInputStream pipedOut = new PipedInputStream(pipedIn)) {
 
-        teeOut.write("this is my command\n".getBytes());
-        teeOut.flush();
+                channel.setIn(pipedOut);
 
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < 1000; i++) {
-            sb.append("0123456789");
+                try(OutputStream teeOut = new TeeOutputStream(sent, pipedIn);
+                    ByteArrayOutputStream out = new ByteArrayOutputStream();
+                    ByteArrayOutputStream err = new ByteArrayOutputStream()) {
+
+                    channel.setOut(out);
+                    channel.setErr(err);
+                    channel.open();
+            
+                    teeOut.write("this is my command\n".getBytes());
+                    teeOut.flush();
+            
+                    StringBuilder sb = new StringBuilder();
+                    for (int i = 0; i < 1000; i++) {
+                        sb.append("0123456789");
+                    }
+                    sb.append("\n");
+                    teeOut.write(sb.toString().getBytes());
+            
+                    teeOut.write("exit\n".getBytes());
+                    teeOut.flush();
+            
+                    channel.waitFor(ClientChannel.CLOSED, 0);
+            
+                    channel.close(false);
+                    client.stop();
+            
+                    assertArrayEquals(sent.toByteArray(), out.toByteArray());
+                }
+            }
         }
-        sb.append("\n");
-        teeOut.write(sb.toString().getBytes());
-
-        teeOut.write("exit\n".getBytes());
-        teeOut.flush();
-
-        channel.waitFor(ClientChannel.CLOSED, 0);
-
-        channel.close(false);
-        client.stop();
-
-        assertArrayEquals(sent.toByteArray(), out.toByteArray());
     }
 
     @Test
     public void testClientInverted() throws Exception {
         client.start();
-        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
-        session.addPasswordIdentity("smx");
-        session.auth().verify();
-        ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
+        
+        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
+            session.addPasswordIdentity("smx");
+            session.auth().verify(5L, TimeUnit.SECONDS);
+            
+            try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
+                ByteArrayOutputStream sent = new ByteArrayOutputStream();
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                ByteArrayOutputStream err = new ByteArrayOutputStream()) {
 
-        ByteArrayOutputStream sent = new ByteArrayOutputStream();
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        ByteArrayOutputStream err = new ByteArrayOutputStream();
-        channel.setOut(out);
-        channel.setErr(err);
-        channel.open().await();
-
-        OutputStream pipedIn = new TeeOutputStream(sent, channel.getInvertedIn());
-
-        pipedIn.write("this is my command\n".getBytes());
-        pipedIn.flush();
-
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < 1000; i++) {
-            sb.append("0123456789");
+                channel.setOut(out);
+                channel.setErr(err);
+                channel.open().await();
+        
+                try(OutputStream pipedIn = new TeeOutputStream(sent, channel.getInvertedIn())) {
+                    pipedIn.write("this is my command\n".getBytes());
+                    pipedIn.flush();
+            
+                    StringBuilder sb = new StringBuilder();
+                    for (int i = 0; i < 1000; i++) {
+                        sb.append("0123456789");
+                    }
+                    sb.append("\n");
+                    pipedIn.write(sb.toString().getBytes());
+            
+                    pipedIn.write("exit\n".getBytes());
+                    pipedIn.flush();
+                }
+        
+                channel.waitFor(ClientChannel.CLOSED, 0);
+        
+                channel.close(false);
+                client.stop();
+        
+                assertArrayEquals(sent.toByteArray(), out.toByteArray());
+            }
         }
-        sb.append("\n");
-        pipedIn.write(sb.toString().getBytes());
-
-        pipedIn.write("exit\n".getBytes());
-        pipedIn.flush();
-
-        channel.waitFor(ClientChannel.CLOSED, 0);
-
-        channel.close(false);
-        client.stop();
-
-        assertArrayEquals(sent.toByteArray(), out.toByteArray());
     }
 
     @Test
     public void testClientWithCustomChannel() throws Exception {
         client.start();
-        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
-        session.addPasswordIdentity("smx");
-        session.auth().verify();
+        
+        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
+            session.addPasswordIdentity("smx");
+            session.auth().verify(5L, TimeUnit.SECONDS);
+    
+            try(ChannelShell channel = new ChannelShell();
+                ByteArrayOutputStream sent = new ByteArrayOutputStream();
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                ByteArrayOutputStream err = new ByteArrayOutputStream()) {
 
-        ChannelShell channel = new ChannelShell();
-        session.getService(ConnectionService.class).registerChannel(channel);
-
-        ByteArrayOutputStream sent = new ByteArrayOutputStream();
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        ByteArrayOutputStream err = new ByteArrayOutputStream();
-        channel.setOut(out);
-        channel.setErr(err);
-        channel.open().verify();
-
-        channel.close(false).await();
-        client.stop();
+                session.getService(ConnectionService.class).registerChannel(channel);
+                channel.setOut(out);
+                channel.setErr(err);
+                channel.open().verify(5L, TimeUnit.SECONDS);
+                channel.close(false).await();
+            }
+        } finally {
+            client.stop();
+        }
     }
 
     @Test
     public void testClientClosingStream() throws Exception {
         client.start();
-        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
-        session.addPasswordIdentity("smx");
-        session.auth().verify();
-        ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
+        
+        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
+            session.addPasswordIdentity("smx");
+            session.auth().verify(5L, TimeUnit.SECONDS);
+    
+            try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
+                ByteArrayOutputStream sent = new ByteArrayOutputStream();
+                PipedOutputStream pipedIn = new PipedOutputStream();
+                InputStream inPipe = new PipedInputStream(pipedIn);
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                ByteArrayOutputStream err = new ByteArrayOutputStream()) {
 
+                channel.setIn(inPipe);
+                channel.setOut(out);
+                channel.setErr(err);
+                channel.open();
 
-        ByteArrayOutputStream sent = new ByteArrayOutputStream();
-        PipedOutputStream pipedIn = new PipedOutputStream();
-        OutputStream teeOut = new TeeOutputStream(sent, pipedIn);
-        channel.setIn(new PipedInputStream(pipedIn));
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        ByteArrayOutputStream err = new ByteArrayOutputStream();
-        channel.setOut(out);
-        channel.setErr(err);
-        channel.open();
-
-        teeOut.write("this is my command\n".getBytes());
-        teeOut.flush();
-
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < 1000; i++) {
-            sb.append("0123456789");
+                try(OutputStream teeOut = new TeeOutputStream(sent, pipedIn)) {
+                    teeOut.write("this is my command\n".getBytes());
+                    teeOut.flush();
+        
+                    StringBuilder sb = new StringBuilder();
+                    for (int i = 0; i < 1000; i++) {
+                        sb.append("0123456789");
+                    }
+                    sb.append("\n");
+                    teeOut.write(sb.toString().getBytes());
+                }    
+    
+                channel.waitFor(ClientChannel.CLOSED, 0);
+        
+                channel.close(false);
+                client.stop();
+        
+                assertArrayEquals(sent.toByteArray(), out.toByteArray());
+            }
         }
-        sb.append("\n");
-        teeOut.write(sb.toString().getBytes());
-
-        teeOut.close();
-
-        channel.waitFor(ClientChannel.CLOSED, 0);
-
-        channel.close(false);
-        client.stop();
-
-        assertArrayEquals(sent.toByteArray(), out.toByteArray());
     }
 
     @Test
@@ -435,138 +469,175 @@ public class ClientTest extends BaseTest {
 //        sshd.getProperties().put(SshServer.WINDOW_SIZE, Integer.toString(0x20000));
 //        sshd.getProperties().put(SshServer.MAX_PACKET_SIZE, Integer.toString(0x1000));
         client.start();
-        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
-        session.addPasswordIdentity("smx");
-        session.auth().verify();
-        ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
-        ByteArrayOutputStream sent = new ByteArrayOutputStream();
-        PipedOutputStream pipedIn = new PipedOutputStream();
-        OutputStream teeOut = new TeeOutputStream(sent, pipedIn);
-        channel.setIn(new PipedInputStream(pipedIn));
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        ByteArrayOutputStream err = new ByteArrayOutputStream();
-        channel.setOut(out);
-        channel.setErr(err);
-        channel.open().await();
+        
+        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
+            session.addPasswordIdentity("smx");
+            session.auth().verify(5L, TimeUnit.SECONDS);
 
-        long t0 = System.currentTimeMillis();
+            try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
+                ByteArrayOutputStream sent = new ByteArrayOutputStream();
+                PipedOutputStream pipedIn = new PipedOutputStream();
+                InputStream inPipe = new PipedInputStream(pipedIn); 
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                ByteArrayOutputStream err = new ByteArrayOutputStream()) {
 
-        int bytes = 0;
-        for (int i = 0; i < 10000; i++) {
-            byte[] data = "01234567890123456789012345678901234567890123456789\n".getBytes();
-            teeOut.write(data);
-            teeOut.flush();
-            bytes += data.length;
-            if ((bytes & 0xFFF00000) != ((bytes - data.length) & 0xFFF00000)) {
-                System.out.println("Bytes written: " + bytes);
+                channel.setIn(inPipe);
+                channel.setOut(out);
+                channel.setErr(err);
+                channel.open().await();
+        
+        
+                int bytes = 0;
+                byte[] data = "01234567890123456789012345678901234567890123456789\n".getBytes();
+                long t0 = System.currentTimeMillis();
+                try(OutputStream teeOut = new TeeOutputStream(sent, pipedIn)) {
+                    for (int i = 0; i < 10000; i++) {
+                        teeOut.write(data);
+                        teeOut.flush();
+                        bytes += data.length;
+                        if ((bytes & 0xFFF00000) != ((bytes - data.length) & 0xFFF00000)) {
+                            System.out.println("Bytes written: " + bytes);
+                        }
+                    }
+                    teeOut.write("exit\n".getBytes());
+                    teeOut.flush();
+                }        
+                long t1 = System.currentTimeMillis();
+        
+                System.out.println("Sent " + (bytes / 1024) + " Kb in " + (t1 - t0) + " ms");
+        
+                System.out.println("Waiting for channel to be closed");
+        
+                channel.waitFor(ClientChannel.CLOSED, 0);
+        
+                channel.close(false);
+                client.stop();
+        
+                assertArrayEquals(sent.toByteArray(), out.toByteArray());
+                //assertArrayEquals(sent.toByteArray(), out.toByteArray());
             }
         }
-        teeOut.write("exit\n".getBytes());
-        teeOut.flush();
-
-        long t1 = System.currentTimeMillis();
-
-        System.out.println("Sent " + (bytes / 1024) + " Kb in " + (t1 - t0) + " ms");
-
-        System.out.println("Waiting for channel to be closed");
-
-        channel.waitFor(ClientChannel.CLOSED, 0);
-
-        channel.close(false);
-        client.stop();
-
-        assertTrue(BufferUtils.equals(sent.toByteArray(), out.toByteArray()));
-        //assertArrayEquals(sent.toByteArray(), out.toByteArray());
     }
 
     @Test(expected = SshException.class)
     public void testOpenChannelOnClosedSession() throws Exception {
         client.start();
-        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
-        session.addPasswordIdentity("smx");
-        session.auth().verify();
-        ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
-        session.close(false);
+        
+        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
+            session.addPasswordIdentity("smx");
+            session.auth().verify(5L, TimeUnit.SECONDS);
+            
+            try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL)) {
+                session.close(false);
+        
+                try(PipedOutputStream pipedIn = new PipedOutputStream();
+                    InputStream inPipe = new PipedInputStream(pipedIn);
+                    ByteArrayOutputStream out = new ByteArrayOutputStream();
+                    ByteArrayOutputStream err = new ByteArrayOutputStream()) {
 
-        PipedOutputStream pipedIn = new PipedOutputStream();
-        channel.setIn(new PipedInputStream(pipedIn));
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        ByteArrayOutputStream err = new ByteArrayOutputStream();
-        channel.setOut(out);
-        channel.setErr(err);
-        channel.open();
+                    channel.setIn(inPipe);
+                    channel.setOut(out);
+                    channel.setErr(err);
+                    channel.open();
+                }
+            }
+        }
     }
 
     @Test
     public void testCloseBeforeAuthSucceed() throws Exception {
         authLatch = new CountDownLatch(1);
         client.start();
-        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
-        session.addPasswordIdentity("smx");
-        AuthFuture authFuture = session.auth();
-        CloseFuture closeFuture = session.close(false);
-        authLatch.countDown();
-        authFuture.await();
-        closeFuture.await();
-        assertNotNull(authFuture.getException());
-        assertTrue(closeFuture.isClosed());
+        
+        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
+            session.addPasswordIdentity("smx");
+
+            AuthFuture authFuture = session.auth();
+            CloseFuture closeFuture = session.close(false);
+            authLatch.countDown();
+            authFuture.await();
+            closeFuture.await();
+            assertNotNull("No authentication exception", authFuture.getException());
+            assertTrue("Future not closed", closeFuture.isClosed());
+        }
     }
 
     @Test
     public void testCloseCleanBeforeChannelOpened() throws Exception {
         client.start();
-        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
-        session.addPasswordIdentity("smx");
-        session.auth().verify();
-        ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
-        channel.setIn(new ByteArrayInputStream(new byte[0]));
-        channel.setOut(new ByteArrayOutputStream());
-        channel.setErr(new ByteArrayOutputStream());
-        OpenFuture openFuture = channel.open();
-        CloseFuture closeFuture = session.close(false);
-        openFuture.await();
-        closeFuture.await();
-        assertTrue(openFuture.isOpened());
-        assertTrue(closeFuture.isClosed());
+        
+        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
+            session.addPasswordIdentity("smx");
+            session.auth().verify(5L, TimeUnit.SECONDS);
+
+            try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
+                InputStream inp = new ByteArrayInputStream(GenericUtils.EMPTY_BYTE_ARRAY);
+                OutputStream out = new ByteArrayOutputStream();
+                OutputStream err = new ByteArrayOutputStream()) { 
+
+                channel.setIn(inp);
+                channel.setOut(out);
+                channel.setErr(err);
+
+                OpenFuture openFuture = channel.open();
+                CloseFuture closeFuture = session.close(false);
+                openFuture.await();
+                closeFuture.await();
+                assertTrue("Not open", openFuture.isOpened());
+                assertTrue("Not closed", closeFuture.isClosed());
+            }
+        }
     }
 
     @Test
     public void testCloseImmediateBeforeChannelOpened() throws Exception {
         channelLatch = new CountDownLatch(1);
         client.start();
-        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
-        session.addPasswordIdentity("smx");
-        session.auth().verify();
-        ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
-        channel.setIn(new ByteArrayInputStream(new byte[0]));
-        channel.setOut(new ByteArrayOutputStream());
-        channel.setErr(new ByteArrayOutputStream());
-        OpenFuture openFuture = channel.open();
-        CloseFuture closeFuture = session.close(true);
-        channelLatch.countDown();
-        openFuture.await();
-        closeFuture.await();
-        assertNotNull(openFuture.getException());
-        assertTrue(closeFuture.isClosed());
+
+        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
+            session.addPasswordIdentity("smx");
+            session.auth().verify(5L, TimeUnit.SECONDS);
+
+            try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
+                InputStream inp = new ByteArrayInputStream(GenericUtils.EMPTY_BYTE_ARRAY);
+                OutputStream out = new ByteArrayOutputStream();
+                OutputStream err = new ByteArrayOutputStream()) { 
+
+                channel.setIn(inp);
+                channel.setOut(out);
+                channel.setErr(err);
+
+                OpenFuture openFuture = channel.open();
+                CloseFuture closeFuture = session.close(true);
+                channelLatch.countDown();
+                openFuture.await();
+                closeFuture.await();
+                assertNotNull("No open exception", openFuture.getException());
+                assertTrue("Not closed", closeFuture.isClosed());
+            }
+        }
     }
 
     @Test
     public void testPublicKeyAuth() throws Exception {
         client.start();
-        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
-
-        KeyPair pair = Utils.createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
-        session.addPublicKeyIdentity(pair);
-        session.auth().verify();
+        
+        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
+            KeyPair pair = Utils.createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
+            session.addPublicKeyIdentity(pair);
+            session.auth().verify(5L, TimeUnit.SECONDS);
+        }
     }
 
     @Test
     public void testPublicKeyAuthNew() throws Exception {
         client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(UserAuthPublicKey.UserAuthPublicKeyFactory.INSTANCE));
         client.start();
-        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
-        session.addPublicKeyIdentity(Utils.createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA));
-        session.auth().verify();
+        
+        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
+            session.addPublicKeyIdentity(Utils.createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA));
+            session.auth().verify(5L, TimeUnit.SECONDS);
+        }
     }
 
     @Test
@@ -580,58 +651,71 @@ public class ClientTest extends BaseTest {
         });
         client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(UserAuthPublicKey.UserAuthPublicKeyFactory.INSTANCE));
         client.start();
-        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
-        session.addPublicKeyIdentity(new SimpleGeneratorHostKeyProvider(null, "RSA").loadKey(KeyPairProvider.SSH_RSA));
-        session.addPublicKeyIdentity(pair);
-        session.auth().verify();
+
+        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
+            session.addPublicKeyIdentity(new SimpleGeneratorHostKeyProvider(null, "RSA").loadKey(KeyPairProvider.SSH_RSA));
+            session.addPublicKeyIdentity(pair);
+            session.auth().verify(5L, TimeUnit.SECONDS);
+        }
     }
 
     @Test
     public void testPasswordAuthNew() throws Exception {
         client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthPassword.UserAuthPasswordFactory()));
         client.start();
-        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
-        session.addPasswordIdentity("smx");
-        session.auth().verify();
+        
+        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
+            session.addPasswordIdentity("smx");
+            session.auth().verify(5L, TimeUnit.SECONDS);
+        }
     }
 
     @Test
     public void testPasswordAuthNewWithFailureOnFirstIdentity() throws Exception {
         client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthPassword.UserAuthPasswordFactory()));
         client.start();
-        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
-        session.addPasswordIdentity("bad");
-        session.addPasswordIdentity("smx");
-        session.auth().verify();
+        
+        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
+            session.addPasswordIdentity("bad");
+            session.addPasswordIdentity("smx");
+            session.auth().verify(5L, TimeUnit.SECONDS);
+        }
     }
 
     @Test
     public void testKeyboardInteractiveAuthNew() throws Exception {
         client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(UserAuthKeyboardInteractive.UserAuthKeyboardInteractiveFactory.INSTANCE));
         client.start();
-        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
-        session.addPasswordIdentity("smx");
-        session.auth().verify();
+        
+        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
+            session.addPasswordIdentity("smx");
+            session.auth().verify(5L, TimeUnit.SECONDS);
+        }
     }
 
     @Test
     public void testKeyboardInteractiveAuthNewWithFailureOnFirstIdentity() throws Exception {
         client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(UserAuthKeyboardInteractive.UserAuthKeyboardInteractiveFactory.INSTANCE));
         client.start();
-        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
-        session.addPasswordIdentity("bad");
-        session.addPasswordIdentity("smx");
-        session.auth().verify();
+        
+        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
+            session.addPasswordIdentity("bad");
+            session.addPasswordIdentity("smx");
+            session.auth().verify(5L, TimeUnit.SECONDS);
+        }
     }
 
     @Test
     public void testKeyboardInteractiveWithFailures() throws Exception {
         final AtomicInteger count = new AtomicInteger();
-        client.getProperties().put(ClientFactoryManager.PASSWORD_PROMPTS, "3");
+        final int MAX_PROMPTS = 3;
+        FactoryManagerUtils.updateProperty(client, ClientFactoryManager.PASSWORD_PROMPTS, MAX_PROMPTS);
+
         client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthKeyboardInteractive.UserAuthKeyboardInteractiveFactory()));
         client.setUserInteraction(new UserInteraction() {
             @Override
             public void welcome(String banner) {
+                // ignored
             }
             @Override
             public String[] interactive(String destination, String name, String instruction, String[] prompt, boolean[] echo) {
@@ -640,96 +724,111 @@ public class ClientTest extends BaseTest {
             }
         });
         client.start();
-        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
-        AuthFuture future = session.auth();
-        future.await();
-        assertTrue(future.isFailure());
-        assertEquals(3, count.get());
+        
+        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
+            AuthFuture future = session.auth();
+            future.await();
+            assertTrue("Unexpected authentication success", future.isFailure());
+            assertEquals("Mismatched authentication retry count", MAX_PROMPTS, count.get());
+        }
     }
-
 
     @Test
     public void testKeyboardInteractiveInSessionUserInteractive() throws Exception {
         final AtomicInteger count = new AtomicInteger();
-        client.getProperties().put(ClientFactoryManager.PASSWORD_PROMPTS, "3");
+        final int MAX_PROMPTS = 3;
+        FactoryManagerUtils.updateProperty(client, ClientFactoryManager.PASSWORD_PROMPTS, MAX_PROMPTS);
+
         client.setUserAuthFactories(Arrays
                         .<NamedFactory<UserAuth>> asList(UserAuthKeyboardInteractive.UserAuthKeyboardInteractiveFactory.INSTANCE));
         client.start();
-        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
-        session.setUserInteraction(new UserInteraction() {
-            @Override
-            public void welcome(String banner) {
-            }
 
-            @Override
-            public String[] interactive(String destination, String name, String instruction,
-                                        String[] prompt, boolean[] echo) {
-                count.incrementAndGet();
-                return new String[] { "smx" };
-            }
-        });
-        AuthFuture future = session.auth();
-        future.await();
-        assertTrue(future.isSuccess());
-        assertFalse(future.isFailure());
-        assertEquals(1, count.get());
+        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
+            session.setUserInteraction(new UserInteraction() {
+                    @Override
+                    public void welcome(String banner) {
+                        // ignored
+                    }
+        
+                    @Override
+                    public String[] interactive(String destination, String name, String instruction,
+                                                String[] prompt, boolean[] echo) {
+                        count.incrementAndGet();
+                        return new String[] { "smx" };
+                    }
+                });
+            AuthFuture future = session.auth();
+            future.await();
+            assertTrue("Authentication not marked as success", future.isSuccess());
+            assertFalse("Authentication marked as failure", future.isFailure());
+            assertEquals("Mismatched authentication attempts count", 1, count.get());
+        }
     }
 
     @Test
     public void testKeyboardInteractiveInSessionUserInteractiveFailure() throws Exception {
         final AtomicInteger count = new AtomicInteger();
-        client.getProperties().put(ClientFactoryManager.PASSWORD_PROMPTS, "3");
+        final int MAX_PROMPTS = 3;
+        FactoryManagerUtils.updateProperty(client, ClientFactoryManager.PASSWORD_PROMPTS, MAX_PROMPTS);
         client.setUserAuthFactories(Arrays
                         .<NamedFactory<UserAuth>> asList(new UserAuthKeyboardInteractive.UserAuthKeyboardInteractiveFactory()));
         client.start();
-        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
-        session.setUserInteraction(new UserInteraction() {
-            @Override
-            public void welcome(String banner) {
-            }
-
-            @Override
-            public String[] interactive(String destination, String name, String instruction,
-                                        String[] prompt, boolean[] echo) {
-                count.incrementAndGet();
-                return new String[] { "bad" };
-            }
-        });
-        AuthFuture future = session.auth();
-        future.await();
-        assertTrue(future.isFailure());
-        assertEquals(3, count.get());
+        
+        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
+            session.setUserInteraction(new UserInteraction() {
+                @Override
+                public void welcome(String banner) {
+                    // ignored
+                }
+    
+                @Override
+                public String[] interactive(String destination, String name, String instruction,
+                                            String[] prompt, boolean[] echo) {
+                    count.incrementAndGet();
+                    return new String[] { "bad" };
+                }
+            });
+            AuthFuture future = session.auth();
+            future.await();
+            assertTrue("Authentication not, marked as failure", future.isFailure());
+            assertEquals("Mismatched authentication retry count", MAX_PROMPTS, count.get());
+        }
     }
 
     @Test
     public void testClientDisconnect() throws Exception {
         TestEchoShellFactory.TestEchoShell.latch = new CountDownLatch(1);
-        try
-        {
+        try {
             client.start();
-            ClientSession session = client.connect("smx", "localhost", port).await().getSession();
-            session.addPasswordIdentity("smx");
-            session.auth().verify();
-            ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
-            PipedOutputStream pipedIn = new PipedOutputStream();
-            channel.setIn(new PipedInputStream(pipedIn));
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            ByteArrayOutputStream err = new ByteArrayOutputStream();
-            channel.setOut(out);
-            channel.setErr(err);
-            channel.open().await();
+            
+            try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
+                session.addPasswordIdentity("smx");
+                session.auth().verify(5L, TimeUnit.SECONDS);
+                
+                try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
+                    PipedOutputStream pipedIn = new PipedOutputStream();
+                    InputStream inPipe = new PipedInputStream(pipedIn); 
+                    ByteArrayOutputStream out = new ByteArrayOutputStream();
+                    ByteArrayOutputStream err = new ByteArrayOutputStream()) {
 
-//            ((AbstractSession) session).disconnect(SshConstants.SSH2_DISCONNECT_BY_APPLICATION, "Cancel");
-            AbstractSession cs = (AbstractSession) session;
-            Buffer buffer = cs.createBuffer(SshConstants.SSH_MSG_DISCONNECT);
-            buffer.putInt(SshConstants.SSH2_DISCONNECT_BY_APPLICATION);
-            buffer.putString("Cancel");
-            buffer.putString("");
-            IoWriteFuture f = cs.writePacket(buffer);
-            f.await();
-            suspend(cs.getIoSession());
-
-            TestEchoShellFactory.TestEchoShell.latch.await();
+                    channel.setIn(inPipe);
+                    channel.setOut(out);
+                    channel.setErr(err);
+                    channel.open().await();
+        
+        //            ((AbstractSession) session).disconnect(SshConstants.SSH2_DISCONNECT_BY_APPLICATION, "Cancel");
+                    AbstractSession cs = (AbstractSession) session;
+                    Buffer buffer = cs.createBuffer(SshConstants.SSH_MSG_DISCONNECT);
+                    buffer.putInt(SshConstants.SSH2_DISCONNECT_BY_APPLICATION);
+                    buffer.putString("Cancel");
+                    buffer.putString("");
+                    IoWriteFuture f = cs.writePacket(buffer);
+                    f.await();
+                    suspend(cs.getIoSession());
+    
+                    TestEchoShellFactory.TestEchoShell.latch.await();
+                }
+            }
         } finally {
             TestEchoShellFactory.TestEchoShell.latch = null;
         }
@@ -753,10 +852,13 @@ public class ClientTest extends BaseTest {
                 }
         );
         client.start();
-        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
-        session.waitFor(ClientSession.WAIT_AUTH, 10000);
-        assertTrue(ok.get());
-        client.stop();
+        
+        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
+            session.waitFor(ClientSession.WAIT_AUTH, 10000);
+            assertTrue(ok.get());
+        } finally {
+            client.stop();
+        }
     }
 
     @Test
@@ -764,15 +866,18 @@ public class ClientTest extends BaseTest {
         sshd.getCipherFactories().add(BuiltinCiphers.none);
         client.getCipherFactories().add(BuiltinCiphers.none);
         client.start();
-        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
-        session.addPasswordIdentity("smx");
-        session.auth().verify();
-        session.switchToNoneCipher().await();
-
-        ClientChannel channel = session.createSubsystemChannel("sftp");
-        channel.open().verify();
-
-        client.stop();
+        
+        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
+            session.addPasswordIdentity("smx");
+            session.auth().verify(5L, TimeUnit.SECONDS);
+            session.switchToNoneCipher().await();
+    
+            try(ClientChannel channel = session.createSubsystemChannel("sftp")) {
+                channel.open().verify(5L, TimeUnit.SECONDS);
+            }
+        } finally {
+            client.stop();
+        }
     }
 
     private void suspend(IoSession ioSession) {

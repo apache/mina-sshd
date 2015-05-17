@@ -18,6 +18,8 @@
  */
 package org.apache.sshd.client.future;
 
+import java.util.concurrent.TimeUnit;
+
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.SshFuture;
 
@@ -27,13 +29,23 @@ import org.apache.sshd.common.future.SshFuture;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface AuthFuture extends SshFuture<AuthFuture> {
-
     /**
      * Wait and verify that the authentication succeeded.
-     *
      * @throws SshException if the authentication failed for any reason
      */
     void verify() throws SshException;
+
+    /**
+     * Wait and verify that the authentication succeeded within the specified timeout.
+     * @throws SshException if the authentication failed for any reason
+     */
+    void verify(long timeout, TimeUnit unit) throws SshException;
+
+    /**
+     * Wait and verify that the authentication succeeded within the specified timeout.
+     * @throws SshException if the authentication failed for any reason
+     */
+    void verify(long timeoutMillis) throws SshException;
 
     /**
      * Returns the cause of the connection failure.

@@ -208,7 +208,8 @@ public class ServerTest extends BaseTest {
         client.start();
         try(ClientSession s = client.connect("test", "localhost", port).await().getSession()) {
             s.addPasswordIdentity("test");
-            s.auth().verify();
+            s.auth().verify(5L, TimeUnit.SECONDS);
+
             try(ChannelShell shell = s.createShellChannel();
                 ByteArrayOutputStream out = new ByteArrayOutputStream();
                 ByteArrayOutputStream err = new ByteArrayOutputStream()) {
@@ -260,7 +261,8 @@ public class ServerTest extends BaseTest {
 
         try(ClientSession s = client.connect("test", "localhost", port).await().getSession()) {
             s.addPasswordIdentity("test");
-            s.auth().verify();
+            s.auth().verify(5L, TimeUnit.SECONDS);
+
             try(ChannelExec shell = s.createExecChannel("normal");
                 // Create a pipe that will block reading when the buffer is full
                 PipedInputStream pis = new PipedInputStream();
@@ -355,7 +357,7 @@ public class ServerTest extends BaseTest {
 
         try(ClientSession s = client.connect("test", "localhost", port).await().getSession()) {
             s.addPasswordIdentity("test");
-            s.auth().verify();
+            s.auth().verify(5L, TimeUnit.SECONDS);
             Assert.assertEquals("Mismatched client events count", 1, clientEventCount.get());
             Assert.assertEquals("Mismatched server events count", 1, serverEventCount.get());
             s.close(false);
@@ -411,7 +413,7 @@ public class ServerTest extends BaseTest {
             try {
                 try(ClientSession s = client.connect("test", "localhost", port).await().getSession()) {
                     s.addPasswordIdentity("test");
-                    s.auth().verify();
+                    s.auth().verify(5L, TimeUnit.SECONDS);
                 }
                 
                 synchronized(eventsMap) {

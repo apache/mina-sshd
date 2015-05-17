@@ -40,6 +40,7 @@ public class ChannelExec extends PtyCapableChannelSession {
         this.command = command;
     }
 
+    @Override
     protected void doOpen() throws IOException {
         doOpenPty();
 

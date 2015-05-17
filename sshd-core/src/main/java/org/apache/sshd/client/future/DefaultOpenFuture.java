@@ -18,6 +18,8 @@
  */
 package org.apache.sshd.client.future;
 
+import java.util.concurrent.TimeUnit;
+
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.DefaultSshFuture;
 
@@ -27,23 +29,36 @@ import org.apache.sshd.common.future.DefaultSshFuture;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class DefaultOpenFuture extends DefaultSshFuture<OpenFuture> implements OpenFuture {
-
     public DefaultOpenFuture(Object lock) {
         super(lock);
     }
 
+    @Override   // TODO for JDK-8 make this a default method
     public void verify() throws SshException {
+        verify(Long.MAX_VALUE);
+    }
+
+    @Override   // TODO for JDK-8 make this a default method
+    public void verify(long timeout, TimeUnit unit) throws SshException {
+        verify(unit.toMillis(timeout));        
+    }
+
+    @Override
+    public void verify(long timeoutMillis) throws SshException {
         try {
-            await();
-        }
-        catch (InterruptedException e) {
+            if (!await(timeoutMillis)) {
+                throw new SshException("Channel opening time out after " + timeoutMillis);
+            }
+        } catch (InterruptedException e) {
             throw new SshException("Channel opening interrupted", e);
         }
+
         if (!isOpened()) {
             throw new SshException("Channel opening failed", getException());
         }
     }
 
+    @Override
     public Throwable getException() {
         Object v = getValue();
         if (v instanceof Throwable) {
@@ -53,14 +68,17 @@ public class DefaultOpenFuture extends DefaultSshFuture<OpenFuture> implements O
         }
     }
 
+    @Override
     public boolean isOpened() {
         return getValue() instanceof Boolean;
     }
 
+    @Override
     public void setOpened() {
         setValue(Boolean.TRUE);
     }
 
+    @Override
     public void setException(Throwable exception) {
         if (exception == null) {
             throw new NullPointerException("exception");

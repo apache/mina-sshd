@@ -55,11 +55,10 @@ public class DefaultSshFuture<T extends SshFuture> implements SshFuture<T> {
      */
     @Override
     public T await() throws InterruptedException {
-        synchronized (lock) {
-            while (result == null) {
-                lock.wait();
-            }
+        if (await0(Long.MAX_VALUE, true) == null) {
+            throw new InternalError("No result while await completion");
         }
+
         return asT();
     }
 
@@ -76,7 +75,7 @@ public class DefaultSshFuture<T extends SshFuture> implements SshFuture<T> {
      */
     @Override
     public boolean await(long timeoutMillis) throws InterruptedException {
-        return await0(timeoutMillis, true);
+        return await0(timeoutMillis, true) != null;
     }
 
     /**
@@ -107,32 +106,29 @@ public class DefaultSshFuture<T extends SshFuture> implements SshFuture<T> {
     @Override
     public boolean awaitUninterruptibly(long timeoutMillis) {
         try {
-            return await0(timeoutMillis, false);
+            return await0(timeoutMillis, false) != null;
         } catch (InterruptedException e) {
-            throw new InternalError();
+            throw new InternalError("Unexpected interrupted exception wile awaitUninterruptibly " + timeoutMillis + " msec.: " + e.getMessage(), e);
         }
     }
 
     /**
      * Wait for the Future to be ready. If the requested delay is 0 or
-     * negative, this method immediately returns the value of the
-     * 'ready' flag.
-     * Every 5 second, the wait will be suspended to be able to check if
-     * there is a deadlock or not.
-     *
+     * negative, this method immediately returns.
      * @param timeoutMillis The delay we will wait for the Future to be ready
      * @param interruptable Tells if the wait can be interrupted or not
-     * @return <code>true</code> if the Future is ready
+     * @return The non-{@code null} result object if the Future is ready,
+     * {@code null} if the timeout expired and no result was received
      * @throws InterruptedException If the thread has been interrupted
      * when it's not allowed.
      */
-    private boolean await0(long timeoutMillis, boolean interruptable) throws InterruptedException {
+    protected Object await0(long timeoutMillis, boolean interruptable) throws InterruptedException {
         long curTime = System.currentTimeMillis();
-        long endTime = Long.MAX_VALUE - timeoutMillis < curTime ? Long.MAX_VALUE : curTime + timeoutMillis;
+        long endTime = ((Long.MAX_VALUE - timeoutMillis) < curTime) ? Long.MAX_VALUE : (curTime + timeoutMillis);
 
         synchronized (lock) {
-            if (result != null || timeoutMillis <= 0) {
-                return result != null;
+            if ((result != null) || (timeoutMillis <= 0)) {
+                return result;
             }
 
             for (;;) {
@@ -145,13 +141,12 @@ public class DefaultSshFuture<T extends SshFuture> implements SshFuture<T> {
                 }
 
                 curTime = System.currentTimeMillis();
-                if (result != null || curTime >= endTime) {
-                    return result != null;
+                if ((result != null) || (curTime >= endTime)) {
+                    return result;
                 }
             }
         }
     }
-
 
     /**
      * {@inheritDoc}

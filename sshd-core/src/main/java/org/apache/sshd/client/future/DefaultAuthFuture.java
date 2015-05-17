@@ -18,6 +18,8 @@
  */
 package org.apache.sshd.client.future;
 
+import java.util.concurrent.TimeUnit;
+
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.DefaultSshFuture;
 
@@ -28,23 +30,36 @@ import org.apache.sshd.common.future.DefaultSshFuture;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class DefaultAuthFuture extends DefaultSshFuture<AuthFuture> implements AuthFuture {
-
     public DefaultAuthFuture( Object lock) {
         super(lock);
     }
 
+    @Override   // TODO for JDK-8 make this a default method
     public void verify() throws SshException {
+        verify(Long.MAX_VALUE);
+    }
+
+    @Override   // TODO for JDK-8 make this a default method
+    public void verify(long timeout, TimeUnit unit) throws SshException {
+        verify(unit.toMillis(timeout));        
+    }
+
+    @Override
+    public void verify(long timeoutMillis) throws SshException {
         try {
-            await();
-        }
-        catch (InterruptedException e) {
+            if (!await(timeoutMillis)) {
+                throw new SshException("Authentication timeout afer " + timeoutMillis);
+            }
+        } catch (InterruptedException e) {
             throw new SshException("Authentication interrupted", e);
         }
+
         if (!isSuccess()) {
             throw new SshException("Authentication failed", getException());
         }
     }
 
+    @Override
     public Throwable getException() {
         Object v = getValue();
         if (v instanceof Throwable) {
@@ -54,20 +69,24 @@ public class DefaultAuthFuture extends DefaultSshFuture<AuthFuture> implements A
         }
     }
 
+    @Override
     public boolean isSuccess() {
         Object v = getValue();
-        return v instanceof Boolean && (Boolean) v;
+        return (v instanceof Boolean) && ((Boolean) v).booleanValue();
     }
 
+    @Override
     public boolean isFailure() {
         Object v = getValue();
-        return v instanceof Boolean && !((Boolean) v);
+        return (v instanceof Boolean) && (!((Boolean) v).booleanValue());
     }
 
+    @Override
     public void setAuthed(boolean authed) {
         setValue(Boolean.valueOf(authed));
     }
 
+    @Override
     public void setException(Throwable exception) {
         if (exception == null) {
             throw new NullPointerException("exception");

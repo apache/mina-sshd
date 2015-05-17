@@ -19,6 +19,7 @@
 package org.apache.sshd.common.channel;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.RuntimeSshException;
@@ -85,6 +86,7 @@ public class ChannelAsyncInputStream extends CloseableUtils.AbstractCloseable im
         }
     }
 
+    @SuppressWarnings("synthetic-access")
     private void doRead(boolean resume) {
         IoReadFutureImpl future = null;
         int nbRead = 0;
@@ -111,7 +113,7 @@ public class ChannelAsyncInputStream extends CloseableUtils.AbstractCloseable im
             } catch (IOException e) {
                 channel.getSession().exceptionCaught(e);
             }
-            future.setValue(nbRead);
+            future.setValue(Integer.valueOf(nbRead));
         }
     }
 
@@ -121,8 +123,7 @@ public class ChannelAsyncInputStream extends CloseableUtils.AbstractCloseable im
     }
 
     public static class IoReadFutureImpl extends DefaultSshFuture<IoReadFuture> implements IoReadFuture {
-
-        final Buffer buffer;
+        private final Buffer buffer;
 
         public IoReadFutureImpl(Buffer buffer) {
             super(null);
@@ -134,12 +135,23 @@ public class ChannelAsyncInputStream extends CloseableUtils.AbstractCloseable im
             return buffer;
         }
 
-        @Override
+        @Override   // TODO for JDK-8 make this a default method
         public void verify() throws SshException {
+            verify(Long.MAX_VALUE);
+        }
+
+        @Override   // TODO for JDK-8 make this a default method
+        public void verify(long timeout, TimeUnit unit) throws SshException {
+            verify(unit.toMillis(timeout));        
+        }
+
+        @Override
+        public void verify(long timeoutMillis) throws SshException {
             try {
-                await();
-            }
-            catch (InterruptedException e) {
+                if (!await(timeoutMillis)) {
+                    throw new SshException("Timed out after " + timeoutMillis);
+                }
+            } catch (InterruptedException e) {
                 throw new SshException("Interrupted", e);
             }
             if (getValue() instanceof Throwable) {
@@ -156,9 +168,9 @@ public class ChannelAsyncInputStream extends CloseableUtils.AbstractCloseable im
             } else if (v instanceof Throwable) {
                 throw (RuntimeSshException) new RuntimeSshException("Error reading from channel.").initCause((Throwable) v);
             } else if (v instanceof Integer) {
-                return (Integer) v;
+                return ((Integer) v).intValue();
             } else {
-                throw new IllegalStateException();
+                throw new IllegalStateException("Unknown read value type: " + ((v == null) ? "null" : v.getClass().getName()));
             }
         }
 

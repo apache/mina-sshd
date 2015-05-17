@@ -18,6 +18,8 @@
  */
 package org.apache.sshd.client.future;
 
+import java.util.concurrent.TimeUnit;
+
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.SshFuture;
 
@@ -29,11 +31,22 @@ import org.apache.sshd.common.future.SshFuture;
 public interface OpenFuture extends SshFuture<OpenFuture> {
 
     /**
-     * Wait and verify that the channel has been successfuly opened.
-     *
-     * @throws org.apache.sshd.common.SshException if the authentication failed for any reason
+     * Wait and verify that the channel has been successfully opened.
+     * @throws SshException if the action failed for any reason
      */
     void verify() throws SshException;
+
+    /**
+     * Wait and verify that the channel has been successfully opened within the specified timeout.
+     * @throws SshException if the action failed for any reason
+     */
+    void verify(long timeout, TimeUnit unit) throws SshException;
+
+    /**
+     * Wait and verify that the authentication succeeded within the specified timeout.
+     * @throws SshException if the action failed for any reason
+     */
+    void verify(long timeoutMillis) throws SshException;
 
     /**
      * Returns the cause of the connection failure.
