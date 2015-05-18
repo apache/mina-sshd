@@ -24,13 +24,10 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.security.KeyPair;
 
-import org.bouncycastle.openssl.PEMDecryptorProvider;
-import org.bouncycastle.openssl.PEMEncryptedKeyPair;
 import org.bouncycastle.openssl.PEMKeyPair;
 import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.openssl.PEMWriter;
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
-import org.bouncycastle.openssl.jcajce.JcePEMDecryptorProviderBuilder;
 
 /**
  * TODO Add javadoc
@@ -40,6 +37,7 @@ import org.bouncycastle.openssl.jcajce.JcePEMDecryptorProviderBuilder;
 public class PEMGeneratorHostKeyProvider extends AbstractGeneratorHostKeyProvider {
 
     public PEMGeneratorHostKeyProvider() {
+        super();
     }
 
     public PEMGeneratorHostKeyProvider(String path) {
@@ -54,24 +52,28 @@ public class PEMGeneratorHostKeyProvider extends AbstractGeneratorHostKeyProvide
         super(path, algorithm, keySize);
     }
 
+    @Override
     protected KeyPair doReadKeyPair(InputStream is) throws Exception {
-        PEMParser r = new PEMParser(new InputStreamReader(is));
-        Object o = r.readObject();
-        JcaPEMKeyConverter pemConverter = new JcaPEMKeyConverter();
-        pemConverter.setProvider("BC");
-        if (o instanceof PEMKeyPair) {
-            o = pemConverter.getKeyPair((PEMKeyPair)o);
-            return (KeyPair) o;
-        } else if (o instanceof KeyPair) {
-            return (KeyPair) o;
+        try(PEMParser r = new PEMParser(new InputStreamReader(is))) {
+            Object o = r.readObject();
+            JcaPEMKeyConverter pemConverter = new JcaPEMKeyConverter();
+            pemConverter.setProvider("BC");
+            if (o instanceof PEMKeyPair) {
+                o = pemConverter.getKeyPair((PEMKeyPair)o);
+                return (KeyPair) o;
+            } else if (o instanceof KeyPair) {
+                return (KeyPair) o;
+            }
+            return null;
         }
-        return null;
     }
 
+    @Override
     protected void doWriteKeyPair(KeyPair kp, OutputStream os) throws Exception {
-        PEMWriter w = new PEMWriter(new OutputStreamWriter(os));
-        w.writeObject(kp);
-        w.flush();
+        try(PEMWriter w = new PEMWriter(new OutputStreamWriter(os))) {
+            w.writeObject(kp);
+            w.flush();
+        }
     }
 
 }

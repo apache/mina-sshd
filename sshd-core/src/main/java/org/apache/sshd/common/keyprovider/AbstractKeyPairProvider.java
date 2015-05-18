@@ -23,10 +23,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.sshd.common.KeyPairProvider;
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.KeyUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.sshd.common.util.KeyUtils.getKeyType;
 
 /**
  * TODO Add javadoc
@@ -34,38 +35,37 @@ import static org.apache.sshd.common.util.KeyUtils.getKeyType;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractKeyPairProvider implements KeyPairProvider {
-
     protected final Logger log = LoggerFactory.getLogger(getClass());
 
+    protected AbstractKeyPairProvider() {
+        super();
+    }
+
+    @Override
     public KeyPair loadKey(String type) {
-        assert type != null;
+        ValidateUtils.checkNotNullAndNotEmpty(type, "No key type to load", GenericUtils.EMPTY_OBJECT_ARRAY);
+
         Iterable<KeyPair> keys = loadKeys();
         for (KeyPair key : keys) {
-            if (type.equals(getKeyType(key))) {
+            if (type.equals(KeyUtils.getKeyType(key))) {
                 return key;
             }
         }
         return null;
     }
 
-    public String getKeyTypes() {
+    @Override
+    public List<String> getKeyTypes() {
         List<String> types = new ArrayList<String>();
         Iterable<KeyPair> keys = loadKeys();
         for (KeyPair key : keys) {
-            String type = getKeyType(key);
-            if (type != null && !types.contains(type)) {
-                types.add(type);
+            String type = KeyUtils.getKeyType(key);
+            if (GenericUtils.isEmpty(type) || types.contains(type)) {
+                continue;
             }
+            types.add(type);
         }
-        StringBuilder sb = new StringBuilder();
-        for (String type : types) {
-            if (sb.length() > 0) {
-                sb.append(",");
-            }
-            sb.append(type);
-        }
-        return sb.toString();
-    }
 
-    public abstract Iterable<KeyPair> loadKeys();
+        return types;
+    }
 }

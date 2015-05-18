@@ -21,13 +21,11 @@ package org.apache.sshd.common.keyprovider;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.security.KeyPair;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.List;
 import java.util.NoSuchElementException;
 
-import org.apache.sshd.common.util.IoUtils;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.bouncycastle.openssl.PEMDecryptorProvider;
 import org.bouncycastle.openssl.PEMEncryptedKeyPair;
@@ -53,14 +51,14 @@ public class ResourceKeyPairProvider extends AbstractKeyPairProvider {
     /**
      * Logger
      */
-    private final Logger log = LoggerFactory.getLogger(getClass());
+    protected final Logger log = LoggerFactory.getLogger(getClass());
 
     // --- Properties ---
 
     /**
      * Class loader
      */
-    private final ClassLoader cloader;
+    protected final ClassLoader cloader;
 
     /**
      * Key resources
@@ -78,36 +76,29 @@ public class ResourceKeyPairProvider extends AbstractKeyPairProvider {
      * No-arg constructor.
      */
     public ResourceKeyPairProvider() {
-        this.cloader = this.getClass().getClassLoader();
+        this(GenericUtils.EMPTY_STRING_ARRAY);
     } // end of <init>
 
     /**
      * Bulk constructor 1.
      */
-    public ResourceKeyPairProvider(String[] resources) {
-        this.cloader = this.getClass().getClassLoader();
-        this.resources = resources;
+    public ResourceKeyPairProvider(String ... resources) {
+        this(resources, null);
     } // end of <init>
 
     /**
      * Bulk constructor 2.
      */
-    public ResourceKeyPairProvider(String[] resources,
-                                   PasswordFinder passwordFinder) {
-
-        this.cloader = this.getClass().getClassLoader();
-        this.resources = resources;
-        this.passwordFinder = passwordFinder;
+    public ResourceKeyPairProvider(String[] resources, PasswordFinder passwordFinder) {
+        this(resources, passwordFinder, null);
     } // end of <init>
 
     /**
      * Bulk constructor 3.
      */
-    public ResourceKeyPairProvider(String[] resources,
-                                   PasswordFinder passwordFinder,
-                                   ClassLoader cloader) {
+    public ResourceKeyPairProvider(String[] resources, PasswordFinder passwordFinder, ClassLoader cloader) {
 
-        this.cloader = cloader;
+        this.cloader = (cloader == null) ? this.getClass().getClassLoader() : cloader;
         this.resources = resources;
         this.passwordFinder = passwordFinder;
     } // end of <init>
@@ -145,30 +136,36 @@ public class ResourceKeyPairProvider extends AbstractKeyPairProvider {
     /**
      * {@inheritDoc}
      */
+    @Override
     public Iterable<KeyPair> loadKeys() {
         if (!SecurityUtils.isBouncyCastleRegistered()) {
             throw new IllegalStateException("BouncyCastle must be registered as a JCE provider");
         } // end of if
         return new Iterable<KeyPair>() {
+            @Override
             public Iterator<KeyPair> iterator() {
                 return new Iterator<KeyPair>() {
+                    @SuppressWarnings("synthetic-access")
                     private final Iterator<String> iterator = Arrays.asList(resources).iterator();
                     private KeyPair nextKeyPair;
                     private boolean nextKeyPairSet = false;
+                    @Override
                     public boolean hasNext() {
                         return nextKeyPairSet || setNextObject();
                     }
+                    @Override
                     public KeyPair next() {
                         if (!nextKeyPairSet) {
                             if (!setNextObject()) {
-                                throw new NoSuchElementException();
+                                throw new NoSuchElementException("No next element in iterator");
                             }
                         }
                         nextKeyPairSet = false;
                         return nextKeyPair;
                     }
+                    @Override
                     public void remove() {
-                        throw new UnsupportedOperationException();
+                        throw new UnsupportedOperationException("Not allowed to remove items");
                     }
                     private boolean setNextObject() {
                         while (iterator.hasNext()) {
@@ -188,19 +185,15 @@ public class ResourceKeyPairProvider extends AbstractKeyPairProvider {
     }
 
     protected KeyPair doLoadKey(String resource) {
-        PEMParser r = null;
-        InputStreamReader isr = null;
-        InputStream is = null;
-        try {
-            is = this.cloader.getResourceAsStream(resource);
-            isr = new InputStreamReader(is);
-            r = new PEMParser(isr);
+        try(InputStream is = this.cloader.getResourceAsStream(resource);
+            InputStreamReader isr = new InputStreamReader(is);
+            PEMParser r = new PEMParser(isr)) {
 
             Object o = r.readObject();
 
             JcaPEMKeyConverter pemConverter = new JcaPEMKeyConverter();
             pemConverter.setProvider("BC");
-            if (passwordFinder != null && o instanceof PEMEncryptedKeyPair) {
+            if ((passwordFinder != null) && (o instanceof PEMEncryptedKeyPair)) {
                 JcePEMDecryptorProviderBuilder decryptorBuilder = new JcePEMDecryptorProviderBuilder();
                 PEMDecryptorProvider pemDecryptor = decryptorBuilder.build(passwordFinder.getPassword());
                 o = pemConverter.getKeyPair(((PEMEncryptedKeyPair) o).decryptKeyPair(pemDecryptor));
@@ -214,9 +207,8 @@ public class ResourceKeyPairProvider extends AbstractKeyPairProvider {
             } // end of if
         } catch (Exception e) {
             log.warn("Unable to read key " + resource, e);
-        } finally {
-            IoUtils.closeQuietly(r, is, isr);
-        } // end of finally
+        }
+
         return null;
     } // end of doLoadKey
 

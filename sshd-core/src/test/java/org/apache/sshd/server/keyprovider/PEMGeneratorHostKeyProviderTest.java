@@ -18,17 +18,21 @@
  */
 package org.apache.sshd.server.keyprovider;
 
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 import java.security.KeyPair;
+import java.security.PublicKey;
+import java.security.interfaces.ECPublicKey;
+import java.security.spec.AlgorithmParameterSpec;
 import java.security.spec.ECGenParameterSpec;
 
 import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.util.BaseTest;
+import org.junit.Assume;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 /**
  * TODO Add javadoc
@@ -39,161 +43,91 @@ public class PEMGeneratorHostKeyProviderTest extends BaseTest {
 
     @Test
     public void testDSA() {
-        if (!SecurityUtils.isBouncyCastleRegistered()) {
-            return;
-        }
-
-        File path = new File("target/keys");
-        path.mkdirs();
-        path = new File(path, "simple_dsa.key");
-        path.delete();
-
-        // Generate
-        PEMGeneratorHostKeyProvider provider = new PEMGeneratorHostKeyProvider();
-        provider.setAlgorithm("DSA");
-        provider.setKeySize(512);
-        provider.setPath(path.getPath());
-        assertEquals(KeyPairProvider.SSH_DSS, provider.getKeyTypes());
-        KeyPair pk1 = provider.loadKey(KeyPairProvider.SSH_DSS);
-        assertNotNull(pk1);
-
-        // Read existing
-        provider = new PEMGeneratorHostKeyProvider();
-        provider.setAlgorithm("DSA");
-        provider.setKeySize(512);
-        provider.setPath(path.getPath());
-        assertEquals(KeyPairProvider.SSH_DSS, provider.getKeyTypes());
-        KeyPair pk2 = provider.loadKey(KeyPairProvider.SSH_DSS);
-        assertNotNull(pk2);
-
-        assertEquals(pk2.getPublic(), pk1.getPublic());
+        Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
+        testPEMGeneratorHostKeyProvider("DSA", KeyPairProvider.SSH_DSS, 512, null);
     }
 
     @Test
     public void testRSA() {
-        if (!SecurityUtils.isBouncyCastleRegistered()) {
-            return;
-        }
-
-        File path = new File("target/keys");
-        path.mkdirs();
-        path = new File(path, "simple_rsa.key");
-        path.delete();
-
-        // Generate
-        PEMGeneratorHostKeyProvider provider = new PEMGeneratorHostKeyProvider();
-        provider.setAlgorithm("RSA");
-        provider.setKeySize(512);
-        provider.setPath(path.getPath());
-        assertEquals(KeyPairProvider.SSH_RSA, provider.getKeyTypes());
-        KeyPair pk1 = provider.loadKey(KeyPairProvider.SSH_RSA);
-        assertNotNull(pk1);
-
-        // Read existing
-        provider = new PEMGeneratorHostKeyProvider();
-        provider.setAlgorithm("RSA");
-        provider.setKeySize(512);
-        provider.setPath(path.getPath());
-        assertEquals(KeyPairProvider.SSH_RSA, provider.getKeyTypes());
-        KeyPair pk2 = provider.loadKey(KeyPairProvider.SSH_RSA);
-        assertNotNull(pk2);
-
-        assertEquals(pk2.getPublic(), pk1.getPublic());
+        Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
+        testPEMGeneratorHostKeyProvider("RSA", KeyPairProvider.SSH_RSA, 512, null);
     }
 
     @Test
     public void testEC_NISTP256() {
-        if (!SecurityUtils.isBouncyCastleRegistered()) {
-            return;
-        }
-
-        File path = new File("target/keys");
-        path.mkdirs();
-        path = new File(path, "simple_ec_nistp256.key");
-        path.delete();
-
-        // Generate
-        PEMGeneratorHostKeyProvider provider = new PEMGeneratorHostKeyProvider();
-        provider.setAlgorithm("EC");
-        provider.setKeySpec(new ECGenParameterSpec("prime256v1"));
-        provider.setPath(path.getPath());
-        assertEquals(KeyPairProvider.ECDSA_SHA2_NISTP256, provider.getKeyTypes());
-        KeyPair pk1 = provider.loadKey(KeyPairProvider.ECDSA_SHA2_NISTP256);
-        assertNotNull(pk1);
-
-        // Read existing
-        provider = new PEMGeneratorHostKeyProvider();
-        provider.setAlgorithm("EC");
-        provider.setKeySpec(new ECGenParameterSpec("prime256v1"));
-        provider.setPath(path.getPath());
-        assertEquals(KeyPairProvider.ECDSA_SHA2_NISTP256, provider.getKeyTypes());
-        KeyPair pk2 = provider.loadKey(KeyPairProvider.ECDSA_SHA2_NISTP256);
-        assertNotNull(pk2);
-
-        assertEquals(pk2.getPublic(), pk1.getPublic());
+        Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
+        testPEMGeneratorHostKeyProvider("EC", KeyPairProvider.ECDSA_SHA2_NISTP256, -1, new ECGenParameterSpec("prime256v1"));
     }
 
     @Test
     public void testEC_NISTP384() {
-        if (!SecurityUtils.isBouncyCastleRegistered()) {
-            return;
-        }
-
-        File path = new File("target/keys");
-        path.mkdirs();
-        path = new File(path, "simple_ec_nistp384.key");
-        path.delete();
-
-        // Generate
-        PEMGeneratorHostKeyProvider provider = new PEMGeneratorHostKeyProvider();
-        provider.setAlgorithm("EC");
-        provider.setKeySpec(new ECGenParameterSpec("P-384"));
-        provider.setPath(path.getPath());
-        assertEquals(KeyPairProvider.ECDSA_SHA2_NISTP384, provider.getKeyTypes());
-        KeyPair pk1 = provider.loadKey(KeyPairProvider.ECDSA_SHA2_NISTP384);
-        assertNotNull(pk1);
-
-        // Read existing
-        provider = new PEMGeneratorHostKeyProvider();
-        provider.setAlgorithm("EC");
-        provider.setKeySpec(new ECGenParameterSpec("P-384"));
-        provider.setPath(path.getPath());
-        assertEquals(KeyPairProvider.ECDSA_SHA2_NISTP384, provider.getKeyTypes());
-        KeyPair pk2 = provider.loadKey(KeyPairProvider.ECDSA_SHA2_NISTP384);
-        assertNotNull(pk2);
-
-        assertEquals(pk2.getPublic(), pk1.getPublic());
+        Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
+        testPEMGeneratorHostKeyProvider("EC", KeyPairProvider.ECDSA_SHA2_NISTP384, -1, new ECGenParameterSpec("P-384"));
     }
 
     @Test
     public void testEC_NISTP521() {
-        if (!SecurityUtils.isBouncyCastleRegistered()) {
-            return;
+        Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
+        testPEMGeneratorHostKeyProvider("EC", KeyPairProvider.ECDSA_SHA2_NISTP521, -1, new ECGenParameterSpec("P-521"));
+    }
+
+    private static File testPEMGeneratorHostKeyProvider(String algorithm, String keyType, int keySize, AlgorithmParameterSpec keySpec) {
+        File    path = initKeyFileLocation(algorithm);
+        KeyPair kpWrite = invokePEMGeneratorHostKeyProvider(path, algorithm, keyType, keySize, keySpec);
+        assertTrue("Key file not generated: " + path.getAbsolutePath(), path.exists());
+
+        KeyPair     kpRead = invokePEMGeneratorHostKeyProvider(path, algorithm, keyType, keySize, keySpec);
+        PublicKey   pubWrite = kpWrite.getPublic(), pubRead = kpRead.getPublic();
+        if (pubWrite instanceof ECPublicKey) {
+            // The algorithm is reported as ECDSA instead of EC
+            assertECPublicKeyEquals("Mismatched EC public key", ECPublicKey.class.cast(pubWrite), ECPublicKey.class.cast(pubRead));
+        } else {
+            assertKeyEquals("Mismatched public keys", pubWrite, pubRead);
+        }
+        return path;
+    }
+
+    private static KeyPair invokePEMGeneratorHostKeyProvider(File path, String algorithm, String keyType, int keySize, AlgorithmParameterSpec keySpec) {
+        PEMGeneratorHostKeyProvider provider = new PEMGeneratorHostKeyProvider();
+        provider.setAlgorithm(algorithm);
+        provider.setOverwriteAllowed(true);
+        provider.setPath(path.getAbsolutePath());
+        if (keySize > 0) {
+            provider.setKeySize(keySize);
+        }
+        if (keySpec != null) {
+            provider.setKeySpec(keySpec);
         }
 
+        return validateKeyPairProvider(provider, keyType);
+    }
+
+    private static KeyPair validateKeyPairProvider(KeyPairProvider provider, String keyType) {
+        Iterable<String>    types=provider.getKeyTypes();
+        KeyPair             kp=null;
+        for (String type : types) {
+            if (keyType.equals(type)) {
+                kp = provider.loadKey(keyType);
+                assertNotNull("Failed to load key for " + keyType, kp);
+                break;
+            }
+        }
+        
+        assertNotNull("Expected key type not found: " + keyType, kp);
+        return kp;
+    }
+
+    private static File initKeyFileLocation(String algorithm) {
         File path = new File("target/keys");
-        path.mkdirs();
-        path = new File(path, "simple_ec_nistp521.key");
-        path.delete();
+        if (!path.exists()) {
+            assertTrue("Failed to crearte hierarchy of " + path.getAbsolutePath(), path.mkdirs());
+        }
 
-        // Generate
-        PEMGeneratorHostKeyProvider provider = new PEMGeneratorHostKeyProvider();
-        provider.setAlgorithm("EC");
-        provider.setKeySpec(new ECGenParameterSpec("P-521"));
-        provider.setPath(path.getPath());
-        assertEquals(KeyPairProvider.ECDSA_SHA2_NISTP521, provider.getKeyTypes());
-        KeyPair pk1 = provider.loadKey(KeyPairProvider.ECDSA_SHA2_NISTP521);
-        assertNotNull(pk1);
-
-        // Read existing
-        provider = new PEMGeneratorHostKeyProvider();
-        provider.setAlgorithm("EC");
-        provider.setKeySpec(new ECGenParameterSpec("P-521"));
-        provider.setPath(path.getPath());
-        assertEquals(KeyPairProvider.ECDSA_SHA2_NISTP521, provider.getKeyTypes());
-        KeyPair pk2 = provider.loadKey(KeyPairProvider.ECDSA_SHA2_NISTP521);
-        assertNotNull(pk2);
-
-        assertEquals(pk2.getPublic(), pk1.getPublic());
+        path = new File(path, algorithm + "-PEM.key");
+        if (path.exists()) {
+            assertTrue("Failed to delete test key file: " + path.getAbsolutePath(), path.delete());
+        }
+        
+        return path;
     }
 }

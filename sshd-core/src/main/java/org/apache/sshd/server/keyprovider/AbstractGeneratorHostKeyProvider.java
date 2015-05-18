@@ -18,11 +18,9 @@
  */
 package org.apache.sshd.server.keyprovider;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.KeyPair;
@@ -31,6 +29,7 @@ import java.security.spec.AlgorithmParameterSpec;
 import java.util.Collections;
 
 import org.apache.sshd.common.keyprovider.AbstractKeyPairProvider;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.SecurityUtils;
 
 /**
@@ -41,22 +40,22 @@ import org.apache.sshd.common.util.SecurityUtils;
 public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairProvider {
 
     private String path;
-    private String algorithm = "DSA";
+    private String algorithm;
     private int keySize;
     private AlgorithmParameterSpec keySpec;
     private KeyPair keyPair;
     private boolean overwriteAllowed = true;
 
     protected AbstractGeneratorHostKeyProvider() {
+        this(null);
     }
 
     protected AbstractGeneratorHostKeyProvider(String path) {
-        this.path = path;
+        this(path, "DSA");
     }
 
     protected AbstractGeneratorHostKeyProvider(String path, String algorithm) {
-        this.path = path;
-        this.algorithm = algorithm;
+        this(path, algorithm, 0);
     }
 
     protected AbstractGeneratorHostKeyProvider(String path, String algorithm, int keySize) {
@@ -109,53 +108,49 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
 
     protected abstract void doWriteKeyPair(KeyPair kp, OutputStream os) throws Exception;
 
+    @Override
     public synchronized Iterable<KeyPair> loadKeys() {
         if (keyPair == null) {
-            if (path != null) {
+            if (!GenericUtils.isEmpty(path)) {
                 File f = new File(path);
                 if (f.exists() && f.isFile()) {
                     keyPair = readKeyPair(f);
                 }
             }
-            if (keyPair == null) {
-                keyPair = generateKeyPair(algorithm);
-                if (keyPair != null && path != null) {
-                    writeKeyPair(keyPair, new File(path));
-                }
-            }
-            if (keyPair == null) {
-                return Collections.emptyList();
+        }
+
+        if (keyPair == null) {
+            keyPair = generateKeyPair(getAlgorithm());
+            if ((keyPair != null) && (!GenericUtils.isEmpty(path))) {
+                writeKeyPair(keyPair, new File(path));
             }
         }
+
+        if (keyPair == null) {
+            return Collections.emptyList();
+        }
+
         return Collections.singleton(keyPair);
     }
 
     private KeyPair readKeyPair(File f) {
-        InputStream is = null;
-        try {
-            is = new FileInputStream(f);
+        try(InputStream is = new FileInputStream(f)) {
             return doReadKeyPair(is);
         } catch (Exception e) {
-            log.warn("Unable to read key {}: {}", path, e);
-        } finally {
-            close(is);
+            log.warn("Unable to read key {}: {}", f.getAbsolutePath(), e);
+            return null;
         }
-        return null;
     }
 
     private void writeKeyPair(KeyPair kp, File f) {
-        if (!f.exists() || overwriteAllowed) {
-            OutputStream os = null;
-            try {
-                os = new FileOutputStream(f);
+        if ((!f.exists()) || isOverwriteAllowed()) {
+            try(OutputStream os = new FileOutputStream(f)) {
                 doWriteKeyPair(kp, os);
             } catch (Exception e) {
                 log.warn("Unable to write key {}: {}", path, e);
-            } finally {
-                close(os);
             }
         } else {
-            log.error("Overwriting key ({}) is disabled: using throwaway {}", f.getName(), kp);
+            log.error("Overwriting key ({}) is disabled: using throwaway {}", f.getAbsolutePath(), kp);
         }
     }
 
@@ -167,22 +162,12 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
             } else if (keySize != 0) {
                 generator.initialize(keySize);
             }
-            log.info("Generating host key...");
+            log.info("generateKeyPair(" + algorithm + ") generating host key...");
             KeyPair kp = generator.generateKeyPair();
             return kp;
         } catch (Exception e) {
-            log.warn("Unable to generate keypair", e);
+            log.warn("generateKeyPair(" + algorithm + ") Unable to generate keypair", e);
             return null;
-        }
-    }
-
-    private void close(Closeable c) {
-        try {
-            if (c != null) {
-                c.close();
-            }
-        } catch (IOException e) {
-            // Ignore
         }
     }
 }

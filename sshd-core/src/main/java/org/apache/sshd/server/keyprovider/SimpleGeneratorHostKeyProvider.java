@@ -32,6 +32,7 @@ import java.security.KeyPair;
 public class SimpleGeneratorHostKeyProvider extends AbstractGeneratorHostKeyProvider {
 
     public SimpleGeneratorHostKeyProvider() {
+        super();
     }
 
     public SimpleGeneratorHostKeyProvider(String path) {
@@ -46,13 +47,17 @@ public class SimpleGeneratorHostKeyProvider extends AbstractGeneratorHostKeyProv
         super(path, algorithm, keySize);
     }
 
+    @Override
     protected KeyPair doReadKeyPair(InputStream is) throws Exception {
-        ObjectInputStream r = new ObjectInputStream(is);
-        return (KeyPair) r.readObject();
+        try(ObjectInputStream r = new ObjectInputStream(is)) {
+            return (KeyPair) r.readObject();
+        }
     }
 
+    @Override
     protected void doWriteKeyPair(KeyPair kp, OutputStream os) throws Exception {
-        ObjectOutputStream w = new ObjectOutputStream(os);
-        w.writeObject(kp);
+        try(ObjectOutputStream w = new ObjectOutputStream(os)) {
+            w.writeObject(kp);
+        }
     }
 }

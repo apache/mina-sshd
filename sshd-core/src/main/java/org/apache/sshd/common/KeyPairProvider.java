@@ -19,6 +19,7 @@
 package org.apache.sshd.common;
 
 import java.security.KeyPair;
+import java.util.List;
 
 /**
  * Provider for key pairs.  This provider is used on the server side to provide
@@ -55,8 +56,7 @@ public interface KeyPairProvider {
 
     /**
      * Load available keys.
-     *
-     * @return an array of available keys, never <code>null</code>
+     * @return an {@link Iterable} instance of available keys, never <code>null</code>
      */
     Iterable<KeyPair> loadKeys();
 
@@ -65,16 +65,13 @@ public interface KeyPairProvider {
      * "ecdsa-sha2-nistp{256,384,521}". If there is no key of this type, return
      * <code>null</code>
      *
-     * @param type
-     *            the type of key to load
+     * @param type the type of key to load
      * @return a valid key pair or <code>null</code>
      */
     KeyPair loadKey(String type);
 
     /**
-     * Return a comma separated list of the key types available
-     *
-     * @return the list of key availables
+     * @return The available {@link Iterable} key types in preferred order - never {@code null}
      */
-    String getKeyTypes();
+    Iterable<String> getKeyTypes();
 }

@@ -48,10 +48,11 @@ public class FileKeyPairProvider extends AbstractKeyPairProvider {
     private PasswordFinder passwordFinder;
 
     public FileKeyPairProvider() {
+        super();
     }
 
-    public FileKeyPairProvider(String[] files) {
-        this.files = files;
+    public FileKeyPairProvider(String ... files) {
+        this(files, null);
     }
 
     public FileKeyPairProvider(String[] files, PasswordFinder passwordFinder) {
@@ -75,19 +76,24 @@ public class FileKeyPairProvider extends AbstractKeyPairProvider {
         this.passwordFinder = passwordFinder;
     }
 
+    @Override
     public Iterable<KeyPair> loadKeys() {
         if (!SecurityUtils.isBouncyCastleRegistered()) {
             throw new IllegalStateException("BouncyCastle must be registered as a JCE provider");
         }
         return new Iterable<KeyPair>() {
+            @Override
             public Iterator<KeyPair> iterator() {
                 return new Iterator<KeyPair>() {
+                    @SuppressWarnings("synthetic-access")
                     private final Iterator<String> iterator = Arrays.asList(files).iterator();
                     private KeyPair nextKeyPair;
                     private boolean nextKeyPairSet = false;
+                    @Override
                     public boolean hasNext() {
                         return nextKeyPairSet || setNextObject();
                     }
+                    @Override
                     public KeyPair next() {
                         if (!nextKeyPairSet) {
                             if (!setNextObject()) {
@@ -97,6 +103,7 @@ public class FileKeyPairProvider extends AbstractKeyPairProvider {
                         nextKeyPairSet = false;
                         return nextKeyPair;
                     }
+                    @Override
                     public void remove() {
                         throw new UnsupportedOperationException();
                     }

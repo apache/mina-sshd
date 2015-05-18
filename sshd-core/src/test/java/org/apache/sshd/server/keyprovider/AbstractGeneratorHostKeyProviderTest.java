@@ -18,9 +18,7 @@
  */
 package org.apache.sshd.server.keyprovider;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import static org.junit.Assert.assertEquals;
 
 import java.io.File;
 import java.io.InputStream;
@@ -28,28 +26,32 @@ import java.io.OutputStream;
 import java.security.KeyPair;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.Assert.assertEquals;
+import org.apache.sshd.util.BaseTest;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
-public class AbstractGeneratorHostKeyProviderTest {
+public class AbstractGeneratorHostKeyProviderTest extends BaseTest {
 
     @Rule
     public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
+    @SuppressWarnings("synthetic-access")
     @Test
     public void testOverwriteKey() throws Exception {
         File keyPairFile = temporaryFolder.newFile();
 
         TestProvider provider = new TestProvider(keyPairFile);
         provider.loadKeys();
-        assertEquals(1, provider.getWriteCount());
+        assertEquals("Mismatched generate write count", 1, provider.getWriteCount());
 
         provider = new TestProvider(keyPairFile);
         provider.setOverwriteAllowed(false);
         provider.loadKeys();
-        assertEquals(0, provider.getWriteCount());
+        assertEquals("Mismatched load write count", 0, provider.getWriteCount());
     }
 
-    private class TestProvider extends AbstractGeneratorHostKeyProvider {
+    private static class TestProvider extends AbstractGeneratorHostKeyProvider {
         private final AtomicInteger writes = new AtomicInteger(0);
 
         private TestProvider(File file) {
