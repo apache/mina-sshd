@@ -16,18 +16,16 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.sshd.client.keyverifier;
 
-
 /**
- * A ServerKeyVerifier that accepts all server keys.
- *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public final class AcceptAllServerKeyVerifier extends StaticServerKeyVerifier {
-	public static final AcceptAllServerKeyVerifier INSTANCE = new AcceptAllServerKeyVerifier();
+public final class RejectAllServerKeyVerifier extends StaticServerKeyVerifier {
+    public static final RejectAllServerKeyVerifier INSTANCE = new RejectAllServerKeyVerifier();
 
-	private AcceptAllServerKeyVerifier() {
-	    super(true);
-	}
+    private RejectAllServerKeyVerifier() {
+        super(false);
+    }
 }

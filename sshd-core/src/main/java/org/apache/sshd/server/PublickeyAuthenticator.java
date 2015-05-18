@@ -20,6 +20,8 @@ package org.apache.sshd.server;
 
 import java.security.PublicKey;
 
+import org.apache.sshd.common.util.AbstractLoggingBean;
+import org.apache.sshd.common.util.KeyUtils;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
@@ -40,4 +42,50 @@ public interface PublickeyAuthenticator {
      */
     boolean authenticate(String username, PublicKey key, ServerSession session);
 
+    /**
+     * Returns the same constant result {@code true/false} regardless
+     */
+    public static abstract class StaticPublickeyAuthenticator extends AbstractLoggingBean implements PublickeyAuthenticator {
+        private final boolean   acceptance;
+
+        protected StaticPublickeyAuthenticator(boolean acceptance) {
+            this.acceptance = acceptance;
+        }
+
+        public final boolean isAccepted() {
+            return acceptance;
+        }
+
+        @Override
+        public final boolean authenticate(String username, PublicKey key, ServerSession session) {
+            if (log.isDebugEnabled()) {
+                log.debug("authenticate({}[{}][[]]: {}",
+                          new Object[] { username, session, key.getAlgorithm(), KeyUtils.getFingerPrint(key), Boolean.valueOf(isAccepted()) });
+            }
+
+            return isAccepted();
+        }
+    }
+
+    /**
+     * Accepts all authentication attempts
+     */
+    public static final class AcceptAllPublickeyAuthenticator extends StaticPublickeyAuthenticator {
+        public static final AcceptAllPublickeyAuthenticator INSTANCE = new AcceptAllPublickeyAuthenticator();
+
+        private AcceptAllPublickeyAuthenticator() {
+            super(true);
+        }
+    }
+
+    /**
+     * Rejects all authentication attempts
+     */
+    public static final class RejectAllPublickeyAuthenticator extends StaticPublickeyAuthenticator {
+        public static final RejectAllPublickeyAuthenticator INSTANCE = new RejectAllPublickeyAuthenticator();
+
+        private RejectAllPublickeyAuthenticator() {
+            super(false);
+        }
+    }
 }

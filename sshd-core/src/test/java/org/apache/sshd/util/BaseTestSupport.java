@@ -99,6 +99,10 @@ public abstract class BaseTestSupport extends Assert {
 
     /* ----------------------- Useful extra assertions --------------------- */
 
+    public static void assertEquals(String message, boolean expected, boolean actual) {
+        assertEquals(message, Boolean.valueOf(expected), Boolean.valueOf(actual));
+    }
+
     public static File assertHierarchyTargetFolderExists(File folder) {
         if (!folder.exists()) {
             assertTrue("Failed to create hierarchy of " + folder.getAbsolutePath(), folder.mkdirs());

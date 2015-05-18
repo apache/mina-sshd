@@ -44,10 +44,14 @@ public class KeyUtils {
     /**
      * Retrieve the public key fingerprint
      *
-     * @param key the public key
-     * @return the fingerprint
+     * @param key the public key - ignored if {@code null}
+     * @return the fingerprint or {@code null} if no key
      */
     public static String getFingerPrint(PublicKey key) {
+        if (key == null) {
+            return null;
+        }
+
         try {
             Buffer buffer = new ByteArrayBuffer();
             buffer.putRawPublicKey(key);
@@ -56,7 +60,7 @@ public class KeyUtils {
             md5.update(buffer.array(), 0, buffer.wpos());
             byte[] data = md5.digest();
             return BufferUtils.printHex(data, 0, data.length, ':');
-        } catch (Exception e) {
+        } catch(Exception e) {
             return "Unable to compute fingerprint";
         }
     }

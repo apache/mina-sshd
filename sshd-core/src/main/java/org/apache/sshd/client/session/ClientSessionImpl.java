@@ -44,7 +44,6 @@ import org.apache.sshd.client.scp.DefaultScpClient;
 import org.apache.sshd.client.sftp.DefaultSftpClient;
 import org.apache.sshd.client.sftp.SftpFileSystem;
 import org.apache.sshd.client.sftp.SftpFileSystemProvider;
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.ServiceFactory;
@@ -110,6 +109,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         sendKexInit();
     }
 
+    @Override
     protected Service[] getServices() {
         Service[] services;
         if (nextService != null) {
@@ -122,26 +122,32 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         return services;
     }
 
+    @Override
     public ClientFactoryManager getFactoryManager() {
         return (ClientFactoryManager) factoryManager;
     }
 
+    @Override
     public void addPasswordIdentity(String password) {
         identities.add(password);
     }
 
+    @Override
     public void addPublicKeyIdentity(KeyPair key) {
         identities.add(key);
     }
 
+    @Override
     public UserInteraction getUserInteraction() {
         return userInteraction;
     }
 
+    @Override
     public void setUserInteraction(UserInteraction userInteraction) {
         this.userInteraction = userInteraction;
     }
 
+    @Override
     public AuthFuture auth() throws IOException {
         if (username == null) {
             throw new IllegalStateException("No username specified when the session was created");
@@ -196,10 +202,12 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         }
     }
 
+    @Override
     public ClientChannel createChannel(String type) throws IOException {
         return createChannel(type, null);
     }
 
+    @Override
     public ClientChannel createChannel(String type, String subType) throws IOException {
         if (ClientChannel.CHANNEL_SHELL.equals(type)) {
             return createShellChannel();
@@ -212,6 +220,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         }
     }
 
+    @Override
     public ChannelShell createShellChannel() throws IOException {
         if (inCipher instanceof CipherNone || outCipher instanceof CipherNone) {
             throw new IllegalStateException("Interactive channels are not supported with none cipher");
@@ -221,18 +230,21 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         return channel;
     }
 
+    @Override
     public ChannelExec createExecChannel(String command) throws IOException {
         ChannelExec channel = new ChannelExec(command);
         getConnectionService().registerChannel(channel);
         return channel;
     }
 
+    @Override
     public ChannelSubsystem createSubsystemChannel(String subsystem) throws IOException {
         ChannelSubsystem channel = new ChannelSubsystem(subsystem);
         getConnectionService().registerChannel(channel);
         return channel;
     }
 
+    @Override
     public ChannelDirectTcpip createDirectTcpipChannel(SshdSocketAddress local, SshdSocketAddress remote) throws IOException {
         ChannelDirectTcpip channel = new ChannelDirectTcpip(local, remote);
         getConnectionService().registerChannel(channel);
@@ -247,60 +259,74 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         return getService(ConnectionService.class);
     }
 
+    @Override
     public ScpTransferEventListener getScpTransferEventListener() {
         return scpListener;
     }
 
+    @Override
     public void setScpTransferEventListener(ScpTransferEventListener listener) {
         scpListener = listener;
     }
 
+    @Override
     public ScpClient createScpClient() {
         return createScpClient(getScpTransferEventListener());
     }
 
+    @Override
     public ScpClient createScpClient(ScpTransferEventListener listener) {
         return new DefaultScpClient(this, listener);
     }
 
+    @Override
     public SftpClient createSftpClient() throws IOException {
         return new DefaultSftpClient(this);
     }
 
+    @Override
     public FileSystem createSftpFileSystem() throws IOException {
         return new SftpFileSystem(new SftpFileSystemProvider((org.apache.sshd.SshClient) factoryManager), this);
     }
 
+    @Override
     public SshdSocketAddress startLocalPortForwarding(SshdSocketAddress local, SshdSocketAddress remote) throws IOException {
         return getConnectionService().getTcpipForwarder().startLocalPortForwarding(local, remote);
     }
 
+    @Override
     public void stopLocalPortForwarding(SshdSocketAddress local) throws IOException {
         getConnectionService().getTcpipForwarder().stopLocalPortForwarding(local);
     }
 
+    @Override
     public SshdSocketAddress startRemotePortForwarding(SshdSocketAddress remote, SshdSocketAddress local) throws IOException {
         return getConnectionService().getTcpipForwarder().startRemotePortForwarding(remote, local);
     }
 
+    @Override
     public void stopRemotePortForwarding(SshdSocketAddress remote) throws IOException {
         getConnectionService().getTcpipForwarder().stopRemotePortForwarding(remote);
     }
 
+    @Override
     public SshdSocketAddress startDynamicPortForwarding(SshdSocketAddress local) throws IOException {
         return getConnectionService().getTcpipForwarder().startDynamicPortForwarding(local);
     }
 
+    @Override
     public void stopDynamicPortForwarding(SshdSocketAddress local) throws IOException {
         getConnectionService().getTcpipForwarder().stopDynamicPortForwarding(local);
     }
 
+    @Override
     protected void handleMessage(Buffer buffer) throws Exception {
         synchronized (lock) {
             super.handleMessage(buffer);
         }
     }
 
+    @Override
     public int waitFor(int mask, long timeout) {
         long t = 0;
         synchronized (lock) {
@@ -342,6 +368,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         }
     }
 
+    @Override
     protected boolean readIdentification(Buffer buffer) throws IOException {
         serverVersion = doReadIdentification(buffer, false);
         if (serverVersion == null) {
@@ -360,12 +387,14 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         sendIdentification(clientVersion);
     }
 
+    @Override
     protected void sendKexInit() throws IOException {
         String algs = NamedResource.Utils.getNames(getFactoryManager().getSignatureFactories());
         clientProposal = createProposal(algs);
         I_C = sendKexInit(clientProposal);
     }
 
+    @Override
     protected void receiveKexInit(Buffer buffer) throws IOException {
         serverProposal = new String[SshConstants.PROPOSAL_MAX];
         I_S = receiveKexInit(buffer, serverProposal);
@@ -413,6 +442,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         throw new IllegalStateException("Starting services is not supported on the client side");
     }
 
+    @Override
     public Map<Object, Object> getMetadataMap() {
         return metadataMap;
     }

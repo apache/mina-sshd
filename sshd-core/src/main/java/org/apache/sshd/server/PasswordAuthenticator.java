@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.server;
 
+import org.apache.sshd.common.util.AbstractLoggingBean;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
@@ -39,4 +40,49 @@ public interface PasswordAuthenticator {
      */
     boolean authenticate(String username, String password, ServerSession session);
 
+    /**
+     * Returns the same constant result {@code true/false} regardless
+     */
+    public static abstract class StaticPasswordAuthenticator extends AbstractLoggingBean implements PasswordAuthenticator {
+        private final boolean   acceptance;
+
+        protected StaticPasswordAuthenticator(boolean acceptance) {
+            this.acceptance = acceptance;
+        }
+
+        public final boolean isAccepted() {
+            return acceptance;
+        }
+
+        @Override
+        public final boolean authenticate(String username, String password, ServerSession session) {
+            if (log.isDebugEnabled()) {
+                log.debug("authenticate({}[{}]: {}", username, session, Boolean.valueOf(isAccepted()));
+            }
+            
+            return isAccepted();
+        }
+    }
+
+    /**
+     * Accepts all authentication attempts
+     */
+    public static final class AcceptAllPasswordAuthenticator extends StaticPasswordAuthenticator {
+        public static final AcceptAllPasswordAuthenticator INSTANCE = new AcceptAllPasswordAuthenticator();
+
+        private AcceptAllPasswordAuthenticator() {
+            super(true);
+        }
+    }
+
+    /**
+     * Rejects all authentication attempts
+     */
+    public static final class RejectAllPasswordAuthenticator extends StaticPasswordAuthenticator {
+        public static final RejectAllPasswordAuthenticator INSTANCE = new RejectAllPasswordAuthenticator();
+
+        private RejectAllPasswordAuthenticator() {
+            super(false);
+        }
+    }
 }
