@@ -63,13 +63,13 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.config.SshConfigFileReader;
 import org.apache.sshd.common.future.SshFutureListener;
-import org.apache.sshd.common.io.DefaultIoServiceFactoryFactory;
 import org.apache.sshd.common.io.IoConnectFuture;
 import org.apache.sshd.common.io.IoConnector;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.common.session.AbstractSession;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.SecurityUtils;
-import org.apache.sshd.common.util.ThreadUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
 import org.apache.sshd.common.util.io.NoCloseOutputStream;
 import org.bouncycastle.openssl.PasswordFinder;
@@ -164,37 +164,17 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         this.userAuthFactories = userAuthFactories;
     }
 
+    @Override
     protected void checkConfig() {
-        if (getKeyExchangeFactories() == null) {
-            throw new IllegalArgumentException("KeyExchangeFactories not set");
-        }
-        if (getScheduledExecutorService() == null) {
-            setScheduledExecutorService(
-                    ThreadUtils.newSingleThreadScheduledExecutor(this.toString() + "-timer"),
-                    true);
-        }
-        if (getCipherFactories() == null) {
-            throw new IllegalArgumentException("CipherFactories not set");
-        }
-        if (getCompressionFactories() == null) {
-            throw new IllegalArgumentException("CompressionFactories not set");
-        }
-        if (getMacFactories() == null) {
-            throw new IllegalArgumentException("MacFactories not set");
-        }
-        if (getRandomFactory() == null) {
-            throw new IllegalArgumentException("RandomFactory not set");
-        }
-        if (getTcpipForwarderFactory() == null) {
-            throw new IllegalArgumentException("TcpipForwarderFactory not set");
-        }
-        if (getServerKeyVerifier() == null) {
-            throw new IllegalArgumentException("ServerKeyVerifier not set");
-        }
+        super.checkConfig();
+        
+        ValidateUtils.checkNotNull(getTcpipForwarderFactory(), "TcpipForwarderFactory not set", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkNotNull(getServerKeyVerifier(), "ServerKeyVerifier not set", GenericUtils.EMPTY_OBJECT_ARRAY);
+
         // Register the additional agent forwarding channel if needed
         if (getAgentFactory() != null) {
             List<NamedFactory<Channel>> factories = getChannelFactories();
-            if (factories == null) {
+            if (GenericUtils.isEmpty(factories)) {
                 factories = new ArrayList<NamedFactory<Channel>>();
             } else {
                 factories = new ArrayList<NamedFactory<Channel>>(factories);
@@ -202,16 +182,15 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             factories.add(getAgentFactory().getChannelForwardingFactory());
             setChannelFactories(factories);
         }
-        if (getIoServiceFactoryFactory() == null) {
-            setIoServiceFactoryFactory(new DefaultIoServiceFactoryFactory());
-        }
-        if (getServiceFactories() == null) {
+
+        if (GenericUtils.isEmpty(getServiceFactories())) {
             setServiceFactories(Arrays.asList(
                     new ClientUserAuthService.Factory(),
                     new ClientConnectionService.Factory()
             ));
         }
-        if (getUserAuthFactories() == null) {
+
+        if (GenericUtils.isEmpty(getUserAuthFactories())) {
             setUserAuthFactories(Arrays.asList(
                     UserAuthPublicKey.UserAuthPublicKeyFactory.INSTANCE,
                     UserAuthKeyboardInteractive.UserAuthKeyboardInteractiveFactory.INSTANCE,
@@ -248,6 +227,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     protected Closeable getInnerCloseable() {
         return builder()
                 .run(new Runnable() {
+                    @SuppressWarnings("synthetic-access")
                     @Override
                     public void run() {
                         removeSessionTimeout(sessionFactory);
@@ -255,6 +235,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                 })
                 .sequential(connector, ioServiceFactory)
                 .run(new Runnable() {
+                    @SuppressWarnings("synthetic-access")
                     @Override
                     public void run() {
                         connector = null;

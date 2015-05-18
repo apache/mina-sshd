@@ -36,16 +36,16 @@ import org.apache.sshd.common.ForwardingFilter;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.Session;
 import org.apache.sshd.common.SshdSocketAddress;
-import org.apache.sshd.common.io.DefaultIoServiceFactoryFactory;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.mina.MinaServiceFactory;
 import org.apache.sshd.common.io.nio2.Nio2ServiceFactory;
 import org.apache.sshd.common.session.AbstractSession;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.SecurityUtils;
-import org.apache.sshd.common.util.ThreadUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.CommandFactory;
 import org.apache.sshd.server.PasswordAuthenticator;
@@ -211,14 +211,13 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         this.tcpipForwardingFilter = forwardingFilter;
     }
 
+    @Override
     protected void checkConfig() {
-        if (getPort() < 0) {
-            throw new IllegalArgumentException("Bad port number: " + port);
-        }
-        if (getKeyExchangeFactories() == null) {
-            throw new IllegalArgumentException("KeyExchangeFactories not set");
-        }
-        if (getUserAuthFactories() == null) {
+        super.checkConfig();
+
+        ValidateUtils.checkTrue(getPort() >= 0 /* zero means not set yet */, "Bad port number: %d", Integer.valueOf(getPort()));
+
+        if (GenericUtils.isEmpty(getUserAuthFactories())) {
             List<NamedFactory<UserAuth>> factories = new ArrayList<NamedFactory<UserAuth>>();
             if (getPasswordAuthenticator() != null) {
                 factories.add(UserAuthPassword.UserAuthPasswordFactory.INSTANCE);
@@ -230,42 +229,16 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
             if (getGSSAuthenticator() != null) {
               factories.add(UserAuthGSS.UserAuthGSSFactory.INSTANCE);
             }
-            if (factories.size() > 0) {
-                setUserAuthFactories(factories);
-            } else {
-                throw new IllegalArgumentException("UserAuthFactories not set");
-            }
+            
+            ValidateUtils.checkTrue(factories.size() > 0, "UserAuthFactories not set", GenericUtils.EMPTY_OBJECT_ARRAY); 
+            setUserAuthFactories(factories);
         }
-        if (getScheduledExecutorService() == null) {
-            setScheduledExecutorService(
-                    ThreadUtils.newSingleThreadScheduledExecutor(this.toString() + "-timer"),
-                    true);
-        }
-        if (getCipherFactories() == null) {
-            throw new IllegalArgumentException("CipherFactories not set");
-        }
-        if (getCompressionFactories() == null) {
-            throw new IllegalArgumentException("CompressionFactories not set");
-        }
-        if (getMacFactories() == null) {
-            throw new IllegalArgumentException("MacFactories not set");
-        }
-        if (getChannelFactories() == null) {
-            throw new IllegalArgumentException("ChannelFactories not set");
-        }
-        if (getRandomFactory() == null) {
-            throw new IllegalArgumentException("RandomFactory not set");
-        }
-        if (getKeyPairProvider() == null) {
-            throw new IllegalArgumentException("HostKeyProvider not set");
-        }
-        if (getFileSystemFactory() == null) {
-            throw new IllegalArgumentException("FileSystemFactory not set");
-        }
-        if (getIoServiceFactoryFactory() == null) {
-            setIoServiceFactoryFactory(new DefaultIoServiceFactoryFactory());
-        }
-        if (getServiceFactories() == null) {
+
+        ValidateUtils.checkNotNullAndNotEmpty(getChannelFactories(), "ChannelFactories not set", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkNotNull(getKeyPairProvider(), "HostKeyProvider not set", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkNotNull(getFileSystemFactory(), "FileSystemFactory not set", GenericUtils.EMPTY_OBJECT_ARRAY);
+
+        if (GenericUtils.isEmpty(getServiceFactories())) {
             setServiceFactories(Arrays.asList(
                     new ServerUserAuthService.Factory(),
                     new ServerConnectionService.Factory()
@@ -288,14 +261,24 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
 
         setupSessionTimeout(sessionFactory);
 
-        if (host != null) {
-            String[] hosts = host.split(",");
+        String  hostsList=getHost();
+        if (!GenericUtils.isEmpty(hostsList)) {
+            String[] hosts = GenericUtils.split(hostsList, ',');
             for (String host : hosts) {
+                if (log.isDebugEnabled()) {
+                    log.debug("start() - resolve bind host={}", host);
+                }
+
                 InetAddress[] inetAddresses = InetAddress.getAllByName(host);
                 for (InetAddress inetAddress : inetAddresses) {
+                    if (log.isTraceEnabled()) {
+                        log.trace("start() - bind host={} / {}", host, inetAddress);
+                    }
+
                     acceptor.bind(new InetSocketAddress(inetAddress, port));
                     if (port == 0) {
                         port = ((InetSocketAddress) acceptor.getBoundAddresses().iterator().next()).getPort();
+                        log.info("start() listen on auto-allocated port=" + port);
                     }
                 }
             }
@@ -303,6 +286,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
             acceptor.bind(new InetSocketAddress(port));
             if (port == 0) {
                 port = ((InetSocketAddress) acceptor.getBoundAddresses().iterator().next()).getPort();
+                log.info("start() listen on auto-allocated port=" + port);
             }
         }
     }
@@ -326,6 +310,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     protected Closeable getInnerCloseable() {
         return builder()
                 .run(new Runnable() {
+                    @SuppressWarnings("synthetic-access")
                     @Override
                     public void run() {
                         removeSessionTimeout(sessionFactory);
@@ -333,6 +318,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
                 })
                 .sequential(acceptor, ioServiceFactory)
                 .run(new Runnable() {
+                    @SuppressWarnings("synthetic-access")
                     @Override
                     public void run() {
                         acceptor = null;

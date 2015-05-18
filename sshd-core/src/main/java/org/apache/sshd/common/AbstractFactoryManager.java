@@ -30,12 +30,16 @@ import java.util.concurrent.TimeUnit;
 import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.common.compression.Compression;
 import org.apache.sshd.common.file.FileSystemFactory;
+import org.apache.sshd.common.io.DefaultIoServiceFactoryFactory;
 import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.io.IoServiceFactoryFactory;
 import org.apache.sshd.common.session.AbstractSessionFactory;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.SessionTimeoutListener;
 import org.apache.sshd.common.util.CloseableUtils;
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ThreadUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * TODO Add javadoc
@@ -303,5 +307,25 @@ public abstract class AbstractFactoryManager extends CloseableUtils.AbstractInne
             sessionFactory.removeListener(sessionTimeoutListener);
         }
         sessionTimeoutListener = null;
+    }
+    
+    protected void checkConfig() {
+        ValidateUtils.checkNotNullAndNotEmpty(getKeyExchangeFactories(), "KeyExchangeFactories not set", GenericUtils.EMPTY_OBJECT_ARRAY);
+
+        if (getScheduledExecutorService() == null) {
+            setScheduledExecutorService(
+                    ThreadUtils.newSingleThreadScheduledExecutor(this.toString() + "-timer"),
+                    true);
+        }
+
+        ValidateUtils.checkNotNullAndNotEmpty(getCipherFactories(), "CipherFactories not set", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkNotNullAndNotEmpty(getCompressionFactories(), "CompressionFactories not set", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkNotNullAndNotEmpty(getMacFactories(), "MacFactories not set", GenericUtils.EMPTY_OBJECT_ARRAY);
+
+        ValidateUtils.checkNotNull(getRandomFactory(), "RandomFactory not set", GenericUtils.EMPTY_OBJECT_ARRAY);
+
+        if (getIoServiceFactoryFactory() == null) {
+            setIoServiceFactoryFactory(new DefaultIoServiceFactoryFactory());
+        }
     }
 }
