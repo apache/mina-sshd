@@ -20,8 +20,6 @@ package org.apache.sshd;
 
 import static org.apache.sshd.util.Utils.createTestKeyPairProvider;
 import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assume.assumeThat;
 
 import java.io.ByteArrayOutputStream;
@@ -41,14 +39,14 @@ import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.Environment;
-import org.apache.sshd.util.BaseTest;
+import org.apache.sshd.util.BaseTestSupport;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.BogusPublickeyAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.Utils;
 import org.junit.Test;
 
-public class AgentTest extends BaseTest {
+public class AgentTest extends BaseTestSupport {
 
     @Test
     public void testAgent() throws Exception {

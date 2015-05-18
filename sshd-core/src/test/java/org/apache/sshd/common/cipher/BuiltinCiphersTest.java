@@ -33,15 +33,14 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.cipher.BuiltinCiphers.ParseResult;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.util.BaseTest;
-import org.junit.Assert;
+import org.apache.sshd.util.BaseTestSupport;
 import org.junit.Test;
 import org.mockito.Mockito;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class BuiltinCiphersTest extends BaseTest {
+public class BuiltinCiphersTest extends BaseTestSupport {
     public BuiltinCiphersTest() {
         super();
     }
@@ -53,7 +52,7 @@ public class BuiltinCiphersTest extends BaseTest {
 
             for (int index=0; index < name.length(); index++) {
                 BuiltinCiphers  actual=BuiltinCiphers.fromString(name);
-                Assert.assertSame(name + " - mismatched enum values", expected, actual);
+                assertSame(name + " - mismatched enum values", expected, actual);
                 name = shuffleCase(name);   // prepare for next time
             }
         }
@@ -66,7 +65,7 @@ public class BuiltinCiphersTest extends BaseTest {
             
             for (int index=0; index < name.length(); index++) {
                 BuiltinCiphers  actual=BuiltinCiphers.fromFactoryName(name);
-                Assert.assertSame(name + " - mismatched enum values", expected, actual);
+                assertSame(name + " - mismatched enum values", expected, actual);
                 name = shuffleCase(name);   // prepare for next time
             }
         }
@@ -81,10 +80,10 @@ public class BuiltinCiphersTest extends BaseTest {
             }
             
             NamedFactory<Cipher>    factory=expected;
-            Assert.assertEquals(expected.name() + " - mismatched factory names", expected.getName(), factory.getName());
+            assertEquals(expected.name() + " - mismatched factory names", expected.getName(), factory.getName());
 
             BuiltinCiphers  actual=BuiltinCiphers.fromFactory(factory);
-            Assert.assertSame(expected.getName() + " - mismatched enum values", expected, actual);
+            assertSame(expected.getName() + " - mismatched enum values", expected, actual);
         }
     }
 
@@ -95,11 +94,11 @@ public class BuiltinCiphersTest extends BaseTest {
         for (Field f : fields) {
             String          name=(String) f.get(null);
             BuiltinCiphers  value=BuiltinCiphers.fromFactoryName(name);
-            Assert.assertNotNull("No match found for " + name, value);
-            Assert.assertTrue(name + " re-specified", avail.add(value));
+            assertNotNull("No match found for " + name, value);
+            assertTrue(name + " re-specified", avail.add(value));
         }
         
-        Assert.assertEquals("Incomplete coverage", BuiltinCiphers.VALUES, avail);
+        assertEquals("Incomplete coverage", BuiltinCiphers.VALUES, avail);
     }
 
     @Test
@@ -157,7 +156,7 @@ public class BuiltinCiphersTest extends BaseTest {
         for (NamedFactory<Cipher> expected : BuiltinCiphers.VALUES) {
             String                  name=expected.getName();
             NamedFactory<Cipher>    actual=BuiltinCiphers.resolveFactory(name);
-            Assert.assertSame(name, expected, actual);
+            assertSame(name, expected, actual);
         }
     }
 
@@ -166,7 +165,7 @@ public class BuiltinCiphersTest extends BaseTest {
         for (CipherFactory expected : BuiltinCiphers.VALUES) {
             try {
                 BuiltinCiphers.registerExtension(expected);
-                Assert.fail("Unexpected sucess for " + expected.getName());
+                fail("Unexpected sucess for " + expected.getName());
             } catch(IllegalArgumentException e) {
                 // expected - ignored
             }
@@ -182,7 +181,7 @@ public class BuiltinCiphersTest extends BaseTest {
         try {
             for (int index=1; index <= Byte.SIZE; index++) {
                 BuiltinCiphers.registerExtension(expected);
-                Assert.assertEquals("Unexpected success at attempt #" + index, 1, index);
+                assertEquals("Unexpected success at attempt #" + index, 1, index);
             }
         } finally {
             BuiltinCiphers.unregisterExtension(name);
@@ -196,27 +195,27 @@ public class BuiltinCiphersTest extends BaseTest {
 
         String  name=expected.getName();
         try {
-            Assert.assertNull("Extension already registered", BuiltinCiphers.resolveFactory(name));
+            assertNull("Extension already registered", BuiltinCiphers.resolveFactory(name));
             BuiltinCiphers.registerExtension(expected);
 
             NamedFactory<Cipher>    actual=BuiltinCiphers.resolveFactory(name);
-            Assert.assertSame("Mismatched resolved instance", expected, actual);
+            assertSame("Mismatched resolved instance", expected, actual);
         } finally {
             NamedFactory<Cipher>    actual=BuiltinCiphers.unregisterExtension(name);
-            Assert.assertSame("Mismatched unregistered instance", expected, actual);
-            Assert.assertNull("Extension not un-registered", BuiltinCiphers.resolveFactory(name));
+            assertSame("Mismatched unregistered instance", expected, actual);
+            assertNull("Extension not un-registered", BuiltinCiphers.resolveFactory(name));
         }
     }
 
     @Test
     public void testFac2NamedTransformer() {
-        Assert.assertNull("Invalid null transformation", CipherFactory.FAC2NAMED.transform(null));
+        assertNull("Invalid null transformation", CipherFactory.FAC2NAMED.transform(null));
         for (CipherFactory expected : BuiltinCiphers.VALUES) {
             NamedFactory<Cipher>   actual=CipherFactory.FAC2NAMED.transform(expected);
-            Assert.assertSame("Mismatched transformed instance for " + expected.getName(), expected, actual);
+            assertSame("Mismatched transformed instance for " + expected.getName(), expected, actual);
         }
         
         CipherFactory   mock=Mockito.mock(CipherFactory.class);
-        Assert.assertSame("Mismatched transformed mocked instance", mock, CipherFactory.FAC2NAMED.transform(mock));
+        assertSame("Mismatched transformed mocked instance", mock, CipherFactory.FAC2NAMED.transform(mock));
     }
 }

@@ -20,11 +20,13 @@ package org.apache.sshd;
 
 import java.io.ByteArrayOutputStream;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.ClientFactoryManager;
+import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.server.Command;
-import org.apache.sshd.server.ServerFactoryManager;
-import org.apache.sshd.util.BaseTest;
+import org.apache.sshd.util.BaseTestSupport;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.BogusPublickeyAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
@@ -33,14 +35,12 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-
 /**
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class KeepAliveTest extends BaseTest {
+public class KeepAliveTest extends BaseTestSupport {
 
     private SshServer sshd;
     private int port;
@@ -52,7 +52,7 @@ public class KeepAliveTest extends BaseTest {
     @Before
     public void setUp() throws Exception {
         sshd = SshServer.setUpDefaultServer();
-        sshd.getProperties().put(ServerFactoryManager.IDLE_TIMEOUT, Integer.toString(timeout));
+        sshd.getProperties().put(FactoryManager.IDLE_TIMEOUT, Integer.toString(timeout));
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setShellFactory(new TestEchoShellFactory());
         sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
@@ -72,66 +72,82 @@ public class KeepAliveTest extends BaseTest {
     public void testClient() throws Exception {
         SshClient client = SshClient.setUpDefaultClient();
         client.start();
-        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
-        session.addPasswordIdentity("smx");
-        session.auth().verify();
-        ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
-
-        int state = channel.waitFor(ClientChannel.CLOSED, wait);
-        assertEquals("Wrong channel state", ClientChannel.CLOSED | ClientChannel.EOF, state);
-
-        channel.close(false);
-        client.stop();
+        
+        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
+            session.addPasswordIdentity("smx");
+            session.auth().verify(5L, TimeUnit.SECONDS);
+            
+            try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL)) {
+                int state = channel.waitFor(ClientChannel.CLOSED, wait);
+                assertEquals("Wrong channel state", ClientChannel.CLOSED | ClientChannel.EOF, state);
+        
+                channel.close(false);
+            }
+        } finally {
+            client.stop();
+        }
     }
 
     @Test
     public void testClientNew() throws Exception {
         SshClient client = SshClient.setUpDefaultClient();
         client.start();
-        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
-        session.addPasswordIdentity("smx");
-        session.auth().verify();
-        ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
-
-        int state = channel.waitFor(ClientChannel.CLOSED, wait);
-        assertEquals("Wrong channel state", ClientChannel.CLOSED | ClientChannel.EOF, state);
-
-        channel.close(false);
-        client.stop();
+        
+        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
+            session.addPasswordIdentity("smx");
+            session.auth().verify(5L, TimeUnit.SECONDS);
+        
+            try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL)) {
+                int state = channel.waitFor(ClientChannel.CLOSED, wait);
+                assertEquals("Wrong channel state", ClientChannel.CLOSED | ClientChannel.EOF, state);
+        
+                channel.close(false);
+            }
+        } finally {
+            client.stop();
+        }
     }
 
     @Test
     public void testClientWithHeartBeat() throws Exception {
         SshClient client = SshClient.setUpDefaultClient();
-        client.getProperties().put(ClientFactoryManager.HEARTBEAT_INTERVAL, Integer.toString(heartbeat));
+        FactoryManagerUtils.updateProperty(client, ClientFactoryManager.HEARTBEAT_INTERVAL, heartbeat);
         client.start();
-        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
-        session.addPasswordIdentity("smx");
-        session.auth().verify();
-        ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
 
-        int state = channel.waitFor(ClientChannel.CLOSED, wait);
-        assertEquals("Wrong channel state", ClientChannel.TIMEOUT, state);
+        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
+            session.addPasswordIdentity("smx");
+            session.auth().verify(5L, TimeUnit.SECONDS);
 
-        channel.close(false);
-        client.stop();
+            try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL)) {
+                int state = channel.waitFor(ClientChannel.CLOSED, wait);
+                assertEquals("Wrong channel state", ClientChannel.TIMEOUT, state);
+    
+                channel.close(false);
+            }
+        } finally {
+            client.stop();
+        }
     }
 
     @Test
     public void testClientWithHeartBeatNew() throws Exception {
         SshClient client = SshClient.setUpDefaultClient();
-        client.getProperties().put(ClientFactoryManager.HEARTBEAT_INTERVAL, Integer.toString(heartbeat));
+        FactoryManagerUtils.updateProperty(client, ClientFactoryManager.HEARTBEAT_INTERVAL, heartbeat);
         client.start();
-        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
-        session.addPasswordIdentity("smx");
-        session.auth().verify();
-        ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
 
-        int state = channel.waitFor(ClientChannel.CLOSED, wait);
-        assertEquals("Wrong channel state", ClientChannel.TIMEOUT, state);
-
-        channel.close(false);
-        client.stop();
+        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
+            session.addPasswordIdentity("smx");
+            session.auth().verify(5L, TimeUnit.SECONDS);
+            
+            try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL)) {
+                int state = channel.waitFor(ClientChannel.CLOSED, wait);
+                assertEquals("Wrong channel state", ClientChannel.TIMEOUT, state);
+        
+                channel.close(false);
+            }
+        } finally {
+            client.stop();
+        }
     }
 
     @Test
@@ -140,23 +156,28 @@ public class KeepAliveTest extends BaseTest {
 
         SshClient client = SshClient.setUpDefaultClient();
         client.start();
-        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
-        session.addPasswordIdentity("smx");
-        session.auth().verify();
-        ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        ByteArrayOutputStream err = new ByteArrayOutputStream();
-        channel.setOut(out);
-        channel.setErr(err);
-        channel.open().await();
+        
+        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
+            session.addPasswordIdentity("smx");
+            session.auth().verify(5L, TimeUnit.SECONDS);
 
+            try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                ByteArrayOutputStream err = new ByteArrayOutputStream()) {
 
-        TestEchoShellFactory.TestEchoShell.latch.await();
-        int state = channel.waitFor(ClientChannel.CLOSED, wait);
-        assertEquals("Wrong channel state", ClientChannel.CLOSED | ClientChannel.EOF | ClientChannel.OPENED, state);
-
-        channel.close(false);
-        client.stop();
+                channel.setOut(out);
+                channel.setErr(err);
+                channel.open().await();
+        
+                assertTrue("Latch time out", TestEchoShellFactory.TestEchoShell.latch.await(10L, TimeUnit.SECONDS));
+                int state = channel.waitFor(ClientChannel.CLOSED, wait);
+                assertEquals("Wrong channel state", ClientChannel.CLOSED | ClientChannel.EOF | ClientChannel.OPENED, state);
+    
+                channel.close(false);
+            }
+        } finally {
+            client.stop();
+        }
     }
 
     @Test
@@ -165,31 +186,36 @@ public class KeepAliveTest extends BaseTest {
 
         SshClient client = SshClient.setUpDefaultClient();
         client.start();
-        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
-        session.addPasswordIdentity("smx");
-        session.auth().verify();
-        ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        ByteArrayOutputStream err = new ByteArrayOutputStream();
-        channel.setOut(out);
-        channel.setErr(err);
-        channel.open().await();
 
+        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
+            session.addPasswordIdentity("smx");
+            session.auth().verify(5L, TimeUnit.SECONDS);
+            
+            try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                ByteArrayOutputStream err = new ByteArrayOutputStream()) {
 
-        TestEchoShellFactory.TestEchoShell.latch.await();
-        int state = channel.waitFor(ClientChannel.CLOSED, wait);
-        assertEquals("Wrong channel state", ClientChannel.CLOSED | ClientChannel.EOF | ClientChannel.OPENED, state);
-
-        channel.close(false);
-        client.stop();
+                channel.setOut(out);
+                channel.setErr(err);
+                channel.open().await();
+    
+                assertTrue("Latch time out", TestEchoShellFactory.TestEchoShell.latch.await(10L, TimeUnit.SECONDS));
+                int state = channel.waitFor(ClientChannel.CLOSED, wait);
+                assertEquals("Wrong channel state", ClientChannel.CLOSED | ClientChannel.EOF | ClientChannel.OPENED, state);
+        
+                channel.close(false);
+            }
+        } finally {
+            client.stop();
+        }
     }
-
 
     public static class TestEchoShellFactory extends EchoShellFactory {
         @Override
         public Command create() {
             return new TestEchoShell();
         }
+
         public static class TestEchoShell extends EchoShell {
 
             public static CountDownLatch latch;
@@ -203,5 +229,4 @@ public class KeepAliveTest extends BaseTest {
             }
         }
     }
-
 }

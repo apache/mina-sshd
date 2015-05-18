@@ -21,15 +21,13 @@ package org.apache.sshd.server.shell;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 
-import org.apache.sshd.util.BaseTest;
+import org.apache.sshd.util.BaseTestSupport;
 import org.apache.sshd.util.BogusEnvironment;
 import org.apache.sshd.util.BogusExitCallback;
 import org.apache.sshd.util.BogusInvertedShell;
 import org.junit.Test;
 
-import static junit.framework.Assert.assertEquals;
-
-public class InvertedShellWrapperTest extends BaseTest {
+public class InvertedShellWrapperTest extends BaseTestSupport {
 
     @Test
     public void testStreamsAreFlushedBeforeClosing() throws Exception {

@@ -19,8 +19,6 @@
 package org.apache.sshd;
 
 import static org.apache.sshd.util.Utils.getFreePort;
-import static org.junit.Assert.assertEquals;
-
 import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -35,7 +33,7 @@ import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 import org.apache.sshd.client.channel.ChannelDirectTcpip;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.SshdSocketAddress;
-import org.apache.sshd.util.BaseTest;
+import org.apache.sshd.util.BaseTestSupport;
 import org.apache.sshd.util.BogusForwardingFilter;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
@@ -43,7 +41,6 @@ import org.apache.sshd.util.JSchLogger;
 import org.apache.sshd.util.SimpleUserInfo;
 import org.apache.sshd.util.Utils;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.LoggerFactory;
@@ -55,7 +52,7 @@ import com.jcraft.jsch.Session;
 /**
  * Port forwarding tests
  */
-public class PortForwardingTest extends BaseTest {
+public class PortForwardingTest extends BaseTestSupport {
 
     private final org.slf4j.Logger log = LoggerFactory.getLogger(getClass());
 
@@ -331,10 +328,10 @@ public class PortForwardingTest extends BaseTest {
         fSocket.setAccessible(true);
         
         try(Socket socket = (Socket) fSocket.get(session)) {
-            Assert.assertTrue("socket is not connected", socket.isConnected());
-            Assert.assertFalse("socket should not be closed", socket.isClosed());
+            assertTrue("socket is not connected", socket.isConnected());
+            assertFalse("socket should not be closed", socket.isClosed());
             socket.close();
-            Assert.assertTrue("socket has not closed", socket.isClosed());
+            assertTrue("socket has not closed", socket.isClosed());
         }
     }
 

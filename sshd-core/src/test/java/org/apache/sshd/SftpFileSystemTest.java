@@ -18,10 +18,6 @@
  */
 package org.apache.sshd;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -51,16 +47,15 @@ import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.command.ScpCommandFactory;
 import org.apache.sshd.server.sftp.SftpSubsystemFactory;
-import org.apache.sshd.util.BaseTest;
+import org.apache.sshd.util.BaseTestSupport;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.Utils;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class SftpFileSystemTest extends BaseTest {
+public class SftpFileSystemTest extends BaseTestSupport {
 
     private SshServer sshd;
     private int port;
@@ -187,7 +182,7 @@ public class SftpFileSystemTest extends BaseTest {
             Files.write(file, "Hello world\n".getBytes());
     
             Map<String, Object> attrs = Files.readAttributes(file, "posix:*");
-            Assert.assertNotNull("NO attributes read for " + file, attrs);
+            assertNotNull("NO attributes read for " + file, attrs);
     
             Files.setAttribute(file, "basic:size", Long.valueOf(2l));
             Files.setAttribute(file, "posix:permissions", PosixFilePermissions.fromString("rwxr-----"));

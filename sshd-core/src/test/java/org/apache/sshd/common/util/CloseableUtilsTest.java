@@ -28,14 +28,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultCloseFuture;
-import org.apache.sshd.util.BaseTest;
-import org.junit.Assert;
+import org.apache.sshd.util.BaseTestSupport;
 import org.junit.Test;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class CloseableUtilsTest extends BaseTest {
+public class CloseableUtilsTest extends BaseTestSupport {
     public CloseableUtilsTest() {
         super();
     }
@@ -43,15 +42,18 @@ public class CloseableUtilsTest extends BaseTest {
     @Test
     public void testCloseImmediateNotCalledIfAlreadyClosed() throws IOException {
         Closeable   closeable=new CloseableUtils.IoBaseCloseable() {
+                @Override
                 public CloseFuture close(boolean immediately) {
-                    Assert.fail("Unexpected call to close(" + immediately + ")");
+                    fail("Unexpected call to close(" + immediately + ")");
                     return null;
                 }
     
+                @Override
                 public boolean isClosed() {
                     return true;
                 }
     
+                @Override
                 public boolean isClosing() {
                     return false;
                 }
@@ -62,15 +64,18 @@ public class CloseableUtilsTest extends BaseTest {
     @Test
     public void testCloseImmediateNotCalledIfIsClosing() throws IOException {
         Closeable   closeable=new CloseableUtils.IoBaseCloseable() {
+                @Override
                 public CloseFuture close(boolean immediately) {
-                    Assert.fail("Unexpected call to close(" + immediately + ")");
+                    fail("Unexpected call to close(" + immediately + ")");
                     return null;
                 }
     
+                @Override
                 public boolean isClosed() {
                     return false;
                 }
     
+                @Override
                 public boolean isClosing() {
                     return true;
                 }
@@ -83,16 +88,19 @@ public class CloseableUtilsTest extends BaseTest {
         final DefaultCloseFuture    future=new DefaultCloseFuture(this);
         final AtomicInteger         callsCount=new AtomicInteger(0);
         final Closeable   closeable=new CloseableUtils.IoBaseCloseable() {
+                @Override
                 public CloseFuture close(boolean immediately) {
-                    Assert.assertTrue("Closure is not immediate", immediately);
-                    Assert.assertEquals("Multiple close immediate calls", 1, callsCount.incrementAndGet());
+                    assertTrue("Closure is not immediate", immediately);
+                    assertEquals("Multiple close immediate calls", 1, callsCount.incrementAndGet());
                     return future;
                 }
     
+                @Override
                 public boolean isClosed() {
                     return false;
                 }
     
+                @Override
                 public boolean isClosing() {
                     return false;
                 }
@@ -100,6 +108,7 @@ public class CloseableUtilsTest extends BaseTest {
        ExecutorService  service=ThreadUtils.newSingleThreadExecutor(getCurrentTestName());
        try {
            Future<?>    task=service.submit(new Runnable() {
+                    @Override
                     public void run() {
                         try {
                             closeable.close();
@@ -110,7 +119,7 @@ public class CloseableUtilsTest extends BaseTest {
                });
            future.setClosed();  // signal close complete
            task.get(5L, TimeUnit.SECONDS);  // make sure #await call terminated
-           Assert.assertEquals("Close immediate not called", 1, callsCount.get());
+           assertEquals("Close immediate not called", 1, callsCount.get());
        } finally {
            service.shutdownNow();
        }

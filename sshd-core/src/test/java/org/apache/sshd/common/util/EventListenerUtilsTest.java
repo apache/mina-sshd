@@ -23,14 +23,13 @@ import java.util.ArrayList;
 import java.util.EventListener;
 import java.util.List;
 
-import org.apache.sshd.util.BaseTest;
-import org.junit.Assert;
+import org.apache.sshd.util.BaseTestSupport;
 import org.junit.Test;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class EventListenerUtilsTest extends BaseTest {
+public class EventListenerUtilsTest extends BaseTestSupport {
     public EventListenerUtilsTest() {
         super();
     }
@@ -51,8 +50,8 @@ public class EventListenerUtilsTest extends BaseTest {
 
         for (int index = 0; index < impls.size(); index++) {
             ProxyListenerImpl l = impls.get(index);
-            Assert.assertSame("Mismatched string at listener #" + index, expStr, l.getStringValue());
-            Assert.assertSame("Mismatched number at listener #" + index, expNum, l.getNumberValue());
+            assertSame("Mismatched string at listener #" + index, expStr, l.getStringValue());
+            assertSame("Mismatched number at listener #" + index, expNum, l.getNumberValue());
         }
     }
 
@@ -70,6 +69,7 @@ public class EventListenerUtilsTest extends BaseTest {
             return strValue;
         }
 
+        @Override
         public void callMeWithString(String s) {
             strValue = s;
         }
@@ -78,6 +78,7 @@ public class EventListenerUtilsTest extends BaseTest {
             return numValue;
         }
 
+        @Override
         public void callMeWithNumber(Number n) {
             numValue = n;
         }

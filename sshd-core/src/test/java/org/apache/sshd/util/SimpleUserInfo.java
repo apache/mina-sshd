@@ -34,29 +34,37 @@ public class SimpleUserInfo implements UserInfo, UIKeyboardInteractive {
         this.password = password;
     }
 
+    @Override
     public String getPassphrase() {
         return null;
     }
 
+    @Override
     public String getPassword() {
         return password;
     }
 
+    @Override
     public boolean promptPassword(String message) {
         return true;
     }
 
+    @Override
     public boolean promptPassphrase(String message) {
         return false;
     }
 
+    @Override
     public boolean promptYesNo(String message) {
         return true;
     }
 
+    @Override
     public void showMessage(String message) {
+        // ignored
     }
 
+    @Override
     public String[] promptKeyboardInteractive(String destination, String name, String instruction, String[] prompt, boolean[] echo) {
         return new String[] { password };
     }

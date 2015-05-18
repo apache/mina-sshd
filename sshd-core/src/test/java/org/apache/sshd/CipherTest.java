@@ -28,7 +28,7 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.Random;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.random.BouncyCastleRandom;
-import org.apache.sshd.util.BaseTest;
+import org.apache.sshd.util.BaseTestSupport;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.JSchLogger;
@@ -37,14 +37,12 @@ import org.apache.sshd.util.Utils;
 import org.junit.After;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-
 /**
  * Test Cipher algorithms.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class CipherTest extends BaseTest {
+public class CipherTest extends BaseTestSupport {
 
     private SshServer sshd;
     private int port;
@@ -164,7 +162,7 @@ public class CipherTest extends BaseTest {
 
     static boolean checkCipher(String cipher){
         try{
-            Class c=Class.forName(cipher);
+            Class<?> c=Class.forName(cipher);
             com.jcraft.jsch.Cipher _c = (com.jcraft.jsch.Cipher)(c.newInstance());
             _c.init(com.jcraft.jsch.Cipher.ENCRYPT_MODE,
                     new byte[_c.getBlockSize()],

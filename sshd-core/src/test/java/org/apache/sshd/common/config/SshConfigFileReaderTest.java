@@ -44,14 +44,13 @@ import org.apache.sshd.common.kex.BuiltinDHFactories;
 import org.apache.sshd.common.mac.BuiltinMacs;
 import org.apache.sshd.common.signature.BuiltinSignatures;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.util.BaseTest;
-import org.junit.Assert;
+import org.apache.sshd.util.BaseTestSupport;
 import org.junit.Test;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SshConfigFileReaderTest extends BaseTest {
+public class SshConfigFileReaderTest extends BaseTestSupport {
     public SshConfigFileReaderTest() {
         super();
     }
@@ -59,18 +58,18 @@ public class SshConfigFileReaderTest extends BaseTest {
     @Test
     public void testReadFromURL() throws IOException {
         URL url=getClass().getResource("sshd_config");
-        Assert.assertNotNull("Cannot locate test file", url);
+        assertNotNull("Cannot locate test file", url);
         
         Properties  props=SshConfigFileReader.readConfigFile(url);
-        Assert.assertFalse("No properties read", props.isEmpty());
-        Assert.assertTrue("Unexpected commented property data", GenericUtils.isEmpty(props.getProperty("ListenAddress")));
-        Assert.assertTrue("Unexpected non-existing property data", GenericUtils.isEmpty(props.getProperty(getCurrentTestName())));
+        assertFalse("No properties read", props.isEmpty());
+        assertTrue("Unexpected commented property data", GenericUtils.isEmpty(props.getProperty("ListenAddress")));
+        assertTrue("Unexpected non-existing property data", GenericUtils.isEmpty(props.getProperty(getCurrentTestName())));
 
         String  keysList=props.getProperty("HostKey");
-        Assert.assertFalse("No host keys", GenericUtils.isEmpty(keysList));
+        assertFalse("No host keys", GenericUtils.isEmpty(keysList));
 
         String[]    keys=GenericUtils.split(keysList, ',');
-        Assert.assertTrue("No multiple keys", GenericUtils.length((Object[]) keys) > 1);
+        assertTrue("No multiple keys", GenericUtils.length((Object[]) keys) > 1);
     }
 
     @Test
@@ -112,8 +111,8 @@ public class SshConfigFileReaderTest extends BaseTest {
             props.setProperty(SshConfigFileReader.COMPRESSION_PROP, expected.name().toLowerCase());
             
             NamedResource   actual=SshConfigFileReader.getCompression(props);
-            Assert.assertNotNull("No match for " + expected.name(), actual);
-            Assert.assertEquals(expected.name(), expected.getName(), actual.getName());
+            assertNotNull("No match for " + expected.name(), actual);
+            assertEquals(expected.name(), expected.getName(), actual.getName());
         }
     }
 
@@ -128,7 +127,7 @@ public class SshConfigFileReaderTest extends BaseTest {
             };
         // must be lenient since we do not cover the full default spectrum
         AbstractFactoryManager  actual=SshConfigFileReader.configure(expected, props, true, true);
-        Assert.assertSame("Mismatched configured result", expected, actual);
+        assertSame("Mismatched configured result", expected, actual);
         validateAbstractFactoryManagerConfiguration(expected, props, true);
     }
 
@@ -144,7 +143,7 @@ public class SshConfigFileReaderTest extends BaseTest {
                 getCurrentTestName(),
                 false,
                 true);
-        Assert.fail("Unexpected success: " + NamedResource.Utils.getNames(manager.getCipherFactories()));
+        fail("Unexpected success: " + NamedResource.Utils.getNames(manager.getCipherFactories()));
     }
 
     @Test(expected=IllegalArgumentException.class)
@@ -159,7 +158,7 @@ public class SshConfigFileReaderTest extends BaseTest {
                 getCurrentTestName(),
                 false,
                 true);
-        Assert.fail("Unexpected success: " + NamedResource.Utils.getNames(manager.getSignatureFactories()));
+        fail("Unexpected success: " + NamedResource.Utils.getNames(manager.getSignatureFactories()));
     }
 
     @Test(expected=IllegalArgumentException.class)
@@ -174,7 +173,7 @@ public class SshConfigFileReaderTest extends BaseTest {
                 getCurrentTestName(),
                 false,
                 true);
-        Assert.fail("Unexpected success: " + NamedResource.Utils.getNames(manager.getMacFactories()));
+        fail("Unexpected success: " + NamedResource.Utils.getNames(manager.getMacFactories()));
     }
 
     @Test
@@ -199,8 +198,8 @@ public class SshConfigFileReaderTest extends BaseTest {
                     false,
                     true);
             List<NamedFactory<Compression>> compressions=manager.getCompressionFactories();
-            Assert.assertEquals(prefix + "(size)", 1, GenericUtils.size(compressions));
-            Assert.assertSame(prefix + "[instance]", expected, compressions.get(0));
+            assertEquals(prefix + "(size)", 1, GenericUtils.size(compressions));
+            assertSame(prefix + "[instance]", expected, compressions.get(0));
         }
     }
 
@@ -248,7 +247,7 @@ public class SshConfigFileReaderTest extends BaseTest {
 
     private static <M extends FactoryManager> M validateFactoryManagerCompressions(M manager, String value, boolean lenient) {
         NamedFactory<Compression>   factory=CompressionConfigValue.fromName(value);
-        Assert.assertTrue("Unknown compression: " + value, lenient || (factory != null));
+        assertTrue("Unknown compression: " + value, lenient || (factory != null));
         if (factory != null) {
             validateFactoryManagerFactories(Compression.class, Collections.singletonList(factory), manager.getCompressionFactories());
         }
@@ -269,12 +268,12 @@ public class SshConfigFileReaderTest extends BaseTest {
 
     private static <T extends NamedResource> List<T> testParsedFactoriesList(
             List<? extends NamedResource> expected, List<T> actual, Collection<String> unsupported) {
-        Assert.assertTrue("Unexpected unsupported factories: " + unsupported, GenericUtils.isEmpty(unsupported));
-        Assert.assertEquals("Mismatched list size", expected.size(), GenericUtils.size(actual));
+        assertTrue("Unexpected unsupported factories: " + unsupported, GenericUtils.isEmpty(unsupported));
+        assertEquals("Mismatched list size", expected.size(), GenericUtils.size(actual));
         for (int index=0; index < expected.size(); index++) {
             NamedResource   e=expected.get(index), a=actual.get(index);
             String          n1=e.getName(), n2=a.getName();
-            Assert.assertEquals("Mismatched name at index=" + index, n1, n2);
+            assertEquals("Mismatched name at index=" + index, n1, n2);
         }
         
         return actual;

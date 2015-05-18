@@ -29,26 +29,32 @@ import org.apache.sshd.server.SignalListener;
 
 public class BogusEnvironment implements Environment {
 
+    @Override
     public Map<String, String> getEnv() {
         return Collections.emptyMap();
     }
 
+    @Override
     public Map<PtyMode, Integer> getPtyModes() {
         return Collections.emptyMap();
     }
 
+    @Override
     public void addSignalListener(SignalListener listener, Signal... signal) {
         // ignored
     }
 
+    @Override
     public void addSignalListener(SignalListener listener, Collection<Signal> signals) {
         // ignored
     }
 
+    @Override
     public void addSignalListener(SignalListener listener) {
         // ignored
     }
 
+    @Override
     public void removeSignalListener(SignalListener listener) {
         // ignored
     }

@@ -24,10 +24,12 @@ public class BogusExitCallback implements ExitCallback {
 
     private boolean exited;
 
+    @Override
     public void onExit(int exitValue) {
         this.exited = true;
     }
 
+    @Override
     public void onExit(int exitValue, String exitMessage) {
         this.exited = true;
     }

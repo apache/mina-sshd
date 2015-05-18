@@ -28,18 +28,22 @@ import org.apache.sshd.common.SshdSocketAddress;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class BogusForwardingFilter implements ForwardingFilter {
+    @Override
     public boolean canForwardAgent(Session session) {
         return true;
     }
 
+    @Override
     public boolean canForwardX11(Session session) {
         return true;
     }
 
+    @Override
     public boolean canConnect(SshdSocketAddress address, Session session) {
         return true;
     }
 
+    @Override
     public boolean canListen(SshdSocketAddress address, Session session) {
         return true;
     }

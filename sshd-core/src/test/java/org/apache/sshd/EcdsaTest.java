@@ -35,7 +35,7 @@ import org.apache.sshd.common.signature.BuiltinSignatures;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.server.PublickeyAuthenticator;
 import org.apache.sshd.server.session.ServerSession;
-import org.apache.sshd.util.BaseTest;
+import org.apache.sshd.util.BaseTestSupport;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.Utils;
 import org.junit.After;
@@ -48,7 +48,7 @@ import org.junit.Test;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class EcdsaTest extends BaseTest {
+public class EcdsaTest extends BaseTestSupport {
 
     private SshServer sshd;
     private SshClient client;

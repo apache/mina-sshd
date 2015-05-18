@@ -36,7 +36,7 @@ import org.apache.sshd.deprecated.UserAuthPublicKey;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.session.SessionFactory;
-import org.apache.sshd.util.BaseTest;
+import org.apache.sshd.util.BaseTestSupport;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.BogusPublickeyAuthenticator;
 import org.apache.sshd.util.Utils;
@@ -44,11 +44,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-public class AuthenticationTest extends BaseTest {
+public class AuthenticationTest extends BaseTestSupport {
 
     private static final String WELCOME = "Welcome to SSHD";
 
@@ -61,8 +57,8 @@ public class AuthenticationTest extends BaseTest {
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
         sshd.setPublickeyAuthenticator(new BogusPublickeyAuthenticator());
-        sshd.getProperties().put(SshServer.WELCOME_BANNER, WELCOME);
-        sshd.getProperties().put(SshServer.AUTH_METHODS, "publickey,password publickey,keyboard-interactive");
+        sshd.getProperties().put(ServerFactoryManager.WELCOME_BANNER, WELCOME);
+        sshd.getProperties().put(ServerFactoryManager.AUTH_METHODS, "publickey,password publickey,keyboard-interactive");
         sshd.setSessionFactory(new SessionFactory() {
             @Override
             protected AbstractSession doCreateSession(IoSession ioSession) throws Exception {
@@ -179,6 +175,7 @@ public class AuthenticationTest extends BaseTest {
         public TestSession(ServerFactoryManager server, IoSession ioSession) throws Exception {
             super(server, ioSession);
         }
+        @Override
         public void handleMessage(Buffer buffer) throws Exception {
             super.handleMessage(buffer);
         }

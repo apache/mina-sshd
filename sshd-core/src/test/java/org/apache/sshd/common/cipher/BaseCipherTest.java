@@ -29,15 +29,14 @@ import org.apache.sshd.common.Cipher;
 import org.apache.sshd.common.Cipher.Mode;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.util.SecurityUtils;
-import org.apache.sshd.util.BaseTest;
-import org.junit.Assert;
+import org.apache.sshd.util.BaseTestSupport;
 import org.junit.Assume;
 import org.junit.internal.AssumptionViolatedException;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class BaseCipherTest extends BaseTest {
+public abstract class BaseCipherTest extends BaseTestSupport {
 	protected BaseCipherTest() {
 		super();
 	}
@@ -88,6 +87,6 @@ public abstract class BaseCipherTest extends BaseTest {
 		byte[]	actual=workBuf.clone();
 		dec.update(actual, 0, actual.length);
 
-		Assert.assertArrayEquals(facName, expected, actual);
+		assertArrayEquals(facName, expected, actual);
 	}
 }

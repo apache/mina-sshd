@@ -18,9 +18,6 @@
  */
 package org.apache.sshd;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
@@ -33,7 +30,7 @@ import org.apache.mina.core.session.IoSession;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.SshdSocketAddress;
-import org.apache.sshd.util.BaseTest;
+import org.apache.sshd.util.BaseTestSupport;
 import org.apache.sshd.util.BogusForwardingFilter;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
@@ -45,7 +42,7 @@ import org.junit.Test;
 /**
  * Port forwarding tests
  */
-public class ProxyTest extends BaseTest {
+public class ProxyTest extends BaseTestSupport {
     private SshServer sshd;
     private int sshPort;
     private int echoPort;

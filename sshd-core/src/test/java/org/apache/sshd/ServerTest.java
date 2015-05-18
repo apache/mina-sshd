@@ -18,11 +18,6 @@
  */
 package org.apache.sshd;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -64,12 +59,11 @@ import org.apache.sshd.server.ExitCallback;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.command.ScpCommandFactory;
 import org.apache.sshd.server.sftp.SftpSubsystemFactory;
-import org.apache.sshd.util.BaseTest;
+import org.apache.sshd.util.BaseTestSupport;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.Utils;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -80,7 +74,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ServerTest extends BaseTest {
+public class ServerTest extends BaseTestSupport {
 
     private SshServer sshd;
     private SshClient client;
@@ -358,8 +352,8 @@ public class ServerTest extends BaseTest {
         try(ClientSession s = client.connect("test", "localhost", port).await().getSession()) {
             s.addPasswordIdentity("test");
             s.auth().verify(5L, TimeUnit.SECONDS);
-            Assert.assertEquals("Mismatched client events count", 1, clientEventCount.get());
-            Assert.assertEquals("Mismatched server events count", 1, serverEventCount.get());
+            assertEquals("Mismatched client events count", 1, clientEventCount.get());
+            assertEquals("Mismatched server events count", 1, serverEventCount.get());
             s.close(false);
         }
     }
@@ -428,7 +422,7 @@ public class ServerTest extends BaseTest {
             }
         }
         
-        Assert.fail("No success to authenticate");
+        fail("No success to authenticate");
     }
 
     public static class TestEchoShellFactory extends EchoShellFactory {

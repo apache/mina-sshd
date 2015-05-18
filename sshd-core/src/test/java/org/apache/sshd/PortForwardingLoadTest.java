@@ -46,7 +46,7 @@ import org.apache.mina.core.service.IoAcceptor;
 import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
-import org.apache.sshd.util.BaseTest;
+import org.apache.sshd.util.BaseTestSupport;
 import org.apache.sshd.util.BogusForwardingFilter;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
@@ -54,19 +54,16 @@ import org.apache.sshd.util.JSchLogger;
 import org.apache.sshd.util.SimpleUserInfo;
 import org.apache.sshd.util.Utils;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.sshd.util.Utils.getFreePort;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Port forwarding tests
  */
-public class PortForwardingLoadTest extends BaseTest {
+public class PortForwardingLoadTest extends BaseTestSupport {
 
     private final org.slf4j.Logger log = LoggerFactory.getLogger(getClass());
 
@@ -136,6 +133,7 @@ public class PortForwardingLoadTest extends BaseTest {
         final AtomicInteger conCount = new AtomicInteger(0);
 
         new Thread() {
+            @Override
             public void run() {
                 try {
                     for (int i = 0; i < NUM_ITERATIONS; ++i) {
@@ -212,6 +210,7 @@ public class PortForwardingLoadTest extends BaseTest {
         final AtomicInteger conCount = new AtomicInteger(0);
 
         new Thread() {
+            @Override
             public void run() {
                 started[0] = true;
                 try {
@@ -228,7 +227,7 @@ public class PortForwardingLoadTest extends BaseTest {
             }
         }.start();
         Thread.sleep(50);
-        Assert.assertTrue("Server not started", started[0]);
+        assertTrue("Server not started", started[0]);
 
         final boolean lenOK[] = new boolean[NUM_ITERATIONS];
         final boolean dataOK[] = new boolean[NUM_ITERATIONS];
@@ -261,8 +260,8 @@ public class PortForwardingLoadTest extends BaseTest {
         }
         Thread.sleep(50);
         for (int i = 0; i < NUM_ITERATIONS; i++) {
-            Assert.assertTrue(lenOK[i]);
-            Assert.assertTrue(dataOK[i]);
+            assertTrue(lenOK[i]);
+            assertTrue(dataOK[i]);
         }
         session.delPortForwardingR(forwardedPort);
         ss.close();
@@ -317,6 +316,7 @@ public class PortForwardingLoadTest extends BaseTest {
         final List<Throwable> errors = new CopyOnWriteArrayList<Throwable>();
         for (int i = 0; i < threads.length; i++) {
             threads[i] = new Thread() {
+                @Override
                 public void run() {
                     for (int j = 0; j < nbLoops; j++)  {
                         final MultiThreadedHttpConnectionManager mgr = new MultiThreadedHttpConnectionManager();

@@ -42,6 +42,7 @@ public class UserAuthPassword extends AbstractUserAuth {
         this.password = password;
     }
 
+    @Override
     public Result next(Buffer buffer) throws IOException {
         if (buffer == null) {
             log.debug("Send SSH_MSG_USERAUTH_REQUEST for password");

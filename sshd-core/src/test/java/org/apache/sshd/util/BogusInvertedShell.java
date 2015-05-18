@@ -44,31 +44,38 @@ public class BogusInvertedShell implements InvertedShell {
         this.err = err;
     }
 
+    @Override
     public void start(Map<String, String> env) throws IOException {
         this.started = true;
         this.env = Collections.unmodifiableMap(env);
     }
 
+    @Override
     public OutputStream getInputStream() {
         return in;
     }
 
+    @Override
     public InputStream getOutputStream() {
         return out;
     }
 
+    @Override
     public InputStream getErrorStream() {
         return err;
     }
 
+    @Override
     public boolean isAlive() {
         return alive;
     }
 
+    @Override
     public int exitValue() {
         return 0;
     }
 
+    @Override
     public void destroy() {
         IoUtils.closeQuietly(in);
         IoUtils.closeQuietly(out);

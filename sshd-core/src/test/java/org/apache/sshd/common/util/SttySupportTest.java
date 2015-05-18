@@ -23,7 +23,7 @@ import java.io.Reader;
 import java.util.Map;
 
 import org.apache.sshd.common.PtyMode;
-import org.apache.sshd.util.BaseTest;
+import org.apache.sshd.util.BaseTestSupport;
 import org.junit.Test;
 
 /**
@@ -31,7 +31,7 @@ import org.junit.Test;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SttySupportTest extends BaseTest {
+public class SttySupportTest extends BaseTestSupport {
 
     @Test
     public void parseOutput1() throws Exception {

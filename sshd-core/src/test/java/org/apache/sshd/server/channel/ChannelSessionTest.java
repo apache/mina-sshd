@@ -18,9 +18,6 @@
  */
 package org.apache.sshd.server.channel;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
 import java.util.Collection;
 
@@ -29,11 +26,11 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.server.Signal;
 import org.apache.sshd.server.SignalListener;
-import org.apache.sshd.util.BaseTest;
+import org.apache.sshd.util.BaseTestSupport;
 import org.apache.sshd.util.BogusChannel;
 import org.junit.Test;
 
-public class ChannelSessionTest extends BaseTest {
+public class ChannelSessionTest extends BaseTestSupport {
 
     private boolean expanded = false;
 
@@ -45,16 +42,18 @@ public class ChannelSessionTest extends BaseTest {
         final Buffer buffer = new ByteArrayBuffer();
         buffer.putInt(1234);
 
-        final ChannelSession channelSession = new ChannelSession();
-        channelSession.asyncOut = new ChannelAsyncOutputStream(new BogusChannel(), (byte) 0) {
-            @Override
-            public void onWindowExpanded() throws IOException {
-                expanded = true;
-                super.onWindowExpanded();
-            }
-        };
-        channelSession.handleWindowAdjust(buffer);
-        assertTrue(expanded);
+        try(ChannelSession channelSession = new ChannelSession()) {
+            channelSession.asyncOut = new ChannelAsyncOutputStream(new BogusChannel(), (byte) 0) {
+                @SuppressWarnings("synthetic-access")
+                @Override
+                public void onWindowExpanded() throws IOException {
+                    expanded = true;
+                    super.onWindowExpanded();
+                }
+            };
+            channelSession.handleWindowAdjust(buffer);
+            assertTrue(expanded);
+        }
     }
 
     @Test

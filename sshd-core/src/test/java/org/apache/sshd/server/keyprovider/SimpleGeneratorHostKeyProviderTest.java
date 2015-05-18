@@ -18,9 +18,6 @@
  */
 package org.apache.sshd.server.keyprovider;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
 import java.io.File;
 import java.security.KeyPair;
 import java.security.spec.AlgorithmParameterSpec;
@@ -28,7 +25,7 @@ import java.security.spec.ECGenParameterSpec;
 
 import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.util.SecurityUtils;
-import org.apache.sshd.util.BaseTest;
+import org.apache.sshd.util.BaseTestSupport;
 import org.junit.Assume;
 import org.junit.Test;
 
@@ -37,7 +34,7 @@ import org.junit.Test;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SimpleGeneratorHostKeyProviderTest extends BaseTest {
+public class SimpleGeneratorHostKeyProviderTest extends BaseTestSupport {
 
     @Test
     public void testDSA() {

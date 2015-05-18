@@ -31,8 +31,9 @@ public class JSchLogger implements Logger {
         JSch.setLogger(new JSchLogger());
     }
 
-    private org.slf4j.Logger log = LoggerFactory.getLogger("org.jcraft.jsch.JSch");
+    private final org.slf4j.Logger log = LoggerFactory.getLogger("org.jcraft.jsch.JSch");
 
+    @Override
     public boolean isEnabled(int level) {
         switch (level) {
             case DEBUG: return log.isDebugEnabled();
@@ -40,10 +41,11 @@ public class JSchLogger implements Logger {
             case WARN:  return log.isWarnEnabled();
             case ERROR: return log.isErrorEnabled();
             case FATAL: return log.isErrorEnabled();
+            default   : return false;
         }
-        return false;
     }
 
+    @Override
     public void log(int level, String message) {
         switch (level) {
             case DEBUG: log.debug(message); break;
@@ -51,6 +53,7 @@ public class JSchLogger implements Logger {
             case WARN:  log.warn(message); break;
             case ERROR: log.error(message); break;
             case FATAL: log.error(message); break;
+            default:    log.error("[LEVEL=" + level + "]: " + message);
         }
     }
 }

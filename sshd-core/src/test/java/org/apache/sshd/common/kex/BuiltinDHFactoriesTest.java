@@ -31,15 +31,14 @@ import java.util.Set;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.kex.BuiltinDHFactories.ParseResult;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.util.BaseTest;
-import org.junit.Assert;
+import org.apache.sshd.util.BaseTestSupport;
 import org.junit.Test;
 import org.mockito.Mockito;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class BuiltinDHFactoriesTest extends BaseTest {
+public class BuiltinDHFactoriesTest extends BaseTestSupport {
     public BuiltinDHFactoriesTest() {
         super();
     }
@@ -49,7 +48,7 @@ public class BuiltinDHFactoriesTest extends BaseTest {
         for (BuiltinDHFactories expected : BuiltinDHFactories.VALUES) {
             String name = expected.getName();
             BuiltinDHFactories actual = BuiltinDHFactories.fromFactoryName(name);
-            Assert.assertSame(name, expected, actual);
+            assertSame(name, expected, actual);
         }
     }
 
@@ -60,11 +59,11 @@ public class BuiltinDHFactoriesTest extends BaseTest {
         for (Field f : fields) {
             String          name=(String) f.get(null);
             BuiltinDHFactories  value=BuiltinDHFactories.fromFactoryName(name);
-            Assert.assertNotNull("No match found for " + name, value);
-            Assert.assertTrue(name + " re-specified", avail.add(value));
+            assertNotNull("No match found for " + name, value);
+            assertTrue(name + " re-specified", avail.add(value));
         }
         
-        Assert.assertEquals("Incomplete coverage", BuiltinDHFactories.VALUES, avail);
+        assertEquals("Incomplete coverage", BuiltinDHFactories.VALUES, avail);
     }
 
     @Test
@@ -108,7 +107,7 @@ public class BuiltinDHFactoriesTest extends BaseTest {
         for (DHFactory expected : BuiltinDHFactories.VALUES) {
             String              name=expected.getName();
             DHFactory   actual=BuiltinDHFactories.resolveFactory(name);
-            Assert.assertSame(name, expected, actual);
+            assertSame(name, expected, actual);
         }
     }
 
@@ -117,7 +116,7 @@ public class BuiltinDHFactoriesTest extends BaseTest {
         for (DHFactory expected : BuiltinDHFactories.VALUES) {
             try {
                 BuiltinDHFactories.registerExtension(expected);
-                Assert.fail("Unexpected sucess for " + expected.getName());
+                fail("Unexpected sucess for " + expected.getName());
             } catch(IllegalArgumentException e) {
                 // expected - ignored
             }
@@ -133,7 +132,7 @@ public class BuiltinDHFactoriesTest extends BaseTest {
         try {
             for (int index=1; index <= Byte.SIZE; index++) {
                 BuiltinDHFactories.registerExtension(expected);
-                Assert.assertEquals("Unexpected success at attempt #" + index, 1, index);
+                assertEquals("Unexpected success at attempt #" + index, 1, index);
             }
         } finally {
             BuiltinDHFactories.unregisterExtension(name);
@@ -147,15 +146,15 @@ public class BuiltinDHFactoriesTest extends BaseTest {
 
         String  name=expected.getName();
         try {
-            Assert.assertNull("Extension already registered", BuiltinDHFactories.resolveFactory(name));
+            assertNull("Extension already registered", BuiltinDHFactories.resolveFactory(name));
             BuiltinDHFactories.registerExtension(expected);
 
             DHFactory    actual=BuiltinDHFactories.resolveFactory(name);
-            Assert.assertSame("Mismatched resolved instance", expected, actual);
+            assertSame("Mismatched resolved instance", expected, actual);
         } finally {
             DHFactory    actual=BuiltinDHFactories.unregisterExtension(name);
-            Assert.assertSame("Mismatched unregistered instance", expected, actual);
-            Assert.assertNull("Extension not un-registered", BuiltinDHFactories.resolveFactory(name));
+            assertSame("Mismatched unregistered instance", expected, actual);
+            assertNull("Extension not un-registered", BuiltinDHFactories.resolveFactory(name));
         }
     }
 }

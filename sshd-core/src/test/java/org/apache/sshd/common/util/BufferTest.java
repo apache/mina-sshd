@@ -18,17 +18,15 @@
  */
 package org.apache.sshd.common.util;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
-import org.apache.sshd.util.BaseTest;
+import org.apache.sshd.util.BaseTestSupport;
 import org.junit.Test;
 
-public class BufferTest extends BaseTest {
+public class BufferTest extends BaseTestSupport {
 
     @Test
     public void testGetLong() throws Exception {

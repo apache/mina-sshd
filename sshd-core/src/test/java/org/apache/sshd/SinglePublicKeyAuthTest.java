@@ -29,25 +29,23 @@ import org.apache.sshd.common.util.KeyUtils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.CommandFactory;
 import org.apache.sshd.server.PublickeyAuthenticator;
+import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.auth.CachingPublicKeyAuthenticator;
 import org.apache.sshd.server.command.UnknownCommand;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.server.session.ServerSession;
-import org.apache.sshd.util.BaseTest;
+import org.apache.sshd.util.BaseTestSupport;
 import org.apache.sshd.util.Utils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SinglePublicKeyAuthTest extends BaseTest {
+public class SinglePublicKeyAuthTest extends BaseTestSupport {
 
     private SshServer sshd;
     private int port = 0;
@@ -60,12 +58,14 @@ public class SinglePublicKeyAuthTest extends BaseTest {
         sshd = SshServer.setUpDefaultServer();
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setCommandFactory(new CommandFactory() {
+            @Override
             public Command createCommand(String command) {
                 return new UnknownCommand(command);
             }
         });
-        sshd.getProperties().put(SshServer.AUTH_METHODS, "publickey");
+        sshd.getProperties().put(ServerFactoryManager.AUTH_METHODS, "publickey");
         sshd.setPublickeyAuthenticator(new PublickeyAuthenticator() {
+            @Override
             public boolean authenticate(String username, PublicKey key, ServerSession session) {
                 return delegate.authenticate(username, key, session);
             }
@@ -85,6 +85,7 @@ public class SinglePublicKeyAuthTest extends BaseTest {
     public void testPublicKeyAuthWithCache() throws Exception {
         final ConcurrentHashMap<String, AtomicInteger> count = new ConcurrentHashMap<String, AtomicInteger>();
         TestCachingPublicKeyAuthenticator auth = new TestCachingPublicKeyAuthenticator(new PublickeyAuthenticator() {
+            @Override
             public boolean authenticate(String username, PublicKey key,
                                         ServerSession session) {
                 count.putIfAbsent(KeyUtils.getFingerPrint(key), new AtomicInteger());
@@ -113,6 +114,7 @@ public class SinglePublicKeyAuthTest extends BaseTest {
     public void testPublicKeyAuthWithoutCache() throws Exception {
         final ConcurrentHashMap<String, AtomicInteger> count = new ConcurrentHashMap<String, AtomicInteger>();
         delegate = new PublickeyAuthenticator() {
+            @Override
             public boolean authenticate(String username, PublicKey key,
                                         ServerSession session) {
                 count.putIfAbsent(KeyUtils.getFingerPrint(key), new AtomicInteger());

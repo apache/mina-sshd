@@ -21,15 +21,14 @@ package org.apache.sshd.server.sftp;
 
 import java.util.concurrent.ExecutorService;
 
-import org.apache.sshd.util.BaseTest;
-import org.junit.Assert;
+import org.apache.sshd.util.BaseTestSupport;
 import org.junit.Test;
 import org.mockito.Mockito;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SftpSubsystemFactoryTest extends BaseTest {
+public class SftpSubsystemFactoryTest extends BaseTestSupport {
     public SftpSubsystemFactoryTest() {
         super();
     }
@@ -41,9 +40,9 @@ public class SftpSubsystemFactoryTest extends BaseTest {
     @Test
     public void testBuilderDefaultFactoryValues() {
         SftpSubsystemFactory factory = new SftpSubsystemFactory.Builder().build();
-        Assert.assertNull("Mismatched executor", factory.getExecutorService());
-        Assert.assertFalse("Mismatched shutdown state", factory.isShutdownOnExit());
-        Assert.assertSame("Mismatched unsupported attribute policy", SftpSubsystemFactory.DEFAULT_POLICY, factory.getUnsupportedAttributePolicy());
+        assertNull("Mismatched executor", factory.getExecutorService());
+        assertFalse("Mismatched shutdown state", factory.isShutdownOnExit());
+        assertSame("Mismatched unsupported attribute policy", SftpSubsystemFactory.DEFAULT_POLICY, factory.getUnsupportedAttributePolicy());
     }
 
     /**
@@ -56,12 +55,12 @@ public class SftpSubsystemFactoryTest extends BaseTest {
         SftpSubsystemFactory factory = builder.withExecutorService(service)
                 .withShutdownOnExit(true)
                 .build();
-        Assert.assertSame("Mismatched executor", service, factory.getExecutorService());
-        Assert.assertTrue("Mismatched shutdown state", factory.isShutdownOnExit());
+        assertSame("Mismatched executor", service, factory.getExecutorService());
+        assertTrue("Mismatched shutdown state", factory.isShutdownOnExit());
 
         for (UnsupportedAttributePolicy policy : UnsupportedAttributePolicy.VALUES) {
             SftpSubsystemFactory actual = builder.withUnsupportedAttributePolicy(policy).build();
-            Assert.assertSame("Mismatched unsupported attribute policy", policy, actual.getUnsupportedAttributePolicy());
+            assertSame("Mismatched unsupported attribute policy", policy, actual.getUnsupportedAttributePolicy());
         }
     }
 
@@ -83,11 +82,11 @@ public class SftpSubsystemFactoryTest extends BaseTest {
         SftpSubsystemFactory.Builder builder = new SftpSubsystemFactory.Builder();
         SftpSubsystemFactory f1 = builder.withExecutorService(dummyExecutor()).build();
         SftpSubsystemFactory f2 = builder.build();
-        Assert.assertNotSame("No new instance built", f1, f2);
-        Assert.assertSame("Mismatched executors", f1.getExecutorService(), f2.getExecutorService());
+        assertNotSame("No new instance built", f1, f2);
+        assertSame("Mismatched executors", f1.getExecutorService(), f2.getExecutorService());
 
         SftpSubsystemFactory f3 = builder.withExecutorService(dummyExecutor()).build();
-        Assert.assertNotSame("Executor service not changed", f1.getExecutorService(), f3.getExecutorService());
+        assertNotSame("Executor service not changed", f1.getExecutorService(), f3.getExecutorService());
     }
 
     private static ExecutorService dummyExecutor() {

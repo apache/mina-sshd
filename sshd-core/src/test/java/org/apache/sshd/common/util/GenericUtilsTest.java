@@ -23,14 +23,13 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import org.apache.sshd.util.BaseTest;
-import org.junit.Assert;
+import org.apache.sshd.util.BaseTestSupport;
 import org.junit.Test;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class GenericUtilsTest extends BaseTest {
+public class GenericUtilsTest extends BaseTestSupport {
     public GenericUtilsTest() {
         super();
     }
@@ -45,12 +44,12 @@ public class GenericUtilsTest extends BaseTest {
             String      sep=String.valueOf(ch);
             String      s=GenericUtils.join(expected, sep);
             String[]    actual=GenericUtils.split(s, ch);
-            Assert.assertEquals("Mismatched split length for separator=" + sep, expected.size(), GenericUtils.length((Object[]) actual));
+            assertEquals("Mismatched split length for separator=" + sep, expected.size(), GenericUtils.length((Object[]) actual));
             
             for (int index=0; index < actual.length; index++) {
                 String  e=expected.get(index), a=actual[index];
                 if (!e.endsWith(a)) {
-                    Assert.fail("Mismatched value at index=" + index + " for separator=" + sep + ": expected=" + e + ", actual=" + a);
+                    fail("Mismatched value at index=" + index + " for separator=" + sep + ": expected=" + e + ", actual=" + a);
                 }
             }
         }

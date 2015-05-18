@@ -23,14 +23,16 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.jcraft.jsch.JSch;
+
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.common.Session;
 import org.apache.sshd.common.SessionListener;
 import org.apache.sshd.server.ServerFactoryManager;
-import org.apache.sshd.util.BaseTest;
+import org.apache.sshd.util.BaseTestSupport;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.JSchLogger;
@@ -40,16 +42,12 @@ import org.apache.sshd.util.Utils;
 import org.junit.After;
 import org.junit.Test;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 /**
  * Test key exchange algorithms.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class KeyReExchangeTest extends BaseTest {
+public class KeyReExchangeTest extends BaseTestSupport {
 
     private SshServer sshd;
     private int port;
@@ -105,104 +103,124 @@ public class KeyReExchangeTest extends BaseTest {
     public void testReExchangeFromNativeClient() throws Exception {
         setUp(0, 0);
 
-        SshClient client = SshClient.setUpDefaultClient();
-        client.start();
-        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
-        session.addPasswordIdentity("smx");
-        session.auth().verify();
-        ChannelShell channel = session.createShellChannel();
-
-        ByteArrayOutputStream sent = new ByteArrayOutputStream();
-        PipedOutputStream pipedIn = new PipedOutputStream();
-        channel.setIn(new PipedInputStream(pipedIn));
-        OutputStream teeOut = new TeeOutputStream(sent, pipedIn);
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        ByteArrayOutputStream err = new ByteArrayOutputStream();
-        channel.setOut(out);
-        channel.setErr(err);
-        channel.open();
-
-        teeOut.write("this is my command\n".getBytes());
-        teeOut.flush();
-
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < 10; i++) {
-            sb.append("0123456789");
+        try(SshClient client = SshClient.setUpDefaultClient()) {
+            client.start();
+        
+            try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
+                session.addPasswordIdentity("smx");
+                session.auth().verify(5L, TimeUnit.SECONDS);
+                
+                try(ChannelShell channel = session.createShellChannel();
+                    ByteArrayOutputStream sent = new ByteArrayOutputStream();
+                    PipedOutputStream pipedIn = new PipedOutputStream();
+                    InputStream inPipe = new PipedInputStream(pipedIn);
+                    OutputStream teeOut = new TeeOutputStream(sent, pipedIn);
+                    ByteArrayOutputStream out = new ByteArrayOutputStream();
+                    ByteArrayOutputStream err = new ByteArrayOutputStream()) {
+    
+                    channel.setIn(inPipe);
+                    channel.setOut(out);
+                    channel.setErr(err);
+                    channel.open();
+            
+                    teeOut.write("this is my command\n".getBytes());
+                    teeOut.flush();
+            
+                    StringBuilder sb = new StringBuilder();
+                    for (int i = 0; i < 10; i++) {
+                        sb.append("0123456789");
+                    }
+                    sb.append("\n");
+            
+                    byte[]  data=sb.toString().getBytes();
+                    for (int i = 0; i < 10; i++) {
+                        teeOut.write(data);
+                        teeOut.flush();
+                        session.reExchangeKeys();
+                    }
+                    teeOut.write("exit\n".getBytes());
+                    teeOut.flush();
+            
+                    channel.waitFor(ClientChannel.CLOSED, 0);
+            
+                    channel.close(false);
+            
+                    assertArrayEquals("Mismatched sent data content", sent.toByteArray(), out.toByteArray());
+                }
+            } finally {
+                client.stop();
+            }
         }
-        sb.append("\n");
-
-        for (int i = 0; i < 10; i++) {
-            teeOut.write(sb.toString().getBytes());
-            teeOut.flush();
-            session.reExchangeKeys();
-        }
-        teeOut.write("exit\n".getBytes());
-        teeOut.flush();
-
-        channel.waitFor(ClientChannel.CLOSED, 0);
-
-        channel.close(false);
-        client.stop();
-
-        assertArrayEquals(sent.toByteArray(), out.toByteArray());
     }
 
     @Test
     public void testReExchangeFromServer() throws Exception {
         setUp(8192, 0);
 
-        SshClient client = SshClient.setUpDefaultClient();
-        client.start();
-        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
-        session.addPasswordIdentity("smx");
-        session.auth().verify();
-        ChannelShell channel = session.createShellChannel();
+        try(SshClient client = SshClient.setUpDefaultClient()) {
+            client.start();
+            
+            try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
+                session.addPasswordIdentity("smx");
+                session.auth().verify(5L, TimeUnit.SECONDS);
 
-        ByteArrayOutputStream sent = new ByteArrayOutputStream();
-        PipedOutputStream pipedIn = new PipedOutputStream();
-        channel.setIn(new PipedInputStream(pipedIn));
-        OutputStream teeOut = new TeeOutputStream(sent, pipedIn);
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        ByteArrayOutputStream err = new ByteArrayOutputStream();
-        channel.setOut(out);
-        channel.setErr(err);
-        channel.open();
+                try(ChannelShell channel = session.createShellChannel();
+                    ByteArrayOutputStream sent = new ByteArrayOutputStream();
+                    PipedOutputStream pipedIn = new PipedOutputStream();
+                    OutputStream teeOut = new TeeOutputStream(sent, pipedIn);
+                    ByteArrayOutputStream out = new ByteArrayOutputStream();
+                    ByteArrayOutputStream err = new ByteArrayOutputStream();
+                    InputStream inPipe = new PipedInputStream(pipedIn)) {
 
-        teeOut.write("this is my command\n".getBytes());
-        teeOut.flush();
-
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < 100; i++) {
-            sb.append("0123456789");
-        }
-        sb.append("\n");
-
-        final AtomicInteger exchanges = new AtomicInteger();
-        session.addListener(new SessionListener() {
-            public void sessionCreated(Session session) {
-            }
-            public void sessionEvent(Session session, Event event) {
-                if (event == Event.KeyEstablished) {
-                    exchanges.incrementAndGet();
+                    channel.setIn(inPipe);
+                    channel.setOut(out);
+                    channel.setErr(err);
+                    channel.open();
+            
+                    teeOut.write("this is my command\n".getBytes());
+                    teeOut.flush();
+            
+                    StringBuilder sb = new StringBuilder();
+                    for (int i = 0; i < 100; i++) {
+                        sb.append("0123456789");
+                    }
+                    sb.append("\n");
+            
+                    final AtomicInteger exchanges = new AtomicInteger();
+                    session.addListener(new SessionListener() {
+                        @Override
+                        public void sessionCreated(Session session) {
+                            // ignored
+                        }
+                        @Override
+                        public void sessionEvent(Session session, Event event) {
+                            if (event == Event.KeyEstablished) {
+                                exchanges.incrementAndGet();
+                            }
+                        }
+                        @Override
+                        public void sessionClosed(Session session) {
+                            // ignored
+                        }
+                    });
+                    for (int i = 0; i < 100; i++) {
+                        teeOut.write(sb.toString().getBytes());
+                        teeOut.flush();
+                    }
+                    teeOut.write("exit\n".getBytes());
+                    teeOut.flush();
+            
+                    channel.waitFor(ClientChannel.CLOSED, 0);
+            
+                    channel.close(false);
+            
+                    assertTrue("Expected rekeying", exchanges.get() > 0);
+                    assertEquals("Mismatched sent data length", sent.toByteArray().length, out.toByteArray().length);
+                    assertArrayEquals("Mismatched sent data content", sent.toByteArray(), out.toByteArray());
                 }
+            } finally {
+                client.stop();
             }
-            public void sessionClosed(Session session) {
-            }
-        });
-        for (int i = 0; i < 100; i++) {
-            teeOut.write(sb.toString().getBytes());
-            teeOut.flush();
         }
-        teeOut.write("exit\n".getBytes());
-        teeOut.flush();
-
-        channel.waitFor(ClientChannel.CLOSED, 0);
-
-        channel.close(false);
-        client.stop();
-
-        assertTrue("Expected rekeying", exchanges.get() > 0);
-        assertEquals(sent.toByteArray().length, out.toByteArray().length);
-        assertArrayEquals(sent.toByteArray(), out.toByteArray());
     }
 }

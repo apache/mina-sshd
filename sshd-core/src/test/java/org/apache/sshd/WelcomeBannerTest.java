@@ -21,7 +21,8 @@ package org.apache.sshd;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.client.UserInteraction;
-import org.apache.sshd.util.BaseTest;
+import org.apache.sshd.server.ServerFactoryManager;
+import org.apache.sshd.util.BaseTestSupport;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.BogusPublickeyAuthenticator;
 import org.apache.sshd.util.Utils;
@@ -29,9 +30,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import static junit.framework.Assert.assertEquals;
-
-public class WelcomeBannerTest extends BaseTest {
+public class WelcomeBannerTest extends BaseTestSupport {
 
     private static final String WELCOME = "Welcome to SSHD";
 
@@ -44,7 +43,7 @@ public class WelcomeBannerTest extends BaseTest {
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
         sshd.setPublickeyAuthenticator(new BogusPublickeyAuthenticator());
-        sshd.getProperties().put(SshServer.WELCOME_BANNER, WELCOME);
+        sshd.getProperties().put(ServerFactoryManager.WELCOME_BANNER, WELCOME);
         sshd.start();
         port = sshd.getPort();
     }
@@ -61,9 +60,11 @@ public class WelcomeBannerTest extends BaseTest {
         final AtomicReference<String> welcome = new AtomicReference<String>();
         SshClient client = SshClient.setUpDefaultClient();
         client.setUserInteraction(new UserInteraction() {
+            @Override
             public void welcome(String banner) {
                 welcome.set(banner);
             }
+            @Override
             public String[] interactive(String destination, String name, String instruction, String[] prompt, boolean[] echo) {
                 return null;
             }

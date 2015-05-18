@@ -30,7 +30,7 @@ import org.apache.sshd.common.Random;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.mac.BuiltinMacs;
 import org.apache.sshd.common.random.BouncyCastleRandom;
-import org.apache.sshd.util.BaseTest;
+import org.apache.sshd.util.BaseTestSupport;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.JSchLogger;
@@ -40,14 +40,12 @@ import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-
 /**
  * Test Cipher algorithms.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class MacTest extends BaseTest {
+public class MacTest extends BaseTestSupport {
 
     private SshServer sshd;
     private int port;
@@ -147,17 +145,20 @@ public class MacTest extends BaseTest {
             s.connect();
             com.jcraft.jsch.Channel c = s.openChannel("shell");
             c.connect();
-            OutputStream os = c.getOutputStream();
-            InputStream is = c.getInputStream();
-            for (int i = 0; i < 10; i++) {
-                os.write("this is my command\n".getBytes());
-                os.flush();
+            try(OutputStream os = c.getOutputStream();
+                InputStream is = c.getInputStream()) {
+
                 byte[] data = new byte[512];
-                int len = is.read(data);
-                String str = new String(data, 0, len);
-                assertEquals("this is my command\n", str);
+                for (int i = 0; i < 10; i++) {
+                    os.write("this is my command\n".getBytes());
+                    os.flush();
+                    int len = is.read(data);
+                    String str = new String(data, 0, len);
+                    assertEquals("this is my command\n", str);
+                }
+            } finally {
+                c.disconnect();
             }
-            c.disconnect();
         } finally {
             s.disconnect();
         }
@@ -165,7 +166,7 @@ public class MacTest extends BaseTest {
 
     static boolean checkCipher(String cipher){
         try{
-            Class c=Class.forName(cipher);
+            Class<?> c=Class.forName(cipher);
             com.jcraft.jsch.Cipher _c = (com.jcraft.jsch.Cipher)(c.newInstance());
             _c.init(com.jcraft.jsch.Cipher.ENCRYPT_MODE,
                     new byte[_c.getBlockSize()],

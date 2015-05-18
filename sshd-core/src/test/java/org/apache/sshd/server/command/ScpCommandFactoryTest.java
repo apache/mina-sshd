@@ -23,15 +23,14 @@ import java.util.concurrent.ExecutorService;
 
 import org.apache.sshd.common.scp.ScpHelper;
 import org.apache.sshd.server.CommandFactory;
-import org.apache.sshd.util.BaseTest;
-import org.junit.Assert;
+import org.apache.sshd.util.BaseTestSupport;
 import org.junit.Test;
 import org.mockito.Mockito;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ScpCommandFactoryTest extends BaseTest {
+public class ScpCommandFactoryTest extends BaseTestSupport {
     public ScpCommandFactoryTest() {
         super();
     }
@@ -43,11 +42,11 @@ public class ScpCommandFactoryTest extends BaseTest {
     @Test
     public void testBuilderDefaultFactoryValues() {
         ScpCommandFactory   factory = new ScpCommandFactory.Builder().build();
-        Assert.assertNull("Mismatched delegate", factory.getDelegateCommandFactory());
-        Assert.assertNull("Mismatched executor", factory.getExecutorService());
-        Assert.assertEquals("Mismatched send size", ScpHelper.MIN_SEND_BUFFER_SIZE, factory.getSendBufferSize());
-        Assert.assertEquals("Mismatched receive size", ScpHelper.MIN_RECEIVE_BUFFER_SIZE, factory.getReceiveBufferSize());
-        Assert.assertFalse("Mismatched shutdown state", factory.isShutdownOnExit());
+        assertNull("Mismatched delegate", factory.getDelegateCommandFactory());
+        assertNull("Mismatched executor", factory.getExecutorService());
+        assertEquals("Mismatched send size", ScpHelper.MIN_SEND_BUFFER_SIZE, factory.getSendBufferSize());
+        assertEquals("Mismatched receive size", ScpHelper.MIN_RECEIVE_BUFFER_SIZE, factory.getReceiveBufferSize());
+        assertFalse("Mismatched shutdown state", factory.isShutdownOnExit());
     }
 
     /**
@@ -65,11 +64,11 @@ public class ScpCommandFactoryTest extends BaseTest {
                                         .withReceiveBufferSize(receiveSize)
                                         .withShutdownOnExit(true)
                                         .build();
-        Assert.assertSame("Mismatched delegate", delegate, factory.getDelegateCommandFactory());
-        Assert.assertSame("Mismatched executor", service, factory.getExecutorService());
-        Assert.assertEquals("Mismatched send size", sendSize, factory.getSendBufferSize());
-        Assert.assertEquals("Mismatched receive size", receiveSize, factory.getReceiveBufferSize());
-        Assert.assertTrue("Mismatched shutdown state", factory.isShutdownOnExit());
+        assertSame("Mismatched delegate", delegate, factory.getDelegateCommandFactory());
+        assertSame("Mismatched executor", service, factory.getExecutorService());
+        assertEquals("Mismatched send size", sendSize, factory.getSendBufferSize());
+        assertEquals("Mismatched receive size", receiveSize, factory.getReceiveBufferSize());
+        assertTrue("Mismatched shutdown state", factory.isShutdownOnExit());
     }
 
     /**
@@ -90,11 +89,11 @@ public class ScpCommandFactoryTest extends BaseTest {
         ScpCommandFactory.Builder    builder = new ScpCommandFactory.Builder();
         ScpCommandFactory            f1 = builder.withDelegate(dummyFactory()).build();
         ScpCommandFactory            f2 = builder.build();
-        Assert.assertNotSame("No new instance built", f1, f2);
-        Assert.assertSame("Mismatched delegate", f1.getDelegateCommandFactory(), f2.getDelegateCommandFactory());
+        assertNotSame("No new instance built", f1, f2);
+        assertSame("Mismatched delegate", f1.getDelegateCommandFactory(), f2.getDelegateCommandFactory());
         
         ScpCommandFactory    f3=builder.withDelegate(dummyFactory()).build();
-        Assert.assertNotSame("Delegate not changed", f1.getDelegateCommandFactory(), f3.getDelegateCommandFactory());
+        assertNotSame("Delegate not changed", f1.getDelegateCommandFactory(), f3.getDelegateCommandFactory());
     }
 
     private static ExecutorService dummyExecutor() {

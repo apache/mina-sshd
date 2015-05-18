@@ -33,14 +33,13 @@ import org.apache.sshd.common.kex.BuiltinDHFactories;
 import org.apache.sshd.common.mac.BuiltinMacs;
 import org.apache.sshd.common.signature.BuiltinSignatures;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.util.BaseTest;
-import org.junit.Assert;
+import org.apache.sshd.util.BaseTestSupport;
 import org.junit.Test;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SshBuilderTest extends BaseTest {
+public class SshBuilderTest extends BaseTestSupport {
     public SshBuilderTest() {
         super();
     }
@@ -53,7 +52,7 @@ public class SshBuilderTest extends BaseTest {
     public void testAllBuiltinCiphersListed() {
         Set<BuiltinCiphers> all=EnumSet.allOf(BuiltinCiphers.class);
         // The 'none' cipher is not listed as preferred - it is implied
-        Assert.assertTrue("Missing " + BuiltinCiphers.Constants.NONE + " cipher in all values", all.remove(BuiltinCiphers.none));
+        assertTrue("Missing " + BuiltinCiphers.Constants.NONE + " cipher in all values", all.remove(BuiltinCiphers.none));
         testAllInstancesListed(all, BaseBuilder.DEFAULT_CIPHERS_PREFERENCE);
     }
 
@@ -85,9 +84,9 @@ public class SshBuilderTest extends BaseTest {
     }
 
     private static <E extends Enum<E>> void testAllInstancesListed(Set<? extends E> expValues, Collection<? extends E> actValues) {
-        Assert.assertEquals("Mismatched actual values size", expValues.size(), actValues.size());
+        assertEquals("Mismatched actual values size", expValues.size(), actValues.size());
         for (E expected : expValues) {
-            Assert.assertTrue(expected.name() + " not found in actual values", actValues.contains(expected));
+            assertTrue(expected.name() + " not found in actual values", actValues.contains(expected));
         }
     }
 
@@ -103,7 +102,7 @@ public class SshBuilderTest extends BaseTest {
             int                         numCiphers=GenericUtils.size(ciphers);
             // make sure returned list size matches expected count
             if (ignoreUnsupported) {
-                Assert.assertEquals("Incomplete full ciphers size", BaseBuilder.DEFAULT_CIPHERS_PREFERENCE.size(), numCiphers);
+                assertEquals("Incomplete full ciphers size", BaseBuilder.DEFAULT_CIPHERS_PREFERENCE.size(), numCiphers);
             } else {
                 int expectedCount=0;
                 for (BuiltinCiphers c : BaseBuilder.DEFAULT_CIPHERS_PREFERENCE) {
@@ -111,7 +110,7 @@ public class SshBuilderTest extends BaseTest {
                         expectedCount++;
                     }
                 }
-                Assert.assertEquals("Incomplete supported ciphers size", expectedCount, numCiphers);
+                assertEquals("Incomplete supported ciphers size", expectedCount, numCiphers);
             }
             
             // make sure order is according to the default preference list
@@ -123,10 +122,10 @@ public class SshBuilderTest extends BaseTest {
                 }
                 
                 String  expectedName=c.getName();
-                Assert.assertTrue("Out of actual ciphers for expected=" + expectedName, nameIndex < numCiphers);
+                assertTrue("Out of actual ciphers for expected=" + expectedName, nameIndex < numCiphers);
                 
                 String  actualName=cipherNames.get(nameIndex);
-                Assert.assertEquals("Mismatched cipher at position " + nameIndex + " for ignoreUnsupported=" + ignoreUnsupported, expectedName, actualName);
+                assertEquals("Mismatched cipher at position " + nameIndex + " for ignoreUnsupported=" + ignoreUnsupported, expectedName, actualName);
                 nameIndex++;
             }
         }

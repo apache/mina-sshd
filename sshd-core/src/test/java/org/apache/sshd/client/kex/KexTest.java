@@ -18,9 +18,6 @@
  */
 package org.apache.sshd.client.kex;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.io.PipedInputStream;
@@ -36,7 +33,7 @@ import org.apache.sshd.common.KeyExchange;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.kex.BuiltinDHFactories;
 import org.apache.sshd.common.kex.DHFactory;
-import org.apache.sshd.util.BaseTest;
+import org.apache.sshd.util.BaseTestSupport;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.TeeOutputStream;
@@ -49,7 +46,7 @@ import org.junit.Test;
  * Test client key exchange algorithms.
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class KexTest extends BaseTest {
+public class KexTest extends BaseTestSupport {
 
     private SshServer sshd;
     private int port;

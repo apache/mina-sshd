@@ -219,7 +219,9 @@ public abstract class AbstractChannel extends CloseableUtils.AbstractInnerClosea
 
     @Override
     protected void doCloseImmediately() {
-        service.unregisterChannel(AbstractChannel.this);
+        if (service != null) {
+            service.unregisterChannel(AbstractChannel.this);
+        }
         super.doCloseImmediately();
     }
 

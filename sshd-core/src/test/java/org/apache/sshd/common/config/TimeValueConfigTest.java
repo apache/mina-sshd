@@ -21,14 +21,13 @@ package org.apache.sshd.common.config;
 
 import java.util.concurrent.TimeUnit;
 
-import org.apache.sshd.util.BaseTest;
-import org.junit.Assert;
+import org.apache.sshd.util.BaseTestSupport;
 import org.junit.Test;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class TimeValueConfigTest extends BaseTest {
+public class TimeValueConfigTest extends BaseTestSupport {
     public TimeValueConfigTest() {
         super();
     }
@@ -46,7 +45,7 @@ public class TimeValueConfigTest extends BaseTest {
             String  s=(String) values[index];
             Number  expected=(Number) values[index + 1];
             long    actual=TimeValueConfig.durationOf(s);
-            Assert.assertEquals(s, expected.longValue(), actual);
+            assertEquals(s, expected.longValue(), actual);
         }
     }
 }

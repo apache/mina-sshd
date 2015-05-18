@@ -18,20 +18,18 @@
  */
 package org.apache.sshd.server.keyprovider;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.KeyPair;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.sshd.util.BaseTest;
+import org.apache.sshd.util.BaseTestSupport;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-public class AbstractGeneratorHostKeyProviderTest extends BaseTest {
+public class AbstractGeneratorHostKeyProviderTest extends BaseTestSupport {
 
     @Rule
     public TemporaryFolder temporaryFolder = new TemporaryFolder();

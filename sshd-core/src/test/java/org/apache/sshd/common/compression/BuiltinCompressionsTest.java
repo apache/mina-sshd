@@ -32,15 +32,14 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.compression.BuiltinCompressions.ParseResult;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.util.BaseTest;
-import org.junit.Assert;
+import org.apache.sshd.util.BaseTestSupport;
 import org.junit.Test;
 import org.mockito.Mockito;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class BuiltinCompressionsTest extends BaseTest {
+public class BuiltinCompressionsTest extends BaseTestSupport {
     public BuiltinCompressionsTest() {
         super();
     }
@@ -52,7 +51,7 @@ public class BuiltinCompressionsTest extends BaseTest {
 
             for (int index=0; index < name.length(); index++) {
                 BuiltinCompressions actual=BuiltinCompressions.fromFactoryName(name);
-                Assert.assertSame(name, expected, actual);
+                assertSame(name, expected, actual);
                 name = shuffleCase(name);
             }
         }
@@ -64,11 +63,11 @@ public class BuiltinCompressionsTest extends BaseTest {
         for (Field f : fields) {
             String              name=(String) f.get(null);
             BuiltinCompressions value=BuiltinCompressions.fromFactoryName(name);
-            Assert.assertNotNull("No match found for " + name, value);
-            Assert.assertTrue(name + " re-specified", avail.add(value));
+            assertNotNull("No match found for " + name, value);
+            assertTrue(name + " re-specified", avail.add(value));
         }
         
-        Assert.assertEquals("Incomplete coverage", BuiltinCompressions.VALUES, avail);
+        assertEquals("Incomplete coverage", BuiltinCompressions.VALUES, avail);
     }
 
     @Test
@@ -112,7 +111,7 @@ public class BuiltinCompressionsTest extends BaseTest {
         for (NamedFactory<Compression> expected : BuiltinCompressions.VALUES) {
             String                  name=expected.getName();
             NamedFactory<Compression>    actual=BuiltinCompressions.resolveFactory(name);
-            Assert.assertSame(name, expected, actual);
+            assertSame(name, expected, actual);
         }
     }
 
@@ -121,7 +120,7 @@ public class BuiltinCompressionsTest extends BaseTest {
         for (CompressionFactory expected : BuiltinCompressions.VALUES) {
             try {
                 BuiltinCompressions.registerExtension(expected);
-                Assert.fail("Unexpected sucess for " + expected.getName());
+                fail("Unexpected sucess for " + expected.getName());
             } catch(IllegalArgumentException e) {
                 // expected - ignored
             }
@@ -137,7 +136,7 @@ public class BuiltinCompressionsTest extends BaseTest {
         try {
             for (int index=1; index <= Byte.SIZE; index++) {
                 BuiltinCompressions.registerExtension(expected);
-                Assert.assertEquals("Unexpected success at attempt #" + index, 1, index);
+                assertEquals("Unexpected success at attempt #" + index, 1, index);
             }
         } finally {
             BuiltinCompressions.unregisterExtension(name);
@@ -151,27 +150,27 @@ public class BuiltinCompressionsTest extends BaseTest {
 
         String  name=expected.getName();
         try {
-            Assert.assertNull("Extension already registered", BuiltinCompressions.resolveFactory(name));
+            assertNull("Extension already registered", BuiltinCompressions.resolveFactory(name));
             BuiltinCompressions.registerExtension(expected);
 
             NamedFactory<Compression>    actual=BuiltinCompressions.resolveFactory(name);
-            Assert.assertSame("Mismatched resolved instance", expected, actual);
+            assertSame("Mismatched resolved instance", expected, actual);
         } finally {
             NamedFactory<Compression>    actual=BuiltinCompressions.unregisterExtension(name);
-            Assert.assertSame("Mismatched unregistered instance", expected, actual);
-            Assert.assertNull("Extension not un-registered", BuiltinCompressions.resolveFactory(name));
+            assertSame("Mismatched unregistered instance", expected, actual);
+            assertNull("Extension not un-registered", BuiltinCompressions.resolveFactory(name));
         }
     }
 
     @Test
     public void testFac2NamedTransformer() {
-        Assert.assertNull("Invalid null transformation", CompressionFactory.FAC2NAMED.transform(null));
+        assertNull("Invalid null transformation", CompressionFactory.FAC2NAMED.transform(null));
         for (CompressionFactory expected : BuiltinCompressions.VALUES) {
             NamedFactory<Compression>   actual=CompressionFactory.FAC2NAMED.transform(expected);
-            Assert.assertSame("Mismatched transformed instance for " + expected.getName(), expected, actual);
+            assertSame("Mismatched transformed instance for " + expected.getName(), expected, actual);
         }
         
         CompressionFactory   mock=Mockito.mock(CompressionFactory.class);
-        Assert.assertSame("Mismatched transformed mocked instance", mock, CompressionFactory.FAC2NAMED.transform(mock));
+        assertSame("Mismatched transformed mocked instance", mock, CompressionFactory.FAC2NAMED.transform(mock));
     }
 }

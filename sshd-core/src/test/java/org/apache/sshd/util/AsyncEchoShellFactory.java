@@ -73,18 +73,22 @@ public class AsyncEchoShellFactory implements Factory<Command> {
 
         @Override
         public void setInputStream(InputStream in) {
+            // ignored
         }
 
         @Override
         public void setOutputStream(OutputStream out) {
+            // ignored
         }
 
         @Override
         public void setErrorStream(OutputStream err) {
+            // ignored
         }
 
         @Override
         public void setIoInputStream(IoInputStream in) {
+            // ignored
         }
 
         @Override
@@ -116,6 +120,7 @@ public class AsyncEchoShellFactory implements Factory<Command> {
         @Override
         public void close() throws IOException {
             out.close(false).addListener(new SshFutureListener<CloseFuture>() {
+                @SuppressWarnings("synthetic-access")
                 @Override
                 public void operationComplete(CloseFuture future) {
                     callback.onExit(0);
@@ -125,6 +130,7 @@ public class AsyncEchoShellFactory implements Factory<Command> {
 
         @Override
         public void destroy() {
+            // ignored
         }
 
         @Override

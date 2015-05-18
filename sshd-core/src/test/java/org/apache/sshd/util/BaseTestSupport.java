@@ -18,12 +18,6 @@
  */
 package org.apache.sshd.util;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.io.File;
 import java.security.Key;
 import java.security.KeyPair;
@@ -53,29 +47,32 @@ import org.junit.runner.Description;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class BaseTest extends TestWatcher {
-    @Rule public TestWatcher rule = this;
+public abstract class BaseTestSupport extends Assert {
+    @Rule public final TestWatcher rule = new TestWatcher() {
+            // TODO consider using a ThreadLocal storage for the start time - provided
+            //      the code is assured to call starting/finished on the same thread
+            private long startTime;
+    
+            @Override
+            protected void starting(Description description) {
+                System.out.println("\nStarting " + description.getClassName() + ":" + description.getMethodName() + "...\n");
+                startTime = System.currentTimeMillis();
+            }
+    
+            @Override
+            protected void finished(Description description) {
+                long duration = System.currentTimeMillis() - startTime;
+                System.out.println("\nFinished " + description.getClassName() + ":" + description.getMethodName() + " in " + duration + " ms\n");
+            }
+        };
     @Rule public final TestName TEST_NAME_HOLDER = new TestName();
-    private long startTime;
 
-    protected BaseTest() {
+    protected BaseTestSupport() {
     	super();
     }
 
     public final String getCurrentTestName() {
         return TEST_NAME_HOLDER.getMethodName();
-    }
-
-    @Override
-    protected void starting(Description description) {
-        System.out.println("\nStarting " + description.getClassName() + ":" + description.getMethodName() + "...\n");
-        startTime = System.currentTimeMillis();
-    }
-
-    @Override
-    protected void finished(Description description) {
-        long duration = System.currentTimeMillis() - startTime;
-        System.out.println("\nFinished " + description.getClassName() + ":" + description.getMethodName() + " in " + duration + " ms\n");
     }
 
     /* ------------------- Useful extra test helpers ---------------------- */
@@ -121,11 +118,11 @@ public abstract class BaseTest extends TestWatcher {
     
     public static <E> void assertListEquals(String message, List<? extends E> expected, List<? extends E> actual) {
         int expSize=GenericUtils.size(expected), actSize=GenericUtils.size(actual);
-        Assert.assertEquals(message + "[size]", expSize, actSize);
+        assertEquals(message + "[size]", expSize, actSize);
         
         for (int index=0; index < expSize; index++) {
             E expValue=expected.get(index), actValue=actual.get(index);
-            Assert.assertEquals(message + "[" + index + "]", expValue, actValue);
+            assertEquals(message + "[" + index + "]", expValue, actValue);
         }
     }
 

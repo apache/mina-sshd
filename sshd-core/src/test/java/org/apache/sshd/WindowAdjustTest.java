@@ -65,6 +65,7 @@ public class WindowAdjustTest {
                 Paths.get(getClass().getResource("/big-msg.txt").toURI()));
 
         sshServer.setShellFactory(new Factory<Command>() {
+            @Override
             public Command create() {
                 return new FloodingAsyncCommand(msg, 10000, END_FILE);
             }
@@ -134,12 +135,18 @@ public class WindowAdjustTest {
             this.lastMsg = lastMsg;
         }
 
-        public void setIoInputStream(IoInputStream in) {}
+        @Override
+        public void setIoInputStream(IoInputStream in) {
+            // ignored
+        }
 
+        @Override
         public void setIoOutputStream(IoOutputStream out) {
             final AsyncInPendingWrapper a = new AsyncInPendingWrapper(out);
 
             new Thread(new Runnable() {
+                @SuppressWarnings("synthetic-access")
+                @Override
                 public void run() {
                     for (int i = 0; i < sendCount; i++) {
                         a.write(new ByteArrayBuffer(msg));
@@ -149,19 +156,40 @@ public class WindowAdjustTest {
             }).start();
         }
 
-        public void setIoErrorStream(IoOutputStream err) {}
+        @Override
+        public void setIoErrorStream(IoOutputStream err) {
+            // ignored
+        }
 
-        public void setInputStream(InputStream in) {}
+        @Override
+        public void setInputStream(InputStream in) {
+            // ignored
+        }
 
-        public void setOutputStream(OutputStream out) {}
+        @Override
+        public void setOutputStream(OutputStream out) {
+            // ignored
+        }
 
-        public void setErrorStream(OutputStream err) {}
+        @Override
+        public void setErrorStream(OutputStream err) {
+            // ignored
+        }
 
-        public void setExitCallback(ExitCallback callback) {}
+        @Override
+        public void setExitCallback(ExitCallback callback) {
+            // ignored
+        }
 
-        public void start(Environment env) throws IOException {}
+        @Override
+        public void start(Environment env) throws IOException {
+            // ignored
+        }
 
-        public void destroy() {}
+        @Override
+        public void destroy() {
+            // ignored
+        }
     }
 
     /**
@@ -172,6 +200,9 @@ public class WindowAdjustTest {
 
         // Order has to be preserved for queued writes
         private final Deque<Buffer> pending = new LinkedList<Buffer>() {
+            // we don't expect to serialize it
+            private static final long serialVersionUID = 1L;
+
             @Override
             public boolean add(Buffer o) {
                 return super.add(o);
@@ -198,6 +229,8 @@ public class WindowAdjustTest {
         private void writeWithPendingDetection(final Buffer msg, final boolean wasPending) {
             try {
                 asyncIn.write(msg).addListener(new SshFutureListener<IoWriteFuture>() {
+                    @SuppressWarnings("synthetic-access")
+                    @Override
                     public void operationComplete(final IoWriteFuture future) {
                         if(wasPending) {
                             pending.remove();

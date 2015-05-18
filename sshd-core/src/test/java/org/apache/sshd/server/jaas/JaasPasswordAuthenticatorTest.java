@@ -33,26 +33,22 @@ import javax.security.auth.login.Configuration;
 import javax.security.auth.login.LoginException;
 import javax.security.auth.spi.LoginModule;
 
-import org.apache.sshd.util.BaseTest;
+import org.apache.sshd.util.BaseTestSupport;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 
 /**
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class JaasPasswordAuthenticatorTest extends BaseTest {
+public class JaasPasswordAuthenticatorTest extends BaseTestSupport {
 
     @Before
     public void setUp() {
         Configuration config = new Configuration() {
+            @Override
             public AppConfigurationEntry[] getAppConfigurationEntry(String name) {
                 return new AppConfigurationEntry[] {
                         new AppConfigurationEntry(DummyLoginModule.class.getName(),
@@ -60,7 +56,9 @@ public class JaasPasswordAuthenticatorTest extends BaseTest {
                                                   new HashMap<String,Object>())
                 };
             }
+            @Override
             public void refresh() {
+                // ignored
             }
         };
         Configuration.setConfiguration(config);
@@ -90,11 +88,13 @@ public class JaasPasswordAuthenticatorTest extends BaseTest {
         public DummyLoginModule() {
         }
 
+        @Override
         public void initialize(Subject subject, CallbackHandler callbackHandler, Map<String, ?> sharedState, Map<String, ?> options) {
             this.subject = subject;
             this.callbackHandler = callbackHandler;
         }
 
+        @Override
         public boolean login() throws LoginException {
             Callback[] callbacks = new Callback[2];
             callbacks[0] = new NameCallback("Username: ");
@@ -111,14 +111,17 @@ public class JaasPasswordAuthenticatorTest extends BaseTest {
             return user.equals(new String(tmpPassword));
         }
 
+        @Override
         public boolean commit() throws LoginException {
             return true;
         }
 
+        @Override
         public boolean abort() throws LoginException {
             return true;
         }
 
+        @Override
         public boolean logout() throws LoginException {
             return true;
         }

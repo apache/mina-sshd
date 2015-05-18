@@ -30,15 +30,14 @@ import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.Signature;
 import org.apache.sshd.common.signature.BuiltinSignatures.ParseResult;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.util.BaseTest;
-import org.junit.Assert;
+import org.apache.sshd.util.BaseTestSupport;
 import org.junit.Test;
 import org.mockito.Mockito;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class BuiltinSignaturesTest extends BaseTest {
+public class BuiltinSignaturesTest extends BaseTestSupport {
     public BuiltinSignaturesTest() {
         super();
     }
@@ -48,7 +47,7 @@ public class BuiltinSignaturesTest extends BaseTest {
         for (BuiltinSignatures expected : BuiltinSignatures.VALUES) {
             String name = expected.getName();
             BuiltinSignatures actual = BuiltinSignatures.fromFactoryName(name);
-            Assert.assertSame(name, expected, actual);
+            assertSame(name, expected, actual);
         }
     }
 
@@ -93,7 +92,7 @@ public class BuiltinSignaturesTest extends BaseTest {
         for (SignatureFactory expected : BuiltinSignatures.VALUES) {
             String              name=expected.getName();
             SignatureFactory    actual=BuiltinSignatures.resolveFactory(name);
-            Assert.assertSame(name, expected, actual);
+            assertSame(name, expected, actual);
         }
     }
 
@@ -102,7 +101,7 @@ public class BuiltinSignaturesTest extends BaseTest {
         for (SignatureFactory expected : BuiltinSignatures.VALUES) {
             try {
                 BuiltinSignatures.registerExtension(expected);
-                Assert.fail("Unexpected sucess for " + expected.getName());
+                fail("Unexpected sucess for " + expected.getName());
             } catch(IllegalArgumentException e) {
                 // expected - ignored
             }
@@ -118,7 +117,7 @@ public class BuiltinSignaturesTest extends BaseTest {
         try {
             for (int index=1; index <= Byte.SIZE; index++) {
                 BuiltinSignatures.registerExtension(expected);
-                Assert.assertEquals("Unexpected success at attempt #" + index, 1, index);
+                assertEquals("Unexpected success at attempt #" + index, 1, index);
             }
         } finally {
             BuiltinSignatures.unregisterExtension(name);
@@ -132,27 +131,27 @@ public class BuiltinSignaturesTest extends BaseTest {
 
         String  name=expected.getName();
         try {
-            Assert.assertNull("Extension already registered", BuiltinSignatures.resolveFactory(name));
+            assertNull("Extension already registered", BuiltinSignatures.resolveFactory(name));
             BuiltinSignatures.registerExtension(expected);
 
             SignatureFactory    actual=BuiltinSignatures.resolveFactory(name);
-            Assert.assertSame("Mismatched resolved instance", expected, actual);
+            assertSame("Mismatched resolved instance", expected, actual);
         } finally {
             SignatureFactory    actual=BuiltinSignatures.unregisterExtension(name);
-            Assert.assertSame("Mismatched unregistered instance", expected, actual);
-            Assert.assertNull("Extension not un-registered", BuiltinSignatures.resolveFactory(name));
+            assertSame("Mismatched unregistered instance", expected, actual);
+            assertNull("Extension not un-registered", BuiltinSignatures.resolveFactory(name));
         }
     }
 
     @Test
     public void testFac2NamedTransformer() {
-        Assert.assertNull("Invalid null transformation", SignatureFactory.FAC2NAMED.transform(null));
+        assertNull("Invalid null transformation", SignatureFactory.FAC2NAMED.transform(null));
         for (SignatureFactory expected : BuiltinSignatures.VALUES) {
             NamedFactory<Signature>   actual=SignatureFactory.FAC2NAMED.transform(expected);
-            Assert.assertSame("Mismatched transformed instance for " + expected.getName(), expected, actual);
+            assertSame("Mismatched transformed instance for " + expected.getName(), expected, actual);
         }
         
         SignatureFactory   mock=Mockito.mock(SignatureFactory.class);
-        Assert.assertSame("Mismatched transformed mocked instance", mock, SignatureFactory.FAC2NAMED.transform(mock));
+        assertSame("Mismatched transformed mocked instance", mock, SignatureFactory.FAC2NAMED.transform(mock));
     }
 }

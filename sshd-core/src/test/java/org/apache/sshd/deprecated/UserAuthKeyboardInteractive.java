@@ -18,14 +18,18 @@
  */
 package org.apache.sshd.deprecated;
 
+import static org.apache.sshd.common.SshConstants.SSH_MSG_USERAUTH_FAILURE;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_USERAUTH_INFO_REQUEST;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_USERAUTH_SUCCESS;
+
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.sshd.client.UserInteraction;
 import org.apache.sshd.client.session.ClientSessionImpl;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.util.buffer.Buffer;
-
-import static org.apache.sshd.common.SshConstants.*;
 
 /**
  * Userauth with keyboard-interactive method.
@@ -42,6 +46,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
         this.password = password;
     }
 
+    @Override
     public Result next(Buffer buffer) throws IOException {
         if (buffer == null) {
             log.debug("Send SSH_MSG_USERAUTH_REQUEST for password");
@@ -69,7 +74,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
                         prompt[i] = buffer.getString();
                         echo[i] = (buffer.getByte() != 0);
                     }
-                    log.debug("Promt: {}", prompt);
+                    log.debug("Promt: {}", Arrays.toString(prompt));
                     log.debug("Echo: {}", echo);
 
                     String[] rep = null;
@@ -102,7 +107,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
                     log.debug("Received SSH_MSG_USERAUTH_FAILURE");
                     return Result.Failure;
                 default:
-                    log.debug("Received unknown packet {}", cmd);
+                    log.debug("Received unknown packet {}", Byte.valueOf(cmd));
                     return Result.Continued;
             }
         }

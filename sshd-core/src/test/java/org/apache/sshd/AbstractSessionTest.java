@@ -18,15 +18,12 @@
  */
 package org.apache.sshd;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-
 import java.io.IOException;
 
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
-import org.apache.sshd.util.BaseTest;
+import org.apache.sshd.util.BaseTestSupport;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -35,7 +32,7 @@ import org.junit.Test;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class AbstractSessionTest extends BaseTest {
+public class AbstractSessionTest extends BaseTestSupport {
 
     private MySession session;
 
@@ -79,6 +76,7 @@ public class AbstractSessionTest extends BaseTest {
     public void testReadIdentBadLineEnding() {
         Buffer buf = new ByteArrayBuffer(("SSH-2.0-software\ra").getBytes());
         String ident = session.doReadIdentification(buf);
+        fail("Unexpected success: " + ident);
     }
 
     @Test(expected = IllegalStateException.class)
@@ -91,6 +89,7 @@ public class AbstractSessionTest extends BaseTest {
                 "01234567890123456789012345678901234567890123456789" +
                 "01234567890123456789012345678901234567890123456789").getBytes());
         String ident = session.doReadIdentification(buf);
+        fail("Unexpected success: " + ident);
     }
 
     @Test(expected = IllegalStateException.class)
@@ -102,14 +101,18 @@ public class AbstractSessionTest extends BaseTest {
         sb.append("SSH-2.0-software\r\n");
         Buffer buf = new ByteArrayBuffer(sb.toString().getBytes());
         String ident = session.doReadIdentification(buf);
+        fail("Unexpected success: " + ident);
     }
 
     public static class MySession extends AbstractSession {
         public MySession() {
             super(true, SshServer.setUpDefaultServer(), null);
         }
+        @Override
         protected void handleMessage(Buffer buffer) throws Exception {
+            // ignored
         }
+        @Override
         protected boolean readIdentification(Buffer buffer) {
             return false;
         }
@@ -118,18 +121,23 @@ public class AbstractSessionTest extends BaseTest {
         }
         @Override
         protected void sendKexInit() throws IOException {
+            // ignored
         }
         @Override
         protected void checkKeys() {
+            // ignored
         }
         @Override
         protected void receiveKexInit(Buffer buffer) throws IOException {
+            // ignored
         }
         @Override
         public void startService(String name) throws Exception {
+            // ignored
         }
         @Override
         public void resetIdleTimeout() {
+            // ignored
         }
     }
 }

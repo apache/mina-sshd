@@ -22,7 +22,7 @@ import java.io.OutputStream;
 
 import com.jcraft.jsch.Channel;
 import com.jcraft.jsch.JSch;
-import org.apache.sshd.util.BaseTest;
+import org.apache.sshd.util.BaseTestSupport;
 import org.apache.sshd.util.JSchLogger;
 import org.apache.sshd.util.SimpleUserInfo;
 import org.junit.After;
@@ -35,7 +35,7 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SpringConfigTest extends BaseTest {
+public class SpringConfigTest extends BaseTestSupport {
 
     private ClassPathXmlApplicationContext context;
 

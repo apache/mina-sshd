@@ -22,13 +22,6 @@ import static org.apache.sshd.common.sftp.SftpConstants.SSH_FX_FILE_ALREADY_EXIS
 import static org.apache.sshd.common.sftp.SftpConstants.SSH_FX_NO_SUCH_FILE;
 import static org.apache.sshd.common.sftp.SftpConstants.S_IRUSR;
 import static org.apache.sshd.common.sftp.SftpConstants.S_IWUSR;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -47,7 +40,7 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.command.ScpCommandFactory;
 import org.apache.sshd.server.sftp.SftpSubsystemFactory;
-import org.apache.sshd.util.BaseTest;
+import org.apache.sshd.util.BaseTestSupport;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.JSchLogger;
@@ -62,7 +55,7 @@ import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.SftpException;
 
-public class SftpTest extends BaseTest {
+public class SftpTest extends BaseTestSupport {
 
     private SshServer sshd;
     private int port;
@@ -435,7 +428,7 @@ public class SftpTest extends BaseTest {
         URI base = new File(System.getProperty("user.dir")).getAbsoluteFile().toURI();
         String path = new File(base.relativize(url).getPath()).getParent() + "/";
         path = path.replace('\\', '/');
-        Vector res = c.ls(path);
+        Vector<?> res = c.ls(path);
         for (Object f : res) {
             System.out.println(f.toString());
         }

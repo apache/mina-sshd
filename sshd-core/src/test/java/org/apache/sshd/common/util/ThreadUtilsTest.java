@@ -23,14 +23,13 @@ import java.util.Collection;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.apache.sshd.util.BaseTest;
-import org.junit.Assert;
+import org.apache.sshd.util.BaseTestSupport;
 import org.junit.Test;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ThreadUtilsTest extends BaseTest {
+public class ThreadUtilsTest extends BaseTestSupport {
     public ThreadUtilsTest() {
         super();
     }
@@ -38,25 +37,25 @@ public class ThreadUtilsTest extends BaseTest {
     @Test
     public void testProtectExecutorServiceShutdown() {
         for (boolean shutdownOnExit : new boolean[] { true, false }) {
-            Assert.assertNull("Unexpected instance for shutdown=" + shutdownOnExit, ThreadUtils.protectExecutorServiceShutdown(null, shutdownOnExit));
+            assertNull("Unexpected instance for shutdown=" + shutdownOnExit, ThreadUtils.protectExecutorServiceShutdown(null, shutdownOnExit));
         }
 
         ExecutorService service=Executors.newSingleThreadExecutor();
         try {
-            Assert.assertSame("Unexpected wrapped instance", service, ThreadUtils.protectExecutorServiceShutdown(service, true));
+            assertSame("Unexpected wrapped instance", service, ThreadUtils.protectExecutorServiceShutdown(service, true));
             
             ExecutorService wrapped=ThreadUtils.protectExecutorServiceShutdown(service, false);
             try {
-                Assert.assertNotSame("No wrapping occurred", service, wrapped);
+                assertNotSame("No wrapping occurred", service, wrapped);
 
                 wrapped.shutdown();
-                Assert.assertTrue("Wrapped service not shutdown", wrapped.isShutdown());
-                Assert.assertFalse("Protected service is shutdown", service.isShutdown());
+                assertTrue("Wrapped service not shutdown", wrapped.isShutdown());
+                assertFalse("Protected service is shutdown", service.isShutdown());
                 
                 Collection<?>   running=wrapped.shutdownNow();
-                Assert.assertTrue("Non-empty runners list", running.isEmpty());
-                Assert.assertTrue("Wrapped service not shutdownNow", wrapped.isShutdown());
-                Assert.assertFalse("Protected service is shutdownNow", service.isShutdown());
+                assertTrue("Non-empty runners list", running.isEmpty());
+                assertTrue("Wrapped service not shutdownNow", wrapped.isShutdown());
+                assertFalse("Protected service is shutdownNow", service.isShutdown());
             } finally {
                 wrapped.shutdownNow();  // just in case
             }

@@ -21,7 +21,7 @@ package org.apache.sshd;
 import org.apache.sshd.common.Random;
 import org.apache.sshd.common.random.BouncyCastleRandom;
 import org.apache.sshd.common.random.JceRandom;
-import org.apache.sshd.util.BaseTest;
+import org.apache.sshd.util.BaseTestSupport;
 import org.junit.Test;
 
 /**
@@ -29,7 +29,7 @@ import org.junit.Test;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class RandomTest extends BaseTest {
+public class RandomTest extends BaseTestSupport {
 
     @Test
     public void testJce() {

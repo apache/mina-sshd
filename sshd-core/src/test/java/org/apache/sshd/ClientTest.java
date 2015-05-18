@@ -18,12 +18,6 @@
  */
 package org.apache.sshd;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -86,7 +80,7 @@ import org.apache.sshd.server.session.ServerConnectionService;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.session.ServerUserAuthService;
 import org.apache.sshd.util.AsyncEchoShellFactory;
-import org.apache.sshd.util.BaseTest;
+import org.apache.sshd.util.BaseTestSupport;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.BogusPublickeyAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
@@ -101,7 +95,7 @@ import org.junit.Test;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ClientTest extends BaseTest {
+public class ClientTest extends BaseTestSupport {
 
     private SshServer sshd;
     private SshClient client;

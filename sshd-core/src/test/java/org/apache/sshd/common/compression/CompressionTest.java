@@ -18,8 +18,6 @@
  */
 package org.apache.sshd.common.compression;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
@@ -27,7 +25,7 @@ import java.util.Arrays;
 
 import org.apache.sshd.SshServer;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.util.BaseTest;
+import org.apache.sshd.util.BaseTestSupport;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.JSchLogger;
@@ -43,7 +41,7 @@ import com.jcraft.jsch.JSch;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class CompressionTest extends BaseTest {
+public class CompressionTest extends BaseTestSupport {
 
     private SshServer sshd;
 
