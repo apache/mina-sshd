@@ -23,8 +23,6 @@ import java.io.IOException;
 import org.apache.sshd.client.session.ClientSessionImpl;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.util.buffer.Buffer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * TODO Add javadoc
@@ -32,9 +30,6 @@ import org.slf4j.LoggerFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class UserAuthPassword extends AbstractUserAuth {
-
-    protected final Logger log = LoggerFactory.getLogger(getClass());
-
     private final String password;
 
     public UserAuthPassword(ClientSessionImpl session, String service, String password) {

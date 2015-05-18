@@ -22,15 +22,12 @@ package org.apache.sshd.common.kex.dh;
 import org.apache.sshd.common.Digest;
 import org.apache.sshd.common.KeyExchange;
 import org.apache.sshd.common.session.AbstractSession;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.sshd.common.util.AbstractLoggingBean;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractDHKeyExchange implements KeyExchange {
-
-    protected final Logger log = LoggerFactory.getLogger(getClass());
+public abstract class AbstractDHKeyExchange extends AbstractLoggingBean implements KeyExchange {
     protected byte[] V_S;
     protected byte[] V_C;
     protected byte[] I_S;

@@ -23,29 +23,31 @@ import java.security.PublicKey;
 
 import org.apache.sshd.ClientSession;
 import org.apache.sshd.client.ServerKeyVerifier;
+import org.apache.sshd.common.util.AbstractLoggingBean;
 import org.apache.sshd.common.util.buffer.BufferUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * A ServerKeyVerifier that accepts one server key (specified in the constructor)
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class RequiredServerKeyVerifier implements ServerKeyVerifier {
-
-	protected final Logger log = LoggerFactory.getLogger(getClass());
-
-	final PublicKey requiredKey;
+public class RequiredServerKeyVerifier extends AbstractLoggingBean implements ServerKeyVerifier {
+	private final PublicKey requiredKey;
 
 	public RequiredServerKeyVerifier(PublicKey requiredKey) {
-		super();
 		this.requiredKey = requiredKey;
 	}
 
-	public boolean verifyServerKey(ClientSession sshClientSession, SocketAddress remoteAddress, PublicKey serverKey) {
+	public final PublicKey getRequiredKey() {
+	    return requiredKey;
+	}
+
+	@Override
+    public boolean verifyServerKey(ClientSession sshClientSession, SocketAddress remoteAddress, PublicKey serverKey) {
 		if (requiredKey.equals(serverKey)) {
-            log.debug("Server at {} presented expected key: {}", remoteAddress, BufferUtils.printHex(serverKey.getEncoded()));
+		    if (log.isDebugEnabled()) {
+		        log.debug("Server at {} presented expected key: {}", remoteAddress, BufferUtils.printHex(serverKey.getEncoded()));
+		    }
 			return true;
 		} else {
             log.error("Server at {} presented wrong key: {}", remoteAddress, BufferUtils.printHex(serverKey.getEncoded()));

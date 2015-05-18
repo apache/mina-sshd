@@ -21,18 +21,14 @@ package org.apache.sshd.common.future;
 import java.lang.reflect.Array;
 import java.util.concurrent.TimeUnit;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.sshd.common.util.AbstractLoggingBean;
 
 /**
  * A default implementation of {@link SshFuture}.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class DefaultSshFuture<T extends SshFuture> implements SshFuture<T> {
-
-    final Logger logger = LoggerFactory.getLogger(getClass());
-
+public class DefaultSshFuture<T extends SshFuture> extends AbstractLoggingBean implements SshFuture<T> {
     /** A default value to indicate the future has been canceled */
     private static final Object CANCELED = new Object();
     /** A value indicating a null */
@@ -272,7 +268,7 @@ public class DefaultSshFuture<T extends SshFuture> implements SshFuture<T> {
         try {
             l.operationComplete(asT());
         } catch (Throwable t) {
-            logger.warn("Listener threw an exception", t);
+            log.warn("Listener threw an exception", t);
         }
     }
 

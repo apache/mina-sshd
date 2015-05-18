@@ -23,29 +23,25 @@ import java.security.PublicKey;
 
 import org.apache.sshd.ClientSession;
 import org.apache.sshd.client.ServerKeyVerifier;
+import org.apache.sshd.common.util.AbstractLoggingBean;
 import org.apache.sshd.common.util.KeyUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * A ServerKeyVerifier that accepts all server keys.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class AcceptAllServerKeyVerifier implements ServerKeyVerifier {
-
-	protected final Logger log = LoggerFactory.getLogger(getClass());
-
+public class AcceptAllServerKeyVerifier extends AbstractLoggingBean implements ServerKeyVerifier {
 	public static final ServerKeyVerifier INSTANCE = new AcceptAllServerKeyVerifier();
 
 	private AcceptAllServerKeyVerifier() {
+	    super();
 	}
 
 	@Override
     public boolean verifyServerKey(ClientSession sshClientSession, SocketAddress remoteAddress, PublicKey serverKey) {
         log.warn("Server at {} presented unverified {} key: {}",
-                new Object[] { remoteAddress, serverKey.getAlgorithm(), KeyUtils.getFingerPrint(serverKey) });
+                 new Object[] { remoteAddress, serverKey.getAlgorithm(), KeyUtils.getFingerPrint(serverKey) });
 		return true;
 	}
-
 }

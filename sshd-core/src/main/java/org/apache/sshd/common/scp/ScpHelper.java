@@ -42,19 +42,15 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.scp.ScpTransferEventListener.FileOperation;
+import org.apache.sshd.common.util.AbstractLoggingBean;
 import org.apache.sshd.common.util.DirectoryScanner;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.IoUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ScpHelper {
-
-    protected static final Logger log = LoggerFactory.getLogger(ScpHelper.class);
-
+public class ScpHelper extends AbstractLoggingBean {
     public static final int OK = 0;
     public static final int WARNING = 1;
     public static final int ERROR = 2;
@@ -649,7 +645,7 @@ public class ScpHelper {
             }
         }
 
-        return String.format("%04o", pf);
+        return String.format("%04o", Integer.valueOf(pf));
     }
 
     public static Set<PosixFilePermission> setOctalPerms(Path path, String str) throws IOException {

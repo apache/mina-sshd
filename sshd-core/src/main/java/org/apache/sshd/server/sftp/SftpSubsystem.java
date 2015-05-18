@@ -80,6 +80,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.file.FileSystemAware;
+import org.apache.sshd.common.util.AbstractLoggingBean;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.IoUtils;
 import org.apache.sshd.common.util.OsUtils;
@@ -92,17 +93,13 @@ import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
 import org.apache.sshd.server.SessionAware;
 import org.apache.sshd.server.session.ServerSession;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * SFTP subsystem
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SftpSubsystem implements Command, Runnable, SessionAware, FileSystemAware {
-
-    protected final Logger log = LoggerFactory.getLogger(getClass());
+public class SftpSubsystem extends AbstractLoggingBean implements Command, Runnable, SessionAware, FileSystemAware {
 
     /**
      * Properties key for the maximum of available open handles per session.

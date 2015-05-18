@@ -28,8 +28,6 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.util.KeyUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * TODO Add javadoc
@@ -37,9 +35,6 @@ import org.slf4j.LoggerFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class UserAuthPublicKey extends AbstractUserAuth {
-
-    protected final Logger log = LoggerFactory.getLogger(getClass());
-
     private final KeyPair key;
 
     public UserAuthPublicKey(ClientSessionImpl session, String service, KeyPair key) {

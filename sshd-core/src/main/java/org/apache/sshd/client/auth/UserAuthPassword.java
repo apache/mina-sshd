@@ -26,16 +26,15 @@ import org.apache.sshd.ClientSession;
 import org.apache.sshd.client.UserAuth;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.util.AbstractLoggingBean;
 import org.apache.sshd.common.util.buffer.Buffer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class UserAuthPassword implements UserAuth {
+public class UserAuthPassword extends AbstractLoggingBean implements UserAuth {
 
     public static class UserAuthPasswordFactory implements NamedFactory<UserAuth> {
         public static final UserAuthPasswordFactory INSTANCE = new UserAuthPasswordFactory();
@@ -54,11 +53,14 @@ public class UserAuthPassword implements UserAuth {
         }
     }
 
-    protected final Logger log = LoggerFactory.getLogger(getClass());
     private ClientSession session;
     private String service;
     private Iterator<String> passwords;
     private String current;
+
+    public UserAuthPassword() {
+        super();
+    }
 
     @Override
     public void init(ClientSession session, String service, List<Object> identities) throws Exception {

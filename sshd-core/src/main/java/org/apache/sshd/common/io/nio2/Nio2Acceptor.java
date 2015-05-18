@@ -54,7 +54,7 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
     @Override
     public void bind(Collection<? extends SocketAddress> addresses) throws IOException {
         for (SocketAddress address : addresses) {
-            logger.debug("Binding Nio2Acceptor to address {}", address);
+            log.debug("Binding Nio2Acceptor to address {}", address);
             AsynchronousServerSocketChannel socket = AsynchronousServerSocketChannel.open(group);
             setOption(socket, FactoryManager.SOCKET_KEEPALIVE, StandardSocketOptions.SO_KEEPALIVE, null);
             setOption(socket, FactoryManager.SOCKET_LINGER, StandardSocketOptions.SO_LINGER, null);
@@ -76,7 +76,7 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
 
     @Override
     public void unbind() {
-        logger.debug("Unbinding");
+        log.debug("Unbinding");
         unbind(getBoundAddresses());
     }
 
@@ -116,7 +116,7 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
             try {
                 channels.get(address).close();
             } catch (IOException e) {
-                logger.debug("Exception caught while closing channel", e);
+                log.debug("Exception caught while closing channel", e);
             }
         }
         super.doCloseImmediately();
@@ -170,10 +170,10 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
         @Override
         protected void onFailed(final Throwable exc, final SocketAddress address) {
             if (channels.containsKey(address) && !disposing.get()) {
-                logger.warn("Caught " + exc.getClass().getSimpleName()
-                          + " while accepting incoming connection from " + address
-                          + ": " + exc.getMessage(),
-                            exc);
+                log.warn("Caught " + exc.getClass().getSimpleName()
+                       + " while accepting incoming connection from " + address
+                       + ": " + exc.getMessage(),
+                         exc);
             }
         }
     }

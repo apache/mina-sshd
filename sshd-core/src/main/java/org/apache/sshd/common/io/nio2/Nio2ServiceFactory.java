@@ -44,15 +44,17 @@ public class Nio2ServiceFactory extends AbstractIoServiceFactory {
         try {
             group = AsynchronousChannelGroup.withThreadPool(ThreadUtils.protectExecutorServiceShutdown(getExecutorService(), isShutdownExecutor()));
         } catch(IOException e) {
-            logger.warn("Failed (" + e.getClass().getSimpleName() + " to start async. channel group: " + e.getMessage(), e);
+            log.warn("Failed (" + e.getClass().getSimpleName() + " to start async. channel group: " + e.getMessage(), e);
             throw new RuntimeSshException(e);
         }
     }
 
+    @Override
     public IoConnector createConnector(IoHandler handler) {
         return new Nio2Connector(getFactoryManager(), handler, group);
     }
 
+    @Override
     public IoAcceptor createAcceptor(IoHandler handler) {
         return new Nio2Acceptor(getFactoryManager(), handler, group);
     }
@@ -61,20 +63,20 @@ public class Nio2ServiceFactory extends AbstractIoServiceFactory {
     protected void doCloseImmediately() {
         try {
             if (!group.isShutdown()) {
-                logger.debug("Shutdown group");
+                log.debug("Shutdown group");
                 group.shutdownNow();
             
                 // if we protect the executor then the await will fail since we didn't really shut it down...
                 if (isShutdownExecutor()) {
                     if (group.awaitTermination(5, TimeUnit.SECONDS)) {
-                        logger.debug("Group successfully shut down");
+                        log.debug("Group successfully shut down");
                     } else {
-                        logger.debug("Not all group tasks terminated");
+                        log.debug("Not all group tasks terminated");
                     }
                 }
             }
         } catch (Exception e) {
-            logger.debug("Exception caught while closing channel group", e);
+            log.debug("Exception caught while closing channel group", e);
         } finally {
             super.doCloseImmediately();
         }

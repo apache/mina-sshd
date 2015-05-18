@@ -27,11 +27,10 @@ import java.util.EnumSet;
 import java.util.Map;
 
 import org.apache.sshd.common.Factory;
+import org.apache.sshd.common.util.AbstractLoggingBean;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.server.Command;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * A {@link Factory} of {@link Command} that will create a new process and bridge
@@ -39,7 +38,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ProcessShellFactory implements Factory<Command> {
+public class ProcessShellFactory extends AbstractLoggingBean implements Factory<Command> {
 
     public enum TtyOptions {
         Echo,
@@ -48,8 +47,6 @@ public class ProcessShellFactory implements Factory<Command> {
         ONlCr,
         OCrNl
     }
-
-    private static final Logger LOG = LoggerFactory.getLogger(ProcessShellFactory.class);
 
     private String[] command;
     private EnumSet<TtyOptions> ttyOptions;
@@ -86,6 +83,11 @@ public class ProcessShellFactory implements Factory<Command> {
         private TtyFilterInputStream out;
         private TtyFilterInputStream err;
 
+        public ProcessShell() {
+            super();
+        }
+
+        @SuppressWarnings("synthetic-access")
         @Override
         public void start(Map<String,String> env) throws IOException {
             String[] cmds = new String[command.length];
@@ -101,10 +103,10 @@ public class ProcessShellFactory implements Factory<Command> {
                 try {
                     builder.environment().putAll(env);
                 } catch (Exception e) {
-                    LOG.info("Could not set environment for command", e);
+                    log.info("Could not set environment for command", e);
                 }
             }
-            LOG.info("Starting shell with command: '{}' and env: {}", builder.command(), builder.environment());
+            log.info("Starting shell with command: '{}' and env: {}", builder.command(), builder.environment());
             process = builder.start();
             out = new TtyFilterInputStream(process.getInputStream());
             err = new TtyFilterInputStream(process.getErrorStream());
@@ -169,6 +171,7 @@ public class ProcessShellFactory implements Factory<Command> {
             public int available() throws IOException {
                 return super.available() + buffer.available();
             }
+            @SuppressWarnings("synthetic-access")
             @Override
             public synchronized int read() throws IOException {
                 int c;
@@ -210,6 +213,7 @@ public class ProcessShellFactory implements Factory<Command> {
                 super(out);
                 this.echo = echo;
             }
+            @SuppressWarnings("synthetic-access")
             @Override
             public void write(int c) throws IOException {
                 if (c == '\n' && ttyOptions.contains(TtyOptions.INlCr)) {

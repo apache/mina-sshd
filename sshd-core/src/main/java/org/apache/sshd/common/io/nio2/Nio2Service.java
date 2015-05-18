@@ -35,14 +35,10 @@ import org.apache.sshd.common.io.IoService;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.GenericUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  */
 public abstract class Nio2Service extends CloseableUtils.AbstractInnerCloseable implements IoService {
-
-    protected final Logger logger = LoggerFactory.getLogger(getClass());
     protected final FactoryManager manager;
     protected final IoHandler handler;
     protected final Map<Long, IoSession> sessions;
@@ -50,7 +46,7 @@ public abstract class Nio2Service extends CloseableUtils.AbstractInnerCloseable 
     protected final AsynchronousChannelGroup group;
 
     protected Nio2Service(FactoryManager manager, IoHandler handler, AsynchronousChannelGroup group) {
-        logger.debug("Creating {}", getClass().getSimpleName());
+        log.debug("Creating {}", getClass().getSimpleName());
         this.manager = manager;
         this.handler = handler;
         this.sessions = new ConcurrentHashMap<Long, IoSession>();
@@ -61,7 +57,7 @@ public abstract class Nio2Service extends CloseableUtils.AbstractInnerCloseable 
         try {
             close(true).await();
         } catch (InterruptedException e) {
-            logger.debug("Exception caught while closing", e);
+            log.debug("Exception caught while closing", e);
         }
     }
 
@@ -96,7 +92,7 @@ public abstract class Nio2Service extends CloseableUtils.AbstractInnerCloseable 
             try {
                 socket.setOption(option, val);
             } catch (IOException e) {
-                logger.warn("Unable to set socket option " + option + " to " + val, e);
+                log.warn("Unable to set socket option " + option + " to " + val, e);
             }
         }
     }

@@ -36,8 +36,6 @@ import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.future.DefaultSshFuture;
 import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.future.SshFutureListener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Utility class to help with {@link Closeable}s.
@@ -150,14 +148,15 @@ public class CloseableUtils {
 
     }
 
-    public static abstract class IoBaseCloseable implements Closeable {
-        /** Our logger */
-        protected final Logger log = LoggerFactory.getLogger(getClass());
-        
+    public static abstract class IoBaseCloseable extends AbstractLoggingBean implements Closeable {
         protected IoBaseCloseable() {
             super();
         }
         
+        protected IoBaseCloseable(String discriminator) {
+            super(discriminator);
+        }
+
         // TODO once JDK 8+ becomes the minimum for this project, make it a default method instead of this class
         @Override
         public void close() throws IOException {
@@ -309,6 +308,14 @@ public class CloseableUtils {
         /** A future that will be set 'closed' when the object is actually closed */
         protected final CloseFuture closeFuture = new DefaultCloseFuture(lock);
 
+        protected AbstractCloseable() {
+            super();
+        }
+
+        protected AbstractCloseable(String discriminator) {
+            super(discriminator);
+        }
+
         @Override
         public CloseFuture close(boolean immediately) {
             if (immediately) {
@@ -393,6 +400,14 @@ public class CloseableUtils {
     public static abstract class AbstractInnerCloseable extends AbstractCloseable {
 
         protected abstract Closeable getInnerCloseable();
+
+        protected AbstractInnerCloseable() {
+            super();
+        }
+
+        protected AbstractInnerCloseable(String discriminator) {
+            super(discriminator);
+        }
 
         @Override
         protected CloseFuture doCloseGracefully() {

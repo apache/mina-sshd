@@ -25,19 +25,23 @@ import java.nio.file.FileSystems;
 
 import org.apache.sshd.common.Session;
 import org.apache.sshd.common.file.FileSystemFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.sshd.common.util.AbstractLoggingBean;
 
 /**
  * Native file system factory. It uses the OS file system.
  *
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public class NativeFileSystemFactory implements FileSystemFactory {
-
-    private final Logger LOG = LoggerFactory.getLogger(NativeFileSystemFactory.class);
-
+public class NativeFileSystemFactory extends AbstractLoggingBean implements FileSystemFactory {
     private boolean createHome;
+
+    public NativeFileSystemFactory() {
+        this(false);
+    }
+    
+    public NativeFileSystemFactory(boolean createHome) {
+        this.createHome = createHome;
+    }
 
     /**
      * Should the home directories be created automatically
@@ -51,14 +55,11 @@ public class NativeFileSystemFactory implements FileSystemFactory {
      * Set if the home directories be created automatically
      * @param createHome true if the file system will create the home directory if not available
      */
-
     public void setCreateHome(boolean createHome) {
         this.createHome = createHome;
     }
 
-    /**
-     * Create the appropriate user file system view.
-     */
+    @Override
     public FileSystem createFileSystem(Session session) {
         String userName = session.getUsername();
         // create home if does not exist
@@ -66,11 +67,11 @@ public class NativeFileSystemFactory implements FileSystemFactory {
             String homeDirStr = "/home/" + userName;
             File homeDir = new File(homeDirStr);
             if (homeDir.isFile()) {
-                LOG.warn("Not a directory :: " + homeDirStr);
+                log.warn("Not a directory :: " + homeDirStr);
 //                    throw new FtpException("Not a directory :: " + homeDirStr);
             }
             if ((!homeDir.exists()) && (!homeDir.mkdirs())) {
-                LOG.warn("Cannot create user home :: " + homeDirStr);
+                log.warn("Cannot create user home :: " + homeDirStr);
 //                    throw new FtpException("Cannot create user home :: "
 //                            + homeDirStr);
             }

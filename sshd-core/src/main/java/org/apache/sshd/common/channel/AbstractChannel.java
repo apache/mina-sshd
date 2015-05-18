@@ -68,6 +68,14 @@ public abstract class AbstractChannel extends CloseableUtils.AbstractInnerClosea
     protected final DefaultCloseFuture gracefulFuture = new DefaultCloseFuture(lock);
     protected final List<RequestHandler<Channel>> handlers = new ArrayList<RequestHandler<Channel>>();
 
+    protected AbstractChannel() {
+        super();
+    }
+
+    protected AbstractChannel(String discriminator) {
+        super(discriminator);
+    }
+
     public void addRequestHandler(RequestHandler<Channel> handler) {
         handlers.add(handler);
     }

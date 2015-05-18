@@ -31,8 +31,6 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Client side <code>ssh-auth</code> service.
@@ -53,10 +51,6 @@ public class ClientUserAuthServiceOld extends CloseableUtils.AbstractCloseable i
             return new ClientUserAuthServiceOld(session);
         }
     }
-
-    /** Our logger */
-    protected final Logger log = LoggerFactory.getLogger(getClass());
-
     /**
      * When !authFuture.isDone() the current authentication
      */

@@ -34,8 +34,6 @@ import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.openssl.PasswordFinder;
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
 import org.bouncycastle.openssl.jcajce.JcePEMDecryptorProviderBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * <p>This host key provider loads private keys from the specified resources.</p>
@@ -46,13 +44,6 @@ import org.slf4j.LoggerFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ResourceKeyPairProvider extends AbstractKeyPairProvider {
-    // --- Shared ---
-
-    /**
-     * Logger
-     */
-    protected final Logger log = LoggerFactory.getLogger(getClass());
-
     // --- Properties ---
 
     /**

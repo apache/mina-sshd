@@ -23,20 +23,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.sshd.common.KeyPairProvider;
+import org.apache.sshd.common.util.AbstractLoggingBean;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.KeyUtils;
 import org.apache.sshd.common.util.ValidateUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractKeyPairProvider implements KeyPairProvider {
-    protected final Logger log = LoggerFactory.getLogger(getClass());
-
+public abstract class AbstractKeyPairProvider extends AbstractLoggingBean implements KeyPairProvider {
     protected AbstractKeyPairProvider() {
         super();
     }

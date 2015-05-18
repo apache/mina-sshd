@@ -18,6 +18,9 @@
  */
 package org.apache.sshd.client.auth;
 
+import static org.apache.sshd.common.SshConstants.SSH_MSG_USERAUTH_INFO_REQUEST;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -29,20 +32,16 @@ import org.apache.sshd.client.UserAuth;
 import org.apache.sshd.client.UserInteraction;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.util.AbstractLoggingBean;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import static org.apache.sshd.common.SshConstants.SSH_MSG_USERAUTH_INFO_REQUEST;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE;
 
 /**
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class UserAuthKeyboardInteractive implements UserAuth {
+public class UserAuthKeyboardInteractive extends AbstractLoggingBean implements UserAuth {
 
     public static class UserAuthKeyboardInteractiveFactory implements NamedFactory<UserAuth> {
         public static final UserAuthKeyboardInteractiveFactory INSTANCE = new UserAuthKeyboardInteractiveFactory();
@@ -61,13 +60,16 @@ public class UserAuthKeyboardInteractive implements UserAuth {
         }
     }
 
-    protected final Logger log = LoggerFactory.getLogger(getClass());
     private ClientSession session;
     private String service;
     private Iterator<String> passwords;
     private String current;
     private int nbTrials;
     private int maxTrials;
+
+    public UserAuthKeyboardInteractive() {
+        super();
+    }
 
     @Override
     public void init(ClientSession session, String service, List<Object> identities) throws Exception {

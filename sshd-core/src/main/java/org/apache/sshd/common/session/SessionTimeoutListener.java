@@ -18,13 +18,12 @@
  */
 package org.apache.sshd.common.session;
 
-import org.apache.sshd.common.Session;
-import org.apache.sshd.common.SessionListener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
+
+import org.apache.sshd.common.Session;
+import org.apache.sshd.common.SessionListener;
+import org.apache.sshd.common.util.AbstractLoggingBean;
 
 /**
  * Task that iterates over all currently open {@link AbstractSession}s and checks each of them for timeouts. If
@@ -32,31 +31,33 @@ import java.util.concurrent.CopyOnWriteArraySet;
  *
  * @see org.apache.sshd.common.session.AbstractSession#checkForTimeouts()
  */
-public class SessionTimeoutListener implements SessionListener, Runnable {
-
-    private final Logger log = LoggerFactory.getLogger(SessionTimeoutListener.class);
-    
+public class SessionTimeoutListener extends AbstractLoggingBean implements SessionListener, Runnable {
     private final Set<AbstractSession> sessions = new CopyOnWriteArraySet<AbstractSession>();
 
+    @Override
     public void sessionCreated(Session session) {
         if (session instanceof AbstractSession && (session.getAuthTimeout() > 0 || session.getIdleTimeout() > 0)) {
             sessions.add((AbstractSession) session);
         }
     }
 
+    @Override
     public void sessionEvent(Session session, Event event) {
+        // ignored
     }
 
+    @Override
     public void sessionClosed(Session s) {
         sessions.remove(s);
     }
 
+    @Override
     public void run() {
         for (AbstractSession session : sessions) {
             try {
                 session.checkForTimeouts();
-            } catch (Exception e) {
-                log.warn("An error occurred while checking session timeouts", e);
+            } catch(Exception e) {
+                log.warn("An error occurred while checking session=" + session + " timeouts", e);
             }
         }
     }

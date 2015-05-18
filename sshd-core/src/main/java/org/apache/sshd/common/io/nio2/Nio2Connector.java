@@ -41,7 +41,7 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
 
     @Override
     public IoConnectFuture connect(SocketAddress address) {
-        logger.debug("Connecting to {}", address);
+        log.debug("Connecting to {}", address);
         final IoConnectFuture future = new DefaultIoConnectFuture(null);
         try {
             final AsynchronousSocketChannel socket = AsynchronousSocketChannel.open(group);

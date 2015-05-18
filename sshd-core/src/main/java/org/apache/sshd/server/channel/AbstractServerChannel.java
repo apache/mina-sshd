@@ -35,6 +35,15 @@ public abstract class AbstractServerChannel extends AbstractChannel {
 
     protected boolean exitStatusSent;
 
+    protected AbstractServerChannel() {
+        super();
+    }
+
+    protected AbstractServerChannel(String discriminator) {
+        super(discriminator);
+    }
+
+    @Override
     public OpenFuture open(int recipient, int rwsize, int rmpsize, Buffer buffer) {
         this.recipient = recipient;
         this.remoteWindow.init(rwsize, rmpsize);
@@ -42,10 +51,12 @@ public abstract class AbstractServerChannel extends AbstractChannel {
         return doInit(buffer);
     }
 
+    @Override
     public void handleOpenSuccess(int recipient, int rwsize, int rmpsize, Buffer buffer) throws IOException {
         throw new IllegalStateException();
     }
 
+    @Override
     public void handleOpenFailure(Buffer buffer) {
         throw new IllegalStateException();
     }
@@ -59,7 +70,9 @@ public abstract class AbstractServerChannel extends AbstractChannel {
     protected void sendExitStatus(int v) throws IOException {
         if (!exitStatusSent) {
             exitStatusSent = true;
-            log.debug("Send SSH_MSG_CHANNEL_REQUEST exit-status on channel {}", id);
+            if (log.isDebugEnabled()) {
+                log.debug("Send SSH_MSG_CHANNEL_REQUEST exit-status on channel {}", Integer.valueOf(id));
+            }
             Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST);
             buffer.putInt(recipient);
             buffer.putString("exit-status");

@@ -28,6 +28,7 @@ import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.callback.UnsupportedCallbackException;
 import javax.security.auth.login.LoginContext;
 
+import org.apache.sshd.common.util.AbstractLoggingBean;
 import org.apache.sshd.server.PasswordAuthenticator;
 import org.apache.sshd.server.session.ServerSession;
 import org.slf4j.Logger;
@@ -38,11 +39,17 @@ import org.slf4j.LoggerFactory;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class JaasPasswordAuthenticator implements PasswordAuthenticator {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(JaasPasswordAuthenticator.class);
+public class JaasPasswordAuthenticator extends AbstractLoggingBean implements PasswordAuthenticator {
 
     private String domain;
+
+    public JaasPasswordAuthenticator() {
+        this(null);
+    }
+    
+    public JaasPasswordAuthenticator(String domain) {
+        this.domain = domain;
+    }
 
     public String getDomain() {
         return domain;
@@ -52,6 +59,7 @@ public class JaasPasswordAuthenticator implements PasswordAuthenticator {
         this.domain = domain;
     }
 
+    @Override
     public boolean authenticate(final String username, final String password, final ServerSession session) {
     	return authenticate(username, password);
     }
@@ -60,6 +68,7 @@ public class JaasPasswordAuthenticator implements PasswordAuthenticator {
         try {
             Subject subject = new Subject();
             LoginContext loginContext = new LoginContext(domain, subject, new CallbackHandler() {
+                @Override
                 public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException {
                     for (int i = 0; i < callbacks.length; i++) {
                         if (callbacks[i] instanceof NameCallback) {
@@ -76,7 +85,7 @@ public class JaasPasswordAuthenticator implements PasswordAuthenticator {
             loginContext.logout();
             return true;
         } catch (Exception e) {
-            LOGGER.error("Authentication failed with error", e);
+            log.error("Authentication failed with error", e);
             return false;
         }
     }

@@ -25,9 +25,8 @@ import java.io.OutputStream;
 import org.apache.sshd.common.channel.ChannelPipedInputStream;
 import org.apache.sshd.common.channel.ChannelPipedOutputStream;
 import org.apache.sshd.common.channel.Window;
+import org.apache.sshd.common.util.AbstractLoggingBean;
 import org.apache.sshd.common.util.io.LoggingFilterOutputStream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * {@link ChannelDataReceiver} that buffers the received data into byte buffer
@@ -35,7 +34,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Kohsuke Kawaguchi
  */
-public class PipeDataReceiver implements ChannelDataReceiver {
+public class PipeDataReceiver extends AbstractLoggingBean implements ChannelDataReceiver {
     private InputStream in;
     private OutputStream out;
 
@@ -52,14 +51,14 @@ public class PipeDataReceiver implements ChannelDataReceiver {
         return in;
     }
 
+    @Override
     public void close() throws IOException {
         out.close();
     }
 
+    @Override
     public int data(ChannelSession channel, byte[] buf, int start, int len) throws IOException {
         out.write(buf, start, len);
         return 0; // ChannelPipedOutputStream calls consume method on its own, so here we return 0 to make the ends meet.
     }
-
-    protected final Logger log = LoggerFactory.getLogger(getClass());
 }

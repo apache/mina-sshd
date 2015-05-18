@@ -25,21 +25,17 @@ import java.util.concurrent.TimeUnit;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.util.CloseableUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractIoServiceFactory extends CloseableUtils.AbstractCloseable implements IoServiceFactory {
 
-    protected final Logger logger;
     private final FactoryManager manager;
     private final ExecutorService executor;
     private final boolean shutdownExecutor;
 
     protected AbstractIoServiceFactory(FactoryManager factoryManager, ExecutorService executorService, boolean shutdownOnExit) {
-        logger = LoggerFactory.getLogger(getClass());
         manager = factoryManager;
         executor = executorService;
         shutdownExecutor = shutdownOnExit;

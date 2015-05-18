@@ -20,25 +20,26 @@ package org.apache.sshd.server.channel;
 
 import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.RequestHandler;
+import org.apache.sshd.common.util.AbstractLoggingBean;
 import org.apache.sshd.common.util.buffer.Buffer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Handles Putty specific channel requests as indicated by
  * <A HREF="http://tartarus.org/~simon/putty-snapshots/htmldoc/AppendixF.html">Appendix F: SSH-2 names specified for PuTTY</A>
  */
-public class PuttyRequestHandler implements RequestHandler<Channel> {
-
+public class PuttyRequestHandler extends AbstractLoggingBean implements RequestHandler<Channel> {
     public static final String REQUEST_SUFFIX = "@putty.projects.tartarus.org";
 
-    protected final Logger log = LoggerFactory.getLogger(getClass());
+    public PuttyRequestHandler() {
+        super();
+    }
 
+    @Override
     public Result process(Channel channel, String request, boolean wantReply, Buffer buffer) throws Exception {
         // make sure proper suffix
         if ((request == null)
-                || (request.length() <= REQUEST_SUFFIX.length())
-                || (!request.endsWith(REQUEST_SUFFIX))) {
+         || (request.length() <= REQUEST_SUFFIX.length())
+         || (!request.endsWith(REQUEST_SUFFIX))) {
             return Result.Unsupported;
         }
 
@@ -64,5 +65,4 @@ public class PuttyRequestHandler implements RequestHandler<Channel> {
 
         return Result.ReplyFailure;
     }
-
 }

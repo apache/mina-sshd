@@ -34,15 +34,10 @@ import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.util.CloseableUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  */
 public abstract class MinaService extends CloseableUtils.AbstractCloseable implements org.apache.sshd.common.io.IoService, IoHandler, Closeable {
-
-    protected final Logger log = LoggerFactory.getLogger(getClass());
-
     protected final FactoryManager manager;
     protected final org.apache.sshd.common.io.IoHandler handler;
     protected final IoProcessor<NioSession> ioProcessor;

@@ -24,6 +24,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.Signature;
+import java.util.concurrent.Callable;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyAgreement;
@@ -54,12 +55,12 @@ public class SecurityUtils {
         if (hasEcc == null) {
             try {
                 getKeyPairGenerator("EC");
-                hasEcc = true;
+                hasEcc = Boolean.TRUE;
             } catch (Throwable t) {
-                hasEcc = false;
+                hasEcc = Boolean.TRUE;
             }
         }
-        return hasEcc;
+        return hasEcc.booleanValue();
     }
 
     public static synchronized void setSecurityProvider(String securityProvider) {
@@ -68,7 +69,7 @@ public class SecurityUtils {
     }
 
     public static synchronized void setRegisterBouncyCastle(boolean registerBouncyCastle) {
-        SecurityUtils.registerBouncyCastle = registerBouncyCastle;
+        SecurityUtils.registerBouncyCastle = Boolean.valueOf(registerBouncyCastle);
         registrationDone = false;
     }
 
@@ -86,14 +87,14 @@ public class SecurityUtils {
         if (!registrationDone) {
             if (registerBouncyCastle == null) {
                 String prop = System.getProperty("org.apache.sshd.registerBouncyCastle");
-                if (prop != null) {
-                    registerBouncyCastle = Boolean.parseBoolean(prop);
+                if (!GenericUtils.isEmpty(prop)) {
+                    registerBouncyCastle = Boolean.valueOf(prop);
                 }
             }
-            if (securityProvider == null && (registerBouncyCastle == null || registerBouncyCastle)) {
+            if (securityProvider == null && (registerBouncyCastle == null || registerBouncyCastle.booleanValue())) {
                 // Use an inner class to avoid a strong dependency from SshServer on BouncyCastle
                 try {
-                    new BouncyCastleRegistration().run();
+                    new BouncyCastleRegistration().call();
                 } catch (Throwable t) {
                     if (registerBouncyCastle == null) {
                         LOG.info("BouncyCastle not registered, using the default JCE provider");
@@ -107,8 +108,9 @@ public class SecurityUtils {
         }
     }
 
-    private static class BouncyCastleRegistration {
-        public void run() throws Exception {
+    private static class BouncyCastleRegistration implements Callable<Void> {
+        @Override
+        public Void call() throws Exception {
             if (java.security.Security.getProvider(BOUNCY_CASTLE) == null) {
                 LOG.info("Trying to register BouncyCastle as a JCE provider");
                 java.security.Security.addProvider(new BouncyCastleProvider());
@@ -119,6 +121,7 @@ public class SecurityUtils {
                 LOG.info("BouncyCastle already registered as a JCE provider");
             }
             securityProvider = BOUNCY_CASTLE;
+            return null;
         }
     }
 

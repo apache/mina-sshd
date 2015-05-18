@@ -20,8 +20,7 @@ package org.apache.sshd.common.channel;
 
 import java.io.IOException;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.sshd.common.util.AbstractLoggingBean;
 
 /**
  * A Window for a given channel.
@@ -32,10 +31,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class Window {
-
-    private final static Logger log = LoggerFactory.getLogger(Window.class);
-
+public class Window extends AbstractLoggingBean {
     private final AbstractChannel channel;
     private final Object lock;
     private final String name;

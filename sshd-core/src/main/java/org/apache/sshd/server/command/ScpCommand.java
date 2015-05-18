@@ -30,12 +30,11 @@ import java.util.concurrent.Future;
 import org.apache.sshd.common.file.FileSystemAware;
 import org.apache.sshd.common.scp.ScpHelper;
 import org.apache.sshd.common.scp.ScpTransferEventListener;
+import org.apache.sshd.common.util.AbstractLoggingBean;
 import org.apache.sshd.common.util.ThreadUtils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * This commands provide SCP support on both server and client side.
@@ -44,10 +43,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ScpCommand implements Command, Runnable, FileSystemAware {
-
-    protected static final Logger log = LoggerFactory.getLogger(ScpCommand.class);
-
+public class ScpCommand extends AbstractLoggingBean implements Command, Runnable, FileSystemAware {
     protected String name;
     protected boolean optR;
     protected boolean optT;
@@ -107,9 +103,11 @@ public class ScpCommand implements Command, Runnable, FileSystemAware {
         log.debug("Executing command {}", command);
         String[] args = command.split(" ");
         for (int i = 1; i < args.length; i++) {
-            if (args[i].charAt(0) == '-') {
-                for (int j = 1; j < args[i].length(); j++) {
-                    switch (args[i].charAt(j)) {
+            String  argVal=args[i];
+            if (argVal.charAt(0) == '-') {
+                for (int j = 1; j < argVal.length(); j++) {
+                    char    option=argVal.charAt(j);
+                    switch(option) {
                         case 'f':
                             optF = true;
                             break;
@@ -125,13 +123,14 @@ public class ScpCommand implements Command, Runnable, FileSystemAware {
                         case 'd':
                             optD = true;
                             break;
-//                          default:
+                          default:  // ignored
 //                            error = new IOException("Unsupported option: " + args[i].charAt(j));
 //                            return;
                     }
                 }
             } else {
-                path = command.substring(command.indexOf(args[i - 1]) + args[i - 1].length() + 1);
+                String  prevArg=args[i - 1];
+                path = command.substring(command.indexOf(prevArg) + prevArg.length() + 1);
                 if (path.startsWith("\"") && path.endsWith("\"") || path.startsWith("'") && path.endsWith("'")) {
                     path = path.substring(1, path.length() - 1);
                 }
@@ -143,26 +142,32 @@ public class ScpCommand implements Command, Runnable, FileSystemAware {
         }
     }
 
+    @Override
     public void setInputStream(InputStream in) {
         this.in = in;
     }
 
+    @Override
     public void setOutputStream(OutputStream out) {
         this.out = out;
     }
 
+    @Override
     public void setErrorStream(OutputStream err) {
         this.err = err;
     }
 
+    @Override
     public void setExitCallback(ExitCallback callback) {
         this.callback = callback;
     }
 
+    @Override
     public void setFileSystem(FileSystem fs) {
         this.fileSystem = fs;
     }
 
+    @Override
     public void start(Environment env) throws IOException {
         if (error != null) {
             throw error;
@@ -176,6 +181,7 @@ public class ScpCommand implements Command, Runnable, FileSystemAware {
         }
     }
 
+    @Override
     public void destroy() {
         // if thread has not completed, cancel it
         if ((pendingFuture != null) && (!pendingFuture.isDone())) {
@@ -206,6 +212,7 @@ public class ScpCommand implements Command, Runnable, FileSystemAware {
         }
     }
 
+    @Override
     public void run() {
         int exitValue = ScpHelper.OK;
         String exitMessage = null;

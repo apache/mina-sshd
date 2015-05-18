@@ -25,21 +25,17 @@ import org.apache.sshd.agent.SshAgentServer;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.session.ConnectionService;
+import org.apache.sshd.common.util.AbstractLoggingBean;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.tomcat.jni.Local;
 import org.apache.tomcat.jni.Pool;
 import org.apache.tomcat.jni.Socket;
 import org.apache.tomcat.jni.Status;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * The server side fake agent, acting as an agent, but actually forwarding the requests to the auth channel on the client side.
  */
-public class AgentServerProxy implements SshAgentServer {
-
-    private static final Logger LOG = LoggerFactory.getLogger(AgentServerProxy.class);
-
+public class AgentServerProxy extends AbstractLoggingBean implements SshAgentServer {
     private final ConnectionService service;
     private final String authSocket;
     private final long pool;
@@ -93,7 +89,7 @@ public class AgentServerProxy implements SshAgentServer {
                                 }
                             } catch (Exception e) {
                                 if (!closed) {
-                                    LOG.info("Exchange caught in authentication forwarding", e);
+                                    log.info("Exchange caught in authentication forwarding", e);
                                 }
                             }
                         }
@@ -122,7 +118,7 @@ public class AgentServerProxy implements SshAgentServer {
             return;
         }
         closed = true;
-        final boolean isDebug = LOG.isDebugEnabled();
+        final boolean isDebug = log.isDebugEnabled();
 
         if (handle != 0) {
             if (!innerFinished) {
@@ -134,7 +130,7 @@ public class AgentServerProxy implements SshAgentServer {
 
                     if (connectResult != Status.APR_SUCCESS) {
                         if (isDebug) {
-                            LOG.debug("Unable to connect to socket PIPE {}. APR errcode {}", authSocket, connectResult);
+                            log.debug("Unable to connect to socket PIPE {}. APR errcode {}", authSocket, Long.valueOf(connectResult));
                         }
                     }
 
@@ -142,21 +138,20 @@ public class AgentServerProxy implements SshAgentServer {
                     int sendResult = Socket.send(tmpSocket, END_OF_STREAM_MESSAGE, 0, 1);
                     if (sendResult != 1) {
                         if (isDebug) {
-                            LOG.debug("Unable to send signal the EOS for {}. APR retcode {} != 1", authSocket,
-                                    sendResult);
+                            log.debug("Unable to send signal the EOS for {}. APR retcode {} != 1", authSocket, Integer.valueOf(sendResult));
                         }
                     }
                 } catch (Exception e) {
                     //log eventual exceptions in debug mode
                     if (isDebug) {
-                        LOG.debug("Exception connecting to the PIPE socket: " + authSocket, e);
+                        log.debug("Exception connecting to the PIPE socket: " + authSocket, e);
                     }
                 }
             }
 
             final int closeCode = Socket.close(handle);
             if (closeCode != Status.APR_SUCCESS) {
-                LOG.warn("Exceptions closing the PIPE: {}. APR error code: {} ", authSocket, closeCode);
+                log.warn("Exceptions closing the PIPE: {}. APR error code: {} ", authSocket, Integer.valueOf(closeCode));
             }
         }
 
@@ -167,7 +162,7 @@ public class AgentServerProxy implements SshAgentServer {
                 if (socketFile.exists()) {
                     if (socketFile.delete()) {
                         if (isDebug) {
-                            LOG.debug("Deleted PIPE socket {}", socketFile);
+                            log.debug("Deleted PIPE socket {}", socketFile);
                         }
                     }
 
@@ -175,7 +170,7 @@ public class AgentServerProxy implements SshAgentServer {
                         final File parentFile = socketFile.getParentFile();
                         if (parentFile.delete()) {
                             if (isDebug) {
-                                LOG.debug("Deleted parent PIPE socket {}", parentFile);
+                                log.debug("Deleted parent PIPE socket {}", parentFile);
                             }
                         }
                     }
@@ -184,7 +179,7 @@ public class AgentServerProxy implements SshAgentServer {
         } catch (Exception e) {
             //log eventual exceptions in debug mode
             if (isDebug) {
-                LOG.debug("Exception deleting the PIPE socket: " + authSocket, e);
+                log.debug("Exception deleting the PIPE socket: " + authSocket, e);
             }
         }
     }

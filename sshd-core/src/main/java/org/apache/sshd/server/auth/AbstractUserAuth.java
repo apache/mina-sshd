@@ -18,22 +18,19 @@
  */
 package org.apache.sshd.server.auth;
 
+import org.apache.sshd.common.util.AbstractLoggingBean;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.server.UserAuth;
 import org.apache.sshd.server.session.ServerSession;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  */
-public abstract class AbstractUserAuth implements UserAuth {
-
-    protected final Logger log = LoggerFactory.getLogger(this.getClass());
-
+public abstract class AbstractUserAuth extends AbstractLoggingBean implements UserAuth {
     protected ServerSession session;
     protected String service;
     protected String username;
 
+    @Override
     public String getUserName() {
         return username;
     }
@@ -42,6 +39,7 @@ public abstract class AbstractUserAuth implements UserAuth {
         return service;
     }
 
+    @Override
     public Boolean auth(ServerSession session, String username, String service, Buffer buffer) throws Exception {
         this.session = session;
         this.username = username;
@@ -49,11 +47,14 @@ public abstract class AbstractUserAuth implements UserAuth {
         return doAuth(buffer, true);
     }
 
+    @Override
     public Boolean next(Buffer buffer) throws Exception {
         return doAuth(buffer, false);
     }
 
+    @Override
     public void destroy() {
+        // ignored
     }
 
     protected abstract Boolean doAuth(Buffer buffer, boolean init) throws Exception;

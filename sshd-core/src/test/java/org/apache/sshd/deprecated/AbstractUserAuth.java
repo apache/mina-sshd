@@ -19,15 +19,11 @@
 package org.apache.sshd.deprecated;
 
 import org.apache.sshd.client.session.ClientSessionImpl;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.sshd.common.util.AbstractLoggingBean;
 
 /**
  */
-public abstract class AbstractUserAuth implements UserAuth {
-
-    protected final Logger log = LoggerFactory.getLogger(this.getClass());
-
+public abstract class AbstractUserAuth extends AbstractLoggingBean implements UserAuth {
     protected final ClientSessionImpl session;
     protected final String service;
 
@@ -39,5 +35,4 @@ public abstract class AbstractUserAuth implements UserAuth {
     public String getService() {
         return service;
     }
-
 }

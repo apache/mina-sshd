@@ -33,6 +33,10 @@ public class JSchLogger implements Logger {
 
     private final org.slf4j.Logger log = LoggerFactory.getLogger("org.jcraft.jsch.JSch");
 
+    public JSchLogger() {
+        super();
+    }
+
     @Override
     public boolean isEnabled(int level) {
         switch (level) {

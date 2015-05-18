@@ -25,17 +25,11 @@ import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.SshAgentServer;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.session.ConnectionService;
-import org.apache.sshd.server.session.ServerSession;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * The server side fake agent, acting as an agent, but actually forwarding the requests to the auth channel on the client side.
  */
 public class AgentServerProxy implements SshAgentServer {
-
-    private static final Logger LOG = LoggerFactory.getLogger(AgentServerProxy.class);
-
     private final ConnectionService service;
     private String id;
 
