@@ -19,10 +19,12 @@
 package org.apache.sshd.client.kex;
 
 import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.util.Collections;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.ClientChannel;
 import org.apache.sshd.ClientSession;
@@ -96,49 +98,49 @@ public class KexTest extends BaseTestSupport {
     private void testClient(NamedFactory<KeyExchange> kex) throws Exception {
         System.out.println("testClient - KEX=" + kex.getName());
 
-        ByteArrayOutputStream sent = new ByteArrayOutputStream();
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        try(SshClient client = SshClient.setUpDefaultClient()) {
-            client.setKeyExchangeFactories(Collections.singletonList(kex));
-            client.start();
-            
-            try {
-                ClientSession session = client.connect("smx", "localhost", port).await().getSession();
-                session.addPasswordIdentity("smx");
-                session.auth().verify();
-                ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
+        try(ByteArrayOutputStream sent = new ByteArrayOutputStream();
+            ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+
+            try(SshClient client = SshClient.setUpDefaultClient()) {
+                client.setKeyExchangeFactories(Collections.singletonList(kex));
+                client.start();
                 
-                try(PipedOutputStream pipedIn = new PipedOutputStream();
-                    ByteArrayOutputStream err = new ByteArrayOutputStream();
-                    OutputStream teeOut = new TeeOutputStream(sent, pipedIn)) {
-
-                    channel.setIn(new PipedInputStream(pipedIn));
-                    channel.setOut(out);
-                    channel.setErr(err);
-                    assertTrue(channel.open().await().isOpened());
-        
-                    teeOut.write("this is my command\n".getBytes());
-                    teeOut.flush();
-        
-                    StringBuilder sb = new StringBuilder();
-                    for (int i = 0; i < 10; i++) {
-                        sb.append("0123456789");
+                try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
+                    session.addPasswordIdentity("smx");
+                    session.auth().verify(5L, TimeUnit.SECONDS);
+                    
+                    try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
+                        PipedOutputStream pipedIn = new PipedOutputStream();
+                        InputStream inPipe = new PipedInputStream(pipedIn);
+                        ByteArrayOutputStream err = new ByteArrayOutputStream();
+                        OutputStream teeOut = new TeeOutputStream(sent, pipedIn)) {
+    
+                        channel.setIn(inPipe);
+                        channel.setOut(out);
+                        channel.setErr(err);
+                        assertTrue("Channel not opened", channel.open().await().isOpened());
+            
+                        teeOut.write("this is my command\n".getBytes());
+                        teeOut.flush();
+            
+                        StringBuilder sb = new StringBuilder();
+                        for (int i = 0; i < 10; i++) {
+                            sb.append("0123456789");
+                        }
+                        sb.append("\n");
+                        teeOut.write(sb.toString().getBytes());
+            
+                        teeOut.write("exit\n".getBytes());
+                        teeOut.flush();
+            
+                        channel.waitFor(ClientChannel.CLOSED, 0);
                     }
-                    sb.append("\n");
-                    teeOut.write(sb.toString().getBytes());
-        
-                    teeOut.write("exit\n".getBytes());
-                    teeOut.flush();
-        
-                    channel.waitFor(ClientChannel.CLOSED, 0);
-                } finally {    
-                    channel.close(false);
+                } finally {
+                    client.stop();
                 }
-            } finally {
-                client.stop();
             }
+    
+            assertArrayEquals(kex.getName(), sent.toByteArray(), out.toByteArray());
         }
-
-        assertArrayEquals(kex.getName(), sent.toByteArray(), out.toByteArray());
     }
 }

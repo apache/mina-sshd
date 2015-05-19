@@ -109,7 +109,7 @@ public class ScpTest extends BaseTestSupport {
             try {
                 try (ClientSession session = client.connect("test", "localhost", port).await().getSession()) {
                     session.addPasswordIdentity("test");
-                    session.auth().verify();
+                    session.auth().verify(5L, TimeUnit.SECONDS);
 
                     ScpClient scp = createScpClient(session);
 
@@ -151,7 +151,7 @@ public class ScpTest extends BaseTestSupport {
             try {
                 try (ClientSession session = client.connect("test", "localhost", port).await().getSession()) {
                     session.addPasswordIdentity("test");
-                    session.auth().verify();
+                    session.auth().verify(5L, TimeUnit.SECONDS);
 
                     ScpClient scp = createScpClient(session);
 
@@ -207,7 +207,7 @@ public class ScpTest extends BaseTestSupport {
 
                 try (ClientSession session = client.connect("test", "localhost", port).await().getSession()) {
                     session.addPasswordIdentity("test");
-                    session.auth().verify();
+                    session.auth().verify(5L, TimeUnit.SECONDS);
 
                     ScpClient scp = createScpClient(session);
                     scp.upload("target/scp/local/" + zeroLocal.getName(), "target/scp/remote/" + zeroRemote.getName());
@@ -249,7 +249,7 @@ public class ScpTest extends BaseTestSupport {
 
                 try (ClientSession session = client.connect("test", "localhost", port).await().getSession()) {
                     session.addPasswordIdentity("test");
-                    session.auth().verify();
+                    session.auth().verify(5L, TimeUnit.SECONDS);
 
                     ScpClient scp = createScpClient(session);
                     scp.download("target/scp/remote/" + zeroRemote.getName(), "target/scp/local/" + zeroLocal.getName());
@@ -268,7 +268,7 @@ public class ScpTest extends BaseTestSupport {
             try {
                 try (ClientSession session = client.connect("test", "localhost", port).await().getSession()) {
                     session.addPasswordIdentity("test");
-                    session.auth().verify();
+                    session.auth().verify(5L, TimeUnit.SECONDS);
 
                     ScpClient scp = createScpClient(session);
 
@@ -320,7 +320,7 @@ public class ScpTest extends BaseTestSupport {
             try {
                 try (ClientSession session = client.connect("test", "localhost", port).await().getSession()) {
                     session.addPasswordIdentity("test");
-                    session.auth().verify();
+                    session.auth().verify(5L, TimeUnit.SECONDS);
 
                     ScpClient scp = createScpClient(session);
 
@@ -384,7 +384,7 @@ public class ScpTest extends BaseTestSupport {
             try {
                 try (ClientSession session = client.connect("test", "localhost", port).await().getSession()) {
                     session.addPasswordIdentity("test");
-                    session.auth().verify();
+                    session.auth().verify(5L, TimeUnit.SECONDS);
 
                     ScpClient scp = createScpClient(session);
 
@@ -423,7 +423,7 @@ public class ScpTest extends BaseTestSupport {
             try {
                 try (ClientSession session = client.connect("test", "localhost", port).await().getSession()) {
                     session.addPasswordIdentity("test");
-                    session.auth().verify();
+                    session.auth().verify(5L, TimeUnit.SECONDS);
 
                     ScpClient scp = createScpClient(session);
 
@@ -462,7 +462,7 @@ public class ScpTest extends BaseTestSupport {
             try {
                 try (ClientSession session = client.connect("test", "localhost", port).await().getSession()) {
                     session.addPasswordIdentity("test");
-                    session.auth().verify();
+                    session.auth().verify(5L, TimeUnit.SECONDS);
 
                     ScpClient scp = createScpClient(session);
 
@@ -510,7 +510,7 @@ public class ScpTest extends BaseTestSupport {
             try {
                 try (ClientSession session = client.connect("test", "localhost", port).await().getSession()) {
                     session.addPasswordIdentity("test");
-                    session.auth().verify();
+                    session.auth().verify(5L, TimeUnit.SECONDS);
 
                     ScpClient scp = createScpClient(session);
 
@@ -564,69 +564,75 @@ public class ScpTest extends BaseTestSupport {
     @Test
     public void testScp() throws Exception {
         session = getJschSession();
-
-        String data = "0123456789\n";
-
-        String unixDir = "target/scp";
-        String fileName = "out.txt";
-        String unixPath = unixDir + File.separator + fileName;
-        File root = new File(unixDir);
-        File target = new File(unixPath);
-        Utils.deleteRecursive(root);
-        root.mkdirs();
-        assertTrue(root.exists());
-
-        target.delete();
-        assertFalse(target.exists());
-        sendFile(unixPath, "out.txt", data);
-        assertFileLength(target, data.length(), 5000);
-
-        target.delete();
-        assertFalse(target.exists());
-        sendFile(unixDir, "out.txt", data);
-        assertFileLength(target, data.length(), 5000);
-
-        sendFileError("target", "scp", "0123456789\n");
-
-        readFileError(unixDir);
-
-        assertEquals(data, readFile(unixPath));
-
-        assertEquals(data, readDir(unixDir));
-
-        target.delete();
-        root.delete();
-
-        sendDir("target", "scp", "out.txt", data);
-        assertFileLength(target, data.length(), 5000);
+        try {
+            String data = "0123456789\n";
+    
+            String unixDir = "target/scp";
+            String fileName = "out.txt";
+            String unixPath = unixDir + File.separator + fileName;
+            File root = new File(unixDir);
+            File target = new File(unixPath);
+            Utils.deleteRecursive(root);
+            root.mkdirs();
+            assertTrue(root.exists());
+    
+            target.delete();
+            assertFalse(target.exists());
+            sendFile(unixPath, "out.txt", data);
+            assertFileLength(target, data.length(), 5000);
+    
+            target.delete();
+            assertFalse(target.exists());
+            sendFile(unixDir, "out.txt", data);
+            assertFileLength(target, data.length(), 5000);
+    
+            sendFileError("target", "scp", "0123456789\n");
+    
+            readFileError(unixDir);
+    
+            assertEquals(data, readFile(unixPath));
+    
+            assertEquals(data, readDir(unixDir));
+    
+            target.delete();
+            root.delete();
+    
+            sendDir("target", "scp", "out.txt", data);
+            assertFileLength(target, data.length(), 5000);
+        } finally {
+            session.disconnect();
+        }
     }
 
     @Test
     public void testWithGanymede() throws Exception {
         // begin client config
         final Connection conn = new Connection("localhost", port);
-        conn.connect(null, 5000, 0);
-        conn.authenticateWithPassword("sshd", "sshd");
-        final SCPClient scp_client = new SCPClient(conn);
-        final Properties props = new Properties();
-        props.setProperty("test", "test-passed");
-        File f = new File("target/scp/gan");
-        Utils.deleteRecursive(f);
-        f.mkdirs();
-        assertTrue(f.exists());
-
-        String name = "test.properties";
-        scp_client.put(toBytes(props, ""), name, "target/scp/gan");
-        assertTrue(new File(f, name).exists());
-        assertTrue(new File(f, name).delete());
-
-        name = "test2.properties";
-        scp_client.put(toBytes(props, ""), name, "target/scp/gan");
-        assertTrue(new File(f, name).exists());
-        assertTrue(new File(f, name).delete());
-
-        assertTrue(f.delete());
-        conn.close();
+        try {
+            conn.connect(null, 5000, 0);
+            conn.authenticateWithPassword("sshd", "sshd");
+            final SCPClient scp_client = new SCPClient(conn);
+            final Properties props = new Properties();
+            props.setProperty("test", "test-passed");
+            File f = new File("target/scp/gan");
+            Utils.deleteRecursive(f);
+            f.mkdirs();
+            assertTrue(f.exists());
+    
+            String name = "test.properties";
+            scp_client.put(toBytes(props, ""), name, "target/scp/gan");
+            assertTrue(new File(f, name).exists());
+            assertTrue(new File(f, name).delete());
+    
+            name = "test2.properties";
+            scp_client.put(toBytes(props, ""), name, "target/scp/gan");
+            assertTrue(new File(f, name).exists());
+            assertTrue(new File(f, name).delete());
+    
+            assertTrue(f.delete());
+        } finally {
+            conn.close();
+        }
     }
 
     private byte[] toBytes(final Properties properties, final String comments) {

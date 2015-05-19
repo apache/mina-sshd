@@ -18,6 +18,7 @@
  */
 package org.apache.sshd;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.client.UserInteraction;
@@ -58,22 +59,28 @@ public class WelcomeBannerTest extends BaseTestSupport {
     @Test
     public void testBanner() throws Exception {
         final AtomicReference<String> welcome = new AtomicReference<String>();
-        SshClient client = SshClient.setUpDefaultClient();
-        client.setUserInteraction(new UserInteraction() {
-            @Override
-            public void welcome(String banner) {
-                welcome.set(banner);
+        
+        try(SshClient client = SshClient.setUpDefaultClient()) {
+            client.setUserInteraction(new UserInteraction() {
+                @Override
+                public void welcome(String banner) {
+                    welcome.set(banner);
+                }
+                @Override
+                public String[] interactive(String destination, String name, String instruction, String[] prompt, boolean[] echo) {
+                    return null;
+                }
+            });
+            client.start();
+            
+            try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
+                session.addPasswordIdentity("smx");
+                session.auth().verify(5L, TimeUnit.SECONDS);
+                assertEquals(WELCOME, welcome.get());
+                session.close(true);
+            } finally {
+                client.stop();
             }
-            @Override
-            public String[] interactive(String destination, String name, String instruction, String[] prompt, boolean[] echo) {
-                return null;
-            }
-        });
-        client.start();
-        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
-        session.addPasswordIdentity("smx");
-        session.auth().verify();
-        assertEquals(WELCOME, welcome.get());
-        session.close(true);
+        }
     }
 }

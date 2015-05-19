@@ -43,7 +43,7 @@ public class ChannelOutputStream extends OutputStream {
     private boolean closed;
     private int bufferLength;
     private int lastSize;
-    private boolean noDelay = false;
+    private boolean noDelay;
 
     public ChannelOutputStream(AbstractChannel channel, Window remoteWindow, Logger log, byte cmd) {
         this.channel = channel;
@@ -61,15 +61,18 @@ public class ChannelOutputStream extends OutputStream {
         return noDelay;
     }
 
+    @Override
     public synchronized void write(int w) throws IOException {
         b[0] = (byte) w;
         write(b, 0, 1);
     }
 
+    @Override
     public synchronized void write(byte[] buf, int s, int l) throws IOException {
         if (closed) {
-            throw new SshException("Already closed");
+            throw new SshException("write(len=" + l + ") channel already closed");
         }
+
         while (l > 0) {
             // The maximum amount we should admit without flushing again
             // is enough to make up one full packet within our allowed
@@ -107,15 +110,16 @@ public class ChannelOutputStream extends OutputStream {
     @Override
     public synchronized void flush() throws IOException {
         if (closed) {
-            throw new SshException("Already closed");
+            throw new SshException("flush(length=" + bufferLength + ") - stream is already closed");
         }
+
         try {
             while (bufferLength > 0) {
                 Buffer buf = buffer;
                 int total = bufferLength;
                 int length = Math.min(Math.min(remoteWindow.waitForSpace(), total), remoteWindow.getPacketSize());
                 int pos = buf.wpos();
-                buf.wpos(cmd == SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA ? 14 : 10);
+                buf.wpos((cmd == SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA) ? 14 : 10);
                 buf.putInt(length);
                 buf.wpos(buf.wpos() + length);
                 if (total == length) {
@@ -128,23 +132,34 @@ public class ChannelOutputStream extends OutputStream {
                 }
                 lastSize = length;
                 remoteWindow.waitAndConsume(length);
-                log.debug("Send {} on channel {}", cmd == SshConstants.SSH_MSG_CHANNEL_DATA ? "SSH_MSG_CHANNEL_DATA" : "SSH_MSG_CHANNEL_EXTENDED_DATA", channel.getId());
+                if (log.isDebugEnabled()) {
+                    log.debug("Send {} on channel {}",
+                              (cmd == SshConstants.SSH_MSG_CHANNEL_DATA) ? "SSH_MSG_CHANNEL_DATA" : "SSH_MSG_CHANNEL_EXTENDED_DATA",
+                              Integer.valueOf(channel.getId()));
+                }
                 channel.writePacket(buf);
             }
-        } catch (WindowClosedException e) {
+        } catch(WindowClosedException e) {
             closed = true;
             throw e;
-        } catch (SshException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new SshException(e);
+        } catch(Exception e) {
+            if (e instanceof IOException) {
+                throw (IOException) e;
+            } else {
+                throw new SshException(e);
+            }
         }
     }
 
     @Override
     public synchronized void close() throws IOException {
-        flush();
-        closed = true;
+        if (!closed) {
+            try {
+                flush();
+            } finally {
+                closed = true;
+            }
+        }
     }
 
     private void newBuffer(int size) {

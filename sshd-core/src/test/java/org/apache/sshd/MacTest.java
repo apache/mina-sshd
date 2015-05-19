@@ -145,16 +145,19 @@ public class MacTest extends BaseTestSupport {
             s.connect();
             com.jcraft.jsch.Channel c = s.openChannel("shell");
             c.connect();
+
             try(OutputStream os = c.getOutputStream();
                 InputStream is = c.getInputStream()) {
 
-                byte[] data = new byte[512];
+                String  expected = "this is my command\n";
+                byte[] bytes = expected.getBytes();
+                byte[] data = new byte[bytes.length + Long.SIZE];
                 for (int i = 0; i < 10; i++) {
-                    os.write("this is my command\n".getBytes());
+                    os.write(bytes);
                     os.flush();
                     int len = is.read(data);
                     String str = new String(data, 0, len);
-                    assertEquals("this is my command\n", str);
+                    assertEquals("Mismatched data at iteration " + i, expected, str);
                 }
             } finally {
                 c.disconnect();

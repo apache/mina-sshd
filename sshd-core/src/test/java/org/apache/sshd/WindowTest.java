@@ -27,11 +27,13 @@ import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.Service;
@@ -91,6 +93,7 @@ public class WindowTest extends BaseTestSupport {
                     @Override
                     public Service create(Session session) throws IOException {
                         return new ServerUserAuthService(session) {
+                            @SuppressWarnings("synthetic-access")
                             @Override
                             public void process(byte cmd, Buffer buffer) throws Exception {
                                 authLatch.await();
@@ -106,6 +109,7 @@ public class WindowTest extends BaseTestSupport {
                     @Override
                     public Channel create() {
                         return new ChannelSession() {
+                            @SuppressWarnings("synthetic-access")
                             @Override
                             public OpenFuture open(int recipient, int rwsize, int rmpsize, Buffer buffer) {
                                 try {
@@ -143,130 +147,149 @@ public class WindowTest extends BaseTestSupport {
     @Test
     public void testWindowConsumptionWithInvertedStreams() throws Exception {
         sshd.setShellFactory(new AsyncEchoShellFactory());
-        sshd.getProperties().put(FactoryManager.WINDOW_SIZE, "1024");
-        client.getProperties().put(FactoryManager.WINDOW_SIZE, "1024");
+        FactoryManagerUtils.updateProperty(sshd, FactoryManager.WINDOW_SIZE, 1024);
+        FactoryManagerUtils.updateProperty(client, FactoryManager.WINDOW_SIZE, 1024);
         client.start();
-        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
-        session.addPasswordIdentity("smx");
-        session.auth().verify();
-        final ChannelShell channel = session.createShellChannel();
-        channel.open().verify();
+        
+        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
+            session.addPasswordIdentity("smx");
+            session.auth().verify(5L, TimeUnit.SECONDS);
 
-        final Channel serverChannel = sshd.getActiveSessions().iterator().next().getService(ServerConnectionService.class)
-                .getChannels().iterator().next();
+            try(ChannelShell channel = session.createShellChannel()) {
+                channel.open().verify(5L, TimeUnit.SECONDS);
+        
+                try(Channel serverChannel = sshd.getActiveSessions().iterator().next().getService(ServerConnectionService.class).getChannels().iterator().next()) {
+                    Window clientLocal = channel.getLocalWindow();
+                    Window clientRemote = channel.getRemoteWindow();
+                    Window serverLocal = serverChannel.getLocalWindow();
+                    Window serverRemote = serverChannel.getRemoteWindow();
+            
+                    final String message = "0123456789";
+                    final int nbMessages = 500;
+            
+                    try(BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(channel.getInvertedIn()));
+                        BufferedReader reader = new BufferedReader(new InputStreamReader(channel.getInvertedOut()))) {
 
-        Window clientLocal = channel.getLocalWindow();
-        Window clientRemote = channel.getRemoteWindow();
-        Window serverLocal = serverChannel.getLocalWindow();
-        Window serverRemote = serverChannel.getRemoteWindow();
-
-        final String message = "0123456789";
-        final int nbMessages = 500;
-
-        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(channel.getInvertedIn()));
-        BufferedReader reader = new BufferedReader(new InputStreamReader(channel.getInvertedOut()));
-        for (int i = 0; i < nbMessages; i++) {
-            writer.write(message);
-            writer.write("\n");
-            writer.flush();
-
-            waitForWindowNotEquals(clientLocal, serverRemote, "client local", "server remote");
-
-            String line = reader.readLine();
-            assertEquals(message, line);
-
-            waitForWindowEquals(clientLocal, serverRemote, "client local", "server remote");
-            waitForWindowEquals(clientRemote, serverLocal, "client remote", "server local");
+                        for (int i = 0; i < nbMessages; i++) {
+                            writer.write(message);
+                            writer.write("\n");
+                            writer.flush();
+                
+                            waitForWindowNotEquals(clientLocal, serverRemote, "client local", "server remote");
+                
+                            String line = reader.readLine();
+                            assertEquals("Mismatched message at line #" + i, message, line);
+                
+                            waitForWindowEquals(clientLocal, serverRemote, "client local", "server remote");
+                            waitForWindowEquals(clientRemote, serverLocal, "client remote", "server local");
+                        }
+                    }
+                }
+            }
+        } finally {
+            client.stop();
         }
     }
 
     @Test
     public void testWindowConsumptionWithDirectStreams() throws Exception {
         sshd.setShellFactory(new AsyncEchoShellFactory());
-        sshd.getProperties().put(FactoryManager.WINDOW_SIZE, "1024");
-        client.getProperties().put(FactoryManager.WINDOW_SIZE, "1024");
+        FactoryManagerUtils.updateProperty(sshd, FactoryManager.WINDOW_SIZE, 1024);
+        FactoryManagerUtils.updateProperty(client, FactoryManager.WINDOW_SIZE, 1024);
+
         client.start();
-        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
-        session.addPasswordIdentity("smx");
-        session.auth().verify();
-        final ChannelShell channel = session.createShellChannel();
+        
+        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
+            session.addPasswordIdentity("smx");
+            session.auth().verify(5L, TimeUnit.SECONDS);
+            
+            try(ChannelShell channel = session.createShellChannel();
+                PipedInputStream inPis = new PipedInputStream();
+                PipedOutputStream inPos = new PipedOutputStream(inPis);
+                PipedInputStream outPis = new PipedInputStream();
+                PipedOutputStream outPos = new PipedOutputStream(outPis)) {
 
-        PipedInputStream inPis = new PipedInputStream();
-        PipedOutputStream inPos = new PipedOutputStream(inPis);
-        channel.setIn(inPis);
-        PipedInputStream outPis = new PipedInputStream();
-        PipedOutputStream outPos = new PipedOutputStream(outPis);
-        channel.setOut(outPos);
-        channel.open().verify();
-
-        final Channel serverChannel = sshd.getActiveSessions().iterator().next().getService(ServerConnectionService.class)
-                .getChannels().iterator().next();
-
-        Window clientLocal = channel.getLocalWindow();
-        Window clientRemote = channel.getRemoteWindow();
-        Window serverLocal = serverChannel.getLocalWindow();
-        Window serverRemote = serverChannel.getRemoteWindow();
-
-        final String message = "0123456789";
-        final int nbMessages = 500;
-
-        try(BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(inPos));
-            BufferedReader reader = new BufferedReader(new InputStreamReader(outPis))) {
-            for (int i = 0; i < nbMessages; i++) {
-                writer.write(message);
-                writer.write("\n");
-                writer.flush();
-    
-                waitForWindowEquals(clientLocal, serverRemote, "client local", "server remote");
-    
-                String line = reader.readLine();
-                assertEquals(message, line);
-    
-                waitForWindowEquals(clientLocal, serverRemote, "client local", "server remote");
-                waitForWindowEquals(clientRemote, serverLocal, "client remote", "server local");
+                channel.setIn(inPis);
+                channel.setOut(outPos);
+                channel.open().verify();
+        
+                try(Channel serverChannel = sshd.getActiveSessions().iterator().next().getService(ServerConnectionService.class).getChannels().iterator().next()) {
+                    Window clientLocal = channel.getLocalWindow();
+                    Window clientRemote = channel.getRemoteWindow();
+                    Window serverLocal = serverChannel.getLocalWindow();
+                    Window serverRemote = serverChannel.getRemoteWindow();
+            
+                    final String message = "0123456789";
+                    final int nbMessages = 500;
+            
+                    try(BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(inPos));
+                        BufferedReader reader = new BufferedReader(new InputStreamReader(outPis))) {
+                        for (int i = 0; i < nbMessages; i++) {
+                            writer.write(message);
+                            writer.write("\n");
+                            writer.flush();
+                
+                            waitForWindowEquals(clientLocal, serverRemote, "client local", "server remote");
+                
+                            String line = reader.readLine();
+                            assertEquals("Mismatched message at line #" + i, message, line);
+                
+                            waitForWindowEquals(clientLocal, serverRemote, "client local", "server remote");
+                            waitForWindowEquals(clientRemote, serverLocal, "client remote", "server local");
+                        }
+                    }
+                }
             }
+        } finally {
+            client.stop();
         }
     }
 
     @Test
     public void testWindowConsumptionWithAsyncStreams() throws Exception {
         sshd.setShellFactory(new AsyncEchoShellFactory());
-        sshd.getProperties().put(FactoryManager.WINDOW_SIZE, "1024");
-        client.getProperties().put(FactoryManager.WINDOW_SIZE, "1024");
+        FactoryManagerUtils.updateProperty(sshd, FactoryManager.WINDOW_SIZE, 1024);
+        FactoryManagerUtils.updateProperty(client, FactoryManager.WINDOW_SIZE, 1024);
+
         client.start();
-        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
-        session.addPasswordIdentity("smx");
-        session.auth().verify();
-        final ChannelShell channel = session.createShellChannel();
-        channel.setStreaming(ClientChannel.Streaming.Async);
-        channel.open().verify();
+        
+        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
+            session.addPasswordIdentity("smx");
+            session.auth().verify(5L, TimeUnit.SECONDS);
 
-        final Channel serverChannel = sshd.getActiveSessions().iterator().next().getService(ServerConnectionService.class)
-                .getChannels().iterator().next();
-
-        Window clientLocal = channel.getLocalWindow();
-        Window clientRemote = channel.getRemoteWindow();
-        Window serverLocal = serverChannel.getLocalWindow();
-        Window serverRemote = serverChannel.getRemoteWindow();
-
-        final String message = "0123456789";
-        final int nbMessages = 500;
-
-        for (int i = 0; i < nbMessages; i++) {
-
-            Buffer buffer = new ByteArrayBuffer((message + "\n").getBytes());
-            channel.getAsyncIn().write(buffer).verify();
-
-            waitForWindowNotEquals(clientLocal, serverRemote, "client local", "server remote");
-
-            Buffer buf = new ByteArrayBuffer(16);
-            IoReadFuture future = channel.getAsyncOut().read(buf);
-            future.verify();
-            assertEquals(11, buf.available());
-            assertEquals(message + "\n", new String(buf.array(), buf.rpos(), buf.available()));
-
-            waitForWindowEquals(clientLocal, serverRemote, "client local", "server remote");
-            waitForWindowEquals(clientRemote, serverLocal, "client remote", "server local");
+            try(ChannelShell channel = session.createShellChannel()) {
+                channel.setStreaming(ClientChannel.Streaming.Async);
+                channel.open().verify(5L, TimeUnit.SECONDS);
+        
+                try(Channel serverChannel = sshd.getActiveSessions().iterator().next().getService(ServerConnectionService.class).getChannels().iterator().next()) {
+                    Window clientLocal = channel.getLocalWindow();
+                    Window clientRemote = channel.getRemoteWindow();
+                    Window serverLocal = serverChannel.getLocalWindow();
+                    Window serverRemote = serverChannel.getRemoteWindow();
+            
+                    final String message = "0123456789\n";
+                    final byte[] bytes=message.getBytes();
+                    final int nbMessages = 500;
+                    for (int i = 0; i < nbMessages; i++) {
+            
+                        Buffer buffer = new ByteArrayBuffer(bytes);
+                        channel.getAsyncIn().write(buffer).verify();
+            
+                        waitForWindowNotEquals(clientLocal, serverRemote, "client local", "server remote");
+            
+                        Buffer buf = new ByteArrayBuffer(16);
+                        IoReadFuture future = channel.getAsyncOut().read(buf);
+                        future.verify();
+                        assertEquals("Mismatched available data at line #" + i, message.length(), buf.available());
+                        assertEquals("Mismatched data at line #" + i, message, new String(buf.array(), buf.rpos(), buf.available()));
+            
+                        waitForWindowEquals(clientLocal, serverRemote, "client local", "server remote");
+                        waitForWindowEquals(clientRemote, serverLocal, "client remote", "server local");
+                    }
+                }
+            }
+        } finally {
+            client.stop();
         }
     }
 
@@ -308,5 +331,4 @@ public class WindowTest extends BaseTestSupport {
             }
         }
     }
-
 }

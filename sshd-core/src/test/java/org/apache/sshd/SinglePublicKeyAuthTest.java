@@ -65,6 +65,7 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
         });
         sshd.getProperties().put(ServerFactoryManager.AUTH_METHODS, "publickey");
         sshd.setPublickeyAuthenticator(new PublickeyAuthenticator() {
+            @SuppressWarnings("synthetic-access")
             @Override
             public boolean authenticate(String username, PublicKey key, ServerSession session) {
                 return delegate.authenticate(username, key, session);
@@ -85,6 +86,7 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
     public void testPublicKeyAuthWithCache() throws Exception {
         final ConcurrentHashMap<String, AtomicInteger> count = new ConcurrentHashMap<String, AtomicInteger>();
         TestCachingPublicKeyAuthenticator auth = new TestCachingPublicKeyAuthenticator(new PublickeyAuthenticator() {
+            @SuppressWarnings("synthetic-access")
             @Override
             public boolean authenticate(String username, PublicKey key,
                                         ServerSession session) {
@@ -94,18 +96,25 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
             }
         });
         delegate = auth;
-        SshClient client = SshClient.setUpDefaultClient();
-        client.start();
-        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
-        session.addPublicKeyIdentity(pairRsaBad);
-        session.addPublicKeyIdentity(pairRsa);
-        assertTrue(session.auth().await().isSuccess());
-        assertEquals(2, count.size());
-        assertTrue(count.containsKey(KeyUtils.getFingerPrint(pairRsaBad.getPublic())));
-        assertTrue(count.containsKey(KeyUtils.getFingerPrint(pairRsa.getPublic())));
-        assertEquals(1, count.get(KeyUtils.getFingerPrint(pairRsaBad.getPublic())).get());
-        assertEquals(1, count.get(KeyUtils.getFingerPrint(pairRsa.getPublic())).get());
-        client.close(false).await();
+        
+        try(SshClient client = SshClient.setUpDefaultClient()) {
+            client.start();
+            
+            try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
+                session.addPublicKeyIdentity(pairRsaBad);
+                session.addPublicKeyIdentity(pairRsa);
+                assertTrue(session.auth().await().isSuccess());
+                assertEquals(2, count.size());
+                assertTrue(count.containsKey(KeyUtils.getFingerPrint(pairRsaBad.getPublic())));
+                assertTrue(count.containsKey(KeyUtils.getFingerPrint(pairRsa.getPublic())));
+                assertEquals(1, count.get(KeyUtils.getFingerPrint(pairRsaBad.getPublic())).get());
+                assertEquals(1, count.get(KeyUtils.getFingerPrint(pairRsa.getPublic())).get());
+                client.close(false).await();
+            } finally {
+                client.stop();
+            }
+        }
+
         Thread.sleep(100);
         assertTrue(auth.getCache().isEmpty());
     }
@@ -114,6 +123,7 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
     public void testPublicKeyAuthWithoutCache() throws Exception {
         final ConcurrentHashMap<String, AtomicInteger> count = new ConcurrentHashMap<String, AtomicInteger>();
         delegate = new PublickeyAuthenticator() {
+            @SuppressWarnings("synthetic-access")
             @Override
             public boolean authenticate(String username, PublicKey key,
                                         ServerSession session) {
@@ -122,12 +132,19 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
                 return key.equals(pairRsa.getPublic());
             }
         };
-        SshClient client = SshClient.setUpDefaultClient();
-        client.start();
-        ClientSession session = client.connect("smx", "localhost", port).await().getSession();
-        session.addPublicKeyIdentity(pairRsaBad);
-        session.addPublicKeyIdentity(pairRsa);
-        assertTrue(session.auth().await().isSuccess());
+        
+        try(SshClient client = SshClient.setUpDefaultClient()) {
+            client.start();
+            
+            try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
+                session.addPublicKeyIdentity(pairRsaBad);
+                session.addPublicKeyIdentity(pairRsa);
+                assertTrue(session.auth().await().isSuccess());
+            } finally {
+                client.stop();
+            }
+        }
+
         assertEquals(2, count.size());
         assertTrue(count.containsKey(KeyUtils.getFingerPrint(pairRsaBad.getPublic())));
         assertTrue(count.containsKey(KeyUtils.getFingerPrint(pairRsa.getPublic())));
@@ -143,7 +160,4 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
             return cache;
         }
     }
-
 }
-
-

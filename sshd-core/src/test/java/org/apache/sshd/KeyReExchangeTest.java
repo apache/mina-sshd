@@ -80,23 +80,33 @@ public class KeyReExchangeTest extends BaseTestSupport {
         JSch.setConfig("kex", "diffie-hellman-group-exchange-sha1");
         JSch sch = new JSch();
         com.jcraft.jsch.Session s = sch.getSession("smx", "localhost", port);
-        s.setUserInfo(new SimpleUserInfo("smx"));
-        s.connect();
-        com.jcraft.jsch.Channel c = s.openChannel("shell");
-        c.connect();
-        OutputStream os = c.getOutputStream();
-        InputStream is = c.getInputStream();
-        for (int i = 0; i < 10; i++) {
-            os.write("this is my command\n".getBytes());
-            os.flush();
-            byte[] data = new byte[512];
-            int len = is.read(data);
-            String str = new String(data, 0, len);
-            assertEquals("this is my command\n", str);
-            s.rekey();
+        try {
+            s.setUserInfo(new SimpleUserInfo("smx"));
+            s.connect();
+
+            com.jcraft.jsch.Channel c = s.openChannel("shell");
+            c.connect();
+            try(OutputStream os = c.getOutputStream();
+                InputStream is = c.getInputStream()) {
+
+                String expected = "this is my command\n";
+                byte[] bytes = expected.getBytes();
+                byte[] data = new byte[bytes.length + Long.SIZE];
+                for (int i = 0; i < 10; i++) {
+                    os.write(bytes);
+                    os.flush();
+
+                    int len = is.read(data);
+                    String str = new String(data, 0, len);
+                    assertEquals("Mismatched data at iteration " + i,expected, str);
+                    s.rekey();
+                }
+            } finally {
+                c.disconnect();
+            }
+        } finally {
+            s.disconnect();
         }
-        c.disconnect();
-        s.disconnect();
     }
 
     @Test

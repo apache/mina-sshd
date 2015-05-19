@@ -18,6 +18,8 @@
  */
 package org.apache.sshd;
 
+import static org.apache.sshd.util.Utils.getFreePort;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -31,11 +33,9 @@ import java.net.URL;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.JSchException;
-import com.jcraft.jsch.Session;
 import org.apache.commons.httpclient.HostConfiguration;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpVersion;
@@ -56,21 +56,26 @@ import org.apache.sshd.util.Utils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.sshd.util.Utils.getFreePort;
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.Session;
 
 /**
  * Port forwarding tests
  */
 public class PortForwardingLoadTest extends BaseTestSupport {
-
-    private final org.slf4j.Logger log = LoggerFactory.getLogger(getClass());
-
+    private final Logger log = LoggerFactory.getLogger(getClass());
     private SshServer sshd;
     private int sshPort;
     private int echoPort;
     private IoAcceptor acceptor;
+
+    public PortForwardingLoadTest() {
+        super();
+    }
 
     @Before
     public void setUp() throws Exception {
@@ -119,74 +124,91 @@ public class PortForwardingLoadTest extends BaseTestSupport {
                 "longer Test Data. This is significantly longer Test Data. This is significantly "+
                 "longer Test Data. This is significantly longer Test Data. This is significantly "+
                 "longer Test Data. ";
-        StringBuilder sb = new StringBuilder();
+        StringBuilder sb = new StringBuilder(PAYLOAD_TMP.length() * 1000);
         for (int i = 0; i < 1000; i++) {
             sb.append(PAYLOAD_TMP);
         }
         final String PAYLOAD = sb.toString();
-        Session session = createSession();
-        final ServerSocket ss = new ServerSocket();
-        ss.setReuseAddress(true);
-        ss.bind(new InetSocketAddress((InetAddress) null, 0));
-        int forwardedPort = ss.getLocalPort();
-        int sinkPort = session.setPortForwardingL(0, "localhost", forwardedPort);
-        final AtomicInteger conCount = new AtomicInteger(0);
 
-        new Thread() {
-            @Override
-            public void run() {
-                try {
-                    for (int i = 0; i < NUM_ITERATIONS; ++i) {
-                        try(Socket s = ss.accept()) {
-                            conCount.incrementAndGet();
-                            InputStream is = s.getInputStream();
-                            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        Session session = createSession();        
+        try(final ServerSocket ss = new ServerSocket()) {
+            ss.setReuseAddress(true);
+            ss.bind(new InetSocketAddress((InetAddress) null, 0));
+            int forwardedPort = ss.getLocalPort();
+            int sinkPort = session.setPortForwardingL(0, "localhost", forwardedPort);
+            final AtomicInteger conCount = new AtomicInteger(0);
+    
+            Thread tAcceptor = new Thread(getCurrentTestName() + "Acceptor") {
+                    @SuppressWarnings("synthetic-access")
+                    @Override
+                    public void run() {
+                        try {
                             byte[] buf = new byte[8192];
-                            int l;
-                            while (baos.size() < PAYLOAD.length() && (l = is.read(buf)) > 0) {
-                                baos.write(buf, 0, l);
+                            log.info("Started...");
+                            for (int i = 0; i < NUM_ITERATIONS; ++i) {
+                                try(Socket s = ss.accept()) {
+                                    conCount.incrementAndGet();
+                                    
+                                    try(InputStream sockIn = s.getInputStream();
+                                        ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+                                    
+                                        int l;
+                                        while ((baos.size() < PAYLOAD.length()) && ((l = sockIn.read(buf)) > 0)) {
+                                            baos.write(buf, 0, l);
+                                        }
+                                    
+                                        assertEquals("Mismatched received data at iteration #" + i, PAYLOAD, baos.toString());
+        
+                                        try(InputStream inputCopy = new ByteArrayInputStream(baos.toByteArray());
+                                            OutputStream sockOut = s.getOutputStream()) {
+                                            
+                                            while ((l = sockIn.read(buf)) > 0) {
+                                                sockOut.write(buf, 0, l);
+                                            }
+                                        }
+                                    }
+                                }
                             }
-                            if (!PAYLOAD.equals(baos.toString())) {
-                                assertEquals(PAYLOAD, baos.toString());
-                            }
-                            is = new ByteArrayInputStream(baos.toByteArray());
-                            OutputStream os = s.getOutputStream();
-                            while ((l = is.read(buf)) > 0) {
-                                os.write(buf, 0, l);
-                            }
+                            log.info("Done");
+                        } catch (Exception e) {
+                            log.error("Failed to complete run loop", e);
                         }
                     }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }.start();
-        Thread.sleep(50);
+                };
+            tAcceptor.start();
+            Thread.sleep(50);
+    
+            byte[]  buf = new byte[8192];
+            byte[]  bytes = PAYLOAD.getBytes();
+            for (int i = 0; i < NUM_ITERATIONS; i++) {
+                log.info("Iteration {}", Integer.valueOf(i));
+                try(Socket s = new Socket("localhost", sinkPort);
+                    OutputStream sockOut = s.getOutputStream()) {
 
-        for ( int i = 0; i < NUM_ITERATIONS; i++) {
-            Socket s = null;
-            try {
-                LoggerFactory.getLogger(getClass()).info("Iteration {}", i);
-                s = new Socket("localhost", sinkPort);
-                s.getOutputStream().write(PAYLOAD.getBytes());
-                s.getOutputStream().flush();
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                byte[] buf = new byte[8192];
-                int l;
-                while (baos.size() < PAYLOAD.length() && (l = s.getInputStream().read(buf)) > 0) {
-                    baos.write(buf, 0, l);
-                }
-                assertEquals(PAYLOAD, baos.toString());
-            } catch (Exception e) {
-                e.printStackTrace();
-            } finally {
-                if (s != null) {
-                    s.close();
+                    s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(10L));
+
+                    sockOut.write(bytes);
+                    sockOut.flush();
+    
+                    try(InputStream sockIn = s.getInputStream();
+                        ByteArrayOutputStream baos = new ByteArrayOutputStream(bytes.length)) {
+                        int l;
+                        while ((baos.size() < PAYLOAD.length()) && ((l = sockIn.read(buf)) > 0)) {
+                            baos.write(buf, 0, l);
+                        }
+                        assertEquals("Mismatched payload at iteration #" + i, PAYLOAD, baos.toString());
+                    }
+                } catch (Exception e) {
+                    log.error("Error in iteration #" + i, e);
                 }
             }
+            session.delPortForwardingL(sinkPort);
+            
+            ss.close();
+            tAcceptor.join(TimeUnit.SECONDS.toMillis(5L));
+        } finally {
+            session.disconnect();
         }
-        session.delPortForwardingL(sinkPort);
-        ss.close();
     }
 
     @Test
@@ -199,72 +221,91 @@ public class PortForwardingLoadTest extends BaseTestSupport {
                 "longer Test Data. This is significantly longer Test Data. This is significantly "+
                 "longer Test Data. ";
         Session session = createSession();
-        final ServerSocket ss = new ServerSocket();
-        ss.setReuseAddress(true);
-        ss.bind(new InetSocketAddress((InetAddress) null, 0));
-        int forwardedPort = ss.getLocalPort();
-        int sinkPort = getFreePort();
-        session.setPortForwardingR(sinkPort, "localhost", forwardedPort);
-        final boolean started[] = new boolean[1];
-        started[0] = false;
-        final AtomicInteger conCount = new AtomicInteger(0);
-
-        new Thread() {
-            @Override
-            public void run() {
-                started[0] = true;
-                try {
-                    for (int i = 0; i < NUM_ITERATIONS; ++i) {
-                        try(Socket s = ss.accept()) {
-                            conCount.incrementAndGet();
-                            s.getOutputStream().write(PAYLOAD.getBytes());
-                            s.getOutputStream().flush();
+        try (final ServerSocket ss = new ServerSocket()) {
+            ss.setReuseAddress(true);
+            ss.bind(new InetSocketAddress((InetAddress) null, 0));
+            int forwardedPort = ss.getLocalPort();
+            int sinkPort = getFreePort();
+            session.setPortForwardingR(sinkPort, "localhost", forwardedPort);
+            final boolean started[] = new boolean[1];
+            started[0] = false;
+            final AtomicInteger conCount = new AtomicInteger(0);
+    
+            Thread tWriter = new Thread(getCurrentTestName() + "Writer") {
+                    @SuppressWarnings("synthetic-access")
+                    @Override
+                    public void run() {
+                        started[0] = true;
+                        try {
+                            byte[]  bytes=PAYLOAD.getBytes();
+                            for (int i = 0; i < NUM_ITERATIONS; ++i) {
+                                try(Socket s = ss.accept()) {
+                                    conCount.incrementAndGet();
+                                    
+                                    try(OutputStream sockOut=s.getOutputStream()) {
+                                        sockOut.write(bytes);
+                                        sockOut.flush();
+                                    }
+                                }
+                            }
+                        } catch (Exception e) {
+                            log.error("Failed to complete run loop", e);
                         }
                     }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }.start();
-        Thread.sleep(50);
-        assertTrue("Server not started", started[0]);
+                };
+            tWriter.start();
+            Thread.sleep(50);
+            assertTrue("Server not started", started[0]);
+    
+            final boolean lenOK[] = new boolean[NUM_ITERATIONS];
+            final boolean dataOK[] = new boolean[NUM_ITERATIONS];
+            byte b2[] = new byte[PAYLOAD.length()];
+            byte b1[] = new byte[b2.length / 2];
 
-        final boolean lenOK[] = new boolean[NUM_ITERATIONS];
-        final boolean dataOK[] = new boolean[NUM_ITERATIONS];
-        for ( int i = 0; i < NUM_ITERATIONS; i++) {
-            final int ii = i;
-            Socket s = null;
-            try {
-                s = new Socket("localhost", sinkPort);
-                byte b1[] = new byte[PAYLOAD.length() / 2];
-                byte b2[] = new byte[PAYLOAD.length()];
-                int read1 = s.getInputStream().read(b1);
-                Thread.sleep(50);
-                int read2 = s.getInputStream().read(b2);
-                lenOK[ii] = PAYLOAD.length() == read1 + read2;
-                dataOK[ii] = PAYLOAD.equals(new String(b1, 0, read1) + new String(b2, 0, read2));
-                if (!lenOK[ii] || !dataOK[ii] ) {
-                    throw new Exception("Bad data");
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            } finally {
-                if (s != null) {
-                    s.close();
+            for (int i = 0; i < NUM_ITERATIONS; i++) {
+                final int ii = i;
+                try(Socket s = new Socket("localhost", sinkPort);
+                    InputStream sockIn = s.getInputStream()) {
+
+                    s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(10L));
+
+                    int read1 = sockIn.read(b1);
+                    String part1 = new String(b1, 0, read1);
+                    Thread.sleep(50);
+
+                    int read2 = sockIn.read(b2);
+                    String part2 = new String(b2, 0, read2);
+                    int totalRead = read1 + read2;
+                    lenOK[ii] = PAYLOAD.length() == totalRead;
+
+                    String readData = part1 + part2;
+                    dataOK[ii] = PAYLOAD.equals(readData);
+                    if (!lenOK[ii]) {
+                        throw new IndexOutOfBoundsException("Mismatched length: expected=" + PAYLOAD.length() + ", actual=" + totalRead);
+                    }
+                    
+                    if (!dataOK[ii]) {
+                        throw new IllegalStateException("Mismatched content");
+                    }
+                } catch (Exception e) {
+                    log.error("Failed to complete iteration #" + i, e);
                 }
             }
+            int ok = 0;
+            for (int i = 0; i < NUM_ITERATIONS; i++) {
+                ok += lenOK[i] ? 1 : 0;
+            }
+            Thread.sleep(50);
+            for (int i = 0; i < NUM_ITERATIONS; i++) {
+                assertTrue("Bad length at iteration " + i, lenOK[i]);
+                assertTrue("Bad data at iteration " + i, dataOK[i]);
+            }
+            session.delPortForwardingR(forwardedPort);
+            ss.close();
+            tWriter.join(TimeUnit.SECONDS.toMillis(5L));
+        } finally {
+            session.disconnect();
         }
-        int ok = 0;
-        for (int i = 0; i < NUM_ITERATIONS; i++) {
-            ok += lenOK[i] ? 1 : 0;
-        }
-        Thread.sleep(50);
-        for (int i = 0; i < NUM_ITERATIONS; i++) {
-            assertTrue(lenOK[i]);
-            assertTrue(dataOK[i]);
-        }
-        session.delPortForwardingR(forwardedPort);
-        ss.close();
     }
 
     @Test
@@ -303,49 +344,50 @@ public class PortForwardingLoadTest extends BaseTestSupport {
         final int port = acceptor.getLocalAddress().getPort();
 
         Session session = createSession();
-
-        final int forwardedPort1 = session.setPortForwardingL(0, host, port);
-        final int forwardedPort2 = getFreePort();
-        session.setPortForwardingR(forwardedPort2, "localhost", forwardedPort1);
-        System.err.println("URL: http://localhost:" + forwardedPort2);
-
-
-        final CountDownLatch latch = new CountDownLatch(nbThread * nbDownloads * nbLoops);
-
-        final Thread[] threads = new Thread[nbThread];
-        final List<Throwable> errors = new CopyOnWriteArrayList<Throwable>();
-        for (int i = 0; i < threads.length; i++) {
-            threads[i] = new Thread() {
-                @Override
-                public void run() {
-                    for (int j = 0; j < nbLoops; j++)  {
-                        final MultiThreadedHttpConnectionManager mgr = new MultiThreadedHttpConnectionManager();
-                        final HttpClient client = new HttpClient(mgr);
-                        client.getHttpConnectionManager().getParams().setDefaultMaxConnectionsPerHost(100);
-                        client.getHttpConnectionManager().getParams().setMaxTotalConnections(1000);
-                        for (int i = 0; i < nbDownloads; i++) {
-                            try {
-                                checkHtmlPage(client, new URL("http://localhost:" + forwardedPort2 + path));
-                            } catch (Throwable e) {
-                                errors.add(e);
-                            } finally {
-                                latch.countDown();
-                                System.err.println("Remaining: " + latch.getCount());
+        try {
+            final int forwardedPort1 = session.setPortForwardingL(0, host, port);
+            final int forwardedPort2 = getFreePort();
+            session.setPortForwardingR(forwardedPort2, "localhost", forwardedPort1);
+            System.err.println("URL: http://localhost:" + forwardedPort2);
+    
+            final CountDownLatch latch = new CountDownLatch(nbThread * nbDownloads * nbLoops);
+            final Thread[] threads = new Thread[nbThread];
+            final List<Throwable> errors = new CopyOnWriteArrayList<Throwable>();
+            for (int i = 0; i < threads.length; i++) {
+                threads[i] = new Thread(getCurrentTestName() + "[" + i + "]") {
+                    @Override
+                    public void run() {
+                        for (int j = 0; j < nbLoops; j++)  {
+                            final MultiThreadedHttpConnectionManager mgr = new MultiThreadedHttpConnectionManager();
+                            final HttpClient client = new HttpClient(mgr);
+                            client.getHttpConnectionManager().getParams().setDefaultMaxConnectionsPerHost(100);
+                            client.getHttpConnectionManager().getParams().setMaxTotalConnections(1000);
+                            for (int i = 0; i < nbDownloads; i++) {
+                                try {
+                                    checkHtmlPage(client, new URL("http://localhost:" + forwardedPort2 + path));
+                                } catch (Throwable e) {
+                                    errors.add(e);
+                                } finally {
+                                    latch.countDown();
+                                    System.err.println("Remaining: " + latch.getCount());
+                                }
                             }
+                            mgr.shutdown();
                         }
-                        mgr.shutdown();
                     }
-                }
-            };
+                };
+            }
+            for (int i = 0; i < threads.length; i++) {
+                threads[i].start();
+            }
+            latch.await();
+            for (Throwable t : errors) {
+                t.printStackTrace();
+            }
+            assertEquals(0, errors.size());
+        } finally {
+            session.disconnect();
         }
-        for (int i = 0; i < threads.length; i++) {
-            threads[i].start();
-        }
-        latch.await();
-        for (Throwable t : errors) {
-            t.printStackTrace();
-        }
-        assertEquals(0, errors.size());
     }
 
     protected Session createSession() throws JSchException {

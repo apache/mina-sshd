@@ -60,15 +60,20 @@ public class SpringConfigTest extends BaseTestSupport {
         com.jcraft.jsch.Session s = sch.getSession("smx", "localhost", port);
         s.setUserInfo(new SimpleUserInfo("smx"));
         s.connect();
-        Channel c = s.openChannel("shell");
-        c.connect();
-        OutputStream os = c.getOutputStream();
-        os.write("this is my command".getBytes());
-        os.flush();
-        Thread.sleep(100);
-        c.disconnect();
-        s.disconnect();
+        
+        try {
+            Channel c = s.openChannel("shell");
+            c.connect();
+        
+            try(OutputStream os = c.getOutputStream()) {
+                os.write("this is my command".getBytes());
+                os.flush();
+                Thread.sleep(100);
+            } finally {
+                c.disconnect();
+            }
+        } finally {
+            s.disconnect();
+        }
     }
-
-
 }

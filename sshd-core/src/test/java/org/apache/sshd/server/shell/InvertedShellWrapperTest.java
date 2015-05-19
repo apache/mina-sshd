@@ -33,23 +33,24 @@ public class InvertedShellWrapperTest extends BaseTestSupport {
     public void testStreamsAreFlushedBeforeClosing() throws Exception {
         BogusInvertedShell shell = newShell("out", "err");
         shell.setAlive(false);
-        ByteArrayInputStream in = new ByteArrayInputStream("in".getBytes());
-        ByteArrayOutputStream out = new ByteArrayOutputStream(50);
-        ByteArrayOutputStream err = new ByteArrayOutputStream();
+        try(ByteArrayInputStream in = new ByteArrayInputStream("in".getBytes());
+            ByteArrayOutputStream out = new ByteArrayOutputStream(50);
+            ByteArrayOutputStream err = new ByteArrayOutputStream()) {
 
-        InvertedShellWrapper wrapper = new InvertedShellWrapper(shell);
-        wrapper.setInputStream(in);
-        wrapper.setOutputStream(out);
-        wrapper.setErrorStream(err);
-        wrapper.setExitCallback(new BogusExitCallback());
-        wrapper.start(new BogusEnvironment());
-
-        wrapper.pumpStreams();
-
-        // check the streams were flushed before exiting
-        assertEquals("in", shell.getInputStream().toString());
-        assertEquals("out", out.toString());
-        assertEquals("err", err.toString());
+            InvertedShellWrapper wrapper = new InvertedShellWrapper(shell);
+            wrapper.setInputStream(in);
+            wrapper.setOutputStream(out);
+            wrapper.setErrorStream(err);
+            wrapper.setExitCallback(new BogusExitCallback());
+            wrapper.start(new BogusEnvironment());
+    
+            wrapper.pumpStreams();
+    
+            // check the streams were flushed before exiting
+            assertEquals("in", shell.getInputStream().toString());
+            assertEquals("out", out.toString());
+            assertEquals("err", err.toString());
+        }
     }
 
     private BogusInvertedShell newShell(String contentOut, String contentErr) {
@@ -58,5 +59,4 @@ public class InvertedShellWrapperTest extends BaseTestSupport {
         ByteArrayInputStream err = new ByteArrayInputStream(contentErr.getBytes());
         return new BogusInvertedShell(in, out, err);
     }
-
 }

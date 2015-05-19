@@ -18,6 +18,12 @@
  */
 package org.apache.sshd.client;
 
+import static org.apache.sshd.common.sftp.SftpConstants.S_IFDIR;
+import static org.apache.sshd.common.sftp.SftpConstants.S_IFLNK;
+import static org.apache.sshd.common.sftp.SftpConstants.S_IFMT;
+import static org.apache.sshd.common.sftp.SftpConstants.S_IFREG;
+
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -26,15 +32,10 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.concurrent.TimeUnit;
 
-import static org.apache.sshd.common.sftp.SftpConstants.S_IFDIR;
-import static org.apache.sshd.common.sftp.SftpConstants.S_IFLNK;
-import static org.apache.sshd.common.sftp.SftpConstants.S_IFMT;
-import static org.apache.sshd.common.sftp.SftpConstants.S_IFREG;
-
 /**
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public interface SftpClient extends AutoCloseable {
+public interface SftpClient extends Closeable {
 
     enum OpenMode {
         Read,
@@ -183,11 +184,6 @@ public interface SftpClient extends AutoCloseable {
     }
 
     int getVersion();
-
-    /**
-     * Close the client.
-     */
-    void close() throws IOException;
 
     boolean isClosing();
 

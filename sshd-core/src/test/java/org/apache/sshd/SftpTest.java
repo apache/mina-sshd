@@ -22,6 +22,7 @@ import static org.apache.sshd.common.sftp.SftpConstants.SSH_FX_FILE_ALREADY_EXIS
 import static org.apache.sshd.common.sftp.SftpConstants.SSH_FX_NO_SUCH_FILE;
 import static org.apache.sshd.common.sftp.SftpConstants.S_IRUSR;
 import static org.apache.sshd.common.sftp.SftpConstants.S_IWUSR;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -32,6 +33,7 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Vector;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.SftpClient;
 import org.apache.sshd.common.NamedFactory;
@@ -192,68 +194,66 @@ public class SftpTest extends BaseTestSupport {
     public void testClient() throws Exception {
         SshClient client = SshClient.setUpDefaultClient();
         client.start();
-        try {
-            try (ClientSession session = client.connect("x", "localhost", port).await().getSession()) {
-                session.addPasswordIdentity("x");
-                session.auth().verify();
+        try (ClientSession session = client.connect("x", "localhost", port).await().getSession()) {
+            session.addPasswordIdentity("x");
+            session.auth().verify(5L, TimeUnit.SECONDS);
+    
+            Utils.deleteRecursive(new File("target/sftp"));
+            new File("target/sftp").mkdirs();
+            new File("target/sftp/client/test.txt").delete();
+            new File("target/sftp/client").delete();
+    
+            try (SftpClient sftp = session.createSftpClient()) {
+                sftp.mkdir("target/sftp/client");
         
-                Utils.deleteRecursive(new File("target/sftp"));
-                new File("target/sftp").mkdirs();
-                new File("target/sftp/client/test.txt").delete();
-                new File("target/sftp/client").delete();
+                SftpClient.Handle h = sftp.open("target/sftp/client/test.txt", EnumSet.of(SftpClient.OpenMode.Write, SftpClient.OpenMode.Create));
+                byte[] d = "0123456789\n".getBytes();
+                sftp.write(h, 0, d, 0, d.length);
+                sftp.write(h, d.length, d, 0, d.length);
         
-                try (SftpClient sftp = session.createSftpClient()) {
-                    sftp.mkdir("target/sftp/client");
-            
-                    SftpClient.Handle h = sftp.open("target/sftp/client/test.txt", EnumSet.of(SftpClient.OpenMode.Write, SftpClient.OpenMode.Create));
-                    byte[] d = "0123456789\n".getBytes();
-                    sftp.write(h, 0, d, 0, d.length);
-                    sftp.write(h, d.length, d, 0, d.length);
-            
-                    SftpClient.Attributes attrs = sftp.stat(h);
-                    assertNotNull("No handle attributes", attrs);
-            
-                    sftp.close(h);
-            
-                    h = sftp.openDir("target/sftp/client");
-                    SftpClient.DirEntry[] dir = sftp.readDir(h);
-                    assertNotNull("No dir entries", dir);
-                    assertEquals("Mismatced number of dir entries", 1, dir.length);
-                    assertNull("Unexpected entry read", sftp.readDir(h));
-                    sftp.close(h);
-            
-                    sftp.remove("target/sftp/client/test.txt");
+                SftpClient.Attributes attrs = sftp.stat(h);
+                assertNotNull("No handle attributes", attrs);
+        
+                sftp.close(h);
+        
+                h = sftp.openDir("target/sftp/client");
+                SftpClient.DirEntry[] dir = sftp.readDir(h);
+                assertNotNull("No dir entries", dir);
+                assertEquals("Mismatced number of dir entries", 1, dir.length);
+                assertNull("Unexpected entry read", sftp.readDir(h));
+                sftp.close(h);
+        
+                sftp.remove("target/sftp/client/test.txt");
 
-                    byte[] workBuf = new byte[1024 * 128];
-                    try (OutputStream os = sftp.write("target/sftp/client/test.txt")) {
-                        os.write(workBuf);
-                    }
-            
-                    try (InputStream is = sftp.read("target/sftp/client/test.txt")) {
-                        int readLen = is.read(workBuf);
-                        assertEquals("Mismatched read data length", workBuf.length, readLen);
-        
-                        int i = is.read();
-                        assertEquals("Unexpected read past EOF", -1, i);
-                    }
-        
-                    SftpClient.Attributes attributes = sftp.stat("target/sftp/client/test.txt");
-                    assertTrue("Test file not detected as regular", attributes.isRegularFile());
-            
-                    attributes = sftp.stat("target/sftp/client");
-                    assertTrue("Test directory not reported as such", attributes.isDirectory());
-            
-                    int nb = 0;
-                    for (SftpClient.DirEntry entry : sftp.readDir("target/sftp/client")) {
-                        assertNotNull("Unexpected null entry", entry);
-                        nb++;
-                    }
-                    assertEquals("Mismatched read dir entries", 1, nb);
-            
-                    sftp.remove("target/sftp/client/test.txt");
-            
-                    sftp.rmdir("target/sftp/client/");
+                byte[] workBuf = new byte[1024 * 128];
+                try (OutputStream os = sftp.write("target/sftp/client/test.txt")) {
+                    os.write(workBuf);
                 }
+        
+                try (InputStream is = sftp.read("target/sftp/client/test.txt")) {
+                    int readLen = is.read(workBuf);
+                    assertEquals("Mismatched read data length", workBuf.length, readLen);
+    
+                    int i = is.read();
+                    assertEquals("Unexpected read past EOF", -1, i);
+                }
+    
+                SftpClient.Attributes attributes = sftp.stat("target/sftp/client/test.txt");
+                assertTrue("Test file not detected as regular", attributes.isRegularFile());
+        
+                attributes = sftp.stat("target/sftp/client");
+                assertTrue("Test directory not reported as such", attributes.isDirectory());
+        
+                int nb = 0;
+                for (SftpClient.DirEntry entry : sftp.readDir("target/sftp/client")) {
+                    assertNotNull("Unexpected null entry", entry);
+                    nb++;
+                }
+                assertEquals("Mismatched read dir entries", 1, nb);
+        
+                sftp.remove("target/sftp/client/test.txt");
+        
+                sftp.rmdir("target/sftp/client/");
             }
         } finally {
             client.stop();
@@ -268,39 +268,42 @@ public class SftpTest extends BaseTestSupport {
      */
     @Test
     public void testWriteChunking() throws Exception {
-        SshClient client = SshClient.setUpDefaultClient();
-        client.start();
-        ClientSession session = client.connect("x", "localhost", port).await().getSession();
-        session.addPasswordIdentity("x");
-        session.auth().verify();
-
-        Utils.deleteRecursive(new File("target/sftp"));
-        new File("target/sftp").mkdirs();
-        new File("target/sftp/client").delete();
-
-        SftpClient sftp = session.createSftpClient();
-
-        sftp.mkdir("target/sftp/client");
-
-        uploadAndVerifyFile(sftp, 0, "emptyFile.txt");
-        uploadAndVerifyFile(sftp, 1000, "smallFile.txt");
-        uploadAndVerifyFile(sftp, ByteArrayBuffer.MAX_LEN - 1, "bufferMaxLenMinusOneFile.txt");
-        uploadAndVerifyFile(sftp, ByteArrayBuffer.MAX_LEN, "bufferMaxLenFile.txt");
-        // were chunking not implemented, these would fail. these sizes should invoke our internal chunking mechanism
-        uploadAndVerifyFile(sftp, ByteArrayBuffer.MAX_LEN + 1, "bufferMaxLenPlusOneFile.txt");
-        uploadAndVerifyFile(sftp, (int)(1.5 * ByteArrayBuffer.MAX_LEN), "1point5BufferMaxLenFile.txt");
-        uploadAndVerifyFile(sftp, (2 * ByteArrayBuffer.MAX_LEN) - 1, "2TimesBufferMaxLenMinusOneFile.txt");
-        uploadAndVerifyFile(sftp, 2 * ByteArrayBuffer.MAX_LEN, "2TimesBufferMaxLenFile.txt");
-        uploadAndVerifyFile(sftp, (2 * ByteArrayBuffer.MAX_LEN) + 1, "2TimesBufferMaxLenPlusOneFile.txt");
-        uploadAndVerifyFile(sftp, 200000, "largerFile.txt");
-
-        // test erroneous calls that check for negative values
-        testInvalidParams(sftp);
-
-        // cleanup
-        sftp.rmdir("target/sftp/client");
-        sftp.close();
-        client.stop();
+        try(SshClient client = SshClient.setUpDefaultClient()) {
+            client.start();
+            
+            try(ClientSession session = client.connect("x", "localhost", port).await().getSession()) {
+                session.addPasswordIdentity("x");
+                session.auth().verify(5L, TimeUnit.SECONDS);
+        
+                Utils.deleteRecursive(new File("target/sftp"));
+                new File("target/sftp").mkdirs();
+                new File("target/sftp/client").delete();
+        
+                try(SftpClient sftp = session.createSftpClient()) {
+                    sftp.mkdir("target/sftp/client");
+            
+                    uploadAndVerifyFile(sftp, 0, "emptyFile.txt");
+                    uploadAndVerifyFile(sftp, 1000, "smallFile.txt");
+                    uploadAndVerifyFile(sftp, ByteArrayBuffer.MAX_LEN - 1, "bufferMaxLenMinusOneFile.txt");
+                    uploadAndVerifyFile(sftp, ByteArrayBuffer.MAX_LEN, "bufferMaxLenFile.txt");
+                    // were chunking not implemented, these would fail. these sizes should invoke our internal chunking mechanism
+                    uploadAndVerifyFile(sftp, ByteArrayBuffer.MAX_LEN + 1, "bufferMaxLenPlusOneFile.txt");
+                    uploadAndVerifyFile(sftp, (int)(1.5 * ByteArrayBuffer.MAX_LEN), "1point5BufferMaxLenFile.txt");
+                    uploadAndVerifyFile(sftp, (2 * ByteArrayBuffer.MAX_LEN) - 1, "2TimesBufferMaxLenMinusOneFile.txt");
+                    uploadAndVerifyFile(sftp, 2 * ByteArrayBuffer.MAX_LEN, "2TimesBufferMaxLenFile.txt");
+                    uploadAndVerifyFile(sftp, (2 * ByteArrayBuffer.MAX_LEN) + 1, "2TimesBufferMaxLenPlusOneFile.txt");
+                    uploadAndVerifyFile(sftp, 200000, "largerFile.txt");
+            
+                    // test erroneous calls that check for negative values
+                    testInvalidParams(sftp);
+            
+                    // cleanup
+                    sftp.rmdir("target/sftp/client");
+                }
+            } finally {
+                client.stop();
+            }
+        }
     }
 
     private void testInvalidParams(SftpClient sftp) throws Exception {
@@ -401,15 +404,18 @@ public class SftpTest extends BaseTestSupport {
 
         ChannelSftp c = (ChannelSftp) session.openChannel("sftp");
         c.connect();
-        c.put(new ByteArrayInputStream("0123456789".getBytes()), unixPath);
-
-        assertTrue("Target not created after initial write: " + target.getAbsolutePath(), target.exists());
-        assertEquals("0123456789", readFile(unixPath));
-
-        try(OutputStream os = c.put(unixPath, null, ChannelSftp.APPEND, -5)) {
-            os.write("a".getBytes());
+        try {
+            c.put(new ByteArrayInputStream("0123456789".getBytes()), unixPath);
+    
+            assertTrue("Target not created after initial write: " + target.getAbsolutePath(), target.exists());
+            assertEquals("0123456789", readFile(unixPath));
+    
+            try(OutputStream os = c.put(unixPath, null, ChannelSftp.APPEND, -5)) {
+                os.write("a".getBytes());
+            }
+        } finally {
+            c.disconnect();
         }
-        c.disconnect();
 
         assertTrue("Target not created after data update: " + target.getAbsolutePath(), target.exists());
         assertEquals("Mismatched file data", "01234a6789", readFile(unixPath));
@@ -423,14 +429,17 @@ public class SftpTest extends BaseTestSupport {
     public void testReadDir() throws Exception {
         ChannelSftp c = (ChannelSftp) session.openChannel("sftp");
         c.connect();
-
-        URI url = getClass().getClassLoader().getResource(SshClient.class.getName().replace('.', '/') + ".class").toURI();
-        URI base = new File(System.getProperty("user.dir")).getAbsoluteFile().toURI();
-        String path = new File(base.relativize(url).getPath()).getParent() + "/";
-        path = path.replace('\\', '/');
-        Vector<?> res = c.ls(path);
-        for (Object f : res) {
-            System.out.println(f.toString());
+        try {
+            URI url = getClass().getClassLoader().getResource(SshClient.class.getName().replace('.', '/') + ".class").toURI();
+            URI base = new File(System.getProperty("user.dir")).getAbsoluteFile().toURI();
+            String path = new File(base.relativize(url).getPath()).getParent() + "/";
+            path = path.replace('\\', '/');
+            Vector<?> res = c.ls(path);
+            for (Object f : res) {
+                System.out.println(f.toString());
+            }
+        } finally {
+            c.disconnect();
         }
     }
 
@@ -439,56 +448,66 @@ public class SftpTest extends BaseTestSupport {
         ChannelSftp c = (ChannelSftp) session.openChannel("sftp");
         c.connect();
 
-        URI url = getClass().getClassLoader().getResource(SshClient.class.getName().replace('.', '/') + ".class").toURI();
-        URI base = new File(System.getProperty("user.dir")).getAbsoluteFile().toURI();
-        String path = new File(base.relativize(url).getPath()).getParent() + "/";
-        path = path.replace('\\', '/');
-        String real = c.realpath(path);
-        System.out.println(real);
         try {
-            real = c.realpath(path + "/foobar");
+            URI url = getClass().getClassLoader().getResource(SshClient.class.getName().replace('.', '/') + ".class").toURI();
+            URI base = new File(System.getProperty("user.dir")).getAbsoluteFile().toURI();
+            String path = new File(base.relativize(url).getPath()).getParent() + "/";
+            path = path.replace('\\', '/');
+            String real = c.realpath(path);
             System.out.println(real);
-            fail("Expected SftpException");
-        } catch (SftpException e) {
-            // ok
+            try {
+                real = c.realpath(path + "/foobar");
+                System.out.println(real);
+                fail("Expected SftpException");
+            } catch (SftpException e) {
+                // ok
+            }
+        } finally {
+            c.disconnect();
         }
     }
 
     @Test
     public void testRename() throws Exception {
-        SshClient client = SshClient.setUpDefaultClient();
-        client.start();
-        ClientSession session = client.connect("x", "localhost", port).await().getSession();
-        session.addPasswordIdentity("x");
-        session.auth().verify();
-
-        Utils.deleteRecursive(new File("target/sftp"));
-        new File("target/sftp").mkdirs();
-        new File("target/sftp/client").delete();
-
-        SftpClient sftp = session.createSftpClient();
-        try (OutputStream os = sftp.write("target/sftp/test.txt")) {
-            os.write("Hello world!\n".getBytes());
+        try(SshClient client = SshClient.setUpDefaultClient()) {
+            client.start();
+            
+            try(ClientSession session = client.connect("x", "localhost", port).await().getSession()) {
+                session.addPasswordIdentity("x");
+                session.auth().verify(5L, TimeUnit.SECONDS);
+        
+                Utils.deleteRecursive(new File("target/sftp"));
+                new File("target/sftp").mkdirs();
+                new File("target/sftp/client").delete();
+        
+                try(SftpClient sftp = session.createSftpClient()) {
+                    try (OutputStream os = sftp.write("target/sftp/test.txt")) {
+                        os.write("Hello world!\n".getBytes());
+                    }
+            
+                    try {
+                        sftp.rename("target/sftp/test2.txt", "target/sftp/test3.txt");
+                        fail("Expected an SftpException");
+                    } catch (org.apache.sshd.client.SftpException e) {
+                        assertEquals(SSH_FX_NO_SUCH_FILE, e.getStatus());
+                    }
+            
+                    try (OutputStream os = sftp.write("target/sftp/test2.txt")) {
+                        os.write("H".getBytes());
+                    }
+            
+                    try {
+                        sftp.rename("target/sftp/test.txt", "target/sftp/test2.txt");
+                        fail("Expected an SftpException");
+                    } catch (org.apache.sshd.client.SftpException e) {
+                        assertEquals(SSH_FX_FILE_ALREADY_EXISTS, e.getStatus());
+                    }
+                    sftp.rename("target/sftp/test.txt", "target/sftp/test2.txt", SftpClient.CopyMode.Overwrite);
+                }
+            } finally {
+                client.stop();
+            }
         }
-
-        try {
-            sftp.rename("target/sftp/test2.txt", "target/sftp/test3.txt");
-            fail("Expected an SftpException");
-        } catch (org.apache.sshd.client.SftpException e) {
-            assertEquals(SSH_FX_NO_SUCH_FILE, e.getStatus());
-        }
-
-        try (OutputStream os = sftp.write("target/sftp/test2.txt")) {
-            os.write("H".getBytes());
-        }
-
-        try {
-            sftp.rename("target/sftp/test.txt", "target/sftp/test2.txt");
-            fail("Expected an SftpException");
-        } catch (org.apache.sshd.client.SftpException e) {
-            assertEquals(SSH_FX_FILE_ALREADY_EXISTS, e.getStatus());
-        }
-        sftp.rename("target/sftp/test.txt", "target/sftp/test2.txt", SftpClient.CopyMode.Overwrite);
     }
 
     @Test
@@ -509,19 +528,23 @@ public class SftpTest extends BaseTestSupport {
 
         ChannelSftp c = (ChannelSftp) session.openChannel("sftp");
         c.connect();
-        c.put(new ByteArrayInputStream("0123456789".getBytes()), unixPath);
-
-        assertTrue(target.exists());
-        assertEquals("0123456789", readFile(unixPath));
-
-        c.symlink(unixPath, linkUnixPath);
-
-        assertTrue(link.exists());
-        assertEquals("0123456789", readFile(linkUnixPath));
-
-        String str1 = c.readlink(linkUnixPath);
-        String str2 = c.realpath(unixPath);
-        assertEquals(str1, str2);
+        try {
+            c.put(new ByteArrayInputStream("0123456789".getBytes()), unixPath);
+    
+            assertTrue(target.exists());
+            assertEquals("0123456789", readFile(unixPath));
+    
+            c.symlink(unixPath, linkUnixPath);
+    
+            assertTrue(link.exists());
+            assertEquals("0123456789", readFile(linkUnixPath));
+    
+            String str1 = c.readlink(linkUnixPath);
+            String str2 = c.realpath(unixPath);
+            assertEquals(str1, str2);
+        } finally {
+            c.disconnect();
+        }
     }
 
     protected void assertFileLength(File file, long length, long timeout) throws Exception {
@@ -546,27 +569,30 @@ public class SftpTest extends BaseTestSupport {
     protected String readFile(String path) throws Exception {
         ChannelSftp c = (ChannelSftp) session.openChannel("sftp");
         c.connect();
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        InputStream is = c.get(path);
-        try {
+        
+        try(ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            InputStream is = c.get(path)) {
+
             byte[] buffer = new byte[256];
             int count;
             while (-1 != (count = is.read(buffer))) {
                 bos.write(buffer, 0, count);
             }
-        } finally {
-            is.close();
-        }
 
-        c.disconnect();
-        return new String(bos.toByteArray());
+            return bos.toString();
+        } finally {
+            c.disconnect();
+        }
     }
 
     protected void sendFile(String path, String data) throws Exception {
         ChannelSftp c = (ChannelSftp) session.openChannel("sftp");
         c.connect();
-        c.put(new ByteArrayInputStream(data.getBytes()), path);
-        c.disconnect();
+        try {
+            c.put(new ByteArrayInputStream(data.getBytes()), path);
+        } finally {
+            c.disconnect();
+        }
     }
 
     private String randomString(int size) {

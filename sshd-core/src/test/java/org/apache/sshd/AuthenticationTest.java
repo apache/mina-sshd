@@ -78,79 +78,95 @@ public class AuthenticationTest extends BaseTestSupport {
 
     @Test
     public void testChangeUser() throws Exception {
-        SshClient client = SshClient.setUpDefaultClient();
-        client.setServiceFactories(Arrays.asList(
-                new ClientUserAuthServiceOld.Factory(),
-                new ClientConnectionService.Factory()
-        ));
-        client.start();
-        ClientSession s = client.connect(null, "localhost", port).await().getSession();
-        s.waitFor(ClientSession.CLOSED | ClientSession.WAIT_AUTH, 0);
+        try(SshClient client = SshClient.setUpDefaultClient()) {
+            client.setServiceFactories(Arrays.asList(
+                    new ClientUserAuthServiceOld.Factory(),
+                    new ClientConnectionService.Factory()
+            ));
 
-        assertFalse(authPassword(s, "user1", "the-password").await().isSuccess());
-        assertFalse(authPassword(s, "user2", "the-password").await().isSuccess());
-
-        // Note that WAIT_AUTH flag should be false, but since the internal
-        // authentication future is not updated, it's still returned
-        assertEquals(ClientSession.CLOSED | ClientSession.WAIT_AUTH, s.waitFor(ClientSession.CLOSED, 1000));
-        client.stop();
+            client.start();
+                
+            try(ClientSession s = client.connect(null, "localhost", port).await().getSession()) {
+                s.waitFor(ClientSession.CLOSED | ClientSession.WAIT_AUTH, 0);
+        
+                assertFalse(authPassword(s, "user1", "the-password").await().isSuccess());
+                assertFalse(authPassword(s, "user2", "the-password").await().isSuccess());
+        
+                // Note that WAIT_AUTH flag should be false, but since the internal
+                // authentication future is not updated, it's still returned
+                assertEquals(ClientSession.CLOSED | ClientSession.WAIT_AUTH, s.waitFor(ClientSession.CLOSED, 1000));
+            } finally {
+                client.stop();
+            }
+        }
     }
 
     @Test
     public void testAuthPasswordOnly() throws Exception {
-        SshClient client = SshClient.setUpDefaultClient();
-        client.setServiceFactories(Arrays.asList(
-                new ClientUserAuthServiceOld.Factory(),
-                new ClientConnectionService.Factory()
-        ));
-        client.start();
-        ClientSession s = client.connect(null, "localhost", port).await().getSession();
-        s.waitFor(ClientSession.CLOSED | ClientSession.WAIT_AUTH, 0);
-
-        assertFalse(authPassword(s, "smx", "smx").await().isSuccess());
-
-        s.close(true);
-        client.stop();
+        try(SshClient client = SshClient.setUpDefaultClient()) {
+            client.setServiceFactories(Arrays.asList(
+                    new ClientUserAuthServiceOld.Factory(),
+                    new ClientConnectionService.Factory()
+            ));
+            client.start();
+            
+            try(ClientSession s = client.connect(null, "localhost", port).await().getSession()) {
+                s.waitFor(ClientSession.CLOSED | ClientSession.WAIT_AUTH, 0);
+        
+                assertFalse(authPassword(s, "smx", "smx").await().isSuccess());
+        
+                s.close(true);
+            } finally {
+                client.stop();
+            }
+        }
     }
 
     @Test
     public void testAuthKeyPassword() throws Exception {
-        SshClient client = SshClient.setUpDefaultClient();
-        client.setServiceFactories(Arrays.asList(
-                new ClientUserAuthServiceOld.Factory(),
-                new ClientConnectionService.Factory()
-        ));
-        client.start();
-        ClientSession s = client.connect(null, "localhost", port).await().getSession();
-        s.waitFor(ClientSession.CLOSED | ClientSession.WAIT_AUTH, 0);
-
-        KeyPair pair = Utils.createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
-        assertFalse(authPublicKey(s, "smx", pair).await().isSuccess());
-
-        assertTrue(authPassword(s, "smx", "smx").await().isSuccess());
-
-        s.close(true);
-        client.stop();
+        try(SshClient client = SshClient.setUpDefaultClient()) {
+            client.setServiceFactories(Arrays.asList(
+                    new ClientUserAuthServiceOld.Factory(),
+                    new ClientConnectionService.Factory()
+            ));
+            client.start();
+            
+            try(ClientSession s = client.connect(null, "localhost", port).await().getSession()) {
+                s.waitFor(ClientSession.CLOSED | ClientSession.WAIT_AUTH, 0);
+        
+                KeyPair pair = Utils.createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
+                assertFalse(authPublicKey(s, "smx", pair).await().isSuccess());
+        
+                assertTrue(authPassword(s, "smx", "smx").await().isSuccess());
+                s.close(true);
+            } finally {
+                client.stop();
+            }
+        }
     }
 
     @Test
     public void testAuthKeyInteractive() throws Exception {
-        SshClient client = SshClient.setUpDefaultClient();
-        client.setServiceFactories(Arrays.asList(
-                new ClientUserAuthServiceOld.Factory(),
-                new ClientConnectionService.Factory()
-        ));
-        client.start();
-        ClientSession s = client.connect(null, "localhost", port).await().getSession();
-        s.waitFor(ClientSession.CLOSED | ClientSession.WAIT_AUTH, 0);
-
-        KeyPair pair = Utils.createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
-        assertFalse(authPublicKey(s, "smx", pair).await().isSuccess());
-
-        assertTrue(authInteractive(s, "smx", "smx").await().isSuccess());
-
-        s.close(true);
-        client.stop();
+        try(SshClient client = SshClient.setUpDefaultClient()) {
+            client.setServiceFactories(Arrays.asList(
+                    new ClientUserAuthServiceOld.Factory(),
+                    new ClientConnectionService.Factory()
+            ));
+            client.start();
+            
+            try(ClientSession s = client.connect(null, "localhost", port).await().getSession()) {
+                s.waitFor(ClientSession.CLOSED | ClientSession.WAIT_AUTH, 0);
+        
+                KeyPair pair = Utils.createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
+                assertFalse(authPublicKey(s, "smx", pair).await().isSuccess());
+        
+                assertTrue(authInteractive(s, "smx", "smx").await().isSuccess());
+        
+                s.close(true);
+            } finally {
+                client.stop();
+            }
+        }
     }
 
     private AuthFuture authPassword(ClientSession s, String user, String pswd) throws IOException {
@@ -180,5 +196,4 @@ public class AuthenticationTest extends BaseTestSupport {
             super.handleMessage(buffer);
         }
     }
-
 }

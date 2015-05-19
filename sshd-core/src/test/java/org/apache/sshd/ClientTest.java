@@ -266,6 +266,8 @@ public class ClientTest extends BaseTestSupport {
             }    
 
             client.close(true);
+        } finally {
+            client.stop();
         }
     }
 
@@ -344,6 +346,8 @@ public class ClientTest extends BaseTestSupport {
                     assertArrayEquals(sent.toByteArray(), out.toByteArray());
                 }
             }
+        } finally {
+            client.stop();
         }
     }
 
@@ -386,6 +390,8 @@ public class ClientTest extends BaseTestSupport {
         
                 assertArrayEquals(sent.toByteArray(), out.toByteArray());
             }
+        } finally {
+            client.stop();
         }
     }
 
@@ -452,6 +458,8 @@ public class ClientTest extends BaseTestSupport {
         
                 assertArrayEquals(sent.toByteArray(), out.toByteArray());
             }
+        } finally {
+            client.stop();
         }
     }
 
@@ -510,6 +518,8 @@ public class ClientTest extends BaseTestSupport {
                 assertArrayEquals(sent.toByteArray(), out.toByteArray());
                 //assertArrayEquals(sent.toByteArray(), out.toByteArray());
             }
+        } finally {
+            client.stop();
         }
     }
 
@@ -553,6 +563,8 @@ public class ClientTest extends BaseTestSupport {
             closeFuture.await();
             assertNotNull("No authentication exception", authFuture.getException());
             assertTrue("Future not closed", closeFuture.isClosed());
+        } finally {
+            client.stop();
         }
     }
 
@@ -580,6 +592,8 @@ public class ClientTest extends BaseTestSupport {
                 assertTrue("Not open", openFuture.isOpened());
                 assertTrue("Not closed", closeFuture.isClosed());
             }
+        } finally {
+            client.stop();
         }
     }
 
@@ -609,6 +623,8 @@ public class ClientTest extends BaseTestSupport {
                 assertNotNull("No open exception", openFuture.getException());
                 assertTrue("Not closed", closeFuture.isClosed());
             }
+        } finally {
+            client.stop();
         }
     }
 
@@ -620,6 +636,8 @@ public class ClientTest extends BaseTestSupport {
             KeyPair pair = Utils.createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
             session.addPublicKeyIdentity(pair);
             session.auth().verify(5L, TimeUnit.SECONDS);
+        } finally {
+            client.stop();
         }
     }
 
@@ -631,6 +649,8 @@ public class ClientTest extends BaseTestSupport {
         try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
             session.addPublicKeyIdentity(Utils.createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA));
             session.auth().verify(5L, TimeUnit.SECONDS);
+        } finally {
+            client.stop();
         }
     }
 
@@ -650,6 +670,8 @@ public class ClientTest extends BaseTestSupport {
             session.addPublicKeyIdentity(new SimpleGeneratorHostKeyProvider(null, "RSA").loadKey(KeyPairProvider.SSH_RSA));
             session.addPublicKeyIdentity(pair);
             session.auth().verify(5L, TimeUnit.SECONDS);
+        } finally {
+            client.stop();
         }
     }
 
@@ -661,6 +683,8 @@ public class ClientTest extends BaseTestSupport {
         try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
             session.addPasswordIdentity("smx");
             session.auth().verify(5L, TimeUnit.SECONDS);
+        } finally {
+            client.stop();
         }
     }
 
@@ -673,6 +697,8 @@ public class ClientTest extends BaseTestSupport {
             session.addPasswordIdentity("bad");
             session.addPasswordIdentity("smx");
             session.auth().verify(5L, TimeUnit.SECONDS);
+        } finally {
+            client.stop();
         }
     }
 
@@ -684,6 +710,8 @@ public class ClientTest extends BaseTestSupport {
         try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
             session.addPasswordIdentity("smx");
             session.auth().verify(5L, TimeUnit.SECONDS);
+        } finally {
+            client.stop();
         }
     }
 
@@ -696,6 +724,8 @@ public class ClientTest extends BaseTestSupport {
             session.addPasswordIdentity("bad");
             session.addPasswordIdentity("smx");
             session.auth().verify(5L, TimeUnit.SECONDS);
+        } finally {
+            client.stop();
         }
     }
 
@@ -724,6 +754,8 @@ public class ClientTest extends BaseTestSupport {
             future.await();
             assertTrue("Unexpected authentication success", future.isFailure());
             assertEquals("Mismatched authentication retry count", MAX_PROMPTS, count.get());
+        } finally {
+            client.stop();
         }
     }
 
@@ -756,6 +788,8 @@ public class ClientTest extends BaseTestSupport {
             assertTrue("Authentication not marked as success", future.isSuccess());
             assertFalse("Authentication marked as failure", future.isFailure());
             assertEquals("Mismatched authentication attempts count", 1, count.get());
+        } finally {
+            client.stop();
         }
     }
 
@@ -786,6 +820,8 @@ public class ClientTest extends BaseTestSupport {
             future.await();
             assertTrue("Authentication not, marked as failure", future.isFailure());
             assertEquals("Mismatched authentication retry count", MAX_PROMPTS, count.get());
+        } finally {
+            client.stop();
         }
     }
 
@@ -822,6 +858,8 @@ public class ClientTest extends BaseTestSupport {
     
                     TestEchoShellFactory.TestEchoShell.latch.await();
                 }
+            } finally {
+                client.stop();
             }
         } finally {
             TestEchoShellFactory.TestEchoShell.latch = null;

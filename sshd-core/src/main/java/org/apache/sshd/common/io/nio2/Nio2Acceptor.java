@@ -86,10 +86,13 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
             AsynchronousServerSocketChannel channel = channels.remove(address);
             if (channel != null) {
                 try {
+                    log.trace("unbind({})", address);
                     channel.close();
                 } catch (IOException e) {
-                    log.warn("Error unbinding socket", e);
+                    log.warn("Error unbinding channel for " + address, e);
                 }
+            } else {
+                log.trace("No active channel to unbind {}", address);
             }
         }
     }

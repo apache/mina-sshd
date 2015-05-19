@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.Cipher;
 import org.apache.sshd.common.FactoryManager;
@@ -118,30 +119,31 @@ public class LoadTest extends BaseTestSupport {
                     SshBuilder.ClientBuilder.DH2KEX.transform(BuiltinDHFactories.dhg1)));
             client.setCipherFactories(Arrays.<NamedFactory<Cipher>>asList(BuiltinCiphers.blowfishcbc));
             client.start();
-            try {
-                ClientSession session = client.connect("sshd", "localhost", port).await().getSession();
+            try(ClientSession session = client.connect("sshd", "localhost", port).await().getSession()) {
                 session.addPasswordIdentity("sshd");
-                session.auth().verify();
+                session.auth().verify(5L, TimeUnit.SECONDS);
     
-                ByteArrayOutputStream out = new ByteArrayOutputStream();
-                ByteArrayOutputStream err = new ByteArrayOutputStream();
-                ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
-                channel.setOut(out);
-                channel.setErr(err);
-                try {
-                    channel.open().await();
-                    OutputStream pipedIn = channel.getInvertedIn();
-        
-                    msg += "\nexit\n";
-                    pipedIn.write(msg.getBytes());
-                    pipedIn.flush();
-        
-                    channel.waitFor(ClientChannel.CLOSED, 0);
-                } finally {    
-                    channel.close(false);
-                }
+                try(ByteArrayOutputStream out = new ByteArrayOutputStream();
+                    ByteArrayOutputStream err = new ByteArrayOutputStream();
+                    ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL)) {
+                    channel.setOut(out);
+                    channel.setErr(err);
 
-                assertArrayEquals("Mismatched message data", msg.getBytes(), out.toByteArray());
+                    try {
+                        channel.open().await();
+                        try(OutputStream pipedIn = channel.getInvertedIn()) {
+                            msg += "\nexit\n";
+                            pipedIn.write(msg.getBytes());
+                            pipedIn.flush();
+                        }
+            
+                        channel.waitFor(ClientChannel.CLOSED, 0);
+                    } finally {    
+                        channel.close(false);
+                    }
+    
+                    assertArrayEquals("Mismatched message data", msg.getBytes(), out.toByteArray());
+                }
             } finally {
                 client.stop();
             }

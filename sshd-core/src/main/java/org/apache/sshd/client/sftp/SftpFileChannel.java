@@ -204,6 +204,7 @@ public class SftpFileChannel extends FileChannel {
 
     @Override
     public void force(boolean metaData) throws IOException {
+        // ignored
     }
 
     @Override

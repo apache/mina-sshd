@@ -19,9 +19,12 @@
 package org.apache.sshd;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.net.Socket;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.service.IoAcceptor;
@@ -97,15 +100,24 @@ public class ProxyTest extends BaseTestSupport {
         try(ClientSession session = createNativeSession()) {
             SshdSocketAddress dynamic = session.startDynamicPortForwarding(new SshdSocketAddress("localhost", 0));
 
-            byte[] buf = new byte[1024];
-            for (int i = 0, l = 0; i < 10; i++) {
+            String  expected = getCurrentTestName();
+            byte[]  bytes = expected.getBytes();
+            byte[]  buf = new byte[bytes.length + Long.SIZE];
+            for (int i = 0; i < 10; i++) {
                 try(Socket s = new Socket(new Proxy(Proxy.Type.SOCKS, new InetSocketAddress("localhost", dynamic.getPort())))) {
                     s.connect(new InetSocketAddress("localhost", echoPort));
-                    s.getOutputStream().write("foo".getBytes());
-                    s.getOutputStream().flush();
-                    l = s.getInputStream().read(buf);
+                    s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(10L));
+                    
+                    try(OutputStream sockOut = s.getOutputStream();
+                        InputStream sockIn = s.getInputStream()) {
+                        
+                        sockOut.write(bytes);
+                        sockOut.flush();
+                    
+                        int l = sockIn.read(buf);
+                        assertEquals("Mismatched data at iteration " + i, expected, new String(buf, 0, l));
+                    }
                 }
-                assertEquals("foo", new String(buf, 0, l));
             }
 
             session.stopDynamicPortForwarding(dynamic);
@@ -113,8 +125,9 @@ public class ProxyTest extends BaseTestSupport {
             try {
                 try(Socket s = new Socket(new Proxy(Proxy.Type.SOCKS, new InetSocketAddress("localhost", dynamic.getPort())))) {
                     s.connect(new InetSocketAddress("localhost", echoPort));
-                    s.getOutputStream().write("foo".getBytes());
-                    fail("Expected IOException");
+                    s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(10L));
+                    s.getOutputStream().write(bytes);
+                    fail("Unexpected success to write proxy data");
                 }
             } catch (IOException e) {
                 // expected
@@ -137,5 +150,3 @@ public class ProxyTest extends BaseTestSupport {
         return session;
     }
 }
-
-

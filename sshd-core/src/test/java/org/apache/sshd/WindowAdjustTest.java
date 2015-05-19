@@ -79,27 +79,34 @@ public class WindowAdjustTest {
 
     @After
     public void tearDown() throws Exception {
-        sshServer.stop();
-        sshServer.close(true);
+        if (sshServer != null) {
+            sshServer.stop();
+            sshServer.close(true);
+        }
     }
 
     @Test(timeout=60*1000L)
     public void testTrafficHeavyLoad() throws Exception {
-        SshClient client = SshClient.setUpDefaultClient();
-        client.start();
-
-        final ClientSession session = client.connect("admin", "localhost", port).await().getSession();
-        session.addPasswordIdentity("admin");
-        session.auth().verify();
-
-        final ClientChannel channel = session.createShellChannel();
-
-        channel.setOut(new VerifyingOutputStream(channel, END_FILE));
-        channel.setErr(new NoCloseOutputStream(System.err));
-        channel.open();
-
-        channel.waitFor(ClientChannel.CLOSED, 0);
-        session.close(true);
+        
+        try(SshClient client = SshClient.setUpDefaultClient()) {
+            client.start();
+    
+            try(final ClientSession session = client.connect("admin", "localhost", port).await().getSession()) {
+                session.addPasswordIdentity("admin");
+                session.auth().verify();
+        
+                try(final ClientChannel channel = session.createShellChannel()) {
+                    channel.setOut(new VerifyingOutputStream(channel, END_FILE));
+                    channel.setErr(new NoCloseOutputStream(System.err));
+                    channel.open();
+            
+                    channel.waitFor(ClientChannel.CLOSED, 0);
+                }
+                session.close(true);
+            } finally {
+                client.stop();
+            }
+        }
     }
 
     /**

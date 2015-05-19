@@ -101,6 +101,8 @@ public class EcdsaTest extends BaseTestSupport {
         try(ClientSession s = client.connect("smx", "localhost", port).await().getSession()) {
             s.addPasswordIdentity("smx");
             s.auth().verify(5L, TimeUnit.SECONDS);
+        } finally {
+            client.stop();
         }
     }
 
@@ -129,6 +131,8 @@ public class EcdsaTest extends BaseTestSupport {
         try(ClientSession s = client.connect("smx", "localhost", port).await().getSession()) {
             s.addPublicKeyIdentity(kp);
             s.auth().verify(5L, TimeUnit.SECONDS);
+        } finally {
+            client.stop();
         }
     }
 }

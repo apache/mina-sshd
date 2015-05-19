@@ -130,6 +130,8 @@ public class ServerTest extends BaseTestSupport {
                 }
             }
             assertTrue("Number trials (" + nbTrials + ") below min.=" + MAX_AUTH_REQUESTS, nbTrials > MAX_AUTH_REQUESTS);
+        } finally {
+            client.stop();
         }
     }
 
@@ -152,13 +154,15 @@ public class ServerTest extends BaseTestSupport {
                 assertTrue(nbTrials < 100);
                 authFuture = s.getService(ClientUserAuthServiceOld.class)
                         .auth(new UserAuthPassword((ClientSessionImpl) s, "ssh-connection", "buggy"));
-                assertTrue(authFuture.await(5000));
-                assertTrue(authFuture.isDone());
-                assertFalse(authFuture.isSuccess());
+                assertTrue("Authentication wait failed", authFuture.await(5000));
+                assertTrue("Authentication not done", authFuture.isDone());
+                assertFalse("Authentication unexpectedly successful", authFuture.isSuccess());
             }
             while (authFuture.isFailure());
             assertNotNull("Missing auth future exception", authFuture.getException());
             assertTrue("Number trials (" + nbTrials + ") below min.=" + MAX_AUTH_REQUESTS, nbTrials > MAX_AUTH_REQUESTS);
+        } finally {
+            client.stop();
         }
     }
 
@@ -172,6 +176,8 @@ public class ServerTest extends BaseTestSupport {
         try(ClientSession s = client.connect("test", "localhost", port).await().getSession()) {
             int res = s.waitFor(ClientSession.CLOSED, 2 * AUTH_TIMEOUT);
             assertEquals("Session should be closed", ClientSession.CLOSED | ClientSession.WAIT_AUTH, res);
+        } finally {
+            client.stop();
         }
     }
 
@@ -213,7 +219,10 @@ public class ServerTest extends BaseTestSupport {
                 int res = s.waitFor(ClientSession.CLOSED, 2 * IDLE_TIMEOUT);
                 assertEquals("Session should be closed", ClientSession.CLOSED | ClientSession.AUTHED, res);
             }
+        } finally {
+            client.stop();
         }
+
         assertTrue(latch.await(1, TimeUnit.SECONDS));
         assertTrue(TestEchoShellFactory.TestEchoShell.latch.await(1, TimeUnit.SECONDS));
     }
@@ -230,8 +239,9 @@ public class ServerTest extends BaseTestSupport {
         final CountDownLatch latch = new CountDownLatch(1);
 
         sshd.setCommandFactory(new StreamCommand.Factory());
-        sshd.getProperties().put(FactoryManager.IDLE_TIMEOUT, "5000");
-        sshd.getProperties().put(FactoryManager.DISCONNECT_TIMEOUT, "2000");
+        
+        FactoryManagerUtils.updateProperty(sshd, FactoryManager.IDLE_TIMEOUT, 5000);
+        FactoryManagerUtils.updateProperty(sshd, FactoryManager.DISCONNECT_TIMEOUT, 2000);
         sshd.getSessionFactory().addListener(new SessionListener() {
             @Override
             public void sessionCreated(Session session) {
@@ -261,11 +271,13 @@ public class ServerTest extends BaseTestSupport {
                 // Create a pipe that will block reading when the buffer is full
                 PipedInputStream pis = new PipedInputStream();
                 PipedOutputStream pos = new PipedOutputStream(pis)) {
+
                 shell.setOut(pos);
-                shell.open().await();
+                shell.open().verify(5L, TimeUnit.SECONDS);
         
                 try(AbstractSession serverSession = sshd.getActiveSessions().iterator().next();
                     Channel channel = serverSession.getService(AbstractConnectionService.class).getChannels().iterator().next()) {
+
                     while (channel.getRemoteWindow().getSize() > 0) {
                         Thread.sleep(1);
                     }
@@ -274,11 +286,13 @@ public class ServerTest extends BaseTestSupport {
             
                     long t0 = System.currentTimeMillis();
                     latch.await(1, TimeUnit.MINUTES);
-                    long t1 = System.currentTimeMillis();
-                    assertTrue(t1 - t0 > 7000);
-                    assertTrue(t1 - t0 < 10000);
+                    long t1 = System.currentTimeMillis(), diff = t1 - t0;
+                    assertTrue("Wait time too low: " + diff, diff > 7000);
+                    assertTrue("Wait time too high: " + diff, diff < 10000);
                 }
             }
+        } finally {
+            client.stop();
         }
     }
 
@@ -302,6 +316,8 @@ public class ServerTest extends BaseTestSupport {
         client.start();
         try(ClientSession s = client.connect("test", "localhost", port).await().getSession()) {
             s.close(false);
+        } finally {
+            client.stop();
         }
     }
 
@@ -355,6 +371,8 @@ public class ServerTest extends BaseTestSupport {
             assertEquals("Mismatched client events count", 1, clientEventCount.get());
             assertEquals("Mismatched server events count", 1, serverEventCount.get());
             s.close(false);
+        } finally {
+            client.stop();
         }
     }
 

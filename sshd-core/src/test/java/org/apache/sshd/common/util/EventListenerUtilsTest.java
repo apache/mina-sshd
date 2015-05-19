@@ -44,7 +44,7 @@ public class EventListenerUtilsTest extends BaseTestSupport {
 
         ProxyListener listener = EventListenerUtils.proxyWrapper(ProxyListener.class, impls);
         String expStr = getCurrentTestName();
-        Number expNum = System.currentTimeMillis();
+        Number expNum = Long.valueOf(System.currentTimeMillis());
         listener.callMeWithString(expStr);
         listener.callMeWithNumber(expNum);
 

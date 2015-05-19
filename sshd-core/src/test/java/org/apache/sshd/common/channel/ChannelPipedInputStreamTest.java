@@ -54,5 +54,4 @@ public class ChannelPipedInputStreamTest extends BaseTestSupport {
             }
         }
     }
-
 }
