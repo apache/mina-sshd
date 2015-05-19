@@ -20,18 +20,29 @@ package org.apache.sshd.common.io;
 
 import java.util.Iterator;
 import java.util.ServiceLoader;
+import java.util.concurrent.ExecutorService;
 
 import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.threads.ExecutorServiceConfigurer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  */
-public class DefaultIoServiceFactoryFactory implements IoServiceFactoryFactory {
+public class DefaultIoServiceFactoryFactory extends AbstractIoServiceFactoryFactory {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultIoServiceFactoryFactory.class);
 
     private IoServiceFactoryFactory factory;
+
+    public DefaultIoServiceFactoryFactory() {
+        this(null, true);
+    }
+    
+    protected DefaultIoServiceFactoryFactory(ExecutorService executors, boolean shutdownOnExit) {
+        super(executors, shutdownOnExit);
+    }
 
     @Override
     public IoServiceFactory create(FactoryManager manager) {
@@ -42,16 +53,22 @@ public class DefaultIoServiceFactoryFactory implements IoServiceFactoryFactory {
         synchronized (this) {
             if (factory == null) {
                 factory = newInstance(IoServiceFactoryFactory.class);
+                if (factory instanceof ExecutorServiceConfigurer) {
+                    ExecutorServiceConfigurer   configurer=(ExecutorServiceConfigurer) factory;
+                    configurer.setExecutorService(getExecutorService());
+                    configurer.setShutdownOnExit(isShutdownOnExit());
+                }
             }
         }
         return factory;
     }
 
-    private static <T> T newInstance(Class<T> clazz) {
+    public static <T extends IoServiceFactoryFactory> T newInstance(Class<T> clazz) {
         String factory = System.getProperty(clazz.getName());
-        if (factory != null) {
+        if (!GenericUtils.isEmpty(factory)) {
             return newInstance(clazz, factory);
         }
+
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         if (cl != null) {
             T t = tryLoad(ServiceLoader.load(clazz, cl));
@@ -68,7 +85,7 @@ public class DefaultIoServiceFactoryFactory implements IoServiceFactoryFactory {
         throw new IllegalStateException("Could not find a valid sshd io provider");
     }
 
-    private static <T> T tryLoad(ServiceLoader<T> loader) {
+    public static <T extends IoServiceFactoryFactory> T tryLoad(ServiceLoader<T> loader) {
         Iterator<T> it = loader.iterator();
         try {
             while (it.hasNext()) {
@@ -84,7 +101,12 @@ public class DefaultIoServiceFactoryFactory implements IoServiceFactoryFactory {
         return null;
     }
 
-    private static <T> T newInstance(Class<T> clazz, String factory) {
+    public static <T extends IoServiceFactoryFactory> T newInstance(Class<T> clazz, String factory) {
+        BuiltinIoServiceFactoryFactories    builtin = BuiltinIoServiceFactoryFactories.fromFactoryName(factory);
+        if (builtin != null) {
+            return clazz.cast(builtin.create());
+        }
+
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         if (cl != null) {
             try {

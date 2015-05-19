@@ -21,13 +21,18 @@ package org.apache.sshd.common.io;
 
 import java.util.concurrent.ExecutorService;
 
+import org.apache.sshd.common.util.AbstractLoggingBean;
+import org.apache.sshd.common.util.threads.ExecutorServiceConfigurer;
+
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractIoServiceFactoryFactory implements IoServiceFactoryFactory {
+public abstract class AbstractIoServiceFactoryFactory
+                extends AbstractLoggingBean
+                implements IoServiceFactoryFactory, ExecutorServiceConfigurer {
 
-    private final ExecutorService executorService;
-    private final boolean shutdownExecutor;
+    private ExecutorService executorService;
+    private boolean shutdownExecutor;
 
     /**
      * @param executors      The {@link ExecutorService} to use for spawning threads.
@@ -43,11 +48,25 @@ public abstract class AbstractIoServiceFactoryFactory implements IoServiceFactor
         shutdownExecutor = shutdownOnExit;
     }
 
-    public final ExecutorService getExecutorService() {
+    @Override
+    public ExecutorService getExecutorService() {
         return executorService;
     }
 
-    public final boolean isShutdownExecutor() {
+    @Override
+    public void setExecutorService(ExecutorService service) {
+        executorService = service;
+        
+    }
+
+    @Override
+    public boolean isShutdownOnExit() {
         return shutdownExecutor;
     }
+
+    @Override
+    public void setShutdownOnExit(boolean shutdown) {
+        shutdownExecutor = shutdown;
+    }
+
 }

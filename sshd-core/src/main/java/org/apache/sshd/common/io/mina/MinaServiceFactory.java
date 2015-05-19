@@ -29,7 +29,7 @@ import org.apache.sshd.common.io.AbstractIoServiceFactory;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoConnector;
 import org.apache.sshd.common.io.IoHandler;
-import org.apache.sshd.common.util.ThreadUtils;
+import org.apache.sshd.common.util.threads.ThreadUtils;
 
 /**
  */
@@ -44,10 +44,12 @@ public class MinaServiceFactory extends AbstractIoServiceFactory {
         ioProcessor = new SimpleIoProcessorPool<>(NioProcessor.class, getExecutorService(), getNioWorkers(factoryManager), null);
     }
 
+    @Override
     public IoConnector createConnector(IoHandler handler) {
         return new MinaConnector(getFactoryManager(), handler, ioProcessor);
     }
 
+    @Override
     public IoAcceptor createAcceptor(IoHandler handler) {
         return new MinaAcceptor(getFactoryManager(), handler, ioProcessor);
     }

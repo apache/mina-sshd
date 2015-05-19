@@ -25,11 +25,12 @@ import java.util.concurrent.TimeUnit;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.util.CloseableUtils;
+import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractIoServiceFactory extends CloseableUtils.AbstractCloseable implements IoServiceFactory {
+public abstract class AbstractIoServiceFactory extends CloseableUtils.AbstractCloseable implements IoServiceFactory, ExecutorServiceCarrier {
 
     private final FactoryManager manager;
     private final ExecutorService executor;
@@ -45,11 +46,13 @@ public abstract class AbstractIoServiceFactory extends CloseableUtils.AbstractCl
         return manager;
     }
 
+    @Override
     public final ExecutorService getExecutorService() {
         return executor;
     }
 
-    public final boolean isShutdownExecutor() {
+    @Override
+    public final boolean isShutdownOnExit() {
         return shutdownExecutor;
     }
 
@@ -57,7 +60,7 @@ public abstract class AbstractIoServiceFactory extends CloseableUtils.AbstractCl
     protected void doCloseImmediately() {
         try {
             ExecutorService service = getExecutorService();
-            if ((service != null) && isShutdownExecutor() && (!service.isShutdown())) {
+            if ((service != null) && isShutdownOnExit() && (!service.isShutdown())) {
                 log.debug("Shutdown executor");
                 service.shutdownNow();
                 if (service.awaitTermination(5, TimeUnit.SECONDS)) {

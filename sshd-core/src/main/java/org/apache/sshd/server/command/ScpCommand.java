@@ -31,7 +31,7 @@ import org.apache.sshd.common.file.FileSystemAware;
 import org.apache.sshd.common.scp.ScpHelper;
 import org.apache.sshd.common.scp.ScpTransferEventListener;
 import org.apache.sshd.common.util.AbstractLoggingBean;
-import org.apache.sshd.common.util.ThreadUtils;
+import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;

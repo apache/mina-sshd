@@ -26,6 +26,7 @@ import org.apache.sshd.common.scp.ScpHelper;
 import org.apache.sshd.common.scp.ScpTransferEventListener;
 import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.ObjectBuilder;
+import org.apache.sshd.common.util.threads.ExecutorServiceConfigurer;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.CommandFactory;
 
@@ -38,7 +39,7 @@ import org.apache.sshd.server.CommandFactory;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ScpCommandFactory implements CommandFactory, Cloneable {
+public class ScpCommandFactory implements CommandFactory, Cloneable, ExecutorServiceConfigurer {
     /**
      * Command prefix used to identify SCP commands
      */
@@ -89,6 +90,7 @@ public class ScpCommandFactory implements CommandFactory, Cloneable {
             return this;
         }
 
+        @Override
         public ScpCommandFactory build() {
             return factory.clone();
         }
@@ -124,6 +126,7 @@ public class ScpCommandFactory implements CommandFactory, Cloneable {
         delegate = factory;
     }
 
+    @Override
     public ExecutorService getExecutorService() {
         return executors;
     }
@@ -135,10 +138,12 @@ public class ScpCommandFactory implements CommandFactory, Cloneable {
      *                when the command is terminated - unless it is the ad-hoc service, which will be
      *                shutdown regardless
      */
+    @Override
     public void setExecutorService(ExecutorService service) {
         executors = service;
     }
 
+    @Override
     public boolean isShutdownOnExit() {
         return shutdownExecutor;
     }
@@ -148,6 +153,7 @@ public class ScpCommandFactory implements CommandFactory, Cloneable {
      *                  will be called when command terminates - unless it is the ad-hoc
      *                 service, which will be shutdown regardless
      */
+    @Override
     public void setShutdownOnExit(boolean shutdown) {
         shutdownExecutor = shutdown;
     }
@@ -219,6 +225,7 @@ public class ScpCommandFactory implements CommandFactory, Cloneable {
      *         delegate command factory is available
      * @see #SCP_COMMAND_PREFIX
      */
+    @Override
     public Command createCommand(String command) {
         if (command.startsWith(SCP_COMMAND_PREFIX)) {
             return new ScpCommand(command, getExecutorService(), isShutdownOnExit(), getSendBufferSize(), getReceiveBufferSize(), listenerProxy);

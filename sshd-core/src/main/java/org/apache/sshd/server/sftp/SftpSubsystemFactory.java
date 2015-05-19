@@ -23,12 +23,13 @@ import java.util.concurrent.ExecutorService;
 
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.util.ObjectBuilder;
+import org.apache.sshd.common.util.threads.ExecutorServiceConfigurer;
 import org.apache.sshd.server.Command;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SftpSubsystemFactory implements NamedFactory<Command>, Cloneable {
+public class SftpSubsystemFactory implements NamedFactory<Command>, Cloneable, ExecutorServiceConfigurer {
     public static final String NAME = "sftp";
     public static final UnsupportedAttributePolicy DEFAULT_POLICY = UnsupportedAttributePolicy.Warn;
 
@@ -54,6 +55,7 @@ public class SftpSubsystemFactory implements NamedFactory<Command>, Cloneable {
             return this;
         }
 
+        @Override
         public SftpSubsystemFactory build() {
             // return a clone so that each invocation returns a different instance - avoid shared instances
             return factory.clone();
@@ -68,10 +70,12 @@ public class SftpSubsystemFactory implements NamedFactory<Command>, Cloneable {
         super();
     }
 
+    @Override
     public String getName() {
         return NAME;
     }
 
+    @Override
     public ExecutorService getExecutorService() {
         return executors;
     }
@@ -80,10 +84,12 @@ public class SftpSubsystemFactory implements NamedFactory<Command>, Cloneable {
      * @param service The {@link ExecutorService} to be used by the {@link SftpSubsystem}
      *                command when starting execution. If {@code null} then a single-threaded ad-hoc service is used.
      */
+    @Override
     public void setExecutorService(ExecutorService service) {
         executors = service;
     }
 
+    @Override
     public boolean isShutdownOnExit() {
         return shutdownExecutor;
     }
@@ -93,6 +99,7 @@ public class SftpSubsystemFactory implements NamedFactory<Command>, Cloneable {
      *                       will be called when subsystem terminates - unless it is the ad-hoc service, which
      *                       will be shutdown regardless
      */
+    @Override
     public void setShutdownOnExit(boolean shutdownOnExit) {
         shutdownExecutor = shutdownOnExit;
     }
@@ -113,6 +120,7 @@ public class SftpSubsystemFactory implements NamedFactory<Command>, Cloneable {
         policy = p;
     }
 
+    @Override
     public Command create() {
         return new SftpSubsystem(getExecutorService(), isShutdownOnExit(), getUnsupportedAttributePolicy());
     }

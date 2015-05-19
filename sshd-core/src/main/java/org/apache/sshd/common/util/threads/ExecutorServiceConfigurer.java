@@ -16,24 +16,15 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.io;
 
-public class WritePendingException extends IllegalStateException {
-    private static final long serialVersionUID = 8814014909076826576L;
+package org.apache.sshd.common.util.threads;
 
-    public WritePendingException() {
-        super();
-    }
+import java.util.concurrent.ExecutorService;
 
-    public WritePendingException(String message, Throwable cause) {
-        super(message, cause);
-    }
-
-    public WritePendingException(String s) {
-        super(s);
-    }
-
-    public WritePendingException(Throwable cause) {
-        super(cause);
-    }
+/**
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ */
+public interface ExecutorServiceConfigurer extends ExecutorServiceCarrier {
+    void setExecutorService(ExecutorService service);
+    void setShutdownOnExit(boolean shutdown);
 }

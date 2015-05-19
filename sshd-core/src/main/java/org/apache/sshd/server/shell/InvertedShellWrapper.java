@@ -24,7 +24,7 @@ import java.io.OutputStream;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 
-import org.apache.sshd.common.util.ThreadUtils;
+import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;

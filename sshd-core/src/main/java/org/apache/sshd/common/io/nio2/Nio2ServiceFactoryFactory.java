@@ -48,8 +48,8 @@ public class Nio2ServiceFactoryFactory extends AbstractIoServiceFactoryFactory {
         Class<?> clazz = AsynchronousChannel.class;
     }
 
+    @Override
     public IoServiceFactory create(FactoryManager manager) {
-        return new Nio2ServiceFactory(manager, getExecutorService(), isShutdownExecutor());
+        return new Nio2ServiceFactory(manager, getExecutorService(), isShutdownOnExit());
     }
-
 }

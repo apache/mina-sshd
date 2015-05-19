@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.util;
+package org.apache.sshd.common.util.threads;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -64,10 +64,11 @@ public class ThreadUtils {
                     new InvocationHandler() {
                         private final AtomicBoolean stopped = new AtomicBoolean(false);
 
+                        @Override
                         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
                             String name = method.getName();
                             if ("isShutdown".equals(name)) {
-                                return stopped.get();
+                                return Boolean.valueOf(stopped.get());
                             } else if ("shutdown".equals(name)) {
                                 stopped.set(true);
                                 return null;    // void...
@@ -172,6 +173,7 @@ public class ThreadUtils {
             namePrefix = "sshd-" + name + "-thread-";
         }
 
+        @Override
         public Thread newThread(Runnable r) {
             Thread t = new Thread(group, r, namePrefix + threadNumber.getAndIncrement(), 0);
             if (t.isDaemon())

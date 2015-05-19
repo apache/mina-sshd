@@ -248,6 +248,7 @@ public class Nio2Session extends CloseableUtils.AbstractCloseable implements IoS
         socket.read(buffer, null, completion);
     }
 
+    @SuppressWarnings("synthetic-access")
     private void startWriting() {
         final DefaultIoWriteFuture future = writes.peek();
         if (future != null) {
@@ -270,12 +271,14 @@ public class Nio2Session extends CloseableUtils.AbstractCloseable implements IoS
                                 finishWrite();
                             }
                         }
+
                         @Override
                         protected void onFailed(Throwable exc, Object attachment) {
                             future.setException(exc);
                             exceptionCaught(exc);
                             finishWrite();
                         }
+
                         private void finishWrite() {
                             writes.remove(future);
                             currentWrite.compareAndSet(future, null);

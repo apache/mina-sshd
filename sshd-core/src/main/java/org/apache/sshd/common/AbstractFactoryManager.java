@@ -38,8 +38,8 @@ import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.SessionTimeoutListener;
 import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.ThreadUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.threads.ThreadUtils;
 
 /**
  * TODO Add javadoc

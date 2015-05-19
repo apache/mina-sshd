@@ -44,7 +44,8 @@ public class MinaServiceFactoryFactory extends AbstractIoServiceFactoryFactory {
         super(executors, shutdownOnExit);
     }
 
+    @Override
     public IoServiceFactory create(FactoryManager manager) {
-        return new MinaServiceFactory(manager, getExecutorService(), isShutdownExecutor());
+        return new MinaServiceFactory(manager, getExecutorService(), isShutdownOnExit());
     }
 }
