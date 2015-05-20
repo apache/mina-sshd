@@ -31,6 +31,7 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.deprecated.UserAuth.Result;
 
 /**
  * Client side <code>ssh-auth</code> service.
@@ -99,7 +100,7 @@ public class ClientUserAuthServiceOld extends CloseableUtils.AbstractCloseable i
         } else if (cmd == SshConstants.SSH_MSG_USERAUTH_BANNER) {
             String welcome = buffer.getString();
             String lang = buffer.getString();
-            log.debug("Welcome banner: {}", welcome);
+            log.debug("Welcome banner[{}]: {}", lang, welcome);
             UserInteraction ui = session.getFactoryManager().getUserInteraction();
             if (ui != null) {
                 ui.welcome(welcome);
@@ -156,7 +157,8 @@ public class ClientUserAuthServiceOld extends CloseableUtils.AbstractCloseable i
      */
     private void processUserAuth(Buffer buffer) throws IOException {
         log.debug("processing {}", userAuth);
-        switch (userAuth.next(buffer)) {
+        Result  result = userAuth.next(buffer);
+        switch(result) {
             case Success:
                 log.debug("succeeded with {}", userAuth);
                 session.setAuthenticated();
@@ -174,6 +176,8 @@ public class ClientUserAuthServiceOld extends CloseableUtils.AbstractCloseable i
                 // Will wake up anyone sitting in waitFor
                 log.debug("continuing with {}", userAuth);
                 break;
+            default:
+                log.debug("ignored result={} for {}", result, userAuth);
         }
     }
 

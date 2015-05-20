@@ -38,10 +38,12 @@ public class ProxyAgentFactory implements SshAgentFactory {
 
     private final Map<String, AgentServerProxy> proxies = new ConcurrentHashMap<String, AgentServerProxy>();
 
+    @Override
     public NamedFactory<Channel> getChannelForwardingFactory() {
         return new ChannelAgentForwarding.ChannelAgentForwardingFactory();
     }
 
+    @Override
     public SshAgent createClient(FactoryManager manager) throws IOException {
         String proxyId = FactoryManagerUtils.getString(manager, SshAgent.SSH_AUTHSOCKET_ENV_NAME);
         if (GenericUtils.isEmpty(proxyId)) {
@@ -56,6 +58,7 @@ public class ProxyAgentFactory implements SshAgentFactory {
         return proxy.createClient();
     }
 
+    @Override
     public SshAgentServer createServer(ConnectionService service) throws IOException {
         Session session = service.getSession();
         if (!(session instanceof ServerSession)) {

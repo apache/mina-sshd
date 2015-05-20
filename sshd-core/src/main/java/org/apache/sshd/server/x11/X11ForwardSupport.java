@@ -181,7 +181,9 @@ public class X11ForwardSupport extends CloseableUtils.AbstractInnerCloseable imp
                 throw new SshException("Session has been closed");
             }
             openFuture = new DefaultOpenFuture(lock);
-            log.info("Send SSH_MSG_CHANNEL_OPEN on channel {}", id);
+            if (log.isDebugEnabled()) {
+                log.debug("Send SSH_MSG_CHANNEL_OPEN on channel {}", Integer.valueOf(id));
+            }
             Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN);
             buffer.putString(type);
             buffer.putInt(id);

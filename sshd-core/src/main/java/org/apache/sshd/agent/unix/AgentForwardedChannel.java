@@ -35,6 +35,7 @@ public class AgentForwardedChannel extends AbstractClientChannel implements Runn
         this.socket = socket;
     }
 
+    @Override
     public void run() {
         try {
             byte[] buf = new byte[1024];
@@ -69,6 +70,7 @@ public class AgentForwardedChannel extends AbstractClientChannel implements Runn
         super.doCloseImmediately();
     }
 
+    @Override
     protected synchronized void doWriteData(byte[] data, int off, int len) throws IOException {
         localWindow.consumeAndCheck(len);
         int result = Socket.send(socket, data, off, len);

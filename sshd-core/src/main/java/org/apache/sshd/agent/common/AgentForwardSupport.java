@@ -52,6 +52,7 @@ public class AgentForwardSupport extends CloseableUtils.AbstractCloseable {
         }
     }
 
+    @Override
     public synchronized void close() throws IOException {
         if (agentId != null) {
             agentId = null;
@@ -70,6 +71,7 @@ public class AgentForwardSupport extends CloseableUtils.AbstractCloseable {
         super.doCloseImmediately();
     }
 
+    @Override
     public String toString() {
         return getClass().getSimpleName() + "[" + service.getSession() + "]";
     }

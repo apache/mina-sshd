@@ -19,7 +19,6 @@
 package org.apache.sshd.server.auth;
 
 import java.security.PublicKey;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -42,27 +41,35 @@ public class CachingPublicKeyAuthenticator implements PublickeyAuthenticator, Se
         this.authenticator = authenticator;
     }
 
+    @Override
     public boolean authenticate(String username, PublicKey key, ServerSession session) {
         Map<PublicKey, Boolean> map = cache.get(session);
         if (map == null) {
-            map = new HashMap<PublicKey, Boolean>();
+            map = new ConcurrentHashMap<PublicKey, Boolean>();
             cache.put(session, map);
             session.addListener(this);
         }
-        if (map.containsKey(key)) {
-            return map.get(key);
+        
+        Boolean result = map.get(key);
+        if (result == null) {
+            result = Boolean.valueOf(authenticator.authenticate(username, key, session));
+            map.put(key, result);
         }
-        boolean result = authenticator.authenticate(username, key, session);
-        map.put(key, result);
-        return result;
+
+        return result.booleanValue();
     }
 
+    @Override
     public void sessionCreated(Session session) {
+        // ignored
     }
 
+    @Override
     public void sessionEvent(Session session, Event event) {
+        // ignored
     }
 
+    @Override
     public void sessionClosed(Session session) {
         cache.remove(session);
     }

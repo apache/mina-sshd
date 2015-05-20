@@ -35,10 +35,12 @@ public class ServerConnectionService extends AbstractConnectionService {
 
     public static class Factory implements ServiceFactory {
 
+        @Override
         public String getName() {
             return "ssh-connection";
         }
 
+        @Override
         public Service create(Session session) throws IOException {
             return new ServerConnectionService(session);
         }
@@ -56,10 +58,12 @@ public class ServerConnectionService extends AbstractConnectionService {
         }
     }
 
+    @Override
     public String initAgentForward() throws IOException {
         return agentForward.initialize();
     }
 
+    @Override
     public String createX11Display(boolean singleConnection, String authenticationProtocol, String authenticationCookie, int screen) throws IOException {
         return x11Forward.createDisplay(singleConnection, authenticationProtocol, authenticationCookie, screen);
     }

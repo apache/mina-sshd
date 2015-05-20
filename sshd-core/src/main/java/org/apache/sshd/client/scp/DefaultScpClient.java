@@ -135,6 +135,7 @@ public class DefaultScpClient extends AbstractScpClient {
     public void upload(String[] local, String remote, Collection<Option> options) throws IOException {
         final Collection<String>    paths=Arrays.asList(ValidateUtils.checkNotNullAndNotEmpty(local, "Invalid argument local: %s", (Object) local));
         runUpload(remote, options, paths, new ScpOperationExecutor<String>() {
+            @Override
             public void execute(ScpHelper helper, Collection<String> local, Collection<Option> options) throws IOException {
                 helper.send(local,
                         options.contains(Option.Recursive),
@@ -146,8 +147,9 @@ public class DefaultScpClient extends AbstractScpClient {
 
     @Override
     public void upload(Path[] local, String remote, Collection<Option> options) throws IOException {
-        final Collection<Path>    paths=Arrays.asList(ValidateUtils.checkNotNullAndNotEmpty(local, "Invalid argument local: %s", local));
+        final Collection<Path>    paths=Arrays.asList(ValidateUtils.checkNotNullAndNotEmpty(local, "Invalid argument local: %s", (Object) local));
         runUpload(remote, options, paths, new ScpOperationExecutor<Path>() {
+            @Override
             public void execute(ScpHelper helper, Collection<Path> local, Collection<Option> options) throws IOException {
                 helper.sendPaths(local,
                         options.contains(Option.Recursive),

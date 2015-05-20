@@ -19,7 +19,6 @@
 package org.apache.sshd.common;
 
 import java.security.KeyPair;
-import java.util.List;
 
 /**
  * Provider for key pairs.  This provider is used on the server side to provide

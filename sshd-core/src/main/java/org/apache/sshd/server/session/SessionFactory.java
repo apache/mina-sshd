@@ -39,6 +39,7 @@ public class SessionFactory extends AbstractSessionFactory {
         this.server = server;
     }
 
+    @Override
     protected AbstractSession doCreateSession(IoSession ioSession) throws Exception {
         return new ServerSession(server, ioSession);
     }

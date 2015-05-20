@@ -42,6 +42,7 @@ public abstract class AbstractDHKeyExchange extends AbstractLoggingBean implemen
         super();
     }
 
+    @Override
     public void init(AbstractSession s, byte[] V_S, byte[] V_C, byte[] I_S, byte[] I_C) throws Exception {
         this.V_S = V_S;
         this.V_C = V_C;
@@ -49,14 +50,17 @@ public abstract class AbstractDHKeyExchange extends AbstractLoggingBean implemen
         this.I_C = I_C;
     }
 
+    @Override
     public Digest getHash() {
         return hash;
     }
 
+    @Override
     public byte[] getH() {
         return H;
     }
 
+    @Override
     public byte[] getK() {
         return K;
     }

@@ -41,6 +41,7 @@ public class ChannelSubsystem extends ChannelSession {
         this.subsystem = subsystem;
     }
 
+    @Override
     protected void doOpen() throws IOException {
         log.debug("Send SSH_MSG_CHANNEL_REQUEST exec");
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST);
@@ -55,6 +56,7 @@ public class ChannelSubsystem extends ChannelSession {
 
     public void onClose(final Runnable run) {
         closeFuture.addListener(new SshFutureListener<CloseFuture>() {
+            @Override
             public void operationComplete(CloseFuture future) {
                 run.run();
             }

@@ -106,5 +106,6 @@ public interface ChannelDataReceiver extends Closeable {
      *
      * The client will no longer send us any more data.
      */
+    @Override
     void close() throws IOException;
 }

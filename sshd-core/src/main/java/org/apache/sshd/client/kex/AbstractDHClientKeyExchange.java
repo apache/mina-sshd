@@ -46,6 +46,7 @@ public abstract class AbstractDHClientKeyExchange extends AbstractDHKeyExchange 
         session = (ClientSessionImpl) s;
     }
 
+    @Override
     public PublicKey getServerKey() {
         return serverKey;
     }

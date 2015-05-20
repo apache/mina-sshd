@@ -70,6 +70,7 @@ public class VirtualFileSystemFactory implements FileSystemFactory {
         return homeDir;
     }
 
+    @Override
     public FileSystem createFileSystem(Session session) throws IOException {
         String dir = computeRootDir(session.getUsername());
         return new RootedFileSystemProvider().newFileSystem(Paths.get(dir), null);

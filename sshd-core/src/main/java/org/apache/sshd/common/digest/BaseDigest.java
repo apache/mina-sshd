@@ -47,18 +47,22 @@ public class BaseDigest implements Digest {
         this.bsize = bsize;
     }
 
+    @Override
     public int getBlockSize() {
         return bsize;
     }
 
+    @Override
     public void init() throws Exception {
         this.md = SecurityUtils.getMessageDigest(algorithm);
     }
 
+    @Override
     public void update(byte[] foo, int start, int len) throws Exception {
         md.update(foo, start, len);
     }
 
+    @Override
     public byte[] digest() throws Exception {
         return md.digest();
     }

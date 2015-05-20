@@ -114,15 +114,23 @@ public class TcpipServerChannel extends AbstractServerChannel {
         int portToConnect = buffer.getInt();
         String originatorIpAddress = buffer.getString();
         int originatorPort = buffer.getInt();
-        log.info("Receiving request for direct tcpip: hostToConnect={}, portToConnect={}, originatorIpAddress={}, originatorPort={}",
-                new Object[] { hostToConnect, Integer.valueOf(portToConnect), originatorIpAddress, Integer.valueOf(originatorPort) });
-
-
-        SshdSocketAddress address = null;
-        switch (type) {
-            case Direct:    address = new SshdSocketAddress(hostToConnect, portToConnect); break;
-            case Forwarded: address = service.getTcpipForwarder().getForwardedPort(portToConnect); break;
+        if (log.isDebugEnabled()) {
+            log.debug("Receiving request for direct tcpip: hostToConnect={}, portToConnect={}, originatorIpAddress={}, originatorPort={}",
+                      hostToConnect, Integer.valueOf(portToConnect), originatorIpAddress, Integer.valueOf(originatorPort));
         }
+
+        final SshdSocketAddress address;
+        switch (type) {
+            case Direct:
+                address = new SshdSocketAddress(hostToConnect, portToConnect);
+                break;
+            case Forwarded:
+                address = service.getTcpipForwarder().getForwardedPort(portToConnect);
+                break;
+            default:
+                throw new IllegalStateException("Unknown server channel type: " + type);
+        }
+
         final ForwardingFilter filter = getSession().getFactoryManager().getTcpipForwardingFilter();
         if (address == null || filter == null || !filter.canConnect(address, getSession())) {
             super.close(true);

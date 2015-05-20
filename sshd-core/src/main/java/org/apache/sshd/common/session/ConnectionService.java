@@ -20,10 +20,8 @@ package org.apache.sshd.common.session;
 
 import java.io.IOException;
 
-import org.apache.sshd.agent.local.AgentForwardedChannel;
 import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.Service;
-import org.apache.sshd.common.Session;
 import org.apache.sshd.common.TcpipForwarder;
 
 /**

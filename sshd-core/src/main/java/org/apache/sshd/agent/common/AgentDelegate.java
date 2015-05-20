@@ -38,22 +38,27 @@ public class AgentDelegate implements SshAgent {
         // ignored
     }
 
+    @Override
     public List<Pair<PublicKey, String>> getIdentities() throws IOException {
         return agent.getIdentities();
     }
 
+    @Override
     public byte[] sign(PublicKey key, byte[] data) throws IOException {
         return agent.sign(key, data);
     }
 
+    @Override
     public void addIdentity(KeyPair key, String comment) throws IOException {
         agent.addIdentity(key, comment);
     }
 
+    @Override
     public void removeIdentity(PublicKey key) throws IOException {
         agent.removeIdentity(key);
     }
 
+    @Override
     public void removeAllIdentities() throws IOException {
         agent.removeAllIdentities();
     }

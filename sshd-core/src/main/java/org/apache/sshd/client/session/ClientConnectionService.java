@@ -45,10 +45,12 @@ public class ClientConnectionService extends AbstractConnectionService {
 
     public static class Factory implements ServiceFactory {
 
+        @Override
         public String getName() {
             return "ssh-connection";
         }
 
+        @Override
         public Service create(Session session) throws IOException {
             return new ClientConnectionService(session);
         }
@@ -75,11 +77,14 @@ public class ClientConnectionService extends AbstractConnectionService {
             FactoryManager manager = session.getFactoryManager();
             ScheduledExecutorService service = manager.getScheduledExecutorService();
             service.scheduleAtFixedRate(new Runnable() {
+                @Override
                 public void run() {
                     sendHeartBeat();
                 }
             }, interval, interval, TimeUnit.MILLISECONDS);
-            log.debug("startHeartbeat - started at interval={}", interval);
+            if (log.isDebugEnabled()) {
+                log.debug("startHeartbeat - started at interval={}", Long.valueOf(interval));
+            }
         }
     }
 
@@ -96,11 +101,13 @@ public class ClientConnectionService extends AbstractConnectionService {
     }
 
     // TODO: remove from interface
+    @Override
     public String initAgentForward() throws IOException {
         throw new IllegalStateException("Server side operation");
     }
 
     // TODO: remove from interface
+    @Override
     public String createX11Display(boolean singleConnection, String authenticationProtocol, String authenticationCookie, int screen) throws IOException {
         throw new IllegalStateException("Server side operation");
     }

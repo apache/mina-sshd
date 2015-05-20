@@ -63,7 +63,7 @@ public class TcpipClientChannel extends AbstractClientChannel {
 
     @Override
     public synchronized OpenFuture open() throws IOException {
-        InetSocketAddress src = null, dst = null;
+        final InetSocketAddress src, dst;
         switch (typeEnum) {
             case Direct:
                 src = (InetSocketAddress) serverSession.getRemoteAddress();
@@ -73,12 +73,15 @@ public class TcpipClientChannel extends AbstractClientChannel {
                 src = (InetSocketAddress) serverSession.getRemoteAddress();
                 dst = (InetSocketAddress) serverSession.getLocalAddress();
                 break;
+            default:
+                throw new SshException("Unknown client channel type: " + typeEnum);
         }
         if (closeFuture.isClosed()) {
             throw new SshException("Session has been closed");
         }
         openFuture = new DefaultOpenFuture(lock);
-        log.info("Send SSH_MSG_CHANNEL_OPEN on channel {}", this);
+        log.debug("Send SSH_MSG_CHANNEL_OPEN on channel {}", this);
+
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN);
         buffer.putString(type);
         buffer.putInt(id);

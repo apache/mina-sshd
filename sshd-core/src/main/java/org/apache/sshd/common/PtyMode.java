@@ -65,11 +65,11 @@ public enum PtyMode {
     static {
         commands = new HashMap<Integer, PtyMode>();
         for (PtyMode c : PtyMode.values()) {
-            commands.put(c.toInt(), c);
+            commands.put(Integer.valueOf(c.toInt()), c);
         }
     }
 
     public static PtyMode fromInt(int b) {
-        return commands.get(0x00FF & (b + 256));
+        return commands.get(Integer.valueOf(0x00FF & (b + 256)));
     }
 }

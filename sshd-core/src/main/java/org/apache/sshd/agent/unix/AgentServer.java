@@ -24,6 +24,7 @@ import java.io.IOException;
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.common.AbstractAgentClient;
 import org.apache.sshd.agent.local.AgentImpl;
+import org.apache.sshd.common.util.AbstractLoggingBean;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.tomcat.jni.Local;
@@ -35,7 +36,7 @@ import org.apache.tomcat.jni.Status;
 /**
  * A server for an SSH Agent
  */
-public class AgentServer implements Closeable {
+public class AgentServer extends AbstractLoggingBean implements Closeable {
 
     private final SshAgent agent;
     private String authSocket;
@@ -69,6 +70,7 @@ public class AgentServer implements Closeable {
             throwException(result);
         }
         thread = new Thread() {
+            @SuppressWarnings("synthetic-access")
             @Override
             public void run() {
                 try {
@@ -78,7 +80,7 @@ public class AgentServer implements Closeable {
                         new SshAgentSession(clientSock, agent);
                     }
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    log.error("Failed to run session", e);
                 }
             }
         };
@@ -102,6 +104,7 @@ public class AgentServer implements Closeable {
             new Thread(this).start();
         }
 
+        @SuppressWarnings("synthetic-access")
         @Override
         public void run() {
             try {
@@ -116,12 +119,13 @@ public class AgentServer implements Closeable {
                     messageReceived(new ByteArrayBuffer(buf, 0, result));
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                log.error("Failed to process", e);
             } finally {
                 Socket.close(socket);
             }
         }
 
+        @SuppressWarnings("synthetic-access")
         @Override
         protected void reply(Buffer buf) throws IOException {
             int result = Socket.send(socket, buf.array(), buf.rpos(), buf.available());

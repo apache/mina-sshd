@@ -68,6 +68,7 @@ public interface ClientFactoryManager extends FactoryManager {
      *
      * @return A <code>TcpipForwarderFactory</code>
      */
+    @Override
     TcpipForwarderFactory getTcpipForwarderFactory();
 
     /**

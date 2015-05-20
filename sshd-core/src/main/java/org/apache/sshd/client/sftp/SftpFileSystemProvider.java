@@ -18,6 +18,17 @@
  */
 package org.apache.sshd.client.sftp;
 
+import static org.apache.sshd.common.sftp.SftpConstants.SFTP_V3;
+import static org.apache.sshd.common.sftp.SftpConstants.S_IRGRP;
+import static org.apache.sshd.common.sftp.SftpConstants.S_IROTH;
+import static org.apache.sshd.common.sftp.SftpConstants.S_IRUSR;
+import static org.apache.sshd.common.sftp.SftpConstants.S_IWGRP;
+import static org.apache.sshd.common.sftp.SftpConstants.S_IWOTH;
+import static org.apache.sshd.common.sftp.SftpConstants.S_IWUSR;
+import static org.apache.sshd.common.sftp.SftpConstants.S_IXGRP;
+import static org.apache.sshd.common.sftp.SftpConstants.S_IXOTH;
+import static org.apache.sshd.common.sftp.SftpConstants.S_IXUSR;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
@@ -34,7 +45,6 @@ import java.nio.file.FileStore;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystemAlreadyExistsException;
 import java.nio.file.FileSystemNotFoundException;
-import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
@@ -53,6 +63,7 @@ import java.nio.file.attribute.PosixFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.UserPrincipal;
 import java.nio.file.spi.FileSystemProvider;
+import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -70,29 +81,22 @@ import org.apache.sshd.client.SftpException;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.config.SshConfigFileReader;
 import org.apache.sshd.common.sftp.SftpConstants;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.IoUtils;
-
-import static org.apache.sshd.common.sftp.SftpConstants.SFTP_V3;
-import static org.apache.sshd.common.sftp.SftpConstants.S_IRGRP;
-import static org.apache.sshd.common.sftp.SftpConstants.S_IROTH;
-import static org.apache.sshd.common.sftp.SftpConstants.S_IRUSR;
-import static org.apache.sshd.common.sftp.SftpConstants.S_IWGRP;
-import static org.apache.sshd.common.sftp.SftpConstants.S_IWOTH;
-import static org.apache.sshd.common.sftp.SftpConstants.S_IWUSR;
-import static org.apache.sshd.common.sftp.SftpConstants.S_IXGRP;
-import static org.apache.sshd.common.sftp.SftpConstants.S_IXOTH;
-import static org.apache.sshd.common.sftp.SftpConstants.S_IXUSR;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SftpFileSystemProvider extends FileSystemProvider {
-
-    final SshClient client;
-    final Map<String, SftpFileSystem> fileSystems = new HashMap<String, SftpFileSystem>();
+    private final SshClient client;
+    private final Map<String, SftpFileSystem> fileSystems = new HashMap<String, SftpFileSystem>();
+    protected final Logger log;
 
     public SftpFileSystemProvider() {
         this(null);
     }
 
     public SftpFileSystemProvider(SshClient client) {
+        this.log = LoggerFactory.getLogger(getClass());
         if (client == null) {
             // TODO: make this configurable using system properties
             client = SshBuilder.client().build();
@@ -477,6 +481,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
                     return "view";
                 }
 
+                @SuppressWarnings("synthetic-access")
                 @Override
                 public PosixFileAttributes readAttributes() throws IOException {
                     SftpPath p = toSftpPath(path);
@@ -600,9 +605,10 @@ public class SftpFileSystemProvider extends FileSystemProvider {
     @Override
     public <A extends BasicFileAttributes> A readAttributes(Path path, Class<A> type, LinkOption... options) throws IOException {
         if (type.isAssignableFrom(PosixFileAttributes.class)) {
-            return (A) getFileAttributeView(path, PosixFileAttributeView.class, options).readAttributes();
+            return type.cast(getFileAttributeView(path, PosixFileAttributeView.class, options).readAttributes());
         }
-        throw new UnsupportedOperationException();
+
+        throw new UnsupportedOperationException("readAttributes(" + path + ")[" + type.getSimpleName() + "] N/A");
     }
 
     @Override
@@ -628,42 +634,46 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         Map<String, Object> map = new HashMap<>();
         for (String attr : attrs.split(",")) {
             switch (attr) {
-            case "lastModifiedTime":
-                map.put(attr, v.lastModifiedTime());
-                break;
-            case "lastAccessTime":
-                map.put(attr, v.lastAccessTime());
-                break;
-            case "creationTime":
-                map.put(attr, v.creationTime());
-                break;
-            case "size":
-                map.put(attr, v.size());
-                break;
-            case "isRegularFile":
-                map.put(attr, v.isRegularFile());
-                break;
-            case "isDirectory":
-                map.put(attr, v.isDirectory());
-                break;
-            case "isSymbolicLink":
-                map.put(attr, v.isSymbolicLink());
-                break;
-            case "isOther":
-                map.put(attr, v.isOther());
-                break;
-            case "fileKey":
-                map.put(attr, v.fileKey());
-                break;
-            case "owner":
-                map.put(attr, v.owner());
-                break;
-            case "permissions":
-                map.put(attr, v.permissions());
-                break;
-            case "group":
-                map.put(attr, v.group());
-                break;
+                case "lastModifiedTime":
+                    map.put(attr, v.lastModifiedTime());
+                    break;
+                case "lastAccessTime":
+                    map.put(attr, v.lastAccessTime());
+                    break;
+                case "creationTime":
+                    map.put(attr, v.creationTime());
+                    break;
+                case "size":
+                    map.put(attr, Long.valueOf(v.size()));
+                    break;
+                case "isRegularFile":
+                    map.put(attr, Boolean.valueOf(v.isRegularFile()));
+                    break;
+                case "isDirectory":
+                    map.put(attr, Boolean.valueOf(v.isDirectory()));
+                    break;
+                case "isSymbolicLink":
+                    map.put(attr, Boolean.valueOf(v.isSymbolicLink()));
+                    break;
+                case "isOther":
+                    map.put(attr, Boolean.valueOf(v.isOther()));
+                    break;
+                case "fileKey":
+                    map.put(attr, v.fileKey());
+                    break;
+                case "owner":
+                    map.put(attr, v.owner());
+                    break;
+                case "permissions":
+                    map.put(attr, v.permissions());
+                    break;
+                case "group":
+                    map.put(attr, v.group());
+                    break;
+                default:
+                    if (log.isTraceEnabled()) {
+                        log.trace("readAttributes({})[{}] ignored {}={}", path, attributes, attr, v);
+                    }
             }
         }
         return map;
@@ -687,34 +697,42 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         }
         SftpClient.Attributes attributes = new SftpClient.Attributes();
         switch (attr) {
-        case "lastModifiedTime":
-            attributes.mtime((int) ((FileTime) value).to(TimeUnit.SECONDS));
-            break;
-        case "lastAccessTime":
-            attributes.atime((int) ((FileTime) value).to(TimeUnit.SECONDS));
-            break;
-        case "creationTime":
-            attributes.ctime((int) ((FileTime) value).to(TimeUnit.SECONDS));
-            break;
-        case "size":
-            attributes.size((long) value);
-            break;
-        case "permissions":
-            attributes.perms(attributesToPermissions((Set<PosixFilePermission>) value));
-            break;
-        case "owner":
-            attributes.owner(((UserPrincipal) value).getName());
-            break;
-        case "group":
-            attributes.group(((GroupPrincipal) value).getName());
-            break;
-        case "isRegularFile":
-        case "isDirectory":
-        case "isSymbolicLink":
-        case "isOther":
-        case "fileKey":
-            throw new IllegalArgumentException(attr);
+            case "lastModifiedTime":
+                attributes.mtime((int) ((FileTime) value).to(TimeUnit.SECONDS));
+                break;
+            case "lastAccessTime":
+                attributes.atime((int) ((FileTime) value).to(TimeUnit.SECONDS));
+                break;
+            case "creationTime":
+                attributes.ctime((int) ((FileTime) value).to(TimeUnit.SECONDS));
+                break;
+            case "size":
+                attributes.size(((Number) value).longValue());
+                break;
+            case "permissions": {
+                @SuppressWarnings("unchecked")
+                Set<PosixFilePermission>    attrSet = (Set<PosixFilePermission>) value;
+                attributes.perms(attributesToPermissions(path, attrSet));
+                }
+                break;
+            case "owner":
+                attributes.owner(((UserPrincipal) value).getName());
+                break;
+            case "group":
+                attributes.group(((GroupPrincipal) value).getName());
+                break;
+            case "isRegularFile":
+            case "isDirectory":
+            case "isSymbolicLink":
+            case "isOther":
+            case "fileKey":
+                throw new UnsupportedOperationException("setAttribute(" + path + ")[" + attribute + "] unknown view attribute: " + attr);
+            default:
+                if (log.isTraceEnabled()) {
+                    log.trace("setAttribute({})[{}] ignore {}={}", path, attribute, attr, value);
+                }
         }
+
         try (SftpClient client = p.getFileSystem().getClient()) {
             client.setStat(p.toString(), attributes);
         }
@@ -772,11 +790,14 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         return p;
     }
 
-    protected int attributesToPermissions(Set<PosixFilePermission> perms) {
+    protected int attributesToPermissions(Path path, Collection<PosixFilePermission> perms) {
+        if (GenericUtils.isEmpty(perms)) {
+            return 0;
+        }
+
         int pf = 0;
-        if (perms != null) {
-            for (PosixFilePermission p : perms) {
-                switch (p) {
+        for (PosixFilePermission p : perms) {
+            switch (p) {
                 case OWNER_READ:
                     pf |= S_IRUSR;
                     break;
@@ -804,9 +825,13 @@ public class SftpFileSystemProvider extends FileSystemProvider {
                 case OTHERS_EXECUTE:
                     pf |= S_IXOTH;
                     break;
-                }
+                default:
+                    if (log.isTraceEnabled()) {
+                        log.trace("attributesToPermissions(" + path + ") ignored " + p);
+                    }
             }
         }
+
         return pf;
     }
 

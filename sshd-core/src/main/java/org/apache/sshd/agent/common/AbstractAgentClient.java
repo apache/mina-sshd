@@ -33,11 +33,12 @@ import java.security.PublicKey;
 import java.util.List;
 
 import org.apache.sshd.agent.SshAgent;
+import org.apache.sshd.common.util.AbstractLoggingBean;
 import org.apache.sshd.common.util.KeyUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
-public abstract class AbstractAgentClient {
+public abstract class AbstractAgentClient extends AbstractLoggingBean {
 
     private final Buffer buffer = new ByteArrayBuffer();
     private final SshAgent agent;

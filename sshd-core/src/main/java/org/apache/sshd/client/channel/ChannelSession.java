@@ -46,6 +46,7 @@ public class ChannelSession extends AbstractClientChannel {
     protected void doOpen() throws IOException {
         if (streaming == Streaming.Async) {
             asyncIn = new ChannelAsyncOutputStream(this, SshConstants.SSH_MSG_CHANNEL_DATA) {
+                @SuppressWarnings("synthetic-access")
                 @Override
                 protected CloseFuture doCloseGracefully() {
                     try {
@@ -113,7 +114,7 @@ public class ChannelSession extends AbstractClientChannel {
             }
         } catch (Exception e) {
             if (!isClosing()) {
-                log.info("Caught exception", e);
+                log.debug("Caught exception", e);
                 close(false);
             }
         }

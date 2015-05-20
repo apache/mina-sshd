@@ -86,7 +86,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
 
     public ClientSessionImpl(ClientFactoryManager client, IoSession session) throws Exception {
         super(false, client, session);
-        log.info("Client session created");
+        log.info("Client session created: {}", session);
         // Need to set the initial service early as calling code likes to start trying to
         // manipulate it before the connection has even been established.  For instance, to
         // set the authPassword.

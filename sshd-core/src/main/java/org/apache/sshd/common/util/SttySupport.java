@@ -46,7 +46,7 @@ public class SttySupport {
         Map<PtyMode, Integer> modes = new TreeMap<PtyMode, Integer>();
         for (PtyMode mode : PtyMode.values()) {
             if (mode == PtyMode.TTY_OP_ISPEED || mode == PtyMode.TTY_OP_OSPEED) {
-
+                // TODO ...
             } else {
                 String str = mode.name().toLowerCase();
                 // Are we looking for a character?
@@ -57,12 +57,12 @@ public class SttySupport {
                         v = findChar(stty, "rprnt");
                     }
                     if (v >= 0) {
-                        modes.put(mode, v);
+                        modes.put(mode, Integer.valueOf(v));
                     }
                 } else {
                     int v = findFlag(stty, str);
                     if (v >= 0) {
-                        modes.put(mode, v);
+                        modes.put(mode, Integer.valueOf(v));
                     }
                 }
             }
@@ -136,6 +136,7 @@ public class SttySupport {
         try {
             val = getTerminalProperty("columns");
         } catch (Exception e) {
+            // ignored
         }
 
         if (val == -1) {
@@ -159,6 +160,7 @@ public class SttySupport {
         try {
             val = getTerminalProperty("rows");
         } catch (Exception e) {
+            // ignored
         }
 
         if (val == -1) {

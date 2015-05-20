@@ -18,7 +18,6 @@
  */
 package org.apache.sshd.common;
 
-import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**

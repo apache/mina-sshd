@@ -227,6 +227,9 @@ public interface Session extends Closeable {
      * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
      */
     public class AttributeKey<T> {
+        public AttributeKey() {
+            super();
+        }
     }
 
     public void resetIdleTimeout();

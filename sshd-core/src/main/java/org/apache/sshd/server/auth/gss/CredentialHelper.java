@@ -40,13 +40,13 @@ import org.ietf.jgss.GSSManager;
 
 public class CredentialHelper {
 
+    @SuppressWarnings("synthetic-access")
     public static GSSCredential creds(GSSManager mgr, String spn, String keytab) throws LoginException, GSSException {
         LoginContext lc = new LoginContext("x", null, null, new FixedLoginConfiguration(spn, keytab));
-
         lc.login();
 
         try {
-            return (GSSCredential) Subject.doAs(lc.getSubject(), new G(mgr));
+            return Subject.doAs(lc.getSubject(), new G(mgr));
         } catch (PrivilegedActionException e) {
             throw (GSSException) e.getCause();
         }
@@ -88,6 +88,7 @@ public class CredentialHelper {
          * @return The entries, or <code>null</code> if the name is not known
          */
 
+        @Override
         public AppConfigurationEntry[] getAppConfigurationEntry(String name) {
             return new AppConfigurationEntry[]{entry};
         }
@@ -96,7 +97,9 @@ public class CredentialHelper {
          * Refresh the configuration.  Nothing to do here.
          */
 
+        @Override
         public void refresh() {
+            // ignored
         }
     }
 
@@ -123,6 +126,7 @@ public class CredentialHelper {
          * @throws GSSException If an error occurred
          */
 
+        @Override
         public GSSCredential run() throws GSSException {
             return mgr.createCredential(null, GSSCredential.INDEFINITE_LIFETIME, UserAuthGSS.KRB5_MECH, GSSCredential.ACCEPT_ONLY);
         }

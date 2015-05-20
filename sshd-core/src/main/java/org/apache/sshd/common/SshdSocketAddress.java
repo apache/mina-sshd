@@ -27,7 +27,7 @@ import java.net.SocketAddress;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class SshdSocketAddress extends SocketAddress {
-
+    private static final long serialVersionUID = 6461645947151952729L;
     private final String hostName;
     private final int port;
 

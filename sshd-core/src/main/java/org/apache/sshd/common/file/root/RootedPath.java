@@ -34,11 +34,13 @@ public class RootedPath extends BasePath<RootedPath, RootedFileSystem> {
         super(fileSystem, root, names);
     }
 
+    @Override
     public URI toUri() {
         // TODO
         return null;
     }
 
+    @Override
     public RootedPath toRealPath(LinkOption... options) throws IOException {
         RootedPath absolute = toAbsolutePath();
         fileSystem.provider().checkAccess(absolute);

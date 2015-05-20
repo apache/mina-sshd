@@ -83,6 +83,7 @@ public class SecurityUtils {
         return BOUNCY_CASTLE.equals(securityProvider);
     }
 
+    @SuppressWarnings("synthetic-access")
     private static void register() {
         if (!registrationDone) {
             if (registerBouncyCastle == null) {
@@ -109,6 +110,7 @@ public class SecurityUtils {
     }
 
     private static class BouncyCastleRegistration implements Callable<Void> {
+        @SuppressWarnings("synthetic-access")
         @Override
         public Void call() throws Exception {
             if (java.security.Security.getProvider(BOUNCY_CASTLE) == null) {

@@ -24,7 +24,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import org.apache.sshd.SshServer;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.NamedFactory;
@@ -47,10 +46,12 @@ public class ServerUserAuthService extends CloseableUtils.AbstractCloseable impl
 
     public static class Factory implements ServiceFactory {
 
+        @Override
         public String getName() {
             return "ssh-userauth";
         }
 
+        @Override
         public Service create(Session session) throws IOException {
             return new ServerUserAuthService(session);
         }
@@ -106,14 +107,17 @@ public class ServerUserAuthService extends CloseableUtils.AbstractCloseable impl
         }
     }
 
+    @Override
     public void start() {
         // do nothing
     }
 
+    @Override
     public ServerSession getSession() {
         return session;
     }
 
+    @Override
     public void process(byte cmd, Buffer buffer) throws Exception {
         Boolean authed = Boolean.FALSE;
 
@@ -144,8 +148,7 @@ public class ServerUserAuthService extends CloseableUtils.AbstractCloseable impl
             }
 
             if (log.isDebugEnabled()) {
-                log.debug("Authenticating user '{}' with service '{}' and method '{}'",
-                          new Object[] { username, service, method });
+                log.debug("Authenticating user '{}' with service '{}' and method '{}'", username, service, method);
             }
             NamedFactory<UserAuth> factory = NamedFactory.Utils.get(userAuthFactories, method);
             if (factory != null) {
@@ -162,7 +165,9 @@ public class ServerUserAuthService extends CloseableUtils.AbstractCloseable impl
                 // This should not happen
                 throw new IllegalStateException();
             }
-            log.debug("Received authentication message {}", cmd);
+            if (log.isDebugEnabled()) {
+                log.debug("Received authentication message {}", Integer.valueOf(cmd & 0xFF));
+            }
             buffer.rpos(buffer.rpos() - 1);
             try {
                 authed = currentAuth.next(buffer);
@@ -175,7 +180,7 @@ public class ServerUserAuthService extends CloseableUtils.AbstractCloseable impl
         if (authed == null) {
             // authentication is still ongoing
             log.debug("Authentication not finished");
-        } else if (authed) {
+        } else if (authed.booleanValue()) {
             log.debug("Authentication succeeded");
             String username = currentAuth.getUserName();
 
@@ -192,7 +197,7 @@ public class ServerUserAuthService extends CloseableUtils.AbstractCloseable impl
                 Integer maxSessionCount = FactoryManagerUtils.getInteger(manager, ServerFactoryManager.MAX_CONCURRENT_SESSIONS);
                 if (maxSessionCount != null) {
                     int currentSessionCount = session.getActiveSessionCountForUser(username);
-                    if (currentSessionCount >= maxSessionCount) {
+                    if (currentSessionCount >= maxSessionCount.intValue()) {
                         session.disconnect(SshConstants.SSH2_DISCONNECT_SERVICE_NOT_AVAILABLE,
                                 "Too many concurrent connections (" + currentSessionCount + ") - max. allowed: " + maxSessionCount);
                         return;

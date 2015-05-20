@@ -83,28 +83,34 @@ public class InvertedShellWrapper implements Command, SessionAware {
         this.shutdownExecutor = shutdownExecutor;
     }
 
+    @Override
     public void setInputStream(InputStream in) {
         this.in = in;
     }
 
+    @Override
     public void setOutputStream(OutputStream out) {
         this.out = out;
     }
 
+    @Override
     public void setErrorStream(OutputStream err) {
         this.err = err;
     }
 
+    @Override
     public void setExitCallback(ExitCallback callback) {
         this.callback = callback;
     }
 
+    @Override
     public void setSession(ServerSession session) {
         if (shell instanceof SessionAware) {
             ((SessionAware) shell).setSession(session);
         }
     }
 
+    @Override
     public synchronized void start(Environment env) throws IOException {
         // TODO propagate the Environment itself and support signal sending.
         shell.start(env.getEnv());
@@ -112,12 +118,14 @@ public class InvertedShellWrapper implements Command, SessionAware {
         shellOut = shell.getOutputStream();
         shellErr = shell.getErrorStream();
         executor.execute(new Runnable() {
+            @Override
             public void run() {
                 pumpStreams();
             }
         });
     }
 
+    @Override
     public synchronized void destroy() {
         shell.destroy();
         if (shutdownExecutor && executor instanceof ExecutorService) {

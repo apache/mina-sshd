@@ -61,6 +61,7 @@ public abstract class MinaService extends CloseableUtils.AbstractCloseable imple
         super.doCloseImmediately();
     }
 
+    @Override
     public Map<Long, org.apache.sshd.common.io.IoSession> getManagedSessions() {
         Map<Long, IoSession> mina = new HashMap<Long, IoSession>(getIoService().getManagedSessions());
         Map<Long, org.apache.sshd.common.io.IoSession> sessions = new HashMap<Long, org.apache.sshd.common.io.IoSession>();
@@ -74,36 +75,44 @@ public abstract class MinaService extends CloseableUtils.AbstractCloseable imple
         return sessions;
     }
 
+    @Override
     public void sessionOpened(IoSession session) throws Exception {
         // Empty handler
     }
 
+    @Override
     public void sessionIdle(IoSession session, IdleStatus status) throws Exception {
         // Empty handler
     }
 
+    @Override
     public void messageSent(IoSession session, Object message) throws Exception {
         // Empty handler
     }
 
+    @Override
     public void inputClosed(IoSession session) throws Exception {
         session.close(true);
     }
 
+    @Override
     public void sessionCreated(IoSession session) throws Exception {
         org.apache.sshd.common.io.IoSession ioSession = new MinaSession(this, session);
         session.setAttribute(org.apache.sshd.common.io.IoSession.class, ioSession);
         handler.sessionCreated(ioSession);
     }
 
+    @Override
     public void sessionClosed(IoSession session) throws Exception {
         handler.sessionClosed(getSession(session));
     }
 
+    @Override
     public void exceptionCaught(IoSession session, Throwable cause) throws Exception {
         handler.exceptionCaught(getSession(session), cause);
     }
 
+    @Override
     public void messageReceived(IoSession session, Object message) throws Exception {
         handler.messageReceived(getSession(session), MinaSupport.asReadable((IoBuffer) message));
     }
@@ -117,19 +126,19 @@ public abstract class MinaService extends CloseableUtils.AbstractCloseable imple
         Integer intVal;
         Boolean boolVal;
         if ((boolVal = getBoolean(FactoryManager.SOCKET_KEEPALIVE)) != null) {
-            config.setKeepAlive(boolVal);
+            config.setKeepAlive(boolVal.booleanValue());
         }
         if ((intVal = getInteger(FactoryManager.SOCKET_SNDBUF)) != null) {
-            config.setSendBufferSize(intVal);
+            config.setSendBufferSize(intVal.intValue());
         }
         if ((intVal = getInteger(FactoryManager.SOCKET_RCVBUF)) != null) {
-            config.setReceiveBufferSize(intVal);
+            config.setReceiveBufferSize(intVal.intValue());
         }
         if ((intVal = getInteger(FactoryManager.SOCKET_LINGER)) != null) {
-            config.setSoLinger(intVal);
+            config.setSoLinger(intVal.intValue());
         }
         if ((boolVal = getBoolean(FactoryManager.SOCKET_LINGER)) != null) {
-            config.setTcpNoDelay(boolVal);
+            config.setTcpNoDelay(boolVal.booleanValue());
         }
         if (sessionConfig != null) {
             config.setAll(sessionConfig);

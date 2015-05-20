@@ -24,7 +24,7 @@ import java.io.IOException;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public class SftpException extends IOException {
-
+    private static final long serialVersionUID = 8096963562429466995L;
     private final int status;
 
     public SftpException(int status, String msg) {

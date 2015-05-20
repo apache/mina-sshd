@@ -31,8 +31,6 @@ import javax.security.auth.login.LoginContext;
 import org.apache.sshd.common.util.AbstractLoggingBean;
 import org.apache.sshd.server.PasswordAuthenticator;
 import org.apache.sshd.server.session.ServerSession;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * TODO Add javadoc

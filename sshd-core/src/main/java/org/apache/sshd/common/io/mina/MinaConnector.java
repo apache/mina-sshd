@@ -64,36 +64,43 @@ public class MinaConnector extends MinaService implements org.apache.sshd.common
         return getConnector();
     }
 
+    @Override
     public IoConnectFuture connect(SocketAddress address) {
         class Future extends DefaultSshFuture<IoConnectFuture> implements IoConnectFuture {
             Future(Object lock) {
                 super(lock);
             }
 
+            @Override
             public org.apache.sshd.common.io.IoSession getSession() {
                 Object v = getValue();
                 return v instanceof org.apache.sshd.common.io.IoSession ? (org.apache.sshd.common.io.IoSession) v : null;
             }
 
+            @Override
             public Throwable getException() {
                 Object v = getValue();
                 return v instanceof Throwable ? (Throwable) v : null;
             }
 
+            @Override
             public boolean isConnected() {
                 return getValue() instanceof org.apache.sshd.common.io.IoSession;
             }
 
+            @Override
             public void setSession(org.apache.sshd.common.io.IoSession session) {
                 setValue(session);
             }
 
+            @Override
             public void setException(Throwable exception) {
                 setValue(exception);
             }
         }
         final IoConnectFuture future = new Future(null);
         getConnector().connect(address).addListener(new IoFutureListener<ConnectFuture>() {
+            @Override
             public void operationComplete(ConnectFuture cf) {
                 if (cf.getException() != null) {
                     future.setException(cf.getException());

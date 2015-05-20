@@ -19,8 +19,6 @@
 package org.apache.sshd.client.channel;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
@@ -69,7 +67,10 @@ public class ChannelDirectTcpip extends AbstractClientChannel {
             throw new SshException("Session has been closed");
         }
         openFuture = new DefaultOpenFuture(lock);
-        log.info("Send SSH_MSG_CHANNEL_OPEN on channel {}", id);
+        if (log.isDebugEnabled()) {
+            log.debug("Send SSH_MSG_CHANNEL_OPEN on channel {}", Integer.valueOf(id));
+        }
+
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN);
         buffer.putString(type);
         buffer.putInt(id);

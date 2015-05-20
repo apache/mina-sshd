@@ -83,6 +83,7 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
                 throwException(result);
             }
             thread = new Thread() {
+                @SuppressWarnings("synthetic-access")
                 @Override
                 public void run() {
                     try {
@@ -124,6 +125,7 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
     @Override
     public CloseFuture close(boolean immediately) {
         return super.close(immediately).addListener(new SshFutureListener<CloseFuture>() {
+            @SuppressWarnings("synthetic-access")
             @Override
             public void operationComplete(CloseFuture sshFuture) {
                 closeImmediately0();

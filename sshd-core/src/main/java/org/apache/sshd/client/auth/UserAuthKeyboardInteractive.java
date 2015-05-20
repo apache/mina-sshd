@@ -111,7 +111,9 @@ public class UserAuthKeyboardInteractive extends AbstractLoggingBean implements 
             String name = buffer.getString();
             String instruction = buffer.getString();
             String language_tag = buffer.getString();
-            log.info("Received {} {} {}", new Object[]{name, instruction, language_tag});
+            if (log.isDebugEnabled()) {
+                log.debug("SSH_MSG_USERAUTH_INFO_REQUEST {} {} {}", name, instruction, language_tag);
+            }
             int num = buffer.getInt();
             String[] prompt = new String[num];
             boolean[] echo = new boolean[num];

@@ -76,26 +76,32 @@ public class MinaAcceptor extends MinaService implements org.apache.sshd.common.
         return getAcceptor();
     }
 
+    @Override
     public void bind(Collection<? extends SocketAddress> addresses) throws IOException {
         getAcceptor().bind(addresses);
     }
 
+    @Override
     public void bind(SocketAddress address) throws IOException {
         getAcceptor().bind(address);
     }
 
+    @Override
     public void unbind() {
         getAcceptor().unbind();
     }
 
+    @Override
     public void unbind(Collection<? extends SocketAddress> addresses) {
         getAcceptor().unbind(addresses);
     }
 
+    @Override
     public void unbind(SocketAddress address) {
         getAcceptor().unbind(address);
     }
 
+    @Override
     public Set<SocketAddress> getBoundAddresses() {
         return getAcceptor().getLocalAddresses();
     }

@@ -18,10 +18,6 @@
  */
 package org.apache.sshd.common;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
 /**
  * This interface defines constants for the SSH protocol.
  *

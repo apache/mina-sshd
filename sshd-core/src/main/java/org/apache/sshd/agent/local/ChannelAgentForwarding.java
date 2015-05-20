@@ -67,6 +67,7 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
     private AgentClient client;
 
     public ChannelAgentForwarding() {
+        super();
     }
 
     @Override
@@ -101,6 +102,7 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
     public CloseFuture close(boolean immediately) {
         return super.close(immediately).addListener(new SshFutureListener<CloseFuture>() {
             @Override
+            @SuppressWarnings("synthetic-access")
             public void operationComplete(CloseFuture sshFuture) {
                 closeImmediately0();
             }
@@ -123,8 +125,8 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
         throw new UnsupportedOperationException("AgentForward channel does not support extended data");
     }
 
+    @SuppressWarnings("synthetic-access")
     protected class AgentClient extends AbstractAgentClient {
-
         public AgentClient() {
             super(agent);
         }

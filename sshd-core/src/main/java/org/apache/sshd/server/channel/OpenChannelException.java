@@ -26,6 +26,7 @@ import org.apache.sshd.common.SshConstants;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class OpenChannelException extends Exception {
+    private static final long serialVersionUID = 3861183351970782341L;
     private final int code;
 
     public OpenChannelException(int code, String message) {

@@ -58,7 +58,9 @@ public class UserAuthPassword extends AbstractUserAuth {
                 log.debug("Received SSH_MSG_USERAUTH_FAILURE");
                 return Result.Failure;
             } else {
-                log.debug("Received unkown packet {}", cmd);
+                if (log.isDebugEnabled()) {
+                    log.debug("Received unkown packet {}", Integer.valueOf(cmd & 0xFF));
+                }
                 // TODO: check packets
                 return Result.Continued;
             }

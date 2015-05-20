@@ -60,6 +60,7 @@ public class DHG extends AbstractDH {
         g = gValue;
     }
 
+    @Override
     public byte[] getE() throws Exception {
         if (e == null) {
             DHParameterSpec dhSkipParamSpec = new DHParameterSpec(p, g);
@@ -72,6 +73,7 @@ public class DHG extends AbstractDH {
         return e_array;
     }
 
+    @Override
     protected byte[] calculateK() throws Exception {
         KeyFactory myKeyFac = SecurityUtils.getKeyFactory("DH");
         DHPublicKeySpec keySpec = new DHPublicKeySpec(f, p, g);
@@ -88,6 +90,7 @@ public class DHG extends AbstractDH {
         setG(new BigInteger(g));
     }
 
+    @Override
     public void setF(byte[] f) {
         setF(new BigInteger(f));
     }

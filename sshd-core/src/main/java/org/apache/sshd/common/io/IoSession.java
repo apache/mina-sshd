@@ -77,6 +77,7 @@ public interface IoSession extends Closeable {
      *                    {@code false} to close this session after all queued
      *                    write requests are flushed.
      */
+    @Override
     CloseFuture close(boolean immediately);
 
     /**

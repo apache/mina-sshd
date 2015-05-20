@@ -55,22 +55,27 @@ public class MinaSession extends CloseableUtils.AbstractInnerCloseable implement
         session.suspendWrite();
     }
 
+    @Override
     public Object getAttribute(Object key) {
         return session.getAttribute(key);
     }
 
+    @Override
     public Object setAttribute(Object key, Object value) {
         return session.setAttribute(key, value);
     }
 
+    @Override
     public SocketAddress getRemoteAddress() {
         return session.getRemoteAddress();
     }
 
+    @Override
     public SocketAddress getLocalAddress() {
         return session.getLocalAddress();
     }
 
+    @Override
     public long getId() {
         return session.getId();
     }
@@ -83,17 +88,24 @@ public class MinaSession extends CloseableUtils.AbstractInnerCloseable implement
     @Override
     protected Closeable getInnerCloseable() {
         return new CloseableUtils.IoBaseCloseable() {
+            @SuppressWarnings("synthetic-access")
+            @Override
             public boolean isClosing() {
                 return session.isClosing();
             }
+            @SuppressWarnings("synthetic-access")
+            @Override
             public boolean isClosed() {
                 return !session.isConnected();
             }
+            @SuppressWarnings("synthetic-access")
+            @Override
             public org.apache.sshd.common.future.CloseFuture close(boolean immediately) {
                 final DefaultCloseFuture future = new DefaultCloseFuture(lock);
                 session.close(false).addListener(new IoFutureListener<IoFuture>() {
+                    @Override
                     public void operationComplete(IoFuture f) {
-                        future.setValue(true);
+                        future.setValue(Boolean.TRUE);
                     }
                 });
                 return future;
@@ -101,12 +113,14 @@ public class MinaSession extends CloseableUtils.AbstractInnerCloseable implement
         };
     }
 
+    @Override
     public IoWriteFuture write(Buffer buffer) {
         class Future extends DefaultSshFuture<IoWriteFuture> implements IoWriteFuture {
             Future(Object lock) {
                 super(lock);
             }
 
+            @Override
             public void verify() throws SshException {
                 try {
                     await();
@@ -119,6 +133,7 @@ public class MinaSession extends CloseableUtils.AbstractInnerCloseable implement
                 }
             }
 
+            @Override
             public boolean isWritten() {
                 return getValue() instanceof Boolean;
             }
@@ -127,6 +142,7 @@ public class MinaSession extends CloseableUtils.AbstractInnerCloseable implement
                 setValue(Boolean.TRUE);
             }
 
+            @Override
             public Throwable getException() {
                 Object v = getValue();
                 return v instanceof Throwable ? (Throwable) v : null;
@@ -141,6 +157,7 @@ public class MinaSession extends CloseableUtils.AbstractInnerCloseable implement
         }
         final Future future = new Future(null);
         session.write(MinaSupport.asIoBuffer(buffer)).addListener(new IoFutureListener<WriteFuture>() {
+            @Override
             public void operationComplete(WriteFuture cf) {
                 if (cf.getException() != null) {
                     future.setException(cf.getException());
@@ -152,10 +169,12 @@ public class MinaSession extends CloseableUtils.AbstractInnerCloseable implement
         return future;
     }
 
+    @Override
     public IoService getService() {
         return service;
     }
 
+    @Override
     public String toString() {
         return getClass().getSimpleName() + "[local=" + session.getLocalAddress() + ", remote=" + session.getRemoteAddress() + "]";
     }

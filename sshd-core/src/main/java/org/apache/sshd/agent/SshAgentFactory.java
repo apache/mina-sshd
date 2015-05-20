@@ -23,7 +23,6 @@ import java.io.IOException;
 import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.Session;
 import org.apache.sshd.common.session.ConnectionService;
 
 /**

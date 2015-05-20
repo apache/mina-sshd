@@ -20,7 +20,6 @@ package org.apache.sshd.common.file.root;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.WatchService;
 import java.nio.file.attribute.UserPrincipalLookupService;
 import java.util.Map;
 import java.util.Set;
@@ -46,6 +45,7 @@ public class RootedFileSystem extends BaseFileSystem<RootedPath> {
 
     @Override
     public void close() throws IOException {
+        // ignored
     }
 
     @Override

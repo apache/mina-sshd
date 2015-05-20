@@ -34,6 +34,7 @@ public class ChannelShell extends PtyCapableChannelSession {
         super(true);
     }
 
+    @Override
     protected void doOpen() throws IOException {
         doOpenPty();
 

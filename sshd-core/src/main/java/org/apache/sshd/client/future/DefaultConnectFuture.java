@@ -33,6 +33,7 @@ public class DefaultConnectFuture extends DefaultSshFuture<ConnectFuture> implem
         super(lock);
     }
 
+    @Override
     public ClientSession getSession() {
         Object v = getValue();
         if (v instanceof RuntimeException) {
@@ -48,6 +49,7 @@ public class DefaultConnectFuture extends DefaultSshFuture<ConnectFuture> implem
         }
     }
 
+    @Override
     public Throwable getException() {
         Object v = getValue();
         if (v instanceof Throwable) {
@@ -57,10 +59,12 @@ public class DefaultConnectFuture extends DefaultSshFuture<ConnectFuture> implem
         }
     }
 
+    @Override
     public boolean isConnected() {
         return getValue() instanceof ClientSession;
     }
 
+    @Override
     public void setSession(ClientSession session) {
         if (session == null) {
             throw new NullPointerException("session");
@@ -68,6 +72,7 @@ public class DefaultConnectFuture extends DefaultSshFuture<ConnectFuture> implem
         setValue(session);
     }
 
+    @Override
     public void setException(Throwable exception) {
         if (exception == null) {
             throw new NullPointerException("exception");

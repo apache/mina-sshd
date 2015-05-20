@@ -214,6 +214,7 @@ public interface ClientSession extends Session {
     /**
      * Close this session.
      */
+    @Override
     CloseFuture close(boolean immediately);
 
     /**
@@ -224,6 +225,7 @@ public interface ClientSession extends Session {
     /**
      * Return ClientFactoryManager for this session.
      */
+    @Override
     ClientFactoryManager getFactoryManager();
 
     /**

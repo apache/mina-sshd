@@ -90,6 +90,7 @@ public class EventListenerUtils {
         }
 
         Object wrapper = Proxy.newProxyInstance(loader, new Class<?>[]{listenerType}, new InvocationHandler() {
+            @Override
             public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
                 for (T l : listeners) {
                     method.invoke(l, args);

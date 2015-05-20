@@ -36,6 +36,7 @@ public abstract class AbstractDHServerKeyExchange extends AbstractDHKeyExchange 
         super();
     }
 
+    @Override
     public void init(AbstractSession s, byte[] V_S, byte[] V_C, byte[] I_S, byte[] I_C) throws Exception {
         super.init(s, V_S, V_C, I_S, I_C);
         if (!(s instanceof ServerSession)) {
@@ -44,6 +45,7 @@ public abstract class AbstractDHServerKeyExchange extends AbstractDHKeyExchange 
         session = (ServerSession) s;
     }
 
+    @Override
     public PublicKey getServerKey() {
         return session.getHostKey().getPublic();
     }

@@ -42,6 +42,7 @@ public class AgentImpl implements SshAgent {
     private final List<Pair<KeyPair, String>> keys = new ArrayList<Pair<KeyPair, String>>();
     private boolean closed;
 
+    @Override
     public List<Pair<PublicKey, String>> getIdentities() throws IOException {
         if (closed) {
             throw new SshException("Agent closed");
@@ -53,6 +54,7 @@ public class AgentImpl implements SshAgent {
         return pks;
     }
 
+    @Override
     public byte[] sign(PublicKey key, byte[] data) throws IOException {
         if (closed) {
             throw new SshException("Agent closed");
@@ -83,6 +85,7 @@ public class AgentImpl implements SshAgent {
         }
     }
 
+    @Override
     public void addIdentity(KeyPair key, String comment) throws IOException {
         if (closed) {
             throw new SshException("Agent closed");
@@ -90,6 +93,7 @@ public class AgentImpl implements SshAgent {
         keys.add(new Pair<KeyPair, String>(key, comment));
     }
 
+    @Override
     public void removeIdentity(PublicKey key) throws IOException {
         if (closed) {
             throw new SshException("Agent closed");
@@ -101,6 +105,7 @@ public class AgentImpl implements SshAgent {
         keys.remove(kp);
     }
 
+    @Override
     public void removeAllIdentities() throws IOException {
         if (closed) {
             throw new SshException("Agent closed");

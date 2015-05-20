@@ -48,10 +48,12 @@ public class ClientUserAuthService extends CloseableUtils.AbstractCloseable impl
 
     public static class Factory implements ServiceFactory {
 
+        @Override
         public String getName() {
             return "ssh-userauth";
         }
 
+        @Override
         public Service create(Session session) throws IOException {
             return new ClientUserAuthService(session);
         }
@@ -98,11 +100,14 @@ public class ClientUserAuthService extends CloseableUtils.AbstractCloseable impl
         }
     }
 
+    @Override
     public ClientSessionImpl getSession() {
         return session;
     }
 
+    @Override
     public void start() {
+        // ignored
     }
 
     public AuthFuture auth(List<Object> identities, String service) throws IOException {
@@ -120,6 +125,7 @@ public class ClientUserAuthService extends CloseableUtils.AbstractCloseable impl
         return authFuture;
     }
 
+    @Override
     public void process(byte cmd, Buffer buffer) throws Exception {
         if (this.authFuture.isSuccess()) {
             throw new IllegalStateException("UserAuth message delivered to authenticated client");

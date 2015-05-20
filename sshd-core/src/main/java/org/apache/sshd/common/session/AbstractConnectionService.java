@@ -87,13 +87,17 @@ public abstract class AbstractConnectionService extends CloseableUtils.AbstractI
         return channels.values();
     }
 
+    @Override
     public AbstractSession getSession() {
         return (AbstractSession) session;
     }
 
+    @Override
     public void start() {
+        // do nothing
     }
 
+    @Override
     public TcpipForwarder getTcpipForwarder() {
         return tcpipForwarder;
     }
@@ -117,6 +121,7 @@ public abstract class AbstractConnectionService extends CloseableUtils.AbstractI
      * @return the id of this channel
      * @throws IOException
      */
+    @Override
     public int registerChannel(Channel channel) throws IOException {
         int channelId = getNextChannelId();
         channel.init(this, session, channelId);
@@ -124,7 +129,7 @@ public abstract class AbstractConnectionService extends CloseableUtils.AbstractI
             if (isClosing()) {
                 throw new IllegalStateException("Session is being closed");
             }
-            channels.put(channelId, channel);
+            channels.put(Integer.valueOf(channelId), channel);
         }
         return channelId;
     }
@@ -134,10 +139,12 @@ public abstract class AbstractConnectionService extends CloseableUtils.AbstractI
      *
      * @param channel the channel
      */
+    @Override
     public void unregisterChannel(Channel channel) {
-        channels.remove(channel.getId());
+        channels.remove(Integer.valueOf(channel.getId()));
     }
 
+    @Override
     public void process(byte cmd, Buffer buffer) throws Exception {
         switch (cmd) {
             case SSH_MSG_CHANNEL_OPEN:
@@ -184,13 +191,16 @@ public abstract class AbstractConnectionService extends CloseableUtils.AbstractI
         }
     }
 
+    @Override
     public void setAllowMoreSessions(boolean allow) {
         allowMoreSessions = allow;
     }
 
     public void channelOpenConfirmation(Buffer buffer) throws IOException {
         Channel channel = getChannel(buffer);
-        log.debug("Received SSH_MSG_CHANNEL_OPEN_CONFIRMATION on channel {}", channel.getId());
+        if (log.isDebugEnabled()) {
+            log.debug("Received SSH_MSG_CHANNEL_OPEN_CONFIRMATION on channel {}", Integer.valueOf(channel.getId()));
+        }
         int recipient = buffer.getInt();
         int rwsize = buffer.getInt();
         int rmpsize = buffer.getInt();
@@ -199,8 +209,11 @@ public abstract class AbstractConnectionService extends CloseableUtils.AbstractI
 
     public void channelOpenFailure(Buffer buffer) throws IOException {
         AbstractClientChannel channel = (AbstractClientChannel) getChannel(buffer);
-        log.debug("Received SSH_MSG_CHANNEL_OPEN_FAILURE on channel {}", channel.getId());
-        channels.remove(channel.getId());
+        Integer id = Integer.valueOf(channel.getId());
+        if (log.isDebugEnabled()) {
+            log.debug("Received SSH_MSG_CHANNEL_OPEN_FAILURE on channel {}", id);
+        }
+        channels.remove(id);
         channel.handleOpenFailure(buffer);
     }
 
@@ -237,7 +250,7 @@ public abstract class AbstractConnectionService extends CloseableUtils.AbstractI
             Channel channel = getChannel(buffer);
             channel.handleWindowAdjust(buffer);
         } catch (SshException e) {
-            log.info(e.getMessage());
+            log.info("channelWindowAdjust error: {}", e.getMessage());
         }
     }
 
@@ -294,7 +307,7 @@ public abstract class AbstractConnectionService extends CloseableUtils.AbstractI
      */
     protected Channel getChannel(Buffer buffer) throws IOException {
         int recipient = buffer.getInt();
-        Channel channel = channels.get(recipient);
+        Channel channel = channels.get(Integer.valueOf(recipient));
         if (channel == null) {
             buffer.rpos(buffer.rpos() - 5);
             byte cmd = buffer.getByte();
@@ -343,6 +356,7 @@ public abstract class AbstractConnectionService extends CloseableUtils.AbstractI
 
         final int channelId = registerChannel(channel);
         channel.open(id, rwsize, rmpsize, buffer).addListener(new SshFutureListener<OpenFuture>() {
+            @Override
             public void operationComplete(OpenFuture future) {
                 try {
                     if (future.isOpened()) {
@@ -410,6 +424,10 @@ public abstract class AbstractConnectionService extends CloseableUtils.AbstractI
                             session.writePacket(buffer);
                         }
                         return;
+                    default:
+                        if (log.isTraceEnabled()) {
+                            log.trace("globalRequest({}) {}#process: {}", req, handler.getClass().getSimpleName(), result);
+                        }
                 }
             }
         }
@@ -428,6 +446,7 @@ public abstract class AbstractConnectionService extends CloseableUtils.AbstractI
         ((AbstractSession) session).requestFailure(buffer);
     }
 
+    @Override
     public String toString() {
         return getClass().getSimpleName() + "[" + session + "]";
     }

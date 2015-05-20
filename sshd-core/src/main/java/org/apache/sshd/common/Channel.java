@@ -57,6 +57,7 @@ public interface Channel extends Closeable {
 
     void handleFailure() throws IOException;
 
+    @Override
     CloseFuture close(boolean immediately);
 
     void init(ConnectionService service, Session session, int id) throws IOException;

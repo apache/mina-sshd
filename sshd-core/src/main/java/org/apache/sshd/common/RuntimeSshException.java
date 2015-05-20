@@ -24,6 +24,7 @@ package org.apache.sshd.common;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class RuntimeSshException extends RuntimeException {
+    private static final long serialVersionUID = -2423550196146939503L;
 
     public RuntimeSshException() {
         this(null, null);

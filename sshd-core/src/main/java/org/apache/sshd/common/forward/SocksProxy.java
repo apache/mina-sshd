@@ -125,6 +125,7 @@ public class SocksProxy extends CloseableUtils.AbstractCloseable implements IoHa
             super(session);
         }
 
+        @SuppressWarnings("synthetic-access")
         @Override
         protected void onMessage(Buffer buffer) throws IOException {
             if (channel == null) {
@@ -142,7 +143,10 @@ public class SocksProxy extends CloseableUtils.AbstractCloseable implements IoHa
                 if (host.startsWith("0.0.0.")) {
                     host = getNTString(buffer);
                 }
-                log.debug("Received socks4 connection request to {}:{}", host, port);
+                if (log.isDebugEnabled()) {
+                    log.debug("Received socks4 connection request for {} to {}:{}", userId, host, Integer.valueOf(port));
+                }
+
                 SshdSocketAddress remote = new SshdSocketAddress(host, port);
                 channel = new TcpipClientChannel(TcpipClientChannel.Type.Direct, session, remote);
                 service.registerChannel(channel);
@@ -157,6 +161,7 @@ public class SocksProxy extends CloseableUtils.AbstractCloseable implements IoHa
             }
         }
 
+        @SuppressWarnings("synthetic-access")
         protected void onChannelOpened(OpenFuture future) {
             Buffer buffer = new ByteArrayBuffer(8);
             buffer.putByte((byte) 0x00);
@@ -197,6 +202,7 @@ public class SocksProxy extends CloseableUtils.AbstractCloseable implements IoHa
             super(session);
         }
 
+        @SuppressWarnings("synthetic-access")
         @Override
         protected void onMessage(Buffer buffer) throws IOException {
             if (authMethods == null) {
@@ -249,7 +255,9 @@ public class SocksProxy extends CloseableUtils.AbstractCloseable implements IoHa
                     throw new IllegalStateException("Unsupported address type: " + type);
                 }
                 int port = getUShort(buffer);
-                log.debug("Received socks5 connection request to {}:{}", host, port);
+                if (log.isDebugEnabled()) {
+                    log.debug("Received socks5 connection request to {}:{}", host, Integer.valueOf(port));
+                }
                 SshdSocketAddress remote = new SshdSocketAddress(host, port);
                 channel = new TcpipClientChannel(TcpipClientChannel.Type.Direct, session, remote);
                 service.registerChannel(channel);
@@ -265,6 +273,7 @@ public class SocksProxy extends CloseableUtils.AbstractCloseable implements IoHa
             }
         }
 
+        @SuppressWarnings("synthetic-access")
         protected void onChannelOpened(OpenFuture future) {
             int wpos = response.wpos();
             response.rpos(0);

@@ -87,13 +87,13 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
             throw new IllegalStateException("TcpipForwarder is closing");
         }
         SshdSocketAddress bound = doBind(local, new StaticIoHandler());
-        localToRemote.put(bound.getPort(), remote);
+        localToRemote.put(Integer.valueOf(bound.getPort()), remote);
         return bound;
     }
 
     @Override
     public synchronized void stopLocalPortForwarding(SshdSocketAddress local) throws IOException {
-        if (localToRemote.remove(local.getPort()) != null && acceptor != null) {
+        if (localToRemote.remove(Integer.valueOf(local.getPort())) != null && acceptor != null) {
             acceptor.unbind(local.toInetSocketAddress());
         }
     }
@@ -111,13 +111,13 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
         }
         int port = remote.getPort() == 0 ? result.getInt() : remote.getPort();
         // TODO: Is it really safe to only store the local address after the request ?
-        remoteToLocal.put(port, local);
+        remoteToLocal.put(Integer.valueOf(port), local);
         return new SshdSocketAddress(remote.getHostName(), port);
     }
 
     @Override
     public synchronized void stopRemotePortForwarding(SshdSocketAddress remote) throws IOException {
-        if (remoteToLocal.remove(remote.getPort()) != null) {
+        if (remoteToLocal.remove(Integer.valueOf(remote.getPort())) != null) {
             Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_GLOBAL_REQUEST);
             buffer.putString("cancel-tcpip-forward");
             buffer.putBoolean(false);
@@ -143,13 +143,13 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
         }
         SocksProxy socksProxy = new SocksProxy(service);
         SshdSocketAddress bound = doBind(local, new SocksProxy(service));
-        dynamicLocal.put(bound.getPort(), socksProxy);
+        dynamicLocal.put(Integer.valueOf(bound.getPort()), socksProxy);
         return bound;
     }
 
     @Override
     public synchronized void stopDynamicPortForwarding(SshdSocketAddress local) throws IOException {
-        Closeable obj = dynamicLocal.remove(local.getPort());
+        Closeable obj = dynamicLocal.remove(Integer.valueOf(local.getPort()));
         if (obj != null) {
             obj.close(true);
             acceptor.unbind(local.toInetSocketAddress());
@@ -158,7 +158,7 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
 
     @Override
     public synchronized SshdSocketAddress getForwardedPort(int remotePort) {
-        return remoteToLocal.get(remotePort);
+        return remoteToLocal.get(Integer.valueOf(remotePort));
     }
 
     @Override
@@ -230,12 +230,13 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
 
     class StaticIoHandler implements IoHandler {
 
+        @SuppressWarnings("synthetic-access")
         @Override
         public void sessionCreated(final IoSession session) throws Exception {
             final TcpipClientChannel channel;
             int localPort = ((InetSocketAddress) session.getLocalAddress()).getPort();
-            if (localToRemote.containsKey(localPort)) {
-                SshdSocketAddress remote = localToRemote.get(localPort);
+            SshdSocketAddress remote = localToRemote.get(Integer.valueOf(localPort));
+            if (remote != null) {
                 channel = new TcpipClientChannel(TcpipClientChannel.Type.Direct, session, remote);
             } else {
                 channel = new TcpipClientChannel(TcpipClientChannel.Type.Forwarded, session, null);
@@ -254,6 +255,7 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
             });
         }
 
+        @SuppressWarnings("synthetic-access")
         @Override
         public void sessionClosed(IoSession session) throws Exception {
             TcpipClientChannel channel = (TcpipClientChannel) session.getAttribute(TcpipClientChannel.class);

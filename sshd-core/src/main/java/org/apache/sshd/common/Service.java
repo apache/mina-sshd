@@ -18,8 +18,6 @@
  */
 package org.apache.sshd.common;
 
-import java.io.IOException;
-
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.util.buffer.Buffer;
 
@@ -48,6 +46,7 @@ public interface Service extends Closeable {
      * @param immediately
      *
      */
+    @Override
     CloseFuture close(boolean immediately);
 
 }

@@ -32,14 +32,16 @@ public class DefaultCloseFuture extends DefaultSshFuture<CloseFuture> implements
         super(lock);
     }
 
+    @Override
     public boolean isClosed() {
         if (isDone()) {
-            return (Boolean) getValue();
+            return ((Boolean) getValue()).booleanValue();
         } else {
             return false;
         }
     }
 
+    @Override
     public void setClosed() {
         setValue(Boolean.TRUE);
     }
