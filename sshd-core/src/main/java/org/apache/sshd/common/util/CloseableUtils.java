@@ -159,6 +159,16 @@ public class CloseableUtils {
 
         // TODO once JDK 8+ becomes the minimum for this project, make it a default method instead of this class
         @Override
+        public boolean isOpen() {
+            if (isClosed() || isClosing()) {
+                return false;
+            } else {
+                return true;
+            }
+        }
+
+        // TODO once JDK 8+ becomes the minimum for this project, make it a default method instead of this class
+        @Override
         public void close() throws IOException {
             CloseableUtils.close(this);
         }

@@ -109,13 +109,16 @@ import org.apache.sshd.client.SftpClient;
 import org.apache.sshd.client.SftpException;
 import org.apache.sshd.client.channel.ChannelSubsystem;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.util.AbstractLoggingBean;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.common.util.io.InputStreamWithChannel;
+import org.apache.sshd.common.util.io.OutputStreamWithChannel;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class DefaultSftpClient implements SftpClient {
+public class DefaultSftpClient extends AbstractLoggingBean implements SftpClient {
     private final ClientSession clientSession;
     private final ChannelSubsystem channel;
     private final Map<Integer, Buffer> messages;
@@ -146,6 +149,7 @@ public class DefaultSftpClient implements SftpClient {
             throw (IOException) new InterruptedIOException().initCause(e);
         }
         this.channel.onClose(new Runnable() {
+            @SuppressWarnings("synthetic-access")
             @Override
             public void run() {
                 synchronized (messages) {
@@ -229,7 +233,7 @@ public class DefaultSftpClient implements SftpClient {
         int id = buffer.getInt();
         buffer.rpos(0);
         synchronized (messages) {
-            messages.put(id, buffer);
+            messages.put(Integer.valueOf(id), buffer);
             messages.notifyAll();
         }
     }
@@ -252,7 +256,7 @@ public class DefaultSftpClient implements SftpClient {
                 if (closing) {
                     throw new SshException("Channel has been closed");
                 }
-                Buffer buffer = messages.remove(id);
+                Buffer buffer = messages.remove(Integer.valueOf(id));
                 if (buffer != null) {
                     return buffer;
                 }
@@ -321,9 +325,13 @@ public class DefaultSftpClient implements SftpClient {
             int substatus = buffer.getInt();
             String msg = buffer.getString();
             String lang = buffer.getString();
+            if (log.isTraceEnabled()) {
+                log.trace("init(id={}) - status: {} [{}] {}", Integer.valueOf(id), Integer.valueOf(substatus), lang, msg);
+            }
+
             throw new SftpException(substatus, msg);
         } else {
-            throw new SshException("Unexpected SFTP packet received: " + type);
+            throw new SshException("Unexpected SFTP packet received: type=" + type + ", id=" + id + ", length=" + length);
         }
     }
 
@@ -335,11 +343,15 @@ public class DefaultSftpClient implements SftpClient {
             int substatus = buffer.getInt();
             String msg = buffer.getString();
             String lang = buffer.getString();
+            if (log.isTraceEnabled()) {
+                log.trace("checkStatus(id={}) - status: {} [{}] {}", Integer.valueOf(id), Integer.valueOf(substatus), lang, msg);
+            }
+
             if (substatus != SSH_FX_OK) {
                 throw new SftpException(substatus, msg);
             }
         } else {
-            throw new SshException("Unexpected SFTP packet received: " + type);
+            throw new SshException("Unexpected SFTP packet received: type=" + type + ", id=" + id + ", length=" + length);
         }
     }
 
@@ -351,12 +363,15 @@ public class DefaultSftpClient implements SftpClient {
             int substatus = buffer.getInt();
             String msg = buffer.getString();
             String lang = buffer.getString();
+            if (log.isTraceEnabled()) {
+                log.trace("checkHandle(id={}) - status: {} [{}] {}", Integer.valueOf(id), Integer.valueOf(substatus), lang, msg);
+            }
             throw new SftpException(substatus, msg);
         } else if (type == SSH_FXP_HANDLE) {
             String handle = buffer.getString();
             return new Handle(handle);
         } else {
-            throw new SshException("Unexpected SFTP packet received: " + type);
+            throw new SshException("Unexpected SFTP packet received: type=" + type + ", id=" + id + ", length=" + length);
         }
     }
 
@@ -368,11 +383,14 @@ public class DefaultSftpClient implements SftpClient {
             int substatus = buffer.getInt();
             String msg = buffer.getString();
             String lang = buffer.getString();
+            if (log.isTraceEnabled()) {
+                log.trace("checkAttributes(id={}) - status: {} [{}] {}", Integer.valueOf(id), Integer.valueOf(substatus), lang, msg);
+            }
             throw new SftpException(substatus, msg);
         } else if (type == SSH_FXP_ATTRS) {
             return readAttributes(buffer);
         } else {
-            throw new SshException("Unexpected SFTP packet received: " + type);
+            throw new SshException("Unexpected SFTP packet received: type=" + type + ", id=" + id + ", length=" + length);
         }
     }
 
@@ -384,20 +402,26 @@ public class DefaultSftpClient implements SftpClient {
             int substatus = buffer.getInt();
             String msg = buffer.getString();
             String lang = buffer.getString();
+            if (log.isTraceEnabled()) {
+                log.trace("checkOneName(id={}) - status: {} [{}] {}", Integer.valueOf(id), Integer.valueOf(substatus), lang, msg);
+            }
             throw new SftpException(substatus, msg);
         } else if (type == SSH_FXP_NAME) {
             int len = buffer.getInt();
             if (len != 1) {
                 throw new SshException("SFTP error: received " + len + " names instead of 1");
             }
-            String name = buffer.getString();
+            String name = buffer.getString(), longName = null;
             if (version == SFTP_V3) {
-                String longName = buffer.getString();
+                longName = buffer.getString();
             }
             Attributes attrs = readAttributes(buffer);
+            if (log.isTraceEnabled()) {
+                log.trace("checkOneName(id={}) ({})[{}]: {}", Integer.valueOf(id), name, longName, attrs);
+            }
             return name;
         } else {
-            throw new SshException("Unexpected SFTP packet received: " + type);
+            throw new SshException("Unexpected SFTP packet received: type=" + type + ", id=" + id + ", length=" + length);
         }
     }
 
@@ -441,15 +465,16 @@ public class DefaultSftpClient implements SftpClient {
             
             // update the permissions according to the type
             switch (attrs.type) {
-            case SSH_FILEXFER_TYPE_REGULAR:
-                attrs.perms |= S_IFREG;
-                break;
-            case SSH_FILEXFER_TYPE_DIRECTORY:
-                attrs.perms |= S_IFDIR;
-                break;
-            case SSH_FILEXFER_TYPE_SYMLINK:
-                attrs.perms |= S_IFLNK;
-                break;
+                case SSH_FILEXFER_TYPE_REGULAR:
+                    attrs.perms |= S_IFREG;
+                    break;
+                case SSH_FILEXFER_TYPE_DIRECTORY:
+                    attrs.perms |= S_IFDIR;
+                    break;
+                case SSH_FILEXFER_TYPE_SYMLINK:
+                    attrs.perms |= S_IFLNK;
+                    break;
+                default:    // do nothing
             }
 
             if ((flags & SSH_FILEXFER_ATTR_ACCESSTIME) != 0) {
@@ -489,18 +514,19 @@ public class DefaultSftpClient implements SftpClient {
             int flags = 0;
             for (Attribute a : attributes.flags) {
                 switch (a) {
-                case Size:
-                    flags |= SSH_FILEXFER_ATTR_SIZE;
-                    break;
-                case UidGid:
-                    flags |= SSH_FILEXFER_ATTR_UIDGID;
-                    break;
-                case Perms:
-                    flags |= SSH_FILEXFER_ATTR_PERMISSIONS;
-                    break;
-                case AcModTime:
-                    flags |= SSH_FILEXFER_ATTR_ACMODTIME;
-                    break;
+                    case Size:
+                        flags |= SSH_FILEXFER_ATTR_SIZE;
+                        break;
+                    case UidGid:
+                        flags |= SSH_FILEXFER_ATTR_UIDGID;
+                        break;
+                    case Perms:
+                        flags |= SSH_FILEXFER_ATTR_PERMISSIONS;
+                        break;
+                    case AcModTime:
+                        flags |= SSH_FILEXFER_ATTR_ACMODTIME;
+                        break;
+                    default:    // do nothing
                 }
             }
             buffer.putInt(flags);
@@ -522,24 +548,25 @@ public class DefaultSftpClient implements SftpClient {
             int flags = 0;
             for (Attribute a : attributes.flags) {
                 switch (a) {
-                case Size:
-                    flags |= SSH_FILEXFER_ATTR_SIZE;
-                    break;
-                case OwnerGroup:
-                    flags |= SSH_FILEXFER_ATTR_OWNERGROUP;
-                    break;
-                case Perms:
-                    flags |= SSH_FILEXFER_ATTR_PERMISSIONS;
-                    break;
-                case AccessTime:
-                    flags |= SSH_FILEXFER_ATTR_ACCESSTIME;
-                    break;
-                case ModifyTime:
-                    flags |= SSH_FILEXFER_ATTR_MODIFYTIME;
-                    break;
-                case CreateTime:
-                    flags |= SSH_FILEXFER_ATTR_CREATETIME;
-                    break;
+                    case Size:
+                        flags |= SSH_FILEXFER_ATTR_SIZE;
+                        break;
+                    case OwnerGroup:
+                        flags |= SSH_FILEXFER_ATTR_OWNERGROUP;
+                        break;
+                    case Perms:
+                        flags |= SSH_FILEXFER_ATTR_PERMISSIONS;
+                        break;
+                    case AccessTime:
+                        flags |= SSH_FILEXFER_ATTR_ACCESSTIME;
+                        break;
+                    case ModifyTime:
+                        flags |= SSH_FILEXFER_ATTR_MODIFYTIME;
+                        break;
+                    case CreateTime:
+                        flags |= SSH_FILEXFER_ATTR_CREATETIME;
+                        break;
+                    default:    // do nothing
                 }
             }
             buffer.putInt(flags);
@@ -583,7 +610,7 @@ public class DefaultSftpClient implements SftpClient {
             }
             // TODO: acl
         } else {
-            throw new IllegalStateException();
+            throw new UnsupportedOperationException("writeAttributes(" + attributes + ") unsupported version: " + version);
         }
     }
 
@@ -595,24 +622,25 @@ public class DefaultSftpClient implements SftpClient {
             int mode = 0;
             for (OpenMode m : options) {
                 switch (m) {
-                case Read:
-                    mode |= SSH_FXF_READ;
-                    break;
-                case Write:
-                    mode |= SSH_FXF_WRITE;
-                    break;
-                case Append:
-                    mode |= SSH_FXF_APPEND;
-                    break;
-                case Create:
-                    mode |= SSH_FXF_CREAT;
-                    break;
-                case Truncate:
-                    mode |= SSH_FXF_TRUNC;
-                    break;
-                case Exclusive:
-                    mode |= SSH_FXF_EXCL;
-                    break;
+                    case Read:
+                        mode |= SSH_FXF_READ;
+                        break;
+                    case Write:
+                        mode |= SSH_FXF_WRITE;
+                        break;
+                    case Append:
+                        mode |= SSH_FXF_APPEND;
+                        break;
+                    case Create:
+                        mode |= SSH_FXF_CREAT;
+                        break;
+                    case Truncate:
+                        mode |= SSH_FXF_TRUNC;
+                        break;
+                    case Exclusive:
+                        mode |= SSH_FXF_EXCL;
+                        break;
+                    default:    // do nothing
                 }
             }
             buffer.putInt(mode);
@@ -676,12 +704,13 @@ public class DefaultSftpClient implements SftpClient {
             int opts = 0;
             for (CopyMode opt : options) {
                 switch (opt) {
-                case Atomic:
-                    opts |= SSH_FXP_RENAME_ATOMIC;
-                    break;
-                case Overwrite:
-                    opts |= SSH_FXP_RENAME_OVERWRITE;
-                    break;
+                    case Atomic:
+                        opts |= SSH_FXP_RENAME_ATOMIC;
+                        break;
+                    case Overwrite:
+                        opts |= SSH_FXP_RENAME_OVERWRITE;
+                        break;
+                    default:    // do nothing
                 }
             }
             buffer.putInt(opts);
@@ -701,7 +730,6 @@ public class DefaultSftpClient implements SftpClient {
     }
 
     protected int checkData(Buffer buffer, int dstoff, byte[] dst) throws IOException {
-        int len;
         int length = buffer.getInt();
         int type = buffer.getByte();
         int id = buffer.getInt();
@@ -709,16 +737,21 @@ public class DefaultSftpClient implements SftpClient {
             int substatus = buffer.getInt();
             String msg = buffer.getString();
             String lang = buffer.getString();
+            if (log.isTraceEnabled()) {
+                log.trace("checkData(id={}) - status: {} [{}] {}", Integer.valueOf(id), Integer.valueOf(substatus), lang, msg);
+            }
+
             if (substatus == SSH_FX_EOF) {
                 return -1;
             }
+
             throw new SftpException(substatus, msg);
         } else if (type == SSH_FXP_DATA) {
-            len = buffer.getInt();
+            int len = buffer.getInt();
             buffer.getRawBytes(dst, dstoff, len);
             return len;
         } else {
-            throw new SshException("Unexpected SFTP packet received: " + type);
+            throw new SshException("Unexpected SFTP packet received: type=" + type + ", id=" + id + ", length=" + length);
         }
     }
 
@@ -778,6 +811,9 @@ public class DefaultSftpClient implements SftpClient {
             int substatus = buffer.getInt();
             String msg = buffer.getString();
             String lang = buffer.getString();
+            if (log.isTraceEnabled()) {
+                log.trace("checkDir(id={}) - status: {} [{}] {}", Integer.valueOf(id), Integer.valueOf(substatus), lang, msg);
+            }
             if (substatus == SSH_FX_EOF) {
                 return null;
             }
@@ -789,11 +825,15 @@ public class DefaultSftpClient implements SftpClient {
                 String name = buffer.getString();
                 String longName = (version == SFTP_V3) ? buffer.getString() : null;
                 Attributes attrs = readAttributes(buffer);
+                if (log.isTraceEnabled()) {
+                    log.trace("checkDir(id={})[{}] ({})[{}]: {}", Integer.valueOf(id), Integer.valueOf(i), name, longName, attrs);
+                }
+
                 entries[i] = new DirEntry(name, longName, attrs);
             }
             return entries;
         } else {
-            throw new SshException("Unexpected SFTP packet received: " + type);
+            throw new SshException("Unexpected SFTP packet received: type=" + type + ", id=" + id + ", length=" + length);
         }
     }
 
@@ -964,27 +1004,36 @@ public class DefaultSftpClient implements SftpClient {
     }
 
     @Override
-    public InputStream read(final String path, final EnumSet<OpenMode> mode) throws IOException {
-        return new InputStream() {
-            byte[] buffer = new byte[32 * 1024];
-            int index = 0;
-            int available = 0;
-            Handle handle = DefaultSftpClient.this.open(path, mode);
-            long offset;
+    public InputStream read(final String path, final Collection<OpenMode> mode) throws IOException {
+        return new InputStreamWithChannel() {
+            private byte[] bb = new byte[1];
+            private byte[] buffer = new byte[32 * 1024];
+            private int index;
+            private int available;
+            private Handle handle = DefaultSftpClient.this.open(path, mode);
+            private long offset;
+
+            @Override
+            public boolean isOpen() {
+                return handle != null;
+            }
+
             @Override
             public int read() throws IOException {
-                byte[] buffer = new byte[1];
-                int read = read(buffer, 0, 1);
+                int read = read(bb, 0, 1);
                 if (read > 0) {
-                    return buffer[0];
+                    return bb[0];
                 }
+
                 return read;
             }
+
             @Override
             public int read(byte[] b, int off, int len) throws IOException {
-                if (handle == null) {
+                if (!isOpen()) {
                     throw new IOException("Stream closed");
                 }
+
                 int idx = off;
                 while (len > 0) {
                     if (index >= available) {
@@ -1010,11 +1059,15 @@ public class DefaultSftpClient implements SftpClient {
                 }
                 return idx - off;
             }
+
             @Override
             public void close() throws IOException {
-                if (handle != null) {
-                    DefaultSftpClient.this.close(handle);
-                    handle = null;
+                if (isOpen()) {
+                    try {
+                        DefaultSftpClient.this.close(handle);
+                    } finally {
+                        handle = null;
+                    }
                 }
             }
         };
@@ -1026,20 +1079,31 @@ public class DefaultSftpClient implements SftpClient {
     }
 
     @Override
-    public OutputStream write(final String path, final EnumSet<OpenMode> mode) throws IOException {
-        return new OutputStream() {
-            byte[] buffer = new byte[32 * 1024];
-            int index = 0;
-            Handle handle = DefaultSftpClient.this.open(path, mode);
-            long offset;
+    public OutputStream write(final String path, final Collection<OpenMode> mode) throws IOException {
+        return new OutputStreamWithChannel() {
+            private byte[] bb = new byte[1];
+            private byte[] buffer = new byte[32 * 1024];
+            private int index;
+            private Handle handle = DefaultSftpClient.this.open(path, mode);
+            private long offset;
+
+            @Override
+            public boolean isOpen() {
+                return handle != null;
+            }
+
             @Override
             public void write(int b) throws IOException {
-                byte[] buffer = new byte[1];
-                buffer[0] = (byte) b;
-                write(buffer, 0, 1);
+                bb[0] = (byte) b;
+                write(bb, 0, 1);
             }
+
             @Override
             public void write(byte[] b, int off, int len) throws IOException {
+                if (!isOpen()) {
+                    throw new IOException("write(len=" + len + ") Stream is closed");
+                }
+
                 do {
                     int nb = Math.min(len, buffer.length - index);
                     System.arraycopy(b, off, buffer, index, nb);
@@ -1051,20 +1115,34 @@ public class DefaultSftpClient implements SftpClient {
                     len -= nb;
                 } while (len > 0);
             }
+
             @Override
             public void flush() throws IOException {
+                if (!isOpen()) {
+                    throw new IOException("flush() Stream is closed");
+                }
+
                 DefaultSftpClient.this.write(handle, offset, buffer, 0, index);
                 offset += index;
                 index = 0;
             }
+
             @Override
             public void close() throws IOException {
-                if (index > 0) {
-                    flush();
+                if (isOpen()) {
+                    try {
+                        try {
+                            if (index > 0) {
+                                flush();
+                            }
+                        } finally {
+                            DefaultSftpClient.this.close(handle);
+                        }
+                    } finally {
+                        handle = null;
+                    }
                 }
-                DefaultSftpClient.this.close(handle);
             }
         };
     }
-
 }

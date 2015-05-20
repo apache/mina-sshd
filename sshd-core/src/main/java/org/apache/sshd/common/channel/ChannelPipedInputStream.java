@@ -35,7 +35,7 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ChannelPipedInputStream extends InputStream {
+public class ChannelPipedInputStream extends InputStream implements ChannelPipedSink {
 
     private final Window localWindow;
     private final Buffer buffer = new ByteArrayBuffer();
@@ -98,7 +98,7 @@ public class ChannelPipedInputStream extends InputStream {
         lock.lock();
         try {
             for (;;) {
-                if (closed && writerClosed && eofSent || closed && !writerClosed) {
+                if ((closed && writerClosed && eofSent) || (closed && !writerClosed)) {
                     throw new IOException("Pipe closed");
                 }
                 if (buffer.available() > 0) {
@@ -136,6 +136,7 @@ public class ChannelPipedInputStream extends InputStream {
         return len;
     }
 
+    @Override
     public void eof() {
         lock.lock();
         try {
@@ -150,13 +151,14 @@ public class ChannelPipedInputStream extends InputStream {
     public void close() throws IOException {
         lock.lock();
         try {
-            closed = true;
             dataAvailable.signalAll();
         } finally {
+            closed = true;
             lock.unlock();
         }
     }
 
+    @Override
     public void receive(byte[] bytes, int off, int len) throws IOException {
         lock.lock();
         try {

@@ -27,7 +27,6 @@ import java.nio.file.attribute.UserPrincipalLookupService;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Queue;
 import java.util.Set;
@@ -64,6 +63,7 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> {
         return session;
     }
 
+    @SuppressWarnings("synthetic-access")
     public SftpClient getClient() throws IOException {
         Wrapper wrapper = wrappers.get();
         if (wrapper == null) {
@@ -105,6 +105,7 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> {
         return new DefaultUserPrincipalLookupService();
     }
 
+    @Override
     public SftpPath getDefaultDir() {
         return defaultDir;
     }
@@ -128,6 +129,7 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> {
             return false;
         }
 
+        @SuppressWarnings("synthetic-access")
         @Override
         public void close() throws IOException {
             if (count.decrementAndGet() == 0) {
@@ -248,7 +250,7 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> {
         }
 
         @Override
-        public InputStream read(String path, EnumSet<OpenMode> mode) throws IOException {
+        public InputStream read(String path, Collection<OpenMode> mode) throws IOException {
             return delegate.read(path, mode);
         }
 
@@ -258,7 +260,7 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> {
         }
 
         @Override
-        public OutputStream write(String path, EnumSet<OpenMode> mode) throws IOException {
+        public OutputStream write(String path, Collection<OpenMode> mode) throws IOException {
             return delegate.write(path, mode);
         }
 
@@ -302,6 +304,7 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> {
             this.name = name;
         }
 
+        @Override
         public String getName() {
             return name;
         }

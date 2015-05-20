@@ -43,6 +43,7 @@ public class BufferedIoOutputStream extends CloseableUtils.AbstractInnerCloseabl
         this.out = out;
     }
 
+    @Override
     public IoWriteFuture write(Buffer buffer) {
         final ChannelAsyncOutputStream.IoWriteFutureImpl future = new ChannelAsyncOutputStream.IoWriteFutureImpl(buffer);
         if (isClosing()) {
@@ -59,14 +60,17 @@ public class BufferedIoOutputStream extends CloseableUtils.AbstractInnerCloseabl
         if (future != null) {
             if (currentWrite.compareAndSet(null, future)) {
                 out.write(future.getBuffer()).addListener(new SshFutureListener<IoWriteFuture>() {
+                    @Override
                     public void operationComplete(IoWriteFuture f) {
                         if (f.isWritten()) {
-                            future.setValue(true);
+                            future.setValue(Boolean.TRUE);
                         } else {
                             future.setValue(f.getException());
                         }
                         finishWrite();
                     }
+
+                    @SuppressWarnings("synthetic-access")
                     private void finishWrite() {
                         writes.remove(future);
                         currentWrite.compareAndSet(future, null);

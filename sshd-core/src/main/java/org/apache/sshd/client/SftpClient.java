@@ -30,6 +30,7 @@ import java.io.OutputStream;
 import java.nio.file.attribute.FileTime;
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -70,7 +71,7 @@ public interface SftpClient extends Closeable {
     }
 
     public static class Attributes {
-        public EnumSet<Attribute> flags = EnumSet.noneOf(Attribute.class);
+        public final Set<Attribute> flags = EnumSet.noneOf(Attribute.class);
         public long size;
         public byte type;
         public int uid;
@@ -84,6 +85,23 @@ public interface SftpClient extends Closeable {
         public FileTime accessTime;
         public FileTime createTime;
         public FileTime modifyTime;
+
+        @Override
+        public String toString() {
+            return "type=" + type
+                 + ";size=" + size
+                 + ";uid=" + uid
+                 + ";gid=" + gid
+                 + ";perms=0x" + Integer.toHexString(perms)
+                 + ";flags=" + flags
+                 + ";owner=" + owner
+                 + ";group=" + group
+                 + ";aTime=(" + atime + ")[" + accessTime + "]"
+                 + ";cTime=(" + ctime + ")[" + createTime + "]"
+                 + ";mTime=(" + mtime + ")[" + modifyTime + "]"
+                 ;
+        }
+
         public Attributes size(long size) {
             flags.add(Attribute.Size);
             this.size = size;
@@ -243,10 +261,10 @@ public interface SftpClient extends Closeable {
 
     InputStream read(String path) throws IOException;
 
-    InputStream read(String path, EnumSet<OpenMode> mode) throws IOException;
+    InputStream read(String path, Collection<OpenMode> mode) throws IOException;
 
     OutputStream write(String path) throws IOException;
 
-    OutputStream write(String path, EnumSet<OpenMode> mode) throws IOException;
+    OutputStream write(String path, Collection<OpenMode> mode) throws IOException;
 
 }

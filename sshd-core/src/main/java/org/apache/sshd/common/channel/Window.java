@@ -118,7 +118,9 @@ public class Window extends AbstractLoggingBean {
     public void waitAndConsume(int len) throws InterruptedException, WindowClosedException {
         synchronized (lock) {
             while (size < len && !closed) {
-                log.debug("Waiting for {} bytes on {}", len, name);
+                if (log.isDebugEnabled()) {
+                    log.debug("Waiting for {} bytes on {}", Integer.valueOf(len), name);
+                }
                 waiting = true;
                 lock.wait();
             }

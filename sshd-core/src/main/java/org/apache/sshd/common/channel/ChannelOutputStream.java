@@ -21,6 +21,7 @@ package org.apache.sshd.common.channel;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.OutputStream;
+import java.nio.channels.Channel;
 
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
@@ -32,7 +33,7 @@ import org.slf4j.Logger;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ChannelOutputStream extends OutputStream {
+public class ChannelOutputStream extends OutputStream implements Channel {
 
     private final AbstractChannel channel;
     private final Window remoteWindow;
@@ -62,6 +63,11 @@ public class ChannelOutputStream extends OutputStream {
     }
 
     @Override
+    public boolean isOpen() {
+        return !closed;
+    }
+
+    @Override
     public synchronized void write(int w) throws IOException {
         b[0] = (byte) w;
         write(b, 0, 1);
@@ -69,7 +75,7 @@ public class ChannelOutputStream extends OutputStream {
 
     @Override
     public synchronized void write(byte[] buf, int s, int l) throws IOException {
-        if (closed) {
+        if (!isOpen()) {
             throw new SshException("write(len=" + l + ") channel already closed");
         }
 
@@ -109,7 +115,7 @@ public class ChannelOutputStream extends OutputStream {
 
     @Override
     public synchronized void flush() throws IOException {
-        if (closed) {
+        if (!isOpen()) {
             throw new SshException("flush(length=" + bufferLength + ") - stream is already closed");
         }
 
@@ -153,7 +159,7 @@ public class ChannelOutputStream extends OutputStream {
 
     @Override
     public synchronized void close() throws IOException {
-        if (!closed) {
+        if (isOpen()) {
             try {
                 flush();
             } finally {

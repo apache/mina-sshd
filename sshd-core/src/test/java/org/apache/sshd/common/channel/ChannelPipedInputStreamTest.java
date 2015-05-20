@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.common.channel;
 
+import java.io.IOException;
 import java.util.Arrays;
 
 import org.apache.sshd.util.BaseTestSupport;
@@ -25,22 +26,39 @@ import org.apache.sshd.util.BogusChannel;
 import org.junit.Test;
 
 public class ChannelPipedInputStreamTest extends BaseTestSupport {
+    public ChannelPipedInputStreamTest() {
+        super();
+    }
 
     @Test
-    public void testAvailable() throws Exception {
+    public void testAvailable() throws IOException {
         Window window = new Window(new BogusChannel(), null, true, true);
         try(ChannelPipedInputStream stream = new ChannelPipedInputStream(window)) {
-            byte[] b = "test".getBytes();
+            byte[] b = getCurrentTestName().getBytes();
             stream.receive(b, 0, b.length);
-            assertEquals(b.length, stream.available());
+            assertEquals("Mismatched reported available size after receive", b.length, stream.available());
     
             stream.eof();
-            assertEquals(b.length, stream.available());
+            assertEquals("Mismatched reported available size after EOF", b.length, stream.available());
     
-            final byte[] readBytes = new byte[50];
-            assertEquals(b.length, stream.read(readBytes));
+            byte[] readBytes = new byte[b.length + Long.SIZE];
+            assertEquals("Mismatched reported read size", b.length, stream.read(readBytes));
             assertStreamEquals(b, readBytes);
-            assertEquals(-1, stream.available());
+            assertEquals("Unexpected data still available", -1, stream.available());
+        }
+    }
+
+    @Test
+    public void testIdempotentClose() throws IOException {
+        Window window = new Window(new BogusChannel(), null, true, true);
+        try(ChannelPipedInputStream stream = new ChannelPipedInputStream(window)) {
+            byte[] b = getCurrentTestName().getBytes();
+            stream.receive(b, 0, b.length);
+            stream.eof();
+            
+            for (int index=0; index < Byte.SIZE; index++) {
+                stream.close();
+            }
         }
     }
 
@@ -50,7 +68,7 @@ public class ChannelPipedInputStreamTest extends BaseTestSupport {
         } else {
             assertArrayEquals(expected, Arrays.copyOf(read, expected.length));
             for (int i = expected.length; i < read.length; i++) {
-                assertEquals('\0', read[i]);
+                assertTrue("Non-zero value at position " + i, read[i] == 0);
             }
         }
     }

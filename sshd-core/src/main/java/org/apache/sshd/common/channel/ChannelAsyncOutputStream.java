@@ -48,6 +48,7 @@ public class ChannelAsyncOutputStream extends CloseableUtils.AbstractCloseable i
         doWriteIfPossible(true);
     }
 
+    @Override
     public synchronized IoWriteFuture write(final Buffer buffer) {
         final IoWriteFutureImpl future = new IoWriteFutureImpl(buffer);
         if (isClosing()) {
@@ -88,12 +89,14 @@ public class ChannelAsyncOutputStream extends CloseableUtils.AbstractCloseable i
                     channel.getRemoteWindow().consume(length);
                     try {
                         channel.getSession().writePacket(buf).addListener(new SshFutureListener<org.apache.sshd.common.io.IoWriteFuture>() {
+                            @SuppressWarnings("synthetic-access")
+                            @Override
                             public void operationComplete(org.apache.sshd.common.io.IoWriteFuture f) {
                                 if (total > length) {
                                     doWriteIfPossible(false);
                                 } else {
                                     pendingWrite.compareAndSet(future, null);
-                                    future.setValue(true);
+                                    future.setValue(Boolean.TRUE);
                                 }
                             }
                         });
@@ -105,7 +108,7 @@ public class ChannelAsyncOutputStream extends CloseableUtils.AbstractCloseable i
                 }
             } else {
                 pendingWrite.compareAndSet(future, null);
-                future.setValue(true);
+                future.setValue(Boolean.TRUE);
             }
         }
     }
@@ -128,6 +131,7 @@ public class ChannelAsyncOutputStream extends CloseableUtils.AbstractCloseable i
             return buffer;
         }
 
+        @Override
         public void verify() throws SshException {
             try {
                 await();
@@ -140,10 +144,12 @@ public class ChannelAsyncOutputStream extends CloseableUtils.AbstractCloseable i
             }
         }
 
+        @Override
         public boolean isWritten() {
             return getValue() instanceof Boolean;
         }
 
+        @Override
         public Throwable getException() {
             Object v = getValue();
             if (v instanceof Throwable) {

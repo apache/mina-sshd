@@ -18,6 +18,8 @@
  */
 package org.apache.sshd.common;
 
+import java.nio.channels.Channel;
+
 import org.apache.sshd.common.future.CloseFuture;
 
 /**
@@ -27,7 +29,7 @@ import org.apache.sshd.common.future.CloseFuture;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface Closeable extends java.io.Closeable {
+public interface Closeable extends Channel {
 
     /**
      * Close this resource asynchronously and return a future.

@@ -20,22 +20,24 @@ package org.apache.sshd.common.channel;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.channels.Channel;
 
 /**
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ChannelPipedOutputStream extends OutputStream {
+public class ChannelPipedOutputStream extends OutputStream implements Channel {
 
-    private final ChannelPipedInputStream sink;
+    private final ChannelPipedSink sink;
     private final byte[] b = new byte[1];
     private boolean closed;
 
-    public ChannelPipedOutputStream(ChannelPipedInputStream sink) {
+    public ChannelPipedOutputStream(ChannelPipedSink sink) {
         this.sink = sink;
     }
 
+    @Override
     public void write(int i) throws IOException {
         synchronized (b) {
             b[0] = (byte) i;
@@ -45,12 +47,32 @@ public class ChannelPipedOutputStream extends OutputStream {
 
     @Override
     public void write(byte[] b, int off, int len) throws IOException {
+        if (!isOpen()) {
+            throw new IOException("write(len=" + len + ") Stream has been closed");
+        }
         sink.receive(b, off, len);
     }
 
     @Override
+    public boolean isOpen() {
+        return !closed;
+    }
+
+    @Override
+    public void flush() throws IOException {
+        if (!isOpen()) {
+            throw new IOException("flush() Stream has been closed");
+        }
+    }
+
+    @Override
     public void close() throws IOException {
-        sink.eof();
-        closed = true;
+        if (isOpen()) {
+            try {
+                sink.eof();
+            } finally {
+                closed = true;
+            }
+        }
     }
 }

@@ -16,19 +16,25 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.sshd.common.channel;
 
-import org.apache.sshd.common.SshException;
+import java.io.IOException;
 
 /**
- * Indicates a {@link Window} has been closed.
- * 
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class WindowClosedException extends SshException {
-    private static final long serialVersionUID = -5345787686165334234L;
+public interface ChannelPipedSink {
+    /**
+     * @param bytes Bytes to be sent to the sink
+     * @param off Offset in buffer
+     * @param len Number of bytes
+     * @throws IOException If failed to send the data
+     */
+    void receive(byte[] bytes, int off, int len) throws IOException;
 
-    public WindowClosedException() {
-        super("Already closed");
-    }
+    /**
+     * Signal end of writing to the sink
+     */
+    void eof();
 }

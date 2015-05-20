@@ -16,19 +16,17 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.channel;
 
-import org.apache.sshd.common.SshException;
+package org.apache.sshd.common.util.io;
+
+import java.io.InputStream;
+import java.nio.channels.Channel;
 
 /**
- * Indicates a {@link Window} has been closed.
- * 
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class WindowClosedException extends SshException {
-    private static final long serialVersionUID = -5345787686165334234L;
-
-    public WindowClosedException() {
-        super("Already closed");
+public abstract class InputStreamWithChannel extends InputStream implements Channel {
+    protected InputStreamWithChannel() {
+        super();
     }
 }

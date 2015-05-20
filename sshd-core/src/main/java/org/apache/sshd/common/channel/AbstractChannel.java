@@ -137,8 +137,13 @@ public abstract class AbstractChannel extends CloseableUtils.AbstractInnerClosea
                         session.writePacket(buffer);
                     }
                     return;
+                default:
+                    if (log.isTraceEnabled()) {
+                        log.trace("{}#process({}): {}", handler.getClass().getSimpleName(), req, result);
+                    }
             }
         }
+
         log.warn("Unknown channel request: {}", req);
         if (wantReply) {
             buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_FAILURE);
