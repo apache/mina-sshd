@@ -36,7 +36,7 @@ import org.apache.sshd.agent.local.ProxyAgentFactory;
 import org.apache.sshd.agent.unix.AgentClient;
 import org.apache.sshd.agent.unix.AgentServer;
 import org.apache.sshd.client.channel.ChannelShell;
-import org.apache.sshd.common.KeyPairProvider;
+import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.Environment;

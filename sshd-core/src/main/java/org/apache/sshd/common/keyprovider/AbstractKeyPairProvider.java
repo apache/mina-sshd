@@ -22,7 +22,6 @@ import java.security.KeyPair;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.util.AbstractLoggingBean;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.KeyUtils;

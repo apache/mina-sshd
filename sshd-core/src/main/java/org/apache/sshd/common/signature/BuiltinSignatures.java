@@ -32,12 +32,12 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 
 import org.apache.sshd.common.Digest;
-import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.Signature;
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.NamedFactoriesListParseResult;
+import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ValidateUtils;

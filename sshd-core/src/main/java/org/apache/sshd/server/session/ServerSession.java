@@ -24,7 +24,6 @@ import java.util.List;
 
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.FactoryManagerUtils;
-import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.SshConstants;
@@ -32,6 +31,7 @@ import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
+import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;

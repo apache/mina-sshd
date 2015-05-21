@@ -33,6 +33,7 @@ import java.security.spec.ECField;
 import java.security.spec.ECParameterSpec;
 import java.security.spec.ECPoint;
 import java.security.spec.EllipticCurve;
+import java.util.Iterator;
 import java.util.List;
 
 import org.apache.sshd.common.util.GenericUtils;
@@ -101,6 +102,28 @@ public abstract class BaseTestSupport extends Assert {
 
     public static void assertEquals(String message, boolean expected, boolean actual) {
         assertEquals(message, Boolean.valueOf(expected), Boolean.valueOf(actual));
+    }
+
+    public static <T> void assertEquals(String message, Iterable<? extends T> expected, Iterable<? extends T> actual) {
+        if (expected != actual) {
+            assertEquals(message, expected.iterator(), actual.iterator());
+        }
+    }
+
+    public static <T> void assertEquals(String message, Iterator<? extends T> expected, Iterator<? extends T> actual) {
+        if (expected == actual) {
+            return;
+        }
+        
+        for (int index=0; expected.hasNext(); index++) {
+            assertTrue(message + "[next actual index=" + index + "]", actual.hasNext());
+            
+            T   expValue = expected.next(), actValue = actual.next();
+            assertEquals(message + "[iterator index=" + index + "]", expValue, actValue);
+        }
+        
+        // once expected is exhausted make sure no more actual items left
+        assertFalse(message + "[non-empty-actual]", actual.hasNext());
     }
 
     public static File assertHierarchyTargetFolderExists(File folder) {

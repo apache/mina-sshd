@@ -16,9 +16,10 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common;
+package org.apache.sshd.common.keyprovider;
 
 import java.security.KeyPair;
+import java.util.Collections;
 
 /**
  * Provider for key pairs.  This provider is used on the server side to provide
@@ -73,4 +74,30 @@ public interface KeyPairProvider {
      * @return The available {@link Iterable} key types in preferred order - never {@code null}
      */
     Iterable<String> getKeyTypes();
+    
+    /**
+     * A {@link KeyPairProvider} that has no keys
+     */
+    KeyPairProvider EMPTY_KEYPAIR_PROVIDER =
+        new KeyPairProvider() {
+            @Override
+            public KeyPair loadKey(String type) {
+                return null;
+            }
+
+            @Override
+            public Iterable<String> getKeyTypes() {
+                return Collections.emptyList();
+            }
+
+            @Override
+            public Iterable<KeyPair> loadKeys() {
+                return Collections.emptyList();
+            }
+
+            @Override
+            public String toString() {
+                return "EMPTY_KEYPAIR_PROVIDER";
+            }
+        };
 }

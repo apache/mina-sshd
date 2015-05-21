@@ -27,9 +27,9 @@ import java.security.interfaces.RSAKey;
 import java.security.spec.ECParameterSpec;
 
 import org.apache.sshd.common.Digest;
-import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.digest.BuiltinDigests;
+import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;

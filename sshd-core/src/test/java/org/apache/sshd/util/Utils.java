@@ -25,8 +25,8 @@ import java.net.ServerSocket;
 import java.net.URISyntaxException;
 import java.net.URL;
 
-import org.apache.sshd.common.KeyPairProvider;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
+import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 
 public class Utils {

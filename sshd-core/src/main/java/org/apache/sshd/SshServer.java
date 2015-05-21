@@ -75,7 +75,7 @@ import org.apache.sshd.server.shell.ProcessShellFactory;
  * or programmatically. Basic setup is usually done using the {@link #setUpDefaultServer()}
  * method, which will known ciphers, macs, channels, etc...
  * Besides this basic setup, a few things have to be manually configured such as the
- * port number, {@link Factory}, the {@link org.apache.sshd.common.KeyPairProvider}
+ * port number, {@link Factory}, the {@link org.apache.sshd.common.keyprovider.KeyPairProvider}
  * and the {@link PasswordAuthenticator}.
  *
  * Some properties can also be configured using the {@link #setProperties(java.util.Map)}

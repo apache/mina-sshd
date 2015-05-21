@@ -190,6 +190,26 @@ public class GenericUtils {
         }
     }
 
+    public static final <T> boolean isEmpty(Iterable<? extends T> iter) {
+        if (iter == null) {
+            return true;
+        } else if (iter instanceof Collection<?>) {
+            return isEmpty((Collection<?>) iter);
+        } else {
+            return isEmpty(iter.iterator());
+        }
+    }
+
+    public static final <T> boolean isEmpty(Iterator<? extends T> iter) {
+        if (iter == null) {
+            return true;
+        } else if (iter.hasNext()) {
+            return false;   // debug breakpoint
+        } else {
+            return true;
+        }
+    }
+
     @SafeVarargs
     public static final <T> boolean isEmpty(T ... a) {
         if (length(a) <= 0) {
