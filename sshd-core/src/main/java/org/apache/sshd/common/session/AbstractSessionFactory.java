@@ -24,6 +24,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.sshd.common.AbstractSessionIoHandler;
 import org.apache.sshd.common.SessionListener;
 import org.apache.sshd.common.io.IoSession;
+import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * An abstract base factory of sessions.
@@ -58,9 +59,7 @@ public abstract class AbstractSessionFactory extends AbstractSessionIoHandler {
      * @param listener the session listener to add
      */
     public void addListener(SessionListener listener) {
-        if (listener == null) {
-            throw new IllegalArgumentException();
-        }
+        ValidateUtils.checkNotNull(listener, "addListener(%s) no listener", this);
         this.listeners.add(listener);
     }
 

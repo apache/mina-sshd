@@ -217,7 +217,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
 
                     @Override
                     public void remove() {
-                        throw new UnsupportedOperationException();
+                        throw new UnsupportedOperationException("newDirectoryStream(" + p + ") Iterator#remove() N/A");
                     }
                 };
             }
@@ -420,7 +420,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
 
     @Override
     public FileStore getFileStore(Path path) throws IOException {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("getFileStore(" + path + ") N/A");
     }
 
     @Override
@@ -598,7 +598,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
                 }
             };
         } else {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("getFileAttributeView(" + path + ") view not supported: " + type.getSimpleName());
         }
     }
 
@@ -625,8 +625,9 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         }
         SftpPath p = toSftpPath(path);
         if (!p.getFileSystem().supportedFileAttributeViews().contains(view)) {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("readAttributes(" + path + ")[" + attributes + "] view not supported: " + view);
         }
+
         PosixFileAttributes v = readAttributes(path, PosixFileAttributes.class, options);
         if ("*".equals(attrs)) {
             attrs = "lastModifiedTime,lastAccessTime,creationTime,size,isRegularFile,isDirectory,isSymbolicLink,isOther,fileKey,owner,permissions,group";
@@ -693,8 +694,9 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         }
         SftpPath p = toSftpPath(path);
         if (!p.getFileSystem().supportedFileAttributeViews().contains(view)) {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("setAttribute(" + path + ")[" + attribute + "=" + value + "] view not supported: " + view);
         }
+
         SftpClient.Attributes attributes = new SftpClient.Attributes();
         switch (attr) {
             case "lastModifiedTime":
@@ -726,7 +728,8 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             case "isSymbolicLink":
             case "isOther":
             case "fileKey":
-                throw new UnsupportedOperationException("setAttribute(" + path + ")[" + attribute + "] unknown view attribute: " + attr);
+                throw new UnsupportedOperationException("setAttribute(" + path + ")[" + attribute + "=" + value + "]"
+                                                       + " unknown view=" + view + " attribute: " + attr);
             default:
                 if (log.isTraceEnabled()) {
                     log.trace("setAttribute({})[{}] ignore {}={}", path, attribute, attr, value);

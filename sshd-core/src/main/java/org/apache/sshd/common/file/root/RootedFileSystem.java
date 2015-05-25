@@ -32,15 +32,15 @@ import org.apache.sshd.common.file.util.ImmutableList;
  */
 public class RootedFileSystem extends BaseFileSystem<RootedPath> {
 
-    private Path root;
+    private Path rootPath;
 
     public RootedFileSystem(RootedFileSystemProvider fileSystemProvider, Path root, Map<String, ?> env) {
         super(fileSystemProvider);
-        this.root = root;
+        this.rootPath = root;
     }
 
     public Path getRoot() {
-        return root;
+        return rootPath;
     }
 
     @Override
@@ -60,7 +60,7 @@ public class RootedFileSystem extends BaseFileSystem<RootedPath> {
 
     @Override
     public Set<String> supportedFileAttributeViews() {
-        return root.getFileSystem().supportedFileAttributeViews();
+        return rootPath.getFileSystem().supportedFileAttributeViews();
     }
 
     @Override
@@ -72,5 +72,4 @@ public class RootedFileSystem extends BaseFileSystem<RootedPath> {
     protected RootedPath create(String root, ImmutableList<String> names) {
         return new RootedPath(this, root, names);
     }
-
 }

@@ -359,7 +359,7 @@ public class BasePathTest extends BaseTestSupport {
 
         @Override
         protected TestPath create(String root, ImmutableList<String> names) {
-            return new TestPath(fileSystem, root, names);
+            return new TestPath(getFileSystem(), root, names);
         }
 
         @Override

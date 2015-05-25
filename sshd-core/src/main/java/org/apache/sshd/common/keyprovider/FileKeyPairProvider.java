@@ -105,7 +105,7 @@ public class FileKeyPairProvider extends AbstractKeyPairProvider {
                     }
                     @Override
                     public void remove() {
-                        throw new UnsupportedOperationException();
+                        throw new UnsupportedOperationException("loadKeys(files) Iterator#remove() N/A");
                     }
                     private boolean setNextObject() {
                         while (iterator.hasNext()) {

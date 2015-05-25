@@ -16,9 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd;
+package org.apache.sshd.client.sftp;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.channels.FileChannel;
@@ -32,7 +31,6 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.GroupPrincipal;
@@ -40,9 +38,14 @@ import java.nio.file.attribute.PosixFilePermissions;
 import java.nio.file.attribute.UserPrincipalLookupService;
 import java.nio.file.attribute.UserPrincipalNotFoundException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Map;
 
+import org.apache.sshd.SshServer;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.Session;
+import org.apache.sshd.common.file.FileSystemFactory;
+import org.apache.sshd.common.file.root.RootedFileSystemProvider;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.command.ScpCommandFactory;
@@ -59,6 +62,19 @@ public class SftpFileSystemTest extends BaseTestSupport {
 
     private SshServer sshd;
     private int port;
+    private final FileSystemFactory fileSystemFactory;
+
+    public SftpFileSystemTest() throws IOException {
+        Path targetPath = detectTargetFolder().toPath();
+        Path parentPath = targetPath.getParent();
+        final FileSystem fileSystem = new RootedFileSystemProvider().newFileSystem(parentPath, Collections.<String,Object>emptyMap());
+        fileSystemFactory = new FileSystemFactory() {
+            @Override
+            public FileSystem createFileSystem(Session session) throws IOException {
+                return fileSystem;
+            }
+        };
+    }
 
     @Before
     public void setUp() throws Exception {
@@ -68,27 +84,31 @@ public class SftpFileSystemTest extends BaseTestSupport {
         sshd.setCommandFactory(new ScpCommandFactory());
         sshd.setShellFactory(new EchoShellFactory());
         sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
+        sshd.setFileSystemFactory(fileSystemFactory);
         sshd.start();
         port = sshd.getPort();
     }
 
     @After
     public void tearDown() throws Exception {
-        sshd.stop(true);
+        if (sshd != null) {
+            sshd.stop(true);
+        }
     }
 
     @Test
-    public void testFileSystem() throws Exception {
-        Utils.deleteRecursive(new File("target/sftp"));
+    public void testFileSystem() throws IOException {
+        Path targetPath = detectTargetFolder().toPath();
+        Path lclSftp = Utils.resolve(targetPath, "sftp", getClass().getSimpleName());
+        Utils.deleteRecursive(lclSftp);
 
-        String uri = "sftp://x:x@localhost:" + port + "/";
-
-        try(FileSystem fs = FileSystems.newFileSystem(URI.create(uri), null)) {
+        try(FileSystem fs = FileSystems.newFileSystem(URI.create("sftp://x:x@localhost:" + port + "/"), Collections.<String,Object>emptyMap())) {
             Iterable<Path> rootDirs = fs.getRootDirectories();
             for (Path root : rootDirs) {
+                String  rootName = root.toString();
                 try (DirectoryStream<Path> ds = Files.newDirectoryStream(root)) {
                     for (Path child : ds) {
-                        System.out.println(child);
+                        System.out.append('\t').append('[').append(rootName).append("] ").println(child);
                     }
                 } catch(IOException | RuntimeException e) {
                     // TODO on Windows one might get share problems for *.sys files
@@ -101,34 +121,46 @@ public class SftpFileSystemTest extends BaseTestSupport {
                     }
                 }
             }
+
+            Path current = fs.getPath(".").toRealPath().normalize();
+            System.out.append("CWD: ").println(current);
+
+            Path parentPath = targetPath.getParent();
+            Path clientFolder = lclSftp.resolve("client");
+            String remFile1Path = Utils.resolveRelativeRemotePath(parentPath, clientFolder.resolve(getCurrentTestName() + "-1.txt"));
+            Path file1 = fs.getPath(remFile1Path);
+            Files.createDirectories(file1.getParent());
+
+            String  expected="Hello world: " + getCurrentTestName();
+            {
+                Files.write(file1, expected.getBytes());
+                String buf = new String(Files.readAllBytes(file1));
+                assertEquals("Mismatched read test data", expected, buf);
+            }
     
-            Path current = fs.getPath(".").toRealPath();
-            Path file = fs.getPath("target/sftp/client/test.txt");
-            Files.createDirectories(file.getParent());
-            Files.write(file, "Hello world\n".getBytes());
-            String buf = new String(Files.readAllBytes(file));
-            assertEquals("Hello world\n", buf);
-    
-            Path file2 = fs.getPath("target/sftp/client/test2.txt");
-            Path file3 = fs.getPath("target/sftp/client/test3.txt");
+            String remFile2Path = Utils.resolveRelativeRemotePath(parentPath, clientFolder.resolve(getCurrentTestName() + "-2.txt"));
+            Path file2 = fs.getPath(remFile2Path);
+            String remFile3Path = Utils.resolveRelativeRemotePath(parentPath, clientFolder.resolve(getCurrentTestName() + "-3.txt"));
+            Path file3 = fs.getPath(remFile3Path);
             try {
                 Files.move(file2, file3);
-                fail("Expected an IOException");
+                fail("Unexpected success in moving " + file2 + " => " + file3);
             } catch (NoSuchFileException e) {
                 // expected
             }
+
             Files.write(file2, "h".getBytes());
             try {
-                Files.move(file, file2);
-                fail("Expected an IOException");
+                Files.move(file1, file2);
+                fail("Unexpected success in moving " + file1 + " => " + file2);
             } catch (FileAlreadyExistsException e) {
                 // expected
             }
-            Files.move(file, file2, StandardCopyOption.REPLACE_EXISTING);
-            Files.move(file2, file);
+            Files.move(file1, file2, StandardCopyOption.REPLACE_EXISTING);
+            Files.move(file2, file1);
     
-            Map<String, Object> attrs = Files.readAttributes(file, "*");
-            System.out.println(attrs);
+            Map<String, Object> attrs = Files.readAttributes(file1, "*");
+            System.out.append(file1.toString()).append(" attributes: ").println(attrs);
     
             // TODO: symbolic links only work for absolute files
     //        Path link = fs.getPath("target/sftp/client/test2.txt");
@@ -138,54 +170,61 @@ public class SftpFileSystemTest extends BaseTestSupport {
     
             // TODO there are many issues with Windows and symbolic links - for now they are of a lesser interest
             if (OsUtils.isUNIX()) {
-                Path link = fs.getPath("target/sftp/client/test2.txt");
-                Files.createSymbolicLink(link, link.getParent().relativize(file));
+                Path link = fs.getPath(remFile2Path);
+                Path linkParent = link.getParent();
+                Path relPath = linkParent.relativize(file1);
+                Files.createSymbolicLink(link, relPath);
                 assertTrue("Not a symbolic link: " + link, Files.isSymbolicLink(link));
-                assertEquals("test.txt", Files.readSymbolicLink(link).toString());
+
+                Path symLink = Files.readSymbolicLink(link);
+                assertEquals("mismatched symbolic link name", relPath.toString(), symLink.toString());
                 Files.delete(link);
             }
     
-            attrs = Files.readAttributes(file, "*", LinkOption.NOFOLLOW_LINKS);
-            System.out.println(attrs);
+            attrs = Files.readAttributes(file1, "*", LinkOption.NOFOLLOW_LINKS);
+            System.out.append(file1.toString()).append(" no-follow attributes: ").println(attrs);
     
-            buf = new String(Files.readAllBytes(file));
-            assertEquals("Hello world\n", buf);
+            assertEquals("Mismatched symlink data", expected, new String(Files.readAllBytes(file1)));
     
-            try (FileChannel channel = FileChannel.open(file)) {
+            try (FileChannel channel = FileChannel.open(file1)) {
                 try (FileLock lock = channel.lock()) {
                     System.out.println("Locked " + lock.toString());
     
-                    try (FileChannel channel2 = FileChannel.open(file)) {
+                    try (FileChannel channel2 = FileChannel.open(file1)) {
                         try (FileLock lock2 = channel2.lock()) {
                             System.out.println("Locked " + lock2.toString());
-                            fail("Expected an exception");
+                            fail("Unexpected success in re-locking " + file1);
                         } catch (OverlappingFileLockException e) {
                             // expected
                         }
                     }
-    
                 }
             }
     
-            Files.delete(file);
+            Files.delete(file1);
         }
     }
 
     @Test
-    public void testAttributes() throws Exception {
-        Utils.deleteRecursive(new File("target/sftp"));
+    public void testAttributes() throws IOException {
+        Path targetPath = detectTargetFolder().toPath();
+        Path lclSftp = Utils.resolve(targetPath, "sftp", getClass().getSimpleName());
+        Utils.deleteRecursive(lclSftp);
 
         try (FileSystem fs = FileSystems.newFileSystem(URI.create("sftp://x:x@localhost:" + port + "/"), null)) {
-            Path file = fs.getPath("target/sftp/client/test.txt");
+            Path parentPath = targetPath.getParent();
+            Path clientFolder = lclSftp.resolve("client");
+            String remFilePath = Utils.resolveRelativeRemotePath(parentPath, clientFolder.resolve(getCurrentTestName() + ".txt"));
+            Path file = fs.getPath(remFilePath);
             Files.createDirectories(file.getParent());
-            Files.write(file, "Hello world\n".getBytes());
+            Files.write(file, (getCurrentTestName() + "\n").getBytes());
     
             Map<String, Object> attrs = Files.readAttributes(file, "posix:*");
             assertNotNull("NO attributes read for " + file, attrs);
     
-            Files.setAttribute(file, "basic:size", Long.valueOf(2l));
+            Files.setAttribute(file, "basic:size", Long.valueOf(2L));
             Files.setAttribute(file, "posix:permissions", PosixFilePermissions.fromString("rwxr-----"));
-            Files.setAttribute(file, "basic:lastModifiedTime", FileTime.fromMillis(100000l));
+            Files.setAttribute(file, "basic:lastModifiedTime", FileTime.fromMillis(100000L));
 
             FileSystem fileSystem = file.getFileSystem();
             try {
@@ -207,12 +246,15 @@ public class SftpFileSystemTest extends BaseTestSupport {
     }
 
     @Test
-    public void testRootFileSystem() throws Exception {
-        Path rootNative = Paths.get("target/root").toAbsolutePath();
-        Utils.deleteRecursive(rootNative.toFile());
+    public void testRootFileSystem() throws IOException {
+        Path targetPath = detectTargetFolder().toPath();
+        Path rootNative = targetPath.resolve("root").toAbsolutePath();
+        Utils.deleteRecursive(rootNative);
         Files.createDirectories(rootNative);
 
-        FileSystem fs = FileSystems.newFileSystem(URI.create("root:" + rootNative.toUri().toString() + "!/"), null);
-        Files.createDirectories(fs.getPath("test/foo"));
+        try(FileSystem fs = FileSystems.newFileSystem(URI.create("root:" + rootNative.toUri().toString() + "!/"), null)) {
+            Path dir = Files.createDirectories(fs.getPath("test/foo"));
+            System.out.println("Created " + dir);
+        }
     }
 }

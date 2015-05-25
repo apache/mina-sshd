@@ -21,6 +21,7 @@ package org.apache.sshd.common.file.virtualfs;
 import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -73,7 +74,7 @@ public class VirtualFileSystemFactory implements FileSystemFactory {
     @Override
     public FileSystem createFileSystem(Session session) throws IOException {
         String dir = computeRootDir(session.getUsername());
-        return new RootedFileSystemProvider().newFileSystem(Paths.get(dir), null);
+        return new RootedFileSystemProvider().newFileSystem(Paths.get(dir), Collections.<String,Object>emptyMap());
     }
 
 }

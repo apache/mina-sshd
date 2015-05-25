@@ -273,7 +273,7 @@ public class DefaultSftpClient extends AbstractLoggingBean implements SftpClient
         DataInputStream dis = new DataInputStream(channel.getInvertedOut());
         int length = dis.readInt();
         if (length < 5) {
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException("Bad length: " + length);
         }
         Buffer buffer = new ByteArrayBuffer(length + 4);
         buffer.putInt(length);
@@ -281,7 +281,7 @@ public class DefaultSftpClient extends AbstractLoggingBean implements SftpClient
         while (nb > 0) {
             int l = dis.read(buffer.array(), buffer.wpos(), nb);
             if (l < 0) {
-                throw new IllegalArgumentException();
+                throw new IllegalArgumentException("Premature EOF while read " + length + " bytes - remaining=" + nb);
             }
             buffer.wpos(buffer.wpos() + l);
             nb -= l;
@@ -302,7 +302,7 @@ public class DefaultSftpClient extends AbstractLoggingBean implements SftpClient
                 try {
                     messages.wait();
                 } catch (InterruptedException e) {
-                    throw (IOException) new InterruptedIOException().initCause(e);
+                    throw (IOException) new InterruptedIOException("Interruppted init()").initCause(e);
                 }
             }
             buffer = messages.remove(messages.keySet().iterator().next());
@@ -991,7 +991,7 @@ public class DefaultSftpClient extends AbstractLoggingBean implements SftpClient
                     }
                     @Override
                     public void remove() {
-                        throw new UnsupportedOperationException();
+                        throw new UnsupportedOperationException("readDir(" + path + ") Iterator#remove() N/A");
                     }
                 };
             }

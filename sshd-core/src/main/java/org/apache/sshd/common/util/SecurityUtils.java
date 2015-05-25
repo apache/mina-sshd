@@ -18,18 +18,16 @@
  */
 package org.apache.sshd.common.util;
 
+import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.KeyPairGenerator;
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.security.Signature;
 import java.util.concurrent.Callable;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyAgreement;
 import javax.crypto.Mac;
-import javax.crypto.NoSuchPaddingException;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.slf4j.Logger;
@@ -92,7 +90,7 @@ public class SecurityUtils {
                     registerBouncyCastle = Boolean.valueOf(prop);
                 }
             }
-            if (securityProvider == null && (registerBouncyCastle == null || registerBouncyCastle.booleanValue())) {
+            if ((securityProvider == null) && ((registerBouncyCastle == null) || registerBouncyCastle.booleanValue())) {
                 // Use an inner class to avoid a strong dependency from SshServer on BouncyCastle
                 try {
                     new BouncyCastleRegistration().call();
@@ -127,7 +125,7 @@ public class SecurityUtils {
         }
     }
 
-    public static synchronized KeyFactory getKeyFactory(String algorithm) throws NoSuchAlgorithmException, NoSuchProviderException {
+    public static synchronized KeyFactory getKeyFactory(String algorithm) throws GeneralSecurityException {
         register();
         if (getSecurityProvider() == null) {
             return KeyFactory.getInstance(algorithm);
@@ -136,7 +134,7 @@ public class SecurityUtils {
         }
     }
 
-    public static synchronized Cipher getCipher(String transformation) throws NoSuchAlgorithmException, NoSuchPaddingException, NoSuchProviderException {
+    public static synchronized Cipher getCipher(String transformation) throws GeneralSecurityException {
         register();
         if (getSecurityProvider() == null) {
             return Cipher.getInstance(transformation);
@@ -145,7 +143,7 @@ public class SecurityUtils {
         }
     }
 
-    public static synchronized MessageDigest getMessageDigest(String algorithm) throws NoSuchAlgorithmException, NoSuchProviderException {
+    public static synchronized MessageDigest getMessageDigest(String algorithm) throws GeneralSecurityException {
         register();
         if (getSecurityProvider() == null) {
             return MessageDigest.getInstance(algorithm);
@@ -154,7 +152,7 @@ public class SecurityUtils {
         }
     }
 
-    public static synchronized KeyPairGenerator getKeyPairGenerator(String algorithm) throws NoSuchAlgorithmException, NoSuchProviderException {
+    public static synchronized KeyPairGenerator getKeyPairGenerator(String algorithm) throws GeneralSecurityException {
         register();
         if (getSecurityProvider() == null) {
             return KeyPairGenerator.getInstance(algorithm);
@@ -163,7 +161,7 @@ public class SecurityUtils {
         }
     }
 
-    public static synchronized KeyAgreement getKeyAgreement(String algorithm) throws NoSuchAlgorithmException, NoSuchProviderException {
+    public static synchronized KeyAgreement getKeyAgreement(String algorithm) throws GeneralSecurityException {
         register();
         if (getSecurityProvider() == null) {
             return KeyAgreement.getInstance(algorithm);
@@ -172,7 +170,7 @@ public class SecurityUtils {
         }
     }
 
-    public static synchronized Mac getMac(String algorithm) throws NoSuchAlgorithmException, NoSuchProviderException {
+    public static synchronized Mac getMac(String algorithm) throws GeneralSecurityException {
         register();
         if (getSecurityProvider() == null) {
             return Mac.getInstance(algorithm);
@@ -181,7 +179,7 @@ public class SecurityUtils {
         }
     }
 
-    public static synchronized Signature getSignature(String algorithm) throws NoSuchAlgorithmException, NoSuchProviderException {
+    public static synchronized Signature getSignature(String algorithm) throws GeneralSecurityException {
         register();
         if (getSecurityProvider() == null) {
             return Signature.getInstance(algorithm);
@@ -189,5 +187,4 @@ public class SecurityUtils {
             return Signature.getInstance(algorithm, getSecurityProvider());
         }
     }
-
 }

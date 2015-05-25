@@ -64,6 +64,7 @@ import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.Readable;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -1295,9 +1296,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
      */
     @Override
     public void addListener(SessionListener listener) {
-        if (listener == null) {
-            throw new IllegalArgumentException();
-        }
+        ValidateUtils.checkNotNull(listener, "addListener(%s) null instance", this);
         this.listeners.add(listener);
     }
 
@@ -1441,7 +1440,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
 
         public void setException(Throwable cause) {
             if (cause == null) {
-                throw new IllegalArgumentException();
+                throw new IllegalArgumentException("No cause specified");
             }
             setValue(cause);
         }

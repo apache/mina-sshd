@@ -31,7 +31,6 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.util.BaseTestSupport;
 import org.junit.Assume;
-import org.junit.internal.AssumptionViolatedException;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -41,7 +40,6 @@ public abstract class BaseCipherTest extends BaseTestSupport {
 		super();
 	}
 
-	@SuppressWarnings("deprecation")
     protected void ensureKeySizeSupported(int bsize, String algorithm, String transformation) throws GeneralSecurityException {
 		try {
 	        javax.crypto.Cipher	cipher=SecurityUtils.getCipher(transformation);
@@ -49,7 +47,7 @@ public abstract class BaseCipherTest extends BaseTestSupport {
 	        cipher.init(javax.crypto.Cipher.ENCRYPT_MODE, new SecretKeySpec(key, algorithm));
 		} catch(GeneralSecurityException e) {
 			if (e instanceof InvalidKeyException) {	// NOTE: assumption violations are NOT test failures...
-				throw new AssumptionViolatedException(algorithm + "/" + transformation + "[" + bsize + "] N/A");
+			    Assume.assumeTrue(algorithm + "/" + transformation + "[" + bsize + "] N/A", false);
 			}
 
 			throw e;

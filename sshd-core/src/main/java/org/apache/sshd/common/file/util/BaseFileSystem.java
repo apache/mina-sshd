@@ -27,7 +27,10 @@ import java.nio.file.WatchService;
 import java.nio.file.spi.FileSystemProvider;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.apache.sshd.common.util.GenericUtils;
 
 public abstract class BaseFileSystem<T extends Path> extends FileSystem {
 
@@ -63,41 +66,44 @@ public abstract class BaseFileSystem<T extends Path> extends FileSystem {
 
     @Override
     public Iterable<FileStore> getFileStores() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("No file stores available");
     }
 
     @Override
     public T getPath(String first, String... more) {
         StringBuilder sb = new StringBuilder();
-        appendDedupSep(sb, first);
-        for (String segment : more) {
-            if (sb.length() > 0 && sb.charAt(sb.length() - 1) != '/') {
-                sb.append('/');
-            }
-            appendDedupSep(sb, segment);
+        if (!GenericUtils.isEmpty(first)) {
+            appendDedupSep(sb, first.replace('\\', '/'));   // in case we are running on Windows
         }
-        if (sb.length() > 1 && sb.charAt(sb.length() - 1) == '/') {
+        
+        if (GenericUtils.length(more) > 0) {
+            for (String segment : more) {
+                if ((sb.length() > 0) && (sb.charAt(sb.length() - 1) != '/')) {
+                    sb.append('/');
+                }
+                // in case we are running on Windows
+                appendDedupSep(sb, segment.replace('\\', '/'));
+            }
+        }
+
+        if ((sb.length() > 1) && (sb.charAt(sb.length() - 1) == '/')) {
             sb.setLength(sb.length() - 1);
         }
-        String path = sb.toString();
-        String root = null;
+
+        String path = sb.toString(), root = null;
         if (path.startsWith("/")) {
             root = "/";
             path = path.substring(1);
         }
-        String[] names;
-        if (path.length() > 0) {
-            names = path.split("/");
-        } else {
-            names = new String[0];
-        }
+
+        String[] names=GenericUtils.split(path, '/');
         return create(root, names);
     }
 
     private void appendDedupSep(StringBuilder sb, String s) {
         for (int i = 0; i < s.length(); i++) {
             char ch = s.charAt(i);
-            if (ch != '/' || sb.length() == 0 || sb.charAt(sb.length() - 1) != '/') {
+            if ((ch != '/') || (sb.length() == 0) || (sb.charAt(sb.length() - 1) != '/')) {
                 sb.append(ch);
             }
         }
@@ -106,7 +112,7 @@ public abstract class BaseFileSystem<T extends Path> extends FileSystem {
     @Override
     public PathMatcher getPathMatcher(String syntaxAndPattern) {
         int colonIndex = syntaxAndPattern.indexOf(':');
-        if (colonIndex <= 0 || colonIndex == syntaxAndPattern.length() - 1) {
+        if ((colonIndex <= 0) || (colonIndex == syntaxAndPattern.length() - 1)) {
             throw new IllegalArgumentException("syntaxAndPattern must have form \"syntax:pattern\" but was \"" + syntaxAndPattern + "\"");
         }
 
@@ -114,20 +120,21 @@ public abstract class BaseFileSystem<T extends Path> extends FileSystem {
         String pattern = syntaxAndPattern.substring(colonIndex + 1);
         String expr;
         switch (syntax) {
-        case "glob":
-            expr = globToRegex(pattern);
-            break;
-        case "regex":
-            expr = pattern;
-            break;
-        default:
-            throw new UnsupportedOperationException("Unsupported syntax \'" + syntax + "\'");
-        }
+            case "glob":
+                expr = globToRegex(pattern);
+                break;
+            case "regex":
+                expr = pattern;
+                break;
+            default:
+                throw new UnsupportedOperationException("Unsupported path matcher syntax: \'" + syntax + "\'");
+            }
         final Pattern regex = Pattern.compile(expr);
         return new PathMatcher() {
             @Override
             public boolean matches(Path path) {
-                return regex.matcher(path.toString()).matches();
+                Matcher m = regex.matcher(path.toString());
+                return m.matches();
             }
         };
     }
@@ -223,7 +230,7 @@ public abstract class BaseFileSystem<T extends Path> extends FileSystem {
 
     @Override
     public WatchService newWatchService() throws IOException {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("Watch service N/A");
     }
 
     protected T create(String root, String... names) {

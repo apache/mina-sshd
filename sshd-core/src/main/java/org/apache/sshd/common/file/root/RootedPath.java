@@ -18,9 +18,12 @@
  */
 package org.apache.sshd.common.file.root;
 
+import java.io.File;
 import java.io.IOException;
-import java.net.URI;
+import java.nio.file.FileSystem;
 import java.nio.file.LinkOption;
+import java.nio.file.Path;
+import java.nio.file.spi.FileSystemProvider;
 
 import org.apache.sshd.common.file.util.BasePath;
 import org.apache.sshd.common.file.util.ImmutableList;
@@ -29,22 +32,27 @@ import org.apache.sshd.common.file.util.ImmutableList;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class RootedPath extends BasePath<RootedPath, RootedFileSystem> {
-
     public RootedPath(RootedFileSystem fileSystem, String root, ImmutableList<String> names) {
         super(fileSystem, root, names);
     }
 
     @Override
-    public URI toUri() {
-        // TODO
-        return null;
+    public File toFile() {
+        RootedPath absolute = toAbsolutePath();
+        RootedFileSystem fs = getFileSystem();
+        Path path = fs.getRoot();
+        for (String n : absolute.names) {
+            path = path.resolve(n);
+        }
+        return path.toFile();
     }
 
     @Override
     public RootedPath toRealPath(LinkOption... options) throws IOException {
         RootedPath absolute = toAbsolutePath();
-        fileSystem.provider().checkAccess(absolute);
+        FileSystem fs = getFileSystem();
+        FileSystemProvider provider = fs.provider();
+        provider.checkAccess(absolute);
         return absolute;
     }
-
 }

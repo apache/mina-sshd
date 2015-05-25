@@ -57,8 +57,11 @@ import org.apache.sshd.common.util.IoUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class RootedFileSystemProvider extends FileSystemProvider {
+    private final Map<Path, RootedFileSystem> fileSystems = new HashMap<>();
 
-    final Map<Path, RootedFileSystem> fileSystems = new HashMap<>();
+    public RootedFileSystemProvider() {
+        super();
+    }
 
     @Override
     public String getScheme() {
@@ -125,7 +128,7 @@ public class RootedFileSystemProvider extends FileSystemProvider {
 
     private boolean ensureDirectory(Path path) {
         if (!Files.isDirectory(path, IoUtils.getLinkOptions(false))) {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("Not a directory: " + path);
         }
         return true;
     }
@@ -244,7 +247,7 @@ public class RootedFileSystemProvider extends FileSystemProvider {
 
     @Override
     public FileStore getFileStore(Path path) throws IOException {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("getFileStore(" + path + ") N/A");
     }
 
     @Override

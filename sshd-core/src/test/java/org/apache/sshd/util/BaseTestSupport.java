@@ -19,6 +19,10 @@
 package org.apache.sshd.util;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.Path;
 import java.security.Key;
 import java.security.KeyPair;
 import java.security.interfaces.DSAParams;
@@ -49,6 +53,7 @@ import org.junit.runner.Description;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class BaseTestSupport extends Assert {
+    public static final String TEMP_SUBFOLDER_NAME="temp";
     @Rule public final TestWatcher rule = new TestWatcher() {
             // TODO consider using a ThreadLocal storage for the start time - provided
             //      the code is assured to call starting/finished on the same thread
@@ -67,6 +72,7 @@ public abstract class BaseTestSupport extends Assert {
             }
         };
     @Rule public final TestName TEST_NAME_HOLDER = new TestName();
+    private File    targetFolder;
 
     protected BaseTestSupport() {
     	super();
@@ -74,6 +80,25 @@ public abstract class BaseTestSupport extends Assert {
 
     public final String getCurrentTestName() {
         return TEST_NAME_HOLDER.getMethodName();
+    }
+
+    /**
+     * Attempts to detect the location of the Maven &quot;target&quot; folder
+     * associated with the project that contains the actual class extending this
+     * base class
+     * @return The {@link File} representing the location of the &quot;target&quot; folder
+     * @throws IllegalStateException If failed to detect the folder
+     */
+    protected File detectTargetFolder() throws IllegalStateException {
+        synchronized(TEMP_SUBFOLDER_NAME) {
+            if (targetFolder == null) {
+                if ((targetFolder=Utils.detectTargetFolder(getClass())) == null) {
+                    throw new IllegalStateException("Failed to detect target folder");
+                }
+            }
+        }
+
+        return targetFolder;
     }
 
     /* ------------------- Useful extra test helpers ---------------------- */
@@ -124,6 +149,14 @@ public abstract class BaseTestSupport extends Assert {
         
         // once expected is exhausted make sure no more actual items left
         assertFalse(message + "[non-empty-actual]", actual.hasNext());
+    }
+
+    public static Path assertHierarchyTargetFolderExists(Path folder, LinkOption ... options) throws IOException {
+        if (!Files.exists(folder, options)) {
+            Files.createDirectories(folder);
+        }
+        
+        return folder;
     }
 
     public static File assertHierarchyTargetFolderExists(File folder) {
@@ -287,5 +320,38 @@ public abstract class BaseTestSupport extends Assert {
 
         assertEquals(message + "[x]", expected.getAffineX(), actual.getAffineX());
         assertEquals(message + "[y]", expected.getAffineY(), actual.getAffineY());
+    }
+
+    public static void assertFileLength(File file, long length, long timeout) throws Exception {
+        assertFileLength(file.toPath(), length, timeout);
+    }
+
+    /**
+     * Waits the specified timeout for the file to exist and have the required length
+     * @param file The file {@link Path} to check
+     * @param length Expected length
+     * @param timeout Timeout (msec.) to wait for satisfying the requirements
+     * @throws Exception If failed to access the file
+     */
+    public static void assertFileLength(Path file, long length, long timeout) throws Exception {
+        boolean ok = false;
+        long sleepTime = 100L;
+        while (timeout > 0L) {
+            if (Files.exists(file) && (Files.size(file) == length)) {
+                if (!ok) {
+                    ok = true;
+                } else {
+                    return;
+                }
+            } else {
+                ok = false;
+            }
+
+            Thread.sleep(sleepTime);
+            timeout -= sleepTime;
+        }
+
+        assertTrue("File not found: " + file, Files.exists(file));
+        assertEquals("Mismatched file size for " + file, length, Files.size(file));
     }
 }

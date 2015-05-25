@@ -64,7 +64,7 @@ public class SimpleGeneratorHostKeyProviderTest extends BaseTestSupport {
         testSimpleGeneratorHostKeyProvider("EC", KeyPairProvider.ECDSA_SHA2_NISTP521, -1, new ECGenParameterSpec("P-521"));
     }
 
-    private static File testSimpleGeneratorHostKeyProvider(String algorithm, String keyType, int keySize, AlgorithmParameterSpec keySpec) {
+    private File testSimpleGeneratorHostKeyProvider(String algorithm, String keyType, int keySize, AlgorithmParameterSpec keySpec) {
         File    path = initKeyFileLocation(algorithm);
         KeyPair kpWrite = invokeSimpleGeneratorHostKeyProvider(path, algorithm, keyType, keySize, keySpec);
         assertTrue("Key file not generated: " + path.getAbsolutePath(), path.exists());
@@ -104,8 +104,8 @@ public class SimpleGeneratorHostKeyProviderTest extends BaseTestSupport {
         return kp;
     }
 
-    private static File initKeyFileLocation(String algorithm) {
-        File path = new File("target/keys");
+    private File initKeyFileLocation(String algorithm) {
+        File path = new File(detectTargetFolder(), "keys");
         if (!path.exists()) {
             assertTrue("Failed to crearte hierarchy of " + path.getAbsolutePath(), path.mkdirs());
         }

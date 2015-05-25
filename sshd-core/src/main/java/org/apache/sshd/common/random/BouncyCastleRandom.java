@@ -87,7 +87,7 @@ public class BouncyCastleRandom implements Random {
             } while (bits - val + (n-1) < 0);
             return val;
         }
-        throw new IllegalArgumentException();
+        throw new IllegalArgumentException("Limit must be positive: " + n);
     }
 
     final protected int next(int numBits) {

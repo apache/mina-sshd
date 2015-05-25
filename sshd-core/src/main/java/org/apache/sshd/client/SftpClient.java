@@ -68,6 +68,11 @@ public interface SftpClient extends Closeable {
         public Handle(String id) {
             this.id = id;
         }
+        
+        @Override
+        public String toString() {
+            return id;
+        }
     }
 
     public static class Attributes {

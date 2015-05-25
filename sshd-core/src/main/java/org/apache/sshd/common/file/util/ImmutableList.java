@@ -26,9 +26,9 @@ import java.util.AbstractList;
  */
 public class ImmutableList<T> extends AbstractList<T> {
 
-    final T[] data;
-    final int from;
-    final int to;
+    private final T[] data;
+    private final int from;
+    private final int to;
 
     public ImmutableList(T[] data) {
         this(data, 0, data.length);

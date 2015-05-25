@@ -62,7 +62,6 @@ public class DHGServer extends AbstractDHServerKeyExchange {
     }
 
     protected DHGServer(DHFactory factory) {
-        super();
         this.factory = factory;
     }
 

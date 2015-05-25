@@ -18,6 +18,8 @@
  */
 package org.apache.sshd.client.sftp;
 
+import static org.apache.sshd.common.sftp.SftpConstants.SSH_FX_LOCK_CONFLICT;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
@@ -29,27 +31,26 @@ import java.nio.channels.OverlappingFileLockException;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.client.SftpClient;
 import org.apache.sshd.client.SftpException;
 
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FX_LOCK_CONFLICT;
-
 public class SftpFileChannel extends FileChannel {
 
-    final SftpPath p;
-    final EnumSet<SftpClient.OpenMode> modes;
-    final SftpClient sftp;
-    final SftpClient.Handle handle;
-    final Object lock;
-    volatile long pos;
-    volatile Thread blockingThread;
+    private final SftpPath p;
+    private final Collection<SftpClient.OpenMode> modes;
+    private final SftpClient sftp;
+    private final SftpClient.Handle handle;
+    private final Object lock;
+    private volatile long pos;
+    private volatile Thread blockingThread;
 
-    public SftpFileChannel(SftpPath p, EnumSet<SftpClient.OpenMode> modes) throws IOException {
+    public SftpFileChannel(SftpPath p, Collection<SftpClient.OpenMode> modes) throws IOException {
         this.p = p;
         this.modes = modes;
         sftp = p.getFileSystem().getClient();
@@ -66,7 +67,7 @@ public class SftpFileChannel extends FileChannel {
     @Override
     public int read(ByteBuffer dst, long position) throws IOException {
         if (position < 0) {
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException("read(" + p + ") illegal position to read from: " + position);
         }
         return (int) doRead(Collections.singletonList(dst), position);
     }
@@ -127,7 +128,7 @@ public class SftpFileChannel extends FileChannel {
     @Override
     public int write(ByteBuffer src, long position) throws IOException {
         if (position < 0) {
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException("write(" + p + ") illegal position to write to: " + position);
         }
         return (int) doWrite(Collections.singletonList(src), position);
     }
@@ -182,7 +183,7 @@ public class SftpFileChannel extends FileChannel {
     @Override
     public FileChannel position(long newPosition) throws IOException {
         if (newPosition < 0) {
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException("position(" + p + ") illegal file channel position: " + newPosition);
         }
         ensureOpen();
         synchronized (lock) {
@@ -209,8 +210,8 @@ public class SftpFileChannel extends FileChannel {
 
     @Override
     public long transferTo(long position, long count, WritableByteChannel target) throws IOException {
-        if (position < 0 || count < 0) {
-            throw new IllegalArgumentException();
+        if ((position < 0) || (count < 0)) {
+            throw new IllegalArgumentException("transferTo(" + p + ") illegal position (" + position + ") or count (" + count + ")");
         }
         ensureOpen();
         synchronized (lock) {
@@ -218,10 +219,11 @@ public class SftpFileChannel extends FileChannel {
             boolean eof = false;
             long curPos = position;
             try {
-                long totalRead = 0;
                 beginBlocking();
 
-                byte[] buffer = new byte[32768];
+                int bufSize = (int) Math.min(count, 32768);
+                byte[] buffer = new byte[bufSize];
+                long totalRead = 0L;
                 while (totalRead < count) {
                     int read = sftp.read(handle, curPos, buffer, 0, buffer.length);
                     if (read > 0) {
@@ -245,8 +247,8 @@ public class SftpFileChannel extends FileChannel {
 
     @Override
     public long transferFrom(ReadableByteChannel src, long position, long count) throws IOException {
-        if (position < 0 || count < 0) {
-            throw new IllegalArgumentException();
+        if ((position < 0) || (count < 0)) {
+            throw new IllegalArgumentException("transferFrom(" + p + ") illegal position (" + position + ") or count (" + count + ")");
         }
         ensureOpen();
         synchronized (lock) {
@@ -278,7 +280,7 @@ public class SftpFileChannel extends FileChannel {
 
     @Override
     public MappedByteBuffer map(MapMode mode, long position, long size) throws IOException {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("map(" + p + ")[" + mode + "," + position + "," + size + "] N/A");
     }
 
     @Override
@@ -305,6 +307,7 @@ public class SftpFileChannel extends FileChannel {
                 return acquiredBy().isOpen() && valid.get();
             }
 
+            @SuppressWarnings("synthetic-access")
             @Override
             public void release() throws IOException {
                 if (valid.compareAndSet(true, false)) {
@@ -344,5 +347,10 @@ public class SftpFileChannel extends FileChannel {
         if (!isOpen()) {
             throw new ClosedChannelException();
         }
+    }
+
+    @Override
+    public String toString() {
+        return Objects.toString(p);
     }
 }

@@ -417,7 +417,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             while (true) {
                 int length = dis.readInt();
                 if (length < 5) {
-                    throw new IllegalArgumentException();
+                    throw new IllegalArgumentException("Bad length to read: " + length);
                 }
                 Buffer buffer = new ByteArrayBuffer(length + 4);
                 buffer.putInt(length);
@@ -425,7 +425,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                 while (nb > 0) {
                     int l = dis.read(buffer.array(), buffer.wpos(), nb);
                     if (l < 0) {
-                        throw new IllegalArgumentException();
+                        throw new IllegalArgumentException("Premature EOF while read length=" + length + " while remain=" + nb);
                     }
                     buffer.wpos(buffer.wpos() + l);
                     nb -= l;

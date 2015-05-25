@@ -20,6 +20,8 @@ package org.apache.sshd.common.file.util;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.nio.file.FileSystem;
 import java.nio.file.Path;
 import java.nio.file.ProviderMismatchException;
 import java.nio.file.WatchEvent;
@@ -35,9 +37,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
+import org.apache.sshd.common.util.GenericUtils;
+
 public abstract class BasePath<T extends BasePath<T, FS>, FS extends BaseFileSystem<T>> implements Path {
 
-    protected final FS fileSystem;
+    private final FS fileSystem;
     protected final String root;
     protected final ImmutableList<String> names;
 
@@ -51,6 +55,7 @@ public abstract class BasePath<T extends BasePath<T, FS>, FS extends BaseFileSys
     protected T asT() {
         return (T) this;
     }
+
     protected T create(String root, String... names) {
         return create(root, new ImmutableList<>(names));
     }
@@ -91,7 +96,7 @@ public abstract class BasePath<T extends BasePath<T, FS>, FS extends BaseFileSys
 
     @Override
     public T getParent() {
-        if (names.isEmpty() || names.size() == 1 && root == null) {
+        if (names.isEmpty() || ((names.size() == 1) && (root == null))) {
             return null;
         }
         return create(root, names.subList(0, names.size() - 1));
@@ -104,16 +109,18 @@ public abstract class BasePath<T extends BasePath<T, FS>, FS extends BaseFileSys
 
     @Override
     public T getName(int index) {
-        if (index < 0 || index >= names.size()) {
-            throw new IllegalArgumentException();
+        int maxIndex = getNameCount();
+        if ((index < 0) || (index >= maxIndex)) {
+            throw new IllegalArgumentException("Invalid name index " + index + " - not in range [0-" + maxIndex + "]");
         }
         return create(null, names.subList(index, index + 1));
     }
 
     @Override
     public T subpath(int beginIndex, int endIndex) {
-        if ((beginIndex < 0) || (beginIndex >= names.size()) || (endIndex > names.size()) || (beginIndex >= endIndex)) {
-            throw new IllegalArgumentException();
+        int maxIndex = getNameCount();
+        if ((beginIndex < 0) || (beginIndex >= maxIndex) || (endIndex > maxIndex) || (beginIndex >= endIndex)) {
+            throw new IllegalArgumentException("subpath(" + beginIndex + "," + endIndex + ") bad index range - allowed [0-" + maxIndex + "]");
         }
         return create(null, names.subList(beginIndex, endIndex));
     }
@@ -126,9 +133,9 @@ public abstract class BasePath<T extends BasePath<T, FS>, FS extends BaseFileSys
     public boolean startsWith(Path other) {
         T p1 = asT();
         T p2 = checkPath(other);
-        return p1.getFileSystem().equals(p2.getFileSystem())
-                && Objects.equals(p1.root, p2.root)
-                && startsWith(p1.names, p2.names);
+        return Objects.equals(p1.getFileSystem(), p2.getFileSystem())
+            && Objects.equals(p1.root, p2.root)
+            && startsWith(p1.names, p2.names);
     }
 
     @Override
@@ -156,7 +163,8 @@ public abstract class BasePath<T extends BasePath<T, FS>, FS extends BaseFileSys
     }
 
     private boolean isNormal() {
-        if (getNameCount() == 0 || getNameCount() == 1 && !isAbsolute()) {
+        int count = getNameCount();
+        if ((count == 0) || ((count == 1) && !isAbsolute())) {
             return true;
         }
         boolean foundNonParentName = isAbsolute(); // if there's a root, the path doesn't start with ..
@@ -225,13 +233,13 @@ public abstract class BasePath<T extends BasePath<T, FS>, FS extends BaseFileSys
 
     @Override
     public T resolve(String other) {
-        return resolve(getFileSystem().getPath(other));
+        return resolve(getFileSystem().getPath(other, GenericUtils.EMPTY_STRING_ARRAY));
     }
 
     @Override
     public Path resolveSibling(Path other) {
         if (other == null) {
-            throw new NullPointerException();
+            throw new NullPointerException("Missing sibling path argument");
         }
         T parent = getParent();
         return parent == null ? other : parent.resolve(other);
@@ -239,7 +247,7 @@ public abstract class BasePath<T extends BasePath<T, FS>, FS extends BaseFileSys
 
     @Override
     public Path resolveSibling(String other) {
-        return resolveSibling(getFileSystem().getPath(other));
+        return resolveSibling(getFileSystem().getPath(other, GenericUtils.EMPTY_STRING_ARRAY));
     }
 
     @Override
@@ -285,18 +293,24 @@ public abstract class BasePath<T extends BasePath<T, FS>, FS extends BaseFileSys
     }
 
     @Override
-    public File toFile() {
-        throw new UnsupportedOperationException();
+    public URI toUri() {
+        File file = toFile();
+        return file.toURI();
     }
 
     @Override
-    public WatchKey register(WatchService watcher, WatchEvent.Kind<?>[] events, WatchEvent.Modifier... modifiers) throws IOException {
-        throw new UnsupportedOperationException();
+    public File toFile() {
+        throw new UnsupportedOperationException("To file " + toAbsolutePath() + " N/A");
     }
 
     @Override
     public WatchKey register(WatchService watcher, WatchEvent.Kind<?>... events) throws IOException {
-        throw new UnsupportedOperationException();
+        return register(watcher, events, (WatchEvent.Modifier[]) null);
+    }
+
+    @Override
+    public WatchKey register(WatchService watcher, WatchEvent.Kind<?>[] events, WatchEvent.Modifier... modifiers) throws IOException {
+        throw new UnsupportedOperationException("Register to watch " + toAbsolutePath() + " N/A");
     }
 
     @Override
@@ -350,8 +364,10 @@ public abstract class BasePath<T extends BasePath<T, FS>, FS extends BaseFileSys
             throw new ProviderMismatchException();
         }
         T t = (T) paramPath;
-        if (t.fileSystem.provider() != this.fileSystem.provider()) {
-            throw new ProviderMismatchException();
+        
+        FileSystem fs = t.getFileSystem();
+        if (fs.provider() != this.fileSystem.provider()) {
+            throw new ProviderMismatchException("Mismatched providers for " + t);
         }
         return t;
     }

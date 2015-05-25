@@ -19,22 +19,16 @@
 package org.apache.sshd.client.sftp;
 
 import java.io.IOException;
-import java.net.URI;
+import java.nio.file.FileSystem;
 import java.nio.file.LinkOption;
+import java.nio.file.spi.FileSystemProvider;
 
 import org.apache.sshd.common.file.util.BasePath;
 import org.apache.sshd.common.file.util.ImmutableList;
 
 public class SftpPath extends BasePath<SftpPath, SftpFileSystem> {
-
     public SftpPath(SftpFileSystem fileSystem, String root, ImmutableList<String> names) {
         super(fileSystem, root, names);
-    }
-
-    @Override
-    public URI toUri() {
-        // TODO
-        return null;
     }
 
     @Override
@@ -44,8 +38,9 @@ public class SftpPath extends BasePath<SftpPath, SftpFileSystem> {
 //        }
         // TODO: handle links
         SftpPath absolute = toAbsolutePath();
-        fileSystem.provider().checkAccess(absolute);
+        FileSystem fs = getFileSystem();
+        FileSystemProvider provider = fs.provider();
+        provider.checkAccess(absolute);
         return absolute;
     }
-
 }
