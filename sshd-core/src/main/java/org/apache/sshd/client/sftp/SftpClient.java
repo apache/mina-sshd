@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.client;
+package org.apache.sshd.client.sftp;
 
 import static org.apache.sshd.common.sftp.SftpConstants.S_IFDIR;
 import static org.apache.sshd.common.sftp.SftpConstants.S_IFLNK;
@@ -27,11 +27,15 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.channels.Channel;
 import java.nio.file.attribute.FileTime;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
@@ -66,12 +70,18 @@ public interface SftpClient extends Closeable {
     public static class Handle {
         public final String id;
         public Handle(String id) {
-            this.id = id;
+            this.id = ValidateUtils.checkNotNullAndNotEmpty(id, "No handle ID", GenericUtils.EMPTY_OBJECT_ARRAY);
         }
         
         @Override
         public String toString() {
             return id;
+        }
+    }
+
+    public static abstract class CloseableHandle extends Handle implements Channel, Closeable {
+        protected CloseableHandle(String id) {
+            super(id);
         }
     }
 
@@ -115,7 +125,7 @@ public interface SftpClient extends Closeable {
         public Attributes owner(String owner) {
             flags.add(Attribute.OwnerGroup);
             this.owner = owner;
-            if (group == null) {
+            if (GenericUtils.isEmpty(group)) {
                 group = "GROUP@";
             }
             return this;
@@ -123,7 +133,7 @@ public interface SftpClient extends Closeable {
         public Attributes group(String group) {
             flags.add(Attribute.OwnerGroup);
             this.group = group;
-            if (owner == null) {
+            if (GenericUtils.isEmpty(owner)) {
                 owner = "OWNER@";
             }
             return this;
@@ -214,25 +224,29 @@ public interface SftpClient extends Closeable {
     // Low level API
     //
 
-    Handle open(String path, Collection<OpenMode> options) throws IOException;
+    CloseableHandle open(String path) throws IOException;
+    CloseableHandle open(String path, OpenMode ... options) throws IOException;
+    CloseableHandle open(String path, Collection<OpenMode> options) throws IOException;
 
     void close(Handle handle) throws IOException;
 
     void remove(String path) throws IOException;
 
     void rename(String oldPath, String newPath) throws IOException;
-
     void rename(String oldPath, String newPath, CopyMode... options) throws IOException;
+    void rename(String oldPath, String newPath, Collection<CopyMode> options) throws IOException;
 
+    int read(Handle handle, long fileOffset, byte[] dst) throws IOException;
     int read(Handle handle, long fileOffset, byte[] dst, int dstoff, int len) throws IOException;
 
+    void write(Handle handle, long fileOffset, byte[] src) throws IOException;
     void write(Handle handle, long fileOffset, byte[] src, int srcoff, int len) throws IOException;
 
     void mkdir(String path) throws IOException;
 
     void rmdir(String path) throws IOException;
 
-    Handle openDir(String path) throws IOException;
+    CloseableHandle openDir(String path) throws IOException;
 
     DirEntry[] readDir(Handle handle) throws IOException;
 
@@ -265,11 +279,11 @@ public interface SftpClient extends Closeable {
     Iterable<DirEntry> readDir(String path) throws IOException;
 
     InputStream read(String path) throws IOException;
-
+    InputStream read(String path, OpenMode ... mode) throws IOException;
     InputStream read(String path, Collection<OpenMode> mode) throws IOException;
 
     OutputStream write(String path) throws IOException;
-
+    OutputStream write(String path, OpenMode ... mode) throws IOException;
     OutputStream write(String path, Collection<OpenMode> mode) throws IOException;
 
 }

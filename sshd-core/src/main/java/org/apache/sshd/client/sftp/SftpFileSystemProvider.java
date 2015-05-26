@@ -75,14 +75,14 @@ import java.util.concurrent.TimeUnit;
 import org.apache.sshd.ClientSession;
 import org.apache.sshd.SshBuilder;
 import org.apache.sshd.SshClient;
-import org.apache.sshd.client.SftpClient;
-import org.apache.sshd.client.SftpClient.Attributes;
+import org.apache.sshd.client.sftp.SftpClient.Attributes;
 import org.apache.sshd.client.SftpException;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.config.SshConfigFileReader;
 import org.apache.sshd.common.sftp.SftpConstants;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.IoUtils;
+import org.apache.sshd.server.sftp.SftpSubsystemFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -107,7 +107,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
 
     @Override
     public String getScheme() {
-        return "sftp";
+        return SftpConstants.SFTP_SUBSYSTEM_NAME;
     }
 
     @Override

@@ -34,7 +34,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.ClientSession;
-import org.apache.sshd.client.SftpClient;
 import org.apache.sshd.common.file.util.BaseFileSystem;
 import org.apache.sshd.common.file.util.ImmutableList;
 
@@ -110,7 +109,7 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> {
         return defaultDir;
     }
 
-    private class Wrapper implements SftpClient {
+    private class Wrapper extends AbstractSftpClient {
 
         private final SftpClient delegate;
         private final AtomicInteger count = new AtomicInteger(1);
@@ -145,7 +144,7 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> {
         }
 
         @Override
-        public Handle open(String path, Collection<OpenMode> options) throws IOException {
+        public CloseableHandle open(String path, Collection<OpenMode> options) throws IOException {
             return delegate.open(path, options);
         }
 
@@ -160,12 +159,7 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> {
         }
 
         @Override
-        public void rename(String oldPath, String newPath) throws IOException {
-            delegate.rename(oldPath, newPath);
-        }
-
-        @Override
-        public void rename(String oldPath, String newPath, CopyMode... options) throws IOException {
+        public void rename(String oldPath, String newPath, Collection<CopyMode> options) throws IOException {
             delegate.rename(oldPath, newPath, options);
         }
 
@@ -190,7 +184,7 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> {
         }
 
         @Override
-        public Handle openDir(String path) throws IOException {
+        public CloseableHandle openDir(String path) throws IOException {
             return delegate.openDir(path);
         }
 

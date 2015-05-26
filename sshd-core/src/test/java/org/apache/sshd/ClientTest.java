@@ -66,6 +66,7 @@ import org.apache.sshd.common.io.nio2.Nio2Session;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.session.ConnectionService;
+import org.apache.sshd.common.sftp.SftpConstants;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -904,7 +905,7 @@ public class ClientTest extends BaseTestSupport {
             session.auth().verify(5L, TimeUnit.SECONDS);
             session.switchToNoneCipher().await();
     
-            try(ClientChannel channel = session.createSubsystemChannel("sftp")) {
+            try(ClientChannel channel = session.createSubsystemChannel(SftpConstants.SFTP_SUBSYSTEM_NAME)) {
                 channel.open().verify(5L, TimeUnit.SECONDS);
             }
         } finally {

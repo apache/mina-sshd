@@ -46,6 +46,7 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.Session;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.file.root.RootedFileSystemProvider;
+import org.apache.sshd.common.sftp.SftpConstants;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.command.ScpCommandFactory;
@@ -99,7 +100,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
     @Test
     public void testFileSystem() throws IOException {
         Path targetPath = detectTargetFolder().toPath();
-        Path lclSftp = Utils.resolve(targetPath, "sftp", getClass().getSimpleName());
+        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
         Utils.deleteRecursive(lclSftp);
 
         try(FileSystem fs = FileSystems.newFileSystem(URI.create("sftp://x:x@localhost:" + port + "/"), Collections.<String,Object>emptyMap())) {
@@ -208,7 +209,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
     @Test
     public void testAttributes() throws IOException {
         Path targetPath = detectTargetFolder().toPath();
-        Path lclSftp = Utils.resolve(targetPath, "sftp", getClass().getSimpleName());
+        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
         Utils.deleteRecursive(lclSftp);
 
         try (FileSystem fs = FileSystems.newFileSystem(URI.create("sftp://x:x@localhost:" + port + "/"), null)) {

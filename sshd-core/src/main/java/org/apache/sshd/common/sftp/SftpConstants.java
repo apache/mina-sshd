@@ -22,6 +22,7 @@ package org.apache.sshd.common.sftp;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class SftpConstants {
+    public static String SFTP_SUBSYSTEM_NAME = "sftp";
 
     public static final int SSH_FXP_INIT =             1;
     public static final int SSH_FXP_VERSION =          2;
@@ -219,5 +220,4 @@ public class SftpConstants {
     public static int SFTP_V4 = 4;
     public static int SFTP_V5 = 5;
     public static int SFTP_V6 = 6;
-
 }

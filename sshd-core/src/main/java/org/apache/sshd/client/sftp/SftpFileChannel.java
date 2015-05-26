@@ -37,7 +37,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.apache.sshd.client.SftpClient;
 import org.apache.sshd.client.SftpException;
 
 public class SftpFileChannel extends FileChannel {
