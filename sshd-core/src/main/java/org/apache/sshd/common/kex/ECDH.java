@@ -31,7 +31,10 @@ import javax.crypto.KeyAgreement;
 
 import org.apache.sshd.common.Digest;
 import org.apache.sshd.common.cipher.ECCurves;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.SecurityUtils;
+import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.buffer.BufferUtils;
 
 /**
  * Elliptic Curve Diffie-Hellman key agreement.
@@ -60,6 +63,7 @@ public class ECDH extends AbstractDH {
     @Override
     public byte[] getE() throws Exception {
         if (e == null) {
+            ValidateUtils.checkNotNull(params, "No ECParameterSpec(s)", GenericUtils.EMPTY_OBJECT_ARRAY);
             myKpairGen.initialize(params);
             KeyPair myKpair = myKpairGen.generateKeyPair();
             myKeyAgree.init(myKpair.getPrivate());
@@ -71,6 +75,7 @@ public class ECDH extends AbstractDH {
 
     @Override
     protected byte[] calculateK() throws Exception {
+        ValidateUtils.checkNotNull(params, "No ECParameterSpec(s)", GenericUtils.EMPTY_OBJECT_ARRAY);
         KeyFactory myKeyFac = SecurityUtils.getKeyFactory("EC");
         ECPublicKeySpec keySpec = new ECPublicKeySpec(f, params);
         PublicKey yourPubKey = myKeyFac.generatePublic(keySpec);
@@ -84,11 +89,15 @@ public class ECDH extends AbstractDH {
 
     @Override
     public void setF(byte[] f) {
-        this.f = ECCurves.decodeECPoint(f, params.getCurve());
+        ValidateUtils.checkNotNull(params, "No ECParameterSpec(s)", GenericUtils.EMPTY_OBJECT_ARRAY);
+        if ((this.f = ECCurves.decodeECPoint(f, params.getCurve())) == null) {
+            throw new IllegalArgumentException("No EC point decoded for F=" + BufferUtils.printHex(':', f));
+        }
     }
 
     @Override
     public Digest getHash() throws Exception {
+        ValidateUtils.checkNotNull(params, "No ECParameterSpec(s)", GenericUtils.EMPTY_OBJECT_ARRAY);
         return ECCurves.getDigestForParams(params);
     }
 }

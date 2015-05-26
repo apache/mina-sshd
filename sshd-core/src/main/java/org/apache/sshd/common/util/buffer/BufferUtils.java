@@ -18,6 +18,8 @@
  */
 package org.apache.sshd.common.util.buffer;
 
+import org.apache.sshd.common.util.GenericUtils;
+
 /**
  * TODO Add javadoc
  *
@@ -25,38 +27,55 @@ package org.apache.sshd.common.util.buffer;
  */
 public class BufferUtils {
 
-    public static String printHex(byte[] array) {
-        return printHex(array, 0, array.length);
+    public static String printHex(byte ... array) {
+        return printHex(array, 0, GenericUtils.length(array));
+    }
+
+    public static String printHex(char sep, byte ... array) {
+        return printHex(array, 0, GenericUtils.length(array), sep);
     }
 
     public static String printHex(byte[] array, int offset, int len) {
         return printHex(array, offset, len, ' ');
     }
 
+    public static final String  HEX_DIGITS="0123456789abcdef";
+
     public static String printHex(byte[] array, int offset, int len, char sep) {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < len; i++) {
-            byte b = array[offset + i];
+        if (len <= 0) {
+            return "";
+        }
+
+        StringBuilder sb = new StringBuilder(len * 3 /* 2 HEX + sep */);
+        for (int curOffset = offset, maxOffset = offset + len; curOffset < maxOffset; curOffset++) {
+            byte b = array[curOffset];
             if (sb.length() > 0) {
                 sb.append(sep);
             }
-            sb.append(digits[(b >> 4) & 0x0F]);
-            sb.append(digits[b & 0x0F]);
+            sb.append(HEX_DIGITS.charAt((b >> 4) & 0x0F));
+            sb.append(HEX_DIGITS.charAt(b & 0x0F));
         }
+
         return sb.toString();
     }
 
     public static boolean equals(byte[] a1, byte[] a2) {
-        if (a1.length != a2.length) {
+        int len1 = GenericUtils.length(a1);
+        int len2 = GenericUtils.length(a2);
+        if (len1 != len2) {
             return false;
+        } else {
+            return equals(a1, 0, a2, 0, len1);
         }
-        return equals(a1, 0, a2, 0, a1.length);
     }
 
     public static boolean equals(byte[] a1, int a1Offset, byte[] a2, int a2Offset, int length) {
-        if (a1.length < a1Offset + length || a2.length < a2Offset + length) {
+        int len1 = GenericUtils.length(a1);
+        int len2 = GenericUtils.length(a2);
+        if ((len1 < (a1Offset + length)) || (len2 < (a2Offset + length))) {
             return false;
         }
+
         while (length-- > 0) {
             if (a1[a1Offset++] != a2[a2Offset++]) {
                 return false;
@@ -64,12 +83,6 @@ public class BufferUtils {
         }
         return true;
     }
-
-    final static char[] digits = {
-	    '0' , '1' , '2' , '3' , '4' , '5' ,
-	    '6' , '7' , '8' , '9' , 'a' , 'b' ,
-	    'c' , 'd' , 'e' , 'f'
-    };
 
     public static final int getNextPowerOf2(int i) {
         int j = 1;

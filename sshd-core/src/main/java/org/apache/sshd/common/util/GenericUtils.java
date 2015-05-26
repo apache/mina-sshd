@@ -181,6 +181,14 @@ public class GenericUtils {
         }
     }
 
+    public static final int length(byte ... a) {
+        if (a == null) {
+            return 0;
+        } else {
+            return a.length;
+        }
+    }
+
     @SafeVarargs
     public static final <T> int length(T ... a) {
         if (a == null) {

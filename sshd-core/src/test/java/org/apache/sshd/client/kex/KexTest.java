@@ -53,6 +53,10 @@ public class KexTest extends BaseTestSupport {
     private SshServer sshd;
     private int port;
 
+    public KexTest() {
+        super();
+    }
+
     @Before
     public void setUp() throws Exception {
         sshd = SshServer.setUpDefaultServer();
@@ -65,7 +69,9 @@ public class KexTest extends BaseTestSupport {
 
     @After
     public void tearDown() throws Exception {
-        sshd.stop(true);
+        if (sshd != null) {
+            sshd.stop(true);
+        }
     }
 
     @Test
