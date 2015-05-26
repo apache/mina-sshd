@@ -185,8 +185,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
 
     @Override
     public FileChannel newFileChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
-        final SftpPath p = toSftpPath(path);
-        final EnumSet<SftpClient.OpenMode> modes = EnumSet.noneOf(SftpClient.OpenMode.class);
+        Collection<SftpClient.OpenMode> modes = EnumSet.noneOf(SftpClient.OpenMode.class);
         for (OpenOption option : options) {
             if (option == StandardOpenOption.READ) {
                 modes.add(SftpClient.OpenMode.Read);
@@ -201,8 +200,16 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             } else if (option == StandardOpenOption.CREATE_NEW) {
                 modes.add(SftpClient.OpenMode.Create);
                 modes.add(SftpClient.OpenMode.Exclusive);
+            } else if (option == StandardOpenOption.SPARSE) {
+                /*
+                 * As per the Javadoc:
+                 * 
+                 *      The option is ignored when the file system does not
+                 *  support the creation of sparse files
+                 */
+                continue;
             } else {
-                throw new IllegalArgumentException("Unsupported open option " + option);
+                throw new IllegalArgumentException("newFileChannel(" + path + ") unsupported open option: " + option);
             }
         }
         if (modes.isEmpty()) {
@@ -210,7 +217,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             modes.add(SftpClient.OpenMode.Write);
         }
         // TODO: attrs
-        return new SftpFileChannel(p, modes);
+        return new SftpFileChannel(toSftpPath(path), modes);
     }
 
     @Override
@@ -467,26 +474,29 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         SftpPath p = toSftpPath(path);
         boolean w = false;
         boolean x = false;
-        for (AccessMode mode : modes) {
-            switch (mode) {
-                case READ:
-                    break;
-                case WRITE:
-                    w = true;
-                    break;
-                case EXECUTE:
-                    x = true;
-                    break;
-                default:
-                    throw new UnsupportedOperationException("Unsupported mode: " + mode);
+        if (GenericUtils.length(modes) > 0) {
+            for (AccessMode mode : modes) {
+                switch (mode) {
+                    case READ:
+                        break;
+                    case WRITE:
+                        w = true;
+                        break;
+                    case EXECUTE:
+                        x = true;
+                        break;
+                    default:
+                        throw new UnsupportedOperationException("Unsupported mode: " + mode);
+                }
             }
         }
+
         BasicFileAttributes attrs = getFileAttributeView(p, BasicFileAttributeView.class).readAttributes();
-        if (attrs == null && !(p.isAbsolute() && p.getNameCount() == 0)) {
-            throw new NoSuchFileException(toString());
+        if ((attrs == null) && !(p.isAbsolute() && p.getNameCount() == 0)) {
+            throw new NoSuchFileException(path.toString());
         }
-        if (x || w && p.getFileSystem().isReadOnly()) {
-            throw new AccessDeniedException(toString());
+        if (x || (w && p.getFileSystem().isReadOnly())) {
+            throw new AccessDeniedException(path.toString());
         }
     }
 
