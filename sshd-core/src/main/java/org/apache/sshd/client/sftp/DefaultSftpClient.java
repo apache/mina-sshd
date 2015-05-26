@@ -269,7 +269,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
                 try {
                     messages.wait();
                 } catch (InterruptedException e) {
-                    throw (IOException) new InterruptedIOException().initCause(e);
+                    throw (IOException) new InterruptedIOException("Interrupted while waiting for messages").initCause(e);
                 }
             }
         }

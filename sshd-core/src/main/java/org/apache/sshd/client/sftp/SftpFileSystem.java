@@ -84,7 +84,9 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> {
 
     @Override
     public void close() throws IOException {
-        session.close(true);
+        if (isOpen()) {
+            session.close(true);
+        }
     }
 
     @Override

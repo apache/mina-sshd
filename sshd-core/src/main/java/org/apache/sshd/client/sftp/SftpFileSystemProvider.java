@@ -75,14 +75,14 @@ import java.util.concurrent.TimeUnit;
 import org.apache.sshd.ClientSession;
 import org.apache.sshd.SshBuilder;
 import org.apache.sshd.SshClient;
-import org.apache.sshd.client.sftp.SftpClient.Attributes;
 import org.apache.sshd.client.SftpException;
+import org.apache.sshd.client.sftp.SftpClient.Attributes;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.config.SshConfigFileReader;
 import org.apache.sshd.common.sftp.SftpConstants;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.IoUtils;
-import org.apache.sshd.server.sftp.SftpSubsystemFactory;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -118,27 +118,46 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             if (fileSystem != null) {
                 throw new FileSystemAlreadyExistsException(authority);
             }
-            String host = uri.getHost();
-            String userInfo = uri.getUserInfo();
-            if (host == null) {
-                throw new IllegalArgumentException("Host not provided");
+            String host = ValidateUtils.checkNotNullAndNotEmpty(uri.getHost(), "Host not provided", GenericUtils.EMPTY_OBJECT_ARRAY);
+            String userInfo = ValidateUtils.checkNotNullAndNotEmpty(uri.getUserInfo(), "UserInfo not provided", GenericUtils.EMPTY_OBJECT_ARRAY);
+            String[] ui = GenericUtils.split(userInfo, ':');
+            int port = uri.getPort();
+            if (port <= 0) {
+                port = SshConfigFileReader.DEFAULT_PORT;
             }
-            if (userInfo == null) {
-                throw new IllegalArgumentException("UserInfo not provided");
-            }
-            String[] ui = userInfo.split(":");
-            ClientSession session;
+
+            ClientSession session=null;
             try {
-                session = client.connect(ui[0], host, uri.getPort() > 0 ? uri.getPort() : SshConfigFileReader.DEFAULT_PORT)
-                        .await().getSession();
-            } catch (InterruptedException e) {
-                throw new InterruptedIOException();
+                session = client.connect(ui[0], host, port).await().getSession();
+                session.addPasswordIdentity(ui[1]);
+                session.auth().verify();
+                fileSystem = new SftpFileSystem(this, session);
+                fileSystems.put(authority, fileSystem);
+                return fileSystem;
+            } catch(Exception e) {
+                if (session != null) {
+                    try {
+                        session.close();
+                    } catch(IOException t) {
+                        if (log.isDebugEnabled()) {
+                            log.debug("Failed (" + t.getClass().getSimpleName() + ")"
+                                    + " to close session for new file system on " + host + ":" + port
+                                    + " due to " + e.getClass().getSimpleName() + "[" + e.getMessage() + "]"
+                                    + ": " + t.getMessage());
+                        }
+                    }
+                }
+                
+                if (e instanceof IOException) {
+                    throw (IOException) e;
+                } else if (e instanceof InterruptedException) {
+                    throw (IOException) new InterruptedIOException("Interrupted while waiting for connection to " + host + ":" + port).initCause(e);
+                } else if (e instanceof RuntimeException) {
+                    throw (RuntimeException) e;
+                } else {
+                    throw new IOException(e);
+                }
             }
-            session.addPasswordIdentity(ui[1]);
-            session.auth().verify();
-            fileSystem = new SftpFileSystem(this, session);
-            fileSystems.put(authority, fileSystem);
-            return fileSystem;
         }
     }
 

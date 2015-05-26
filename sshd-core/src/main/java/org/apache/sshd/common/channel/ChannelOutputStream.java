@@ -98,7 +98,7 @@ public class ChannelOutputStream extends OutputStream implements Channel {
                         closed = true;
                         throw e;
                     } catch (InterruptedException e) {
-                        throw (IOException)new InterruptedIOException().initCause(e);
+                        throw (IOException)new InterruptedIOException("Interrupted while waiting for remote space").initCause(e);
                     }
                 }
                 continue;

@@ -65,7 +65,7 @@ public class AgentForwardedChannel extends AbstractClientChannel {
                 }
                 return messages.poll();
             } catch (InterruptedException e) {
-                throw (IOException) new InterruptedIOException().initCause(e);
+                throw (IOException) new InterruptedIOException("Interrupted while polling for messages").initCause(e);
             }
         }
     }

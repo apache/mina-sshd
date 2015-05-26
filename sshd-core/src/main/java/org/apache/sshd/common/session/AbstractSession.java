@@ -598,7 +598,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
                     return requestResult.get();
                 }
             } catch (InterruptedException e) {
-                throw (InterruptedIOException) new InterruptedIOException().initCause(e);
+                throw (InterruptedIOException) new InterruptedIOException("Interrupted while waiting for request result").initCause(e);
             }
         }
     }

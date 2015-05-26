@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.client;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -31,6 +32,7 @@ import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -38,9 +40,11 @@ import java.util.concurrent.TimeUnit;
 import org.apache.sshd.ClientSession;
 import org.apache.sshd.SshClient;
 import org.apache.sshd.SshServer;
+import org.apache.sshd.client.scp.ScpClient;
 import org.apache.sshd.common.Session;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.file.root.RootedFileSystemProvider;
+import org.apache.sshd.common.scp.ScpHelper;
 import org.apache.sshd.common.scp.ScpTransferEventListener;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.server.command.ScpCommandFactory;
@@ -51,7 +55,6 @@ import org.apache.sshd.util.JSchLogger;
 import org.apache.sshd.util.SimpleUserInfo;
 import org.apache.sshd.util.Utils;
 import org.junit.After;
-import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -141,7 +144,7 @@ public class ScpTest extends BaseTestSupport {
                     ScpClient scp = createScpClient(session);
                     Path targetPath = detectTargetFolder().toPath();
                     Path parentPath = targetPath.getParent();
-                    Path scpRoot = Utils.resolve(targetPath, "scp", getClass().getSimpleName());
+                    Path scpRoot = Utils.resolve(targetPath, ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName());
                     Utils.deleteRecursive(scpRoot);
 
                     Path localDir = assertHierarchyTargetFolderExists(scpRoot.resolve("local"));
@@ -186,7 +189,7 @@ public class ScpTest extends BaseTestSupport {
 
                     Path targetPath = detectTargetFolder().toPath();
                     Path parentPath = targetPath.getParent();
-                    Path scpRoot = Utils.resolve(targetPath, "scp", getClass().getSimpleName());
+                    Path scpRoot = Utils.resolve(targetPath, ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName());
                     Utils.deleteRecursive(scpRoot);
 
                     Path localDir = assertHierarchyTargetFolderExists(scpRoot.resolve("local"));
@@ -210,7 +213,7 @@ public class ScpTest extends BaseTestSupport {
     @Test
     public void testScpUploadZeroLengthFile() throws Exception {
         Path targetPath = detectTargetFolder().toPath();
-        Path scpRoot = Utils.resolve(targetPath, "scp", getClass().getSimpleName());
+        Path scpRoot = Utils.resolve(targetPath, ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName());
         Path localDir = assertHierarchyTargetFolderExists(scpRoot.resolve("local"));
         Path remoteDir = assertHierarchyTargetFolderExists(scpRoot.resolve("remote"));
         Path zeroLocal = localDir.resolve(getCurrentTestName());
@@ -249,7 +252,7 @@ public class ScpTest extends BaseTestSupport {
     @Test
     public void testScpDownloadZeroLengthFile() throws Exception {
         Path targetPath = detectTargetFolder().toPath();
-        Path scpRoot = Utils.resolve(targetPath, "scp", getClass().getSimpleName());
+        Path scpRoot = Utils.resolve(targetPath, ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName());
         Path localDir = assertHierarchyTargetFolderExists(scpRoot.resolve("local"));
         Path remoteDir = assertHierarchyTargetFolderExists(scpRoot.resolve("remote"));
         Path zeroLocal = localDir.resolve(getCurrentTestName());
@@ -299,7 +302,7 @@ public class ScpTest extends BaseTestSupport {
 
                     Path targetPath = detectTargetFolder().toPath();
                     Path parentPath = targetPath.getParent();
-                    Path scpRoot = Utils.resolve(targetPath, "scp", getClass().getSimpleName());
+                    Path scpRoot = Utils.resolve(targetPath, ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName());
                     Utils.deleteRecursive(scpRoot);
 
                     Path localDir = assertHierarchyTargetFolderExists(scpRoot.resolve("local"));
@@ -350,7 +353,7 @@ public class ScpTest extends BaseTestSupport {
                     ScpClient scp = createScpClient(session);
                     Path targetPath = detectTargetFolder().toPath();
                     Path parentPath = targetPath.getParent();
-                    Path scpRoot = Utils.resolve(targetPath, "scp", getClass().getSimpleName());
+                    Path scpRoot = Utils.resolve(targetPath, ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName());
                     Utils.deleteRecursive(scpRoot);
 
                     Path localDir = assertHierarchyTargetFolderExists(scpRoot.resolve("local"));
@@ -432,7 +435,7 @@ public class ScpTest extends BaseTestSupport {
                 ScpClient scp = createScpClient(session);
                 Path targetPath = detectTargetFolder().toPath();
                 Path parentPath = targetPath.getParent();
-                Path scpRoot = Utils.resolve(targetPath, "scp", getClass().getSimpleName());
+                Path scpRoot = Utils.resolve(targetPath, ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName());
                 Utils.deleteRecursive(scpRoot);
 
                 Path localDir = scpRoot.resolve("local");
@@ -472,7 +475,7 @@ public class ScpTest extends BaseTestSupport {
                 ScpClient scp = createScpClient(session);
                 Path targetPath = detectTargetFolder().toPath();
                 Path parentPath = targetPath.getParent();
-                Path scpRoot = Utils.resolve(targetPath, "scp", getClass().getSimpleName());
+                Path scpRoot = Utils.resolve(targetPath, ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName());
                 Utils.deleteRecursive(scpRoot);
 
                 Path localDir = assertHierarchyTargetFolderExists(scpRoot.resolve("local"));
@@ -510,7 +513,7 @@ public class ScpTest extends BaseTestSupport {
                 ScpClient scp = createScpClient(session);
                 Path targetPath = detectTargetFolder().toPath();
                 Path parentPath = targetPath.getParent();
-                Path scpRoot = Utils.resolve(targetPath, "scp", getClass().getSimpleName());
+                Path scpRoot = Utils.resolve(targetPath, ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName());
                 Utils.deleteRecursive(scpRoot);
 
                 Path localDir = scpRoot.resolve("local");
@@ -547,12 +550,8 @@ public class ScpTest extends BaseTestSupport {
 
     @Test
     public void testScpNativePreserveAttributes() throws Exception {
-        // Ignore this test if running a Windows system
-        Assume.assumeFalse("Skip test for Windows", OsUtils.isWin32());
-
         try (SshClient client = SshClient.setUpDefaultClient()) {
             client.start();
-
 
             try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
                 session.addPasswordIdentity(getCurrentTestName());
@@ -561,12 +560,13 @@ public class ScpTest extends BaseTestSupport {
                 ScpClient scp = createScpClient(session);
                 Path targetPath = detectTargetFolder().toPath();
                 Path parentPath = targetPath.getParent();
-                Path scpRoot = Utils.resolve(targetPath, "scp", getClass().getSimpleName());
+                Path scpRoot = Utils.resolve(targetPath, ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName());
                 Utils.deleteRecursive(scpRoot);
 
                 Path localDir = scpRoot.resolve("local");
                 Path localSubDir = assertHierarchyTargetFolderExists(localDir.resolve("dir"));
-                long lastMod = Files.getLastModifiedTime(localSubDir).toMillis() - TimeUnit.DAYS.toMillis(1);
+                // convert everything to seconds since this is the SCP timestamps granularity
+                long lastMod = TimeUnit.MILLISECONDS.toSeconds(Files.getLastModifiedTime(localSubDir).toMillis() - TimeUnit.DAYS.toMillis(1));
                 Path local1 = localDir.resolve(getCurrentTestName() + "-1.txt");
                 byte[] data = writeFile(local1, getCurrentTestName() + "\n");
                 File lclFile1 = local1.toFile();
@@ -587,26 +587,74 @@ public class ScpTest extends BaseTestSupport {
                 assertFileLength(remote1, data.length, 5000);
                 
                 File remFile1 = remote1.toFile();
-                assertEquals("Mismatched uploaded last-modified time for " + remFile1, lastMod, remFile1.lastModified());
+                assertLastModifiedTimeEquals(remFile1, lastMod);
 
                 Path remoteSubDir = remoteDir.resolve(localSubDir.getFileName());
                 Path remoteSub2 = remoteSubDir.resolve(localSub2.getFileName());
                 assertFileLength(remoteSub2, data.length, 5000);
 
                 File remSubFile2 = remoteSub2.toFile();
-                assertEquals("Mismatched uploaded last-modified time for " + remSubFile2, lastMod, remSubFile2.lastModified());
+                assertLastModifiedTimeEquals(remSubFile2, lastMod);
 
                 Utils.deleteRecursive(localDir);
                 Files.createDirectories(localDir);
 
                 scp.download(remotePath + "/*", localDir, ScpClient.Option.Recursive, ScpClient.Option.PreserveAttributes);
                 assertFileLength(local1, data.length, 5000);
-                assertEquals("Mismatched downloaded last-modified time for " + lclFile1, lastMod, lclFile1.lastModified());
+                assertLastModifiedTimeEquals(lclFile1, lastMod);
                 assertFileLength(localSub2, data.length, 5000);
-                assertEquals("Mismatched downloaded last-modified time for " + lclSubFile2, lastMod, lclSubFile2.lastModified());
+                assertLastModifiedTimeEquals(lclSubFile2, lastMod);
             } finally {
                 client.stop();
             }
+        }
+    }
+
+    @Test
+    public void testStreamsUploadAndDownload() throws Exception {
+        try (SshClient client = SshClient.setUpDefaultClient()) {
+            client.start();
+
+            try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+                session.addPasswordIdentity(getCurrentTestName());
+                session.auth().verify(5L, TimeUnit.SECONDS);
+
+                ScpClient scp = createScpClient(session);
+                Path targetPath = detectTargetFolder().toPath();
+                Path parentPath = targetPath.getParent();
+                Path scpRoot = Utils.resolve(targetPath, ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName());
+                Utils.deleteRecursive(scpRoot);
+
+                Path remoteDir = assertHierarchyTargetFolderExists(scpRoot.resolve("remote"));
+                Path remoteFile = remoteDir.resolve(getCurrentTestName() + ".txt");
+                String remotePath = Utils.resolveRelativeRemotePath(parentPath, remoteFile);
+                byte[] data = (getClass().getName() + "#" + getCurrentTestName()).getBytes();
+                scp.upload(data, remotePath, EnumSet.allOf(PosixFilePermission.class), null);
+
+                byte[] uploaded = Files.readAllBytes(remoteFile);
+                assertArrayEquals("Mismatched uploaded data", data, uploaded);
+
+                byte[] downloaded = scp.downloadBytes(remotePath);
+                assertArrayEquals("Mismatched downloaded data", uploaded, downloaded);
+            } finally {
+                client.stop();
+            }
+        }
+    }
+
+    // see http://stackoverflow.com/questions/2717936/file-createnewfile-creates-files-with-last-modified-time-before-actual-creatio
+    // See https://msdn.microsoft.com/en-us/library/ms724290(VS.85).aspx
+    // The NTFS file system delays updates to the last access time for a file by up to 1 hour after the last access
+    private static void assertLastModifiedTimeEquals(File file, long expectedSeconds) {
+        long actualSeconds = TimeUnit.MILLISECONDS.toSeconds(file.lastModified());
+        if (OsUtils.isWin32()) {
+            if (expectedSeconds != actualSeconds) {
+                System.err.append("Mismatched last modified time for ").append(file.getAbsolutePath())
+                          .append(" - expected=").append(String.valueOf(expectedSeconds))
+                          .append(", actual=").println(actualSeconds);
+            }
+        } else {
+            assertEquals("Mismatched last modified time for " + file.getAbsolutePath(), expectedSeconds, actualSeconds);
         }
     }
 
@@ -643,7 +691,7 @@ public class ScpTest extends BaseTestSupport {
             sendFile(unixDir, fileName, data);
             assertFileLength(target, data.length(), 5000);
     
-            sendFileError("target", "scp", data);
+            sendFileError("target", ScpHelper.SCP_COMMAND_PREFIX, data);
     
             readFileError(unixDir);
     
@@ -653,7 +701,7 @@ public class ScpTest extends BaseTestSupport {
             target.delete();
             root.delete();
     
-            sendDir("target", "scp", fileName, data);
+            sendDir("target", ScpHelper.SCP_COMMAND_PREFIX, fileName, data);
             assertFileLength(target, data.length(), 5000);
         } finally {
             session.disconnect();

@@ -134,7 +134,7 @@ public class AgentClient extends AbstractAgentProxy implements Runnable {
                 }
                 return messages.poll();
             } catch (InterruptedException e) {
-                throw (IOException) new InterruptedIOException().initCause(e);
+                throw (IOException) new InterruptedIOException(authSocket + ": Interrupted while polling for messages").initCause(e);
             }
         }
     }

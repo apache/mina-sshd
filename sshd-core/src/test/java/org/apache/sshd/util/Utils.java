@@ -116,7 +116,15 @@ public class Utils {
             }
         }
 
-        file.delete();
+        // seems that if a file is not writable it cannot be deleted
+        if (!file.canWrite()) {
+            file.setWritable(true, false);
+        }
+        
+        if (!file.delete()) {
+            System.err.append("Failed to delete ").println(file.getAbsolutePath());
+        }
+
         return file;
     }
     
@@ -142,6 +150,10 @@ public class Utils {
         }
         
         try {
+            // seems that if a file is not writable it cannot be deleted
+            if (!Files.isWritable(path)) {
+                path.toFile().setWritable(true, false);
+            }
             Files.delete(path);
         } catch(IOException e) {
             // same logic as deleteRecursive(File) which does not check if deletion succeeded

@@ -21,10 +21,10 @@ package org.apache.sshd.common.scp;
 import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
 import java.io.File;
-import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.StreamCorruptedException;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystem;
@@ -41,16 +41,23 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.file.util.MockPath;
 import org.apache.sshd.common.scp.ScpTransferEventListener.FileOperation;
 import org.apache.sshd.common.util.AbstractLoggingBean;
 import org.apache.sshd.common.util.DirectoryScanner;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.IoUtils;
+import org.apache.sshd.common.util.io.LimitInputStream;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ScpHelper extends AbstractLoggingBean {
+    /**
+     * Command prefix used to identify SCP commands
+     */
+    public static final String SCP_COMMAND_PREFIX = "scp";
+
     public static final int OK = 0;
     public static final int WARNING = 1;
     public static final int ERROR = 2;
@@ -91,46 +98,98 @@ public class ScpHelper extends AbstractLoggingBean {
         this.listener = (eventListener == null) ? ScpTransferEventListener.EMPTY : eventListener;
     }
 
-    public void receive(Path path, boolean recursive, boolean shouldBeDir, boolean preserve, int bufferSize) throws IOException {
+    public void receiveFileStream(final OutputStream local, final int bufferSize) throws IOException {
+        receive(new ScpReceiveLineHandler() {
+            @Override
+            public void process(final String line, boolean isDir, ScpTimestamp timestamp) throws IOException {
+                if (isDir) {
+                    throw new StreamCorruptedException("Cannot download a directory into a file stream: " + line);
+                }
+
+                final Path path = new MockPath(line);
+                receiveStream(line, new ScpTargetStreamResolver() {
+                    @SuppressWarnings("synthetic-access")
+                    @Override
+                    public OutputStream resolveTargetStream(String name, long length, Set<PosixFilePermission> perms) throws IOException {
+                        if (log.isDebugEnabled()) {
+                            log.debug("resolveTargetStream(" + name + ")[" + perms + "][len=" + length + "] started local stream download");
+                        }
+                        return local;
+                    }
+
+                    @Override
+                    public Path getEventListenerFilePath() {
+                        return path;
+                    }
+
+                    @Override
+                    @SuppressWarnings("synthetic-access")
+                    public void postProcessReceivedData(String name, boolean preserve, Set<PosixFilePermission> perms, ScpTimestamp time) throws IOException {
+                        if (log.isDebugEnabled()) {
+                            log.debug("postProcessReceivedData(" + name + ")[" + perms + "][time=" + time + "] ended local stream download");
+                        }
+                    }
+
+                    @Override
+                    public String toString() {
+                        return line;
+                    }
+                }, timestamp, false, bufferSize);
+            }
+        });
+    }
+
+    public void receive(final Path path, final boolean recursive, boolean shouldBeDir, final boolean preserve, final int bufferSize) throws IOException {
         if (shouldBeDir) {
-            LinkOption[]    options=IoUtils.getLinkOptions(false);
-            Boolean         status=IoUtils.checkFileExists(path, options);
+            LinkOption[] options = IoUtils.getLinkOptions(false);
+            Boolean      status = IoUtils.checkFileExists(path, options);
             if (status == null) {
-                throw new SshException("Target directory " + path.toString() + " is most like inaccessible");
+                throw new SshException("Target directory " + path + " is most like inaccessible");
             }
             if (!status.booleanValue()) {
-                throw new SshException("Target directory " + path.toString() + " does not exist");
+                throw new SshException("Target directory " + path + " does not exist");
             }
             if (!Files.isDirectory(path, options)) {
-                throw new SshException("Target directory " + path.toString() + " is not a directory");
+                throw new SshException("Target directory " + path + " is not a directory");
             }
         }
 
+        receive(new ScpReceiveLineHandler() {
+            @Override
+            public void process(String line, boolean isDir, ScpTimestamp time) throws IOException {
+                if (recursive && isDir) {
+                    receiveDir(line, path, time, preserve, bufferSize);
+                } else {
+                    receiveFile(line, path, time, preserve, bufferSize);
+                }
+            }
+        });
+    }
+
+    protected void receive(ScpReceiveLineHandler handler) throws IOException {
         ack();
-        long[] time = null;
-        for (;;)
-        {
+        ScpTimestamp time = null;
+        for (;;) {
             String line;
             boolean isDir = false;
             int c = readAck(true);
-            switch (c)
-            {
+            switch (c) {
                 case -1:
                     return;
                 case 'D':
                     isDir = true;
                 case 'C':
-                    line = ((char) c) + readLine();
+                    line = String.valueOf((char) c) + readLine();
                     log.debug("Received header: " + line);
                     break;
                 case 'T':
-                    line = ((char) c) + readLine();
+                    line = String.valueOf((char) c) + readLine();
                     log.debug("Received header: " + line);
-                    time = parseTime(line);
+                    time = ScpTimestamp.parseTime(line);
                     ack();
                     continue;
                 case 'E':
-                    line = ((char) c) + readLine();
+                    line = String.valueOf((char) c) + readLine();
                     log.debug("Received header: " + line);
                     ack();
                     return;
@@ -139,21 +198,14 @@ public class ScpHelper extends AbstractLoggingBean {
                     continue;
             }
 
-            if (recursive && isDir)
-            {
-                receiveDir(line, path, time, preserve, bufferSize);
-                time = null;
-            }
-            else
-            {
-                receiveFile(line, path, time, preserve, bufferSize);
+            try {
+                handler.process(line, isDir, time);
+            } finally {
                 time = null;
             }
         }
     }
-
-
-    public void receiveDir(String header, Path path, long[] time, boolean preserve, int bufferSize) throws IOException {
+    public void receiveDir(String header, Path path, ScpTimestamp time, boolean preserve, int bufferSize) throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("Receiving directory {}", path);
         }
@@ -169,8 +221,8 @@ public class ScpHelper extends AbstractLoggingBean {
             throw new IOException("Expected 0 length for directory but got " + length);
         }
 
-        LinkOption[]    options=IoUtils.getLinkOptions(false);
-        Boolean         status=IoUtils.checkFileExists(path, options);
+        LinkOption[] options = IoUtils.getLinkOptions(false);
+        Boolean status = IoUtils.checkFileExists(path, options);
         if (status == null) {
             throw new AccessDeniedException("Receive directory existence status cannot be determined: " + path);
         }
@@ -180,7 +232,7 @@ public class ScpHelper extends AbstractLoggingBean {
             String localName = name.replace('/', File.separatorChar);
             file = path.resolve(localName);
         } else if (!status.booleanValue()) {
-            Path    parent=path.getParent();
+            Path parent = path.getParent();
 
             status = IoUtils.checkFileExists(parent, options);
             if (status == null) {
@@ -206,13 +258,7 @@ public class ScpHelper extends AbstractLoggingBean {
         }
 
         if (preserve) {
-            IoUtils.setPermissions(path, perms);
-            if (time != null) {
-                Files.getFileAttributeView(file, BasicFileAttributeView.class)
-                        .setTimes(FileTime.from(time[0], TimeUnit.SECONDS),
-                                FileTime.from(time[1], TimeUnit.SECONDS),
-                                null);
-            }
+            updateFileProperties(file, perms, time);
         }
 
         ack();
@@ -235,7 +281,7 @@ public class ScpHelper extends AbstractLoggingBean {
                     ack();
                     break;
                 } else if (header.startsWith("T")) {
-                    time = parseTime(header);
+                    time = ScpTimestamp.parseTime(header);
                     ack();
                 } else {
                     throw new IOException("Unexpected message: '" + header + "'");
@@ -247,30 +293,35 @@ public class ScpHelper extends AbstractLoggingBean {
         }
     }
 
-    public void receiveFile(String header, Path path, long[] time, boolean preserve, int bufferSize) throws IOException {
+    public void receiveFile(String header, Path path, ScpTimestamp time, boolean preserve, int bufferSize) throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("Receiving file {}", path);
         }
+
+        receiveStream(header, new LocalFileScpTargetStreamResolver(path), time, preserve, bufferSize);
+    }
+
+    public void receiveStream(String header, ScpTargetStreamResolver resolver, ScpTimestamp time, boolean preserve, int bufferSize) throws IOException {
         if (!header.startsWith("C")) {
-            throw new IOException("Expected a C message but got '" + header + "'");
+            throw new IOException("receiveStream(" + resolver + ") Expected a C message but got '" + header + "'");
         }
 
         if (bufferSize < MIN_RECEIVE_BUFFER_SIZE) {
-            throw new IOException("receiveFile(" + path + ") buffer size (" + bufferSize + ") below minimum (" + MIN_RECEIVE_BUFFER_SIZE + ")");
+            throw new IOException("receiveStream(" + resolver + ") buffer size (" + bufferSize + ") below minimum (" + MIN_RECEIVE_BUFFER_SIZE + ")");
         }
 
         Set<PosixFilePermission> perms = parseOctalPerms(header.substring(1, 5));
         final long length = Long.parseLong(header.substring(6, header.indexOf(' ', 6)));
         String name = header.substring(header.indexOf(' ', 6) + 1);
         if (length < 0L) { // TODO consider throwing an exception...
-            log.warn("receiveFile(" + path + ") bad length in header: " + header);
+            log.warn("receiveStream(" + resolver + ") bad length in header: " + header);
         }
 
         // if file size is less than buffer size allocate only expected file size
         int bufSize;
         if (length == 0L) {
             if (log.isDebugEnabled()) {
-                log.debug("receiveFile(" + path + ") zero file size (perhaps special file) using copy buffer size=" + MIN_RECEIVE_BUFFER_SIZE);
+                log.debug("receiveStream(" + resolver + ") zero file size (perhaps special file) using copy buffer size=" + MIN_RECEIVE_BUFFER_SIZE);
             }
             bufSize = MIN_RECEIVE_BUFFER_SIZE;
         } else {
@@ -278,60 +329,17 @@ public class ScpHelper extends AbstractLoggingBean {
         }
 
         if (bufSize < 0) { // TODO consider throwing an exception
-            log.warn("receiveFile(" + path + ") bad buffer size (" + bufSize + ") using default (" + MIN_RECEIVE_BUFFER_SIZE + ")");
+            log.warn("receiveFile(" + resolver + ") bad buffer size (" + bufSize + ") using default (" + MIN_RECEIVE_BUFFER_SIZE + ")");
             bufSize = MIN_RECEIVE_BUFFER_SIZE;
-        }
-
-        LinkOption[]    options=IoUtils.getLinkOptions(false);
-        Boolean         status=IoUtils.checkFileExists(path, options);
-        if (status == null) {
-            throw new AccessDeniedException("Receive target file path existence status cannot be determined: " + path);
-        }
-
-        Path file=null;
-        if (status.booleanValue() && Files.isDirectory(path, options)) {
-            String localName = name.replace('/', File.separatorChar);
-            file = path.resolve(localName);
-        } else if (status.booleanValue() && Files.isRegularFile(path, options)) {
-            file = path;
-        } else if (!status.booleanValue()) {
-            Path    parent=path.getParent();
-            
-            status = IoUtils.checkFileExists(parent, options);
-            if (status == null) {
-                throw new AccessDeniedException("Receive file parent (" + parent + ") existence status cannot be determined for " + path);
-            }
-
-            if (status.booleanValue() && Files.isDirectory(parent, options)) {
-                file = path;
-            }
-        }
-        
-        if (file == null) {
-            throw new IOException("Can not write to " + path);
-        }
-        
-        status = IoUtils.checkFileExists(file, options);
-        if (status == null) {
-            throw new AccessDeniedException("Receive file existence status cannot be determined: " + file);
-        }
-
-        if (status.booleanValue()) {
-            if (Files.isDirectory(file, options)) {
-                throw new IOException("File is a directory: " + file);
-            }
-
-            if (!Files.isWritable(file)) {
-                throw new IOException("Can not write to file: " + file);
-            }
         }
 
         try (
                 InputStream is = new LimitInputStream(this.in, length);
-                OutputStream os = Files.newOutputStream(file)
+                OutputStream os = resolver.resolveTargetStream(name, length, perms)
         ) {
             ack();
 
+            Path file = resolver.getEventListenerFilePath();
             try {
                 listener.startFileEvent(FileOperation.RECEIVE, file, length, perms);
                 IoUtils.copy(is, os, bufSize);
@@ -342,18 +350,28 @@ public class ScpHelper extends AbstractLoggingBean {
             }
         }
 
-        if (preserve) {
-            IoUtils.setPermissions(file, perms);
-            if (time != null) {
-                Files.getFileAttributeView(file, BasicFileAttributeView.class)
-                        .setTimes(FileTime.from(time[0], TimeUnit.SECONDS),
-                                FileTime.from(time[1], TimeUnit.SECONDS),
-                                null);
-            }
-        }
+        resolver.postProcessReceivedData(name, preserve, perms, time);
 
         ack();
         readAck(false);
+
+    }
+
+    protected void updateFileProperties(Path file, Set<PosixFilePermission> perms, ScpTimestamp time) throws IOException {
+        if (log.isTraceEnabled()) {
+            log.trace("updateFileProperties(" + file + ") permissions: " + perms);
+        }
+        IoUtils.setPermissions(file, perms);
+
+        if (time != null) {
+            BasicFileAttributeView view = Files.getFileAttributeView(file, BasicFileAttributeView.class);
+            FileTime lastModified = FileTime.from(time.lastModifiedTime, TimeUnit.MILLISECONDS);
+            FileTime lastAccess = FileTime.from(time.lastAccessTime, TimeUnit.MILLISECONDS);
+            if (log.isTraceEnabled()) {
+                log.trace("updateFileProperties(" + file + ") last-modified=" + lastModified + ", last-access=" + lastAccess);
+            }
+            view.setTimes(lastModified, lastAccess, null);
+        }
     }
 
     public String readLine() throws IOException {
@@ -472,50 +490,20 @@ public class ScpHelper extends AbstractLoggingBean {
             log.debug("Sending file {}", path);
         }
 
+        sendStream(new LocalFileScpSourceStreamResolver(path), preserve, bufferSize);
+    }
+
+    public void sendStream(ScpSourceStreamResolver resolver, boolean preserve, int bufferSize) throws IOException {
         if (bufferSize < MIN_SEND_BUFFER_SIZE) {
-            throw new IOException("sendFile(" + path + ") buffer size (" + bufferSize + ") below minimum (" + MIN_SEND_BUFFER_SIZE + ")");
+            throw new IOException("sendStream(" + resolver + ") buffer size (" + bufferSize + ") below minimum (" + MIN_SEND_BUFFER_SIZE + ")");
         }
 
-        BasicFileAttributes basic = Files.getFileAttributeView(path, BasicFileAttributeView.class).readAttributes();
-        if (preserve) {
-            StringBuilder buf = new StringBuilder();
-            buf.append("T");
-            buf.append(basic.lastModifiedTime().to(TimeUnit.SECONDS));
-            buf.append(" ");
-            buf.append("0");
-            buf.append(" ");
-            buf.append(basic.lastAccessTime().to(TimeUnit.SECONDS));
-            buf.append(" ");
-            buf.append("0");
-            buf.append("\n");
-            out.write(buf.toString().getBytes());
-            out.flush();
-            readAck(false);
-        }
-
-        Set<PosixFilePermission> perms = IoUtils.getPermissions(path);
-        StringBuilder buf = new StringBuilder();
-        buf.append("C");
-        buf.append(preserve ? getOctalPerms(perms) : "0644");
-        buf.append(" ");
-        buf.append(basic.size()); // length
-        buf.append(" ");
-        buf.append(path.getFileName().toString());
-        buf.append("\n");
-        out.write(buf.toString().getBytes());
-        out.flush();
-        readAck(false);
-
-        long fileSize = Files.size(path);
-        if (fileSize < 0L) { // TODO consider throwing an exception...
-            log.warn("sendFile(" + path + ") bad file size: " + fileSize);
-        }
-
+        long fileSize = resolver.getSize();
         // if file size is less than buffer size allocate only expected file size
         int bufSize;
-        if (fileSize == 0L) {
+        if (fileSize <= 0L) {
             if (log.isDebugEnabled()) {
-                log.debug("sendFile(" + path + ") zero file size (perhaps special file) using copy buffer size=" + MIN_SEND_BUFFER_SIZE);
+                log.debug("sendStream(" + resolver + ") unknown file size (" + fileSize + ")  perhaps special file - using copy buffer size=" + MIN_SEND_BUFFER_SIZE);
             }
             bufSize = MIN_SEND_BUFFER_SIZE;
         } else {
@@ -523,11 +511,37 @@ public class ScpHelper extends AbstractLoggingBean {
         }
 
         if (bufSize < 0) { // TODO consider throwing an exception
-            log.warn("sendFile(" + path + ") bad buffer size (" + bufSize + ") using default (" + MIN_SEND_BUFFER_SIZE + ")");
+            log.warn("sendStream(" + resolver + ") bad buffer size (" + bufSize + ") using default (" + MIN_SEND_BUFFER_SIZE + ")");
             bufSize = MIN_SEND_BUFFER_SIZE;
         }
 
-        try (InputStream in = Files.newInputStream(path)) {
+        ScpTimestamp time = resolver.getTimestamp();
+        if (preserve && (time != null)) {
+            String cmd = new StringBuilder(Long.SIZE)
+                    .append('T').append(TimeUnit.MILLISECONDS.toSeconds(time.lastModifiedTime)).append(' ').append('0')
+                    .append(' ').append(TimeUnit.MILLISECONDS.toSeconds(time.lastAccessTime)).append(' ').append('0')
+                    .append('\n')
+                    .toString();
+            out.write(cmd.getBytes());
+            out.flush();
+            readAck(false);
+        }
+
+        Set<PosixFilePermission> perms = EnumSet.copyOf(resolver.getPermissions());
+        String octalPerms = preserve ? getOctalPerms(perms) : "0644";
+        String fileName = resolver.getFileName();
+        String cmd = new StringBuilder(octalPerms.length() + fileName.length() + Long.SIZE /* some extra delimiters */)
+            .append('C').append(octalPerms)
+            .append(' ').append(fileSize)
+            .append(' ').append(fileName)
+            .append('\n')
+            .toString();
+        out.write(cmd.getBytes());
+        out.flush();
+        readAck(false);
+
+        try (InputStream in = resolver.resolveSourceStream()) {
+            Path path = resolver.getEventListenerFilePath();
             try {
                 listener.startFileEvent(FileOperation.SEND, path, fileSize, perms);
                 IoUtils.copy(in, out, bufSize);
@@ -545,6 +559,7 @@ public class ScpHelper extends AbstractLoggingBean {
         if (log.isDebugEnabled()) {
             log.debug("Sending directory {}", path);
         }
+
         BasicFileAttributes basic = Files.getFileAttributeView(path, BasicFileAttributeView.class).readAttributes();
         if (preserve) {
             StringBuilder buf = new StringBuilder();
@@ -579,7 +594,7 @@ public class ScpHelper extends AbstractLoggingBean {
             listener.startFolderEvent(FileOperation.SEND, path, perms);
 
             try {
-                LinkOption[]    options = IoUtils.getLinkOptions(false);
+                LinkOption[] options = IoUtils.getLinkOptions(false);
                 for (Path child : children) {
                     if (Files.isRegularFile(child, options)) {
                         sendFile(child, preserve, bufferSize);
@@ -598,11 +613,6 @@ public class ScpHelper extends AbstractLoggingBean {
         out.write("E\n".getBytes());
         out.flush();
         readAck(false);
-    }
-
-    private long[] parseTime(String line) {
-        String[] numbers = line.substring(1).split(" ");
-        return new long[]{Long.parseLong(numbers[0]), Long.parseLong(numbers[2])};
     }
 
     public static String getOctalPerms(Path path) throws IOException {
@@ -712,62 +722,5 @@ public class ScpHelper extends AbstractLoggingBean {
             break;
         }
         return c;
-    }
-
-    private static class LimitInputStream extends FilterInputStream {
-
-        private long remaining;
-
-        public LimitInputStream(InputStream in, long length) {
-            super(in);
-            remaining = length;
-        }
-
-        @Override
-        public int read() throws IOException {
-            if (remaining > 0) {
-                remaining--;
-                return super.read();
-            } else {
-                return -1;
-            }
-        }
-
-        @Override
-        public int read(byte[] b, int off, int len) throws IOException {
-            int nb = len;
-            if (nb > remaining) {
-                nb = (int) remaining;
-            }
-            if (nb > 0) {
-                int read = super.read(b, off, nb);
-                remaining -= read;
-                return read;
-            } else {
-                return -1;
-            }
-        }
-
-        @Override
-        public long skip(long n) throws IOException {
-            long skipped = super.skip(n);
-            remaining -= skipped;
-            return skipped;
-        }
-
-        @Override
-        public int available() throws IOException {
-            int av = super.available();
-            if (av > remaining) {
-                return (int) remaining;
-            } else {
-                return av;
-            }
-        }
-
-        @Override
-        public void close() throws IOException {
-            // do not close the original input stream since it serves for ACK(s)
-        }
     }
 }

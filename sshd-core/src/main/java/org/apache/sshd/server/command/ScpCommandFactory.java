@@ -41,11 +41,6 @@ import org.apache.sshd.server.CommandFactory;
  */
 public class ScpCommandFactory implements CommandFactory, Cloneable, ExecutorServiceConfigurer {
     /**
-     * Command prefix used to identify SCP commands
-     */
-    public static final String SCP_COMMAND_PREFIX = "scp";
-
-    /**
      * A useful {@link ObjectBuilder} for {@link ScpCommandFactory}
      */
     public static class Builder implements ObjectBuilder<ScpCommandFactory> {
@@ -227,7 +222,7 @@ public class ScpCommandFactory implements CommandFactory, Cloneable, ExecutorSer
      */
     @Override
     public Command createCommand(String command) {
-        if (command.startsWith(SCP_COMMAND_PREFIX)) {
+        if (command.startsWith(ScpHelper.SCP_COMMAND_PREFIX)) {
             return new ScpCommand(command, getExecutorService(), isShutdownOnExit(), getSendBufferSize(), getReceiveBufferSize(), listenerProxy);
         }
 
@@ -236,7 +231,7 @@ public class ScpCommandFactory implements CommandFactory, Cloneable, ExecutorSer
             return factory.createCommand(command);
         }
 
-        throw new IllegalArgumentException("Unknown command, does not begin with '" + SCP_COMMAND_PREFIX + "': " + command);
+        throw new IllegalArgumentException("Unknown command, does not begin with '" + ScpHelper.SCP_COMMAND_PREFIX + "': " + command);
     }
 
     @Override

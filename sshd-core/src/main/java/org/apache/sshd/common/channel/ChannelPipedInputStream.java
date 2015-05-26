@@ -119,7 +119,7 @@ public class ChannelPipedInputStream extends InputStream implements ChannelPiped
                         dataAvailable.await();
                     }
                 } catch (InterruptedException e) {
-                    throw (IOException) new InterruptedIOException().initCause(e);
+                    throw (IOException) new InterruptedIOException("Interrupted while waiting for data to become available").initCause(e);
                 }
             }
             if (len > buffer.available()) {
