@@ -154,6 +154,7 @@ public interface ClientSession extends Session {
     SftpClient createSftpClient() throws IOException;
 
     FileSystem createSftpFileSystem() throws IOException;
+    FileSystem createSftpFileSystem(int readBufferSize, int writeBufferSize) throws IOException;
 
     /**
      * Start forwarding the given local address on the client to the given address on the server.

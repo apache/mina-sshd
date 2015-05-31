@@ -49,17 +49,17 @@ public class SftpFileChannel extends FileChannel {
     private final Collection<SftpClient.OpenMode> modes;
     private final SftpClient sftp;
     private final SftpClient.CloseableHandle handle;
-    private final Object lock;
+    private final Object lock = new Object();
     private volatile long pos;
     private volatile Thread blockingThread;
 
     public SftpFileChannel(SftpPath p, Collection<SftpClient.OpenMode> modes) throws IOException {
-        this.p = p;
+        this.p = ValidateUtils.checkNotNull(p, "No target path", GenericUtils.EMPTY_OBJECT_ARRAY);
         this.modes = ValidateUtils.checkNotNull(modes, "No channel modes specified", GenericUtils.EMPTY_OBJECT_ARRAY);
-        sftp = p.getFileSystem().getClient();
+        
+        SftpFileSystem  fs=p.getFileSystem();
+        sftp = fs.getClient();
         handle = sftp.open(p.toString(), modes);
-        lock = new Object();
-        pos = 0;
     }
 
     @Override

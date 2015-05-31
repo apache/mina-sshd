@@ -286,7 +286,15 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
 
     @Override
     public FileSystem createSftpFileSystem() throws IOException {
-        return new SftpFileSystem(new SftpFileSystemProvider((org.apache.sshd.SshClient) factoryManager), this);
+        return createSftpFileSystem(SftpClient.DEFAULT_READ_BUFFER_SIZE, SftpClient.DEFAULT_WRITE_BUFFER_SIZE);
+    }
+
+    @Override
+    public FileSystem createSftpFileSystem(int readBufferSize, int writeBufferSize) throws IOException {
+        SftpFileSystem  fs=new SftpFileSystem(new SftpFileSystemProvider((org.apache.sshd.SshClient) factoryManager), this);
+        fs.setReadBufferSize(readBufferSize);
+        fs.setWriteBufferSize(writeBufferSize);
+        return fs;
     }
 
     @Override

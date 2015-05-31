@@ -77,6 +77,7 @@ import org.apache.sshd.SshBuilder;
 import org.apache.sshd.SshClient;
 import org.apache.sshd.client.SftpException;
 import org.apache.sshd.client.sftp.SftpClient.Attributes;
+import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.config.SshConfigFileReader;
 import org.apache.sshd.common.sftp.SftpConstants;
@@ -87,6 +88,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class SftpFileSystemProvider extends FileSystemProvider {
+    public static final String  READ_BUFFER_PROP_NAME = "read-buffer-size", WRITE_BUFFER_PROP_NAME="write-buffer-size";
+
     private final SshClient client;
     private final Map<String, SftpFileSystem> fileSystems = new HashMap<String, SftpFileSystem>();
     protected final Logger log;
@@ -132,6 +135,8 @@ public class SftpFileSystemProvider extends FileSystemProvider {
                 session.addPasswordIdentity(ui[1]);
                 session.auth().verify();
                 fileSystem = new SftpFileSystem(this, session);
+                fileSystem.setReadBufferSize(FactoryManagerUtils.getIntProperty(env, READ_BUFFER_PROP_NAME, SftpClient.DEFAULT_READ_BUFFER_SIZE));
+                fileSystem.setWriteBufferSize(FactoryManagerUtils.getIntProperty(env, WRITE_BUFFER_PROP_NAME, SftpClient.DEFAULT_WRITE_BUFFER_SIZE));
                 fileSystems.put(authority, fileSystem);
                 return fileSystem;
             } catch(Exception e) {

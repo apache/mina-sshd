@@ -278,12 +278,22 @@ public interface SftpClient extends Closeable {
 
     Iterable<DirEntry> readDir(String path) throws IOException;
 
+    // default values used if none specified
+    int MIN_BUFFER_SIZE=Byte.MAX_VALUE, MIN_READ_BUFFER_SIZE=MIN_BUFFER_SIZE, MIN_WRITE_BUFFER_SIZE=MIN_BUFFER_SIZE;
+    int IO_BUFFER_SIZE=32 * 1024, DEFAULT_READ_BUFFER_SIZE=IO_BUFFER_SIZE, DEFAULT_WRITE_BUFFER_SIZE=IO_BUFFER_SIZE;
+
     InputStream read(String path) throws IOException;
+    InputStream read(String path, int bufferSize) throws IOException;
     InputStream read(String path, OpenMode ... mode) throws IOException;
+    InputStream read(String path, int bufferSize, OpenMode ... mode) throws IOException;
     InputStream read(String path, Collection<OpenMode> mode) throws IOException;
+    InputStream read(String path, int bufferSize, Collection<OpenMode> mode) throws IOException;
 
     OutputStream write(String path) throws IOException;
+    OutputStream write(String path, int bufferSize) throws IOException;
     OutputStream write(String path, OpenMode ... mode) throws IOException;
+    OutputStream write(String path, int bufferSize, OpenMode ... mode) throws IOException;
     OutputStream write(String path, Collection<OpenMode> mode) throws IOException;
+    OutputStream write(String path, int bufferSize, Collection<OpenMode> mode) throws IOException;
 
 }

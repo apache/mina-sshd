@@ -43,6 +43,8 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> {
     private final Queue<SftpClient> pool;
     private final ThreadLocal<Wrapper> wrappers = new ThreadLocal<>();
     private SftpPath defaultDir;
+    private int readBufferSize = SftpClient.DEFAULT_READ_BUFFER_SIZE;
+    private int writeBufferSize = SftpClient.DEFAULT_WRITE_BUFFER_SIZE;
 
     public SftpFileSystem(SftpFileSystemProvider provider, ClientSession session) throws IOException {
         super(provider);
@@ -51,6 +53,30 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> {
         try (SftpClient client = getClient()) {
             defaultDir = getPath(client.canonicalPath("."));
         }
+    }
+
+    public int getReadBufferSize() {
+        return readBufferSize;
+    }
+
+    public void setReadBufferSize(int size) {
+        if (size < SftpClient.MIN_READ_BUFFER_SIZE) {
+            throw new IllegalArgumentException("Insufficient read buffer size: " + size + ", min.=" + SftpClient.MIN_READ_BUFFER_SIZE);
+        }
+
+        readBufferSize = size;
+    }
+
+    public int getWriteBufferSize() {
+        return writeBufferSize;
+    }
+
+    public void setWriteBufferSize(int size) {
+        if (size < SftpClient.MIN_WRITE_BUFFER_SIZE) {
+            throw new IllegalArgumentException("Insufficient write buffer size: " + size + ", min.=" + SftpClient.MIN_WRITE_BUFFER_SIZE);
+        }
+
+        writeBufferSize = size;
     }
 
     @Override
@@ -72,7 +98,7 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> {
                     client = session.createSftpClient();
                 }
                 if (!client.isClosing()) {
-                    wrapper = new Wrapper(client);
+                    wrapper = new Wrapper(client, getReadBufferSize(), getWriteBufferSize());
                 }
             }
             wrappers.set(wrapper);
@@ -115,9 +141,12 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> {
 
         private final SftpClient delegate;
         private final AtomicInteger count = new AtomicInteger(1);
+        private final int readSize, writeSize;
 
-        private Wrapper(SftpClient delegate) {
+        private Wrapper(SftpClient delegate, int readSize, int writeSize) {
             this.delegate = delegate;
+            this.readSize = readSize;
+            this.writeSize = writeSize;
         }
 
         @Override
@@ -242,22 +271,42 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> {
 
         @Override
         public InputStream read(String path) throws IOException {
-            return delegate.read(path);
+            return read(path, readSize);
+        }
+
+        @Override
+        public InputStream read(String path, OpenMode... mode) throws IOException {
+            return read(path, readSize, mode);
         }
 
         @Override
         public InputStream read(String path, Collection<OpenMode> mode) throws IOException {
-            return delegate.read(path, mode);
+            return read(path, readSize, mode);
+        }
+
+        @Override
+        public InputStream read(String path, int bufferSize, Collection<OpenMode> mode) throws IOException {
+            return delegate.read(path, bufferSize, mode);
         }
 
         @Override
         public OutputStream write(String path) throws IOException {
-            return delegate.write(path);
+            return write(path, writeSize);
+        }
+
+        @Override
+        public OutputStream write(String path, OpenMode... mode) throws IOException {
+            return write(path, writeSize, mode);
         }
 
         @Override
         public OutputStream write(String path, Collection<OpenMode> mode) throws IOException {
-            return delegate.write(path, mode);
+            return write(path, writeSize, mode);
+        }
+
+        @Override
+        public OutputStream write(String path, int bufferSize, Collection<OpenMode> mode) throws IOException {
+            return delegate.write(path, bufferSize, mode);
         }
 
         @Override

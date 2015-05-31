@@ -1025,10 +1025,14 @@ public class DefaultSftpClient extends AbstractSftpClient {
     }
 
     @Override
-    public InputStream read(final String path, final Collection<OpenMode> mode) throws IOException {
+    public InputStream read(final String path, final int bufferSize, final Collection<OpenMode> mode) throws IOException {
+        if (bufferSize < MIN_READ_BUFFER_SIZE) {
+            throw new IllegalArgumentException("Insufficient read buffer size: " + bufferSize + ", min.=" + MIN_READ_BUFFER_SIZE);
+        }
+
         return new InputStreamWithChannel() {
             private byte[] bb = new byte[1];
-            private byte[] buffer = new byte[32 * 1024];
+            private byte[] buffer = new byte[bufferSize];
             private int index;
             private int available;
             private CloseableHandle handle = DefaultSftpClient.this.open(path, mode);
@@ -1095,10 +1099,14 @@ public class DefaultSftpClient extends AbstractSftpClient {
     }
 
     @Override
-    public OutputStream write(final String path, final Collection<OpenMode> mode) throws IOException {
+    public OutputStream write(final String path, final int bufferSize, final Collection<OpenMode> mode) throws IOException {
+        if (bufferSize < MIN_WRITE_BUFFER_SIZE) {
+            throw new IllegalArgumentException("Insufficient write buffer size: " + bufferSize + ", min.=" + MIN_WRITE_BUFFER_SIZE);
+        }
+
         return new OutputStreamWithChannel() {
             private byte[] bb = new byte[1];
-            private byte[] buffer = new byte[32 * 1024];
+            private byte[] buffer = new byte[bufferSize];
             private int index;
             private CloseableHandle handle = DefaultSftpClient.this.open(path, mode);
             private long offset;

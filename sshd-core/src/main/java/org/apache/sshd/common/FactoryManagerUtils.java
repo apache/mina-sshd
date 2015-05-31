@@ -60,12 +60,14 @@ public class FactoryManagerUtils {
      * @return The resolved property
      * @throws NumberFormatException if malformed value
      */
-    public static final long getLongProperty(Map<String, String> props, String name, long defaultValue) {
-        String value = getStringProperty(props, name, null);
-        if (GenericUtils.isEmpty(value)) {
+    public static final long getLongProperty(Map<String,?> props, String name, long defaultValue) {
+        Object value = GenericUtils.isEmpty(props) ? null : props.get(name);
+        if (value == null) {
             return defaultValue;
-        } else {
-            return Long.parseLong(value);
+        } else if (value instanceof Long) {
+            return ((Long) value).longValue();
+        } else {    // we parse the string in case it is not a valid long value
+            return Long.parseLong(value.toString());
         }
     }
 
@@ -96,12 +98,14 @@ public class FactoryManagerUtils {
      * empty string
      * @throws NumberFormatException if malformed value
      */
-    public static final Long getLong(Map<String, String> props, String name) {
-        String value = getStringProperty(props, name, null);
-        if (GenericUtils.isEmpty(value)) {
+    public static final Long getLong(Map<String,?> props, String name) {
+        Object value = GenericUtils.isEmpty(props) ? null : props.get(name);
+        if (value == null) {
             return null;
-        } else {
-            return Long.valueOf(value);
+        } else if (value instanceof Long) {
+            return (Long) value;
+        } else {    // we parse the string in case it is not a valid long value
+            return Long.valueOf(value.toString());
         }
     }
 
@@ -113,7 +117,7 @@ public class FactoryManagerUtils {
         return updateProperty(manager, name, Long.toString(value));
     }
 
-    public static final String updateProperty(Map<String, String> props, String name, long value) {
+    public static final String updateProperty(Map<String,String> props, String name, long value) {
         return updateProperty(props, name, Long.toString(value));
     }
 
@@ -125,12 +129,14 @@ public class FactoryManagerUtils {
         return getIntProperty(manager.getProperties(), name, defaultValue);
     }
 
-    public static final int getIntProperty(Map<String, String> props, String name, int defaultValue) {
-        String value = getStringProperty(props, name, null);
-        if ((value == null) || (value.length() <= 0)) {
+    public static final int getIntProperty(Map<String,?> props, String name, int defaultValue) {
+        Object value = GenericUtils.isEmpty(props) ? null : props.get(name);
+        if (value == null) {
             return defaultValue;
-        } else {
-            return Integer.parseInt(value);
+        } else if (value instanceof Integer) {
+            return ((Integer) value).intValue();
+        } else {    // we parse the string in case this is NOT an integer
+            return Integer.parseInt(value.toString());
         }
     }
 
@@ -142,12 +148,14 @@ public class FactoryManagerUtils {
         return getInteger(manager.getProperties(), name);
     }
 
-    public static final Integer getInteger(Map<String, String> props, String name) {
-        String value = getStringProperty(props, name, null);
-        if ((value == null) || (value.length() <= 0)) {
+    public static final Integer getInteger(Map<String,?> props, String name) {
+        Object value = GenericUtils.isEmpty(props) ? null : props.get(name);
+        if (value == null) {
             return null;
-        } else {
-            return Integer.valueOf(value);
+        } else if (value instanceof Integer) {
+            return (Integer) value;
+        } else {    // we parse the string in case this is NOT an integer
+            return Integer.valueOf(value.toString());
         }
     }
 
@@ -171,12 +179,12 @@ public class FactoryManagerUtils {
         return getBooleanProperty(manager.getProperties(), name, defaultValue);
     }
 
-    public static final boolean getBooleanProperty(Map<String, String> props, String name, boolean defaultValue) {
-        String value = getStringProperty(props, name, null);
-        if ((value == null) || (value.length() <= 0)) {
+    public static final boolean getBooleanProperty(Map<String,?> props, String name, boolean defaultValue) {
+        Boolean value = getBoolean(props, name);
+        if (value == null) {
             return defaultValue;
         } else {
-            return Boolean.parseBoolean(value);
+            return value.booleanValue();
         }
     }
 
@@ -188,12 +196,14 @@ public class FactoryManagerUtils {
         return getBoolean(manager.getProperties(), name);
     }
 
-    public static final Boolean getBoolean(Map<String, String> props, String name) {
-        String value = getStringProperty(props, name, null);
-        if (GenericUtils.isEmpty(value)) {
+    public static final Boolean getBoolean(Map<String,?> props, String name) {
+        Object  value = GenericUtils.isEmpty(props) ? null : props.get(name);
+        if (value == null) {
             return null;
+        } else if (value instanceof Boolean) {
+            return (Boolean) value;
         } else {
-            return Boolean.valueOf(value);
+            return Boolean.valueOf(value.toString());
         }
     }
 
@@ -225,16 +235,17 @@ public class FactoryManagerUtils {
         return getStringProperty(manager.getProperties(), name, defaultValue);
     }
 
-    public static final String getString(Map<String, String> props, String name) {
+    public static final String getString(Map<String,?> props, String name) {
         return getStringProperty(props, name, null);
     }
 
-    public static final String getStringProperty(Map<String, String> props, String name, String defaultValue) {
-        String value = GenericUtils.isEmpty(props) ? null : props.get(name);
-        if (GenericUtils.isEmpty(value)) {
+    public static final String getStringProperty(Map<String,?> props, String name, String defaultValue) {
+        Object value = GenericUtils.isEmpty(props) ? null : props.get(name);
+        String s = (value == null) ? null : value.toString();
+        if (GenericUtils.isEmpty(s)) {
             return defaultValue;
         } else {
-            return value;
+            return s;
         }
     }
 

@@ -22,6 +22,7 @@ package org.apache.sshd.client.sftp;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 
@@ -57,13 +58,28 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
     }
 
     @Override
-    public InputStream read(final String path) throws IOException {
-        return read(path, EnumSet.of(OpenMode.Read));
+    public InputStream read(String path) throws IOException {
+        return read(path, DEFAULT_READ_BUFFER_SIZE);
+    }
+
+    @Override
+    public InputStream read(String path, int bufferSize) throws IOException {
+        return read(path, bufferSize, EnumSet.of(OpenMode.Read));
     }
 
     @Override
     public InputStream read(String path, OpenMode ... mode) throws IOException {
-        return read(path, GenericUtils.of(mode));
+        return read(path, DEFAULT_READ_BUFFER_SIZE, mode);
+    }
+
+    @Override
+    public InputStream read(String path, int bufferSize, OpenMode ... mode) throws IOException {
+        return read(path, bufferSize, GenericUtils.of(mode));
+    }
+
+    @Override
+    public InputStream read(String path, Collection<OpenMode>  mode) throws IOException {
+        return read(path, DEFAULT_READ_BUFFER_SIZE, mode);
     }
 
     @Override
@@ -72,13 +88,28 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
     }
 
     @Override
-    public OutputStream write(final String path) throws IOException {
-        return write(path, EnumSet.of(OpenMode.Write, OpenMode.Create, OpenMode.Truncate));
+    public OutputStream write(String path) throws IOException {
+        return write(path, DEFAULT_WRITE_BUFFER_SIZE);
+    }
+
+    @Override
+    public OutputStream write(String path, int bufferSize) throws IOException {
+        return write(path, bufferSize, EnumSet.of(OpenMode.Write, OpenMode.Create, OpenMode.Truncate));
     }
 
     @Override
     public OutputStream write(String path, OpenMode ... mode) throws IOException {
-        return write(path, GenericUtils.of(mode));
+        return write(path, DEFAULT_WRITE_BUFFER_SIZE, mode);
+    }
+
+    @Override
+    public OutputStream write(String path, Collection<OpenMode> mode) throws IOException {
+        return write(path, DEFAULT_WRITE_BUFFER_SIZE, mode);
+    }
+
+    @Override
+    public OutputStream write(String path, int bufferSize, OpenMode ... mode) throws IOException {
+        return write(path, bufferSize, GenericUtils.of(mode));
     }
 
     @Override

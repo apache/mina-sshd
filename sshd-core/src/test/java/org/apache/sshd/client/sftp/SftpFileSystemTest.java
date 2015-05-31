@@ -40,6 +40,7 @@ import java.nio.file.attribute.UserPrincipalNotFoundException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
+import java.util.TreeMap;
 
 import org.apache.sshd.SshServer;
 import org.apache.sshd.common.NamedFactory;
@@ -47,6 +48,7 @@ import org.apache.sshd.common.Session;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.file.root.RootedFileSystemProvider;
 import org.apache.sshd.common.sftp.SftpConstants;
+import org.apache.sshd.common.util.IoUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.command.ScpCommandFactory;
@@ -103,7 +105,17 @@ public class SftpFileSystemTest extends BaseTestSupport {
         Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
         Utils.deleteRecursive(lclSftp);
 
-        try(FileSystem fs = FileSystems.newFileSystem(URI.create("sftp://x:x@localhost:" + port + "/"), Collections.<String,Object>emptyMap())) {
+        try(FileSystem fs = FileSystems.newFileSystem(
+                URI.create("sftp://" + getCurrentTestName() + ":" + getCurrentTestName() + "@localhost:" + port + "/"),
+                new TreeMap<String,Object>() {
+                    private static final long serialVersionUID = 1L;    // we're not serializing it
+                
+                    {
+                        put(SftpFileSystemProvider.READ_BUFFER_PROP_NAME, Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE));
+                        put(SftpFileSystemProvider.WRITE_BUFFER_PROP_NAME, Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE));
+                    }
+            })) {
+
             Iterable<Path> rootDirs = fs.getRootDirectories();
             for (Path root : rootDirs) {
                 String  rootName = root.toString();
@@ -212,7 +224,17 @@ public class SftpFileSystemTest extends BaseTestSupport {
         Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
         Utils.deleteRecursive(lclSftp);
 
-        try (FileSystem fs = FileSystems.newFileSystem(URI.create("sftp://x:x@localhost:" + port + "/"), null)) {
+        try(FileSystem fs = FileSystems.newFileSystem(
+                URI.create("sftp://" + getCurrentTestName() + ":" + getCurrentTestName() + "@localhost:" + port + "/"),
+                new TreeMap<String,Object>() {
+                    private static final long serialVersionUID = 1L;    // we're not serializing it
+                
+                    {
+                        put(SftpFileSystemProvider.READ_BUFFER_PROP_NAME, Integer.valueOf(SftpClient.MIN_READ_BUFFER_SIZE));
+                        put(SftpFileSystemProvider.WRITE_BUFFER_PROP_NAME, Integer.valueOf(SftpClient.MIN_WRITE_BUFFER_SIZE));
+                    }
+            })) {
+
             Path parentPath = targetPath.getParent();
             Path clientFolder = lclSftp.resolve("client");
             String remFilePath = Utils.resolveRelativeRemotePath(parentPath, clientFolder.resolve(getCurrentTestName() + ".txt"));

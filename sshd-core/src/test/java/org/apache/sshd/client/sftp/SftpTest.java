@@ -48,6 +48,7 @@ import org.apache.sshd.common.Session;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.file.root.RootedFileSystemProvider;
 import org.apache.sshd.common.sftp.SftpConstants;
+import org.apache.sshd.common.util.IoUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.server.Command;
@@ -262,13 +263,13 @@ public class SftpTest extends BaseTestSupport {
             
                     sftp.remove(file);
     
-                    byte[] workBuf = new byte[1024 * 128];
+                    byte[] workBuf = new byte[IoUtils.DEFAULT_COPY_SIZE * Short.SIZE];
                     new Random(System.currentTimeMillis()).nextBytes(workBuf);
                     try (OutputStream os = sftp.write(file)) {
                         os.write(workBuf);
                     }
             
-                    try (InputStream is = sftp.read(file)) {
+                    try (InputStream is = sftp.read(file, IoUtils.DEFAULT_COPY_SIZE)) {
                         int readLen = is.read(workBuf);
                         assertEquals("Mismatched read data length", workBuf.length, readLen);
         
@@ -536,7 +537,7 @@ public class SftpTest extends BaseTestSupport {
                 try(SftpClient sftp = session.createSftpClient()) {
                     Path file1 = clientFolder.resolve(getCurrentTestName() + "-1.txt");
                     String file1Path = Utils.resolveRelativeRemotePath(parentPath, file1);
-                    try (OutputStream os = sftp.write(file1Path)) {
+                    try (OutputStream os = sftp.write(file1Path, SftpClient.MIN_WRITE_BUFFER_SIZE)) {
                         os.write((getCurrentTestName() + "\n").getBytes());
                     }
 
@@ -551,7 +552,7 @@ public class SftpTest extends BaseTestSupport {
                         assertEquals("Mismatched status for failed rename of " + file2Path + " => " + file3Path, SSH_FX_NO_SUCH_FILE, e.getStatus());
                     }
             
-                    try (OutputStream os = sftp.write(file2Path)) {
+                    try (OutputStream os = sftp.write(file2Path, SftpClient.MIN_WRITE_BUFFER_SIZE)) {
                         os.write("H".getBytes());
                     }
             
