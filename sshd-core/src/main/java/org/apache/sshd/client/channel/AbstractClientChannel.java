@@ -252,7 +252,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     @Override
     public void handleOpenSuccess(int recipient, int rwsize, int rmpsize, Buffer buffer) {
         this.recipient = recipient;
-        this.remoteWindow.init(rwsize, rmpsize);
+        this.remoteWindow.init(rwsize, rmpsize, session.getFactoryManager().getProperties());
         try {
             doOpen();
             this.opened.set(true);

@@ -46,7 +46,7 @@ public abstract class AbstractServerChannel extends AbstractChannel {
     @Override
     public OpenFuture open(int recipient, int rwsize, int rmpsize, Buffer buffer) {
         this.recipient = recipient;
-        this.remoteWindow.init(rwsize, rmpsize);
+        this.remoteWindow.init(rwsize, rmpsize, session.getFactoryManager().getProperties());
         configureWindow();
         return doInit(buffer);
     }

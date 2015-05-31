@@ -27,6 +27,10 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.FactoryManagerUtils;
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
@@ -36,6 +40,7 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ChannelPipedInputStream extends InputStream implements ChannelPipedSink {
+    public static final long DEFAULT_TIMEOUT = 0;    // infinite
 
     private final Window localWindow;
     private final Buffer buffer = new ByteArrayBuffer();
@@ -46,7 +51,7 @@ public class ChannelPipedInputStream extends InputStream implements ChannelPiped
     private final Lock lock = new ReentrantLock();
     private final Condition dataAvailable = lock.newCondition();
 
-    private int timeout = 0; // zero is infinite
+    private long timeout;
 
     /**
      * {@link ChannelPipedOutputStream} is already closed and so we will not receive additional data.
@@ -56,14 +61,15 @@ public class ChannelPipedInputStream extends InputStream implements ChannelPiped
     private boolean writerClosed;
 
     public ChannelPipedInputStream(Window localWindow) {
-        this.localWindow = localWindow;
+        this.localWindow = ValidateUtils.checkNotNull(localWindow, "No local window provided", GenericUtils.EMPTY_OBJECT_ARRAY);
+        this.timeout = FactoryManagerUtils.getLongProperty(localWindow.getProperties(), FactoryManager.WINDOW_TIMEOUT, DEFAULT_TIMEOUT);
     }
 
-    public void setTimeout(int timeout) {
+    public void setTimeout(long timeout) {
         this.timeout = timeout;
     }
 
-    public int getTimeout() {
+    public long getTimeout() {
         return timeout;
     }
 
@@ -97,9 +103,9 @@ public class ChannelPipedInputStream extends InputStream implements ChannelPiped
         long startTime = System.currentTimeMillis();
         lock.lock();
         try {
-            for (;;) {
+            for (int index=0;; index++) {
                 if ((closed && writerClosed && eofSent) || (closed && !writerClosed)) {
-                    throw new IOException("Pipe closed");
+                    throw new IOException("Pipe closed after " + index + " cycles");
                 }
                 if (buffer.available() > 0) {
                     break;
@@ -108,25 +114,26 @@ public class ChannelPipedInputStream extends InputStream implements ChannelPiped
                     eofSent = true;
                     return -1; // no more data to read
                 }
+
                 try {
                     if (timeout > 0) {
                         long remaining = timeout - (System.currentTimeMillis() - startTime);
                         if (remaining <= 0) {
-                            throw new SocketException("timeout");
+                            throw new SocketException("Timeout (" + timeout + ") exceeded after " + index + " cycles");
                         }
                         dataAvailable.await(remaining, TimeUnit.MILLISECONDS);
                     } else {
                         dataAvailable.await();
                     }
                 } catch (InterruptedException e) {
-                    throw (IOException) new InterruptedIOException("Interrupted while waiting for data to become available").initCause(e);
+                    throw (IOException) new InterruptedIOException("Interrupted at cycle #" + index + " while waiting for data to become available").initCause(e);
                 }
             }
             if (len > buffer.available()) {
                 len = buffer.available();
             }
             buffer.getRawBytes(b, off, len);
-            if (buffer.rpos() > localWindow.getPacketSize() || buffer.available() == 0) {
+            if ((buffer.rpos() > localWindow.getPacketSize()) || (buffer.available() == 0)) {
                 buffer.compact();
             }
         } finally {

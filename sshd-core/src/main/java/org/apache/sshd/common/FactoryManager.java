@@ -44,6 +44,14 @@ public interface FactoryManager {
     public static final String WINDOW_SIZE = "window-size";
 
     /**
+     * Key used to retrieve timeout (msec.) to wait for data to
+     * become available when reading from a channel. If not set
+     * or non-positive then infinite value is assumed
+     */
+    public static final String WINDOW_TIMEOUT = "window-timeout";
+
+
+    /**
      * Key used to retrieve the value of the maximum packet size
      * in the configuration properties map.
      */

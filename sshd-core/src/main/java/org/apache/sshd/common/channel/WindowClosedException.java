@@ -28,7 +28,7 @@ import org.apache.sshd.common.SshException;
 public class WindowClosedException extends SshException {
     private static final long serialVersionUID = -5345787686165334234L;
 
-    public WindowClosedException() {
-        super("Already closed");
+    public WindowClosedException(String name) {
+        super("Already closed: " + name);
     }
 }

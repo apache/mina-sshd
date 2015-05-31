@@ -19,8 +19,15 @@
 package org.apache.sshd.common.channel;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.Map;
 
+import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.FactoryManagerUtils;
+import org.apache.sshd.common.Session;
 import org.apache.sshd.common.util.AbstractLoggingBean;
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * A Window for a given channel.
@@ -41,11 +48,16 @@ public class Window extends AbstractLoggingBean {
     private int packetSize;
     private boolean waiting;
     private boolean closed;
+    private Map<String,?> props = Collections.<String,Object>emptyMap();
 
     public Window(AbstractChannel channel, Object lock, boolean client, boolean local) {
-        this.channel = channel;
-        this.lock = lock != null ? lock : this;
-        this.name = (client ? "client" : "server") + " " + (local ? "local " : "remote") + " window";
+        this.channel = ValidateUtils.checkNotNull(channel, "No channel provided", GenericUtils.EMPTY_OBJECT_ARRAY);
+        this.lock = (lock != null) ? lock : this;
+        this.name = String.valueOf(channel) + ": " + (client ? "client" : "server") + " " + (local ? "local " : "remote") + " window";
+    }
+
+    public Map<String,?> getProperties() {
+        return props;
     }
 
     public int getSize() {
@@ -62,11 +74,26 @@ public class Window extends AbstractLoggingBean {
         return packetSize;
     }
 
-    public void init(int size, int packetSize) {
+    public void init(Session session) {
+        init(session.getFactoryManager());
+    }
+    
+    public void init(FactoryManager manager) {
+        init(manager.getProperties());
+    }
+
+    public void init(Map<String,?> props) {
+        init(FactoryManagerUtils.getIntProperty(props, FactoryManager.WINDOW_SIZE, AbstractChannel.DEFAULT_WINDOW_SIZE),
+             FactoryManagerUtils.getIntProperty(props, FactoryManager.MAX_PACKET_SIZE, AbstractChannel.DEFAULT_PACKET_SIZE),
+             props);
+    }
+
+    public void init(int size, int packetSize, Map<String,?> props) {
         synchronized (lock) {
             this.size = size;
             this.maxSize = size;
             this.packetSize = packetSize;
+            this.props = props;
             lock.notifyAll();
         }
     }
@@ -90,7 +117,6 @@ public class Window extends AbstractLoggingBean {
             }
         }
     }
-
 
     public void consumeAndCheck(int len) throws IOException {
         synchronized (lock) {
@@ -133,7 +159,7 @@ public class Window extends AbstractLoggingBean {
                 waiting = false;
             }
             if (closed) {
-                throw new WindowClosedException();
+                throw new WindowClosedException(name);
             }
             size -= len;
             if (log.isTraceEnabled()) {
@@ -158,7 +184,7 @@ public class Window extends AbstractLoggingBean {
                 waiting = false;
             }
             if (closed) {
-                throw new WindowClosedException();
+                throw new WindowClosedException(name);
             }
             return size;
         }
@@ -171,5 +197,10 @@ public class Window extends AbstractLoggingBean {
                 lock.notifyAll();
             }
         }
+    }
+
+    @Override
+    public String toString() {
+        return name;
     }
 }

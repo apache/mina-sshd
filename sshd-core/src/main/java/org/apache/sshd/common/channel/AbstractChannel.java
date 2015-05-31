@@ -313,9 +313,7 @@ public abstract class AbstractChannel extends CloseableUtils.AbstractInnerClosea
     }
 
     protected void configureWindow() {
-        int window = session.getIntProperty(FactoryManager.WINDOW_SIZE, DEFAULT_WINDOW_SIZE);
-        int packet = session.getIntProperty(FactoryManager.MAX_PACKET_SIZE, DEFAULT_PACKET_SIZE);
-        localWindow.init(window, packet);
+        localWindow.init(session);
     }
 
     protected void sendWindowAdjust(int len) throws IOException {
