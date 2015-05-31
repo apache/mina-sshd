@@ -20,7 +20,6 @@
 package org.apache.sshd.common;
 
 import java.util.Map;
-import java.util.Objects;
 
 import org.apache.sshd.common.util.GenericUtils;
 
@@ -109,16 +108,16 @@ public class FactoryManagerUtils {
         }
     }
 
-    public static final String updateProperty(Session session, String name, long value) {
+    public static final Object updateProperty(Session session, String name, long value) {
         return updateProperty(session, name, Long.toString(value));
     }
 
-    public static final String updateProperty(FactoryManager manager, String name, long value) {
-        return updateProperty(manager, name, Long.toString(value));
+    public static final Object updateProperty(FactoryManager manager, String name, long value) {
+        return updateProperty(manager.getProperties(), name, value);
     }
 
-    public static final String updateProperty(Map<String,String> props, String name, long value) {
-        return updateProperty(props, name, Long.toString(value));
+    public static final Object updateProperty(Map<String,Object> props, String name, long value) {
+        return updateProperty(props, name, Long.valueOf(value));
     }
 
     public static final int getIntProperty(Session session, String name, int defaultValue) {
@@ -159,16 +158,16 @@ public class FactoryManagerUtils {
         }
     }
 
-    public static final String updateProperty(Session session, String name, int value) {
-        return updateProperty(session, name, Integer.toString(value));
+    public static final Object updateProperty(Session session, String name, int value) {
+        return updateProperty(session.getFactoryManager(), name, value);
     }
 
-    public static final String updateProperty(FactoryManager manager, String name, int value) {
-        return updateProperty(manager, name, Integer.toString(value));
+    public static final Object updateProperty(FactoryManager manager, String name, int value) {
+        return updateProperty(manager.getProperties(), name, value);
     }
 
-    public static final String updateProperty(Map<String, String> props, String name, int value) {
-        return updateProperty(props, name, Integer.toString(value));
+    public static final Object updateProperty(Map<String,Object> props, String name, int value) {
+        return updateProperty(props, name, Integer.valueOf(value));
     }
 
     public static final boolean getBooleanProperty(Session session, String name, boolean defaultValue) {
@@ -207,16 +206,16 @@ public class FactoryManagerUtils {
         }
     }
 
-    public static final String updateProperty(Session session, String name, boolean value) {
-        return updateProperty(session, name, Boolean.toString(value));
+    public static final Object updateProperty(Session session, String name, boolean value) {
+        return updateProperty(session.getFactoryManager(), name, value);
     }
 
-    public static final String updateProperty(FactoryManager manager, String name, boolean value) {
-        return updateProperty(manager, name, Boolean.toString(value));
+    public static final Object updateProperty(FactoryManager manager, String name, boolean value) {
+        return updateProperty(manager.getProperties(), name, value);
     }
 
-    public static final String updateProperty(Map<String, String> props, String name, boolean value) {
-        return updateProperty(props, name, Boolean.toString(value));
+    public static final Object updateProperty(Map<String,Object> props, String name, boolean value) {
+        return updateProperty(props, name, Boolean.valueOf(value));
     }
 
     public static final String getString(Session session, String name) {
@@ -249,23 +248,11 @@ public class FactoryManagerUtils {
         }
     }
 
-    public static String updateProperty(Session session, String name, Object value) {
+    public static Object updateProperty(Session session, String name, Object value) {
         return updateProperty(session.getFactoryManager(), name, value);
     }
 
-    public static String updateProperty(FactoryManager manager, String name, Object value) {
-        return updateProperty(manager.getProperties(), name, value);
-    }
-
-    public static String updateProperty(Map<String, String> props, String name, Object value) {
-        return updateProperty(props, name, Objects.toString(value));
-    }
-
-    public static String updateProperty(Session session, String name, String value) {
-        return updateProperty(session.getFactoryManager(), name, value);
-    }
-
-    public static String updateProperty(FactoryManager manager, String name, String value) {
+    public static Object updateProperty(FactoryManager manager, String name, Object value) {
         return updateProperty(manager.getProperties(), name, value);
     }
 
@@ -273,11 +260,11 @@ public class FactoryManagerUtils {
      * @param props The {@link Map} of properties to update
      * @param name  The property name
      * @param value The property value - if {@code null}/empty then the
-     *              specified property is <U>removed</U> from the properties map
+     * specified property is <U>removed</U> from the properties map
      * @return The removed or previous value (if any)
      */
-    public static String updateProperty(Map<String, String> props, String name, String value) {
-        if (GenericUtils.isEmpty(value)) {
+    public static Object updateProperty(Map<String,Object> props, String name, Object value) {
+        if ((value == null) || ((value instanceof CharSequence) && GenericUtils.isEmpty((CharSequence) value))) {
             return props.remove(name);
         } else {
             return props.put(name, value);

@@ -112,7 +112,7 @@ public class LoadTest extends BaseTestSupport {
 
     protected void runClient(String msg) throws Exception {
         try(SshClient client = SshClient.setUpDefaultClient()) {
-            Map<String,String>  props=client.getProperties();
+            Map<String,Object>  props=client.getProperties();
             FactoryManagerUtils.updateProperty(props, FactoryManager.MAX_PACKET_SIZE, 1024 * 16);
             FactoryManagerUtils.updateProperty(props, FactoryManager.WINDOW_SIZE, 1024 * 8);
             client.setKeyExchangeFactories(Arrays.asList(

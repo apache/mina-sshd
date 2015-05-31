@@ -1154,15 +1154,10 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     }
 
     protected void doOpen(Buffer buffer, int id) throws IOException {
-        if (session.getFactoryManager().getProperties() != null) {
-            String maxHandlesString = session.getFactoryManager().getProperties().get(MAX_OPEN_HANDLES_PER_SESSION);
-            if (maxHandlesString != null) {
-                int maxHandleCount = Integer.parseInt(maxHandlesString);
-                if (handles.size() > maxHandleCount) {
-                    sendStatus(id, SSH_FX_FAILURE, "Too many open handles");
-                    return;
-                }
-            }
+        int maxHandleCount = FactoryManagerUtils.getIntProperty(session, MAX_OPEN_HANDLES_PER_SESSION, Integer.MAX_VALUE);
+        if (handles.size() > maxHandleCount) {
+            sendStatus(id, SSH_FX_FAILURE, "Too many open handles");
+            return;
         }
 
         String path = buffer.getString();

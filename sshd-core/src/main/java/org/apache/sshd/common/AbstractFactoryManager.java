@@ -49,7 +49,7 @@ import org.apache.sshd.common.util.threads.ThreadUtils;
  */
 public abstract class AbstractFactoryManager extends CloseableUtils.AbstractInnerCloseable implements FactoryManager {
 
-    protected Map<String,String> properties = new HashMap<String,String>();
+    protected Map<String,Object> properties = new HashMap<String,Object>();
     protected IoServiceFactoryFactory ioServiceFactoryFactory;
     protected IoServiceFactory ioServiceFactory;
     protected List<NamedFactory<KeyExchange>> keyExchangeFactories;
@@ -158,12 +158,12 @@ public abstract class AbstractFactoryManager extends CloseableUtils.AbstractInne
     }
 
     @Override
-    public Map<String, String> getProperties() {
+    public Map<String, Object> getProperties() {
         return properties;
     }
 
-    public void setProperties(Map<String, String> properties) {
-        this.properties = properties;
+    public void setProperties(Map<String, Object> properties) {
+        this.properties = ValidateUtils.checkNotNull(properties, "Null properties not allowed", GenericUtils.EMPTY_OBJECT_ARRAY);
     }
 
     @Override

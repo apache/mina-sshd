@@ -144,16 +144,23 @@ public interface FactoryManager {
     public static final String NIO2_READ_BUFFER_SIZE = "nio2-read-buf-size";
 
     /**
-     * A map of properties that can be used to configure the SSH server
+     * <P>A map of properties that can be used to configure the SSH server
      * or client.  This map will never be changed by either the server or
      * client and is not supposed to be changed at runtime (changes are not
      * bound to have any effect on a running client or server), though it may
      * affect the creation of sessions later as these values are usually not
-     * cached.
-     *
+     * cached.</P></BR>
+     * <B>Note:</B> the <U>type</U> of the mapped property should match the
+     * expected configuration value type - {@code Long, Integer, Boolean,
+     * String, etc...). If it doesn't, the {@code toString()} result of the
+     * mapped value is used to convert it to the required type. E.g., if
+     * the mapped value is the <U>string</U> &quot;1234&quot; and the expected
+     * value is a {@code long} then it will be parsed into one. Also, if
+     * the mapped value is an {@code Integer} but a {@code long} is expected,
+     * then it will be converted into one.
      * @return a valid <code>Map</code> containing configuration values, never <code>null</code>
      */
-    Map<String,String> getProperties();
+    Map<String,Object> getProperties();
 
     /**
      * An upper case string identifying the version of the

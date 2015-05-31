@@ -45,6 +45,7 @@ import org.apache.sshd.common.Cipher;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.Digest;
 import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.KeyExchange;
 import org.apache.sshd.common.Mac;
 import org.apache.sshd.common.NamedFactory;
@@ -1235,26 +1236,24 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     @Override
     public int getIntProperty(String name, int defaultValue) {
         try {
-            String v = factoryManager.getProperties().get(name);
-            if (v != null) {
-                return Integer.parseInt(v);
-            }
+            return FactoryManagerUtils.getIntProperty(factoryManager, name, defaultValue);
         } catch (Exception e) {
-            // Ignore
+            if (log.isDebugEnabled()) {
+                log.debug("getIntProperty(" + name + ") failed (" + e.getClass().getSimpleName() + ") to retrieve: " + e.getMessage());
+            }
+            return defaultValue;
         }
-        return defaultValue;
     }
 
     public long getLongProperty(String name, long defaultValue) {
         try {
-            String v = factoryManager.getProperties().get(name);
-            if (v != null) {
-                return Long.parseLong(v);
-            }
+            return FactoryManagerUtils.getLongProperty(factoryManager, name, defaultValue);
         } catch (Exception e) {
-            // Ignore
+            if (log.isDebugEnabled()) {
+                log.debug("getLongProperty(" + name + ") failed (" + e.getClass().getSimpleName() + ") to retrieve: " + e.getMessage());
+            }
+            return defaultValue;
         }
-        return defaultValue;
     }
 
     /**

@@ -57,7 +57,7 @@ public class DefaultIoServiceFactoryFactoryTest extends BaseTestSupport {
         Mockito.when(service.isTerminated()).thenReturn(Boolean.TRUE);
 
         FactoryManager manager = Mockito.mock(FactoryManager.class);
-        Mockito.when(manager.getProperties()).thenReturn(Collections.<String,String>emptyMap());
+        Mockito.when(manager.getProperties()).thenReturn(Collections.<String,Object>emptyMap());
 
         String propName = IoServiceFactoryFactory.class.getName();
         for (BuiltinIoServiceFactoryFactories f : BuiltinIoServiceFactoryFactories.VALUES) {
