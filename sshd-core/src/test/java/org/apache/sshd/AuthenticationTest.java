@@ -33,12 +33,12 @@ import org.apache.sshd.deprecated.ClientUserAuthServiceOld;
 import org.apache.sshd.deprecated.UserAuthKeyboardInteractive;
 import org.apache.sshd.deprecated.UserAuthPassword;
 import org.apache.sshd.deprecated.UserAuthPublicKey;
+import org.apache.sshd.server.PublickeyAuthenticator.AcceptAllPublickeyAuthenticator;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.session.SessionFactory;
 import org.apache.sshd.util.BaseTestSupport;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
-import org.apache.sshd.util.BogusPublickeyAuthenticator;
 import org.apache.sshd.util.Utils;
 import org.junit.After;
 import org.junit.Before;
@@ -55,8 +55,8 @@ public class AuthenticationTest extends BaseTestSupport {
     public void setUp() throws Exception {
         sshd = SshServer.setUpDefaultServer();
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
-        sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
-        sshd.setPublickeyAuthenticator(new BogusPublickeyAuthenticator());
+        sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
+        sshd.setPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);
         sshd.getProperties().put(ServerFactoryManager.WELCOME_BANNER, WELCOME);
         sshd.getProperties().put(ServerFactoryManager.AUTH_METHODS, "publickey,password publickey,keyboard-interactive");
         sshd.setSessionFactory(new SessionFactory() {
@@ -89,12 +89,12 @@ public class AuthenticationTest extends BaseTestSupport {
             try(ClientSession s = client.connect(null, "localhost", port).await().getSession()) {
                 s.waitFor(ClientSession.CLOSED | ClientSession.WAIT_AUTH, 0);
         
-                assertFalse(authPassword(s, "user1", "the-password").await().isSuccess());
-                assertFalse(authPassword(s, "user2", "the-password").await().isSuccess());
+                assertFalse("Unexpected user1 password auth success", authPassword(s, "user1", "the-password").await().isSuccess());
+                assertFalse("Unexpected user2 password auth success", authPassword(s, "user2", "the-password").await().isSuccess());
         
                 // Note that WAIT_AUTH flag should be false, but since the internal
                 // authentication future is not updated, it's still returned
-                assertEquals(ClientSession.CLOSED | ClientSession.WAIT_AUTH, s.waitFor(ClientSession.CLOSED, 1000));
+                assertEquals("Mismatched client session close mask", ClientSession.CLOSED | ClientSession.WAIT_AUTH, s.waitFor(ClientSession.CLOSED, 1000));
             } finally {
                 client.stop();
             }
@@ -113,7 +113,7 @@ public class AuthenticationTest extends BaseTestSupport {
             try(ClientSession s = client.connect(null, "localhost", port).await().getSession()) {
                 s.waitFor(ClientSession.CLOSED | ClientSession.WAIT_AUTH, 0);
         
-                assertFalse(authPassword(s, "smx", "smx").await().isSuccess());
+                assertFalse("Unexpected password auth sucess", authPassword(s, getCurrentTestName(), getCurrentTestName()).await().isSuccess());
         
                 s.close(true);
             } finally {
@@ -135,9 +135,8 @@ public class AuthenticationTest extends BaseTestSupport {
                 s.waitFor(ClientSession.CLOSED | ClientSession.WAIT_AUTH, 0);
         
                 KeyPair pair = Utils.createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
-                assertFalse(authPublicKey(s, "smx", pair).await().isSuccess());
-        
-                assertTrue(authPassword(s, "smx", "smx").await().isSuccess());
+                assertFalse("Unexpected pubkey auth success", authPublicKey(s, getCurrentTestName(), pair).await().isSuccess());
+                assertTrue("Failed password auth", authPassword(s, getCurrentTestName(), getCurrentTestName()).await().isSuccess());
                 s.close(true);
             } finally {
                 client.stop();
@@ -158,9 +157,8 @@ public class AuthenticationTest extends BaseTestSupport {
                 s.waitFor(ClientSession.CLOSED | ClientSession.WAIT_AUTH, 0);
         
                 KeyPair pair = Utils.createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
-                assertFalse(authPublicKey(s, "smx", pair).await().isSuccess());
-        
-                assertTrue(authInteractive(s, "smx", "smx").await().isSuccess());
+                assertFalse("Unexpected pubkey auth success", authPublicKey(s, getCurrentTestName(), pair).await().isSuccess());
+                assertTrue("Failed password auth", authInteractive(s, getCurrentTestName(), getCurrentTestName()).await().isSuccess());
         
                 s.close(true);
             } finally {

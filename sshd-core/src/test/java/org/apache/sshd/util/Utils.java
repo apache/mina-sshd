@@ -31,36 +31,81 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.CodeSource;
+import java.security.KeyPair;
 import java.security.ProtectionDomain;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 
 public class Utils {
-
+    // uses a cached instance to avoid re-creating the keys as it is a time-consuming effort
+    private static final AtomicReference<KeyPairProvider> keyPairProviderHolder = new AtomicReference<KeyPairProvider>();
+    public static final String DEFAULT_TEST_HOST_KEY_PROVIDER_ALGORITHM="RSA";
     public static KeyPairProvider createTestHostKeyProvider() {
-        return new SimpleGeneratorHostKeyProvider("target/hostkey.rsa", "RSA");
-//        return createTestKeyPairProvider("hostkey.pem");
+        KeyPairProvider provider = keyPairProviderHolder.get();
+        if (provider != null) {
+            return provider;
+        }
+
+        
+        File targetFolder = ValidateUtils.checkNotNull(detectTargetFolder(Utils.class), "Failed to detect target folder", GenericUtils.EMPTY_OBJECT_ARRAY);
+        File file = new File(targetFolder, "hostkey." + DEFAULT_TEST_HOST_KEY_PROVIDER_ALGORITHM.toLowerCase());
+        provider = validateKeyPairProvider(new SimpleGeneratorHostKeyProvider(file.getAbsolutePath(), DEFAULT_TEST_HOST_KEY_PROVIDER_ALGORITHM.toUpperCase()));
+        
+        KeyPairProvider prev = keyPairProviderHolder.getAndSet(provider);
+        if (prev != null) { // check if somebody else beat us to it
+            return prev;
+        } else {
+            return provider;
+        }
     }
 
+    // uses a cached instance to avoid re-creating the keys as it is a time-consuming effort
+    private static final Map<String, FileKeyPairProvider> providersMap = new ConcurrentHashMap<String, FileKeyPairProvider>(); 
     public static FileKeyPairProvider createTestKeyPairProvider(String resource) {
-        return new FileKeyPairProvider(new String[] { getFile(resource) });
+        String file = getFile(resource);
+        FileKeyPairProvider provider = providersMap.get(file);
+        if (provider != null) {
+            return provider;
+        }
+
+        provider = validateKeyPairProvider(new FileKeyPairProvider(file));
+            
+        FileKeyPairProvider prev = providersMap.put(file, provider);
+        if (prev != null) { // check if somebody else beat us to it
+            return prev;
+        } else {
+            return provider;
+        }
+    }
+
+    private static <P extends KeyPairProvider> P validateKeyPairProvider(P provider) {
+        ValidateUtils.checkNotNull(provider, "No provider", GenericUtils.EMPTY_OBJECT_ARRAY);
+
+        // get the I/O out of the way
+        Iterable<KeyPair>   keys=ValidateUtils.checkNotNull(provider.loadKeys(), "No keys loaded", GenericUtils.EMPTY_OBJECT_ARRAY);
+        if (keys instanceof Collection<?>) {
+            ValidateUtils.checkNotNullAndNotEmpty((Collection<?>) keys, "Empty keys loaded", GenericUtils.EMPTY_OBJECT_ARRAY);
+        }
+        
+        return provider;
     }
 
     public static int getFreePort() throws Exception {
-        ServerSocket s = new ServerSocket();
-        try {
+        try(ServerSocket s = new ServerSocket()) {
             s.setReuseAddress(true);
             s.bind(new InetSocketAddress((InetAddress) null, 0));
             return s.getLocalPort();
-        } finally {
-            s.close();
         }
     }
 

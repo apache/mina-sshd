@@ -124,7 +124,7 @@ public class CipherTest extends BaseTestSupport {
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setCipherFactories(Arrays.<NamedFactory<org.apache.sshd.common.Cipher>>asList(cipher));
         sshd.setShellFactory(new EchoShellFactory());
-        sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
+        sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
         sshd.start();
         port = sshd.getPort();
     }
@@ -141,8 +141,8 @@ public class CipherTest extends BaseTestSupport {
         JSch sch = new JSch();
         JSch.setConfig("cipher.s2c", "aes128-cbc,3des-cbc,blowfish-cbc,aes192-cbc,aes256-cbc,none");
         JSch.setConfig("cipher.c2s", "aes128-cbc,3des-cbc,blowfish-cbc,aes192-cbc,aes256-cbc,none");
-        com.jcraft.jsch.Session s = sch.getSession("smx", "localhost", port);
-        s.setUserInfo(new SimpleUserInfo("smx"));
+        com.jcraft.jsch.Session s = sch.getSession(getCurrentTestName(), "localhost", port);
+        s.setUserInfo(new SimpleUserInfo(getCurrentTestName()));
         s.connect();
         com.jcraft.jsch.Channel c = s.openChannel("shell");
         c.connect();

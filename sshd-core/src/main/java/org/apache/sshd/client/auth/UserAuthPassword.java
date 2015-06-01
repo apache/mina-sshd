@@ -19,6 +19,7 @@
 package org.apache.sshd.client.auth;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
@@ -63,7 +64,7 @@ public class UserAuthPassword extends AbstractLoggingBean implements UserAuth {
     }
 
     @Override
-    public void init(ClientSession session, String service, List<Object> identities) throws Exception {
+    public void init(ClientSession session, String service, Collection<?> identities) throws Exception {
         this.session = session;
         this.service = service;
         List<String> pwds = new ArrayList<String>();

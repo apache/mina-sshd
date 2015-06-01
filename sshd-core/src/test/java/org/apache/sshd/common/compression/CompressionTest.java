@@ -68,7 +68,7 @@ public class CompressionTest extends BaseTestSupport {
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setCompressionFactories(Arrays.<NamedFactory<org.apache.sshd.common.compression.Compression>>asList(compression));
         sshd.setShellFactory(new EchoShellFactory());
-        sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
+        sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
         sshd.start();
         JSch.setConfig("compression.s2c",  "zlib@openssh.com,zlib,none");
         JSch.setConfig("compression.c2s",  "zlib@openssh.com,zlib,none");
@@ -88,8 +88,8 @@ public class CompressionTest extends BaseTestSupport {
     protected void runTest() throws Exception {
         JSchLogger.init();
         JSch sch = new JSch();
-        com.jcraft.jsch.Session s = sch.getSession("smx", "localhost", sshd.getPort());
-        s.setUserInfo(new SimpleUserInfo("smx"));
+        com.jcraft.jsch.Session s = sch.getSession(getCurrentTestName(), "localhost", sshd.getPort());
+        s.setUserInfo(new SimpleUserInfo(getCurrentTestName()));
 
         s.connect();
         try {

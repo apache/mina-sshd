@@ -26,6 +26,8 @@ import org.apache.sshd.ClientChannel;
 import org.apache.sshd.ClientSession;
 import org.apache.sshd.SshClient;
 import org.apache.sshd.client.channel.ChannelExec;
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.eclipse.jgit.errors.TransportException;
 import org.eclipse.jgit.transport.CredentialItem;
 import org.eclipse.jgit.transport.CredentialsProvider;
@@ -92,6 +94,7 @@ public class GitSshdSessionFactory extends SshSessionFactory {
 
         }
 
+        @Override
         public Process exec(String commandName, int timeout) throws IOException {
             final ChannelExec channel = session.createExecChannel(commandName);
             channel.open().verify();
@@ -118,7 +121,8 @@ public class GitSshdSessionFactory extends SshSessionFactory {
 
                 @Override
                 public int exitValue() {
-                    return channel.getExitStatus();
+                    Integer status = ValidateUtils.checkNotNull(channel.getExitStatus(), "No channel status available", GenericUtils.EMPTY_OBJECT_ARRAY);
+                    return status.intValue();
                 }
 
                 @Override
@@ -128,6 +132,7 @@ public class GitSshdSessionFactory extends SshSessionFactory {
             };
         }
 
+        @Override
         public void disconnect() {
             client.close(true);
         }

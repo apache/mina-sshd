@@ -21,7 +21,6 @@ package org.apache.sshd.git.pack;
 import java.io.File;
 import java.util.Arrays;
 
-import com.jcraft.jsch.JSch;
 import org.apache.sshd.SshServer;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.git.transport.GitSshdSessionFactory;
@@ -29,12 +28,14 @@ import org.apache.sshd.git.util.BogusPasswordAuthenticator;
 import org.apache.sshd.git.util.EchoShellFactory;
 import org.apache.sshd.git.util.Utils;
 import org.apache.sshd.server.Command;
-import org.apache.sshd.server.sftp.SftpSubsystem;
 import org.apache.sshd.server.sftp.SftpSubsystemFactory;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.transport.CredentialsProvider;
+import org.eclipse.jgit.transport.SshSessionFactory;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.junit.Test;
+
+import com.jcraft.jsch.JSch;
 
 /**
  */
@@ -48,7 +49,7 @@ public class GitPackCommandTest {
         sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(new SftpSubsystemFactory()));
         sshd.setShellFactory(new EchoShellFactory());
         sshd.setCommandFactory(new GitPackCommandFactory("target/git/server"));
-        sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
+        sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
         sshd.start();
 
         File serverDir = new File("target/git/server/test.git");
@@ -57,7 +58,7 @@ public class GitPackCommandTest {
 
         JSch.setConfig("StrictHostKeyChecking", "no");
         CredentialsProvider.setDefault(new UsernamePasswordCredentialsProvider("sshd", "sshd"));
-        GitSshdSessionFactory.setInstance(new GitSshdSessionFactory());
+        SshSessionFactory.setInstance(new GitSshdSessionFactory());
 
         File dir = new File("target/git/local/test.git");
         Utils.deleteRecursive(dir);

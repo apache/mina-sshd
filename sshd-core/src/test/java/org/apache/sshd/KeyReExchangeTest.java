@@ -67,7 +67,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
         }
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setShellFactory(new EchoShellFactory());
-        sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
+        sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
         sshd.start();
         port  = sshd.getPort();
     }
@@ -79,9 +79,9 @@ public class KeyReExchangeTest extends BaseTestSupport {
         JSchLogger.init();
         JSch.setConfig("kex", "diffie-hellman-group-exchange-sha1");
         JSch sch = new JSch();
-        com.jcraft.jsch.Session s = sch.getSession("smx", "localhost", port);
+        com.jcraft.jsch.Session s = sch.getSession(getCurrentTestName(), "localhost", port);
         try {
-            s.setUserInfo(new SimpleUserInfo("smx"));
+            s.setUserInfo(new SimpleUserInfo(getCurrentTestName()));
             s.connect();
 
             com.jcraft.jsch.Channel c = s.openChannel("shell");
@@ -116,8 +116,8 @@ public class KeyReExchangeTest extends BaseTestSupport {
         try(SshClient client = SshClient.setUpDefaultClient()) {
             client.start();
         
-            try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
-                session.addPasswordIdentity("smx");
+            try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+                session.addPasswordIdentity(getCurrentTestName());
                 session.auth().verify(5L, TimeUnit.SECONDS);
                 
                 try(ChannelShell channel = session.createShellChannel();
@@ -170,8 +170,8 @@ public class KeyReExchangeTest extends BaseTestSupport {
         try(SshClient client = SshClient.setUpDefaultClient()) {
             client.start();
             
-            try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
-                session.addPasswordIdentity("smx");
+            try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+                session.addPasswordIdentity(getCurrentTestName());
                 session.auth().verify(5L, TimeUnit.SECONDS);
 
                 try(ChannelShell channel = session.createShellChannel();

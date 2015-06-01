@@ -88,7 +88,7 @@ public class SshServerTest extends BaseTestSupport {
         SshServer sshd = SshServer.setUpDefaultServer();
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setShellFactory(new EchoShellFactory());
-        sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
+        sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
 
         return sshd;
     }

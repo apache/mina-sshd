@@ -57,8 +57,8 @@ public class SpringConfigTest extends BaseTestSupport {
 
         JSchLogger.init();
         JSch sch = new JSch();
-        com.jcraft.jsch.Session s = sch.getSession("smx", "localhost", port);
-        s.setUserInfo(new SimpleUserInfo("smx"));
+        com.jcraft.jsch.Session s = sch.getSession(getCurrentTestName(), "localhost", port);
+        s.setUserInfo(new SimpleUserInfo(getCurrentTestName()));
         s.connect();
         
         try {

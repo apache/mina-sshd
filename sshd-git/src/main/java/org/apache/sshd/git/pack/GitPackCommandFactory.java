@@ -41,6 +41,7 @@ public class GitPackCommandFactory implements CommandFactory {
         this.delegate = delegate;
     }
 
+    @Override
     public Command createCommand(String command) {
         if (command.startsWith("git-")) {
             return new GitPackCommand(rootDir, command);

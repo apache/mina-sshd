@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.util;
 
+import org.apache.sshd.common.util.AbstractLoggingBean;
 import org.apache.sshd.server.PasswordAuthenticator;
 import org.apache.sshd.server.session.ServerSession;
 
@@ -26,10 +27,20 @@ import org.apache.sshd.server.session.ServerSession;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class BogusPasswordAuthenticator implements PasswordAuthenticator {
+public class BogusPasswordAuthenticator extends AbstractLoggingBean implements PasswordAuthenticator {
+    public static final BogusPasswordAuthenticator INSTANCE = new BogusPasswordAuthenticator();
+
+    public BogusPasswordAuthenticator() {
+        super();
+    }
 
     @Override
     public boolean authenticate(String username, String password, ServerSession session) {
-        return username != null && username.equals(password);
+        boolean result = (username != null) && username.equals(password);
+        if (log.isDebugEnabled()) {
+            log.debug("authenticate({}) {} / {} - sucess = {}", session, username, password, Boolean.valueOf(result));
+        }
+        
+        return result;
     }
 }

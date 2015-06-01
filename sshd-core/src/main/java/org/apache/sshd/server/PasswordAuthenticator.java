@@ -31,8 +31,6 @@ public interface PasswordAuthenticator {
 
     /**
      * Check the validity of a password.
-     * This method should return null if the authentication fails.
-     *
      * @param username the username
      * @param password the password
      * @param session the server session
@@ -56,11 +54,12 @@ public interface PasswordAuthenticator {
 
         @Override
         public final boolean authenticate(String username, String password, ServerSession session) {
+            boolean accepted = isAccepted();
             if (log.isDebugEnabled()) {
-                log.debug("authenticate({}[{}]: {}", username, session, Boolean.valueOf(isAccepted()));
+                log.debug("authenticate({}[{}]: {}", username, session, Boolean.valueOf(accepted));
             }
             
-            return isAccepted();
+            return accepted;
         }
     }
 

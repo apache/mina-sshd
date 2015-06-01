@@ -41,6 +41,7 @@ public class GitPgmCommandFactory implements CommandFactory {
         this.delegate = delegate;
     }
 
+    @Override
     public Command createCommand(String command) {
         if (command.startsWith("git ")) {
             return new GitPgmCommand(rootDir, command.substring("git ".length()));

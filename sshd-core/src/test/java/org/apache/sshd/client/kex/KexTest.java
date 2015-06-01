@@ -62,7 +62,7 @@ public class KexTest extends BaseTestSupport {
         sshd = SshServer.setUpDefaultServer();
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setShellFactory(new EchoShellFactory());
-        sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
+        sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
         sshd.start();
         port  = sshd.getPort();
     }
@@ -111,8 +111,8 @@ public class KexTest extends BaseTestSupport {
                 client.setKeyExchangeFactories(Collections.singletonList(kex));
                 client.start();
                 
-                try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
-                    session.addPasswordIdentity("smx");
+                try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+                    session.addPasswordIdentity(getCurrentTestName());
                     session.auth().verify(5L, TimeUnit.SECONDS);
                     
                     try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);

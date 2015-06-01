@@ -71,7 +71,7 @@ public class WindowAdjustTest {
             }
         });
 
-        sshServer.setPasswordAuthenticator(new BogusPasswordAuthenticator());
+        sshServer.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
         sshServer.setKeyPairProvider(new SimpleGeneratorHostKeyProvider());
         sshServer.start();
         port = sshServer.getPort();

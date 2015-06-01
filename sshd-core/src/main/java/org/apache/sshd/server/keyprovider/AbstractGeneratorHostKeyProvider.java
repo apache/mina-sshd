@@ -128,9 +128,9 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
 
         if (keyPair == null) {
             return Collections.emptyList();
+        } else {
+            return Collections.singleton(keyPair);
         }
-
-        return Collections.singleton(keyPair);
     }
 
     private KeyPair readKeyPair(File f) {

@@ -59,7 +59,7 @@ public class ProxyTest extends BaseTestSupport {
         sshd.getProperties().put(FactoryManager.MAX_PACKET_SIZE, "256");
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setShellFactory(new EchoShellFactory());
-        sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
+        sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
         sshd.setTcpipForwardingFilter(new BogusForwardingFilter());
         sshd.start();
         sshPort = sshd.getPort();

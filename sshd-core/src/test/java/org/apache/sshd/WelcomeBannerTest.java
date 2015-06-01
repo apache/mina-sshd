@@ -22,10 +22,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.client.UserInteraction;
+import org.apache.sshd.server.PublickeyAuthenticator.AcceptAllPublickeyAuthenticator;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.util.BaseTestSupport;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
-import org.apache.sshd.util.BogusPublickeyAuthenticator;
 import org.apache.sshd.util.Utils;
 import org.junit.After;
 import org.junit.Before;
@@ -42,8 +42,8 @@ public class WelcomeBannerTest extends BaseTestSupport {
     public void setUp() throws Exception {
         sshd = SshServer.setUpDefaultServer();
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
-        sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
-        sshd.setPublickeyAuthenticator(new BogusPublickeyAuthenticator());
+        sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
+        sshd.setPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);
         sshd.getProperties().put(ServerFactoryManager.WELCOME_BANNER, WELCOME);
         sshd.start();
         port = sshd.getPort();
@@ -73,8 +73,8 @@ public class WelcomeBannerTest extends BaseTestSupport {
             });
             client.start();
             
-            try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
-                session.addPasswordIdentity("smx");
+            try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+                session.addPasswordIdentity(getCurrentTestName());
                 session.auth().verify(5L, TimeUnit.SECONDS);
                 assertEquals(WELCOME, welcome.get());
                 session.close(true);

@@ -27,7 +27,13 @@ import org.apache.sshd.server.session.ServerSession;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class BogusPasswordAuthenticator implements PasswordAuthenticator {
+    public static final BogusPasswordAuthenticator INSTANCE = new BogusPasswordAuthenticator();
 
+    public BogusPasswordAuthenticator() {
+        super();
+    }
+
+    @Override
     public boolean authenticate(String username, String password, ServerSession session) {
         return username != null && username.equals(password);
     }

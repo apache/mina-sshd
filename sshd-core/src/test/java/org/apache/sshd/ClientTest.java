@@ -74,6 +74,7 @@ import org.apache.sshd.common.util.io.NoCloseOutputStream;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.CommandFactory;
 import org.apache.sshd.server.PublickeyAuthenticator;
+import org.apache.sshd.server.PublickeyAuthenticator.AcceptAllPublickeyAuthenticator;
 import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.UnknownCommand;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
@@ -83,7 +84,6 @@ import org.apache.sshd.server.session.ServerUserAuthService;
 import org.apache.sshd.util.AsyncEchoShellFactory;
 import org.apache.sshd.util.BaseTestSupport;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
-import org.apache.sshd.util.BogusPublickeyAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.TeeOutputStream;
 import org.apache.sshd.util.Utils;
@@ -104,6 +104,10 @@ public class ClientTest extends BaseTestSupport {
     private CountDownLatch authLatch;
     private CountDownLatch channelLatch;
 
+    public ClientTest() {
+        super();
+    }
+
     @Before
     public void setUp() throws Exception {
         authLatch = new CountDownLatch(0);
@@ -118,8 +122,8 @@ public class ClientTest extends BaseTestSupport {
                 return new UnknownCommand(command);
             }
         });
-        sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
-        sshd.setPublickeyAuthenticator(new BogusPublickeyAuthenticator());
+        sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
+        sshd.setPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);
         sshd.setServiceFactories(Arrays.asList(
                 new ServerUserAuthService.Factory() {
                     @Override
@@ -178,14 +182,14 @@ public class ClientTest extends BaseTestSupport {
 
     @Test
     public void testAsyncClient() throws Exception {
-        sshd.getProperties().put(FactoryManager.WINDOW_SIZE, "1024");
+        FactoryManagerUtils.updateProperty(sshd, FactoryManager.WINDOW_SIZE, 1024);
         sshd.setShellFactory(new AsyncEchoShellFactory());
 
-        client.getProperties().put(FactoryManager.WINDOW_SIZE, "1024");
+        FactoryManagerUtils.updateProperty(client, FactoryManager.WINDOW_SIZE, 1024);
         client.start();
 
-        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
-            session.addPasswordIdentity("smx");
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
 
             try(final ChannelShell channel = session.createShellChannel()) {
@@ -275,8 +279,9 @@ public class ClientTest extends BaseTestSupport {
     @Test
     public void testCommandDeadlock() throws Exception {
         client.start();
-        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
-            session.addPasswordIdentity("smx");
+
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
             
             try(ChannelExec channel = session.createExecChannel("test");
@@ -307,8 +312,8 @@ public class ClientTest extends BaseTestSupport {
     public void testClient() throws Exception {
         client.start();
 
-        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
-            session.addPasswordIdentity("smx");
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
             
             try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
@@ -356,8 +361,8 @@ public class ClientTest extends BaseTestSupport {
     public void testClientInverted() throws Exception {
         client.start();
         
-        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
-            session.addPasswordIdentity("smx");
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
             
             try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
@@ -400,8 +405,8 @@ public class ClientTest extends BaseTestSupport {
     public void testClientWithCustomChannel() throws Exception {
         client.start();
         
-        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
-            session.addPasswordIdentity("smx");
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
     
             try(ChannelShell channel = new ChannelShell();
@@ -424,8 +429,8 @@ public class ClientTest extends BaseTestSupport {
     public void testClientClosingStream() throws Exception {
         client.start();
         
-        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
-            session.addPasswordIdentity("smx");
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
     
             try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
@@ -473,8 +478,8 @@ public class ClientTest extends BaseTestSupport {
 //        sshd.getProperties().put(SshServer.MAX_PACKET_SIZE, Integer.toString(0x1000));
         client.start();
         
-        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
-            session.addPasswordIdentity("smx");
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
 
             try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
@@ -528,8 +533,8 @@ public class ClientTest extends BaseTestSupport {
     public void testOpenChannelOnClosedSession() throws Exception {
         client.start();
         
-        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
-            session.addPasswordIdentity("smx");
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
             
             try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL)) {
@@ -554,8 +559,8 @@ public class ClientTest extends BaseTestSupport {
         authLatch = new CountDownLatch(1);
         client.start();
         
-        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
-            session.addPasswordIdentity("smx");
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
 
             AuthFuture authFuture = session.auth();
             CloseFuture closeFuture = session.close(false);
@@ -573,8 +578,8 @@ public class ClientTest extends BaseTestSupport {
     public void testCloseCleanBeforeChannelOpened() throws Exception {
         client.start();
         
-        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
-            session.addPasswordIdentity("smx");
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
 
             try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
@@ -603,8 +608,8 @@ public class ClientTest extends BaseTestSupport {
         channelLatch = new CountDownLatch(1);
         client.start();
 
-        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
-            session.addPasswordIdentity("smx");
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
 
             try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
@@ -633,7 +638,7 @@ public class ClientTest extends BaseTestSupport {
     public void testPublicKeyAuth() throws Exception {
         client.start();
         
-        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
             KeyPair pair = Utils.createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
             session.addPublicKeyIdentity(pair);
             session.auth().verify(5L, TimeUnit.SECONDS);
@@ -647,7 +652,7 @@ public class ClientTest extends BaseTestSupport {
         client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(UserAuthPublicKey.UserAuthPublicKeyFactory.INSTANCE));
         client.start();
         
-        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
             session.addPublicKeyIdentity(Utils.createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA));
             session.auth().verify(5L, TimeUnit.SECONDS);
         } finally {
@@ -667,7 +672,7 @@ public class ClientTest extends BaseTestSupport {
         client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(UserAuthPublicKey.UserAuthPublicKeyFactory.INSTANCE));
         client.start();
 
-        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
             session.addPublicKeyIdentity(new SimpleGeneratorHostKeyProvider(null, "RSA").loadKey(KeyPairProvider.SSH_RSA));
             session.addPublicKeyIdentity(pair);
             session.auth().verify(5L, TimeUnit.SECONDS);
@@ -681,8 +686,8 @@ public class ClientTest extends BaseTestSupport {
         client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthPassword.UserAuthPasswordFactory()));
         client.start();
         
-        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
-            session.addPasswordIdentity("smx");
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
         } finally {
             client.stop();
@@ -694,9 +699,9 @@ public class ClientTest extends BaseTestSupport {
         client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthPassword.UserAuthPasswordFactory()));
         client.start();
         
-        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
-            session.addPasswordIdentity("bad");
-            session.addPasswordIdentity("smx");
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+            session.addPasswordIdentity(getClass().getSimpleName());
+            session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
         } finally {
             client.stop();
@@ -708,8 +713,8 @@ public class ClientTest extends BaseTestSupport {
         client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(UserAuthKeyboardInteractive.UserAuthKeyboardInteractiveFactory.INSTANCE));
         client.start();
         
-        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
-            session.addPasswordIdentity("smx");
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
         } finally {
             client.stop();
@@ -721,9 +726,9 @@ public class ClientTest extends BaseTestSupport {
         client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(UserAuthKeyboardInteractive.UserAuthKeyboardInteractiveFactory.INSTANCE));
         client.start();
         
-        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
-            session.addPasswordIdentity("bad");
-            session.addPasswordIdentity("smx");
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+            session.addPasswordIdentity(getClass().getSimpleName());
+            session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
         } finally {
             client.stop();
@@ -750,7 +755,7 @@ public class ClientTest extends BaseTestSupport {
         });
         client.start();
         
-        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
             AuthFuture future = session.auth();
             future.await();
             assertTrue("Unexpected authentication success", future.isFailure());
@@ -770,7 +775,7 @@ public class ClientTest extends BaseTestSupport {
                         .<NamedFactory<UserAuth>> asList(UserAuthKeyboardInteractive.UserAuthKeyboardInteractiveFactory.INSTANCE));
         client.start();
 
-        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
             session.setUserInteraction(new UserInteraction() {
                     @Override
                     public void welcome(String banner) {
@@ -781,7 +786,7 @@ public class ClientTest extends BaseTestSupport {
                     public String[] interactive(String destination, String name, String instruction,
                                                 String[] prompt, boolean[] echo) {
                         count.incrementAndGet();
-                        return new String[] { "smx" };
+                        return new String[] { getCurrentTestName() };
                     }
                 });
             AuthFuture future = session.auth();
@@ -803,7 +808,7 @@ public class ClientTest extends BaseTestSupport {
                         .<NamedFactory<UserAuth>> asList(new UserAuthKeyboardInteractive.UserAuthKeyboardInteractiveFactory()));
         client.start();
         
-        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
             session.setUserInteraction(new UserInteraction() {
                 @Override
                 public void welcome(String banner) {
@@ -832,8 +837,8 @@ public class ClientTest extends BaseTestSupport {
         try {
             client.start();
             
-            try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
-                session.addPasswordIdentity("smx");
+            try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+                session.addPasswordIdentity(getCurrentTestName());
                 session.auth().verify(5L, TimeUnit.SECONDS);
                 
                 try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
@@ -886,8 +891,8 @@ public class ClientTest extends BaseTestSupport {
         );
         client.start();
         
-        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
-            session.waitFor(ClientSession.WAIT_AUTH, 10000);
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+            session.waitFor(ClientSession.WAIT_AUTH, TimeUnit.SECONDS.toMillis(10L));
             assertTrue(ok.get());
         } finally {
             client.stop();
@@ -900,8 +905,8 @@ public class ClientTest extends BaseTestSupport {
         client.getCipherFactories().add(BuiltinCiphers.none);
         client.start();
         
-        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
-            session.addPasswordIdentity("smx");
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
             session.switchToNoneCipher().await();
     

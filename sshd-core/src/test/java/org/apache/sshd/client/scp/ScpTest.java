@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.client;
+package org.apache.sshd.client.scp;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -97,7 +97,7 @@ public class ScpTest extends BaseTestSupport {
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setCommandFactory(new ScpCommandFactory());
         sshd.setShellFactory(new EchoShellFactory());
-        sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
+        sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
         sshd.setFileSystemFactory(fileSystemFactory);
         sshd.start();
         port = sshd.getPort();

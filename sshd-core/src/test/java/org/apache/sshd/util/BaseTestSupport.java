@@ -152,7 +152,9 @@ public abstract class BaseTestSupport extends Assert {
     }
 
     public static Path assertHierarchyTargetFolderExists(Path folder, LinkOption ... options) throws IOException {
-        if (!Files.exists(folder, options)) {
+        if (Files.exists(folder, options)) {
+            assertTrue("Target is an existing file instead of a folder: " + folder, Files.isDirectory(folder, options));
+        } else {
             Files.createDirectories(folder);
         }
         
@@ -160,7 +162,9 @@ public abstract class BaseTestSupport extends Assert {
     }
 
     public static File assertHierarchyTargetFolderExists(File folder) {
-        if (!folder.exists()) {
+        if (folder.exists()) {
+            assertTrue("Target is an existing file instead of a folder: " + folder.getAbsolutePath(), folder.isDirectory());
+        } else {
             assertTrue("Failed to create hierarchy of " + folder.getAbsolutePath(), folder.mkdirs());
         }
         

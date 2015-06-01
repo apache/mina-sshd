@@ -221,8 +221,9 @@ public class ClientUserAuthService extends CloseableUtils.AbstractCloseable impl
                 return;
             }
             String method = clientMethods.get(currentMethod);
-            userAuth = NamedFactory.Utils.create(authFactories, method);
-            assert userAuth != null;
+            if ((userAuth = NamedFactory.Utils.create(authFactories, method)) == null) {
+                throw new UnsupportedOperationException("Failed to find a user-auth factory for method=" + method);
+            }
             userAuth.init(session, service, identities);
         }
     }

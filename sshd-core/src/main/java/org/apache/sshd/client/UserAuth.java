@@ -18,7 +18,7 @@
  */
 package org.apache.sshd.client;
 
-import java.util.List;
+import java.util.Collection;
 
 import org.apache.sshd.ClientSession;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -30,7 +30,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
  */
 public interface UserAuth {
 
-    void init(ClientSession session, String service, List<Object> identities) throws Exception;
+    void init(ClientSession session, String service, Collection<?> identities) throws Exception;
 
     boolean process(Buffer buffer) throws Exception;
 

@@ -36,6 +36,7 @@ import org.apache.sshd.server.ExitCallback;
  */
 public class EchoShellFactory implements Factory<Command> {
 
+    @Override
     public Command create() {
         return new EchoShell();
     }
@@ -65,32 +66,39 @@ public class EchoShellFactory implements Factory<Command> {
             return environment;
         }
 
+        @Override
         public void setInputStream(InputStream in) {
             this.in = in;
         }
 
+        @Override
         public void setOutputStream(OutputStream out) {
             this.out = out;
         }
 
+        @Override
         public void setErrorStream(OutputStream err) {
             this.err = err;
         }
 
+        @Override
         public void setExitCallback(ExitCallback callback) {
             this.callback = callback;
         }
 
+        @Override
         public void start(Environment env) throws IOException {
             environment = env;
             thread = new Thread(this, "EchoShell");
             thread.start();
         }
 
+        @Override
         public void destroy() {
             thread.interrupt();
         }
 
+        @Override
         public void run() {
             BufferedReader r = new BufferedReader(new InputStreamReader(in));
             try {

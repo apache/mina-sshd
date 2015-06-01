@@ -100,7 +100,7 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
         try(SshClient client = SshClient.setUpDefaultClient()) {
             client.start();
             
-            try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
+            try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
                 session.addPublicKeyIdentity(pairRsaBad);
                 session.addPublicKeyIdentity(pairRsa);
                 assertTrue(session.auth().await().isSuccess());
@@ -136,20 +136,26 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
         try(SshClient client = SshClient.setUpDefaultClient()) {
             client.start();
             
-            try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
+            try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
                 session.addPublicKeyIdentity(pairRsaBad);
                 session.addPublicKeyIdentity(pairRsa);
-                assertTrue(session.auth().await().isSuccess());
+                assertTrue("Failed to authenticate", session.auth().await().isSuccess());
             } finally {
                 client.stop();
             }
         }
 
-        assertEquals(2, count.size());
-        assertTrue(count.containsKey(KeyUtils.getFingerPrint(pairRsaBad.getPublic())));
-        assertTrue(count.containsKey(KeyUtils.getFingerPrint(pairRsa.getPublic())));
-        assertEquals(1, count.get(KeyUtils.getFingerPrint(pairRsaBad.getPublic())).get());
-        assertEquals(2, count.get(KeyUtils.getFingerPrint(pairRsa.getPublic())).get());
+        assertEquals("Mismatched attempted keys count", 2, count.size());
+        
+        String badFingerPrint = KeyUtils.getFingerPrint(pairRsaBad.getPublic());
+        Number badIndex = count.get(badFingerPrint);
+        assertNotNull("Missing bad RSA key", badIndex);
+        assertEquals("Mismatched attempt index for bad key", 1, badIndex.intValue());
+
+        String goodFingerPrint = KeyUtils.getFingerPrint(pairRsa.getPublic());
+        Number goodIndex = count.get(goodFingerPrint);
+        assertNotNull("Missing good RSA key", goodIndex);
+        assertEquals("Mismatched attempt index for good key", 2, goodIndex.intValue());
     }
 
     public static class TestCachingPublicKeyAuthenticator extends CachingPublicKeyAuthenticator {

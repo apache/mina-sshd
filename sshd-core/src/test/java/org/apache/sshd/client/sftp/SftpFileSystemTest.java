@@ -86,7 +86,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
         sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(new SftpSubsystemFactory()));
         sshd.setCommandFactory(new ScpCommandFactory());
         sshd.setShellFactory(new EchoShellFactory());
-        sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
+        sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
         sshd.setFileSystemFactory(fileSystemFactory);
         sshd.start();
         port = sshd.getPort();

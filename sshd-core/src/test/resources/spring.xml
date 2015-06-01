@@ -41,7 +41,7 @@
             <bean class="org.apache.sshd.util.BogusPasswordAuthenticator" />
         </property>
         <property name="publickeyAuthenticator">
-            <bean class="org.apache.sshd.util.BogusPublickeyAuthenticator" />
+            <bean class="org.apache.sshd.server.PublickeyAuthenticator.AcceptAllPublickeyAuthenticator" />
         </property>
         <!-- Standard properties -->
         <!--

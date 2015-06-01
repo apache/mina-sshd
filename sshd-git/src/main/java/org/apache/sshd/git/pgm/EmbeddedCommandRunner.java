@@ -32,7 +32,6 @@ import java.util.List;
 
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.eclipse.jgit.pgm.CommandCatalog;
 import org.eclipse.jgit.pgm.CommandRef;
 import org.eclipse.jgit.pgm.Die;
@@ -151,7 +150,9 @@ public class EmbeddedCommandRunner {
         set(cmd, "ins", in);
         set(cmd, "outs", out);
         set(cmd, "errs", err);
-        if ((Boolean) call(cmd, "requiresRepository")) {
+        
+        Boolean success = (Boolean) call(cmd, "requiresRepository"); 
+        if (success.booleanValue()) {
             call(cmd, "init", new Class[] { Repository.class, String.class }, new Object[] { openGitDir(gitdir), gitdir });
         } else {
             call(cmd, "init", new Class[] { Repository.class, String.class }, new Object[] { null, gitdir });
@@ -167,7 +168,7 @@ public class EmbeddedCommandRunner {
     }
 
     private Object get(Object obj, String name) throws IllegalAccessException, NoSuchFieldException {
-        Class clazz = obj.getClass();
+        Class<?> clazz = obj.getClass();
         while (clazz != null) {
             try {
                 Field field = clazz.getDeclaredField(name);
@@ -181,7 +182,7 @@ public class EmbeddedCommandRunner {
     }
 
     private void set(Object obj, String name, Object val) throws IllegalAccessException, NoSuchFieldException {
-        Class clazz = obj.getClass();
+        Class<?> clazz = obj.getClass();
         while (clazz != null) {
             try {
                 Field field = clazz.getDeclaredField(name);

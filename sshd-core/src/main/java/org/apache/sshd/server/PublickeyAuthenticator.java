@@ -34,7 +34,6 @@ public interface PublickeyAuthenticator {
 
     /**
      * Check the validity of a public key.
-     *
      * @param username the username
      * @param key the key
      * @param session the server session
@@ -58,12 +57,13 @@ public interface PublickeyAuthenticator {
 
         @Override
         public final boolean authenticate(String username, PublicKey key, ServerSession session) {
+            boolean accepted = isAccepted();
             if (log.isDebugEnabled()) {
-                log.debug("authenticate({}[{}][[]]: {}",
-                          new Object[] { username, session, key.getAlgorithm(), KeyUtils.getFingerPrint(key), Boolean.valueOf(isAccepted()) });
+                log.debug("authenticate({}[{}][{}][{}]: {}",
+                          username, session, key.getAlgorithm(), KeyUtils.getFingerPrint(key), Boolean.valueOf(accepted));
             }
 
-            return isAccepted();
+            return accepted;
         }
     }
 

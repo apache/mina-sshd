@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
@@ -76,7 +77,7 @@ public class UserAuthPublicKey extends AbstractLoggingBean implements UserAuth {
     }
 
     @Override
-    public void init(ClientSession session, String service, List<Object> identities) throws Exception {
+    public void init(ClientSession session, String service, Collection<?> identities) throws Exception {
         this.session = session;
         this.service = service;
         List<PublicKeyIdentity> ids = new ArrayList<PublicKeyIdentity>();
@@ -85,19 +86,22 @@ public class UserAuthPublicKey extends AbstractLoggingBean implements UserAuth {
                 ids.add(new KeyPairIdentity(session.getFactoryManager(), (KeyPair) o));
             }
         }
-        SshAgentFactory factory = session.getFactoryManager().getAgentFactory();
+        
+        FactoryManager manager = session.getFactoryManager();
+        SshAgentFactory factory = manager.getAgentFactory();
         if (factory != null) {
-            this.agent = factory.createClient(session.getFactoryManager());
+            this.agent = factory.createClient(manager);
             for (SshAgent.Pair<PublicKey, String> pair : agent.getIdentities()) {
                 ids.add(new KeyAgentIdentity(agent, pair.getFirst()));
             }
         } else {
             this.agent = null;
         }
-        KeyPairProvider provider = session.getFactoryManager().getKeyPairProvider();
+
+        KeyPairProvider provider = manager.getKeyPairProvider();
         if (provider != null) {
             for (KeyPair pair : provider.loadKeys()) {
-                ids.add(new KeyPairIdentity(session.getFactoryManager(), pair));
+                ids.add(new KeyPairIdentity(manager, pair));
             }
         }
         this.keys = ids.iterator();

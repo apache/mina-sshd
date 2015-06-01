@@ -85,7 +85,7 @@ public class ServerTest extends BaseTestSupport {
         sshd = SshServer.setUpDefaultServer();
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setShellFactory(new TestEchoShellFactory());
-        sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
+        sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
         sshd.setSessionFactory(new org.apache.sshd.server.session.SessionFactory());
         sshd.start();
         port = sshd.getPort();
@@ -117,7 +117,7 @@ public class ServerTest extends BaseTestSupport {
         ));
         client.start();
         
-        try(ClientSession s = client.connect("smx", "localhost", port).await().getSession()) {
+        try(ClientSession s = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
             int nbTrials = 0;
             int res = 0;
             while ((res & ClientSession.CLOSED) == 0) {
@@ -146,7 +146,7 @@ public class ServerTest extends BaseTestSupport {
                 new ClientConnectionService.Factory()
         ));
         client.start();
-        try(ClientSession s = client.connect("smx", "localhost", port).await().getSession()) {
+        try(ClientSession s = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
             int nbTrials = 0;
             AuthFuture authFuture;
             do {
@@ -548,7 +548,7 @@ public class ServerTest extends BaseTestSupport {
         sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(new SftpSubsystemFactory()));
         sshd.setShellFactory(new EchoShellFactory());
         sshd.setCommandFactory(new ScpCommandFactory());
-        sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
+        sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
         sshd.start();
         Thread.sleep(100000);
     }

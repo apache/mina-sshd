@@ -26,9 +26,9 @@ import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.server.Command;
+import org.apache.sshd.server.PublickeyAuthenticator.AcceptAllPublickeyAuthenticator;
 import org.apache.sshd.util.BaseTestSupport;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
-import org.apache.sshd.util.BogusPublickeyAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.Utils;
 import org.junit.After;
@@ -55,8 +55,8 @@ public class KeepAliveTest extends BaseTestSupport {
         sshd.getProperties().put(FactoryManager.IDLE_TIMEOUT, Integer.toString(timeout));
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setShellFactory(new TestEchoShellFactory());
-        sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
-        sshd.setPublickeyAuthenticator(new BogusPublickeyAuthenticator());
+        sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
+        sshd.setPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);
         sshd.start();
         port  = sshd.getPort();
     }
@@ -73,8 +73,8 @@ public class KeepAliveTest extends BaseTestSupport {
         SshClient client = SshClient.setUpDefaultClient();
         client.start();
         
-        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
-            session.addPasswordIdentity("smx");
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
             
             try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL)) {
@@ -93,8 +93,8 @@ public class KeepAliveTest extends BaseTestSupport {
         SshClient client = SshClient.setUpDefaultClient();
         client.start();
         
-        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
-            session.addPasswordIdentity("smx");
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
         
             try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL)) {
@@ -114,8 +114,8 @@ public class KeepAliveTest extends BaseTestSupport {
         FactoryManagerUtils.updateProperty(client, ClientFactoryManager.HEARTBEAT_INTERVAL, heartbeat);
         client.start();
 
-        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
-            session.addPasswordIdentity("smx");
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
 
             try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL)) {
@@ -135,8 +135,8 @@ public class KeepAliveTest extends BaseTestSupport {
         FactoryManagerUtils.updateProperty(client, ClientFactoryManager.HEARTBEAT_INTERVAL, heartbeat);
         client.start();
 
-        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
-            session.addPasswordIdentity("smx");
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
             
             try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL)) {
@@ -157,8 +157,8 @@ public class KeepAliveTest extends BaseTestSupport {
         SshClient client = SshClient.setUpDefaultClient();
         client.start();
         
-        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
-            session.addPasswordIdentity("smx");
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
 
             try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
@@ -187,8 +187,8 @@ public class KeepAliveTest extends BaseTestSupport {
         SshClient client = SshClient.setUpDefaultClient();
         client.start();
 
-        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
-            session.addPasswordIdentity("smx");
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
             
             try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);

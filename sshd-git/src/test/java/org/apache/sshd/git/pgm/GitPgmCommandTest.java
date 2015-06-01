@@ -31,7 +31,6 @@ import org.apache.sshd.git.util.BogusPasswordAuthenticator;
 import org.apache.sshd.git.util.EchoShellFactory;
 import org.apache.sshd.git.util.Utils;
 import org.apache.sshd.server.Command;
-import org.apache.sshd.server.sftp.SftpSubsystem;
 import org.apache.sshd.server.sftp.SftpSubsystemFactory;
 import org.eclipse.jgit.api.Git;
 import org.junit.Test;
@@ -54,7 +53,7 @@ public class GitPgmCommandTest {
         sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(new SftpSubsystemFactory()));
         sshd.setShellFactory(new EchoShellFactory());
         sshd.setCommandFactory(new GitPgmCommandFactory("target/git/pgm"));
-        sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
+        sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
         sshd.start();
 
         File serverDir = new File("target/git/pgm");
@@ -88,10 +87,11 @@ public class GitPgmCommandTest {
         channel.setErr(System.err);
         channel.open().verify();
         channel.waitFor(ClientChannel.CLOSED, 0);
-        if (channel.getExitStatus() != null) {
-            int s = channel.getExitStatus();
-            if (s != 0) {
-                throw new Exception("Command failed with status " + s);
+        
+        Integer status = channel.getExitStatus();
+        if (status != null) {
+            if (status.intValue() != 0) {
+                throw new Exception("Command failed with status " + status);
             }
         }
     }

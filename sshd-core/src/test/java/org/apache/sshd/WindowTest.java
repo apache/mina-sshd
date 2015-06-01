@@ -45,6 +45,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.CommandFactory;
+import org.apache.sshd.server.PublickeyAuthenticator.AcceptAllPublickeyAuthenticator;
 import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.UnknownCommand;
 import org.apache.sshd.server.session.ServerConnectionService;
@@ -52,7 +53,6 @@ import org.apache.sshd.server.session.ServerUserAuthService;
 import org.apache.sshd.util.AsyncEchoShellFactory;
 import org.apache.sshd.util.BaseTestSupport;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
-import org.apache.sshd.util.BogusPublickeyAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.Utils;
 import org.junit.After;
@@ -86,8 +86,8 @@ public class WindowTest extends BaseTestSupport {
                 return new UnknownCommand(command);
             }
         });
-        sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
-        sshd.setPublickeyAuthenticator(new BogusPublickeyAuthenticator());
+        sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
+        sshd.setPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);
         sshd.setServiceFactories(Arrays.asList(
                 new ServerUserAuthService.Factory() {
                     @Override
@@ -151,8 +151,8 @@ public class WindowTest extends BaseTestSupport {
         FactoryManagerUtils.updateProperty(client, FactoryManager.WINDOW_SIZE, 1024);
         client.start();
         
-        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
-            session.addPasswordIdentity("smx");
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
 
             try(ChannelShell channel = session.createShellChannel()) {
@@ -199,8 +199,8 @@ public class WindowTest extends BaseTestSupport {
 
         client.start();
         
-        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
-            session.addPasswordIdentity("smx");
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
             
             try(ChannelShell channel = session.createShellChannel();
@@ -253,8 +253,8 @@ public class WindowTest extends BaseTestSupport {
 
         client.start();
         
-        try(ClientSession session = client.connect("smx", "localhost", port).await().getSession()) {
-            session.addPasswordIdentity("smx");
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
 
             try(ChannelShell channel = session.createShellChannel()) {

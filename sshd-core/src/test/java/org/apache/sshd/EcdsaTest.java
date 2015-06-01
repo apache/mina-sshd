@@ -20,7 +20,6 @@ package org.apache.sshd;
 
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
-import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.spec.ECGenParameterSpec;
 import java.util.Arrays;
@@ -33,8 +32,7 @@ import org.apache.sshd.common.Signature;
 import org.apache.sshd.common.keyprovider.AbstractKeyPairProvider;
 import org.apache.sshd.common.signature.BuiltinSignatures;
 import org.apache.sshd.common.util.SecurityUtils;
-import org.apache.sshd.server.PublickeyAuthenticator;
-import org.apache.sshd.server.session.ServerSession;
+import org.apache.sshd.server.PublickeyAuthenticator.AcceptAllPublickeyAuthenticator;
 import org.apache.sshd.util.BaseTestSupport;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.Utils;
@@ -58,7 +56,7 @@ public class EcdsaTest extends BaseTestSupport {
     public void setUp() throws Exception {
         sshd = SshServer.setUpDefaultServer();
 //        sshd.setShellFactory(new TestEchoShellFactory());
-        sshd.setPasswordAuthenticator(new BogusPasswordAuthenticator());
+        sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
         sshd.setSessionFactory(new org.apache.sshd.server.session.SessionFactory());
     }
 
@@ -98,8 +96,8 @@ public class EcdsaTest extends BaseTestSupport {
                 BuiltinSignatures.nistp384,
                 BuiltinSignatures.nistp521));
         client.start();
-        try(ClientSession s = client.connect("smx", "localhost", port).await().getSession()) {
-            s.addPasswordIdentity("smx");
+        try(ClientSession s = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+            s.addPasswordIdentity(getCurrentTestName());
             s.auth().verify(5L, TimeUnit.SECONDS);
         } finally {
             client.stop();
@@ -114,21 +112,15 @@ public class EcdsaTest extends BaseTestSupport {
         generator.initialize(ecGenSpec, new SecureRandom());
         KeyPair kp = generator.generateKeyPair();
 
-
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
-        sshd.setPublickeyAuthenticator(new PublickeyAuthenticator() {
-            @Override
-            public boolean authenticate(String username, PublicKey key, ServerSession session) {
-                return true;
-            }
-        });
+        sshd.setPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);
         sshd.start();
         port  = sshd.getPort();
 
         client = SshClient.setUpDefaultClient();
         client.start();
         
-        try(ClientSession s = client.connect("smx", "localhost", port).await().getSession()) {
+        try(ClientSession s = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
             s.addPublicKeyIdentity(kp);
             s.auth().verify(5L, TimeUnit.SECONDS);
         } finally {

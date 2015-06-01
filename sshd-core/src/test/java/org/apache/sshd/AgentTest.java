@@ -38,9 +38,9 @@ import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.Environment;
+import org.apache.sshd.server.PublickeyAuthenticator.AcceptAllPublickeyAuthenticator;
 import org.apache.sshd.util.BaseTestSupport;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
-import org.apache.sshd.util.BogusPublickeyAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.Utils;
 import org.junit.Assume;
@@ -102,8 +102,8 @@ public class AgentTest extends BaseTestSupport {
         try(SshServer sshd1 = SshServer.setUpDefaultServer()) {
             sshd1.setKeyPairProvider(Utils.createTestHostKeyProvider());
             sshd1.setShellFactory(shellFactory);
-            sshd1.setPasswordAuthenticator(new BogusPasswordAuthenticator());
-            sshd1.setPublickeyAuthenticator(new BogusPublickeyAuthenticator());
+            sshd1.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
+            sshd1.setPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);
             sshd1.setAgentFactory(agentFactory);
             sshd1.start();
             int port1 = sshd1.getPort();
@@ -111,8 +111,8 @@ public class AgentTest extends BaseTestSupport {
             try(SshServer sshd2 = SshServer.setUpDefaultServer()) {
                 sshd2.setKeyPairProvider(Utils.createTestHostKeyProvider());
                 sshd2.setShellFactory(new TestEchoShellFactory());
-                sshd2.setPasswordAuthenticator(new BogusPasswordAuthenticator());
-                sshd2.setPublickeyAuthenticator(new BogusPublickeyAuthenticator());
+                sshd2.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
+                sshd2.setPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);
                 sshd2.setAgentFactory(new ProxyAgentFactory());
                 sshd2.start();
                 int port2 = sshd2.getPort();
