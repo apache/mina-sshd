@@ -20,13 +20,19 @@ package org.apache.sshd.agent.unix;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Collection;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.common.AbstractAgentClient;
 import org.apache.sshd.agent.local.AgentImpl;
 import org.apache.sshd.common.util.AbstractLoggingBean;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
+import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.tomcat.jni.Local;
 import org.apache.tomcat.jni.Pool;
 import org.apache.tomcat.jni.Socket;
@@ -36,24 +42,42 @@ import org.apache.tomcat.jni.Status;
 /**
  * A server for an SSH Agent
  */
-public class AgentServer extends AbstractLoggingBean implements Closeable {
+public class AgentServer extends AbstractLoggingBean implements Closeable, ExecutorServiceCarrier {
 
     private final SshAgent agent;
+    private final ExecutorService service;
+    private final boolean shutdownExecutor;
+    private Future<?> agentThread;
     private String authSocket;
     private long pool;
     private long handle;
-    private Thread thread;
 
     public AgentServer() {
-        this(new AgentImpl());
+        this(null, false);
     }
 
-    public AgentServer(SshAgent agent) {
+    public AgentServer(ExecutorService executor, boolean shutdownOnExit) {
+        this(new AgentImpl(), executor, shutdownOnExit);
+    }
+
+    public AgentServer(SshAgent agent, ExecutorService executor, boolean shutdownOnExit) {
         this.agent = agent;
+        this.service = (executor == null) ? ThreadUtils.newSingleThreadExecutor("AgentServer[" + agent + "]") : executor;
+        this.shutdownExecutor = (service == executor) ?  shutdownOnExit : true;
     }
 
     public SshAgent getAgent() {
         return agent;
+    }
+
+    @Override
+    public ExecutorService getExecutorService() {
+        return service;
+    }
+
+    @Override
+    public boolean isShutdownOnExit() {
+        return shutdownExecutor;
     }
 
     public String start() throws Exception {
@@ -69,29 +93,56 @@ public class AgentServer extends AbstractLoggingBean implements Closeable {
         if (result != Status.APR_SUCCESS) {
             throwException(result);
         }
-        thread = new Thread() {
-            @SuppressWarnings("synthetic-access")
-            @Override
-            public void run() {
-                try {
-                    while (true) {
-                        long clientSock = Local.accept(handle);
-                        Socket.timeoutSet(clientSock, 10000000);
-                        new SshAgentSession(clientSock, agent);
+        
+        ExecutorService executor = getExecutorService();
+        agentThread = executor.submit(new Runnable() {
+                @SuppressWarnings("synthetic-access")
+                @Override
+                public void run() {
+                    try {
+                        while (true) {
+                            long clientSock = Local.accept(handle);
+                            Socket.timeoutSet(clientSock, 10000000);    // TODO make this configurable
+                            new SshAgentSession(clientSock, agent).run();
+                        }
+                    } catch (Exception e) {
+                        log.error("Failed to run session", e);
                     }
-                } catch (Exception e) {
-                    log.error("Failed to run session", e);
                 }
-            }
-        };
-        thread.start();
+            });
         return authSocket;
     }
 
     @Override
     public void close() throws IOException {
-        agent.close();
+        IOException err = null;
+        try {
+            agent.close();
+        } catch(IOException e) {
+            err = e;
+        }
+
         Socket.close(handle);
+        
+        try {
+            if ((agentThread != null) && (!agentThread.isDone())) {
+                agentThread.cancel(true);
+            }
+        } finally {
+            agentThread = null;
+        }
+        
+        ExecutorService executor = getExecutorService();
+        if ((executor != null) && isShutdownOnExit() && (!executor.isShutdown())) {
+            Collection<?> runners = executor.shutdownNow();
+            if (log.isDebugEnabled()) {
+                log.debug("Shut down runners count=" + GenericUtils.size(runners));
+            }
+        }
+        
+        if (err != null) {
+            throw err;
+        }
     }
 
     protected static class SshAgentSession extends AbstractAgentClient implements Runnable {
@@ -101,7 +152,6 @@ public class AgentServer extends AbstractLoggingBean implements Closeable {
         public SshAgentSession(long socket, SshAgent agent) {
             super(agent);
             this.socket = socket;
-            new Thread(this).start();
         }
 
         @SuppressWarnings("synthetic-access")

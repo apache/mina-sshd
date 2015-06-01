@@ -240,9 +240,12 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                     public void run() {
                         connector = null;
                         ioServiceFactory = null;
-                        if (shutdownExecutor && executor != null) {
-                            executor.shutdownNow();
-                            executor = null;
+                        if (shutdownExecutor && (executor != null) && (!executor.isShutdown())) {
+                            try {
+                                executor.shutdownNow();
+                            } finally {
+                                executor = null;
+                            }
                         }
                     }
                 })

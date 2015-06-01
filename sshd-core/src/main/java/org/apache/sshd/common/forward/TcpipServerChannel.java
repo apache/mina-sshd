@@ -21,6 +21,8 @@ package org.apache.sshd.common.forward;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.ConnectException;
+import java.util.Collection;
+import java.util.concurrent.ExecutorService;
 
 import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
@@ -40,6 +42,8 @@ import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.util.Readable;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
+import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.channel.AbstractServerChannel;
 import org.apache.sshd.server.channel.OpenChannelException;
 
@@ -49,7 +53,7 @@ import org.apache.sshd.server.channel.OpenChannelException;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class TcpipServerChannel extends AbstractServerChannel {
-    public abstract static class TcpipFactory implements NamedFactory<Channel> {
+    public abstract static class TcpipFactory implements NamedFactory<Channel>, ExecutorServiceCarrier {
         private final Type type;
 
         protected TcpipFactory(Type type) {
@@ -60,9 +64,22 @@ public class TcpipServerChannel extends AbstractServerChannel {
             return type;
         }
         
+        @Override   // user can override to provide an alternative
+        public ExecutorService getExecutorService() {
+            return null;
+        }
+
+        @Override
+        public boolean isShutdownOnExit() {
+            return false;
+        }
+
         @Override
         public Channel create() {
-            return new TcpipServerChannel(getType());
+            TcpipServerChannel  channel = new TcpipServerChannel(getType());
+            channel.setExecutorService(getExecutorService());
+            channel.setShutdownOnExit(isShutdownOnExit());
+            return channel;
         }
     }
 
@@ -132,7 +149,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
         }
 
         final ForwardingFilter filter = getSession().getFactoryManager().getTcpipForwardingFilter();
-        if (address == null || filter == null || !filter.canConnect(address, getSession())) {
+        if ((address == null) || (filter == null) || (!filter.canConnect(address, getSession()))) {
             super.close(true);
             f.setException(new OpenChannelException(SshConstants.SSH_OPEN_ADMINISTRATIVELY_PROHIBITED, "Connection denied"));
             return f;
@@ -205,16 +222,33 @@ public class TcpipServerChannel extends AbstractServerChannel {
         // We also need to dispose of the connector, but unfortunately we
         // are being invoked by the connector thread or the connector's
         // own processor thread.  Disposing of the connector within either
-        // causes deadlock.  Instead create a new thread to dispose of the
+        // causes deadlock.  Instead create a thread to dispose of the
         // connector in the background.
-        //
-        new Thread("TcpIpServerChannel-ConnectorCleanup") {
-            @SuppressWarnings("synthetic-access")
-            @Override
-            public void run() {
-                connector.close(true);
-            }
-        }.start();
+
+        ExecutorService service = getExecutorService();
+        // allocate a temporary executor service if none provided
+        final ExecutorService executors = (service == null)
+                                        ? ThreadUtils.newSingleThreadExecutor("TcpIpServerChannel-ConnectorCleanup[" + getSession() + "]")
+                                        : service
+                                        ;
+        // shutdown the temporary executor service if had to create it
+        final boolean shutdown = (executors == service) ? isShutdownOnExit() : true;
+        executors.submit(new Runnable() {
+                @SuppressWarnings("synthetic-access")
+                @Override
+                public void run() {
+                    try {
+                        connector.close(true);
+                    } finally {
+                        if ((executors != null) && (!executors.isShutdown()) && shutdown) {
+                            Collection<Runnable> runners = executors.shutdownNow();
+                            if (log.isDebugEnabled()) {
+                                log.debug("destroy() - shutdown executor service - runners count=" + ((runners == null) ? 0 : runners.size()));
+                            }
+                        }
+                    }
+                }
+            });
     }
 
     @Override

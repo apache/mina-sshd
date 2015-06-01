@@ -20,13 +20,21 @@ package org.apache.sshd.agent.unix;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.channels.Channel;
+import java.util.Collection;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.agent.SshAgentServer;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.util.AbstractLoggingBean;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
+import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
+import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.tomcat.jni.Local;
 import org.apache.tomcat.jni.Pool;
 import org.apache.tomcat.jni.Socket;
@@ -35,19 +43,25 @@ import org.apache.tomcat.jni.Status;
 /**
  * The server side fake agent, acting as an agent, but actually forwarding the requests to the auth channel on the client side.
  */
-public class AgentServerProxy extends AbstractLoggingBean implements SshAgentServer {
+public class AgentServerProxy extends AbstractLoggingBean implements SshAgentServer, ExecutorServiceCarrier, Channel {
     private final ConnectionService service;
     private final String authSocket;
     private final long pool;
     private final long handle;
-    private final Thread thread;
-    private volatile boolean closed;
-    private volatile boolean innerFinished;
+    private Future<?> piper;
+    private final ExecutorService pipeService;
+    private final boolean pipeCloseOnExit;
+    private final AtomicBoolean open = new AtomicBoolean(true);
+    private final AtomicBoolean innerFinished = new AtomicBoolean(false);
 
     //used to wake the Local.listen() JNI call
     private static final byte[] END_OF_STREAM_MESSAGE = new byte[] { "END_OF_STREAM".getBytes()[0] };
 
     public AgentServerProxy(ConnectionService service) throws IOException {
+        this(service, null, false);
+    }
+
+    public AgentServerProxy(ConnectionService service, ExecutorService executor, boolean shutdownOnExit) throws IOException {
         this.service = service;
         try {
             String authSocket = AprLibrary.createLocalSocketAddress();
@@ -66,45 +80,61 @@ public class AgentServerProxy extends AbstractLoggingBean implements SshAgentSer
             if (result != Status.APR_SUCCESS) {
                 throwException(result);
             }
-            thread = new Thread("sshd-AgentServerProxy-PIPE-" + authSocket) {
-                @SuppressWarnings("synthetic-access")
-                @Override
-                public void run() {
-                    try {
-                        while (!closed) {
-                            try {
-                                long clientSock = Local.accept(handle);
-                                if (closed) {
-                                    break;
-                                }
-                                Socket.timeoutSet(clientSock, 10000000);
-                                AgentForwardedChannel channel = new AgentForwardedChannel(clientSock);
-                                AgentServerProxy.this.service.registerChannel(channel);
-                                OpenFuture future = channel.open().await();
-                                Throwable t = future.getException();
-                                if (t instanceof Exception) {
-                                    throw (Exception) t;
-                                } else if (t != null) {
-                                    throw new Exception(t);
-                                }
-                            } catch (Exception e) {
-                                if (!closed) {
-                                    log.info("Exchange caught in authentication forwarding", e);
+            
+            pipeService = (executor == null) ? ThreadUtils.newSingleThreadExecutor("sshd-AgentServerProxy-PIPE-" + authSocket) : executor;
+            pipeCloseOnExit = (executor == pipeService) ? shutdownOnExit : true;
+            piper = pipeService.submit(new Runnable() {
+                    @SuppressWarnings("synthetic-access")
+                    @Override
+                    public void run() {
+                        try {
+                            while (isOpen()) {
+                                try {
+                                    long clientSock = Local.accept(handle);
+                                    if (!isOpen()) {
+                                        break;
+                                    }
+                                    Socket.timeoutSet(clientSock, 10000000);    // TODO allow to configure this
+                                    AgentForwardedChannel channel = new AgentForwardedChannel(clientSock);
+                                    AgentServerProxy.this.service.registerChannel(channel);
+                                    OpenFuture future = channel.open().await();
+                                    Throwable t = future.getException();
+                                    if (t instanceof Exception) {
+                                        throw (Exception) t;
+                                    } else if (t != null) {
+                                        throw new Exception(t);
+                                    }
+                                } catch (Exception e) {
+                                    if (isOpen()) {
+                                        log.info(e.getClass().getSimpleName() + " while authentication forwarding: " + e.getMessage(), e);
+                                    }
                                 }
                             }
+                        } finally {
+                            innerFinished.set(true);
                         }
-                    } finally {
-                        innerFinished = true;
                     }
-                }
-            };
-            thread.setDaemon(true);
-            thread.start();
+                });
         } catch (IOException e) {
             throw e;
         } catch (Exception e) {
             throw new SshException(e);
         }
+    }
+
+    @Override
+    public boolean isOpen() {
+        return open.get();
+    }
+
+    @Override
+    public ExecutorService getExecutorService() {
+        return pipeService;
+    }
+
+    @Override
+    public boolean isShutdownOnExit() {
+        return pipeCloseOnExit;
     }
 
     @Override
@@ -114,19 +144,19 @@ public class AgentServerProxy extends AbstractLoggingBean implements SshAgentSer
 
     @Override
     public synchronized void close() throws IOException {
-        if (closed) {
-            return;
+        if (!open.getAndSet(false)) {
+            return; // already closed (or closing)
         }
-        closed = true;
+
         final boolean isDebug = log.isDebugEnabled();
 
         if (handle != 0) {
-            if (!innerFinished) {
+            if (!innerFinished.get()) {
                 try {
 
                     final long tmpPool = Pool.create(AprLibrary.getInstance().getRootPool());
                     final long tmpSocket = Local.create(authSocket, tmpPool);
-                    long connectResult = Local.connect(tmpSocket, 0);
+                    long connectResult = Local.connect(tmpSocket, 0L);
 
                     if (connectResult != Status.APR_SUCCESS) {
                         if (isDebug) {
@@ -157,7 +187,6 @@ public class AgentServerProxy extends AbstractLoggingBean implements SshAgentSer
 
         try {
             if (authSocket != null) {
-
                 final File socketFile = new File(authSocket);
                 if (socketFile.exists()) {
                     if (socketFile.delete()) {
@@ -180,6 +209,22 @@ public class AgentServerProxy extends AbstractLoggingBean implements SshAgentSer
             //log eventual exceptions in debug mode
             if (isDebug) {
                 log.debug("Exception deleting the PIPE socket: " + authSocket, e);
+            }
+        }
+        
+        try {
+            if ((piper != null) && (!piper.isDone())) {
+                piper.cancel(true);
+            }
+        } finally {
+            piper = null;
+        }
+        
+        ExecutorService executor = getExecutorService();
+        if ((executor != null) && isShutdownOnExit() && (!executor.isShutdown())) {
+            Collection<?>   runners = executor.shutdownNow();
+            if (log.isDebugEnabled()) {
+                log.debug("Shut down runners count=" + GenericUtils.size(runners));
             }
         }
     }

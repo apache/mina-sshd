@@ -22,11 +22,15 @@ import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.agent.common.AbstractAgentProxy;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.tomcat.jni.Local;
 import org.apache.tomcat.jni.Pool;
 import org.apache.tomcat.jni.Socket;
@@ -42,11 +46,20 @@ public class AgentClient extends AbstractAgentProxy implements Runnable {
     private final long handle;
     private final Buffer receiveBuffer;
     private final Queue<Buffer> messages;
-    private boolean closed;
+    private Future<?> pumper;
+    private final AtomicBoolean open = new AtomicBoolean(true);
 
     public AgentClient(String authSocket) throws IOException {
+        this(authSocket, null, false);
+    }
+
+    public AgentClient(String authSocket, ExecutorService executor, boolean shutdownOnExit) throws IOException {
+        this.authSocket = authSocket;
+        
+        setExecutorService((executor == null) ? ThreadUtils.newSingleThreadExecutor("AgentClient[" + authSocket + "]") : executor);
+        setShutdownOnExit((executor == null) ? true : shutdownOnExit);
+
         try {
-            this.authSocket = authSocket;
             pool = Pool.create(AprLibrary.getInstance().getRootPool());
             handle = Local.create(authSocket, pool);
             int result = Local.connect(handle, 0);
@@ -55,7 +68,9 @@ public class AgentClient extends AbstractAgentProxy implements Runnable {
             }
             receiveBuffer = new ByteArrayBuffer();
             messages = new ArrayBlockingQueue<Buffer>(10);
-            new Thread(this).start();
+            
+            ExecutorService service = getExecutorService();
+            pumper = service.submit(this);
         } catch (IOException e) {
             throw e;
         } catch (Exception e) {
@@ -64,10 +79,15 @@ public class AgentClient extends AbstractAgentProxy implements Runnable {
     }
 
     @Override
+    public boolean isOpen() {
+        return open.get();
+    }
+
+    @Override
     public void run() {
         try {
             byte[] buf = new byte[1024];
-            while (!closed) {
+            while (isOpen()) {
                 int result = Socket.recv(handle, buf, 0, buf.length);
                 if (result < Status.APR_SUCCESS) {
                     throwException(result);
@@ -75,14 +95,16 @@ public class AgentClient extends AbstractAgentProxy implements Runnable {
                 messageReceived(new ByteArrayBuffer(buf, 0, result));
             }
         } catch (Exception e) {
-            if (!closed) {
-                e.printStackTrace();
+            if (isOpen()) {
+                log.warn(e.getClass().getSimpleName() + " while still open: " + e.getMessage());
             }
         } finally {
             try {
                 close();
             } catch(IOException e) {
-                e.printStackTrace();
+                if (log.isDebugEnabled()) {
+                    log.debug(e.getClass().getSimpleName() + " while closing: " + e.getMessage());
+                }
             }
         }
     }
@@ -111,10 +133,15 @@ public class AgentClient extends AbstractAgentProxy implements Runnable {
 
     @Override
     public void close() throws IOException {
-        if (!closed) {
-            closed = true;
+        if (open.getAndSet(false)) {
             Socket.close(handle);
         }
+        
+        if ((pumper != null) && isShutdownOnExit() && (!pumper.isDone())) {
+            pumper.cancel(true);
+        }
+
+        super.close();
     }
 
     @Override

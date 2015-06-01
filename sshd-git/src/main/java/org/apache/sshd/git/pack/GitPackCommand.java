@@ -54,10 +54,12 @@ public class GitPackCommand implements Command, Runnable {
         this.command = command;
     }
 
+    @Override
     public void setInputStream(InputStream in) {
         this.in = in;
     }
 
+    @Override
     public void setOutputStream(OutputStream out) {
         this.out = out;
         if (out instanceof ChannelOutputStream) {
@@ -65,6 +67,7 @@ public class GitPackCommand implements Command, Runnable {
         }
     }
 
+    @Override
     public void setErrorStream(OutputStream err) {
         this.err = err;
         if (err instanceof ChannelOutputStream) {
@@ -72,14 +75,19 @@ public class GitPackCommand implements Command, Runnable {
         }
     }
 
+    @Override
     public void setExitCallback(ExitCallback callback) {
         this.callback = callback;
     }
 
+    @Override
     public void start(Environment env) throws IOException {
-        new Thread(this).start();
+        Thread  thread=new Thread(this);
+        thread.setDaemon(true);
+        thread.start();
     }
 
+    @Override
     public void run() {
         try {
             List<String> strs = parseDelimitedString(command, " ", true);
@@ -114,6 +122,7 @@ public class GitPackCommand implements Command, Runnable {
         }
     }
 
+    @Override
     public void destroy() {
         //To change body of implemented methods use File | Settings | File Templates.
     }

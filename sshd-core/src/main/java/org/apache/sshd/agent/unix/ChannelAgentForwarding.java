@@ -20,6 +20,9 @@ package org.apache.sshd.agent.unix;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Collection;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.client.future.DefaultOpenFuture;
@@ -31,7 +34,10 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
+import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.channel.AbstractServerChannel;
 import org.apache.tomcat.jni.Local;
 import org.apache.tomcat.jni.Pool;
@@ -43,7 +49,7 @@ import org.apache.tomcat.jni.Status;
  */
 public class ChannelAgentForwarding extends AbstractServerChannel {
 
-    public static class ChannelAgentForwardingFactory implements NamedFactory<Channel> {
+    public static class ChannelAgentForwardingFactory implements NamedFactory<Channel>, ExecutorServiceCarrier {
         public static final ChannelAgentForwardingFactory INSTANCE = new ChannelAgentForwardingFactory();
         
         public ChannelAgentForwardingFactory() {
@@ -55,19 +61,35 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
             return "auth-agent@openssh.com";
         }
 
+        @Override   // user can override to provide an alternative
+        public ExecutorService getExecutorService() {
+            return null;
+        }
+
+        @Override
+        public boolean isShutdownOnExit() {
+            return false;
+        }
+
         @Override
         public Channel create() {
-            return new ChannelAgentForwarding();
+            ChannelAgentForwarding  channel = new ChannelAgentForwarding();
+            channel.setExecutorService(getExecutorService());
+            channel.setShutdownOnExit(isShutdownOnExit());
+            return channel;
         }
     }
 
     private String authSocket;
     private long pool;
     private long handle;
-    private Thread thread;
     private OutputStream out;
+    private ExecutorService forwardService;
+    private Future<?> forwarder;
+    private boolean shutdownForwarder;
 
     public ChannelAgentForwarding() {
+        super();
     }
 
     @Override
@@ -82,25 +104,28 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
             if (result != Status.APR_SUCCESS) {
                 throwException(result);
             }
-            thread = new Thread() {
-                @SuppressWarnings("synthetic-access")
-                @Override
-                public void run() {
-                    try {
-                        byte[] buf = new byte[1024];
-                        while (true) {
-                            int len = Socket.recv(handle, buf, 0, buf.length);
-                            if (len > 0) {
-                                out.write(buf, 0, len);
-                                out.flush();
+            
+            ExecutorService service = getExecutorService();
+            forwardService = (service == null) ? ThreadUtils.newSingleThreadExecutor("ChannelAgentForwarding[" + authSocket + "]") : service;
+            shutdownForwarder = (service == forwardService) ? isShutdownOnExit() : true;
+            forwarder = forwardService.submit(new Runnable() {
+                    @SuppressWarnings("synthetic-access")
+                    @Override
+                    public void run() {
+                        try {
+                            byte[] buf = new byte[1024];
+                            while (true) {
+                                int len = Socket.recv(handle, buf, 0, buf.length);
+                                if (len > 0) {
+                                    out.write(buf, 0, len);
+                                    out.flush();
+                                }
                             }
+                        } catch (IOException e) {
+                            close(true);
                         }
-                    } catch (IOException e) {
-                        close(true);
                     }
-                }
-            };
-            thread.start();
+                });
             f.setOpened();
 
         } catch (Exception e) {
@@ -118,8 +143,27 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
         super.close(true);
 
         // We also need to close the socket.
-        //
         Socket.close(handle);
+        
+        try {
+            if ((forwarder != null) && (!forwarder.isDone())) {
+                forwarder.cancel(true);
+            }
+        } finally {
+            forwarder = null;
+        }
+        
+        try {
+            if  ((forwardService != null) && shutdownForwarder) {
+                Collection<?> runners = forwardService.shutdownNow();
+                if (log.isDebugEnabled()) {
+                    log.debug("Shut down runners count=" + GenericUtils.size(runners));
+                }
+            }
+        } finally {
+            forwardService = null;
+            shutdownForwarder = false;
+        }
     }
 
     @Override
@@ -157,9 +201,7 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
      * @param code APR error code
      * @throws java.io.IOException the produced exception for the given APR error number
      */
-    private void throwException(int code) throws IOException {
-        throw new IOException(
-                org.apache.tomcat.jni.Error.strerror(-code) +
-                " (code: " + code + ")");
+    private static void throwException(int code) throws IOException {
+        throw new IOException(org.apache.tomcat.jni.Error.strerror(-code) + " (code: " + code + ")");
     }
 }

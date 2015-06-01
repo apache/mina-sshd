@@ -2139,7 +2139,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
 
             pendingFuture = null;
 
-            if ((executors != null) && shutdownExecutor) {
+            if ((executors != null) && (!executors.isShutdown()) && shutdownExecutor) {
                 Collection<Runnable> runners = executors.shutdownNow();
                 if (log.isDebugEnabled()) {
                     log.debug("destroy() - shutdown executor service - runners count=" + ((runners == null) ? 0 : runners.size()));

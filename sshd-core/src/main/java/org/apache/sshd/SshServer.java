@@ -323,9 +323,12 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
                     public void run() {
                         acceptor = null;
                         ioServiceFactory = null;
-                        if (shutdownExecutor && executor != null) {
-                            executor.shutdownNow();
-                            executor = null;
+                        if (shutdownExecutor && (executor != null) && (!executor.isShutdown())) {
+                            try {
+                                executor.shutdownNow();
+                            } finally {
+                                executor = null;
+                            }
                         }
                     }
                 })

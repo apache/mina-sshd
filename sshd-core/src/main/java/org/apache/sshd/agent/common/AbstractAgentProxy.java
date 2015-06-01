@@ -31,14 +31,46 @@ import java.io.IOException;
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.util.AbstractLoggingBean;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.common.util.threads.ExecutorServiceConfigurer;
 
-public abstract class AbstractAgentProxy implements SshAgent {
+public abstract class AbstractAgentProxy extends AbstractLoggingBean implements SshAgent, ExecutorServiceConfigurer {
+    private ExecutorService executor;
+    private boolean shutdownExecutor;
+
+    protected AbstractAgentProxy() {
+        super();
+    }
+
+    @Override
+    public ExecutorService getExecutorService() {
+        return executor;
+    }
+
+    @Override
+    public void setExecutorService(ExecutorService service) {
+        executor = service;
+    }
+
+    @Override
+    public boolean isShutdownOnExit() {
+        return shutdownExecutor;
+    }
+
+    @Override
+    public void setShutdownOnExit(boolean shutdown) {
+        shutdownExecutor = shutdown;
+    }
 
     @Override
     public List<Pair<PublicKey, String>> getIdentities() throws IOException {
@@ -46,13 +78,15 @@ public abstract class AbstractAgentProxy implements SshAgent {
         buffer = request(prepare(buffer));
         int type = buffer.getByte();
         if (type != SSH2_AGENT_IDENTITIES_ANSWER) {
-            throw new SshException("SSH agent failure");
+            throw new SshException("Bad agent identities answer: " + type);
         }
+
         int nbIdentities = buffer.getInt();
         if (nbIdentities > 1024) {
-            throw new SshException("SSH agent failure");
+            throw new SshException("Bad identities count: " + nbIdentities);
         }
-        List<Pair<PublicKey, String>> keys = new ArrayList<Pair<PublicKey, String>>();
+
+        List<Pair<PublicKey, String>> keys = new ArrayList<Pair<PublicKey, String>>(nbIdentities);
         for (int i = 0; i < nbIdentities; i++) {
             PublicKey key = buffer.getPublicKey();
             keys.add(new Pair<PublicKey, String>(key, buffer.getString()));
@@ -67,12 +101,19 @@ public abstract class AbstractAgentProxy implements SshAgent {
         buffer.putBytes(data);
         buffer.putInt(0);
         buffer = request(prepare(buffer));
-        if (buffer.getByte() != SSH2_AGENT_SIGN_RESPONSE) {
-            throw new SshException("SSH agent failure");
+        
+        byte responseType = buffer.getByte(); 
+        if (responseType != SSH2_AGENT_SIGN_RESPONSE) {
+            throw new SshException("Bad signing response type: " + (responseType & 0xFF));
         }
         Buffer buf = new ByteArrayBuffer(buffer.getBytes());
-        buf.getString(); // algo
-        return buf.getBytes();
+        String algorithm = buf.getString();
+        byte[] signature = buf.getBytes(); 
+        if (log.isDebugEnabled()) {
+            log.debug("sign(" + algorithm + "): " + BufferUtils.printHex(':', signature));
+        }
+
+        return signature;
     }
 
     @Override
@@ -80,9 +121,15 @@ public abstract class AbstractAgentProxy implements SshAgent {
         Buffer buffer = createBuffer(SSH2_AGENTC_ADD_IDENTITY);
         buffer.putKeyPair(key);
         buffer.putString(comment);
+        if (log.isDebugEnabled()) {
+            log.debug("addIdentity(" + comment + "): " + key.getPublic().getAlgorithm());
+        }
         buffer = request(prepare(buffer));
-        if (buffer.available() != 1 || buffer.getByte() != SSH_AGENT_SUCCESS) {
-            throw new SshException("SSH agent failure");
+        
+        int available = buffer.available();
+        byte response = (available >= 1) ? buffer.getByte() : -1;
+        if ((available != 1) || (response != SSH_AGENT_SUCCESS)) {
+            throw new SshException("Bad addIdentity response (" + (response & 0xFF) + ") - available=" + available);
         }
     }
 
@@ -90,24 +137,43 @@ public abstract class AbstractAgentProxy implements SshAgent {
     public void removeIdentity(PublicKey key) throws IOException {
         Buffer buffer = createBuffer(SSH2_AGENTC_REMOVE_IDENTITY);
         buffer.putPublicKey(key);
+        if (log.isDebugEnabled()) {
+            log.debug("removeIdentity: " + key.getAlgorithm());
+        }
+
         buffer = request(prepare(buffer));
-        if (buffer.available() != 1 || buffer.getByte() != SSH_AGENT_SUCCESS) {
-            throw new SshException("SSH agent failure");
+
+        int available = buffer.available();
+        byte response = (available >= 1) ? buffer.getByte() : -1;
+        if ((available != 1) || (response != SSH_AGENT_SUCCESS)) {
+            throw new SshException("Bad removeIdentity response (" + (response & 0xFF) + ") - available=" + available);
         }
     }
 
     @Override
     public void removeAllIdentities() throws IOException {
         Buffer buffer = createBuffer(SSH2_AGENTC_REMOVE_ALL_IDENTITIES);
+        if (log.isDebugEnabled()) {
+            log.debug("removeAllIdentities");
+        }
         buffer = request(prepare(buffer));
-        if (buffer.available() != 1 || buffer.getByte() != SSH_AGENT_SUCCESS) {
-            throw new SshException("SSH agent failure");
+
+        int available = buffer.available();
+        byte response = (available >= 1) ? buffer.getByte() : -1;
+        if ((available != 1) || (response != SSH_AGENT_SUCCESS)) {
+            throw new SshException("Bad removeAllIdentities response (" + (response & 0xFF) + ") - available=" + available);
         }
     }
 
     @Override
     public void close() throws IOException {
-        // nothing
+        ExecutorService service = getExecutorService();
+        if ((service != null) && isShutdownOnExit() && (!service.isShutdown())) {
+            Collection<?> runners = service.shutdownNow();
+            if (log.isDebugEnabled()) {
+                log.debug("close() - shutdown runners count=" + GenericUtils.size(runners));
+            }
+        }
     }
 
     protected Buffer createBuffer(byte cmd) {

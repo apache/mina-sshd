@@ -19,8 +19,6 @@
 package org.apache.sshd;
 
 import static org.apache.sshd.util.Utils.createTestKeyPairProvider;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assume.assumeThat;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -49,11 +47,14 @@ import org.junit.Assume;
 import org.junit.Test;
 
 public class AgentTest extends BaseTestSupport {
+    public AgentTest() {
+        super();
+    }
 
     @Test
-    public void testAgent() throws Exception {
+    public void testAgentServer() throws Exception {
         // TODO: revisit this test to work without BC
-        Assume.assumeTrue("BoncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
+        Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
 
         try(AgentServer agent = new AgentServer()) {
             String authSocket;
@@ -63,23 +64,23 @@ public class AgentTest extends BaseTestSupport {
                 // the native library is not available, so these tests should be skipped
                 authSocket = null;
             }
-            assumeThat(authSocket, notNullValue());
+            Assume.assumeTrue("Native library N/A", authSocket != null);
     
             try(SshAgent client = new AgentClient(authSocket)) {
                 List<SshAgent.Pair<PublicKey, String>> keys = client.getIdentities();
-                assertNotNull(keys);
-                assertEquals(0, keys.size());
+                assertNotNull("No initial identities", keys);
+                assertEquals("Unexpected initial identities size", 0, keys.size());
         
                 KeyPair k = Utils.createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
                 client.addIdentity(k, "");
                 keys = client.getIdentities();
-                assertNotNull(keys);
-                assertEquals(1, keys.size());
+                assertNotNull("No registered identities after add", keys);
+                assertEquals("Mismatched registered keys size", 1, keys.size());
         
                 client.removeIdentity(k.getPublic());
                 keys = client.getIdentities();
-                assertNotNull(keys);
-                assertEquals(0, keys.size());
+                assertNotNull("No registered identities after remove", keys);
+                assertEquals("Registered keys size not empty", 0, keys.size());
         
                 client.removeAllIdentities();
             }    
@@ -89,14 +90,14 @@ public class AgentTest extends BaseTestSupport {
     @Test
     public void testAgentForwarding() throws Exception {
         // TODO: revisit this test to work without BC
-        Assume.assumeTrue("BoncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
+        Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
 
         TestEchoShellFactory shellFactory = new TestEchoShellFactory();
         ProxyAgentFactory agentFactory = new ProxyAgentFactory();
         LocalAgentFactory localAgentFactory = new LocalAgentFactory();
-
+        String username = getCurrentTestName();
         KeyPair pair = createTestKeyPairProvider("dsaprivkey.pem").loadKey(KeyPairProvider.SSH_DSS);
-        localAgentFactory.getAgent().addIdentity(pair, "smx");
+        localAgentFactory.getAgent().addIdentity(pair, username);
 
         try(SshServer sshd1 = SshServer.setUpDefaultServer()) {
             sshd1.setKeyPairProvider(Utils.createTestHostKeyProvider());
@@ -120,8 +121,8 @@ public class AgentTest extends BaseTestSupport {
                     client1.setAgentFactory(localAgentFactory);
                     client1.start();
                     
-                    try(ClientSession session1 = client1.connect("smx", "localhost", port1).await().getSession()) {
-                        session1.auth().verify(5L, TimeUnit.SECONDS);
+                    try(ClientSession session1 = client1.connect(username, "localhost", port1).await().getSession()) {
+                        session1.auth().verify(10L, TimeUnit.SECONDS);
 
                         try(ChannelShell channel1 = session1.createShellChannel();
                             ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -145,7 +146,7 @@ public class AgentTest extends BaseTestSupport {
                                     client2.getProperties().putAll(shellFactory.shell.getEnvironment().getEnv());
                                     client2.start();
                                     
-                                    try(ClientSession session2 = client2.connect("smx", "localhost", port2).await().getSession()) {
+                                    try(ClientSession session2 = client2.connect(username, "localhost", port2).await().getSession()) {
                                         session2.auth().verify(5L, TimeUnit.SECONDS);
 
                                         try(ChannelShell channel2 = session2.createShellChannel()) {

@@ -18,7 +18,6 @@
  */
 package org.apache.sshd.agent;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.security.KeyPair;
 import java.security.PublicKey;
@@ -27,7 +26,7 @@ import java.util.List;
 /**
  * SSH key agent server
  */
-public interface SshAgent extends Closeable {
+public interface SshAgent extends java.nio.channels.Channel {
 
     public static final String SSH_AUTHSOCKET_ENV_NAME = "SSH_AUTH_SOCK";
 

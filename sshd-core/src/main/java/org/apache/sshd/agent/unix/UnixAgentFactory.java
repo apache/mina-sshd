@@ -19,6 +19,7 @@
 package org.apache.sshd.agent.unix;
 
 import java.io.IOException;
+import java.util.concurrent.ExecutorService;
 
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.SshAgentFactory;
@@ -31,13 +32,57 @@ import org.apache.sshd.common.Session;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.threads.ExecutorServiceConfigurer;
 import org.apache.sshd.server.session.ServerSession;
 
-public class UnixAgentFactory implements SshAgentFactory {
+public class UnixAgentFactory implements SshAgentFactory, ExecutorServiceConfigurer {
+    private ExecutorService executor;
+    private boolean shutdownExecutor;
+    private final NamedFactory<Channel> factory = new ChannelAgentForwarding.ChannelAgentForwardingFactory() {
+        @Override
+        public ExecutorService getExecutorService() {
+            return UnixAgentFactory.this.getExecutorService();
+        }
+
+        @Override
+        public boolean isShutdownOnExit() {
+            return UnixAgentFactory.this.isShutdownOnExit();
+        }
+        
+    };
+
+    public UnixAgentFactory() {
+        super();
+    }
+
+    public UnixAgentFactory(ExecutorService service, boolean shutdown) {
+        executor = service;
+        shutdownExecutor = shutdown;
+    }
+
+    @Override
+    public ExecutorService getExecutorService() {
+        return executor;
+    }
+
+    @Override
+    public void setExecutorService(ExecutorService service) {
+        executor = service;
+    }
+
+    @Override
+    public boolean isShutdownOnExit() {
+        return shutdownExecutor;
+    }
+
+    @Override
+    public void setShutdownOnExit(boolean shutdown) {
+        shutdownExecutor = shutdown;
+    }
 
     @Override
     public NamedFactory<Channel> getChannelForwardingFactory() {
-        return ChannelAgentForwarding.ChannelAgentForwardingFactory.INSTANCE;
+        return factory;
     }
 
     @Override
@@ -46,7 +91,8 @@ public class UnixAgentFactory implements SshAgentFactory {
         if (GenericUtils.isEmpty(authSocket)) {
             throw new SshException("No " + SshAgent.SSH_AUTHSOCKET_ENV_NAME + " value");
         }
-        return new AgentClient(authSocket);
+
+        return new AgentClient(authSocket, getExecutorService(), isShutdownOnExit());
     }
 
     @Override
@@ -55,6 +101,6 @@ public class UnixAgentFactory implements SshAgentFactory {
         if (!(session instanceof ServerSession)) {
             throw new IllegalStateException("The session used to create an agent server proxy must be a server session");
         }
-        return new AgentServerProxy(service);
+        return new AgentServerProxy(service, getExecutorService(), isShutdownOnExit());
     }
 }

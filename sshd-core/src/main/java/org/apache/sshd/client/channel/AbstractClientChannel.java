@@ -212,8 +212,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
                 }
                 try {
                     if (log.isTraceEnabled()) {
-                        log.trace("Waiting for lock on channel {}, mask={}, cond={}",
-                                  new Object[] { this, Integer.valueOf(mask), Integer.valueOf(cond) });
+                        log.trace("Waiting for lock on channel {}, mask={}, cond={}", this, Integer.valueOf(mask), Integer.valueOf(cond));
                     }
                     if (timeout > 0) {
                         lock.wait(timeout);

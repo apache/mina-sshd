@@ -20,14 +20,17 @@ package org.apache.sshd.client.channel;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
 import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.channel.ChannelAsyncInputStream;
+import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.channel.ChannelPipedInputStream;
 import org.apache.sshd.common.channel.ChannelPipedOutputStream;
-import org.apache.sshd.common.channel.ChannelAsyncInputStream;
-import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
 import org.apache.sshd.common.future.CloseFuture;
+import org.apache.sshd.common.util.threads.ThreadUtils;
 
 /**
  * TODO Add javadoc
@@ -35,8 +38,9 @@ import org.apache.sshd.common.future.CloseFuture;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ChannelSession extends AbstractClientChannel {
-
-    private Thread streamPumper;
+    private ExecutorService pumperService;
+    private Future<?> pumper;
+    private boolean shutdownPumper;
 
     public ChannelSession() {
         super("session");
@@ -73,28 +77,50 @@ public class ChannelSession extends AbstractClientChannel {
                 err = pos;
                 invertedErr = pis;
             }
+
             if (in != null) {
-                streamPumper = new Thread("ClientInputStreamPump") {
-                    @Override
-                    public void run() {
-                        pumpInputStream();
-                    }
-                };
+                // allocate a temporary executor service if none provided
+                ExecutorService service = getExecutorService();
+                if ((pumperService = service) == null) {
+                    pumperService = ThreadUtils.newSingleThreadExecutor("ClientInputStreamPump[" + this.toString() + "]");
+                }
+                
+                // shutdown the temporary executor service if had to create it
+                shutdownPumper = (pumperService == service) ? isShutdownOnExit() : true;
+
                 // Interrupt does not really work and the thread will only exit when
                 // the call to read() will return.  So ensure this thread is a daemon
                 // to avoid blocking the whole app
-                streamPumper.setDaemon(true);
-                streamPumper.start();
+                pumper = pumperService.submit(new Runnable() {
+                        @Override
+                        public void run() {
+                            pumpInputStream();
+                        }
+                    });
             }
         }
     }
 
     @Override
     protected void doCloseImmediately() {
-        if (streamPumper != null) {
-            streamPumper.interrupt();
-            streamPumper = null;
+        if ((pumper != null) && (pumperService != null) && shutdownPumper && (!pumperService.isShutdown())) {
+            try {
+                if (!pumper.isDone()) {
+                    pumper.cancel(true);
+                }
+                
+                pumperService.shutdownNow();
+            } catch(Exception e) {
+                // we log it as DEBUG since it is relatively harmless
+                if (log.isDebugEnabled()) {
+                    log.debug("Failed (" + e.getClass().getSimpleName() + ") to shutdown stream pumper: " + e.getMessage());
+                }
+            } finally {
+                pumper = null;
+                pumperService = null;
+            }
         }
+
         super.doCloseImmediately();
     }
 

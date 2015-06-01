@@ -20,7 +20,9 @@ package org.apache.sshd.common.channel;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -37,16 +39,20 @@ import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.util.CloseableUtils;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.common.util.threads.ExecutorServiceConfigurer;
 
 /**
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractChannel extends CloseableUtils.AbstractInnerCloseable implements Channel {
+public abstract class AbstractChannel
+                extends CloseableUtils.AbstractInnerCloseable
+                implements Channel, ExecutorServiceConfigurer {
 
     public static final int DEFAULT_WINDOW_SIZE = 0x200000;
     public static final int DEFAULT_PACKET_SIZE = 0x8000;
@@ -57,6 +63,8 @@ public abstract class AbstractChannel extends CloseableUtils.AbstractInnerClosea
         Opened, CloseSent, CloseReceived, Closed
     }
 
+    private ExecutorService executor;
+    private boolean shutdownExecutor;
     protected final Window localWindow = new Window(this, null, getClass().getName().contains(".client."), true);
     protected final Window remoteWindow = new Window(this, null, getClass().getName().contains(".client."), false);
     protected ConnectionService service;
@@ -103,6 +111,26 @@ public abstract class AbstractChannel extends CloseableUtils.AbstractInnerClosea
     @Override
     public Session getSession() {
         return session;
+    }
+
+    @Override
+    public ExecutorService getExecutorService() {
+        return executor;
+    }
+
+    @Override
+    public void setExecutorService(ExecutorService service) {
+        executor = service;
+    }
+
+    @Override
+    public boolean isShutdownOnExit() {
+        return shutdownExecutor;
+    }
+
+    @Override
+    public void setShutdownOnExit(boolean shutdown) {
+        shutdownExecutor = shutdown;
     }
 
     @Override
@@ -189,10 +217,12 @@ public abstract class AbstractChannel extends CloseableUtils.AbstractInnerClosea
         public boolean isClosing() {
             return closing;
         }
+
         @Override
         public boolean isClosed() {
             return gracefulFuture.isClosed();
         }
+
         @Override
         public CloseFuture close(boolean immediately) {
             closing = true;
@@ -226,6 +256,15 @@ public abstract class AbstractChannel extends CloseableUtils.AbstractInnerClosea
                     AbstractChannel.this.close(true);
                 }
             }
+            
+            ExecutorService service = getExecutorService();
+            if ((service != null) && isShutdownOnExit() && (!service.isShutdown())) {
+                Collection<?>   running = service.shutdownNow();
+                if (log.isDebugEnabled()) {
+                    log.debug("Shutdown executor service on close - running count=" + GenericUtils.size(running));
+                }
+            }
+
             return gracefulFuture;
         }
     }

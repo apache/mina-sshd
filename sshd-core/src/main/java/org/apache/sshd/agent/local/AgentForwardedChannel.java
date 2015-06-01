@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.common.AbstractAgentProxy;
@@ -42,15 +43,25 @@ public class AgentForwardedChannel extends AbstractClientChannel {
 
     public SshAgent getAgent() {
         return new AbstractAgentProxy() {
+            private final AtomicBoolean open = new AtomicBoolean(true);
+
+            @Override
+            public boolean isOpen() {
+                return open.get();
+            }
+
             @Override
             protected Buffer request(Buffer buffer) throws IOException {
                 return AgentForwardedChannel.this.request(buffer);
             }
+
             @Override
             public void close() throws IOException {
-                AgentForwardedChannel.this.close(false);
+                if (open.getAndSet(false)) {
+                    AgentForwardedChannel.this.close(false);
+                    super.close();
+                }
             }
-
         };
     }
 

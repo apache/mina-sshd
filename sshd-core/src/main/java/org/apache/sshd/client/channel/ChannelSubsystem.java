@@ -23,6 +23,8 @@ import java.io.IOException;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
@@ -35,10 +37,7 @@ public class ChannelSubsystem extends ChannelSession {
     private final String subsystem;
 
     public ChannelSubsystem(String subsystem) {
-        if (subsystem == null) {
-            throw new IllegalArgumentException("subsystem must not be null");
-        }
-        this.subsystem = subsystem;
+        this.subsystem = ValidateUtils.checkNotNullAndNotEmpty(subsystem, "Subsystem may not be null/empty", GenericUtils.EMPTY_OBJECT_ARRAY);
     }
 
     @Override

@@ -28,6 +28,7 @@ import java.security.interfaces.RSAPublicKey;
 import java.security.spec.ECParameterSpec;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.common.Signature;
@@ -40,13 +41,23 @@ import org.apache.sshd.common.signature.BuiltinSignatures;
 public class AgentImpl implements SshAgent {
 
     private final List<Pair<KeyPair, String>> keys = new ArrayList<Pair<KeyPair, String>>();
-    private boolean closed;
+    private final AtomicBoolean open = new AtomicBoolean(true);
+
+    public AgentImpl() {
+        super();
+    }
+
+    @Override
+    public boolean isOpen() {
+        return open.get();
+    }
 
     @Override
     public List<Pair<PublicKey, String>> getIdentities() throws IOException {
-        if (closed) {
+        if (!isOpen()) {
             throw new SshException("Agent closed");
         }
+
         List<Pair<PublicKey, String>> pks = new ArrayList<Pair<PublicKey, String>>();
         for (Pair<KeyPair, String> kp : keys) {
             pks.add(new Pair<PublicKey, String>(kp.getFirst().getPublic(), kp.getSecond()));
@@ -56,15 +67,17 @@ public class AgentImpl implements SshAgent {
 
     @Override
     public byte[] sign(PublicKey key, byte[] data) throws IOException {
-        if (closed) {
+        if (!isOpen()) {
             throw new SshException("Agent closed");
         }
+
         Pair<KeyPair, String> kp = getKeyPair(keys, key);
         if (kp == null) {
             throw new SshException("Key not found");
         }
+
         try {
-            Signature verif;
+            final Signature verif;
             if (kp.getFirst().getPublic() instanceof DSAPublicKey) {
                 verif = BuiltinSignatures.dsa.create();
             } else if (kp.getFirst().getPublic() instanceof ECPublicKey) {
@@ -87,7 +100,7 @@ public class AgentImpl implements SshAgent {
 
     @Override
     public void addIdentity(KeyPair key, String comment) throws IOException {
-        if (closed) {
+        if (!isOpen()) {
             throw new SshException("Agent closed");
         }
         keys.add(new Pair<KeyPair, String>(key, comment));
@@ -95,7 +108,7 @@ public class AgentImpl implements SshAgent {
 
     @Override
     public void removeIdentity(PublicKey key) throws IOException {
-        if (closed) {
+        if (!isOpen()) {
             throw new SshException("Agent closed");
         }
         Pair<KeyPair, String> kp = getKeyPair(keys, key);
@@ -107,7 +120,7 @@ public class AgentImpl implements SshAgent {
 
     @Override
     public void removeAllIdentities() throws IOException {
-        if (closed) {
+        if (!isOpen()) {
             throw new SshException("Agent closed");
         }
         keys.clear();
@@ -115,8 +128,9 @@ public class AgentImpl implements SshAgent {
 
     @Override
     public void close() throws IOException {
-        closed = true;
-        keys.clear();
+        if (open.getAndSet(false)) {
+            keys.clear();
+        }
     }
 
     protected static SshAgent.Pair<KeyPair, String> getKeyPair(List<SshAgent.Pair<KeyPair, String>> keys, PublicKey key) {

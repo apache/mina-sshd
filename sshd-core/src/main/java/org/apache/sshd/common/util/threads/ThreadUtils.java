@@ -90,22 +90,23 @@ public class ThreadUtils {
     /**
      * Attempts to find the most suitable {@link ClassLoader} as follows:</BR>
      * <UL>
-     * <LI>
-     * Check the {@link Thread#getContextClassLoader()} value
-     * </LI>
-     * <p/>
-     * <LI>
-     * If no thread context class loader then check the anchor
-     * class (if given) for its class loader
-     * </LI>
-     * <p/>
-     * <LI>
-     * If still no loader available, then use {@link ClassLoader#getSystemClassLoader()}
-     * </LI>
+     *      <LI>
+     *      Check the {@link Thread#getContextClassLoader()} value
+     *      </LI>
+     *      
+     *      <LI>
+     *      If no thread context class loader then check the anchor
+     *      class (if given) for its class loader
+     *      </LI>
+     *      
+     *      <LI>
+     *      If still no loader available, then use {@link ClassLoader#getSystemClassLoader()}
+     *      </LI>
      * </UL>
-     *
-     * @param anchor
-     * @return
+     * @param anchor The anchor {@link Class} to use if no current thread
+     * - ignored if {@code null}
+     * context class loader
+     * @return The resolver {@link ClassLoader}
      */
     public static ClassLoader resolveDefaultClassLoader(Class<?> anchor) {
         Thread thread = Thread.currentThread();
@@ -125,38 +126,27 @@ public class ThreadUtils {
         return cl;
     }
 
-    public static ExecutorService newFixedThreadPool(
-            String poolName,
-            int nThreads
-    ) {
+    public static ExecutorService newFixedThreadPool(String poolName, int nThreads) {
         return new ThreadPoolExecutor(nThreads, nThreads,
-                0L, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<Runnable>(),
-                new SshdThreadFactory(poolName),
-                new ThreadPoolExecutor.CallerRunsPolicy());
+                                      0L, TimeUnit.MILLISECONDS,
+                                      new LinkedBlockingQueue<Runnable>(),
+                                      new SshdThreadFactory(poolName),
+                                      new ThreadPoolExecutor.CallerRunsPolicy());
     }
 
-    public static ExecutorService newCachedThreadPool(
-            String poolName
-    ) {
+    public static ExecutorService newCachedThreadPool(String poolName) {
         return new ThreadPoolExecutor(0, Integer.MAX_VALUE,
-                60L, TimeUnit.SECONDS,
-                new SynchronousQueue<Runnable>(),
-                new SshdThreadFactory(poolName),
-                new ThreadPoolExecutor.CallerRunsPolicy());
+                                      60L, TimeUnit.SECONDS,
+                                      new SynchronousQueue<Runnable>(),
+                                      new SshdThreadFactory(poolName),
+                                      new ThreadPoolExecutor.CallerRunsPolicy());
     }
 
-    public static ScheduledExecutorService newSingleThreadScheduledExecutor(
-            String poolName
-    ) {
-        return new ScheduledThreadPoolExecutor(
-                1,
-                new SshdThreadFactory(poolName));
+    public static ScheduledExecutorService newSingleThreadScheduledExecutor(String poolName) {
+        return new ScheduledThreadPoolExecutor(1, new SshdThreadFactory(poolName));
     }
 
-    public static ExecutorService newSingleThreadExecutor(
-            String poolName
-    ) {
+    public static ExecutorService newSingleThreadExecutor(String poolName) {
         return newFixedThreadPool(poolName, 1);
     }
 
@@ -168,18 +158,21 @@ public class ThreadUtils {
 
         public SshdThreadFactory(String name) {
             SecurityManager s = System.getSecurityManager();
-            group = (s != null) ? s.getThreadGroup() :
-                    Thread.currentThread().getThreadGroup();
-            namePrefix = "sshd-" + name + "-thread-";
+            ThreadGroup parentGroup = (s != null) ? s.getThreadGroup() : Thread.currentThread().getThreadGroup();
+            String effectiveName = name.replace(' ', '-');
+            group = new ThreadGroup(parentGroup, "sshd-" + effectiveName + "-group");
+            namePrefix = "sshd-" + effectiveName + "-thread-";
         }
 
         @Override
         public Thread newThread(Runnable r) {
             Thread t = new Thread(group, r, namePrefix + threadNumber.getAndIncrement(), 0);
-            if (t.isDaemon())
-                t.setDaemon(false);
-            if (t.getPriority() != Thread.NORM_PRIORITY)
+            if (!t.isDaemon()) {
+                t.setDaemon(true);
+            }
+            if (t.getPriority() != Thread.NORM_PRIORITY) {
                 t.setPriority(Thread.NORM_PRIORITY);
+            }
             return t;
         }
 
