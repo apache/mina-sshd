@@ -80,6 +80,18 @@ public class AuthenticationTest extends BaseTestSupport {
     }
 
     @Test
+    public void testWrongPassword() throws Exception {
+        try(SshClient client = SshClient.setUpDefaultClient()) {
+            client.start();
+            try(ClientSession s = client.connect("user", "localhost", port).await().getSession()) {
+                s.addPasswordIdentity("bad password");
+                assertTrue(s.auth().await().isFailure());
+
+            }
+        }
+    }
+
+    @Test
     public void testChangeUser() throws Exception {
         try(SshClient client = SshClient.setUpDefaultClient()) {
             client.setServiceFactories(Arrays.asList(
