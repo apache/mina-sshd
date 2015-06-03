@@ -25,8 +25,11 @@ import org.apache.sshd.util.BaseTestSupport;
 import org.apache.sshd.util.BogusEnvironment;
 import org.apache.sshd.util.BogusExitCallback;
 import org.apache.sshd.util.BogusInvertedShell;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runners.MethodSorters;
 
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class InvertedShellWrapperTest extends BaseTestSupport {
 
     @Test

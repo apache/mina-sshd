@@ -34,12 +34,15 @@ import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.cipher.BuiltinCiphers.ParseResult;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.BaseTestSupport;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runners.MethodSorters;
 import org.mockito.Mockito;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class BuiltinCiphersTest extends BaseTestSupport {
     public BuiltinCiphersTest() {
         super();

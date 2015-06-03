@@ -32,12 +32,15 @@ import org.apache.sshd.common.util.IoUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.server.PublickeyAuthenticator;
 import org.apache.sshd.util.BaseTestSupport;
+import org.junit.FixMethodOrder;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runners.MethodSorters;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class AuthorizedKeyEntryTest extends BaseTestSupport {
     public AuthorizedKeyEntryTest() {
         super();

@@ -20,21 +20,25 @@ package org.apache.sshd;
 
 import java.io.OutputStream;
 
-import com.jcraft.jsch.Channel;
-import com.jcraft.jsch.JSch;
 import org.apache.sshd.util.BaseTestSupport;
 import org.apache.sshd.util.JSchLogger;
 import org.apache.sshd.util.SimpleUserInfo;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runners.MethodSorters;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+import com.jcraft.jsch.Channel;
+import com.jcraft.jsch.JSch;
 
 /**
  * Test for spring based configuration.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class SpringConfigTest extends BaseTestSupport {
 
     private ClassPathXmlApplicationContext context;

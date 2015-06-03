@@ -30,11 +30,14 @@ import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.util.BaseTestSupport;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runners.MethodSorters;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class CloseableUtilsTest extends BaseTestSupport {
     public CloseableUtilsTest() {
         super();

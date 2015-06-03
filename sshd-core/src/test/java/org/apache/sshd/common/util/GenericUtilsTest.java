@@ -24,11 +24,14 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.sshd.util.BaseTestSupport;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runners.MethodSorters;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class GenericUtilsTest extends BaseTestSupport {
     public GenericUtilsTest() {
         super();

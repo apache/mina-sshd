@@ -32,7 +32,9 @@ import org.apache.sshd.util.JSchLogger;
 import org.apache.sshd.util.SimpleUserInfo;
 import org.apache.sshd.util.Utils;
 import org.junit.After;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runners.MethodSorters;
 
 import com.jcraft.jsch.JSch;
 
@@ -41,6 +43,7 @@ import com.jcraft.jsch.JSch;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class CompressionTest extends BaseTestSupport {
 
     private SshServer sshd;

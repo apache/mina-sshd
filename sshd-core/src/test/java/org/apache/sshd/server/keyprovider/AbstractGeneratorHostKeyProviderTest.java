@@ -25,10 +25,13 @@ import java.security.KeyPair;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.util.BaseTestSupport;
+import org.junit.FixMethodOrder;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.junit.runners.MethodSorters;
 
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class AbstractGeneratorHostKeyProviderTest extends BaseTestSupport {
 
     @Rule

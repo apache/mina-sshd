@@ -20,13 +20,22 @@
 package org.apache.sshd.common.util;
 
 import org.apache.sshd.util.BaseTestSupport;
+import org.junit.FixMethodOrder;
+import org.junit.Test;
+import org.junit.runners.MethodSorters;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class ValidateUtilsTest extends BaseTestSupport {
     public ValidateUtilsTest() {
         super();
     }
 
+    @Test(expected=IllegalArgumentException.class)
+    public void checkNotNull() {
+        ValidateUtils.checkNotNull(getClass(), getCurrentTestName(), GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkNotNull(null, getCurrentTestName(), GenericUtils.EMPTY_OBJECT_ARRAY);
+    }
 }

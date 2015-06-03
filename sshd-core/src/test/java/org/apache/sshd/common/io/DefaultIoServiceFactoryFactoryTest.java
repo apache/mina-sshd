@@ -26,12 +26,15 @@ import java.util.concurrent.ExecutorService;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
 import org.apache.sshd.util.BaseTestSupport;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runners.MethodSorters;
 import org.mockito.Mockito;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class DefaultIoServiceFactoryFactoryTest extends BaseTestSupport {
     public DefaultIoServiceFactoryFactoryTest() {
         super();

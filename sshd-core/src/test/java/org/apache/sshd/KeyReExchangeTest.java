@@ -26,8 +26,6 @@ import java.io.PipedOutputStream;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.jcraft.jsch.JSch;
-
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.common.Session;
 import org.apache.sshd.common.SessionListener;
@@ -40,13 +38,18 @@ import org.apache.sshd.util.SimpleUserInfo;
 import org.apache.sshd.util.TeeOutputStream;
 import org.apache.sshd.util.Utils;
 import org.junit.After;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runners.MethodSorters;
+
+import com.jcraft.jsch.JSch;
 
 /**
  * Test key exchange algorithms.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class KeyReExchangeTest extends BaseTestSupport {
 
     private SshServer sshd;

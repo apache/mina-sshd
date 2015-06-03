@@ -33,12 +33,15 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.SshSessionFactory;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runners.MethodSorters;
 
 import com.jcraft.jsch.JSch;
 
 /**
  */
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class GitPackCommandTest {
 
     @Test

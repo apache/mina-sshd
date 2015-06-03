@@ -44,8 +44,11 @@ import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.Utils;
 import org.junit.Assume;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runners.MethodSorters;
 
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class AgentTest extends BaseTestSupport {
     public AgentTest() {
         super();
@@ -188,7 +191,8 @@ public class AgentTest extends BaseTestSupport {
             return shell;
         }
 
-        public class TestEchoShell extends EchoShell {
+        @FixMethodOrder(MethodSorters.NAME_ASCENDING)
+public class TestEchoShell extends EchoShell {
 
             boolean started;
 

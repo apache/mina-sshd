@@ -33,10 +33,13 @@ import org.apache.sshd.git.util.Utils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.sftp.SftpSubsystemFactory;
 import org.eclipse.jgit.api.Git;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runners.MethodSorters;
 
 /**
  */
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class GitPgmCommandTest {
 
     @Test

@@ -25,7 +25,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.sshd.client.sftp.SftpClient.CloseableHandle;
 import org.apache.sshd.client.sftp.SftpClient.Handle;
 import org.apache.sshd.util.BaseTestSupport;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runners.MethodSorters;
 import org.mockito.Matchers;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
@@ -34,6 +36,7 @@ import org.mockito.stubbing.Answer;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class DefaultCloseableHandleTest extends BaseTestSupport {
     public DefaultCloseableHandleTest() {
         super();

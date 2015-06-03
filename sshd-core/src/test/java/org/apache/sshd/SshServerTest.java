@@ -25,12 +25,15 @@ import org.apache.sshd.util.BaseTestSupport;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.Utils;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runners.MethodSorters;
 
 /**
  * @author Kohsuke Kawaguchi
  * @author Michael Heemskerk
  */
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class SshServerTest extends BaseTestSupport {
 
     @Test

@@ -40,11 +40,14 @@ import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.Utils;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runners.MethodSorters;
 
 /**
  * Port forwarding tests
  */
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class ProxyTest extends BaseTestSupport {
     private SshServer sshd;
     private int sshPort;

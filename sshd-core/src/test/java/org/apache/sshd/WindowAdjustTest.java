@@ -43,7 +43,9 @@ import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runners.MethodSorters;
 
 /**
  * This test simulates heavy traffic coming from the server towards the client making sure the traffic does not get stuck.
@@ -51,6 +53,7 @@ import org.junit.Test;
  *
  * AsyncInPendingWrapper in this test serves as a handler for WritePendingException, which can occur when sending too many messages one after another.
  */
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class WindowAdjustTest {
 
     public static final String END_FILE = "#";

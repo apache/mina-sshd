@@ -45,7 +45,9 @@ import org.apache.sshd.util.SimpleUserInfo;
 import org.apache.sshd.util.Utils;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runners.MethodSorters;
 import org.slf4j.LoggerFactory;
 
 import com.jcraft.jsch.JSch;
@@ -55,6 +57,7 @@ import com.jcraft.jsch.Session;
 /**
  * Port forwarding tests
  */
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class PortForwardingTest extends BaseTestSupport {
 
     private final org.slf4j.Logger log = LoggerFactory.getLogger(getClass());
