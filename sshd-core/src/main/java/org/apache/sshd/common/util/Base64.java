@@ -19,6 +19,7 @@
  */
 package org.apache.sshd.common.util;
 
+import java.nio.charset.StandardCharsets;
 import java.security.InvalidParameterException;
 
 /**
@@ -33,6 +34,7 @@ import java.security.InvalidParameterException;
  *  This class was 
  * @author Apache Software Foundation commons codec (http://commons.apache.org/codec/)
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
+ * TODO replace this class with {@code java.util.Base64} when upgrading to JDK 1.8 
  */
 public class Base64 {
 
@@ -166,6 +168,10 @@ public class Base64 {
             }
         }
         return true;
+    }
+
+    public static String encodeToString(byte ... bytes) {
+        return new String(encodeBase64(bytes), StandardCharsets.UTF_8);
     }
 
     /**
@@ -334,6 +340,14 @@ public class Base64 {
         return encodedData;
     }
 
+    public static byte[] decodeString(String s) {
+        if (GenericUtils.isEmpty(s)) {
+            return GenericUtils.EMPTY_BYTE_ARRAY;
+        } else {
+            return decodeBase64(s.getBytes(StandardCharsets.UTF_8));
+        }
+    }
+
     /**
      * Decodes Base64 data into octects
      *
@@ -345,8 +359,8 @@ public class Base64 {
         base64Data = discardNonBase64(base64Data);
 
         // handle the edge case, so we don't have to worry about it later
-        if (base64Data.length == 0) {
-            return new byte[0];
+        if (GenericUtils.isEmpty(base64Data)) {
+            return GenericUtils.EMPTY_BYTE_ARRAY;
         }
 
         int numberQuadruple = base64Data.length / FOURBYTE;
@@ -363,7 +377,7 @@ public class Base64 {
             // ignore the '=' padding
             while (base64Data[lastData - 1] == PAD) {
                 if (--lastData == 0) {
-                    return new byte[0];
+                    return GenericUtils.EMPTY_BYTE_ARRAY;
                 }
             }
             decodedData = new byte[lastData - numberQuadruple];
@@ -437,22 +451,52 @@ public class Base64 {
      * encoded data."
      *
      * @param data The base-64 encoded data to groom
-     * @return The data, less non-base64 characters (see RFC 2045).
+     * @return The data, less non-base64 characters (see RFC 2045) - 
+     * may be same as input if all data was base-64
      */
-    static byte[] discardNonBase64(byte[] data) {
-        byte groomedData[] = new byte[data.length];
+    public static byte[] discardNonBase64(byte[] data) {
+        if (GenericUtils.isEmpty(data)) {
+            return data;
+        }
+
+        byte groomedData[] = null;
         int bytesCopied = 0;
 
         for (int i = 0; i < data.length; i++) {
-            if (isBase64(data[i])) {
-                groomedData[bytesCopied++] = data[i];
+            byte b = data[i];
+
+            if (isBase64(b)) {
+                if (groomedData != null) {
+                    // we had to filter out some non-BASE64 bytes
+                    groomedData[bytesCopied++] = b;
+                }
+            } else {
+                // this means ALL the characters up to this index were BASE64
+                if (groomedData == null) {
+                    groomedData = new byte[data.length - 1 /* the current character, which is NOT BASE64 */];
+
+                    if ((bytesCopied=i) > 0) {
+                        System.arraycopy(data, 0, groomedData, 0, bytesCopied);
+                    }
+                }
             }
         }
 
+        if (groomedData == null) {
+            return data;    // all characters where BASE64
+        }
+
+        if (bytesCopied <= 0) {
+            return GenericUtils.EMPTY_BYTE_ARRAY;
+        }
+
+        // if we were lucky and only ONE character was groomed
+        if (bytesCopied == groomedData.length) {
+            return groomedData;
+        }
+
         byte packedData[] = new byte[bytesCopied];
-
         System.arraycopy(groomedData, 0, packedData, 0, bytesCopied);
-
         return packedData;
     }
 

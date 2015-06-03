@@ -51,7 +51,11 @@ public class ECDH extends AbstractDH {
     private KeyAgreement myKeyAgree;
 
     public ECDH() throws Exception {
-        this(null);
+        this((ECParameterSpec) null);
+    }
+
+    public ECDH(String curveName) throws Exception {
+        this(ValidateUtils.checkNotNull(ECCurves.getECParameterSpec(curveName), "Unknown curve name: %s", curveName));
     }
 
     public ECDH(ECParameterSpec paramSpec) throws Exception {

@@ -56,7 +56,9 @@ import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.signature.BuiltinSignatures;
 import org.apache.sshd.common.util.ObjectBuilder;
 import org.apache.sshd.common.util.SecurityUtils;
+import org.apache.sshd.server.PublickeyAuthenticator;
 import org.apache.sshd.server.channel.ChannelSession;
+import org.apache.sshd.server.config.keys.DefaultAuthorizedKeysAuthenticator;
 import org.apache.sshd.server.global.CancelTcpipForwardHandler;
 import org.apache.sshd.server.global.KeepAliveHandler;
 import org.apache.sshd.server.global.NoMoreSessionsHandler;
@@ -122,6 +124,7 @@ public class SshBuilder {
             if (compressionFactories == null) {
                 compressionFactories = Arrays.<NamedFactory<Compression>>asList(BuiltinCompressions.none);
             }
+
             if (macFactories == null) {
                 macFactories = setUpDefaultMacs(false);
             }
@@ -129,6 +132,7 @@ public class SshBuilder {
             if (fileSystemFactory == null) {
                 fileSystemFactory = new NativeFileSystemFactory();
             }
+
             if (tcpipForwarderFactory == null) {
                 tcpipForwarderFactory = new DefaultTcpipForwarderFactory();
             }
@@ -425,6 +429,17 @@ public class SshBuilder {
                     }
                 };
 
+        protected PublickeyAuthenticator pubkeyAuthenticator;
+
+        public ServerBuilder() {
+            super();
+        }
+
+        public ServerBuilder publickeyAuthenticator(PublickeyAuthenticator auth) {
+            pubkeyAuthenticator = auth;
+            return this;
+        }
+
         @Override
         protected ServerBuilder fillWithDefaultValues() {
             super.fillWithDefaultValues();
@@ -446,7 +461,19 @@ public class SshBuilder {
             if (factory == null) {
                 factory = SshServer.DEFAULT_SSH_SERVER_FACTORY;
             }
+            
+            if (pubkeyAuthenticator == null) {
+                pubkeyAuthenticator = DefaultAuthorizedKeysAuthenticator.INSTANCE;
+            }
+
             return me();
+        }
+
+        @Override
+        public SshServer build(boolean isFillWithDefaultValues) {
+            SshServer server = super.build(isFillWithDefaultValues);
+            server.setPublickeyAuthenticator(pubkeyAuthenticator);
+            return server;
         }
 
         /**

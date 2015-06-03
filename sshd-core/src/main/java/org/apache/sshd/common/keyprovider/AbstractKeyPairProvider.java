@@ -22,9 +22,9 @@ import java.security.KeyPair;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.util.AbstractLoggingBean;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.KeyUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**

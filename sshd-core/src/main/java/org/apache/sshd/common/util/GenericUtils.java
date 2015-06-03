@@ -289,4 +289,48 @@ public class GenericUtils {
         
         return set;
     }
+    
+    public static final String QUOTES="\"'";
+
+    /**
+     * @param s The {@link CharSequence} to be checked
+     * @return If the sequence contains any of the {@link #QUOTES}
+     * on <U>both</U> ends, then they are stripped, otherwise
+     * nothing is done
+     * @see #stripDelimiters(CharSeqeuence, char)
+     */
+    public static final CharSequence stripQuotes(CharSequence s) {
+        if (isEmpty(s)) {
+            return s;
+        }
+        
+        for (int index=0; index < QUOTES.length(); index++) {
+            char delim = QUOTES.charAt(index);
+            CharSequence v = stripDelimiters(s, delim);
+            if (v != s) {   // if stripped one don't continue
+                return v;
+            }
+        }
+        
+        return s;
+    }
+
+    /**
+     * @param s The {@link CharSequence} to be checked
+     * @param delim The expected delimiter
+     * @return If the sequence contains the delimiter on <U>both</U> ends,
+     * then it is are stripped, otherwise nothing is done
+     */
+    public static final CharSequence stripDelimiters(CharSequence s, char delim) {
+        if (isEmpty(s) || (s.length() < 2)) {
+            return s;
+        }
+        
+        int lastPos = s.length() - 1;
+        if ((s.charAt(0) != delim) || (s.charAt(lastPos) != delim)) {
+            return s;
+        } else {
+            return s.subSequence(1, lastPos);
+        }
+    }
 }

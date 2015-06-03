@@ -54,4 +54,63 @@ public class GenericUtilsTest extends BaseTestSupport {
             }
         }
     }
+
+    @Test
+    public void testStripQuotes() {
+        String expected = getCurrentTestName();
+        assertSame("Unexpected un-quoted stripping", expected, GenericUtils.stripQuotes(expected));
+
+        StringBuilder sb = new StringBuilder(2 + expected.length()).append('|').append(expected).append('|');
+        for (int index=0; index < GenericUtils.QUOTES.length(); index++) {
+            char delim = GenericUtils.QUOTES.charAt(index);
+            sb.setCharAt(0, delim);
+            sb.setCharAt(sb.length() - 1, delim);
+            
+            CharSequence actual = GenericUtils.stripQuotes(sb);
+            assertEquals("Mismatched result for delim (" + delim + ")", expected, actual.toString());
+        }
+    }
+    
+    @Test
+    public void testStripOnlyFirstLayerQuotes() {
+        StringBuilder sb = new StringBuilder().append("||").append(getCurrentTestName()).append("||");
+        char[] delims = { '\'', '"', '"', '\'' };
+        for (int index=0; index < delims.length; index += 2) {
+            char topDelim = delims[index], innerDelim = delims[index + 1];
+            sb.setCharAt(0, topDelim);
+            sb.setCharAt(1, innerDelim);
+            sb.setCharAt(sb.length() - 2, innerDelim);
+            sb.setCharAt(sb.length() - 1, topDelim);
+            
+            CharSequence expected = sb.subSequence(1, sb.length() - 1);
+            CharSequence actual = GenericUtils.stripQuotes(sb);
+            assertEquals("Mismatched result for delim (" + topDelim + "/" + innerDelim + ")", expected.toString(), actual.toString());
+        }
+    }
+
+    @Test
+    public void testStripDelimiters() {
+        String expected = getCurrentTestName();
+        final char delim = '|';
+        assertSame("Unexpected un-delimited stripping", expected, GenericUtils.stripDelimiters(expected, delim));
+        
+        CharSequence actual = GenericUtils.stripDelimiters(
+                new StringBuilder(2 + expected.length()).append(delim).append(expected).append(delim), delim);
+        assertEquals("Mismatched stripped values", expected, actual.toString());
+    }
+    
+    @Test
+    public void testStripDelimitersOnlyIfOnBothEnds() {
+        final char delim = '$';
+        StringBuilder expected=new StringBuilder().append(delim).append(getCurrentTestName()).append(delim);
+        for (int index : new int[] { 0, expected.length() - 1 }) {
+            // restore original delimiters
+            expected.setCharAt(0, delim);
+            expected.setCharAt(expected.length() - 1, delim);
+            // trash one end
+            expected.setCharAt(index, (char) (delim + 1));
+            
+            assertSame("Mismatched result for delim at index=" + index, expected, GenericUtils.stripDelimiters(expected, delim));
+        }            
+    }
 }

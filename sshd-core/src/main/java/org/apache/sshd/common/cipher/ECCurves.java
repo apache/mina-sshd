@@ -23,6 +23,7 @@ import java.security.spec.ECFieldFp;
 import java.security.spec.ECParameterSpec;
 import java.security.spec.ECPoint;
 import java.security.spec.EllipticCurve;
+import java.util.Collections;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -186,5 +187,27 @@ public class ECCurves {
                         new BigInteger("011839296A789A3BC0045C8A5FB42C7D1BD998F54449579B446817AFBD17273E662C97EE72995EF42640C550B9013FAD0761353C7086A272C24088BE94769FD16650", 16)),
                 new BigInteger("01FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFA51868783BF2F966B7FCC0148F709A5D03BB5C9B8899C47AEBB6FB71E91386409", 16),
                 1);
+    }
+    
+    private static final class LazySpecsMapHolder {
+        private static final Map<String,ECParameterSpec> specsMap =
+                Collections.unmodifiableMap(new TreeMap<String, ECParameterSpec>(String.CASE_INSENSITIVE_ORDER) {
+                        private static final long serialVersionUID = 1L;    // we're not serializing it
+                    
+                        {
+                            put(NISTP256, EllipticCurves.nistp256);
+                            put(NISTP384, EllipticCurves.nistp384);
+                            put(NISTP521, EllipticCurves.nistp521);
+                        }
+                });
+    }
+
+    @SuppressWarnings("synthetic-access")
+    public static ECParameterSpec getECParameterSpec(String curveName) {
+        if (GenericUtils.isEmpty(curveName)) {
+            return null;
+        } else {
+            return LazySpecsMapHolder.specsMap.get(curveName);
+        }
     }
 }

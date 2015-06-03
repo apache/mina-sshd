@@ -18,7 +18,7 @@
  */
 package org.apache.sshd.client.auth;
 
-import static org.apache.sshd.common.util.KeyUtils.getKeyType;
+import static org.apache.sshd.common.config.keys.KeyUtils.getKeyType;
 
 import java.io.IOException;
 import java.security.KeyPair;

@@ -110,7 +110,7 @@ public enum BuiltinDHFactories implements DHFactory {
             if (!GenericUtils.isEmpty(params)) {
                 throw new IllegalArgumentException("No accepted parameters for " + getName());
             }
-            return new ECDH(ECCurves.EllipticCurves.nistp256);
+            return new ECDH(ECCurves.NISTP256);
         }
 
         @Override
@@ -124,7 +124,7 @@ public enum BuiltinDHFactories implements DHFactory {
             if (!GenericUtils.isEmpty(params)) {
                 throw new IllegalArgumentException("No accepted parameters for " + getName());
             }
-            return new ECDH(ECCurves.EllipticCurves.nistp384);
+            return new ECDH(ECCurves.NISTP384);
         }
 
         @Override
@@ -138,7 +138,7 @@ public enum BuiltinDHFactories implements DHFactory {
             if (!GenericUtils.isEmpty(params)) {
                 throw new IllegalArgumentException("No accepted parameters for " + getName());
             }
-            return new ECDH(ECCurves.EllipticCurves.nistp521);
+            return new ECDH(ECCurves.NISTP521);
         }
 
         @Override

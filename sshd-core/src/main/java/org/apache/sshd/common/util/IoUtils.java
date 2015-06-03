@@ -19,6 +19,7 @@
 package org.apache.sshd.common.util;
 
 import java.io.Closeable;
+import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -225,5 +226,66 @@ public class IoUtils {
         } else {
             return null;
         }
+    }
+
+    /**
+     * Read the requested number of bytes or fail if there are not enough left.
+     * @param input where to read input from
+     * @param buffer destination
+     * @throws IOException if there is a problem reading the file
+     * @throws EOFException if the number of bytes read was incorrect
+     */
+    public static void readFully(InputStream input, byte[] buffer) throws IOException {
+        readFully(input, buffer, 0, buffer.length);
+    }
+
+    /**
+     * Read the requested number of bytes or fail if there are not enough left.
+     * @param input where to read input from
+     * @param buffer destination
+     * @param offset initial offset into buffer
+     * @param length length to read, must be >= 0
+     * @throws IOException if there is a problem reading the file
+     * @throws EOFException if the number of bytes read was incorrect
+     */
+    public static void readFully(InputStream input, byte[] buffer, int offset, int length) throws IOException {
+        int actual = read(input, buffer, offset, length);
+        if (actual != length) {
+            throw new EOFException("Premature EOF - expected=" + length + ", actual=" + actual);
+        }
+    }
+
+    /**
+     * Read as many bytes as possible until EOF or achieved required length
+     * @param input where to read input from
+     * @param buffer destination
+     * @return actual length read; may be less than requested if EOF was reached
+     * @throws IOException if a read error occurs
+     */
+    public static int read(InputStream input, byte[] buffer) throws IOException {
+        return read(input, buffer, 0, buffer.length);
+    }
+
+    /**
+     * Read as many bytes as possible until EOF or achieved required length
+     * @param input where to read input from
+     * @param buffer destination
+     * @param offset initial offset into buffer
+     * @param length length to read - ignored if non-positive
+     * @return actual length read; may be less than requested if EOF was reached
+     * @throws IOException if a read error occurs
+     */
+    public static int read(InputStream input, byte[] buffer, int offset, int length) throws IOException {
+        for (int remaining = length, curOffset = offset; remaining > 0; ) {
+            int count = input.read(buffer, curOffset, remaining);
+            if (count == (-1)) { // EOF before achieved required length
+                return curOffset - offset;
+            }
+
+            remaining -= count;
+            curOffset += count;
+        }
+
+        return length;
     }
 }

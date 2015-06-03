@@ -21,6 +21,8 @@ package org.apache.sshd.common.keyprovider;
 import java.security.KeyPair;
 import java.util.Collections;
 
+import org.apache.sshd.common.cipher.ECCurves;
+
 /**
  * Provider for key pairs.  This provider is used on the server side to provide
  * the host key, or on the client side to provide the user key.
@@ -42,17 +44,17 @@ public interface KeyPairProvider {
     /**
      * SSH identifier for EC keys in NIST curve P-256
      */
-    String ECDSA_SHA2_NISTP256 = "ecdsa-sha2-nistp256";
+    String ECDSA_SHA2_NISTP256 = ECCurves.ECDSA_SHA2_PREFIX + ECCurves.NISTP256;
 
     /**
      * SSH identifier for EC keys in NIST curve P-384
      */
-    String ECDSA_SHA2_NISTP384 = "ecdsa-sha2-nistp384";
+    String ECDSA_SHA2_NISTP384 = ECCurves.ECDSA_SHA2_PREFIX + ECCurves.NISTP384;
 
     /**
      * SSH identifier for EC keys in NIST curve P-521
      */
-    String ECDSA_SHA2_NISTP521 = "ecdsa-sha2-nistp521";
+    String ECDSA_SHA2_NISTP521 = ECCurves.ECDSA_SHA2_PREFIX + ECCurves.NISTP521;
 
     /**
      * Load available keys.

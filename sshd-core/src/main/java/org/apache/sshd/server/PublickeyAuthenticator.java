@@ -19,9 +19,12 @@
 package org.apache.sshd.server;
 
 import java.security.PublicKey;
+import java.util.Collection;
+import java.util.Collections;
 
+import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.util.AbstractLoggingBean;
-import org.apache.sshd.common.util.KeyUtils;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
@@ -41,6 +44,42 @@ public interface PublickeyAuthenticator {
      */
     boolean authenticate(String username, PublicKey key, ServerSession session);
 
+    /**
+     * Checks against a {@link Collection} of {@link PublicKey}s
+     */
+    public static class KeySetPublickeyAuthenticator extends AbstractLoggingBean implements PublickeyAuthenticator {
+        private final Collection<? extends PublicKey> keySet;
+
+        public KeySetPublickeyAuthenticator(Collection<? extends PublicKey> keySet) {
+            this.keySet = (keySet == null) ? Collections.<PublicKey>emptyList() : keySet;
+        }
+
+        public final Collection<? extends PublicKey> getKeySet() {
+            return keySet;
+        }
+
+        @Override
+        public boolean authenticate(String username, PublicKey key, ServerSession session) {
+            return authenticate(username, key, session, getKeySet());
+        }
+        
+        public boolean authenticate(String username, PublicKey key, ServerSession session, Collection<? extends PublicKey> keys) {
+            if (GenericUtils.isEmpty(keys)) {
+                if (log.isDebugEnabled()) {
+                    log.debug("authenticate(" + username + ")[" + session + "] no keys");
+                }
+                
+                return false;
+            }
+            
+            PublicKey matchKey = KeyUtils.findMatchingKey(key, keys);
+            boolean matchFound = (matchKey != null);
+            if (log.isDebugEnabled()) {
+                log.debug("authenticate(" + username + ")[" + session + "] match found=" + matchFound);
+            }
+            return matchFound;
+        }
+    }
     /**
      * Returns the same constant result {@code true/false} regardless
      */
