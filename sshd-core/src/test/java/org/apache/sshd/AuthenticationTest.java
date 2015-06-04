@@ -25,6 +25,7 @@ import java.util.Arrays;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.session.ClientConnectionService;
 import org.apache.sshd.client.session.ClientSessionImpl;
+import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.AbstractSession;
@@ -60,8 +61,8 @@ public class AuthenticationTest extends BaseTestSupport {
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
         sshd.setPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);
-        sshd.getProperties().put(ServerFactoryManager.WELCOME_BANNER, WELCOME);
-        sshd.getProperties().put(ServerFactoryManager.AUTH_METHODS, "publickey,password publickey,keyboard-interactive");
+        FactoryManagerUtils.updateProperty(sshd, ServerFactoryManager.WELCOME_BANNER, WELCOME);
+        FactoryManagerUtils.updateProperty(sshd, ServerFactoryManager.AUTH_METHODS, "publickey,password publickey,keyboard-interactive");
         sshd.setSessionFactory(new SessionFactory() {
             @Override
             protected AbstractSession doCreateSession(IoSession ioSession) throws Exception {

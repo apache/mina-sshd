@@ -545,7 +545,7 @@ public class ServerTest extends BaseTestSupport {
 
     public static void main(String[] args) throws Exception {
         SshServer sshd = SshServer.setUpDefaultServer();
-        sshd.getProperties().put(FactoryManager.IDLE_TIMEOUT, "10000");
+        FactoryManagerUtils.updateProperty(sshd, FactoryManager.IDLE_TIMEOUT, TimeUnit.SECONDS.toMillis(10L));
         sshd.setPort(8001);
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(new SftpSubsystemFactory()));

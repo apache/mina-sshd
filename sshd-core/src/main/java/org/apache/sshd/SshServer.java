@@ -21,7 +21,6 @@ package org.apache.sshd;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
@@ -32,10 +31,9 @@ import java.util.Map;
 import org.apache.sshd.common.AbstractFactoryManager;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.Factory;
+import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.ForwardingFilter;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.Session;
-import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.io.IoSession;
@@ -429,9 +427,11 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         System.err.println("Starting SSHD on port " + port);
                                                     
         SshServer sshd = SshServer.setUpDefaultServer();
-        sshd.getProperties().putAll(options);
+        Map<String,Object> props = sshd.getProperties();
+        FactoryManagerUtils.updateProperty(props, ServerFactoryManager.WELCOME_BANNER, "Welcome to SSHD\n");
+        props.putAll(options);
         sshd.setPort(port);
-        sshd.getProperties().put(ServerFactoryManager.WELCOME_BANNER, "Welcome to SSHD\n");
+
         if (SecurityUtils.isBouncyCastleRegistered()) {
             sshd.setKeyPairProvider(new PEMGeneratorHostKeyProvider("key.pem"));
         } else {
@@ -450,34 +450,8 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
                 return username != null && username.equals(password);
             }
         });
-        sshd.setPublickeyAuthenticator(new PublickeyAuthenticator() {
-            @Override
-            public boolean authenticate(String username, PublicKey key, ServerSession session) {
-                //File f = new File("/Users/" + username + "/.ssh/authorized_keys");
-                return true;
-            }
-        });
-        sshd.setTcpipForwardingFilter(new ForwardingFilter() {
-            @Override
-            public boolean canForwardAgent(Session session) {
-                return true;
-            }
-
-            @Override
-            public boolean canForwardX11(Session session) {
-                return true;
-            }
-
-            @Override
-            public boolean canListen(SshdSocketAddress address, Session session) {
-                return true;
-            }
-
-            @Override
-            public boolean canConnect(SshdSocketAddress address, Session session) {
-                return true;
-            }
-        });
+        sshd.setPublickeyAuthenticator(PublickeyAuthenticator.AcceptAllPublickeyAuthenticator.INSTANCE);
+        sshd.setTcpipForwardingFilter(ForwardingFilter.AcceptAllForwardingFilter.INSTANCE);
         sshd.setCommandFactory(new ScpCommandFactory.Builder().withDelegate(new CommandFactory() {
             @Override
             public Command createCommand(String command) {

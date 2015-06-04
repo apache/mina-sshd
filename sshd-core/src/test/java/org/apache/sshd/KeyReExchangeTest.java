@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.client.channel.ChannelShell;
+import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.Session;
 import org.apache.sshd.common.SessionListener;
 import org.apache.sshd.server.ServerFactoryManager;
@@ -62,12 +63,13 @@ public class KeyReExchangeTest extends BaseTestSupport {
 
     protected void setUp(long bytesLimit, long timeLimit) throws Exception {
         sshd = SshServer.setUpDefaultServer();
-        if (bytesLimit > 0) {
-            sshd.getProperties().put(ServerFactoryManager.REKEY_BYTES_LIMIT, Long.toString(bytesLimit));
+        if (bytesLimit > 0L) {
+            FactoryManagerUtils.updateProperty(sshd, ServerFactoryManager.REKEY_BYTES_LIMIT, bytesLimit);
         }
-        if (timeLimit > 0) {
-            sshd.getProperties().put(ServerFactoryManager.REKEY_TIME_LIMIT, Long.toString(timeLimit));
+        if (timeLimit > 0L) {
+            FactoryManagerUtils.updateProperty(sshd, ServerFactoryManager.REKEY_TIME_LIMIT, timeLimit);
         }
+
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setShellFactory(new EchoShellFactory());
         sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);

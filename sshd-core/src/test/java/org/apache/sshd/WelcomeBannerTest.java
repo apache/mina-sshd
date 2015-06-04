@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.client.UserInteraction;
+import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.server.PublickeyAuthenticator.AcceptAllPublickeyAuthenticator;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.util.BaseTestSupport;
@@ -47,7 +48,7 @@ public class WelcomeBannerTest extends BaseTestSupport {
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
         sshd.setPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);
-        sshd.getProperties().put(ServerFactoryManager.WELCOME_BANNER, WELCOME);
+        FactoryManagerUtils.updateProperty(sshd, ServerFactoryManager.WELCOME_BANNER, WELCOME);
         sshd.start();
         port = sshd.getPort();
     }

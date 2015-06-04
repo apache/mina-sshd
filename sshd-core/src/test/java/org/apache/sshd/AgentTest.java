@@ -34,6 +34,7 @@ import org.apache.sshd.agent.local.ProxyAgentFactory;
 import org.apache.sshd.agent.unix.AgentClient;
 import org.apache.sshd.agent.unix.AgentServer;
 import org.apache.sshd.client.channel.ChannelShell;
+import org.apache.sshd.common.ForwardingFilter;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.server.Command;
@@ -108,18 +109,20 @@ public class AgentTest extends BaseTestSupport {
             sshd1.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
             sshd1.setPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);
             sshd1.setAgentFactory(agentFactory);
+            sshd1.setTcpipForwardingFilter(ForwardingFilter.AcceptAllForwardingFilter.INSTANCE);
             sshd1.start();
-            int port1 = sshd1.getPort();
-    
+            
+            final int port1 = sshd1.getPort();
             try(SshServer sshd2 = SshServer.setUpDefaultServer()) {
                 sshd2.setKeyPairProvider(Utils.createTestHostKeyProvider());
                 sshd2.setShellFactory(new TestEchoShellFactory());
                 sshd2.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
                 sshd2.setPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);
+                sshd1.setTcpipForwardingFilter(ForwardingFilter.AcceptAllForwardingFilter.INSTANCE);
                 sshd2.setAgentFactory(new ProxyAgentFactory());
                 sshd2.start();
-                int port2 = sshd2.getPort();
     
+                final int port2 = sshd2.getPort();
                 try(SshClient client1 = SshClient.setUpDefaultClient()) {
                     client1.setAgentFactory(localAgentFactory);
                     client1.start();
@@ -191,8 +194,7 @@ public class AgentTest extends BaseTestSupport {
             return shell;
         }
 
-        @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class TestEchoShell extends EchoShell {
+        public class TestEchoShell extends EchoShell {
 
             boolean started;
 

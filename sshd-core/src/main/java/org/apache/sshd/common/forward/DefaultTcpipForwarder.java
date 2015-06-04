@@ -169,8 +169,12 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
         if (local.getPort() < 0) {
             throw new IllegalArgumentException("Invalid local port: " + local.getPort());
         }
-        final ForwardingFilter filter = session.getFactoryManager().getTcpipForwardingFilter();
-        if (filter == null || !filter.canListen(local, session)) {
+        
+        ForwardingFilter filter = session.getFactoryManager().getTcpipForwardingFilter();
+        if ((filter == null) || (!filter.canListen(local, session))) {
+            if (log.isDebugEnabled()) {
+                log.debug("localPortForwardingRequested(" + session + ")[" + local + "][haveFilter=" + (filter != null) + "] rejected");
+            }
             throw new IOException("Rejected address: " + local);
         }
         SshdSocketAddress bound = doBind(local, new StaticIoHandler());

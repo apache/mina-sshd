@@ -29,6 +29,7 @@ import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.ForwardingFilter;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.Session;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.channel.ChannelOutputStream;
@@ -54,16 +55,21 @@ import org.apache.sshd.server.channel.OpenChannelException;
  */
 public class TcpipServerChannel extends AbstractServerChannel {
     public abstract static class TcpipFactory implements NamedFactory<Channel>, ExecutorServiceCarrier {
-        private final Type type;
+        private final ForwardingFilter.Type type;
 
-        protected TcpipFactory(Type type) {
+        protected TcpipFactory(ForwardingFilter.Type type) {
             this.type = type;
         }
         
-        public final Type getType() {
+        public final ForwardingFilter.Type getType() {
             return type;
         }
-        
+
+        @Override
+        public final String getName() {
+            return type.getName();
+        }
+
         @Override   // user can override to provide an alternative
         public ExecutorService getExecutorService() {
             return null;
@@ -87,12 +93,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
         public static final DirectTcpipFactory  INSTANCE = new DirectTcpipFactory();
 
         public DirectTcpipFactory() {
-            super(Type.Direct);
-        }
-
-        @Override
-        public String getName() {
-            return "direct-tcpip";
+            super(ForwardingFilter.Type.Direct);
         }
     }
 
@@ -100,27 +101,21 @@ public class TcpipServerChannel extends AbstractServerChannel {
         public static final ForwardedTcpipFactory INSTANCE = new ForwardedTcpipFactory();
         
         public ForwardedTcpipFactory() {
-            super(Type.Forwarded);
-        }
-
-        @Override
-        public String getName() {
-            return "forwarded-tcpip";
+            super(ForwardingFilter.Type.Forwarded);
         }
     }
 
-    private enum Type {
-        Direct,
-        Forwarded
-    }
-
-    private final Type type;
+    private final ForwardingFilter.Type type;
     private IoConnector connector;
     private IoSession ioSession;
     private OutputStream out;
 
-    public TcpipServerChannel(Type type) {
+    public TcpipServerChannel(ForwardingFilter.Type type) {
         this.type = type;
+    }
+
+    public final ForwardingFilter.Type getChannelType() {
+        return type;
     }
 
     @Override
@@ -148,8 +143,12 @@ public class TcpipServerChannel extends AbstractServerChannel {
                 throw new IllegalStateException("Unknown server channel type: " + type);
         }
 
-        final ForwardingFilter filter = getSession().getFactoryManager().getTcpipForwardingFilter();
-        if ((address == null) || (filter == null) || (!filter.canConnect(address, getSession()))) {
+        Session session = getSession();
+        ForwardingFilter filter = session.getFactoryManager().getTcpipForwardingFilter();
+        if ((address == null) || (filter == null) || (!filter.canConnect(type, address, session))) {
+            if (log.isDebugEnabled()) {
+                log.debug("doInit(" + session + ")[" + type + "][haveFilter=" + (filter != null) + "] filtered out " + address);
+            }
             super.close(true);
             f.setException(new OpenChannelException(SshConstants.SSH_OPEN_ADMINISTRATIVELY_PROHIBITED, "Connection denied"));
             return f;

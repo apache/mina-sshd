@@ -48,14 +48,14 @@ public class KeepAliveTest extends BaseTestSupport {
     private SshServer sshd;
     private int port;
 
-    private int heartbeat = 2000;
-    private int timeout = 4000;
-    private int wait = 8000;
+    private static final int HEARTBEAT = 2000;
+    private static final int TIMEOUT = 4000;
+    private static final int WAIT = 8000;
 
     @Before
     public void setUp() throws Exception {
         sshd = SshServer.setUpDefaultServer();
-        sshd.getProperties().put(FactoryManager.IDLE_TIMEOUT, Integer.toString(timeout));
+        FactoryManagerUtils.updateProperty(sshd, FactoryManager.IDLE_TIMEOUT, TIMEOUT);
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setShellFactory(new TestEchoShellFactory());
         sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
@@ -81,7 +81,7 @@ public class KeepAliveTest extends BaseTestSupport {
             session.auth().verify(5L, TimeUnit.SECONDS);
             
             try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL)) {
-                int state = channel.waitFor(ClientChannel.CLOSED, wait);
+                int state = channel.waitFor(ClientChannel.CLOSED, WAIT);
                 assertEquals("Wrong channel state", ClientChannel.CLOSED | ClientChannel.EOF, state);
         
                 channel.close(false);
@@ -101,7 +101,7 @@ public class KeepAliveTest extends BaseTestSupport {
             session.auth().verify(5L, TimeUnit.SECONDS);
         
             try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL)) {
-                int state = channel.waitFor(ClientChannel.CLOSED, wait);
+                int state = channel.waitFor(ClientChannel.CLOSED, WAIT);
                 assertEquals("Wrong channel state", ClientChannel.CLOSED | ClientChannel.EOF, state);
         
                 channel.close(false);
@@ -114,7 +114,7 @@ public class KeepAliveTest extends BaseTestSupport {
     @Test
     public void testClientWithHeartBeat() throws Exception {
         SshClient client = SshClient.setUpDefaultClient();
-        FactoryManagerUtils.updateProperty(client, ClientFactoryManager.HEARTBEAT_INTERVAL, heartbeat);
+        FactoryManagerUtils.updateProperty(client, ClientFactoryManager.HEARTBEAT_INTERVAL, HEARTBEAT);
         client.start();
 
         try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
@@ -122,7 +122,7 @@ public class KeepAliveTest extends BaseTestSupport {
             session.auth().verify(5L, TimeUnit.SECONDS);
 
             try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL)) {
-                int state = channel.waitFor(ClientChannel.CLOSED, wait);
+                int state = channel.waitFor(ClientChannel.CLOSED, WAIT);
                 assertEquals("Wrong channel state", ClientChannel.TIMEOUT, state);
     
                 channel.close(false);
@@ -135,7 +135,7 @@ public class KeepAliveTest extends BaseTestSupport {
     @Test
     public void testClientWithHeartBeatNew() throws Exception {
         SshClient client = SshClient.setUpDefaultClient();
-        FactoryManagerUtils.updateProperty(client, ClientFactoryManager.HEARTBEAT_INTERVAL, heartbeat);
+        FactoryManagerUtils.updateProperty(client, ClientFactoryManager.HEARTBEAT_INTERVAL, HEARTBEAT);
         client.start();
 
         try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
@@ -143,7 +143,7 @@ public class KeepAliveTest extends BaseTestSupport {
             session.auth().verify(5L, TimeUnit.SECONDS);
             
             try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL)) {
-                int state = channel.waitFor(ClientChannel.CLOSED, wait);
+                int state = channel.waitFor(ClientChannel.CLOSED, WAIT);
                 assertEquals("Wrong channel state", ClientChannel.TIMEOUT, state);
         
                 channel.close(false);
@@ -173,7 +173,7 @@ public class KeepAliveTest extends BaseTestSupport {
                 channel.open().await();
         
                 assertTrue("Latch time out", TestEchoShellFactory.TestEchoShell.latch.await(10L, TimeUnit.SECONDS));
-                int state = channel.waitFor(ClientChannel.CLOSED, wait);
+                int state = channel.waitFor(ClientChannel.CLOSED, WAIT);
                 assertEquals("Wrong channel state", ClientChannel.CLOSED | ClientChannel.EOF | ClientChannel.OPENED, state);
     
                 channel.close(false);
@@ -203,7 +203,7 @@ public class KeepAliveTest extends BaseTestSupport {
                 channel.open().await();
     
                 assertTrue("Latch time out", TestEchoShellFactory.TestEchoShell.latch.await(10L, TimeUnit.SECONDS));
-                int state = channel.waitFor(ClientChannel.CLOSED, wait);
+                int state = channel.waitFor(ClientChannel.CLOSED, WAIT);
                 assertEquals("Wrong channel state", ClientChannel.CLOSED | ClientChannel.EOF | ClientChannel.OPENED, state);
         
                 channel.close(false);

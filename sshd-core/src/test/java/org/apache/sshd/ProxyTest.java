@@ -32,9 +32,10 @@ import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.FactoryManagerUtils;
+import org.apache.sshd.common.ForwardingFilter;
 import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.util.BaseTestSupport;
-import org.apache.sshd.util.BogusForwardingFilter;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.Utils;
@@ -58,12 +59,12 @@ public class ProxyTest extends BaseTestSupport {
     @Before
     public void setUp() throws Exception {
         sshd = SshServer.setUpDefaultServer();
-        sshd.getProperties().put(FactoryManager.WINDOW_SIZE, "2048");
-        sshd.getProperties().put(FactoryManager.MAX_PACKET_SIZE, "256");
+        FactoryManagerUtils.updateProperty(sshd, FactoryManager.WINDOW_SIZE, 2048);
+        FactoryManagerUtils.updateProperty(sshd, FactoryManager.MAX_PACKET_SIZE, "256");
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setShellFactory(new EchoShellFactory());
         sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
-        sshd.setTcpipForwardingFilter(new BogusForwardingFilter());
+        sshd.setTcpipForwardingFilter(ForwardingFilter.AcceptAllForwardingFilter.INSTANCE);
         sshd.start();
         sshPort = sshd.getPort();
 
@@ -82,7 +83,6 @@ public class ProxyTest extends BaseTestSupport {
         acceptor.bind(new InetSocketAddress(0));
         echoPort = acceptor.getLocalAddress().getPort();
         this.acceptor = acceptor;
-
     }
 
     @After
@@ -142,9 +142,9 @@ public class ProxyTest extends BaseTestSupport {
 
     protected ClientSession createNativeSession() throws Exception {
         client = SshClient.setUpDefaultClient();
-        client.getProperties().put(FactoryManager.WINDOW_SIZE, "2048");
-        client.getProperties().put(FactoryManager.MAX_PACKET_SIZE, "256");
-        client.setTcpipForwardingFilter(new BogusForwardingFilter());
+        FactoryManagerUtils.updateProperty(client, FactoryManager.WINDOW_SIZE, 2048);
+        FactoryManagerUtils.updateProperty(client, FactoryManager.MAX_PACKET_SIZE, 256);
+        client.setTcpipForwardingFilter(ForwardingFilter.AcceptAllForwardingFilter.INSTANCE);
         client.start();
 
         ClientSession session = client.connect("sshd", "localhost", sshPort).await().getSession();

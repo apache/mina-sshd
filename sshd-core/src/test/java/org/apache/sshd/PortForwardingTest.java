@@ -35,9 +35,9 @@ import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 import org.apache.sshd.client.channel.ChannelDirectTcpip;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.FactoryManagerUtils;
+import org.apache.sshd.common.ForwardingFilter;
 import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.util.BaseTestSupport;
-import org.apache.sshd.util.BogusForwardingFilter;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.JSchLogger;
@@ -76,7 +76,7 @@ public class PortForwardingTest extends BaseTestSupport {
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setShellFactory(new EchoShellFactory());
         sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
-        sshd.setTcpipForwardingFilter(new BogusForwardingFilter());
+        sshd.setTcpipForwardingFilter(ForwardingFilter.AcceptAllForwardingFilter.INSTANCE);
         sshd.start();
         sshPort = sshd.getPort();
 
@@ -450,9 +450,9 @@ public class PortForwardingTest extends BaseTestSupport {
 
     protected ClientSession createNativeSession() throws Exception {
         client = SshClient.setUpDefaultClient();
-        client.getProperties().put(FactoryManager.WINDOW_SIZE, "2048");
-        client.getProperties().put(FactoryManager.MAX_PACKET_SIZE, "256");
-        client.setTcpipForwardingFilter(new BogusForwardingFilter());
+        FactoryManagerUtils.updateProperty(client, FactoryManager.WINDOW_SIZE, 2048);
+        FactoryManagerUtils.updateProperty(client, FactoryManager.MAX_PACKET_SIZE, 256);
+        client.setTcpipForwardingFilter(ForwardingFilter.AcceptAllForwardingFilter.INSTANCE);
         client.start();
 
         ClientSession session = client.connect("sshd", "localhost", sshPort).await().getSession();
@@ -460,8 +460,6 @@ public class PortForwardingTest extends BaseTestSupport {
         session.auth().verify();
         return session;
     }
-
-
 }
 
 

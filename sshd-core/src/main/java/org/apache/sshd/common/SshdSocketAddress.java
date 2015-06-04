@@ -20,26 +20,44 @@ package org.apache.sshd.common;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.Objects;
+
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 
 /**
- * A simple socket address holding the host name and port number.
- *
+ * <P>A simple socket address holding the host name and port number. The reason
+ * it does not extend {@link InetSocketAddress} is twofold:</P></BR>
+ * <OL>
+ *      <LI><P>
+ *      The {@link InetSocketAddress} performs a DNS resolution on the
+ *      provided host name - which we don't want do use until we want to
+ *      create a connection using this address (thus the {@link #toInetSocketAddress()}
+ *      call which executes this query
+ *      </P></LI>
+ *      
+ *      <LI><P>
+ *      If empty host name is provided we replace it with the <I>any</I>
+ *      address of 0.0.0.0
+ *      </P></LI>
+ * </OL>
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class SshdSocketAddress extends SocketAddress {
     private static final long serialVersionUID = 6461645947151952729L;
+    /**
+     * A dummy placeholder that can be used instead of {@code null}s 
+     */
+    public static final SshdSocketAddress LOCALHOST_ADDRESS = new SshdSocketAddress("localhost", 0);
     private final String hostName;
     private final int port;
 
     public SshdSocketAddress(String hostName, int port) {
-        if (hostName == null) {
-            throw new IllegalArgumentException("HostName can not be null");
-        }
-        if (port < 0) {
-            throw new IllegalArgumentException("Port must be >= 0");
-        }
-        this.hostName = hostName;
-        this.port = port;
+        ValidateUtils.checkNotNull(hostName, "Host name may not be null", GenericUtils.EMPTY_OBJECT_ARRAY);
+        this.hostName = GenericUtils.isEmpty(hostName) ? "0.0.0.0" : hostName;
+
+        ValidateUtils.checkTrue(port >= 0, "Port must be >= 0", Integer.valueOf(port));
+        this.port = port; 
     }
 
     public String getHostName() {
@@ -51,28 +69,34 @@ public class SshdSocketAddress extends SocketAddress {
     }
 
     public InetSocketAddress toInetSocketAddress() {
-        return new InetSocketAddress(hostName.length() == 0 ? "0.0.0.0" : hostName, port);
+        return new InetSocketAddress(getHostName(), getPort());
     }
 
     @Override
     public String toString() {
-        return hostName + ":" + port;
+        return getHostName() + ":" + getPort();
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null)
+            return false;
+        if (getClass() != o.getClass())
+            return false;
+
         SshdSocketAddress that = (SshdSocketAddress) o;
-        if (port != that.port) return false;
-        if (!hostName.equals(that.hostName)) return false;
-        return true;
+        if ((this.getPort() == that.getPort())
+         && Objects.equals(this.getHostName(), that.getHostName())) {
+            return true;
+        } else {
+            return false;   // debug breakpoint
+        }
     }
 
     @Override
     public int hashCode() {
-        int result = hostName.hashCode();
-        result = 31 * result + port;
-        return result;
+        return Objects.hashCode(getHostName()) + getPort();
     }
 }

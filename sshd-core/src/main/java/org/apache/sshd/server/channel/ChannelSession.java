@@ -50,6 +50,7 @@ import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.util.CloseableUtils;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.IoUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -596,10 +597,14 @@ public class ChannelSession extends AbstractServerChannel {
     }
 
     protected boolean handleAgentForwarding(Buffer buffer) throws IOException {
-        final ServerSession server = (ServerSession) session;
-        final ForwardingFilter filter = server.getFactoryManager().getTcpipForwardingFilter();
-        final SshAgentFactory factory = server.getFactoryManager().getAgentFactory();
-        if (factory == null || (filter != null && !filter.canForwardAgent(server))) {
+        ServerSession server = (ServerSession) session;
+        FactoryManager manager = server.getFactoryManager();
+        ForwardingFilter filter = manager.getTcpipForwardingFilter();
+        SshAgentFactory factory = manager.getAgentFactory();
+        if ((factory == null) || (filter == null) || (!filter.canForwardAgent(server))) {
+            if (log.isDebugEnabled()) {
+                log.debug("handleAgentForwarding(" + session + ")[haveFactory=" + (factory != null) + ",haveFilter=" + (filter != null) + "] filtered out");
+            }
             return false;
         }
 
@@ -609,15 +614,24 @@ public class ChannelSession extends AbstractServerChannel {
     }
 
     protected boolean handleX11Forwarding(Buffer buffer) throws IOException {
-        final ServerSession server = (ServerSession) session;
-        final ForwardingFilter filter = server.getFactoryManager().getTcpipForwardingFilter();
-        if (filter == null || !filter.canForwardX11(server)) {
+        ServerSession server = (ServerSession) session;
+        ForwardingFilter filter = server.getFactoryManager().getTcpipForwardingFilter();
+        if ((filter == null) || (!filter.canForwardX11(server))) {
+            if (log.isDebugEnabled()) {
+                log.debug("handleX11Forwarding(" + session + ")[haveFilter=" + (filter != null) + "] filtered out");
+            }
             return false;
         }
 
-        String display = service.createX11Display(buffer.getBoolean(), buffer.getString(),
-                                                                    buffer.getString(), buffer.getInt());
-        if (display == null) {
+        boolean singleConnection = buffer.getBoolean();
+        String authProtocol = buffer.getString();
+        String authCookie = buffer.getString();
+        int screenId = buffer.getInt();
+        String display = service.createX11Display(singleConnection, authProtocol, authCookie, screenId);
+        if (GenericUtils.isEmpty(display)) {
+            if (log.isDebugEnabled()) {
+                log.debug("handleX11Forwarding(" + session + ") no X.11 display created");
+            }
             return false;
         }
 

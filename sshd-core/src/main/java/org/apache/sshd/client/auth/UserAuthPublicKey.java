@@ -50,6 +50,7 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 public class UserAuthPublicKey extends AbstractLoggingBean implements UserAuth {
 
     public static class UserAuthPublicKeyFactory implements NamedFactory<UserAuth> {
+        public static final String NAME = "publickey";
         public static final UserAuthPublicKeyFactory INSTANCE = new UserAuthPublicKeyFactory();
 
         public UserAuthPublicKeyFactory() {
@@ -58,7 +59,7 @@ public class UserAuthPublicKey extends AbstractLoggingBean implements UserAuth {
 
         @Override
         public String getName() {
-            return "publickey";
+            return NAME;
         }
         @Override
         public UserAuth create() {
@@ -119,7 +120,7 @@ public class UserAuthPublicKey extends AbstractLoggingBean implements UserAuth {
                 buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST);
                 buffer.putString(session.getUsername());
                 buffer.putString(service);
-                buffer.putString("publickey");
+                buffer.putString(UserAuthPublicKeyFactory.NAME);
                 buffer.putByte((byte) 0);
                 buffer.putString(algo);
                 buffer.putPublicKey(key);
@@ -136,7 +137,7 @@ public class UserAuthPublicKey extends AbstractLoggingBean implements UserAuth {
             buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST);
             buffer.putString(session.getUsername());
             buffer.putString(service);
-            buffer.putString("publickey");
+            buffer.putString(UserAuthPublicKeyFactory.NAME);
             buffer.putByte((byte) 1);
             buffer.putString(algo);
             buffer.putPublicKey(key);
@@ -146,7 +147,7 @@ public class UserAuthPublicKey extends AbstractLoggingBean implements UserAuth {
             bs.putByte(SshConstants.SSH_MSG_USERAUTH_REQUEST);
             bs.putString(session.getUsername());
             bs.putString(service);
-            bs.putString("publickey");
+            bs.putString(UserAuthPublicKeyFactory.NAME);
             bs.putByte((byte) 1);
             bs.putString(algo);
             bs.putPublicKey(key);

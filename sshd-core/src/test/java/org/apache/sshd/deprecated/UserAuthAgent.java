@@ -23,6 +23,7 @@ import java.security.PublicKey;
 import java.util.Iterator;
 
 import org.apache.sshd.agent.SshAgent;
+import org.apache.sshd.client.auth.UserAuthPublicKey.UserAuthPublicKeyFactory;
 import org.apache.sshd.client.session.ClientSessionImpl;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.config.keys.KeyUtils;
@@ -53,7 +54,7 @@ public class UserAuthAgent extends AbstractUserAuth {
             int pos1 = buffer.wpos() - 1;
             buffer.putString(session.getUsername());
             buffer.putString(service);
-            buffer.putString("publickey");
+            buffer.putString(UserAuthPublicKeyFactory.NAME);
             buffer.putByte((byte) 1);
             buffer.putString(KeyUtils.getKeyType(key));
             int pos2 = buffer.wpos();
@@ -65,7 +66,7 @@ public class UserAuthAgent extends AbstractUserAuth {
             bs.putByte(SshConstants.SSH_MSG_USERAUTH_REQUEST);
             bs.putString(session.getUsername());
             bs.putString(service);
-            bs.putString("publickey");
+            bs.putString(UserAuthPublicKeyFactory.NAME);
             bs.putByte((byte) 1);
             bs.putString(KeyUtils.getKeyType(key));
             bs.putPublicKey(key);

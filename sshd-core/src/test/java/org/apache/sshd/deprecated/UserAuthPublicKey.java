@@ -21,6 +21,7 @@ package org.apache.sshd.deprecated;
 import java.io.IOException;
 import java.security.KeyPair;
 
+import org.apache.sshd.client.auth.UserAuthPublicKey.UserAuthPublicKeyFactory;
 import org.apache.sshd.client.session.ClientSessionImpl;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.Signature;
@@ -51,7 +52,7 @@ public class UserAuthPublicKey extends AbstractUserAuth {
                 int pos1 = buffer.wpos() - 1;
                 buffer.putString(session.getUsername());
                 buffer.putString(service);
-                buffer.putString("publickey");
+                buffer.putString(UserAuthPublicKeyFactory.NAME);
                 buffer.putByte((byte) 1);
                 String alg = KeyUtils.getKeyType(key);
                 buffer.putString(alg);
@@ -66,7 +67,7 @@ public class UserAuthPublicKey extends AbstractUserAuth {
                 bs.putByte(SshConstants.SSH_MSG_USERAUTH_REQUEST);
                 bs.putString(session.getUsername());
                 bs.putString(service);
-                bs.putString("publickey");
+                bs.putString(UserAuthPublicKeyFactory.NAME);
                 bs.putByte((byte) 1);
                 bs.putString(alg);
                 bs.putPublicKey(key.getPublic());

@@ -30,6 +30,7 @@ import org.apache.sshd.common.AbstractFactoryManager;
 import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.Cipher;
 import org.apache.sshd.common.Factory;
+import org.apache.sshd.common.ForwardingFilter;
 import org.apache.sshd.common.KeyExchange;
 import org.apache.sshd.common.Mac;
 import org.apache.sshd.common.NamedFactory;
@@ -96,6 +97,7 @@ public class SshBuilder {
         protected FileSystemFactory fileSystemFactory;
         protected TcpipForwarderFactory tcpipForwarderFactory;
         protected List<RequestHandler<ConnectionService>> globalRequestHandlers;
+        protected ForwardingFilter forwardingFilter;
 
         protected S fillWithDefaultValues() {
             if (signatureFactories == null) {
@@ -131,6 +133,10 @@ public class SshBuilder {
 
             if (fileSystemFactory == null) {
                 fileSystemFactory = new NativeFileSystemFactory();
+            }
+
+            if (forwardingFilter == null) {
+                forwardingFilter = ForwardingFilter.RejectAllForwardingFilter.INSTANCE;
             }
 
             if (tcpipForwarderFactory == null) {
@@ -180,6 +186,11 @@ public class SshBuilder {
             return me();
         }
 
+        public S forwardingFilter(final ForwardingFilter filter) {
+            this.forwardingFilter = filter;
+            return me();
+        }
+
         public S tcpipForwarderFactory(final TcpipForwarderFactory tcpipForwarderFactory) {
             this.tcpipForwarderFactory = tcpipForwarderFactory;
             return me();
@@ -210,9 +221,9 @@ public class SshBuilder {
             ssh.setMacFactories(macFactories);
             ssh.setChannelFactories(channelFactories);
             ssh.setFileSystemFactory(fileSystemFactory);
+            ssh.setTcpipForwardingFilter(forwardingFilter);
             ssh.setTcpipForwarderFactory(tcpipForwarderFactory);
             ssh.setGlobalRequestHandlers(globalRequestHandlers);
-
             return ssh;
         }
 

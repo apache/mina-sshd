@@ -483,7 +483,9 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         }
 
         SshClient client = SshClient.setUpDefaultClient();
-        client.getProperties().putAll(options);
+        Map<String,Object> props = client.getProperties();
+        props.putAll(options);
+
         client.start();
         client.setKeyPairProvider(provider);
         client.setUserInteraction(new UserInteraction() {
@@ -519,7 +521,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                 agent.addIdentity(key, "");
             }
             agent.close();
-            client.getProperties().put(SshAgent.SSH_AUTHSOCKET_ENV_NAME, authSock);
+            props.put(SshAgent.SSH_AUTHSOCKET_ENV_NAME, authSock);
         }
         */
 

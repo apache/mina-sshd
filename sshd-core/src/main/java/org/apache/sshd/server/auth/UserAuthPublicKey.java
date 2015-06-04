@@ -36,6 +36,8 @@ import org.apache.sshd.server.UserAuth;
 public class UserAuthPublicKey extends AbstractUserAuth {
 
     public static class UserAuthPublicKeyFactory implements NamedFactory<UserAuth> {
+        public static final String NAME = "publickey";
+
         public static final UserAuthPublicKeyFactory INSTANCE = new UserAuthPublicKeyFactory();
 
         public UserAuthPublicKeyFactory() {
@@ -44,7 +46,7 @@ public class UserAuthPublicKey extends AbstractUserAuth {
 
         @Override
         public String getName() {
-            return "publickey";
+            return NAME;
         }
         @Override
         public UserAuth create() {
@@ -94,7 +96,7 @@ public class UserAuthPublicKey extends AbstractUserAuth {
             buf.putByte(SshConstants.SSH_MSG_USERAUTH_REQUEST);
             buf.putString(username);
             buf.putString(service);
-            buf.putString("publickey");
+            buf.putString(UserAuthPublicKeyFactory.NAME);
             buf.putByte((byte) 1);
             buf.putString(alg);
             buffer.rpos(oldPos);
