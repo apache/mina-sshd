@@ -16,11 +16,14 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common;
+package org.apache.sshd.common.session;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.sshd.common.Closeable;
+import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.Service;
 import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
@@ -188,6 +191,7 @@ public interface Session extends Closeable {
     /**
      * Initiate a new key exchange.
      */
+    @SuppressWarnings("rawtypes")
     SshFuture reExchangeKeys() throws IOException;
 
     /**

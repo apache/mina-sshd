@@ -20,7 +20,7 @@ package org.apache.sshd.server.channel;
 
 import java.io.IOException;
 
-import org.apache.sshd.common.Channel;
+import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelAsyncInputStream;
 import org.apache.sshd.common.io.IoInputStream;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;

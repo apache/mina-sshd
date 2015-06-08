@@ -20,21 +20,26 @@ package org.apache.sshd.agent.local;
 
 import java.io.IOException;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.SshAgentServer;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.session.ConnectionService;
+import org.apache.sshd.common.util.AbstractLoggingBean;
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * The server side fake agent, acting as an agent, but actually forwarding the requests to the auth channel on the client side.
  */
-public class AgentServerProxy implements SshAgentServer {
+public class AgentServerProxy extends AbstractLoggingBean implements SshAgentServer {
     private final ConnectionService service;
-    private String id;
+    private final String id;
+    private final AtomicBoolean open = new AtomicBoolean(true);
 
     public AgentServerProxy(ConnectionService service) throws IOException {
-        this.service = service;
+        this.service = ValidateUtils.checkNotNull(service, "No connection service provided", GenericUtils.EMPTY_OBJECT_ARRAY);
         this.id = UUID.randomUUID().toString();
     }
 
@@ -44,16 +49,22 @@ public class AgentServerProxy implements SshAgentServer {
             this.service.registerChannel(channel);
             OpenFuture future = channel.open().await();
             Throwable t = future.getException();
-            if (t instanceof Exception) {
-                throw (Exception) t;
-            } else if (t != null) {
-                throw new Exception(t);
+            if (t != null) {
+                throw t;
             }
             return channel.getAgent();
-        } catch (IOException e) {
-            throw e;
-        } catch (Exception e) {
-            throw (IOException) new IOException().initCause(e);
+        } catch(Throwable t) {
+            if (log.isDebugEnabled()) {
+                log.debug("createClient(" + service.getSession() + ")[" + getId() + ")"
+                        + " failed (" + t.getClass().getSimpleName() + ")"
+                        + " to create client: " + t.getMessage());
+            }
+
+            if (t instanceof IOException) {
+                throw (IOException) t;
+            }
+            
+            throw (IOException) new IOException("Failed (" + t.getClass().getSimpleName() + ") to create client: " + t.getMessage()).initCause(t);
         }
     }
 
@@ -63,8 +74,16 @@ public class AgentServerProxy implements SshAgentServer {
     }
 
     @Override
-    public void close() throws IOException {
-        // nothing
+    public boolean isOpen() {
+        return open.get();
     }
 
+    @Override
+    public void close() throws IOException {
+        if (open.getAndSet(false)) {
+            if (log.isDebugEnabled()) {
+                log.debug("closed(" + service.getSession() + ")[" + getId() + "]");
+            }
+        }
+    }
 }

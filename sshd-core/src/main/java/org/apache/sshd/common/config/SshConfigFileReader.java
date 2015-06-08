@@ -35,33 +35,33 @@ import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.sshd.SshBuilder.ClientBuilder;
-import org.apache.sshd.SshBuilder.ServerBuilder;
-import org.apache.sshd.SshClient;
-import org.apache.sshd.SshServer;
+import org.apache.sshd.client.ClientBuilder;
+import org.apache.sshd.client.SshClient;
 import org.apache.sshd.common.AbstractFactoryManager;
-import org.apache.sshd.common.Cipher;
-import org.apache.sshd.common.KeyExchange;
-import org.apache.sshd.common.Mac;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.Signature;
 import org.apache.sshd.common.Transformer;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
+import org.apache.sshd.common.cipher.Cipher;
 import org.apache.sshd.common.cipher.CipherFactory;
 import org.apache.sshd.common.compression.BuiltinCompressions;
 import org.apache.sshd.common.compression.Compression;
 import org.apache.sshd.common.compression.CompressionFactory;
 import org.apache.sshd.common.kex.BuiltinDHFactories;
 import org.apache.sshd.common.kex.DHFactory;
+import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.mac.BuiltinMacs;
+import org.apache.sshd.common.mac.Mac;
 import org.apache.sshd.common.mac.MacFactory;
 import org.apache.sshd.common.signature.BuiltinSignatures;
+import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.signature.SignatureFactory;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
 import org.apache.sshd.common.util.io.NoCloseReader;
+import org.apache.sshd.server.ServerBuilder;
+import org.apache.sshd.server.SshServer;
 
 /**
  * Reads and interprets some useful configurations from an OpenSSH

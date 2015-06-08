@@ -22,7 +22,7 @@ import java.util.List;
 
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.TcpipForwarderFactory;
+import org.apache.sshd.common.forward.TcpipForwarderFactory;
 
 /**
  * The <code>ClientFactoryManager</code> enable the retrieval of additional

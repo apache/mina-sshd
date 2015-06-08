@@ -18,7 +18,7 @@
  */
 package org.apache.sshd.server.global;
 
-import org.apache.sshd.common.RequestHandler;
+import org.apache.sshd.common.channel.RequestHandler;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.util.buffer.Buffer;
 
@@ -28,6 +28,9 @@ import org.apache.sshd.common.util.buffer.Buffer;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class NoMoreSessionsHandler implements RequestHandler<ConnectionService> {
+    public NoMoreSessionsHandler() {
+        super();
+    }
 
     @Override
     public Result process(ConnectionService connectionService, String request, boolean wantReply, Buffer buffer) throws Exception {

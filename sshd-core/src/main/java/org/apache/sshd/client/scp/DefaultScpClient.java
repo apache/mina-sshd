@@ -29,8 +29,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 
-import org.apache.sshd.ClientSession;
 import org.apache.sshd.client.channel.ChannelExec;
+import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.file.util.MockFileSystem;

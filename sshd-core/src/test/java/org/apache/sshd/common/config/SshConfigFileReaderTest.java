@@ -26,23 +26,23 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 
-import org.apache.sshd.SshBuilder;
 import org.apache.sshd.common.AbstractFactoryManager;
-import org.apache.sshd.common.Cipher;
+import org.apache.sshd.common.BaseBuilder;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.Mac;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
-import org.apache.sshd.common.Signature;
 import org.apache.sshd.common.Transformer;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
+import org.apache.sshd.common.cipher.Cipher;
 import org.apache.sshd.common.compression.BuiltinCompressions;
 import org.apache.sshd.common.compression.Compression;
 import org.apache.sshd.common.compression.CompressionFactory;
 import org.apache.sshd.common.kex.BuiltinDHFactories;
 import org.apache.sshd.common.mac.BuiltinMacs;
+import org.apache.sshd.common.mac.Mac;
 import org.apache.sshd.common.signature.BuiltinSignatures;
+import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.BaseTestSupport;
 import org.junit.FixMethodOrder;
@@ -77,7 +77,7 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
 
     @Test
     public void testParseCiphersList() {
-        List<? extends NamedResource>   expected=SshBuilder.BaseBuilder.DEFAULT_CIPHERS_PREFERENCE;
+        List<? extends NamedResource>   expected=BaseBuilder.DEFAULT_CIPHERS_PREFERENCE;
         Properties                      props=initNamedResourceProperties(SshConfigFileReader.CIPHERS_CONFIG_PROP, expected);
         BuiltinCiphers.ParseResult      result=SshConfigFileReader.getCiphers(props);
         testParsedFactoriesList(expected, result.getParsedFactories(), result.getUnsupportedFactories());
@@ -85,7 +85,7 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
 
     @Test
     public void testParseMacsList() {
-        List<? extends NamedResource>   expected=SshBuilder.BaseBuilder.DEFAULT_MAC_PREFERENCE;
+        List<? extends NamedResource>   expected=BaseBuilder.DEFAULT_MAC_PREFERENCE;
         Properties                      props=initNamedResourceProperties(SshConfigFileReader.MACS_CONFIG_PROP, expected);
         BuiltinMacs.ParseResult         result=SshConfigFileReader.getMacs(props);
         testParsedFactoriesList(expected, result.getParsedFactories(), result.getUnsupportedFactories());
@@ -93,7 +93,7 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
 
     @Test
     public void testParseSignaturesList() {
-        List<? extends NamedResource>   expected=SshBuilder.BaseBuilder.DEFAULT_SIGNATURE_PREFERENCE;
+        List<? extends NamedResource>   expected=BaseBuilder.DEFAULT_SIGNATURE_PREFERENCE;
         Properties                      props=initNamedResourceProperties(SshConfigFileReader.HOST_KEY_ALGORITHMS_CONFIG_PROP, expected);
         BuiltinSignatures.ParseResult   result=SshConfigFileReader.getSignatures(props);
         testParsedFactoriesList(expected, result.getParsedFactories(), result.getUnsupportedFactories());
@@ -101,7 +101,7 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
 
     @Test
     public void testParseKexFactoriesList() {
-        List<? extends NamedResource>   expected=SshBuilder.BaseBuilder.DEFAULT_KEX_PREFERENCE;
+        List<? extends NamedResource>   expected=BaseBuilder.DEFAULT_KEX_PREFERENCE;
         Properties                      props=initNamedResourceProperties(SshConfigFileReader.KEX_ALGORITHMS_CONFIG_PROP, expected);
         BuiltinDHFactories.ParseResult  result=SshConfigFileReader.getKexFactories(props);
         testParsedFactoriesList(expected, result.getParsedFactories(), result.getUnsupportedFactories());

@@ -29,8 +29,8 @@ import java.security.spec.ECPublicKeySpec;
 
 import javax.crypto.KeyAgreement;
 
-import org.apache.sshd.common.Digest;
 import org.apache.sshd.common.cipher.ECCurves;
+import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ValidateUtils;

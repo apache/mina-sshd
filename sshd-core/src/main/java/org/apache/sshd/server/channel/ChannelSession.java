@@ -33,17 +33,16 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.SshAgentFactory;
-import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.FactoryManagerUtils;
-import org.apache.sshd.common.ForwardingFilter;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.PtyMode;
-import org.apache.sshd.common.RequestHandler;
 import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
 import org.apache.sshd.common.channel.ChannelOutputStream;
+import org.apache.sshd.common.channel.PtyMode;
+import org.apache.sshd.common.channel.RequestHandler;
 import org.apache.sshd.common.file.FileSystemAware;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.future.CloseFuture;
@@ -64,6 +63,7 @@ import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.SessionAware;
 import org.apache.sshd.server.Signal;
 import org.apache.sshd.server.SignalListener;
+import org.apache.sshd.server.forward.ForwardingFilter;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.x11.X11ForwardSupport;
 
@@ -210,7 +210,6 @@ public class ChannelSession extends AbstractServerChannel {
     protected Buffer tempBuffer;
     protected final CloseFuture commandExitFuture = new DefaultCloseFuture(lock);
 
-    @SuppressWarnings("synthetic-access")
     public ChannelSession() {
         addRequestHandler(new ChannelSessionRequestHandler());
         addRequestHandler(new PuttyRequestHandler());
@@ -659,6 +658,10 @@ public class ChannelSession extends AbstractServerChannel {
     }
 
     private class ChannelSessionRequestHandler implements RequestHandler<Channel> {
+        public ChannelSessionRequestHandler() {
+            super();
+        }
+
         @Override
         public Result process(Channel channel, String request, boolean wantReply, Buffer buffer) throws Exception {
             Boolean r = handleRequest(request, buffer);

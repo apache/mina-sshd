@@ -21,8 +21,6 @@ package org.apache.sshd.common.session;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
-import org.apache.sshd.common.Session;
-import org.apache.sshd.common.SessionListener;
 import org.apache.sshd.common.util.AbstractLoggingBean;
 
 /**

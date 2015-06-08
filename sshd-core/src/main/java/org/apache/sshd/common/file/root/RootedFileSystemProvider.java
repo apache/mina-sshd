@@ -48,7 +48,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.IoUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * File system provider which provides a rooted file system.
@@ -110,19 +112,21 @@ public class RootedFileSystemProvider extends FileSystemProvider {
     }
 
     protected Path uriToPath(URI uri) {
-        String scheme = uri.getScheme();
-        if ((scheme == null) || (!scheme.equalsIgnoreCase(getScheme()))) {
-            throw new IllegalArgumentException("URI scheme is not '" + getScheme() + "'");
+        String scheme = uri.getScheme(), expected = getScheme();
+        if ((scheme == null) || (!scheme.equalsIgnoreCase(expected))) {
+            throw new IllegalArgumentException("URI scheme (" + scheme + ") is not '" + expected + "'");
         }
+
+        String root = uri.getRawSchemeSpecificPart();
+        int i = root.indexOf("!/");
+        if (i != -1) {
+            root = root.substring(0, i);
+        }
+
         try {
-            String root = uri.getRawSchemeSpecificPart();
-            int i = root.indexOf("!/");
-            if (i != -1) {
-                root = root.substring(0, i);
-            }
             return Paths.get(new URI(root)).toAbsolutePath();
         } catch (URISyntaxException e) {
-            throw new IllegalArgumentException(e.getMessage(), e);
+            throw new IllegalArgumentException(root + ": " + e.getMessage(), e);
         }
     }
 
@@ -138,83 +142,98 @@ public class RootedFileSystemProvider extends FileSystemProvider {
         String str = uri.getSchemeSpecificPart();
         int i = str.indexOf("!/");
         if (i == -1) {
-            throw new IllegalArgumentException("URI: " + uri + " does not contain path info ex. root:file://foo/bar!/");
+            throw new IllegalArgumentException("URI: " + uri + " does not contain path info - e.g., root:file://foo/bar!/");
         }
-        return getFileSystem(uri).getPath(str.substring(i + 1));
+
+        FileSystem fs = getFileSystem(uri);
+        String subPath = str.substring(i + 1);
+        return fs.getPath(subPath);
     }
 
     @Override
     public InputStream newInputStream(Path path, OpenOption... options) throws IOException {
         Path r = unroot(path);
-        return provider(r).newInputStream(r, options);
+        FileSystemProvider p = provider(r);
+        return p.newInputStream(r, options);
     }
 
     @Override
     public OutputStream newOutputStream(Path path, OpenOption... options) throws IOException {
         Path r = unroot(path);
-        return provider(r).newOutputStream(r, options);
+        FileSystemProvider p = provider(r);
+        return p.newOutputStream(r, options);
     }
 
     @Override
     public FileChannel newFileChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
         Path r = unroot(path);
-        return provider(r).newFileChannel(r, options, attrs);
+        FileSystemProvider p = provider(r);
+        return p.newFileChannel(r, options, attrs);
     }
 
     @Override
     public AsynchronousFileChannel newAsynchronousFileChannel(Path path, Set<? extends OpenOption> options, ExecutorService executor, FileAttribute<?>... attrs) throws IOException {
         Path r = unroot(path);
-        return provider(r).newAsynchronousFileChannel(r, options, executor, attrs);
+        FileSystemProvider p = provider(r);
+        return p.newAsynchronousFileChannel(r, options, executor, attrs);
     }
 
     @Override
     public SeekableByteChannel newByteChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
         Path r = unroot(path);
-        return provider(r).newByteChannel(path, options, attrs);
+        FileSystemProvider p = provider(r);
+        return p.newByteChannel(path, options, attrs);
     }
 
     @Override
     public DirectoryStream<Path> newDirectoryStream(Path dir, DirectoryStream.Filter<? super Path> filter) throws IOException {
         Path r = unroot(dir);
-        return provider(r).newDirectoryStream(r, filter);
+        FileSystemProvider p = provider(r);
+        return p.newDirectoryStream(r, filter);
     }
 
     @Override
     public void createDirectory(Path dir, FileAttribute<?>... attrs) throws IOException {
         Path r = unroot(dir);
-        provider(r).createDirectory(r, attrs);
+        FileSystemProvider p = provider(r);
+        p.createDirectory(r, attrs);
     }
 
     @Override
     public void createSymbolicLink(Path link, Path target, FileAttribute<?>... attrs) throws IOException {
         Path l = unroot(link);
         Path t = unroot(target, false);
-        provider(l).createSymbolicLink(l, t, attrs);
+        FileSystemProvider p = provider(l);
+        p.createSymbolicLink(l, t, attrs);
     }
 
     @Override
     public void createLink(Path link, Path existing) throws IOException {
         Path l = unroot(link);
         Path e = unroot(existing);
-        provider(l).createLink(l, e);
+        FileSystemProvider p = provider(l);
+        p.createLink(l, e);
     }
 
     @Override
     public void delete(Path path) throws IOException {
         Path r = unroot(path);
-        provider(r).delete(r);
+        FileSystemProvider p = provider(r);
+        p.delete(r);
     }
 
     @Override
     public boolean deleteIfExists(Path path) throws IOException {
         Path r = unroot(path);
-        return provider(r).deleteIfExists(r);
+        FileSystemProvider p = provider(r);
+        return p.deleteIfExists(r);
     }
 
     @Override
     public Path readSymbolicLink(Path link) throws IOException {
         Path r = unroot(link);
-        return root(link.getFileSystem(), provider(r).readSymbolicLink(r));
+        FileSystemProvider p = provider(r);
+        return root(link.getFileSystem(), p.readSymbolicLink(r));
 
     }
 
@@ -222,27 +241,31 @@ public class RootedFileSystemProvider extends FileSystemProvider {
     public void copy(Path source, Path target, CopyOption... options) throws IOException {
         Path s = unroot(source);
         Path t = unroot(target);
-        provider(s).copy(s, t, options);
+        FileSystemProvider p = provider(s);
+        p.copy(s, t, options);
     }
 
     @Override
     public void move(Path source, Path target, CopyOption... options) throws IOException {
         Path s = unroot(source);
         Path t = unroot(target);
-        provider(s).move(s, t, options);
+        FileSystemProvider p = provider(s);
+        p.move(s, t, options);
     }
 
     @Override
     public boolean isSameFile(Path path, Path path2) throws IOException {
         Path r = unroot(path);
         Path r2 = unroot(path2);
-        return provider(r).isSameFile(r, r2);
+        FileSystemProvider p = provider(r);
+        return p.isSameFile(r, r2);
     }
 
     @Override
     public boolean isHidden(Path path) throws IOException {
         Path r = unroot(path);
-        return provider(r).isHidden(r);
+        FileSystemProvider p = provider(r);
+        return p.isHidden(r);
     }
 
     @Override
@@ -253,63 +276,77 @@ public class RootedFileSystemProvider extends FileSystemProvider {
     @Override
     public void checkAccess(Path path, AccessMode... modes) throws IOException {
         Path r = unroot(path);
-        provider(r).checkAccess(r, modes);
+        FileSystemProvider p = provider(r);
+        p.checkAccess(r, modes);
     }
 
     @Override
     public <V extends FileAttributeView> V getFileAttributeView(Path path, Class<V> type, LinkOption... options) {
         Path r = unroot(path);
-        return provider(r).getFileAttributeView(r, type, options);
+        FileSystemProvider p = provider(r);
+        return p.getFileAttributeView(r, type, options);
     }
 
     @Override
     public <A extends BasicFileAttributes> A readAttributes(Path path, Class<A> type, LinkOption... options) throws IOException {
         Path r = unroot(path);
-        return provider(r).readAttributes(r, type, options);
+        FileSystemProvider p = provider(r);
+        return p.readAttributes(r, type, options);
     }
 
     @Override
     public Map<String, Object> readAttributes(Path path, String attributes, LinkOption... options) throws IOException {
         Path r = unroot(path);
-        return provider(r).readAttributes(r, attributes, options);
+        FileSystemProvider p = provider(r);
+        return p.readAttributes(r, attributes, options);
     }
 
     @Override
     public void setAttribute(Path path, String attribute, Object value, LinkOption... options) throws IOException {
         Path r = unroot(path);
-        provider(r).setAttribute(r, attribute, value, options);
+        FileSystemProvider p = provider(r);
+        p.setAttribute(r, attribute, value, options);
     }
 
-    private FileSystemProvider provider(Path path) {
-        return path.getFileSystem().provider();
+    private static FileSystemProvider provider(Path path) {
+        FileSystem fs = path.getFileSystem();
+        return fs.provider();
     }
 
-    private Path root(FileSystem  fs, Path nat) {
+    private static Path root(FileSystem  fs, Path nat) {
         RootedFileSystem rfs = (RootedFileSystem) fs;
         if (nat.isAbsolute()) {
-            return rfs.getPath("/" + rfs.getRoot().relativize(nat).toString());
+            Path root = rfs.getRoot();
+            Path rel = root.relativize(nat);
+            return rfs.getPath("/" + rel.toString());
         } else {
             return rfs.getPath(nat.toString());
         }
     }
 
-    private Path unroot(Path path) {
+    private static Path unroot(Path path) {
         return unroot(path, true);
     }
 
-    private Path unroot(Path path, boolean absolute) {
-        if (path == null) {
-            throw new NullPointerException();
-        }
+    private static Path unroot(Path path, boolean absolute) {
+        ValidateUtils.checkNotNull(path, "No path to unroot", GenericUtils.EMPTY_OBJECT_ARRAY);
         if (!(path instanceof RootedPath)) {
-            throw new ProviderMismatchException();
+            throw new ProviderMismatchException("unroot(" + path + ") is not a " + RootedPath.class.getSimpleName()
+                                              + " but rather a " + path.getClass().getSimpleName());
         }
+
         RootedPath p = (RootedPath) path;
         if (absolute || p.isAbsolute()) {
-            String r = p.toAbsolutePath().toString();
-            return p.getFileSystem().getRoot().resolve(r.substring(1));
+            Path absPath = p.toAbsolutePath();
+            String r = absPath.toString();
+            RootedFileSystem rfs = p.getFileSystem();
+            Path root = rfs.getRoot();
+            return root.resolve(r.substring(1));
         } else {
-            return p.getFileName().getRoot().getFileSystem().getPath(p.toString());
+            RootedPath fileName = p.getFileName();
+            RootedPath root = fileName.getRoot();
+            RootedFileSystem rfs = root.getFileSystem();
+            return rfs.getPath(p.toString());
         }
     }
 

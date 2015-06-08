@@ -88,6 +88,7 @@ public class CloseableUtils {
             });
         }
 
+        @SuppressWarnings("rawtypes")
         public <T extends SshFuture> Builder when(SshFuture<T> future) {
             if (future != null) {
                 when(Collections.singleton(future));
@@ -95,10 +96,12 @@ public class CloseableUtils {
             return this;
         }
 
+        @SuppressWarnings("rawtypes")
         public <T extends SshFuture> Builder when(@SuppressWarnings("unchecked") SshFuture<T>... futures) {
             return when(Arrays.asList(futures));
         }
 
+        @SuppressWarnings("rawtypes")
         public <T extends SshFuture> Builder when(final Iterable<? extends SshFuture<T>> futures) {
             return close(new FuturesCloseable<T>(lock, futures));
         }

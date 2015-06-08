@@ -21,7 +21,6 @@ package org.apache.sshd.common.channel;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.CloseFuture;

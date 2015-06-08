@@ -21,7 +21,7 @@ package org.apache.sshd.server;
 import java.util.Collection;
 import java.util.Map;
 
-import org.apache.sshd.common.PtyMode;
+import org.apache.sshd.common.channel.PtyMode;
 
 /**
  * Interface providing access to the environment map and allowing the registration

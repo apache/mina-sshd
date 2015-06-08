@@ -18,7 +18,6 @@
  */
 package org.apache.sshd.common.cipher;
 
-import org.apache.sshd.common.Cipher;
 
 /**
  * Represents a no-op cipher.

@@ -24,6 +24,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.sshd.client.SshClient;
+import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
@@ -31,6 +33,7 @@ import org.apache.sshd.server.Command;
 import org.apache.sshd.server.CommandFactory;
 import org.apache.sshd.server.PublickeyAuthenticator;
 import org.apache.sshd.server.ServerFactoryManager;
+import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.CachingPublicKeyAuthenticator;
 import org.apache.sshd.server.auth.UserAuthPublicKey.UserAuthPublicKeyFactory;
 import org.apache.sshd.server.command.UnknownCommand;

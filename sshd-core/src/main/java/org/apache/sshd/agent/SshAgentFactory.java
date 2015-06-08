@@ -20,9 +20,9 @@ package org.apache.sshd.agent;
 
 import java.io.IOException;
 
-import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.session.ConnectionService;
 
 /**

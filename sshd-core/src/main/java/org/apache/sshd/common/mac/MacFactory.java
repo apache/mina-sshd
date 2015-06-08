@@ -19,7 +19,6 @@
 
 package org.apache.sshd.common.mac;
 
-import org.apache.sshd.common.Mac;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.OptionalFeature;
 import org.apache.sshd.common.Transformer;

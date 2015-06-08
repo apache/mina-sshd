@@ -18,21 +18,23 @@
  */
 package org.apache.sshd.common.forward;
 
-import org.apache.sshd.common.TcpipForwarder;
-import org.apache.sshd.common.TcpipForwarderFactory;
 import org.apache.sshd.common.session.ConnectionService;
 
 /**
- * The default {link TcpipForwarderFactory} implementation.
+ * The default {@link TcpipForwarderFactory} implementation.
  *
- * @see DefaultTcpipForwarder
+ * @see {@link DefaultTcpipForwarder}
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class DefaultTcpipForwarderFactory implements TcpipForwarderFactory
-{
-   @Override
-public TcpipForwarder create( ConnectionService service )
-   {
-      return new DefaultTcpipForwarder( service );
-   }
+public class DefaultTcpipForwarderFactory implements TcpipForwarderFactory {
+    public static final DefaultTcpipForwarderFactory INSTANCE = new DefaultTcpipForwarderFactory();
+
+    public DefaultTcpipForwarderFactory() {
+        super();
+    }
+
+    @Override
+    public TcpipForwarder create(ConnectionService service) {
+        return new DefaultTcpipForwarder(service);
+    }
 }

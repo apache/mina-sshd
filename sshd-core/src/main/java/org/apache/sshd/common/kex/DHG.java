@@ -28,8 +28,8 @@ import javax.crypto.KeyAgreement;
 import javax.crypto.spec.DHParameterSpec;
 import javax.crypto.spec.DHPublicKeySpec;
 
-import org.apache.sshd.common.Digest;
 import org.apache.sshd.common.Factory;
+import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.util.SecurityUtils;
 
 /**

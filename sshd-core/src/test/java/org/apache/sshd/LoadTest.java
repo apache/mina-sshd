@@ -27,12 +27,17 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.sshd.common.Cipher;
+import org.apache.sshd.client.ClientBuilder;
+import org.apache.sshd.client.SshClient;
+import org.apache.sshd.client.channel.ClientChannel;
+import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
+import org.apache.sshd.common.cipher.Cipher;
 import org.apache.sshd.common.kex.BuiltinDHFactories;
+import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.BaseTestSupport;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
@@ -119,7 +124,7 @@ public class LoadTest extends BaseTestSupport {
             FactoryManagerUtils.updateProperty(props, FactoryManager.MAX_PACKET_SIZE, 1024 * 16);
             FactoryManagerUtils.updateProperty(props, FactoryManager.WINDOW_SIZE, 1024 * 8);
             client.setKeyExchangeFactories(Arrays.asList(
-                    SshBuilder.ClientBuilder.DH2KEX.transform(BuiltinDHFactories.dhg1)));
+                    ClientBuilder.DH2KEX.transform(BuiltinDHFactories.dhg1)));
             client.setCipherFactories(Arrays.<NamedFactory<Cipher>>asList(BuiltinCiphers.blowfishcbc));
             client.start();
             try(ClientSession session = client.connect("sshd", "localhost", port).await().getSession()) {

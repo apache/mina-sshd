@@ -16,10 +16,11 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common;
+package org.apache.sshd.common.kex;
 
 import java.security.PublicKey;
 
+import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.buffer.Buffer;
 

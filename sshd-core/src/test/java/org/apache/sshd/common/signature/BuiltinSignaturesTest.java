@@ -27,7 +27,6 @@ import java.util.Random;
 
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
-import org.apache.sshd.common.Signature;
 import org.apache.sshd.common.signature.BuiltinSignatures.ParseResult;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.BaseTestSupport;

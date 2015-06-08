@@ -41,27 +41,25 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.sshd.common.Cipher;
 import org.apache.sshd.common.Closeable;
-import org.apache.sshd.common.Digest;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.FactoryManagerUtils;
-import org.apache.sshd.common.KeyExchange;
-import org.apache.sshd.common.Mac;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
-import org.apache.sshd.common.Random;
 import org.apache.sshd.common.Service;
-import org.apache.sshd.common.Session;
-import org.apache.sshd.common.SessionListener;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.cipher.Cipher;
 import org.apache.sshd.common.compression.Compression;
+import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.future.DefaultSshFuture;
 import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
+import org.apache.sshd.common.kex.KeyExchange;
+import org.apache.sshd.common.mac.Mac;
+import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.Readable;
@@ -126,6 +124,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     protected byte[] I_S; // the payload of the factoryManager's SSH_MSG_KEXINIT
     protected KeyExchange kex;
     protected final AtomicInteger kexState = new AtomicInteger();
+    @SuppressWarnings("rawtypes")
     protected DefaultSshFuture reexchangeFuture;
 
     //
@@ -1311,10 +1310,8 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     	sessionListenerProxy.sessionEvent(this, event);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
+    @SuppressWarnings("rawtypes")
     public SshFuture reExchangeKeys() throws IOException {
         if (kexState.compareAndSet(KEX_STATE_DONE, KEX_STATE_INIT)) {
             log.info("Initiating key re-exchange");

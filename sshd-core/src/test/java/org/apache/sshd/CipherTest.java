@@ -22,11 +22,12 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
 
-import org.apache.sshd.common.Cipher;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.Random;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
+import org.apache.sshd.common.cipher.Cipher;
 import org.apache.sshd.common.random.BouncyCastleRandom;
+import org.apache.sshd.common.random.Random;
+import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.BaseTestSupport;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
@@ -123,10 +124,10 @@ public class CipherTest extends BaseTestSupport {
     }
 
 
-    protected void setUp(NamedFactory<org.apache.sshd.common.Cipher> cipher) throws Exception {
+    protected void setUp(NamedFactory<org.apache.sshd.common.cipher.Cipher> cipher) throws Exception {
         sshd = SshServer.setUpDefaultServer();
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
-        sshd.setCipherFactories(Arrays.<NamedFactory<org.apache.sshd.common.Cipher>>asList(cipher));
+        sshd.setCipherFactories(Arrays.<NamedFactory<org.apache.sshd.common.cipher.Cipher>>asList(cipher));
         sshd.setShellFactory(new EchoShellFactory());
         sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
         sshd.start();

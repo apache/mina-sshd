@@ -21,8 +21,8 @@ package org.apache.sshd.client.keyverifier;
 import java.net.SocketAddress;
 import java.security.PublicKey;
 
-import org.apache.sshd.ClientSession;
 import org.apache.sshd.client.ServerKeyVerifier;
+import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.util.AbstractLoggingBean;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 

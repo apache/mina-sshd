@@ -20,7 +20,7 @@ package org.apache.sshd.client;
 
 import java.util.Collection;
 
-import org.apache.sshd.ClientSession;
+import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**

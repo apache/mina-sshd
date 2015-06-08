@@ -21,16 +21,17 @@ package org.apache.sshd.agent.local;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.agent.SshAgentServer;
-import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.Session;
+import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.session.ConnectionService;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.server.session.ServerSession;
 
@@ -62,22 +63,31 @@ public class ProxyAgentFactory implements SshAgentFactory {
     public SshAgentServer createServer(ConnectionService service) throws IOException {
         Session session = service.getSession();
         if (!(session instanceof ServerSession)) {
-            throw new IllegalStateException("The session used to create an agent server proxy must be a server session");
+            throw new IllegalStateException("The session used to create an agent server proxy must be a server session: " + session);
         }
 
         final AgentServerProxy proxy = new AgentServerProxy(service);
         proxies.put(proxy.getId(), proxy);
         return new SshAgentServer() {
+            private final AtomicBoolean open = new AtomicBoolean(true);
+
             @Override
             public String getId() {
                 return proxy.getId();
             }
 
+            @Override
+            public boolean isOpen() {
+                return open.get() && proxy.isOpen();
+            }
+
             @SuppressWarnings("synthetic-access")
             @Override
             public void close() throws IOException {
-                proxies.remove(proxy.getId());
-                proxy.close();
+                if (open.getAndSet(false)) {
+                    proxies.remove(proxy.getId());
+                    proxy.close();
+                }
             }
         };
     }

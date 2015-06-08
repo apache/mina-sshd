@@ -26,12 +26,15 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.sshd.client.SshClient;
+import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.RuntimeSshException;
-import org.apache.sshd.common.Signature;
 import org.apache.sshd.common.keyprovider.AbstractKeyPairProvider;
 import org.apache.sshd.common.signature.BuiltinSignatures;
+import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.SecurityUtils;
+import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.PublickeyAuthenticator.AcceptAllPublickeyAuthenticator;
 import org.apache.sshd.util.BaseTestSupport;
 import org.apache.sshd.util.BogusPasswordAuthenticator;

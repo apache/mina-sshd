@@ -22,6 +22,7 @@ package org.apache.sshd.common;
 import java.util.Map;
 import java.util.TreeMap;
 
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.util.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;

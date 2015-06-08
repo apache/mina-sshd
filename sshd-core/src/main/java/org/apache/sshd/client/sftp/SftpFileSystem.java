@@ -33,7 +33,7 @@ import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.sshd.ClientSession;
+import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.file.util.BaseFileSystem;
 import org.apache.sshd.common.file.util.ImmutableList;
 

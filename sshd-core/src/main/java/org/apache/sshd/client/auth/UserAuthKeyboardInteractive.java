@@ -27,10 +27,10 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.sshd.ClientSession;
 import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.UserAuth;
 import org.apache.sshd.client.UserInteraction;
+import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.util.AbstractLoggingBean;

@@ -16,38 +16,28 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common;
-
-import org.apache.sshd.common.future.CloseFuture;
-import org.apache.sshd.common.session.Session;
-import org.apache.sshd.common.util.buffer.Buffer;
+package org.apache.sshd.common.random;
 
 /**
- * See RFC 4253 [SSH-TRANS] and the SSH_MSG_SERVICE_REQUEST packet.  Examples include ssh-userauth
- * and ssh-connection but developers are also free to implement their own custom service.
+ * A pseudo random number generator.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface Service extends Closeable {
-
-    Session getSession();
-
-    // TODO: this is specific to clients
-    void start();
+public interface Random {
 
     /**
-     * Service the request.
-     * @param buffer
-     * @throws Exception
-     */
-    void process(byte cmd, Buffer buffer) throws Exception;
-
-    /**
-     * Close the service.
-     * @param immediately
+     * Fill part of bytes with random values.
      *
+     * @param bytes byte array to be filled.
+     * @param start index to start filling at.
+     * @param len length of segment to fill.
      */
-    @Override
-    CloseFuture close(boolean immediately);
+    void fill(byte[] bytes, int start, int len);
+
+    /**
+     * Returns a pseudo-random uniformly distributed {@code int}
+     * in the half-open range [0, n).
+     */
+    int random(int n);
 
 }

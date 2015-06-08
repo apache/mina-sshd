@@ -16,12 +16,12 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd;
+package org.apache.sshd.client.channel;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.channels.Channel;
 
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.future.CloseFuture;
@@ -35,7 +35,7 @@ import org.apache.sshd.common.io.IoOutputStream;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface ClientChannel extends Closeable {
+public interface ClientChannel extends Channel {
 
     String CHANNEL_EXEC = "exec";
     String CHANNEL_SHELL = "shell";

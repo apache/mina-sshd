@@ -16,10 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common;
+package org.apache.sshd.common.forward;
 
 
 import java.io.IOException;
+
+import org.apache.sshd.common.Closeable;
+import org.apache.sshd.common.SshdSocketAddress;
 
 public interface TcpipForwarder extends Closeable {
 

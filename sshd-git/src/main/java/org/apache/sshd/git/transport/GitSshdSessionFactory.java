@@ -22,10 +22,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import org.apache.sshd.ClientChannel;
-import org.apache.sshd.ClientSession;
-import org.apache.sshd.SshClient;
+import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ChannelExec;
+import org.apache.sshd.client.channel.ClientChannel;
+import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.eclipse.jgit.errors.TransportException;

@@ -23,8 +23,8 @@ import java.io.File;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 
-import org.apache.sshd.common.Session;
 import org.apache.sshd.common.file.FileSystemFactory;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.AbstractLoggingBean;
 
 /**

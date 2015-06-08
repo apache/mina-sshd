@@ -21,7 +21,6 @@ package org.apache.sshd.common.channel;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.CloseFuture;

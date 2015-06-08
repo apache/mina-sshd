@@ -103,9 +103,9 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.sshd.ClientSession;
 import org.apache.sshd.client.SftpException;
 import org.apache.sshd.client.channel.ChannelSubsystem;
+import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.sftp.SftpConstants;
 import org.apache.sshd.common.util.GenericUtils;
@@ -192,7 +192,12 @@ public class DefaultSftpClient extends AbstractSftpClient {
         }
         // Process commands
         int rpos = incoming.rpos();
-        while (receive(incoming));
+        for (int count=0; receive(incoming); count++) {
+            if (log.isTraceEnabled()) {
+                log.trace("Processed " + count + " data messages");
+            }
+        }
+
         int read = incoming.rpos() - rpos;
         // Compact and add remaining data
         receiveBuffer.compact();
@@ -209,12 +214,12 @@ public class DefaultSftpClient extends AbstractSftpClient {
         int rpos = incoming.rpos();
         int wpos = incoming.wpos();
         clientSession.resetIdleTimeout();
-        if (wpos - rpos > 4) {
+        if ((wpos - rpos) > 4) {
             int length = incoming.getInt();
             if (length < 5) {
                 throw new IOException("Illegal sftp packet length: " + length);
             }
-            if (wpos - rpos >= length + 4) {
+            if ((wpos - rpos) >= (length + 4)) {
                 incoming.rpos(rpos);
                 incoming.wpos(rpos + 4 + length);
                 process(incoming);
@@ -231,7 +236,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
      * Process an SFTP packet
      */
     protected void process(Buffer incoming) throws IOException {
-        Buffer buffer = new ByteArrayBuffer();
+        Buffer buffer = new ByteArrayBuffer(incoming.available());
         buffer.putBuffer(incoming);
         buffer.rpos(5);
         int id = buffer.getInt();

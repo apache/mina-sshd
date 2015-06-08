@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.forward;
+package org.apache.sshd.server.forward;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -26,12 +26,10 @@ import java.util.concurrent.ExecutorService;
 
 import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
-import org.apache.sshd.common.Channel;
-import org.apache.sshd.common.ForwardingFilter;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.Session;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshdSocketAddress;
+import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
@@ -40,6 +38,7 @@ import org.apache.sshd.common.io.IoConnector;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.Readable;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;

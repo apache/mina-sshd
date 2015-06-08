@@ -18,6 +18,8 @@
  */
 package org.apache.sshd.common.future;
 
+import java.util.concurrent.TimeUnit;
+
 import org.apache.sshd.util.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -27,24 +29,28 @@ import org.junit.runners.MethodSorters;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class FutureTest extends BaseTestSupport {
+    public FutureTest() {
+        super();
+    }
 
     @Test
+    @SuppressWarnings("rawtypes")
     public void testAwaitUnint() {
-
         final DefaultSshFuture future = new DefaultSshFuture(null);
+        final Object expected = new Object();
         new Thread() {
             @Override
             public void run() {
                 try {
-                    Thread.sleep(2000);
+                    Thread.sleep(TimeUnit.SECONDS.toMillis(2L));
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
-                future.setValue(new Object());
+                future.setValue(expected);
             }
         }.start();
 
         future.awaitUninterruptibly();
-        assertNotNull(future.getValue());
+        assertSame("Mismatched signalled value", expected, future.getValue());
     }
 }

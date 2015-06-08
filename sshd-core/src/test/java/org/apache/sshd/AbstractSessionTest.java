@@ -23,6 +23,7 @@ import java.io.IOException;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.BaseTestSupport;
 import org.junit.Before;
 import org.junit.FixMethodOrder;

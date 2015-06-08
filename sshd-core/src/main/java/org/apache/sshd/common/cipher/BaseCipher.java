@@ -21,7 +21,6 @@ package org.apache.sshd.common.cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
-import org.apache.sshd.common.Cipher;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.util.SecurityUtils;
 

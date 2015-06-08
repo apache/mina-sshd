@@ -26,11 +26,15 @@ import java.io.PipedOutputStream;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ChannelShell;
+import org.apache.sshd.client.channel.ClientChannel;
+import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.FactoryManagerUtils;
-import org.apache.sshd.common.Session;
-import org.apache.sshd.common.SessionListener;
+import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.server.ServerFactoryManager;
+import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.BaseTestSupport;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;

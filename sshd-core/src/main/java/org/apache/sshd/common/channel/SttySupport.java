@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.util;
+package org.apache.sshd.common.channel;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -24,8 +24,6 @@ import java.io.InputStream;
 import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.TreeMap;
-
-import org.apache.sshd.common.PtyMode;
 
 /**
  * Support for stty command on unix

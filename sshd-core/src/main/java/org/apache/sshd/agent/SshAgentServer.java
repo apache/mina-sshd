@@ -18,9 +18,9 @@
  */
 package org.apache.sshd.agent;
 
-import java.io.Closeable;
+import java.nio.channels.Channel;
 
-public interface SshAgentServer extends Closeable {
+public interface SshAgentServer extends Channel {
     /**
      * @return Agent server identifier
      */

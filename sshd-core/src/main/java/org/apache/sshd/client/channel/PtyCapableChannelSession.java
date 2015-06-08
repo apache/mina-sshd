@@ -23,10 +23,10 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.apache.sshd.common.PtyMode;
 import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.channel.PtyMode;
+import org.apache.sshd.common.channel.SttySupport;
 import org.apache.sshd.common.util.OsUtils;
-import org.apache.sshd.common.util.SttySupport;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 

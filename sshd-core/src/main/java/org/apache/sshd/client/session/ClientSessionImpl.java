@@ -27,8 +27,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.sshd.ClientChannel;
-import org.apache.sshd.ClientSession;
 import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.ServerKeyVerifier;
 import org.apache.sshd.client.UserInteraction;
@@ -36,6 +34,7 @@ import org.apache.sshd.client.channel.ChannelDirectTcpip;
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.ChannelSubsystem;
+import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.DefaultAuthFuture;
 import org.apache.sshd.client.scp.DefaultScpClient;
@@ -47,7 +46,6 @@ import org.apache.sshd.client.sftp.SftpFileSystemProvider;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.ServiceFactory;
-import org.apache.sshd.common.SessionListener;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.SshdSocketAddress;
@@ -59,6 +57,7 @@ import org.apache.sshd.common.scp.ScpTransferEventListener;
 import org.apache.sshd.common.session.AbstractConnectionService;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.session.ConnectionService;
+import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
@@ -177,6 +176,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
     }
 
     @Override
+    @SuppressWarnings("rawtypes")
     public SshFuture switchToNoneCipher() throws IOException {
         if (!(currentService instanceof AbstractConnectionService)
                 || !((AbstractConnectionService) currentService).getChannels().isEmpty()) {
@@ -291,7 +291,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
 
     @Override
     public FileSystem createSftpFileSystem(int readBufferSize, int writeBufferSize) throws IOException {
-        SftpFileSystem  fs=new SftpFileSystem(new SftpFileSystemProvider((org.apache.sshd.SshClient) factoryManager), this);
+        SftpFileSystem  fs=new SftpFileSystem(new SftpFileSystemProvider((org.apache.sshd.client.SshClient) factoryManager), this);
         fs.setReadBufferSize(readBufferSize);
         fs.setWriteBufferSize(writeBufferSize);
         return fs;

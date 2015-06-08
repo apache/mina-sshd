@@ -21,7 +21,7 @@ package org.apache.sshd.client;
 import java.net.SocketAddress;
 import java.security.PublicKey;
 
-import org.apache.sshd.ClientSession;
+import org.apache.sshd.client.session.ClientSession;
 
 /**
  * The <code>ServerKeyVerifier</code> is used on the client side

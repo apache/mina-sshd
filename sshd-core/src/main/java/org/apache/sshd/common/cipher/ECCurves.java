@@ -27,8 +27,8 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.TreeMap;
 
-import org.apache.sshd.common.Digest;
 import org.apache.sshd.common.digest.BuiltinDigests;
+import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.util.GenericUtils;
 
 /**

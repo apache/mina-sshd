@@ -22,8 +22,10 @@ import java.io.IOException;
 import java.security.KeyPair;
 import java.util.Arrays;
 
+import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.session.ClientConnectionService;
+import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.ClientSessionImpl;
 import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.io.IoSession;
@@ -36,6 +38,7 @@ import org.apache.sshd.deprecated.UserAuthPassword;
 import org.apache.sshd.deprecated.UserAuthPublicKey;
 import org.apache.sshd.server.PublickeyAuthenticator.AcceptAllPublickeyAuthenticator;
 import org.apache.sshd.server.ServerFactoryManager;
+import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.session.SessionFactory;
 import org.apache.sshd.util.BaseTestSupport;

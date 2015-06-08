@@ -30,11 +30,10 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeMap;
 
-import org.apache.sshd.common.Digest;
-import org.apache.sshd.common.Mac;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.config.NamedFactoriesListParseResult;
+import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 

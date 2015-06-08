@@ -21,13 +21,13 @@ package org.apache.sshd.git.pack;
 import java.io.File;
 import java.util.Arrays;
 
-import org.apache.sshd.SshServer;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.git.transport.GitSshdSessionFactory;
 import org.apache.sshd.git.util.BogusPasswordAuthenticator;
 import org.apache.sshd.git.util.EchoShellFactory;
 import org.apache.sshd.git.util.Utils;
 import org.apache.sshd.server.Command;
+import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.sftp.SftpSubsystemFactory;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.transport.CredentialsProvider;

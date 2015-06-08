@@ -20,7 +20,6 @@ package org.apache.sshd.common.digest;
 
 import java.security.MessageDigest;
 
-import org.apache.sshd.common.Digest;
 import org.apache.sshd.common.util.SecurityUtils;
 
 /**

@@ -21,7 +21,6 @@ package org.apache.sshd.common.random;
 import java.security.SecureRandom;
 
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.Random;
 
 /**
  * A <code>Random</code> implementation using the built-in {@link SecureRandom} PRNG. 
@@ -49,24 +48,23 @@ public class JceRandom implements Random {
         public Random create() {
             return new JceRandom();
         }
-
     }
 
     private byte[] tmp = new byte[16];
-    private SecureRandom random = null;
+    private final SecureRandom random = new SecureRandom();
 
     public JceRandom() {
-      random = new SecureRandom();
+      super();
     }
 
     @Override
     public synchronized void fill(byte[] foo, int start, int len) {
-        if (start == 0 && len == foo.length) {
+        if ((start == 0) && (len == foo.length)) {
             random.nextBytes(foo);
         } else {
             synchronized (this) {
                 if (len > tmp.length) {
-                      tmp = new byte[len];
+                    tmp = new byte[len];
                 }
                 random.nextBytes(tmp);
                 System.arraycopy(tmp, 0, foo, start, len);
@@ -78,5 +76,4 @@ public class JceRandom implements Random {
     public synchronized int random(int n) {
         return random.nextInt(n);
     }
-
 }

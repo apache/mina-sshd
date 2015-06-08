@@ -16,36 +16,22 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common;
+package org.apache.sshd.common.forward;
 
-import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.session.ConnectionService;
 
 /**
- * A global request handler.
- *
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * A factory for creating TcpipForwarder objects for client Port forwarding
  */
-public interface RequestHandler<T> {
-
-    enum Result {
-        Unsupported,
-        Replied,
-        ReplySuccess,
-        ReplyFailure
-    }
+public interface TcpipForwarderFactory {
 
     /**
-     * Process the ssh-connection global request.
-     * If an exception is thrown, the ConnectionService will send a failure message if needed
-     * and the request will be considered handled.
+     * Creates the TcpipForwarder to be used for TCP/IP port forwards for
+     * this ClientSession.
      *
-     * @param t
-     * @param request
-     * @param wantReply
-     * @param buffer
-     * @return
-     * @throws Exception
+     * @param service the service the connections are forwarded through
+     * @return the TcpipForwarder that will listen for connections and set up forwarding
      */
-    Result process(T t, String request, boolean wantReply, Buffer buffer) throws Exception;
+    public TcpipForwarder create(ConnectionService service);
 
 }

@@ -20,7 +20,6 @@ package org.apache.sshd.agent.unix;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.channels.Channel;
 import java.util.Collection;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -43,7 +42,7 @@ import org.apache.tomcat.jni.Status;
 /**
  * The server side fake agent, acting as an agent, but actually forwarding the requests to the auth channel on the client side.
  */
-public class AgentServerProxy extends AbstractLoggingBean implements SshAgentServer, ExecutorServiceCarrier, Channel {
+public class AgentServerProxy extends AbstractLoggingBean implements SshAgentServer, ExecutorServiceCarrier {
     private final ConnectionService service;
     private final String authSocket;
     private final long pool;

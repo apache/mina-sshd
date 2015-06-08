@@ -27,10 +27,10 @@ import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.ServiceFactory;
-import org.apache.sshd.common.Session;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.session.AbstractConnectionService;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**

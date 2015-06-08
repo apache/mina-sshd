@@ -18,8 +18,8 @@
  */
 package org.apache.sshd.server.channel;
 
-import org.apache.sshd.common.Channel;
-import org.apache.sshd.common.RequestHandler;
+import org.apache.sshd.common.channel.Channel;
+import org.apache.sshd.common.channel.RequestHandler;
 import org.apache.sshd.common.util.AbstractLoggingBean;
 import org.apache.sshd.common.util.buffer.Buffer;
 

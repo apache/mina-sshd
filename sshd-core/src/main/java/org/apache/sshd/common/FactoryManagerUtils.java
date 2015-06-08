@@ -21,6 +21,7 @@ package org.apache.sshd.common;
 
 import java.util.Map;
 
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 
 /**

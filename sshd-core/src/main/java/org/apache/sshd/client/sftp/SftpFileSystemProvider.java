@@ -72,10 +72,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.sshd.ClientSession;
-import org.apache.sshd.SshBuilder;
-import org.apache.sshd.SshClient;
+import org.apache.sshd.client.ClientBuilder;
 import org.apache.sshd.client.SftpException;
+import org.apache.sshd.client.SshClient;
+import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.sftp.SftpClient.Attributes;
 import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.SshException;
@@ -102,7 +102,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         this.log = LoggerFactory.getLogger(getClass());
         if (client == null) {
             // TODO: make this configurable using system properties
-            client = SshBuilder.client().build();
+            client = ClientBuilder.builder().build();
         }
         this.client = client;
         this.client.start();

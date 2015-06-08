@@ -25,9 +25,8 @@ import java.security.InvalidKeyException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
-import org.apache.sshd.common.Cipher;
-import org.apache.sshd.common.Cipher.Mode;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.cipher.Cipher.Mode;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.util.BaseTestSupport;
 import org.junit.Assume;

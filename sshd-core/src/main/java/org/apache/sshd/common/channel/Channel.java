@@ -16,14 +16,15 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common;
+package org.apache.sshd.common.channel;
 
 import java.io.IOException;
 
 import org.apache.sshd.client.future.OpenFuture;
-import org.apache.sshd.common.channel.Window;
+import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.session.ConnectionService;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**

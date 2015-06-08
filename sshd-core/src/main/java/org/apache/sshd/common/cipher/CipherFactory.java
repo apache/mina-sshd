@@ -19,7 +19,6 @@
 
 package org.apache.sshd.common.cipher;
 
-import org.apache.sshd.common.Cipher;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.OptionalFeature;
 import org.apache.sshd.common.Transformer;

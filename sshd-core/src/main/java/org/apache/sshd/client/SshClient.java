@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd;
+package org.apache.sshd.client;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -40,26 +40,23 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
-import org.apache.sshd.client.ClientFactoryManager;
-import org.apache.sshd.client.ServerKeyVerifier;
-import org.apache.sshd.client.SessionFactory;
-import org.apache.sshd.client.UserAuth;
-import org.apache.sshd.client.UserInteraction;
 import org.apache.sshd.client.auth.UserAuthKeyboardInteractive;
 import org.apache.sshd.client.auth.UserAuthPassword;
 import org.apache.sshd.client.auth.UserAuthPublicKey;
 import org.apache.sshd.client.channel.ChannelShell;
+import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.future.ConnectFuture;
 import org.apache.sshd.client.future.DefaultConnectFuture;
 import org.apache.sshd.client.session.ClientConnectionService;
+import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.ClientSessionImpl;
 import org.apache.sshd.client.session.ClientUserAuthService;
 import org.apache.sshd.common.AbstractFactoryManager;
-import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshdSocketAddress;
+import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.config.SshConfigFileReader;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoConnectFuture;
@@ -127,6 +124,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     private ServerKeyVerifier serverKeyVerifier;
 
     public SshClient() {
+        super();
     }
 
     public SessionFactory getSessionFactory() {
@@ -304,7 +302,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
      * @return a newly create SSH client
      */
     public static SshClient setUpDefaultClient() {
-        return SshBuilder.client().build();
+        return ClientBuilder.builder().build();
     }
 
     /*=================================

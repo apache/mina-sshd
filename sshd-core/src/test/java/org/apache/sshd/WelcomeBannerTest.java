@@ -21,10 +21,13 @@ package org.apache.sshd;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.UserInteraction;
+import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.server.PublickeyAuthenticator.AcceptAllPublickeyAuthenticator;
 import org.apache.sshd.server.ServerFactoryManager;
+import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.BaseTestSupport;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.Utils;

@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
-import org.apache.sshd.common.Mac;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.mac.BuiltinMacs.ParseResult;

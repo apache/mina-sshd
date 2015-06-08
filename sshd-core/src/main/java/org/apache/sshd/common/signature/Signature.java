@@ -16,53 +16,58 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common;
+package org.apache.sshd.common.signature;
+
+import java.security.PrivateKey;
+import java.security.PublicKey;
 
 /**
- * Wrapper for a cryptographic cipher, used either for encryption
- * or decryption.
+ * Signature interface for SSH used to sign or verify packets
+ * Usually wraps a javax.crypto.Signature object
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface Cipher  {
-
-    enum Mode {
-        Encrypt, Decrypt
-    }
-
+public interface Signature {
     /**
-     * Retrieves the size of the initialization vector
-     *
-     * @return
+     * @return The signature algorithm name
      */
-    int getIVSize();
+    String getAlgorithm();
 
     /**
-     * Retrieves the block size for this cipher
+     * Initialize this signature with the given public key and private key.
+     * If the private key is null, only signature verification can be performed.
      *
-     * @return
-     */
-    int getBlockSize();
-
-    /**
-     * Initialize the cipher for encryption or decryption with
-     * the given private key and initialization vector
-     *
-     * @param mode
-     * @param key
-     * @param iv
+     * @param pubkey
+     * @param prvkey
      * @throws Exception
      */
-    void init(Mode mode, byte[] key, byte[] iv) throws Exception;
+    void init(PublicKey pubkey, PrivateKey prvkey) throws Exception;
 
     /**
-     * Performs in-place encryption or decryption on the given data.
-     * 
-     * @param input
-     * @param inputOffset
-     * @param inputLen
+     * Update the computed signature with the given data
+     *
+     * @param H
+     * @param off
+     * @param len
      * @throws Exception
      */
-    void update(byte[] input, int inputOffset, int inputLen) throws Exception;
+    void update(byte[] H, int off, int len) throws Exception;
+
+    /**
+     * Verify against the given signature
+     *
+     * @param sig
+     * @return
+     * @throws Exception
+     */
+    boolean verify(byte[] sig) throws Exception;
+
+    /**
+     * Compute the signature
+     *
+     * @return
+     * @throws Exception
+     */
+    byte[] sign() throws Exception;
 
 }

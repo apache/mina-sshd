@@ -16,21 +16,36 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common;
+package org.apache.sshd.common.channel;
+
+import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
- * Interface used to compute digests, based on algorithms such as MD5 or SHA1.
+ * A global request handler.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface Digest {
+public interface RequestHandler<T> {
 
-    void init() throws Exception;
+    enum Result {
+        Unsupported,
+        Replied,
+        ReplySuccess,
+        ReplyFailure
+    }
 
-    int getBlockSize();
-
-    void update(byte[] foo, int start, int len) throws Exception;
-
-    byte[] digest() throws Exception;
+    /**
+     * Process the ssh-connection global request.
+     * If an exception is thrown, the ConnectionService will send a failure message if needed
+     * and the request will be considered handled.
+     *
+     * @param t
+     * @param request
+     * @param wantReply
+     * @param buffer
+     * @return
+     * @throws Exception
+     */
+    Result process(T t, String request, boolean wantReply, Buffer buffer) throws Exception;
 
 }

@@ -25,9 +25,9 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.apache.sshd.common.Session;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.file.root.RootedFileSystemProvider;
+import org.apache.sshd.common.session.Session;
 
 /**
  * SSHd file system factory to reduce the visibility to a physical folder.

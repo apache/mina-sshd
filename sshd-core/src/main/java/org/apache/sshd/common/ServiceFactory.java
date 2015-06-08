@@ -21,6 +21,7 @@ package org.apache.sshd.common;
 import java.io.IOException;
 import java.util.Collection;
 
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 
 public interface ServiceFactory extends NamedResource {

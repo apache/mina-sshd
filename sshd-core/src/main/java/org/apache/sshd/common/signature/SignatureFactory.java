@@ -21,7 +21,6 @@ package org.apache.sshd.common.signature;
 
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.OptionalFeature;
-import org.apache.sshd.common.Signature;
 import org.apache.sshd.common.Transformer;
 
 /**

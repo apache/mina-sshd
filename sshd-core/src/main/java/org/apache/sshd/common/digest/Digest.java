@@ -16,22 +16,21 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common;
-
-import org.apache.sshd.common.session.ConnectionService;
+package org.apache.sshd.common.digest;
 
 /**
- * A factory for creating TcpipForwarder objects for client Port forwarding
+ * Interface used to compute digests, based on algorithms such as MD5 or SHA1.
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface TcpipForwarderFactory {
+public interface Digest {
 
-    /**
-     * Creates the TcpipForwarder to be used for TCP/IP port forwards for
-     * this ClientSession.
-     *
-     * @param service the service the connections are forwarded through
-     * @return the TcpipForwarder that will listen for connections and set up forwarding
-     */
-    public TcpipForwarder create(ConnectionService service);
+    void init() throws Exception;
+
+    int getBlockSize();
+
+    void update(byte[] foo, int start, int len) throws Exception;
+
+    byte[] digest() throws Exception;
 
 }

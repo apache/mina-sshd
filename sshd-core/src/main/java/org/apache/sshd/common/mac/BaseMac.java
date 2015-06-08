@@ -20,7 +20,6 @@ package org.apache.sshd.common.mac;
 
 import javax.crypto.spec.SecretKeySpec;
 
-import org.apache.sshd.common.Mac;
 import org.apache.sshd.common.util.SecurityUtils;
 
 /**
@@ -41,6 +40,11 @@ public class BaseMac implements Mac {
         this.bsize = bsize;
         this.defbsize = defbsize;
         this.tmp = new byte[defbsize];
+    }
+
+    @Override
+    public final String getAlgorithm() {
+        return algorithm;
     }
 
     @Override
@@ -83,6 +87,11 @@ public class BaseMac implements Mac {
         } else {
             mac.doFinal(buf, offset);
         }
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "[" + getAlgorithm() + "] - " + getBlockSize() + " bits";
     }
 
 }

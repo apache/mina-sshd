@@ -16,11 +16,10 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common;
+package org.apache.sshd.common.session;
 
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoSession;
-import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.Readable;
 
 /**

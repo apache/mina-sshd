@@ -16,38 +16,53 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common;
-
-import java.util.EventListener;
+package org.apache.sshd.common.cipher;
 
 /**
- * Represents an interface receiving Session events.
+ * Wrapper for a cryptographic cipher, used either for encryption
+ * or decryption.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface SessionListener extends EventListener {
+public interface Cipher  {
 
-    enum Event {
-        KeyEstablished, Authenticated, KexCompleted
+    enum Mode {
+        Encrypt, Decrypt
     }
 
     /**
-     * A new session just been created
-     * @param session
+     * Retrieves the size of the initialization vector
+     *
+     * @return
      */
-    void sessionCreated(Session session);
+    int getIVSize();
 
     /**
-     * An event has been triggered
-     * @param session
-     * @param event
+     * Retrieves the block size for this cipher
+     *
+     * @return
      */
-    void sessionEvent(Session session, Event event);
+    int getBlockSize();
 
     /**
-     * A session has been closed
-     * @param session
+     * Initialize the cipher for encryption or decryption with
+     * the given private key and initialization vector
+     *
+     * @param mode
+     * @param key
+     * @param iv
+     * @throws Exception
      */
-    void sessionClosed(Session session);
+    void init(Mode mode, byte[] key, byte[] iv) throws Exception;
+
+    /**
+     * Performs in-place encryption or decryption on the given data.
+     * 
+     * @param input
+     * @param inputOffset
+     * @param inputLen
+     * @throws Exception
+     */
+    void update(byte[] input, int inputOffset, int inputLen) throws Exception;
 
 }

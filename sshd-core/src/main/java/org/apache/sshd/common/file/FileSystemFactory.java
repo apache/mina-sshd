@@ -22,7 +22,7 @@ package org.apache.sshd.common.file;
 import java.io.IOException;
 import java.nio.file.FileSystem;
 
-import org.apache.sshd.common.Session;
+import org.apache.sshd.common.session.Session;
 
 /**
  * Factory for file system implementations - it returns the file system for user.

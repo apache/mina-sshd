@@ -18,9 +18,9 @@
  */
 package org.apache.sshd;
 
-import org.apache.sshd.common.Random;
 import org.apache.sshd.common.random.BouncyCastleRandom;
 import org.apache.sshd.common.random.JceRandom;
+import org.apache.sshd.common.random.Random;
 import org.apache.sshd.util.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;

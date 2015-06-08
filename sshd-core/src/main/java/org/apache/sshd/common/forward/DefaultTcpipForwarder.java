@@ -26,24 +26,23 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.sshd.ClientChannel;
+import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.Closeable;
-import org.apache.sshd.common.ForwardingFilter;
-import org.apache.sshd.common.Session;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.SshdSocketAddress;
-import org.apache.sshd.common.TcpipForwarder;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.session.ConnectionService;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.Readable;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.server.forward.ForwardingFilter;
 
 /**
  * TODO Add javadoc

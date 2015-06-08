@@ -22,7 +22,8 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.util.Map;
 
-import org.apache.sshd.common.PtyMode;
+import org.apache.sshd.common.channel.PtyMode;
+import org.apache.sshd.common.channel.SttySupport;
 import org.apache.sshd.util.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;

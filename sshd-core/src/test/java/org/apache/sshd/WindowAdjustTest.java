@@ -26,6 +26,9 @@ import java.nio.file.Paths;
 import java.util.Deque;
 import java.util.LinkedList;
 
+import org.apache.sshd.client.SshClient;
+import org.apache.sshd.client.channel.ClientChannel;
+import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoInputStream;
@@ -39,6 +42,7 @@ import org.apache.sshd.server.AsyncCommand;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
+import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.junit.After;

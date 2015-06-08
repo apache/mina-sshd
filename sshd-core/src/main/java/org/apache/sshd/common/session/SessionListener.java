@@ -16,23 +16,38 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common;
+package org.apache.sshd.common.session;
+
+import java.util.EventListener;
 
 /**
- * Message Authentication Code for use in SSH.
- * It usually wraps a javax.crypto.Mac class.
+ * Represents an interface receiving Session events.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface Mac {
+public interface SessionListener extends EventListener {
 
-    int getBlockSize();
+    enum Event {
+        KeyEstablished, Authenticated, KexCompleted
+    }
 
-    void init(byte[] key) throws Exception;
+    /**
+     * A new session just been created
+     * @param session
+     */
+    void sessionCreated(Session session);
 
-    void update(byte[] foo, int start, int len);
+    /**
+     * An event has been triggered
+     * @param session
+     * @param event
+     */
+    void sessionEvent(Session session, Event event);
 
-    void updateUInt(long foo);
+    /**
+     * A session has been closed
+     * @param session
+     */
+    void sessionClosed(Session session);
 
-    void doFinal(byte[] buf, int offset) throws Exception;
 }

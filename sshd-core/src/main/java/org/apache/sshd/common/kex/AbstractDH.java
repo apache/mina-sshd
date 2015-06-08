@@ -20,7 +20,7 @@ package org.apache.sshd.common.kex;
 
 import java.math.BigInteger;
 
-import org.apache.sshd.common.Digest;
+import org.apache.sshd.common.digest.Digest;
 
 /**
  * Base class for the Diffie-Hellman key agreement.

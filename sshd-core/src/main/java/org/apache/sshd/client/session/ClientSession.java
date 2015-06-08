@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd;
+package org.apache.sshd.client.session;
 
 import java.io.IOException;
 import java.nio.file.FileSystem;
@@ -24,19 +24,21 @@ import java.security.KeyPair;
 import java.util.Map;
 
 import org.apache.sshd.client.ClientFactoryManager;
+import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.UserInteraction;
 import org.apache.sshd.client.channel.ChannelDirectTcpip;
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.ChannelSubsystem;
+import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.scp.ScpClient;
 import org.apache.sshd.client.sftp.SftpClient;
-import org.apache.sshd.common.Session;
 import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.scp.ScpTransferEventListener;
+import org.apache.sshd.common.session.Session;
 
 /**
  * An authenticated session to a given SSH server
@@ -241,6 +243,7 @@ public interface ClientSession extends Session {
      *         to be finished
      * @throws IOException if a key exchange is already running
      */
+    @SuppressWarnings("rawtypes")
     SshFuture switchToNoneCipher() throws IOException;
 
 }

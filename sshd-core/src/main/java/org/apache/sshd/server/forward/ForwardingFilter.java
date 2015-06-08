@@ -16,13 +16,16 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common;
+package org.apache.sshd.server.forward;
 
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
 
 import org.apache.sshd.agent.SshAgent;
+import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.common.SshdSocketAddress;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.AbstractLoggingBean;
 import org.apache.sshd.common.util.GenericUtils;
 

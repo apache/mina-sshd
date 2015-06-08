@@ -30,7 +30,6 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeMap;
 
-import org.apache.sshd.common.Cipher;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.config.NamedFactoriesListParseResult;

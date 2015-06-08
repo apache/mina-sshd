@@ -26,15 +26,15 @@ import java.io.PipedOutputStream;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.sshd.ClientChannel;
-import org.apache.sshd.ClientSession;
-import org.apache.sshd.SshBuilder;
-import org.apache.sshd.SshClient;
-import org.apache.sshd.SshServer;
-import org.apache.sshd.common.KeyExchange;
+import org.apache.sshd.client.ClientBuilder;
+import org.apache.sshd.client.SshClient;
+import org.apache.sshd.client.channel.ClientChannel;
+import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.kex.BuiltinDHFactories;
 import org.apache.sshd.common.kex.DHFactory;
+import org.apache.sshd.common.kex.KeyExchange;
+import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.BaseTestSupport;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
@@ -101,7 +101,7 @@ public class KexTest extends BaseTestSupport {
     }
 
     private void testClient(DHFactory factory) throws Exception {
-        testClient(SshBuilder.ClientBuilder.DH2KEX.transform(factory));
+        testClient(ClientBuilder.DH2KEX.transform(factory));
     }
 
     private void testClient(NamedFactory<KeyExchange> kex) throws Exception {

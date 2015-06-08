@@ -23,17 +23,16 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.apache.sshd.ClientChannel;
 import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
-import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.Closeable;
-import org.apache.sshd.common.RequestHandler;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.AbstractChannel;
+import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelAsyncInputStream;
 import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
+import org.apache.sshd.common.channel.RequestHandler;
 import org.apache.sshd.common.io.IoInputStream;
 import org.apache.sshd.common.io.IoOutputStream;
 import org.apache.sshd.common.util.IoUtils;
@@ -68,7 +67,6 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     protected String openFailureMsg;
     protected OpenFuture openFuture;
 
-    @SuppressWarnings("synthetic-access")
     protected AbstractClientChannel(String type) {
         this.type = type;
         this.streaming = Streaming.Sync;
@@ -331,10 +329,14 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     }
 
     private class ExitStatusChannelRequestHandler implements RequestHandler<Channel> {
+        public ExitStatusChannelRequestHandler() {
+            super();
+        }
+
         @SuppressWarnings("synthetic-access")
         @Override
         public Result process(Channel channel, String request, boolean wantReply, Buffer buffer) throws Exception {
-            if (request.equals("exit-status")) {
+            if ("exit-status".equals(request)) {
                 exitStatus = Integer.valueOf(buffer.getInt());
                 notifyStateChanged();
                 return Result.ReplySuccess;
@@ -344,10 +346,14 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     }
 
     private class ExitSignalChannelRequestHandler implements RequestHandler<Channel> {
+        public ExitSignalChannelRequestHandler() {
+            super();
+        }
+
         @SuppressWarnings("synthetic-access")
         @Override
         public Result process(Channel channel, String request, boolean wantReply, Buffer buffer) throws Exception {
-            if (request.equals("exit-signal")) {
+            if ("exit-signal".equals(request)) {
                 exitSignal = buffer.getString();
                 notifyStateChanged();
                 return Result.ReplySuccess;

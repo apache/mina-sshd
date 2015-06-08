@@ -24,7 +24,7 @@ import java.util.Map;
 
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.FactoryManagerUtils;
-import org.apache.sshd.common.Session;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.AbstractLoggingBean;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;

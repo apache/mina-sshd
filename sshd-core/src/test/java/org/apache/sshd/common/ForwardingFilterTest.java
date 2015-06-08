@@ -19,7 +19,9 @@
 
 package org.apache.sshd.common;
 
-import org.apache.sshd.common.ForwardingFilter.StaticDecisionForwardingFilter;
+import org.apache.sshd.common.session.Session;
+import org.apache.sshd.server.forward.ForwardingFilter;
+import org.apache.sshd.server.forward.ForwardingFilter.StaticDecisionForwardingFilter;
 import org.apache.sshd.util.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;

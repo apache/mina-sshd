@@ -20,9 +20,9 @@ package org.apache.sshd.common.session;
 
 import java.io.IOException;
 
-import org.apache.sshd.common.Channel;
 import org.apache.sshd.common.Service;
-import org.apache.sshd.common.TcpipForwarder;
+import org.apache.sshd.common.channel.Channel;
+import org.apache.sshd.common.forward.TcpipForwarder;
 
 /**
  * Interface implementing ssh-connection service.

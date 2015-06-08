@@ -28,16 +28,16 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.sshd.ClientSession;
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.client.UserAuth;
+import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.Signature;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.AbstractSession;
+import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.AbstractLoggingBean;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;

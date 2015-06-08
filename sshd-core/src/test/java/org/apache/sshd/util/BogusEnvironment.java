@@ -22,7 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
-import org.apache.sshd.common.PtyMode;
+import org.apache.sshd.common.channel.PtyMode;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.Signal;
 import org.apache.sshd.server.SignalListener;

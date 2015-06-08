@@ -42,15 +42,15 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.TreeMap;
 
-import org.apache.sshd.SshServer;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.Session;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.file.root.RootedFileSystemProvider;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.sftp.SftpConstants;
 import org.apache.sshd.common.util.IoUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.server.Command;
+import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.command.ScpCommandFactory;
 import org.apache.sshd.server.sftp.SftpSubsystemFactory;
 import org.apache.sshd.util.BaseTestSupport;

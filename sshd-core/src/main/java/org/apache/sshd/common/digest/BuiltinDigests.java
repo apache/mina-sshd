@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
 
-import org.apache.sshd.common.Digest;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.util.GenericUtils;
 

@@ -21,8 +21,9 @@ package org.apache.sshd.common.signature;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 
-import org.apache.sshd.common.Signature;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.SecurityUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * TODO Add javadoc
@@ -32,15 +33,20 @@ import org.apache.sshd.common.util.SecurityUtils;
 public abstract class AbstractSignature implements Signature {
 
     protected java.security.Signature signature;
-    protected String algorithm;
+    private final String algorithm;
 
     protected AbstractSignature(String algorithm) {
-        this.algorithm = algorithm;
+        this.algorithm = ValidateUtils.checkNotNullAndNotEmpty(algorithm, "No signature algorithm specified", GenericUtils.EMPTY_OBJECT_ARRAY);
+    }
+
+    @Override
+    public final String getAlgorithm() {
+        return algorithm;
     }
 
     @Override
     public void init(PublicKey pubkey, PrivateKey prvkey) throws Exception {
-        signature = SecurityUtils.getSignature(algorithm);
+        signature = SecurityUtils.getSignature(getAlgorithm());
         if (pubkey != null) {
             signature.initVerify(pubkey);
         }
@@ -72,5 +78,10 @@ public abstract class AbstractSignature implements Signature {
             sig = tmp;
         }
         return sig;
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "[" + getAlgorithm() + "]";
     }
 }

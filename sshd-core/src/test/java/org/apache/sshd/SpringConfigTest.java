@@ -20,6 +20,7 @@ package org.apache.sshd;
 
 import java.io.OutputStream;
 
+import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.BaseTestSupport;
 import org.apache.sshd.util.JSchLogger;
 import org.apache.sshd.util.SimpleUserInfo;
@@ -42,6 +43,10 @@ import com.jcraft.jsch.JSch;
 public class SpringConfigTest extends BaseTestSupport {
 
     private ClassPathXmlApplicationContext context;
+
+    public SpringConfigTest() {
+        super();
+    }
 
     @Before
     public void setUp() throws Exception {

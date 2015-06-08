@@ -22,13 +22,14 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
 
-import org.apache.sshd.common.Cipher;
-import org.apache.sshd.common.Mac;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.Random;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
+import org.apache.sshd.common.cipher.Cipher;
 import org.apache.sshd.common.mac.BuiltinMacs;
+import org.apache.sshd.common.mac.Mac;
 import org.apache.sshd.common.random.BouncyCastleRandom;
+import org.apache.sshd.common.random.Random;
+import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.BaseTestSupport;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;

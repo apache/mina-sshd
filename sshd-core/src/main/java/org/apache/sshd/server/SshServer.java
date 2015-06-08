@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd;
+package org.apache.sshd.server;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -32,7 +32,6 @@ import org.apache.sshd.common.AbstractFactoryManager;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManagerUtils;
-import org.apache.sshd.common.ForwardingFilter;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoServiceFactory;
@@ -44,18 +43,13 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ValidateUtils;
-import org.apache.sshd.server.Command;
-import org.apache.sshd.server.CommandFactory;
-import org.apache.sshd.server.PasswordAuthenticator;
-import org.apache.sshd.server.PublickeyAuthenticator;
-import org.apache.sshd.server.ServerFactoryManager;
-import org.apache.sshd.server.UserAuth;
 import org.apache.sshd.server.auth.UserAuthKeyboardInteractive;
 import org.apache.sshd.server.auth.UserAuthPassword;
 import org.apache.sshd.server.auth.UserAuthPublicKey;
 import org.apache.sshd.server.auth.gss.GSSAuthenticator;
 import org.apache.sshd.server.auth.gss.UserAuthGSS;
 import org.apache.sshd.server.command.ScpCommandFactory;
+import org.apache.sshd.server.forward.ForwardingFilter;
 import org.apache.sshd.server.keyprovider.PEMGeneratorHostKeyProvider;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.server.session.ServerConnectionService;
@@ -110,6 +104,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     protected GSSAuthenticator gssAuthenticator;
 
     public SshServer() {
+        super();
     }
 
     public String getHost() {
@@ -361,7 +356,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     }
 
     public static SshServer setUpDefaultServer() {
-        return SshBuilder.server().build();
+        return ServerBuilder.builder().build();
     }
 
     /*=================================

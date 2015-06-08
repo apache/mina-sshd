@@ -21,7 +21,6 @@ package org.apache.sshd.common.random;
 import java.security.SecureRandom;
 
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.Random;
 import org.bouncycastle.crypto.prng.RandomGenerator;
 import org.bouncycastle.crypto.prng.VMPCRandomGenerator;
 

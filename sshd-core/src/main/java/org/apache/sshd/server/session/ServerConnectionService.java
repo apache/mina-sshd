@@ -22,9 +22,9 @@ import java.io.IOException;
 
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.ServiceFactory;
-import org.apache.sshd.common.Session;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.session.AbstractConnectionService;
+import org.apache.sshd.common.session.Session;
 
 /**
  * Server side <code>ssh-connection</code> service.

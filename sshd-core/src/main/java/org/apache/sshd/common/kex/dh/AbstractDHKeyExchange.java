@@ -19,8 +19,8 @@
 
 package org.apache.sshd.common.kex.dh;
 
-import org.apache.sshd.common.Digest;
-import org.apache.sshd.common.KeyExchange;
+import org.apache.sshd.common.digest.Digest;
+import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.AbstractLoggingBean;
 

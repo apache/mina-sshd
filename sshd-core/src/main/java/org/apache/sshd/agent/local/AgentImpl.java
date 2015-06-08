@@ -31,9 +31,9 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.agent.SshAgent;
-import org.apache.sshd.common.Signature;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.signature.BuiltinSignatures;
+import org.apache.sshd.common.signature.Signature;
 
 /**
  * A local SSH agent implementation

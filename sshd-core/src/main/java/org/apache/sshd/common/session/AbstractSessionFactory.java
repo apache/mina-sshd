@@ -21,8 +21,6 @@ package org.apache.sshd.common.session;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.apache.sshd.common.AbstractSessionIoHandler;
-import org.apache.sshd.common.SessionListener;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.util.ValidateUtils;
 

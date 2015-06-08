@@ -24,6 +24,8 @@ import java.util.concurrent.ExecutorService;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.io.AbstractIoServiceFactoryFactory;
 import org.apache.sshd.common.io.IoServiceFactory;
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  */
@@ -45,7 +47,7 @@ public class Nio2ServiceFactoryFactory extends AbstractIoServiceFactoryFactory {
     public Nio2ServiceFactoryFactory(ExecutorService executors, boolean shutdownOnExit) {
         super(executors, shutdownOnExit);
         // Make sure NIO2 is available
-        Class<?> clazz = AsynchronousChannel.class;
+        ValidateUtils.checkNotNull(AsynchronousChannel.class, "Missing NIO2 class", GenericUtils.EMPTY_OBJECT_ARRAY);
     }
 
     @Override
