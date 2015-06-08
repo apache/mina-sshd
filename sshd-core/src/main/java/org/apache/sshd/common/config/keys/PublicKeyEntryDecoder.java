@@ -21,6 +21,7 @@ package org.apache.sshd.common.config.keys;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.security.GeneralSecurityException;
 import java.security.PublicKey;
 import java.util.Collection;
@@ -53,4 +54,14 @@ public interface PublicKeyEntryDecoder<K extends PublicKey> {
     K decodePublicKey(byte ... keyData) throws IOException, GeneralSecurityException;
     K decodePublicKey(byte[] keyData, int offset, int length) throws IOException, GeneralSecurityException;
     K decodePublicKey(InputStream keyData) throws IOException, GeneralSecurityException;
+    
+    /**
+     * Encodes the {@link PublicKey} using the {@code OpenSSH} format - same
+     * one used by the {@code decodePublicKey} method(s)
+     * @param s The {@link OutputStream} to write the data to
+     * @param key The {@link PublicKey} - may not be {@code null}
+     * @return The key type value - one of the {@link #getSupportedTypeNames()}
+     * @throws IOException If failed to generate the encoding
+     */
+    String encodePublicKey(OutputStream s, K key) throws IOException;
 }

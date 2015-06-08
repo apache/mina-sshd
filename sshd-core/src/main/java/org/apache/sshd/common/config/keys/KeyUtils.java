@@ -125,14 +125,14 @@ public class KeyUtils {
         
         synchronized(byKeyTypeDecodersMap) {
             {
-                PublicKeyEntryDecoder<? extends PublicKey>  decoder=byKeyTypeDecodersMap.get(keyType);
+                PublicKeyEntryDecoder<? extends PublicKey>  decoder=byKeyClassDecodersMap.get(keyType);
                 if (decoder != null) {
                     return decoder;
                 }
             }
             
             // in case it is a derived class
-            for (PublicKeyEntryDecoder<? extends PublicKey> decoder : byKeyTypeDecodersMap.values()) {
+            for (PublicKeyEntryDecoder<? extends PublicKey> decoder : byKeyClassDecodersMap.values()) {
                 Class<?> t = decoder.getKeyType();
                 if (t.isAssignableFrom(keyType)) {
                     return decoder;

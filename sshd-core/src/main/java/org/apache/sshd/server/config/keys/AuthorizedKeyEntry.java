@@ -87,6 +87,39 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
     }
 
     @Override
+    public PublicKey appendPublicKey(Appendable sb) throws IOException, GeneralSecurityException {
+        Map<String,String> options=getLoginOptions();
+        if (!GenericUtils.isEmpty(options)) {
+            int index = 0;
+            for (Map.Entry<String,String> oe : options.entrySet()) {
+                String key = oe.getKey(), value = oe.getValue();
+                if (index > 0) {
+                    sb.append(',');
+                }
+                sb.append(key);
+                // TODO figure out a way to remember which options where quoted
+                // TODO figure out a way to remember which options had no value
+                if (!Boolean.TRUE.toString().equals(value)) {
+                    sb.append('=').append(value);
+                }
+                index++;
+            }
+
+            if (index > 0) {
+                sb.append(' ');
+            }
+        }
+
+        PublicKey key = super.appendPublicKey(sb);
+        String kc = getComment();
+        if (!GenericUtils.isEmpty(kc)) {
+            sb.append(' ').append(kc);
+        }
+        
+        return key;
+    }
+
+    @Override
     public String toString() {
         String   entry = super.toString();
         String   kc = getComment();

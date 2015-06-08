@@ -19,6 +19,7 @@
 package org.apache.sshd.common.cipher;
 
 import java.math.BigInteger;
+import java.security.spec.ECField;
 import java.security.spec.ECFieldFp;
 import java.security.spec.ECParameterSpec;
 import java.security.spec.ECPoint;
@@ -30,6 +31,7 @@ import java.util.TreeMap;
 import org.apache.sshd.common.digest.BuiltinDigests;
 import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * Utilities for working with elliptic curves.
@@ -45,12 +47,6 @@ public class ECCurves {
 
     public static final String NISTP521 = "nistp521";
 
-    private static final Map<Integer, String> CURVE_SIZES = new TreeMap<Integer, String>();
-    static {
-        CURVE_SIZES.put(Integer.valueOf(256), NISTP256);
-        CURVE_SIZES.put(Integer.valueOf(384), NISTP384);
-        CURVE_SIZES.put(Integer.valueOf(521), NISTP521);
-    }
 
     public static String getCurveName(ECParameterSpec params) {
         int fieldSize = getCurveSize(params);
@@ -61,12 +57,57 @@ public class ECCurves {
         return curveName;
     }
 
+    /**
+     * Key=num. of bits, value=curve name
+     */
+    private static final Map<Integer, String> SIZE2CURVENAME = 
+            Collections.unmodifiableMap(new TreeMap<Integer, String>() {
+                private static final long serialVersionUID = 1L;    // we're not serializing it
+        
+                {
+                    put(Integer.valueOf(256), NISTP256);
+                    put(Integer.valueOf(384), NISTP384);
+                    put(Integer.valueOf(521), NISTP521);
+                }
+            });
+
+    /**
+     * @param fieldSize The key size in bits
+     * @return The name of the curve - {@code null/empty} if no match found
+     */
     public static String getCurveName(int fieldSize) {
-        return CURVE_SIZES.get(Integer.valueOf(fieldSize));
+        return SIZE2CURVENAME.get(Integer.valueOf(fieldSize));
+    }
+
+    private static final Map<String, Integer> CURVENAME2OCTECTCOUNT = 
+            Collections.unmodifiableMap(new TreeMap<String, Integer>(String.CASE_INSENSITIVE_ORDER) {
+                private static final long serialVersionUID = 1L;    // we're not serializing it
+        
+                {
+                    put(NISTP256, Integer.valueOf(32));
+                    put(NISTP384, Integer.valueOf(48));
+                    put(NISTP521, Integer.valueOf(66));
+                }
+            });
+
+    /**
+     * @param curveName Curve name - case <U>insensitive</U> - ignored
+     * if {@code null}/empty
+     * @return The number of octets used to represent the point(s) for
+     * the curve - {@code null} if no match found
+     */
+    public static Integer getNumPointOctets(String curveName) {
+        if (GenericUtils.isEmpty(curveName)) {
+            return null;
+        } else {
+            return CURVENAME2OCTECTCOUNT.get(curveName);
+        }
     }
 
     public static int getCurveSize(ECParameterSpec params) {
-        return params.getCurve().getField().getFieldSize();
+        EllipticCurve   curve = ValidateUtils.checkNotNull(params, "No EC params", GenericUtils.EMPTY_OBJECT_ARRAY).getCurve();
+        ECField field = ValidateUtils.checkNotNull(curve, "No EC curve", GenericUtils.EMPTY_OBJECT_ARRAY).getField();
+        return ValidateUtils.checkNotNull(field, "No EC field", GenericUtils.EMPTY_OBJECT_ARRAY).getFieldSize();
     }
 
     public static Digest getDigestForParams(ECParameterSpec params) {
@@ -75,8 +116,10 @@ public class ECCurves {
             return BuiltinDigests.sha256.create();
         } else if (size <= 384) {
             return BuiltinDigests.sha384.create();
-        } else {
+        } else if (size <= 521) {
             return BuiltinDigests.sha512.create();
+        } else {
+            throw new UnsupportedOperationException("Unsupported curve size for digest: " + size);
         }
     }
 

@@ -19,8 +19,11 @@
 
 package org.apache.sshd.common.config.keys;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.StreamCorruptedException;
 import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
@@ -39,6 +42,7 @@ import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.SecurityUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 
 /**
@@ -89,6 +93,20 @@ public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<EC
         }
 
         return generatePublicKey(new ECPublicKeySpec(w, paramSpec));
+    }
+
+    @Override
+    public String encodePublicKey(OutputStream s, ECPublicKey key) throws IOException {
+        ValidateUtils.checkNotNull(key, "No public key provided", GenericUtils.EMPTY_OBJECT_ARRAY);
+        
+        ECParameterSpec params = ValidateUtils.checkNotNull(key.getParams(), "No EC parameters available", GenericUtils.EMPTY_OBJECT_ARRAY);
+        String curveName = ValidateUtils.checkNotNullAndNotEmpty(ECCurves.getCurveName(params), "Cannot determine curve name", GenericUtils.EMPTY_OBJECT_ARRAY);
+        String keyType = ECCurves.ECDSA_SHA2_PREFIX + curveName;
+        encodeString(s, keyType);
+        // see rfc5656 section 3.1
+        encodeString(s, curveName);
+        ECPointCompression.UNCOMPRESSED.writeECPoint(s, curveName, key.getW());
+        return keyType;
     }
 
     @Override
@@ -186,6 +204,21 @@ public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<EC
                     BigInteger  y=octetStringToInteger(yp);
                     return new ECPoint(x, y);
                 }
+                
+                @Override
+                public void writeECPoint(OutputStream s, String curveName, ECPoint p) throws IOException {
+                    Integer elems = ECCurves.getNumPointOctets(curveName);
+                    if (elems == null) {
+                        throw new StreamCorruptedException("writeECPoint(" + name() + ")[" + curveName + "] cannot determine octets count");
+                    }
+                    
+                    int numElements = elems.intValue();
+                    AbstractPublicKeyEntryDecoder.encodeInt(s, 1 /* the indicator */ + 2 * numElements);
+                    s.write(getIndicatorValue());
+                    writeCoordinate(s, "X", p.getAffineX(), numElements);
+                    writeCoordinate(s, "Y", p.getAffineY(), numElements);
+                }
+
             };
 
         private final byte  indicatorValue;
@@ -198,6 +231,40 @@ public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<EC
         }
 
         public abstract ECPoint octetStringToEcPoint(byte[] octets, int startIndex, int len);
+
+        public void writeECPoint(OutputStream s, String curveName, ECPoint p) throws IOException {
+            if (s == null) {
+                throw new EOFException("No output stream");
+            }
+
+            throw new StreamCorruptedException("writeECPoint(" + name() + ")[" + p + "] N/A");
+        }
+
+        protected void writeCoordinate(OutputStream s, String n, BigInteger v, int numElements) throws IOException {
+            byte[]  vp=v.toByteArray();
+            int     startIndex=0;
+            int     vLen=vp.length;
+            if (vLen > numElements) {
+                if (vp[0] == 0) {   // skip artificial positive sign
+                    startIndex++;
+                    vLen--;
+                }
+            }
+
+            if (vLen > numElements) {
+                throw new StreamCorruptedException("writeCoordinate(" + name() + ")[" + n + "]"
+                                                 + " value length (" + vLen + ") exceeds max. (" + numElements + ")"
+                                                 + " for " + v);
+            }
+
+            if (vLen < numElements) {
+                byte[]  tmp=new byte[numElements];
+                System.arraycopy(vp, startIndex, tmp, numElements - vLen, vLen);
+                vp = tmp;
+            }
+
+            s.write(vp, startIndex, vLen);
+        }
 
         public static final Set<ECPointCompression> VALUES=
                 Collections.unmodifiableSet(EnumSet.allOf(ECPointCompression.class));

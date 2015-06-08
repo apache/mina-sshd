@@ -22,6 +22,7 @@ package org.apache.sshd.common.config.keys;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.StreamCorruptedException;
 import java.math.BigInteger;
 import java.nio.charset.Charset;
@@ -114,6 +115,43 @@ public abstract class AbstractPublicKeyEntryDecoder<K extends PublicKey> impleme
         return getKeyType().getSimpleName() + ": " + getSupportedTypeNames();
     }
 
+    public static final int encodeString(OutputStream s, String v) throws IOException {
+        return encodeString(s, v, StandardCharsets.UTF_8);
+    }
+
+    public static final int encodeString(OutputStream s, String v, String charset) throws IOException {
+        return encodeString(s, v, Charset.forName(charset));
+    }
+
+    public static final int encodeString(OutputStream s, String v, Charset cs) throws IOException {
+        return writeRLEBytes(s, v.getBytes(cs));
+    }
+
+    public static final int encodeBigInt(OutputStream s, BigInteger v) throws IOException {
+        return writeRLEBytes(s, v.toByteArray());
+    }
+
+    public static final int writeRLEBytes(OutputStream s, byte ... bytes) throws IOException {
+        return writeRLEBytes(s, bytes, 0, bytes.length);
+    }
+
+    public static final int writeRLEBytes(OutputStream s, byte[] bytes, int off, int len) throws IOException {
+        byte[]  lenBytes=encodeInt(s, len);
+        s.write(bytes, off, len);
+        return lenBytes.length + len;
+    }
+
+    public static final byte[] encodeInt(OutputStream s, int v) throws IOException {
+        byte[]  bytes={
+                (byte) ((v >> 24) & 0xFF),
+                (byte) ((v >> 16) & 0xFF),
+                (byte) ((v >>  8) & 0xFF),
+                (byte) (    v     & 0xFF)
+              };
+        s.write(bytes);
+        return bytes;
+    }
+
     public static final String decodeString(InputStream s) throws IOException {
         return decodeString(s, StandardCharsets.UTF_8);
     }
@@ -146,5 +184,4 @@ public abstract class AbstractPublicKeyEntryDecoder<K extends PublicKey> impleme
              | ((bytes[2] & 0xFF) << 8)
              | (bytes[3] & 0xFF);
     }
-
 }

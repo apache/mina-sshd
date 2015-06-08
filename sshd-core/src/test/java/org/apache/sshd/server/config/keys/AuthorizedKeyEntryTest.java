@@ -19,14 +19,19 @@
 
 package org.apache.sshd.server.config.keys;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.InputStreamReader;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.security.PublicKey;
 import java.util.Collection;
 
+import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.IoUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -53,7 +58,41 @@ public class AuthorizedKeyEntryTest extends BaseTestSupport {
         
         runAuthorizedKeysTests(AuthorizedKeyEntry.readAuthorizedKeys(url));
     }
-    
+
+    @Test
+    public void testEncodePublicKeyEntry() throws Exception {
+        URL url = getClass().getResource(AuthorizedKeyEntry.STD_AUTHORIZED_KEYS_FILENAME);
+        assertNotNull("Missing " + AuthorizedKeyEntry.STD_AUTHORIZED_KEYS_FILENAME + " resource", url);
+        
+        StringBuilder sb = new StringBuilder(Byte.MAX_VALUE); 
+        try(BufferedReader rdr = new BufferedReader(new InputStreamReader(url.openStream(), StandardCharsets.UTF_8))) {
+            for (String line = rdr.readLine(); line != null; line = rdr.readLine()) {
+                line = GenericUtils.trimToEmpty(line);
+                if (GenericUtils.isEmpty(line) || (line.charAt(0) == PublicKeyEntry.COMMENT_CHAR)) {
+                    continue;
+                }
+                
+                int pos = line.indexOf(' ');
+                String keyType = line.substring(0, pos), data = line;
+                // assume this happens if starts with login options
+                if (KeyUtils.getPublicKeyEntryDecoder(keyType) == null) {
+                    data = line.substring(pos + 1).trim();
+                }
+                
+                AuthorizedKeyEntry entry = AuthorizedKeyEntry.parseAuthorizedKeyEntry(data);
+                if (sb.length() > 0) {
+                    sb.setLength(0);
+                }
+
+                PublicKey key = entry.appendPublicKey(sb);
+                assertNotNull("No key for line=" + line, key);
+                
+                String encoded = sb.toString();
+                assertEquals("Mismatched encoded form for line=" + line, data, encoded);
+            }
+        }
+    }
+
     @Test
     @Ignore("It might cause some exceptions if user's file contains unsupported keys")
     public void testReadDefaultAuthorizedKeysFile() throws Exception {

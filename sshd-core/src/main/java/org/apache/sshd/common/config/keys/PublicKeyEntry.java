@@ -19,9 +19,11 @@
 
 package org.apache.sshd.common.config.keys;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
+import java.io.StreamCorruptedException;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
 import java.security.PublicKey;
@@ -92,6 +94,19 @@ public class PublicKeyEntry implements Serializable {
             throw new InvalidKeyException("No key of type=" + kt + " decoded for data=" + BufferUtils.printHex(':', data));
         }
         
+        return key;
+    }
+
+    /**
+     * @param sb The {@link Appendable} instance to encode the data into
+     * @return The {@link PublicKey}
+     * @throws IOException If failed to decode/encode the key
+     * @throws GeneralSecurityException If failed to generate the key
+     * @see #resolvePublicKey()
+     */
+    public PublicKey appendPublicKey(Appendable sb) throws IOException, GeneralSecurityException {
+        PublicKey key = resolvePublicKey();
+        appendPublicKeyEntry(sb, key);
         return key;
     }
 
@@ -191,6 +206,42 @@ public class PublicKeyEntry implements Serializable {
         return entry;
     }
 
+    /**
+     * @param key The {@link PublicKey}
+     * @return The {@code OpenSSH} encoded data
+     * @throws IllegalArgumentException
+     */
+    public static String toString(PublicKey key) throws IllegalArgumentException {
+        try {
+            return appendPublicKeyEntry(new StringBuilder(Byte.MAX_VALUE), key).toString();
+        } catch(IOException e) {
+            throw new IllegalArgumentException("Failed (" + e.getClass().getSimpleName() + ") to encode: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Encodes a public key data the same way as the {@link #parsePublicKeyEntry(String)} expects it
+     * @param sb The {@link Appendable} instance to encode the data into
+     * @param key The {@link PublicKey}
+     * @return The updated appendable instance
+     * @throws IOException If failed to append the data
+     */
+    public static final <A extends Appendable> A appendPublicKeyEntry(A sb, PublicKey key) throws IOException {
+        @SuppressWarnings("unchecked")
+        PublicKeyEntryDecoder<PublicKey> decoder = (PublicKeyEntryDecoder<PublicKey>) KeyUtils.getPublicKeyEntryDecoder(key);
+        if (decoder == null) {
+            throw new StreamCorruptedException("Cannot retrived decoder for key=" + key.getAlgorithm());
+        }
+        
+        try(ByteArrayOutputStream s=new ByteArrayOutputStream(Byte.MAX_VALUE)) {
+            String keyType = decoder.encodePublicKey(s, key);
+            byte[] bytes = s.toByteArray();
+            String b64Data = Base64.encodeToString(bytes);
+            sb.append(keyType).append(' ').append(b64Data);
+        }
+        
+        return sb;
+    }
     /**
      * Character used to denote a comment line in the keys file
      */
