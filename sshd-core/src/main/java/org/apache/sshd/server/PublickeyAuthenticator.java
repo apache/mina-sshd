@@ -23,8 +23,8 @@ import java.util.Collection;
 import java.util.Collections;
 
 import org.apache.sshd.common.config.keys.KeyUtils;
-import org.apache.sshd.common.util.AbstractLoggingBean;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.server.session.ServerSession;
 
 /**

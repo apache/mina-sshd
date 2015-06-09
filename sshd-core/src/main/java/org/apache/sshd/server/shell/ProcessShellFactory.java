@@ -27,9 +27,9 @@ import java.util.EnumSet;
 import java.util.Map;
 
 import org.apache.sshd.common.Factory;
-import org.apache.sshd.common.util.AbstractLoggingBean;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.server.Command;
 
 /**

@@ -23,7 +23,7 @@ package org.apache.sshd.common.util;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class OsUtils {
+public final class OsUtils {
     private static final boolean win32;
 
     static {

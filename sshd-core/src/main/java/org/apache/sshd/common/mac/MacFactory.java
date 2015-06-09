@@ -21,7 +21,7 @@ package org.apache.sshd.common.mac;
 
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.OptionalFeature;
-import org.apache.sshd.common.Transformer;
+import org.apache.sshd.common.util.Transformer;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>

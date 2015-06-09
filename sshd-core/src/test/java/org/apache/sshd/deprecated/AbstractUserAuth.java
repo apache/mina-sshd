@@ -19,7 +19,7 @@
 package org.apache.sshd.deprecated;
 
 import org.apache.sshd.client.session.ClientSessionImpl;
-import org.apache.sshd.common.util.AbstractLoggingBean;
+import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
  */

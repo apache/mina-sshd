@@ -22,6 +22,7 @@ package org.apache.sshd.common.util;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 import org.apache.sshd.util.BaseTestSupport;
 import org.junit.FixMethodOrder;
@@ -115,5 +116,31 @@ public class GenericUtilsTest extends BaseTestSupport {
             
             assertSame("Mismatched result for delim at index=" + index, expected, GenericUtils.stripDelimiters(expected, delim));
         }            
+    }
+
+    @Test
+    public void testAccumulateExceptionOnNullValues() {
+        assertNull("Unexpected null/null result", GenericUtils.accumulateException(null, null));
+        
+        Throwable expected=new NoSuchMethodException(getClass().getName() + "#" + getCurrentTestName());
+        assertSame("Mismatched null/extra result", expected, GenericUtils.accumulateException(null, expected));
+        assertSame("Mismatched current/null result", expected, GenericUtils.accumulateException(expected, null));
+    }
+
+    @Test
+    public void testAccumulateExceptionOnExistingCurrent() {
+        RuntimeException[] expected=new RuntimeException[] {
+                new IllegalArgumentException(getCurrentTestName()),
+                new ClassCastException(getClass().getName()),
+                new NoSuchElementException(getClass().getPackage().getName())
+            };
+        RuntimeException    current=new UnsupportedOperationException("top");
+        for (RuntimeException extra : expected) {
+            RuntimeException    actual=GenericUtils.accumulateException(current, extra);
+            assertSame("Mismatched returned actual exception", current, actual);
+        }
+        
+        Throwable[] actual=current.getSuppressed();
+        assertArrayEquals("Suppressed", expected, actual);
     }
 }

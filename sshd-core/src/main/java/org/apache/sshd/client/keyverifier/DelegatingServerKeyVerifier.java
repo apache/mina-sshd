@@ -24,7 +24,7 @@ import java.util.Map;
 
 import org.apache.sshd.client.ServerKeyVerifier;
 import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.common.util.AbstractLoggingBean;
+import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /*
  * A ServerKeyVerifier that delegates verification to the ServerKeyVerifier found in the ClientSession metadata

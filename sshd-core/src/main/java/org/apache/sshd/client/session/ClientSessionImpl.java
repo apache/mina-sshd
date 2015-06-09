@@ -23,6 +23,7 @@ import java.net.SocketAddress;
 import java.nio.file.FileSystem;
 import java.security.KeyPair;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +51,7 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.cipher.CipherNone;
+import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.future.DefaultSshFuture;
 import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.io.IoSession;
@@ -58,6 +60,8 @@ import org.apache.sshd.common.session.AbstractConnectionService;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.SessionListener;
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
@@ -66,6 +70,37 @@ import org.apache.sshd.common.util.buffer.Buffer;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ClientSessionImpl extends AbstractSession implements ClientSession {
+    /**
+     * Compares 2 password identities - returns zero ONLY if <U>both</U> compared
+     * objects are {@link String}s and equal to each other
+     */
+    public static final Comparator<Object> PASSWORD_IDENTITY_COMPARATOR = new Comparator<Object>() {
+            @Override
+            public int compare(Object o1, Object o2) {
+                if ((!(o1 instanceof String)) || (!(o2 instanceof String))) {
+                    return (-1);
+                } else {
+                    return ((String) o1).compareTo((String) o2);
+                }
+            }
+        };
+
+    /**
+     * Compares 2 {@link KeyPair} identities - returns zero ONLY if <U>both</U> compared
+     * objects are {@link KeyPair}s and equal to each other
+     */
+    public static final Comparator<Object> KEYPAIR_IDENTITY_COMPARATOR = new Comparator<Object>() {
+            @Override
+            public int compare(Object o1, Object o2) {
+                if ((!(o1 instanceof KeyPair)) || (!(o2 instanceof KeyPair))) {
+                    return (-1);
+                } else if (KeyUtils.compareKeyPairs((KeyPair) o1, (KeyPair) o2)) {
+                    return 0; 
+                } else {
+                    return 1;
+                }
+            }
+        };
 
     /**
      * For clients to store their own metadata
@@ -85,12 +120,12 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
 
     public ClientSessionImpl(ClientFactoryManager client, IoSession session) throws Exception {
         super(false, client, session);
-        log.info("Client session created: {}", session);
+        log.debug("Client session created: {}", session);
         // Need to set the initial service early as calling code likes to start trying to
         // manipulate it before the connection has even been established.  For instance, to
         // set the authPassword.
         List<ServiceFactory> factories = client.getServiceFactories();
-        if (factories == null || factories.isEmpty() || factories.size() > 2) {
+        if (GenericUtils.isEmpty(factories) || factories.size() > 2) {
             throw new IllegalArgumentException("One or two services must be configured");
         }
         currentServiceFactory = factories.get(0);
@@ -128,12 +163,62 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
 
     @Override
     public void addPasswordIdentity(String password) {
-        identities.add(password);
+        identities.add(ValidateUtils.checkNotNullAndNotEmpty(password, "No password provided", GenericUtils.EMPTY_OBJECT_ARRAY));
+        if (log.isDebugEnabled()) { // don't show the password in the log
+            log.debug("addPasswordIdentity(" + KeyUtils.getFingerPrint(password) + ")");
+        }
     }
 
     @Override
-    public void addPublicKeyIdentity(KeyPair key) {
-        identities.add(key);
+    public String removePasswordIdentity(String password) {
+        if (GenericUtils.isEmpty(password)) {
+            return null;
+        }
+
+        int index = findIdentityIndex(PASSWORD_IDENTITY_COMPARATOR, password);
+        if (index >= 0) {
+            return (String) identities.remove(index);
+        } else {
+            return null;
+        }
+    }
+
+    @Override
+    public void addPublicKeyIdentity(KeyPair kp) {
+        ValidateUtils.checkNotNull(kp, "No key-pair to add", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkNotNull(kp.getPublic(), "No public key", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkNotNull(kp.getPrivate(), "No private key", GenericUtils.EMPTY_OBJECT_ARRAY);
+
+        identities.add(kp);
+
+        if (log.isDebugEnabled()) {
+            log.debug("addPublicKeyIdentity(" + KeyUtils.getFingerPrint(kp.getPublic()) + ")");
+        }
+    }
+
+    @Override
+    public KeyPair removePublicKeyIdentity(KeyPair kp) {
+        if (kp == null) {
+            return null;
+        }
+        
+        int index = findIdentityIndex(KEYPAIR_IDENTITY_COMPARATOR, kp);
+        if (index >= 0) {
+            return (KeyPair) identities.remove(index);
+        } else {
+            return null;
+        }
+    }
+
+    protected int findIdentityIndex(Comparator<? super Object> comp, Object target) {
+        for (int index = 0; index < identities.size(); index++) {
+            Object value = identities.get(index);
+            if (comp.compare(value, target) == 0) {
+                return index;
+            }
+        }
+        
+        return (-1);
     }
 
     @Override
@@ -382,7 +467,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         if (serverVersion == null) {
             return false;
         }
-        log.info("Server version string: {}", serverVersion);
+        log.debug("Server version string: {}", serverVersion);
         if (!(serverVersion.startsWith("SSH-2.0-") || serverVersion.startsWith("SSH-1.99-"))) {
             throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_VERSION_NOT_SUPPORTED,
                                    "Unsupported protocol version: " + serverVersion);
@@ -390,7 +475,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         return true;
     }
 
-    private void sendClientIdentification() {
+    protected void sendClientIdentification() {
         clientVersion = "SSH-2.0-" + getFactoryManager().getVersion();
         sendIdentification(clientVersion);
     }

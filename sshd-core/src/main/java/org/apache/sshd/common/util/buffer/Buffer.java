@@ -149,10 +149,6 @@ public abstract class Buffer implements Readable {
 
     public abstract String getString(Charset charset);
 
-    public byte[] getStringAsBytes() {
-        return getBytes();
-    }
-
     public BigInteger getMPInt() {
         return new BigInteger(getMPIntAsBytes());
     }
@@ -189,42 +185,47 @@ public abstract class Buffer implements Readable {
 
     public PublicKey getRawPublicKey() throws SshException {
         try {
-            PublicKey key;
             String keyAlg = getString();
             if (KeyPairProvider.SSH_RSA.equals(keyAlg)) {
                 BigInteger e = getMPInt();
                 BigInteger n = getMPInt();
                 KeyFactory keyFactory = SecurityUtils.getKeyFactory("RSA");
-                key = keyFactory.generatePublic(new RSAPublicKeySpec(n, e));
+                return keyFactory.generatePublic(new RSAPublicKeySpec(n, e));
             } else if (KeyPairProvider.SSH_DSS.equals(keyAlg)) {
                 BigInteger p = getMPInt();
                 BigInteger q = getMPInt();
                 BigInteger g = getMPInt();
                 BigInteger y = getMPInt();
                 KeyFactory keyFactory = SecurityUtils.getKeyFactory("DSA");
-                key = keyFactory.generatePublic(new DSAPublicKeySpec(y, p, q, g));
-            } else if (KeyPairProvider.ECDSA_SHA2_NISTP256.equals(keyAlg)) {
-                key = getRawECKey("nistp256", ECCurves.EllipticCurves.nistp256);
-            } else if (KeyPairProvider.ECDSA_SHA2_NISTP384.equals(keyAlg)) {
-                key = getRawECKey("nistp384", ECCurves.EllipticCurves.nistp384);
-            } else if (KeyPairProvider.ECDSA_SHA2_NISTP521.equals(keyAlg)) {
-                key = getRawECKey("nistp521", ECCurves.EllipticCurves.nistp521);
+                return keyFactory.generatePublic(new DSAPublicKeySpec(y, p, q, g));
+            } else if (keyAlg.startsWith(ECCurves.ECDSA_SHA2_PREFIX)) {
+                String curveName = keyAlg.substring(ECCurves.ECDSA_SHA2_PREFIX.length());
+                ECParameterSpec params = ECCurves.getECParameterSpec(curveName);
+                return getRawECKey(curveName, params);
             } else {
                 throw new NoSuchAlgorithmException("Unsupported raw public algorithm: " + keyAlg);
             }
-            return key;
         } catch (GeneralSecurityException e) {
             throw new SshException(e);
         }
     }
 
-    protected PublicKey getRawECKey(String expectedCurve, ECParameterSpec spec) throws GeneralSecurityException, SshException {
+    protected PublicKey getRawECKey(String expectedCurve, ECParameterSpec spec) throws GeneralSecurityException {
         String curveName = getString();
         if (!expectedCurve.equals(curveName)) {
-            throw new InvalidKeySpecException("Curve name does not match expected: " + curveName + " vs "
-                    + expectedCurve);
+            throw new InvalidKeySpecException("getRawECKey(" + expectedCurve + ") curve name does not match expected: " + curveName);
         }
-        ECPoint w = ECCurves.decodeECPoint(getStringAsBytes(), spec.getCurve());
+
+        if (spec == null) {
+            throw new InvalidKeySpecException("getRawECKey(" + expectedCurve + ") missing curve parameters");
+        }
+
+        byte[] octets = getBytes();
+        ECPoint w = ECCurves.decodeECPoint(octets, spec.getCurve());
+        if (w == null) {
+            throw new InvalidKeySpecException("getRawECKey(" + expectedCurve + ") cannot retrieve W value");
+        }
+
         KeyFactory keyFactory = SecurityUtils.getKeyFactory("EC");
         return keyFactory.generatePublic(new ECPublicKeySpec(w, spec));
     }
@@ -255,12 +256,10 @@ public abstract class Buffer implements Readable {
                 KeyFactory keyFactory = SecurityUtils.getKeyFactory("DSA");
                 pub = keyFactory.generatePublic(new DSAPublicKeySpec(y, p, q, g));
                 prv = keyFactory.generatePrivate(new DSAPrivateKeySpec(x, p, q, g));
-            } else if (KeyPairProvider.ECDSA_SHA2_NISTP256.equals(keyAlg)) {
-                return extractEC("nistp256", ECCurves.EllipticCurves.nistp256);
-            } else if (KeyPairProvider.ECDSA_SHA2_NISTP384.equals(keyAlg)) {
-                return extractEC("nistp384", ECCurves.EllipticCurves.nistp384);
-            } else if (KeyPairProvider.ECDSA_SHA2_NISTP521.equals(keyAlg)) {
-                return extractEC("nistp521", ECCurves.EllipticCurves.nistp521);
+            } else if (keyAlg.startsWith(ECCurves.ECDSA_SHA2_PREFIX)) {
+                String curveName = keyAlg.substring(ECCurves.ECDSA_SHA2_PREFIX.length());
+                ECParameterSpec params = ECCurves.getECParameterSpec(curveName);
+                return extractEC(curveName, params);
             } else {
                 throw new NoSuchAlgorithmException("Unsupported key pair algorithm: " + keyAlg);
             }
@@ -270,18 +269,22 @@ public abstract class Buffer implements Readable {
         }
     }
 
-    protected KeyPair extractEC(String expectedCurveName, ECParameterSpec spec) throws GeneralSecurityException, SshException {
+    protected KeyPair extractEC(String expectedCurveName, ECParameterSpec spec) throws GeneralSecurityException {
         String curveName = getString();
-        byte[] groupBytes = getStringAsBytes();
+        if (!expectedCurveName.equals(curveName)) {
+            throw new InvalidKeySpecException("extractEC(" + expectedCurveName + ") mismatched curve name: " + curveName);
+        }
+
+        byte[] groupBytes = getBytes();
         BigInteger exponent = getMPInt();
 
-        if (!expectedCurveName.equals(curveName)) {
-            throw new SshException("Expected curve " + expectedCurveName + " but was " + curveName);
+        if (spec == null) {
+            throw new InvalidKeySpecException("extractEC(" + expectedCurveName + ") missing parameters for curve");
         }
 
         ECPoint group = ECCurves.decodeECPoint(groupBytes, spec.getCurve());
         if (group == null) {
-            throw new InvalidKeySpecException("Couldn't decode EC group");
+            throw new InvalidKeySpecException("extractEC(" + expectedCurveName + ") couldn't decode EC group for curve");
         }
 
         KeyFactory keyFactory = SecurityUtils.getKeyFactory("EC");

@@ -83,7 +83,7 @@ public class PublicKeyEntry implements Serializable {
      */
     public PublicKey resolvePublicKey() throws IOException, GeneralSecurityException {
         String kt = getKeyType();
-        PublicKeyEntryDecoder<? extends PublicKey> decoder = KeyUtils.getPublicKeyEntryDecoder(kt);
+        PublicKeyEntryDecoder<?,?> decoder = KeyUtils.getPublicKeyEntryDecoder(kt);
         if (decoder == null) {
             throw new InvalidKeySpecException("No decoder registered for key type=" + kt);
         }
@@ -228,7 +228,7 @@ public class PublicKeyEntry implements Serializable {
      */
     public static final <A extends Appendable> A appendPublicKeyEntry(A sb, PublicKey key) throws IOException {
         @SuppressWarnings("unchecked")
-        PublicKeyEntryDecoder<PublicKey> decoder = (PublicKeyEntryDecoder<PublicKey>) KeyUtils.getPublicKeyEntryDecoder(key);
+        PublicKeyEntryDecoder<PublicKey,?> decoder = (PublicKeyEntryDecoder<PublicKey,?>) KeyUtils.getPublicKeyEntryDecoder(key);
         if (decoder == null) {
             throw new StreamCorruptedException("Cannot retrived decoder for key=" + key.getAlgorithm());
         }

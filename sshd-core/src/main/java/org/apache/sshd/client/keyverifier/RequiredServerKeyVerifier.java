@@ -23,8 +23,8 @@ import java.security.PublicKey;
 
 import org.apache.sshd.client.ServerKeyVerifier;
 import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.common.util.AbstractLoggingBean;
 import org.apache.sshd.common.util.buffer.BufferUtils;
+import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
  * A ServerKeyVerifier that accepts one server key (specified in the constructor)

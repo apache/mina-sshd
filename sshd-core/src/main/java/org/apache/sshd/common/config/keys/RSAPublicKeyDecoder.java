@@ -24,9 +24,14 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.math.BigInteger;
 import java.security.GeneralSecurityException;
+import java.security.InvalidKeyException;
 import java.security.KeyFactory;
+import java.security.KeyPairGenerator;
+import java.security.interfaces.RSAPrivateCrtKey;
+import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
+import java.security.spec.RSAPrivateCrtKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.util.Collections;
 
@@ -38,11 +43,11 @@ import org.apache.sshd.common.util.ValidateUtils;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class RSAPublicKeyDecoder extends AbstractPublicKeyEntryDecoder<RSAPublicKey> {
+public class RSAPublicKeyDecoder extends AbstractPublicKeyEntryDecoder<RSAPublicKey,RSAPrivateKey> {
     public static final RSAPublicKeyDecoder INSTANCE = new RSAPublicKeyDecoder();
 
     public RSAPublicKeyDecoder() {
-        super(RSAPublicKey.class, Collections.unmodifiableList(Collections.singletonList(KeyPairProvider.SSH_RSA)));
+        super(RSAPublicKey.class, RSAPrivateKey.class, Collections.unmodifiableList(Collections.singletonList(KeyPairProvider.SSH_RSA)));
     }
 
     @Override
@@ -65,6 +70,43 @@ public class RSAPublicKeyDecoder extends AbstractPublicKeyEntryDecoder<RSAPublic
         encodeBigInt(s, key.getModulus());
         
         return KeyPairProvider.SSH_RSA;
+    }
+
+    @Override
+    public RSAPublicKey clonePublicKey(RSAPublicKey key) throws GeneralSecurityException {
+        if (key == null) {
+            return null;
+        } else {
+            return generatePublicKey(new RSAPublicKeySpec(key.getModulus(), key.getPublicExponent()));
+        }
+    }
+
+    @Override
+    public RSAPrivateKey clonePrivateKey(RSAPrivateKey key) throws GeneralSecurityException {
+        if (key == null) {
+            return null;
+        }
+        
+        if (!(key instanceof RSAPrivateCrtKey)) {
+            throw new InvalidKeyException("Cannot clone a non-RSAPrivateCrtKey: " + key.getClass().getSimpleName());
+        }
+
+        RSAPrivateCrtKey rsaPrv = (RSAPrivateCrtKey) key;
+        return generatePrivateKey(
+                new RSAPrivateCrtKeySpec(
+                        rsaPrv.getModulus(),
+                        rsaPrv.getPublicExponent(),
+                        rsaPrv.getPrivateExponent(),
+                        rsaPrv.getPrimeP(),
+                        rsaPrv.getPrimeQ(),
+                        rsaPrv.getPrimeExponentP(),
+                        rsaPrv.getPrimeExponentQ(),
+                        rsaPrv.getCrtCoefficient()));
+    }
+
+    @Override
+    public KeyPairGenerator getKeyPairGenerator() throws GeneralSecurityException {
+        return SecurityUtils.getKeyPairGenerator("RSA");
     }
 
     @Override

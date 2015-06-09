@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.sshd;
+package org.apache.sshd.server;
 
 import org.apache.sshd.server.SshServer;
 

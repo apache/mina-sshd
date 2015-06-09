@@ -24,7 +24,7 @@ import java.io.OutputStream;
 import java.util.Collections;
 import java.util.Map;
 
-import org.apache.sshd.common.util.IoUtils;
+import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.shell.InvertedShell;
 
 public class BogusInvertedShell implements InvertedShell {

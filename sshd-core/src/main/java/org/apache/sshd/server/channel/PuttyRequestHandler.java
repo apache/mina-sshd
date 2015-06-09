@@ -20,8 +20,8 @@ package org.apache.sshd.server.channel;
 
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.RequestHandler;
-import org.apache.sshd.common.util.AbstractLoggingBean;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
  * Handles Putty specific channel requests as indicated by

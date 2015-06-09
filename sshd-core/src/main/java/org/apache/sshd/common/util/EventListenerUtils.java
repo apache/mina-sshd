@@ -28,7 +28,11 @@ import java.util.EventListener;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class EventListenerUtils {
+public final class EventListenerUtils {
+    private EventListenerUtils() {
+        throw new UnsupportedOperationException("No instance");
+    }
+
     /**
      * Provides proxy wrapper around an {@link Iterable} container of listener
      * interface implementation. <b>Note:</b> a listener interface is one whose

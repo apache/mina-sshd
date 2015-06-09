@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd;
+package org.apache.sshd.agent;
 
 import static org.apache.sshd.util.Utils.createTestKeyPairProvider;
 

@@ -49,8 +49,8 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.IoUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.io.IoUtils;
 
 /**
  * File system provider which provides a rooted file system.

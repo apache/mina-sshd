@@ -24,7 +24,9 @@ import java.security.spec.ECFieldFp;
 import java.security.spec.ECParameterSpec;
 import java.security.spec.ECPoint;
 import java.security.spec.EllipticCurve;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -58,16 +60,89 @@ public class ECCurves {
     }
 
     /**
+     * Key=curve name, value=num. of bits
+     */
+    private static final Map<String,Integer> CURVENAME2SIZE =
+            Collections.unmodifiableMap(new TreeMap<String,Integer>(String.CASE_INSENSITIVE_ORDER) {
+                private static final long serialVersionUID = 1L;    // we're not serializing it
+                
+                {
+                    put(NISTP256, Integer.valueOf(256));
+                    put(NISTP384, Integer.valueOf(384));
+                    put(NISTP521, Integer.valueOf(521));
+                }
+        
+            });
+
+    /**
+     * An un-modifiable {@link List} of all the known curve names
+     */
+    @SuppressWarnings("synthetic-access")
+    public static final List<String> NAMES =
+            Collections.unmodifiableList(new ArrayList<String>(CURVENAME2SIZE.size()) {
+                private static final long serialVersionUID = 1L;    // we're not serializing it
+                
+                {
+                    addAll(CURVENAME2SIZE.keySet());
+                    Collections.sort(this); // as a courtesy
+                }
+            });
+
+    /**
+     * An un-modifiable {@link List} of all the known curve types according to {@code OpenSSH}
+     */
+    public static final List<String> TYPES =
+            Collections.unmodifiableList(new ArrayList<String>(CURVENAME2SIZE.size()) {
+                private static final long serialVersionUID = 1L;    // we're not serializing it
+                
+                {
+                    for (String n : NAMES) {
+                        add(ECDSA_SHA2_PREFIX + n);
+                    }
+
+                    Collections.sort(this); // as a courtesy
+                }
+            });
+    /**
+     * An un-modifiable {@link List} of all the known curve sizes
+     */
+    @SuppressWarnings("synthetic-access")
+    public static final List<Integer> SIZES =
+            Collections.unmodifiableList(new ArrayList<Integer>(CURVENAME2SIZE.size()) {
+                    private static final long serialVersionUID = 1L;    // we're not serializing it
+                
+                    {
+                        addAll(CURVENAME2SIZE.values());
+                        Collections.sort(this); // as a courtesy
+                    }
+            });
+    
+    /**
+     * @param name The curve name - ignored if {@code null}/empty
+     * @return The curve size - {@code null} if unknown curve
+     */
+    public static Integer getCurveSize(String name) {
+        if (GenericUtils.isEmpty(name)) {
+            return null;
+        } else {
+            return CURVENAME2SIZE.get(name);
+        }
+    }
+
+    /**
      * Key=num. of bits, value=curve name
      */
+    @SuppressWarnings("synthetic-access")
     private static final Map<Integer, String> SIZE2CURVENAME = 
             Collections.unmodifiableMap(new TreeMap<Integer, String>() {
                 private static final long serialVersionUID = 1L;    // we're not serializing it
         
                 {
-                    put(Integer.valueOf(256), NISTP256);
-                    put(Integer.valueOf(384), NISTP384);
-                    put(Integer.valueOf(521), NISTP521);
+                    for (Map.Entry<String,Integer> e : CURVENAME2SIZE.entrySet()) {
+                        String name = e.getKey();
+                        Integer size = e.getValue();
+                        put(size, name);
+                    }
                 }
             });
 
@@ -234,7 +309,7 @@ public class ECCurves {
     
     private static final class LazySpecsMapHolder {
         private static final Map<String,ECParameterSpec> specsMap =
-                Collections.unmodifiableMap(new TreeMap<String, ECParameterSpec>(String.CASE_INSENSITIVE_ORDER) {
+                Collections.unmodifiableMap(new TreeMap<String,ECParameterSpec>(String.CASE_INSENSITIVE_ORDER) {
                         private static final long serialVersionUID = 1L;    // we're not serializing it
                     
                         {

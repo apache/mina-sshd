@@ -36,13 +36,17 @@ import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.future.DefaultSshFuture;
 import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.future.SshFutureListener;
+import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
  * Utility class to help with {@link Closeable}s.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class CloseableUtils {
+public final class CloseableUtils {
+    private CloseableUtils() {
+        throw new UnsupportedOperationException("No instance");
+    }
 
     // TODO once JDK 8+ becomes the minimum for this project, make it a static method in the Closeable interface
     public static void close(Closeable closeable) throws IOException {
@@ -349,6 +353,7 @@ public class CloseableUtils {
                     if (grace != null) {
                         grace.addListener(new SshFutureListener<CloseFuture>() {
                             @Override
+                            @SuppressWarnings("synthetic-access")
                             public void operationComplete(CloseFuture future) {
                                 if (state.compareAndSet(State.Graceful, State.Immediate)) {
                                     doCloseImmediately();
@@ -437,9 +442,5 @@ public class CloseableUtils {
                 }
             });
         }
-    }
-
-    private CloseableUtils() {
-        throw new UnsupportedOperationException("No instance allowed");
     }
 }

@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.util;
+package org.apache.sshd.common.util.io;
 
 import java.io.Closeable;
 import java.io.EOFException;
@@ -35,6 +35,8 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
+
+import org.apache.sshd.common.util.OsUtils;
 
 /**
  * TODO Add javadoc

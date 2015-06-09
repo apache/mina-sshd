@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.List;
 
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.Transformer;
 
 /**
  * A named factory is a factory identified by a name.

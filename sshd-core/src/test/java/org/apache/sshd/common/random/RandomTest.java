@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd;
+package org.apache.sshd.common.random;
 
 import org.apache.sshd.common.random.BouncyCastleRandom;
 import org.apache.sshd.common.random.JceRandom;

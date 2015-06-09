@@ -26,8 +26,8 @@ import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.session.Session;
-import org.apache.sshd.common.util.AbstractLoggingBean;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
  * Determines if a forwarding request will be permitted.

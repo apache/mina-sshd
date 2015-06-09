@@ -27,11 +27,11 @@ import org.apache.sshd.client.kex.DHGEXClient;
 import org.apache.sshd.client.keyverifier.AcceptAllServerKeyVerifier;
 import org.apache.sshd.common.BaseBuilder;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.Transformer;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.kex.BuiltinDHFactories;
 import org.apache.sshd.common.kex.DHFactory;
 import org.apache.sshd.common.kex.KeyExchange;
+import org.apache.sshd.common.util.Transformer;
 import org.apache.sshd.server.forward.TcpipServerChannel;
 
 /**

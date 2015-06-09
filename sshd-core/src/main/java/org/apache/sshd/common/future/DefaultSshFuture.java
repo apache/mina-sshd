@@ -21,7 +21,7 @@ package org.apache.sshd.common.future;
 import java.lang.reflect.Array;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.sshd.common.util.AbstractLoggingBean;
+import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
  * A default implementation of {@link SshFuture}.

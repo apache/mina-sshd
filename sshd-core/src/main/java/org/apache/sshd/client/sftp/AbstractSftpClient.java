@@ -26,8 +26,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 
-import org.apache.sshd.common.util.AbstractLoggingBean;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>

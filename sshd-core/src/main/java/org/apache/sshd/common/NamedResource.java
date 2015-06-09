@@ -26,6 +26,7 @@ import java.util.Comparator;
 import java.util.List;
 
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.Transformer;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>

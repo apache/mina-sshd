@@ -17,18 +17,37 @@
  * under the License.
  */
 
-package org.apache.sshd;
+package org.apache.sshd.common.util.logging;
 
-import org.apache.sshd.server.SshServer;
-
+import java.util.logging.Level;
 
 /**
- * An activator for the {@link SshServer#main(String[])} - the reason it is
- * here is because the logging configuration is available only for test scope
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ServerMain {
-    public static void main(String[] args) throws Throwable {
-        SshServer.main(args);
-    }
+public interface SimplifiedLog {
+    boolean isEnabled(Level level);
+
+    void log(Level level, Object message);
+
+    void log(Level level, Object message, Throwable t);
+
+    /**
+     * An &quot;empty&quot; {@link SimplifiedLog} that does nothing
+     */
+    SimplifiedLog   EMPTY=new AbstractSimplifiedLog() {
+            @Override
+            public boolean isEnabled(Level level) {
+                return false;
+            }
+
+            @Override
+            public void log(Level level, Object message, Throwable t) {
+                return;
+            }
+
+            @Override
+            public String toString() {
+                return "EMPTY";
+            }
+        };
 }

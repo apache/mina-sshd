@@ -25,7 +25,11 @@ import java.util.Map;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ValidateUtils {
+public final class ValidateUtils {
+    private ValidateUtils() {
+        throw new UnsupportedOperationException("No instance");
+    }
+
     public static final <T> T checkNotNull(T t, String message, Object ... args) {
         checkTrue(t != null, message, args);
         return t;

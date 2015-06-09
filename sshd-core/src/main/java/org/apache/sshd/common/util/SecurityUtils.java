@@ -39,7 +39,6 @@ import org.slf4j.LoggerFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class SecurityUtils {
-
     public static final String BOUNCY_CASTLE = "BC";
 
     private static final Logger LOG = LoggerFactory.getLogger(SecurityUtils.class);
@@ -48,6 +47,10 @@ public class SecurityUtils {
     private static Boolean registerBouncyCastle;
     private static boolean registrationDone;
     private static Boolean hasEcc;
+
+    private SecurityUtils() {
+        throw new UnsupportedOperationException("No instance");
+    }
 
     public static boolean hasEcc() {
         if (hasEcc == null) {

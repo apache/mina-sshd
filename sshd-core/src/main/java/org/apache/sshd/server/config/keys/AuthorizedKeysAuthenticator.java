@@ -29,8 +29,8 @@ import java.util.Collection;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.IoUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.ModifiableFileWatcher;
 import org.apache.sshd.server.PublickeyAuthenticator;
 import org.apache.sshd.server.session.ServerSession;

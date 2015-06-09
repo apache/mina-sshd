@@ -22,8 +22,8 @@ package org.apache.sshd.common.keyprovider;
 import java.security.KeyPair;
 import java.util.Map;
 
-import org.apache.sshd.common.Transformer;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.Transformer;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**

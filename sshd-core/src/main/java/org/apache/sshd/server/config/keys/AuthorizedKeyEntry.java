@@ -317,7 +317,7 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
         }
 
         String keyType = line.substring(0, startPos);
-        PublicKeyEntryDecoder<? extends PublicKey> decoder = KeyUtils.getPublicKeyEntryDecoder(keyType);
+        PublicKeyEntryDecoder<?,?> decoder = KeyUtils.getPublicKeyEntryDecoder(keyType);
         final AuthorizedKeyEntry    entry;
         if (decoder == null) {  // assume this is due to the fact that it starts with login options
             if ((entry=parseAuthorizedKeyEntry(line.substring(startPos + 1).trim())) == null) {

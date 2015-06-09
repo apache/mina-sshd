@@ -38,9 +38,9 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.signature.Signature;
-import org.apache.sshd.common.util.AbstractLoggingBean;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
  * TODO Add javadoc

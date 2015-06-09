@@ -28,7 +28,7 @@ import java.nio.file.Path;
 import java.security.PublicKey;
 import java.util.Collection;
 
-import org.apache.sshd.common.util.IoUtils;
+import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.PublickeyAuthenticator;
 import org.apache.sshd.util.BaseTestSupport;
 import org.junit.FixMethodOrder;

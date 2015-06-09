@@ -25,9 +25,9 @@ import java.util.Map;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.session.Session;
-import org.apache.sshd.common.util.AbstractLoggingBean;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
  * A Window for a given channel.

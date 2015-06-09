@@ -24,10 +24,10 @@ import java.util.List;
 
 import org.apache.sshd.common.BaseBuilder;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.Transformer;
 import org.apache.sshd.common.kex.BuiltinDHFactories;
 import org.apache.sshd.common.kex.DHFactory;
 import org.apache.sshd.common.kex.KeyExchange;
+import org.apache.sshd.common.util.Transformer;
 import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.config.keys.DefaultAuthorizedKeysAuthenticator;
 import org.apache.sshd.server.forward.TcpipServerChannel;

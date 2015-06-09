@@ -416,7 +416,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
                 sendEvent(SessionListener.Event.KeyEstablished);
                 synchronized (pendingPackets) {
                     if (!pendingPackets.isEmpty()) {
-                        log.info("Dequeing pending packets");
+                        log.debug("Dequeing pending packets");
                         synchronized (encodeLock) {
                             PendingWriteFuture future;
                             while ((future = pendingPackets.poll()) != null) {
@@ -530,7 +530,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
                 synchronized (pendingPackets) {
                     if (kexState.get() != KEX_STATE_DONE) {
                         if (pendingPackets.isEmpty()) {
-                            log.info("Start flagging packets as pending until key exchange is done");
+                            log.debug("Start flagging packets as pending until key exchange is done");
                         }
                         PendingWriteFuture future = new PendingWriteFuture(buffer);
                         pendingPackets.add(future);
@@ -1159,7 +1159,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     protected void negotiate() {
         String[] guess = new String[SshConstants.PROPOSAL_MAX];
         for (int i = 0; i < SshConstants.PROPOSAL_MAX; i++) {
-        	String paramName = SshConstants.PROPOSAL_KEX_NAMES[i];
+        	String paramName = SshConstants.PROPOSAL_KEX_NAMES.get(i);
         	String clientParamValue = clientProposal[i];
         	String serverParamValue = serverProposal[i];
             String[] c = clientParamValue.split(",");

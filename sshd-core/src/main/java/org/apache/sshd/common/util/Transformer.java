@@ -19,31 +19,40 @@
 
 package org.apache.sshd.common.util;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.Objects;
 
 /**
- * Serves as a common base class for the vast majority of classes that require
- * some kind of logging. Facilitates quick and easy replacement of the actual used
- * logger from one framework to another
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractLoggingBean {
-    protected final Logger log;
-    
+public interface Transformer<I, O> {
+    // TODO in JDK-8 replace this with Function
     /**
-     * Default constructor - creates a logger using the full class name
+     * @param input Input value
+     * @return Transformed output value
      */
-    protected AbstractLoggingBean() {
-        log = LoggerFactory.getLogger(getClass());
-    }
-    
+    O transform(I input);
+
     /**
-     * Create a logger for instances of the same class for which we might
-     * want to have a &quot;discriminator&quot; for them
-     * @param discriminator The discriminator value
+     * Invokes {@link Objects#toString(Object)} on the argument
      */
-    protected AbstractLoggingBean(String discriminator) {
-        log = LoggerFactory.getLogger(getClass().getName() + "[" + discriminator + "]");
-    }
+    Transformer<Object,String> TOSTRING=new Transformer<Object,String>() {
+            @Override
+            public String transform(Object input) {
+                return Objects.toString(input);
+            }
+        };
+
+    /**
+     * Returns {@link Enum#name()} or {@code null} if argument is {@code null}
+     */
+    Transformer<Enum<?>,String> ENUM_NAME_EXTRACTOR=new Transformer<Enum<?>,String>() {
+            @Override
+            public String transform(Enum<?> input) {
+                if (input == null) {
+                    return null;
+                } else {
+                    return input.name();
+                }
+            }
+        };
 }

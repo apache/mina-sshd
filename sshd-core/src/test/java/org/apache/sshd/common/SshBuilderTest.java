@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.sshd;
+package org.apache.sshd.common;
 
 import java.util.Collection;
 import java.util.EnumSet;

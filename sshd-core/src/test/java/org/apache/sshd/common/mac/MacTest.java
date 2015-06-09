@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd;
+package org.apache.sshd.common.mac;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -25,6 +25,8 @@ import java.util.Arrays;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.cipher.Cipher;
+import org.apache.sshd.common.mac.BuiltinMacs;
+import org.apache.sshd.common.mac.Mac;
 import org.apache.sshd.common.random.BouncyCastleRandom;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.server.SshServer;
@@ -36,6 +38,7 @@ import org.apache.sshd.util.SimpleUserInfo;
 import org.apache.sshd.util.Utils;
 import org.junit.After;
 import org.junit.FixMethodOrder;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
@@ -47,54 +50,46 @@ import com.jcraft.jsch.JSch;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class CipherTest extends BaseTestSupport {
+public class MacTest extends BaseTestSupport {
 
     private SshServer sshd;
     private int port;
 
     @Test
-    public void testAES128CBC() throws Exception {
-        if (BuiltinCiphers.aes128cbc.isSupported()
-                && checkCipher(com.jcraft.jsch.jce.AES128CBC.class.getName())) {
-            setUp(BuiltinCiphers.aes128cbc);
-            runTest();
-        }
+    public void testHMACMD5() throws Exception {
+        setUp(BuiltinMacs.hmacmd5);
+        runTest();
     }
 
     @Test
-    public void testAES192CBC() throws Exception {
-        if (BuiltinCiphers.aes192cbc.isSupported()
-                && checkCipher(com.jcraft.jsch.jce.AES192CBC.class.getName())) {
-            setUp(BuiltinCiphers.aes192cbc);
-            runTest();
-        }
+    public void testHMACMD596() throws Exception {
+        setUp(BuiltinMacs.hmacmd596);
+        runTest();
     }
 
     @Test
-    public void testAES256CBC() throws Exception {
-        if (BuiltinCiphers.aes256cbc.isSupported()
-                && checkCipher(com.jcraft.jsch.jce.AES256CBC.class.getName())) {
-            setUp(BuiltinCiphers.aes256cbc);
-            runTest();
-        }
+    public void testHMACSHA1() throws Exception {
+        setUp(BuiltinMacs.hmacsha1);
+        runTest();
     }
 
     @Test
-    public void testBlowfishCBC() throws Exception {
-        if (BuiltinCiphers.blowfishcbc.isSupported()
-                && checkCipher(com.jcraft.jsch.jce.BlowfishCBC.class.getName())) {
-            setUp(BuiltinCiphers.blowfishcbc);
-            runTest();
-        }
+    public void testHMACSHA196() throws Exception {
+        setUp(BuiltinMacs.hmacsha196);
+        runTest();
     }
 
     @Test
-    public void testTripleDESCBC() throws Exception {
-        if (BuiltinCiphers.tripledescbc.isSupported()
-                && checkCipher(com.jcraft.jsch.jce.TripleDESCBC.class.getName())) {
-            setUp(BuiltinCiphers.tripledescbc);
-            runTest();
-        }
+    public void testHMACSHA256() throws Exception {
+        setUp(BuiltinMacs.hmacsha256);
+        runTest();
+    }
+
+    @Test
+    @Ignore("Lead to ArrayIndexOutOfBoundsException in JSch")
+    public void testHMACSHA512() throws Exception {
+        setUp(BuiltinMacs.hmacsha512);
+        runTest();
     }
 
     @Test
@@ -124,14 +119,14 @@ public class CipherTest extends BaseTestSupport {
     }
 
 
-    protected void setUp(NamedFactory<org.apache.sshd.common.cipher.Cipher> cipher) throws Exception {
+    protected void setUp(NamedFactory<Mac> mac) throws Exception {
         sshd = SshServer.setUpDefaultServer();
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
-        sshd.setCipherFactories(Arrays.<NamedFactory<org.apache.sshd.common.cipher.Cipher>>asList(cipher));
+        sshd.setMacFactories(Arrays.<NamedFactory<Mac>>asList(mac));
         sshd.setShellFactory(new EchoShellFactory());
         sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
         sshd.start();
-        port = sshd.getPort();
+        port  = sshd.getPort();
     }
 
     @After
@@ -146,23 +141,35 @@ public class CipherTest extends BaseTestSupport {
         JSch sch = new JSch();
         JSch.setConfig("cipher.s2c", "aes128-cbc,3des-cbc,blowfish-cbc,aes192-cbc,aes256-cbc,none");
         JSch.setConfig("cipher.c2s", "aes128-cbc,3des-cbc,blowfish-cbc,aes192-cbc,aes256-cbc,none");
+        JSch.setConfig("mac.s2c", "hmac-md5,hmac-sha1,hmac-sha2-256,hmac-sha1-96,hmac-md5-96,hmac-sha2-512");
+        JSch.setConfig("mac.c2s", "hmac-md5,hmac-sha1,hmac-sha2-256,hmac-sha1-96,hmac-md5-96,hmac-sha2-512");
+        JSch.setConfig("hmac-sha2-512",  "com.jcraft.jsch.jce.HMACSHA512");
         com.jcraft.jsch.Session s = sch.getSession(getCurrentTestName(), "localhost", port);
-        s.setUserInfo(new SimpleUserInfo(getCurrentTestName()));
-        s.connect();
-        com.jcraft.jsch.Channel c = s.openChannel("shell");
-        c.connect();
-        OutputStream os = c.getOutputStream();
-        InputStream is = c.getInputStream();
-        for (int i = 0; i < 10; i++) {
-            os.write("this is my command\n".getBytes());
-            os.flush();
-            byte[] data = new byte[512];
-            int len = is.read(data);
-            String str = new String(data, 0, len);
-            assertEquals("this is my command\n", str);
+        try {
+            s.setUserInfo(new SimpleUserInfo(getCurrentTestName()));
+            s.connect();
+            com.jcraft.jsch.Channel c = s.openChannel("shell");
+            c.connect();
+
+            try(OutputStream os = c.getOutputStream();
+                InputStream is = c.getInputStream()) {
+
+                String  expected = "this is my command\n";
+                byte[] bytes = expected.getBytes();
+                byte[] data = new byte[bytes.length + Long.SIZE];
+                for (int i = 0; i < 10; i++) {
+                    os.write(bytes);
+                    os.flush();
+                    int len = is.read(data);
+                    String str = new String(data, 0, len);
+                    assertEquals("Mismatched data at iteration " + i, expected, str);
+                }
+            } finally {
+                c.disconnect();
+            }
+        } finally {
+            s.disconnect();
         }
-        c.disconnect();
-        s.disconnect();
     }
 
     static boolean checkCipher(String cipher){

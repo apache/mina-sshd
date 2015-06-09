@@ -21,7 +21,7 @@ package org.apache.sshd.common.session;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
-import org.apache.sshd.common.util.AbstractLoggingBean;
+import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
  * Task that iterates over all currently open {@link AbstractSession}s and checks each of them for timeouts. If

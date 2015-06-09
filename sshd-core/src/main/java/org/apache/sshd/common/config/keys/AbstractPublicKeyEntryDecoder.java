@@ -28,31 +28,80 @@ import java.math.BigInteger;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
+import java.security.InvalidKeyException;
 import java.security.KeyFactory;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
 import java.util.Collection;
 
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.IoUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.io.IoUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractPublicKeyEntryDecoder<K extends PublicKey> implements PublicKeyEntryDecoder<K> {
-    private final Class<K> keyType;
+public abstract class AbstractPublicKeyEntryDecoder<PUB extends PublicKey,PRV extends PrivateKey>
+               implements PublicKeyEntryDecoder<PUB,PRV> {
+    private final Class<PUB> pubType;
+    private final Class<PRV> prvType;
     private final Collection<String>    names;
     
-    protected AbstractPublicKeyEntryDecoder(Class<K> keyType, Collection<String> names) {
-        this.keyType = ValidateUtils.checkNotNull(keyType, "No key type specified", GenericUtils.EMPTY_OBJECT_ARRAY);
+    protected AbstractPublicKeyEntryDecoder(Class<PUB> pubType, Class<PRV> prvType, Collection<String> names) {
+        this.pubType = ValidateUtils.checkNotNull(pubType, "No public key type specified", GenericUtils.EMPTY_OBJECT_ARRAY);
+        this.prvType = ValidateUtils.checkNotNull(prvType, "No private key type specified", GenericUtils.EMPTY_OBJECT_ARRAY);
         this.names = ValidateUtils.checkNotNullAndNotEmpty(names, "No type names provided", GenericUtils.EMPTY_OBJECT_ARRAY);
     }
 
     @Override
-    public final Class<K> getKeyType() {
-        return keyType;
+    public final Class<PUB> getPublicKeyType() {
+        return pubType;
+    }
+
+    @Override
+    public final Class<PRV> getPrivateKeyType() {
+        return prvType;
+    }
+
+    @Override
+    public KeyPair cloneKeyPair(KeyPair kp) throws GeneralSecurityException {
+        if (kp == null) {
+            return null;
+        }
+        
+        PUB pubCloned = null;
+        {
+            PublicKey pubOriginal = kp.getPublic();
+            Class<PUB> pubExpected = getPublicKeyType();
+            if (pubOriginal != null) {
+                Class<?> orgType = pubOriginal.getClass();
+                if (!pubExpected.isAssignableFrom(orgType)) {
+                    throw new InvalidKeyException("Mismatched public key types: expected=" + pubExpected.getSimpleName() + ", actual=" + orgType.getSimpleName());
+                }
+                
+                pubCloned = clonePublicKey(pubExpected.cast(pubOriginal));
+            }
+        }
+
+        PRV prvCloned = null;
+        {
+            PrivateKey prvOriginal = kp.getPrivate();
+            Class<PRV> prvExpected = getPrivateKeyType();
+            if (prvOriginal != null) {
+                Class<?> orgType = prvOriginal.getClass();
+                if (!prvExpected.isAssignableFrom(orgType)) {
+                    throw new InvalidKeyException("Mismatched private key types: expected=" + prvExpected.getSimpleName() + ", actual=" + orgType.getSimpleName());
+                }
+                
+                prvCloned = clonePrivateKey(prvExpected.cast(prvOriginal));
+            }
+        }
+
+        return new KeyPair(pubCloned, prvCloned);
     }
 
     @Override
@@ -61,12 +110,12 @@ public abstract class AbstractPublicKeyEntryDecoder<K extends PublicKey> impleme
     }
 
     @Override
-    public K decodePublicKey(byte... keyData) throws IOException, GeneralSecurityException {
+    public PUB decodePublicKey(byte... keyData) throws IOException, GeneralSecurityException {
         return decodePublicKey(keyData, 0, GenericUtils.length(keyData));
     }
 
     @Override
-    public K decodePublicKey(byte[] keyData, int offset, int length) throws IOException, GeneralSecurityException {
+    public PUB decodePublicKey(byte[] keyData, int offset, int length) throws IOException, GeneralSecurityException {
         if (length <= 0) {
             return null;
         }
@@ -77,7 +126,7 @@ public abstract class AbstractPublicKeyEntryDecoder<K extends PublicKey> impleme
     }
 
     @Override
-    public K decodePublicKey(InputStream keyData) throws IOException, GeneralSecurityException {
+    public PUB decodePublicKey(InputStream keyData) throws IOException, GeneralSecurityException {
         // the actual data is preceded by a string that repeats the key type
         String type = decodeString(keyData);
         if (GenericUtils.isEmpty(type)) {
@@ -92,13 +141,17 @@ public abstract class AbstractPublicKeyEntryDecoder<K extends PublicKey> impleme
         return decodePublicKey(type, keyData);
     }
 
-    public K generatePublicKey(KeySpec keySpec) throws GeneralSecurityException {
+    public PUB generatePublicKey(KeySpec keySpec) throws GeneralSecurityException {
         KeyFactory  factory = getKeyFactoryInstance();
-        Class<K>    keyType = getKeyType();
+        Class<PUB>    keyType = getPublicKeyType();
         return keyType.cast(factory.generatePublic(keySpec));
     }
 
-    public abstract KeyFactory getKeyFactoryInstance() throws GeneralSecurityException;
+    public PRV generatePrivateKey(KeySpec keySpec) throws GeneralSecurityException {
+        KeyFactory  factory = getKeyFactoryInstance();
+        Class<PRV>    keyType = getPrivateKeyType();
+        return keyType.cast(factory.generatePrivate(keySpec));
+    }
 
     /**
      * @param keyType The reported / encode key type
@@ -108,11 +161,18 @@ public abstract class AbstractPublicKeyEntryDecoder<K extends PublicKey> impleme
      * @throws IOException If failed to read from the data stream
      * @throws GeneralSecurityException If failed to generate the key
      */
-    public abstract K decodePublicKey(String keyType, InputStream keyData) throws IOException, GeneralSecurityException;
+    public abstract PUB decodePublicKey(String keyType, InputStream keyData) throws IOException, GeneralSecurityException;
+
+    @Override
+    public KeyPair generateKeyPair(int keySize) throws GeneralSecurityException {
+        KeyPairGenerator    gen=getKeyPairGenerator();
+        gen.initialize(keySize);
+        return gen.generateKeyPair();
+    }
 
     @Override
     public String toString() {
-        return getKeyType().getSimpleName() + ": " + getSupportedTypeNames();
+        return getPublicKeyType().getSimpleName() + ": " + getSupportedTypeNames();
     }
 
     public static final int encodeString(OutputStream s, String v) throws IOException {

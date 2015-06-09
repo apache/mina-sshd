@@ -169,7 +169,7 @@ public class ClientUserAuthService extends CloseableUtils.AbstractCloseable impl
             return;
         }
         if (cmd == SshConstants.SSH_MSG_USERAUTH_FAILURE) {
-            log.info("Received SSH_MSG_USERAUTH_FAILURE");
+            log.debug("Received SSH_MSG_USERAUTH_FAILURE");
             String mths = buffer.getString();
             boolean partial = buffer.getBoolean();
             if (partial || serverMethods == null) {

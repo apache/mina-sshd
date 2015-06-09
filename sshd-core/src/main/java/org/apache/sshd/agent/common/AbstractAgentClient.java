@@ -34,10 +34,10 @@ import java.util.List;
 
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.common.config.keys.KeyUtils;
-import org.apache.sshd.common.util.AbstractLoggingBean;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 public abstract class AbstractAgentClient extends AbstractLoggingBean {
 

@@ -28,7 +28,7 @@ import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.callback.UnsupportedCallbackException;
 import javax.security.auth.login.LoginContext;
 
-import org.apache.sshd.common.util.AbstractLoggingBean;
+import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.server.PasswordAuthenticator;
 import org.apache.sshd.server.session.ServerSession;
 

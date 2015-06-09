@@ -31,9 +31,9 @@ import java.util.EnumSet;
 import java.util.Set;
 
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.IoUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.session.ServerSession;
 
 /**

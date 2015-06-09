@@ -82,8 +82,8 @@ import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.config.SshConfigFileReader;
 import org.apache.sshd.common.sftp.SftpConstants;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.IoUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.io.IoUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

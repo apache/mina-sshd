@@ -25,7 +25,7 @@ import java.security.PublicKey;
 import org.apache.sshd.client.ServerKeyVerifier;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.config.keys.KeyUtils;
-import org.apache.sshd.common.util.AbstractLoggingBean;
+import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
  * Returns the same constant answer {@code true/false} regardless

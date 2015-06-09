@@ -43,11 +43,11 @@ import java.util.concurrent.TimeUnit;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.file.util.MockPath;
 import org.apache.sshd.common.scp.ScpTransferEventListener.FileOperation;
-import org.apache.sshd.common.util.AbstractLoggingBean;
 import org.apache.sshd.common.util.DirectoryScanner;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.IoUtils;
+import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.LimitInputStream;
+import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>

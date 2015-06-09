@@ -26,9 +26,9 @@ import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.SshAgentServer;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.session.ConnectionService;
-import org.apache.sshd.common.util.AbstractLoggingBean;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
  * The server side fake agent, acting as an agent, but actually forwarding the requests to the auth channel on the client side.

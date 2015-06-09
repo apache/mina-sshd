@@ -33,8 +33,8 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.sshd.common.util.AbstractLoggingBean;
-import org.apache.sshd.common.util.IoUtils;
+import org.apache.sshd.common.util.io.IoUtils;
+import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>

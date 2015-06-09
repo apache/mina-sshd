@@ -23,9 +23,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.sshd.common.config.keys.KeyUtils;
-import org.apache.sshd.common.util.AbstractLoggingBean;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
  * TODO Add javadoc

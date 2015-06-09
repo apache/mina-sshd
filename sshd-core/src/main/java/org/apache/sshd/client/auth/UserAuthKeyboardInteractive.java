@@ -33,9 +33,9 @@ import org.apache.sshd.client.UserInteraction;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
-import org.apache.sshd.common.util.AbstractLoggingBean;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
  * TODO Add javadoc

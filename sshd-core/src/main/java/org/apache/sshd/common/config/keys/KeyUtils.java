@@ -18,17 +18,24 @@
  */
 package org.apache.sshd.common.config.keys;
 
+import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.security.Key;
 import java.security.KeyPair;
+import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.interfaces.DSAKey;
 import java.security.interfaces.DSAParams;
+import java.security.interfaces.DSAPrivateKey;
 import java.security.interfaces.DSAPublicKey;
 import java.security.interfaces.ECKey;
+import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAKey;
+import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.ECParameterSpec;
+import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -51,11 +58,11 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class KeyUtils {
-    private static final Map<String,PublicKeyEntryDecoder<? extends PublicKey>> byKeyTypeDecodersMap =
-            new TreeMap<String, PublicKeyEntryDecoder<? extends PublicKey>>(String.CASE_INSENSITIVE_ORDER);
-    private static final Map<Class<?>,PublicKeyEntryDecoder<? extends PublicKey>> byKeyClassDecodersMap =
-            new HashMap<Class<?>, PublicKeyEntryDecoder<? extends PublicKey>>();
+public final class KeyUtils {
+    private static final Map<String,PublicKeyEntryDecoder<?,?>> byKeyTypeDecodersMap =
+            new TreeMap<String, PublicKeyEntryDecoder<?,?>>(String.CASE_INSENSITIVE_ORDER);
+    private static final Map<Class<?>,PublicKeyEntryDecoder<?,?>> byKeyClassDecodersMap =
+            new HashMap<Class<?>, PublicKeyEntryDecoder<?,?>>();
 
     static {
         registerPublicKeyEntryDecoder(RSAPublicKeyDecoder.INSTANCE);
@@ -67,18 +74,61 @@ public class KeyUtils {
         throw new UnsupportedOperationException("No instance");
     }
 
-    public static void registerPublicKeyEntryDecoder(PublicKeyEntryDecoder<? extends PublicKey> decoder) {
+    /**
+     * @param keyType The key type - {@code OpenSSH} name - e.g., {@code ssh-rsa, ssh-dss}
+     * @param keySize The key size (in bits)
+     * @return A {@link KeyPair} of the specified type and size
+     * @throws GeneralSecurityException If failed to generate the key pair
+     * @see #getPublicKeyEntryDecoder(String)
+     * @see PublicKeyEntryDecoder#generateKeyPair(int)
+     */
+    public static KeyPair generateKeyPair(String keyType, int keySize) throws GeneralSecurityException {
+        PublicKeyEntryDecoder<?,?> decoder = getPublicKeyEntryDecoder(keyType);
+        if (decoder == null) {
+            throw new InvalidKeySpecException("No decoder for key type=" + keyType);
+        }
+        
+        return decoder.generateKeyPair(keySize);
+    }
+
+    /**
+     * Performs a deep-clone of the original {@link KeyPair} - i.e., creates
+     * <U>new</U> public/private keys that are clones of the original one
+     * @param keyType The key type - {@code OpenSSH} name - e.g., {@code ssh-rsa, ssh-dss}
+     * @param kp The {@link KeyPair} to clone - ignored if {@code null}
+     * @return The cloned instance
+     * @throws GeneralSecurityException If failed to clone the pair
+     */
+    public static KeyPair cloneKeyPair(String keyType, KeyPair kp) throws GeneralSecurityException {
+        PublicKeyEntryDecoder<?,?> decoder = getPublicKeyEntryDecoder(keyType);
+        if (decoder == null) {
+            throw new InvalidKeySpecException("No decoder for key type=" + keyType);
+        }
+
+        return decoder.cloneKeyPair(kp);
+    }
+
+    /**
+     * @param decoder The decoder to register
+     * @throws IllegalArgumentException if no decoder or not key type or no
+     * supported names for the decoder
+     * @see PublicKeyEntryDecoder#getPublicKeyType()
+     * @see PublicKeyEntryDecoder#getSupportedTypeNames()
+     */
+    public static void registerPublicKeyEntryDecoder(PublicKeyEntryDecoder<?,?> decoder) {
         ValidateUtils.checkNotNull(decoder, "No decoder specified", GenericUtils.EMPTY_OBJECT_ARRAY);
 
-        Class<?> keyType = ValidateUtils.checkNotNull(decoder.getKeyType(), "No key type declared", GenericUtils.EMPTY_OBJECT_ARRAY);
+        Class<?> pubType = ValidateUtils.checkNotNull(decoder.getPublicKeyType(), "No public key type declared", GenericUtils.EMPTY_OBJECT_ARRAY);
+        Class<?> prvType = ValidateUtils.checkNotNull(decoder.getPrivateKeyType(), "No private key type declared", GenericUtils.EMPTY_OBJECT_ARRAY);
         synchronized(byKeyClassDecodersMap) {
-            byKeyClassDecodersMap.put(keyType, decoder);
+            byKeyClassDecodersMap.put(pubType, decoder);
+            byKeyClassDecodersMap.put(prvType, decoder);
         }
 
         Collection<String> names = ValidateUtils.checkNotNullAndNotEmpty(decoder.getSupportedTypeNames(), "No supported key type", GenericUtils.EMPTY_OBJECT_ARRAY);
         synchronized(byKeyTypeDecodersMap) {
             for (String n : names) {
-                PublicKeyEntryDecoder<? extends PublicKey>  prev = byKeyTypeDecodersMap.put(n, decoder);
+                PublicKeyEntryDecoder<?,?>  prev = byKeyTypeDecodersMap.put(n, decoder);
                 if (prev != null) {
                     continue;   // debug breakpoint
                 }
@@ -87,10 +137,11 @@ public class KeyUtils {
     }
 
     /**
-     * @param keyType The {@code OpenSSH} key type string - ignored if {@code null}/empty
+     * @param keyType The {@code OpenSSH} key type string -  e.g., {@code ssh-rsa, ssh-dss}
+     * - ignored if {@code null}/empty
      * @return The registered {@link PublicKeyEntryDecoder} or {code null} if not found
      */
-    public static PublicKeyEntryDecoder<? extends PublicKey> getPublicKeyEntryDecoder(String keyType) {
+    public static PublicKeyEntryDecoder<?,?> getPublicKeyEntryDecoder(String keyType) {
         if (GenericUtils.isEmpty(keyType)) {
             return null;
         }
@@ -101,11 +152,11 @@ public class KeyUtils {
     }
     
     /**
-     * @param key The {@link PublicKey} - ignored if {@code null}
+     * @param key The {@link Key} (public or private) - ignored if {@code null}
      * @return The registered {@link PublicKeyEntryDecoder} for this key or {code null} if no match found
      * @see #getPublicKeyEntryDecoder(Class)
      */
-    public static PublicKeyEntryDecoder<? extends PublicKey> getPublicKeyEntryDecoder(PublicKey key) {
+    public static PublicKeyEntryDecoder<?,?> getPublicKeyEntryDecoder(Key key) {
         if (key == null) {
             return null;
         } else {
@@ -114,27 +165,27 @@ public class KeyUtils {
     }
 
     /**
-     * @param keyType The key {@link Class} - ignored if {@code null} or not a {@link PublicKey}
+     * @param keyType The key {@link Class} - ignored if {@code null} or not a {@link Key}
      * compatible type
      * @return The registered {@link PublicKeyEntryDecoder} or {code null} if no match found
      */
-    public static PublicKeyEntryDecoder<? extends PublicKey> getPublicKeyEntryDecoder(Class<?> keyType) {
-        if ((keyType == null) || (!PublicKey.class.isAssignableFrom(keyType))) {
+    public static PublicKeyEntryDecoder<?,?> getPublicKeyEntryDecoder(Class<?> keyType) {
+        if ((keyType == null) || (!Key.class.isAssignableFrom(keyType))) {
             return null;
         }
         
         synchronized(byKeyTypeDecodersMap) {
             {
-                PublicKeyEntryDecoder<? extends PublicKey>  decoder=byKeyClassDecodersMap.get(keyType);
+                PublicKeyEntryDecoder<?,?>  decoder=byKeyClassDecodersMap.get(keyType);
                 if (decoder != null) {
                     return decoder;
                 }
             }
             
             // in case it is a derived class
-            for (PublicKeyEntryDecoder<? extends PublicKey> decoder : byKeyClassDecodersMap.values()) {
-                Class<?> t = decoder.getKeyType();
-                if (t.isAssignableFrom(keyType)) {
+            for (PublicKeyEntryDecoder<?,?> decoder : byKeyClassDecodersMap.values()) {
+                Class<?> pubType = decoder.getPublicKeyType(), prvType = decoder.getPrivateKeyType();
+                if (pubType.isAssignableFrom(keyType) || prvType.isAssignableFrom(keyType)) {
                     return decoder;
                 }
             }
@@ -157,14 +208,39 @@ public class KeyUtils {
         try {
             Buffer buffer = new ByteArrayBuffer();
             buffer.putRawPublicKey(key);
-            Digest md5 = BuiltinDigests.md5.create();
-            md5.init();
-            md5.update(buffer.array(), 0, buffer.wpos());
-            byte[] data = md5.digest();
-            return BufferUtils.printHex(data, 0, data.length, ':');
+            return getFingerPrint(buffer.array(), 0, buffer.wpos());
         } catch(Exception e) {
-            return "Unable to compute fingerprint";
+            return e.getClass().getSimpleName();
         }
+    }
+
+    public static String getFingerPrint(String password) {
+        if (GenericUtils.isEmpty(password)) {
+            return null;
+        }
+        
+        try {
+            return getFingerPrint(password.getBytes(StandardCharsets.UTF_8));
+        } catch(Exception e) {
+            return e.getClass().getSimpleName();
+        }
+    }
+    
+    public static String getFingerPrint(byte ... buf) throws Exception {
+        return getFingerPrint(buf, 0, GenericUtils.length(buf));
+    }
+    
+    public static String getFingerPrint(byte[] buf, int offset, int len) throws Exception {
+        if (len <= 0) {
+            return null;
+        }
+
+        Digest md5 = BuiltinDigests.md5.create();
+        md5.init();
+        md5.update(buf, offset, len);
+
+        byte[] data = md5.digest();
+        return BufferUtils.printHex(data, 0, data.length, ':');
     }
 
     /**
@@ -230,6 +306,72 @@ public class KeyUtils {
         }
         
         return null;
+    }
+
+    public static boolean compareKeyPairs(KeyPair k1, KeyPair k2) {
+        if (Objects.equals(k1, k2)) {
+            return true;
+        } else if ((k1 == null) || (k2 == null)) {
+            return false;   // both null is covered by Objects#equals
+        }
+        
+        if (compareKeys(k1.getPublic(), k2.getPublic())
+         && compareKeys(k1.getPrivate(), k2.getPrivate())) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public static boolean compareKeys(PrivateKey k1, PrivateKey k2) {
+        if ((k1 instanceof RSAPrivateKey) && (k2 instanceof RSAPrivateKey)) {
+            return compareRSAKeys(RSAPrivateKey.class.cast(k1), RSAPrivateKey.class.cast(k2));
+        } else if ((k1 instanceof DSAPrivateKey) && (k2 instanceof DSAPrivateKey)) {
+            return compareDSAKeys(DSAPrivateKey.class.cast(k1), DSAPrivateKey.class.cast(k2));
+        } else if ((k1 instanceof ECPrivateKey) && (k2 instanceof ECPrivateKey)) {
+            return compareECKeys(ECPrivateKey.class.cast(k1), ECPrivateKey.class.cast(k2));
+        } else {
+            return false;   // either key is null or not of same class
+        }
+    }
+
+    public static boolean compareRSAKeys(RSAPrivateKey k1, RSAPrivateKey k2) {
+        if (Objects.equals(k1, k2)) {
+            return true;
+        } else if ((k1 == null) || (k2 == null)) {
+            return false;   // both null is covered by Objects#equals
+        } else if (Objects.equals(k1.getModulus(), k2.getModulus())
+                && Objects.equals(k1.getPrivateExponent(), k2.getPrivateExponent())) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public static boolean compareDSAKeys(DSAPrivateKey k1, DSAPrivateKey k2) {
+        if (Objects.equals(k1, k2)) {
+            return true;
+        } else if ((k1 == null) || (k2 == null)) {
+            return false;   // both null is covered by Objects#equals
+        } else if (Objects.equals(k1.getX(), k2.getAlgorithm())
+                && compareDSAParams(k1.getParams(), k2.getParams())) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public static boolean compareECKeys(ECPrivateKey k1, ECPrivateKey k2) {
+        if (Objects.equals(k1, k2)) {
+            return true;
+        } else if ((k1 == null) || (k2 == null)) {
+            return false;   // both null is covered by Objects#equals
+        } else if (Objects.equals(k1.getS(), k2.getS())
+                && compareECParams(k1.getParams(), k2.getParams())) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
     public static boolean compareKeys(PublicKey k1, PublicKey k2) {

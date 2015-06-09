@@ -26,20 +26,23 @@ import java.io.OutputStream;
 import java.io.StreamCorruptedException;
 import java.math.BigInteger;
 import java.security.GeneralSecurityException;
+import java.security.InvalidKeyException;
 import java.security.KeyFactory;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.security.NoSuchProviderException;
+import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.spec.ECParameterSpec;
 import java.security.spec.ECPoint;
+import java.security.spec.ECPrivateKeySpec;
 import java.security.spec.ECPublicKeySpec;
 import java.security.spec.InvalidKeySpecException;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
 
 import org.apache.sshd.common.cipher.ECCurves;
-import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -48,13 +51,11 @@ import org.apache.sshd.common.util.buffer.BufferUtils;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<ECPublicKey> {
+public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<ECPublicKey,ECPrivateKey> {
     public static final ECDSAPublicKeyEntryDecoder INSTANCE = new ECDSAPublicKeyEntryDecoder();
 
     public ECDSAPublicKeyEntryDecoder() {
-        super(ECPublicKey.class,
-              Collections.unmodifiableList(
-                  Arrays.asList(KeyPairProvider.ECDSA_SHA2_NISTP256, KeyPairProvider.ECDSA_SHA2_NISTP384, KeyPairProvider.ECDSA_SHA2_NISTP521)));
+        super(ECPublicKey.class, ECPrivateKey.class, ECCurves.TYPES);
     }
 
     @Override
@@ -96,6 +97,42 @@ public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<EC
     }
 
     @Override
+    public ECPublicKey clonePublicKey(ECPublicKey key) throws GeneralSecurityException {
+        if (!SecurityUtils.hasEcc()) {
+            throw new NoSuchProviderException("ECC not supported");
+        }
+
+        if (key == null) {
+            return null;
+        }
+        
+        ECParameterSpec params = key.getParams();
+        if (params == null) {
+            throw new InvalidKeyException("Missing parameters in key");
+        }
+
+        return generatePublicKey(new ECPublicKeySpec(key.getW(), params));
+    }
+
+    @Override
+    public ECPrivateKey clonePrivateKey(ECPrivateKey key) throws GeneralSecurityException {
+        if (!SecurityUtils.hasEcc()) {
+            throw new NoSuchProviderException("ECC not supported");
+        }
+
+        if (key == null) {
+            return null;
+        }
+        
+        ECParameterSpec params = key.getParams();
+        if (params == null) {
+            throw new InvalidKeyException("Missing parameters in key");
+        }
+
+        return generatePrivateKey(new ECPrivateKeySpec(key.getS(), params));
+    }
+
+    @Override
     public String encodePublicKey(OutputStream s, ECPublicKey key) throws IOException {
         ValidateUtils.checkNotNull(key, "No public key provided", GenericUtils.EMPTY_OBJECT_ARRAY);
         
@@ -113,6 +150,32 @@ public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<EC
     public KeyFactory getKeyFactoryInstance() throws GeneralSecurityException {
         if (SecurityUtils.hasEcc()) {
             return SecurityUtils.getKeyFactory("EC");
+        } else {
+            throw new NoSuchProviderException("ECC not supported");
+        }
+    }
+
+    @Override
+    public KeyPair generateKeyPair(int keySize) throws GeneralSecurityException {
+        String curveName = ECCurves.getCurveName(keySize);
+        if (GenericUtils.isEmpty(curveName)) {
+            throw new InvalidKeySpecException("Unknown curve for key size=" + keySize);
+        }
+        
+        ECParameterSpec params = ECCurves.getECParameterSpec(curveName);
+        if (params == null) {
+            throw new InvalidKeySpecException("No curve parameters available for " + curveName);
+        }
+
+        KeyPairGenerator gen = getKeyPairGenerator();
+        gen.initialize(params);
+        return gen.generateKeyPair();
+    }
+
+    @Override
+    public KeyPairGenerator getKeyPairGenerator() throws GeneralSecurityException {
+        if (SecurityUtils.hasEcc()) {
+            return SecurityUtils.getKeyPairGenerator("EC");
         } else {
             throw new NoSuchProviderException("ECC not supported");
         }

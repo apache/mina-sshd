@@ -35,10 +35,14 @@ import java.util.TreeSet;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class GenericUtils {
+public final class GenericUtils {
     public static final byte[]      EMPTY_BYTE_ARRAY={ };
     public static final String[]    EMPTY_STRING_ARRAY={ };
     public static final Object[]    EMPTY_OBJECT_ARRAY={ };
+
+    private GenericUtils() {
+        throw new UnsupportedOperationException("No instance");
+    }
 
     public static final String trimToEmpty(String s) {
         if (s == null) {
@@ -332,5 +336,28 @@ public class GenericUtils {
         } else {
             return s.subSequence(1, lastPos);
         }
+    }
+    
+    /**
+     * Used to &quot;accumulate&quot; exceptions of the <U>same type</U>. If the
+     * current exception is {@code null} then the new one becomes the current,
+     * otherwise the new one is added as a <U>suppressed</U> exception to the
+     * current one
+     * @param current The current exception
+     * @param extra The extra/new exception
+     * @return The resolved exception
+     * @see Throwable#addSuppressed(Throwable)
+     */
+    public static <T extends Throwable> T accumulateException(T current, T extra) {
+        if (current == null) {
+            return extra;
+        }
+        
+        if ((extra == null) || (extra == current)) {
+            return current;
+        }
+        
+        current.addSuppressed(extra);
+        return current;
     }
 }

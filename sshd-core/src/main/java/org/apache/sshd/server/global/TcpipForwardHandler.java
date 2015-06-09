@@ -23,8 +23,8 @@ import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.channel.RequestHandler;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
-import org.apache.sshd.common.util.AbstractLoggingBean;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
  * Handler for tcpip-forward global request.

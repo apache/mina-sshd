@@ -68,8 +68,31 @@ public interface ClientSession extends Session {
     int WAIT_AUTH =   0x0004;
     int AUTHED =      0x0008;
 
+    /**
+     * @param password Password to be added - may not be {@code null}/empty
+     */
     void addPasswordIdentity(String password);
+
+    /**
+     * @param password The password to remove - ignored if {@code null}/empty
+     * @return The removed password - same one that was added via
+     * {@link #addPasswordIdentity(String)} - or {@code null} if no
+     * match found 
+     */
+    String removePasswordIdentity(String password);
+
+    /**
+     * @param key The {@link KeyPair} to add - may not be {@code null}
+     */
     void addPublicKeyIdentity(KeyPair key);
+
+    /**
+     * @param kp The {@link KeyPair} to remove - ignored if {@code null}
+     * @return The removed {@link KeyPair} - same one that was added via
+     * {@link #addPublicKeyIdentity(KeyPair)} - or {@code null} if no
+     * match found
+     */
+    KeyPair removePublicKeyIdentity(KeyPair kp);
 
     UserInteraction getUserInteraction();
     void setUserInteraction(UserInteraction userInteraction);

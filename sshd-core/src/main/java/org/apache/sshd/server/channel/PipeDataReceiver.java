@@ -25,8 +25,8 @@ import java.io.OutputStream;
 import org.apache.sshd.common.channel.ChannelPipedInputStream;
 import org.apache.sshd.common.channel.ChannelPipedOutputStream;
 import org.apache.sshd.common.channel.Window;
-import org.apache.sshd.common.util.AbstractLoggingBean;
 import org.apache.sshd.common.util.io.LoggingFilterOutputStream;
+import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
  * {@link ChannelDataReceiver} that buffers the received data into byte buffer

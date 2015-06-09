@@ -18,7 +18,7 @@
  */
 package org.apache.sshd.server;
 
-import org.apache.sshd.common.util.AbstractLoggingBean;
+import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
