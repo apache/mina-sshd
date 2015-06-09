@@ -18,6 +18,8 @@
  */
 package org.apache.sshd.common.cipher;
 
+import org.apache.sshd.common.util.GenericUtils;
+
 
 /**
  * Represents a no-op cipher.
@@ -28,20 +30,28 @@ package org.apache.sshd.common.cipher;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class CipherNone implements Cipher {
+    public CipherNone() {
+        super();
+    }
 
     @Override
     public int getIVSize() {
-        return 8;
+        return 8;   // dummy
     }
 
     @Override
     public int getBlockSize() {
-        return 16;
+        return 16;  // dummy
     }
 
     @Override
     public void init(Mode mode, byte[] bytes, byte[] bytes1) throws Exception {
         // ignored - always succeeds
+    }
+
+    @Override
+    public void update(byte[] input) throws Exception {
+        update(input, 0, GenericUtils.length(input));
     }
 
     @Override

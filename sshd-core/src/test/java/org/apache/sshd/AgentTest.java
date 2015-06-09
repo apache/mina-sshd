@@ -131,7 +131,7 @@ public class AgentTest extends BaseTestSupport {
                     client1.start();
                     
                     try(ClientSession session1 = client1.connect(username, "localhost", port1).await().getSession()) {
-                        session1.auth().verify(10L, TimeUnit.SECONDS);
+                        session1.auth().verify(15L, TimeUnit.SECONDS);
 
                         try(ChannelShell channel1 = session1.createShellChannel();
                             ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -156,7 +156,7 @@ public class AgentTest extends BaseTestSupport {
                                     client2.start();
                                     
                                     try(ClientSession session2 = client2.connect(username, "localhost", port2).await().getSession()) {
-                                        session2.auth().verify(5L, TimeUnit.SECONDS);
+                                        session2.auth().verify(15L, TimeUnit.SECONDS);
 
                                         try(ChannelShell channel2 = session2.createShellChannel()) {
                                             channel2.setIn(shellFactory.shell.getIn());

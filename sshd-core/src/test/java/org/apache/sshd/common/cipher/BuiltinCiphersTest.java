@@ -22,16 +22,20 @@ package org.apache.sshd.common.cipher;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
+import org.apache.sshd.client.SshClient;
+import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.cipher.BuiltinCiphers.ParseResult;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -103,18 +107,83 @@ public class BuiltinCiphersTest extends BaseTestSupport {
         assertEquals("Incomplete coverage", BuiltinCiphers.VALUES, avail);
     }
 
-    @Test
+    @Test   // make sure that if a cipher is reported as supported we can indeed use it
     public void testSupportedCipher() throws Exception {
-        for (BuiltinCiphers expected : BuiltinCiphers.VALUES) {
-            if (!expected.isSupported()) {
-                System.out.append("Skip unsupported cipher: ").println(expected);
-                continue;
+        Exception err = null;
+        Random  rnd = new Random(System.nanoTime());
+        for (BuiltinCiphers c : BuiltinCiphers.VALUES) {
+            if (c.isSupported()) {
+                try {
+                    testCipherEncryption(rnd, c.create());
+                } catch(Exception e) {
+                    System.err.println("Failed (" + e.getClass().getSimpleName() + ") to encrypt using " + c + ": " + e.getMessage());
+                    err = e;
+                }
+            } else {
+                System.out.append("Skip unsupported cipher: ").println(c);
             }
-            Cipher cipher = expected.create();
-            byte[] key = new byte[cipher.getBlockSize()];
-            byte[] iv = new byte[cipher.getIVSize()];
-            cipher.init(Cipher.Mode.Encrypt, key, iv);
         }
+        
+        if (err != null) {
+            throw err;
+        }
+    }
+
+    @Test   // make sure that the reported support matches reality by trying to encrypt something
+    public void testCipherSupportDetection() throws Exception {
+        Random  rnd = new Random(System.nanoTime());
+        for (BuiltinCiphers c : BuiltinCiphers.VALUES) {
+            try {
+                testCipherEncryption(rnd, c.create());
+                assertTrue("Mismatched support report for " + c, c.isSupported());
+            } catch(Exception e) {
+                assertFalse("Mismatched support report for " + c, c.isSupported());
+            }
+        }
+    }
+
+    @Test
+    public void testSshClientSupportedCiphersConfiguration() throws Exception {
+        try(SshClient client = SshClient.setUpDefaultClient()) {
+            testSupportedCiphersConfiguration(client);
+        }
+    }
+
+    @Test
+    public void testSshSercerSupportedCiphersConfiguration() throws Exception {
+        try(SshServer server = SshServer.setUpDefaultServer()) {
+            testSupportedCiphersConfiguration(server);
+        }
+    }
+
+    private static <M extends FactoryManager> M testSupportedCiphersConfiguration(M manager) {
+        Collection<? extends NamedResource> factories = manager.getCipherFactories();
+        List<String> names = NamedResource.Utils.getNameList(factories);
+        for (BuiltinCiphers c : BuiltinCiphers.VALUES) {
+            if (BuiltinCiphers.none.equals(c)) {
+                continue;   // not always included by default + it is a dummy cipher
+            }
+
+            // for now, all key sizes below 128 are supported in JVM(s)
+            if (c.getKeySize() <= 128) {
+                assertTrue("Supported cipher not configured by default: " + c, names.contains(c.getName()));
+            }
+        }
+        
+        return manager;
+    }
+
+    private static void testCipherEncryption(Random rnd, Cipher cipher) throws Exception {
+        byte[] key=new byte[cipher.getBlockSize()];
+        rnd.nextBytes(key);
+        byte[] iv=new byte[cipher.getIVSize()];
+        rnd.nextBytes(iv);
+        cipher.init(Cipher.Mode.Encrypt, key, iv);
+
+        byte[] data=new byte[cipher.getBlockSize()];
+        rnd.nextBytes(data);
+        
+        cipher.update(data);
     }
 
     @Test

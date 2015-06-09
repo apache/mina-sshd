@@ -72,8 +72,10 @@ public enum BuiltinCiphers implements CipherFactory {
     private final String factoryName;
     private final int ivsize;
     private final int blocksize;
+    private final int keysize;
     private final String algorithm;
     private final String transformation;
+    private final boolean supported;
 
     @Override
     public final String getName() {
@@ -89,9 +91,16 @@ public enum BuiltinCiphers implements CipherFactory {
         this.factoryName = factoryName;
         this.ivsize = ivsize;
         this.blocksize = blocksize;
+        this.keysize = blocksize * Byte.SIZE;
         this.algorithm = algorithm;
         this.transformation = transformation;
-
+        /*
+         * This can be done once since in order to change the support the JVM
+         * needs to be stopped, some unlimited-strength files need be installed
+         * and then the JVM re-started. Therefore, the answer is not going to
+         * change while the JVM is running 
+         */
+        this.supported = checkSupported(this.transformation, this.keysize);
     }
 
     /**
@@ -101,45 +110,51 @@ public enum BuiltinCiphers implements CipherFactory {
      */
     @Override
     public boolean isSupported() {
+        return supported;
+    }
+
+    private static boolean checkSupported(String xform, int keyLength) {
         try {
-            int maxKeyLength = javax.crypto.Cipher.getMaxAllowedKeyLength(getAlgorithm());
-            return maxKeyLength >= (1l << getBlockSize());
+            int maxKeyLength = javax.crypto.Cipher.getMaxAllowedKeyLength(xform);
+            if (maxKeyLength >= keyLength) {
+                return true;
+            } else {
+                return false;   // debug breakpoint
+            }
         } catch (Exception e) {
             return false;
         }
     }
+    /**
+     * @return The key size (in bits) for the cipher
+     */
+    public int getKeySize() {
+        return keysize;
+    }
 
     /**
-     * Retrieves the size of the initialization vector
-     *
-     * @return
+     * @return The size of the initialization vector
      */
     public int getIVSize() {
         return ivsize;
     }
 
     /**
-     * Retrieves the block size for this cipher
-     *
-     * @return
+     * @return The block size for this cipher
      */
     public int getBlockSize() {
         return blocksize;
     }
 
     /**
-     * Retrieves the algorithm for this cipher
-     *
-     * @return
+     * @return The algorithm for this cipher
      */
     public String getAlgorithm() {
         return algorithm;
     }
 
     /**
-     * Retrieves the algorithm for this cipher
-     *
-     * @return
+     * @return The transformation for this cipher
      */
     public String getTransformation() {
         return transformation;

@@ -57,6 +57,13 @@ public interface Cipher  {
 
     /**
      * Performs in-place encryption or decryption on the given data.
+     * @param input The input/output bytes
+     * @throws Exception
+     */
+    void update(byte[] input) throws Exception;
+
+    /**
+     * Performs in-place encryption or decryption on the given data.
      * 
      * @param input
      * @param inputOffset
