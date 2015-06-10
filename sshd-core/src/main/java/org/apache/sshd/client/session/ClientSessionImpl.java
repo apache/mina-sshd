@@ -44,6 +44,7 @@ import org.apache.sshd.client.sftp.DefaultSftpClient;
 import org.apache.sshd.client.sftp.SftpClient;
 import org.apache.sshd.client.sftp.SftpFileSystem;
 import org.apache.sshd.client.sftp.SftpFileSystemProvider;
+import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.ServiceFactory;
@@ -476,13 +477,15 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
     }
 
     protected void sendClientIdentification() {
-        clientVersion = "SSH-2.0-" + getFactoryManager().getVersion();
+        FactoryManager manager = getFactoryManager();
+        clientVersion = "SSH-2.0-" + manager.getVersion();
         sendIdentification(clientVersion);
     }
 
     @Override
     protected void sendKexInit() throws IOException {
-        String algs = NamedResource.Utils.getNames(getFactoryManager().getSignatureFactories());
+        FactoryManager manager = getFactoryManager();
+        String algs = NamedResource.Utils.getNames(manager.getSignatureFactories());
         clientProposal = createProposal(algs);
         I_C = sendKexInit(clientProposal);
     }
@@ -495,7 +498,8 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
 
     @Override
     protected void checkKeys() throws SshException {
-        ServerKeyVerifier serverKeyVerifier = getFactoryManager().getServerKeyVerifier();
+        ClientFactoryManager manager = getFactoryManager();
+        ServerKeyVerifier serverKeyVerifier = manager.getServerKeyVerifier();
         SocketAddress remoteAddress = ioSession.getRemoteAddress();
 
         if (!serverKeyVerifier.verifyServerKey(this, remoteAddress, kex.getServerKey())) {

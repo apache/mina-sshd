@@ -22,17 +22,18 @@ package org.apache.sshd.client;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.Closeable;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.InterruptedIOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.io.Writer;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.nio.channels.Channel;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
@@ -46,13 +47,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 
 import org.apache.sshd.client.future.ConnectFuture;
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.cipher.ECCurves;
@@ -63,6 +67,8 @@ import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionListener;
+import org.apache.sshd.common.signature.BuiltinSignatures;
+import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -75,15 +81,18 @@ import org.apache.sshd.common.util.logging.LoggingUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class SshKeyScan extends AbstractSimplifiedLog
-                        implements Closeable, Callable<Void>, ServerKeyVerifier, SessionListener {
+                        implements Channel, Callable<Void>, ServerKeyVerifier, SessionListener {
+    public static final String RSA_KEY_TYPE = "rsa", DSS_KEY_TYPE = "dsa", EC_KEY_TYPE = "ecdsa";
     /**
      * Default key types if not overridden from the command line
      */
     public static final List<String> DEFAULT_KEY_TYPES =
-            Collections.unmodifiableList(Arrays.asList("rsa", "ecdsa"));
+            Collections.unmodifiableList(Arrays.asList(RSA_KEY_TYPE, EC_KEY_TYPE));
     public static final long DEFAULT_TIMEOUT = TimeUnit.SECONDS.toMillis(5L);
     public static final Level DEFAULT_LEVEL = Level.INFO;
 
+    private final AtomicBoolean open = new AtomicBoolean(true);
+    private SshClient client;
     private int port;
     private long timeout;
     private List<String> keyTypes;
@@ -157,34 +166,77 @@ public class SshKeyScan extends AbstractSimplifiedLog
 
     @Override
     public Void call() throws Exception {
+        ValidateUtils.checkTrue(isOpen(), "Scanner is closed", GenericUtils.EMPTY_OBJECT_ARRAY);
+
+        Collection<String> typeNames = getKeyTypes();
+        Map<String,List<KeyPair>> pairsMap = createKeyPairs(typeNames);
+        /*
+         * We will need to switch signature factories for each specific
+         * key type in order to force the server to send ONLY that specific
+         * key, so pre-create the factories map according to the selected
+         * key types
+         */
+        Map<String,List<NamedFactory<Signature>>> sigFactories = new TreeMap<String,List<NamedFactory<Signature>>>(String.CASE_INSENSITIVE_ORDER);
+        for (String kt : new TreeSet<String>(pairsMap.keySet())) {
+            List<NamedFactory<Signature>> factories = resolveSignatureFactories(kt);
+            if (GenericUtils.isEmpty(factories)) {
+                if (isEnabled(Level.FINEST)) {
+                    log(Level.FINEST, "Skip empty signature factories for " + kt);
+                }
+                pairsMap.remove(kt);
+            } else {
+                sigFactories.put(kt, factories);
+            }
+        }
+
+        ValidateUtils.checkTrue(!GenericUtils.isEmpty(pairsMap), "No client key pairs", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkTrue(!GenericUtils.isEmpty(sigFactories), "No signature factories", GenericUtils.EMPTY_OBJECT_ARRAY);
+
         Exception err = null;
-        try(SshClient   client = SshClient.setUpDefaultClient()) {
-            Collection<String> typeNames = getKeyTypes();
-            Map<String,KeyPair> pairsMap = createKeyPairs(typeNames);
+        try {
+            ValidateUtils.checkTrue(client == null, "Client still active", GenericUtils.EMPTY_OBJECT_ARRAY);
+            client = SshClient.setUpDefaultClient();
             client.setServerKeyVerifier(this);
 
-            try(BufferedReader rdr = new BufferedReader(new InputStreamReader(getInputStream(), StandardCharsets.UTF_8))) {
+            BufferedReader rdr = new BufferedReader(new InputStreamReader(getInputStream(), StandardCharsets.UTF_8));
+            try {
                 client.start();
-
                 for (String line = rdr.readLine(); line != null; line = rdr.readLine()) {
-                    line = GenericUtils.trimToEmpty(line);
-                    if (GenericUtils.isEmpty(line)) {
+                    String[] hosts = GenericUtils.split(GenericUtils.trimToEmpty(line), ',');
+                    if (GenericUtils.isEmpty(hosts)) {
                         continue;
                     }
                     
-                    try {
-                        resolveServerKeys(client, line, pairsMap);
-                    } catch(Exception e) {
-                        if (isEnabled(Level.FINE)) {
-                            log(Level.FINE, "Failed to retrieve keys from " + line, e);
+                    for (String h : hosts) {
+                        if (!isOpen()) {
+                            throw new InterruptedIOException("Closed while preparing to contact host=" + h);
                         }
-                        err = GenericUtils.accumulateException(err, e);
-                    } finally {
-                        currentHostFingerprints.clear();
+
+                        try {
+                            resolveServerKeys(client, h, pairsMap, sigFactories);
+                        } catch(Exception e) {
+                            // check if interrupted while scanning host keys
+                            if (e instanceof InterruptedIOException) {
+                                throw e;
+                            }
+
+                            if (isEnabled(Level.FINE)) {
+                                log(Level.FINE, "Failed to retrieve keys from " + h, e);
+                            }
+                            err = GenericUtils.accumulateException(err, e);
+                        } finally {
+                            currentHostFingerprints.clear();
+                        }
                     }
                 }
             } finally {
-                client.stop();
+                rdr.close();
+            }
+        } finally {
+            try {
+                close();
+            } catch(IOException e) {
+                err = GenericUtils.accumulateException(err, e);
             }
         }
         
@@ -195,10 +247,22 @@ public class SshKeyScan extends AbstractSimplifiedLog
         return null;
     }
 
-    protected void resolveServerKeys(SshClient client, String host, Map<String,KeyPair> pairsMap) {
-        for (Map.Entry<String,KeyPair> pe : pairsMap.entrySet()) {
+    protected void resolveServerKeys(SshClient client, String host, Map<String,List<KeyPair>> pairsMap, Map<String,List<NamedFactory<Signature>>> sigFactories) throws IOException {
+        for (Map.Entry<String,List<KeyPair>> pe : pairsMap.entrySet()) {
             String kt = pe.getKey();
+            if (!isOpen()) {
+                throw new InterruptedIOException("Closed while attempting to retrieve key type=" + kt + " from " + host);
+            }
+
+            List<NamedFactory<Signature>> current = client.getSignatureFactories();
             try {
+                /*
+                 * Replace whatever factories there are right now with the
+                 * specific one for the key in order to extract only the
+                 * specific host key type
+                 */
+                List<NamedFactory<Signature>>   forced = sigFactories.get(kt);
+                client.setSignatureFactories(forced);
                 resolveServerKeys(client, host, kt, pe.getValue());
             } catch(Exception e) {
                 if (isEnabled(Level.FINE)) {
@@ -208,20 +272,24 @@ public class SshKeyScan extends AbstractSimplifiedLog
                 if (e instanceof ConnectException) {
                     return; // makes no sense to try again with another key type...
                 }
+            } finally {
+                client.setSignatureFactories(current);  // don't have to, but be nice...
             }
         }
     }
     
-    protected void resolveServerKeys(SshClient client, String host, String kt, KeyPair kp) throws Exception {
+    protected void resolveServerKeys(SshClient client, String host, String kt, List<KeyPair> ids) throws Exception {
         int connectPort = getPort();
         if (isEnabled(Level.FINE)) {
-            log(Level.FINE, "Connecting to " + host + ":" + connectPort);
+            log(Level.FINE, "Connecting to " + host + ":" + connectPort + " to retrieve key type=" + kt);
         }
 
         ConnectFuture future = client.connect(UUID.randomUUID().toString(), host, connectPort);
         long waitTime = getTimeout();
         if (!future.await(waitTime)) {
-            throw new ConnectException("Failed to connect to " + host + ":" + connectPort + " within " + waitTime + " msec.");
+            throw new ConnectException("Failed to connect to " + host + ":" + connectPort
+                                     + " within " + waitTime + " msec."
+                                     + " to retrieve key type=" + kt);
         }
 
         try(ClientSession session = future.getSession()) {
@@ -229,23 +297,30 @@ public class SshKeyScan extends AbstractSimplifiedLog
             SocketAddress remoteAddress = ioSession.getRemoteAddress();
             String remoteLocation = toString(remoteAddress);
             if (isEnabled(Level.FINE)) {
-                log(Level.FINE, "Connected to " + remoteLocation);
+                log(Level.FINE, "Connected to " + remoteLocation + " to retrieve key type=" + kt);
             }
 
             try {
                 session.addListener(this);
                 if (isEnabled(Level.FINER)) {
-                    log(Level.FINER, "Authenticating with " + kt + " to " + remoteLocation);
+                    log(Level.FINER, "Authenticating with key type=" + kt + " to " + remoteLocation);
                 }
 
-                // shouldn't really succeed, but do it since key exchange occurs only on auth attempt
-                session.addPublicKeyIdentity(kp);
+                for (KeyPair kp : ids) {
+                    session.addPublicKeyIdentity(kp);
+                }
+
                 try {
+                    // shouldn't really succeed, but do it since key exchange occurs only on auth attempt
                     session.auth().verify(waitTime);
                     log(Level.WARNING, "Unexpected authentication success using key type=" + kt + " with " + remoteLocation);
                 } catch(Exception e) {
                     if (isEnabled(Level.FINER)) {
                         log(Level.FINER, "Failed to authenticate using key type=" + kt + " with " + remoteLocation);
+                    }
+                } finally {
+                    for (KeyPair kp : ids) {
+                        session.removePublicKeyIdentity(kp);
                     }
                 }
             } finally {
@@ -290,8 +365,8 @@ public class SshKeyScan extends AbstractSimplifiedLog
     @Override
     public boolean verifyServerKey(ClientSession sshClientSession, SocketAddress remoteAddress, PublicKey serverKey) {
         String remoteLocation = toString(remoteAddress);
+        String extra = KeyUtils.getFingerPrint(serverKey);
         try {
-            String extra = KeyUtils.getFingerPrint(serverKey);
             String keyType = KeyUtils.getKeyType(serverKey);
             String current = GenericUtils.isEmpty(keyType) ? null : currentHostFingerprints.get(keyType);
             if (Objects.equals(current, extra)) {
@@ -303,19 +378,23 @@ public class SshKeyScan extends AbstractSimplifiedLog
                     log(Level.FINE, "verifyServerKey(" + remoteLocation + ")[" + keyType + "] found new key: " + extra);
                 }
 
-                StringBuilder   sb = new StringBuilder(256).append(remoteLocation).append(' ');
-                PublicKeyEntry.appendPublicKeyEntry(sb, serverKey);
-                log(Level.INFO, sb);
-                
+                writeServerKey(remoteLocation, keyType, serverKey);
+
                 if (!GenericUtils.isEmpty(keyType)) {
                     currentHostFingerprints.put(keyType, extra);
                 }
             }
         } catch(Exception e) {
-            log(Level.SEVERE, "Failed to output the public key from " + remoteLocation, e);
+            log(Level.SEVERE, "Failed to output the public key " + extra + " from " + remoteLocation, e);
         }
 
         return true;
+    }
+
+    protected void writeServerKey(String remoteLocation, String keyType, PublicKey serverKey) throws Exception {
+        StringBuilder sb = new StringBuilder(256).append(remoteLocation).append(' ');
+        PublicKeyEntry.appendPublicKeyEntry(sb, serverKey);
+        log(Level.INFO, sb);
     }
 
     private static final String toString(SocketAddress addr) {
@@ -330,47 +409,103 @@ public class SshKeyScan extends AbstractSimplifiedLog
         }
     }
 
-    protected Map<String,KeyPair> createKeyPairs(Collection<String> typeNames) throws GeneralSecurityException {
+    protected List<NamedFactory<Signature>> resolveSignatureFactories(String keyType) throws GeneralSecurityException {
+        if (isEnabled(Level.FINE)) {
+            log(Level.FINE, "Resolve signature factories for " + keyType);
+        }
+
+        if (RSA_KEY_TYPE.equalsIgnoreCase(keyType)) {
+            return Collections.singletonList((NamedFactory<Signature>) BuiltinSignatures.rsa);
+        } else if (DSS_KEY_TYPE.equalsIgnoreCase(keyType)) {
+            return Collections.singletonList((NamedFactory<Signature>) BuiltinSignatures.dsa);
+        } else if (EC_KEY_TYPE.equalsIgnoreCase(keyType)) {
+            List<NamedFactory<Signature>> factories = new ArrayList<NamedFactory<Signature>>(ECCurves.NAMES.size());
+            for (String n : ECCurves.NAMES) {
+                if (isEnabled(Level.FINER)) {
+                    log(Level.FINER, "Resolve signature factory for curve=" + n);
+                }
+
+                NamedFactory<Signature> f =
+                    ValidateUtils.checkNotNull(BuiltinSignatures.fromString(n), "Unknown curve signature: %s", n);
+                factories.add(f);
+            }
+
+            return factories;
+        } else {
+            throw new InvalidKeySpecException("Unknown key type: " + keyType);
+        }
+    }
+
+    protected Map<String,List<KeyPair>> createKeyPairs(Collection<String> typeNames) throws GeneralSecurityException {
         if (GenericUtils.isEmpty(typeNames)) {
             return Collections.emptyMap();
         }
 
-        Map<String,KeyPair> pairsMap = new TreeMap<String, KeyPair>(String.CASE_INSENSITIVE_ORDER);
+        Map<String,List<KeyPair>> pairsMap = new TreeMap<String,List<KeyPair>>(String.CASE_INSENSITIVE_ORDER);
         for (String kt : typeNames) {
-            if (isEnabled(Level.FINE)) {
-                log(Level.FINE, "Generate key pair for " + kt);
+            if (pairsMap.containsKey(kt)) {
+                log(Level.WARNING, "Key type " + kt + " re-specified");
+                continue;
             }
 
-            if ("rsa".equalsIgnoreCase(kt)) {
-                pairsMap.put(KeyPairProvider.SSH_RSA, KeyUtils.generateKeyPair(KeyPairProvider.SSH_RSA, 1024));
-            } else if ("dsa".equalsIgnoreCase(kt)) {
-                pairsMap.put(KeyPairProvider.SSH_DSS, KeyUtils.generateKeyPair(KeyPairProvider.SSH_DSS, 512));
-            } else if ("ecdsa".equalsIgnoreCase(kt)) {
-                if (!SecurityUtils.hasEcc()) {
-                    throw new InvalidKeySpecException("ECC not supported");
-                }
-
-                for (String curveName : ECCurves.NAMES) {
-                    Integer keySize = ECCurves.getCurveSize(curveName);
-                    if (keySize == null) {
-                        throw new InvalidKeySpecException("Unknown curve: " + curveName);
-                    }
-
-                    if (isEnabled(Level.FINER)) {
-                        log(Level.FINER, "Generate key pair for curve=" + curveName);
-                    }
-
-                    String keyName = ECCurves.ECDSA_SHA2_PREFIX + curveName;
-                    pairsMap.put(keyName, KeyUtils.generateKeyPair(keyName, keySize.intValue()));
-                }
+            List<KeyPair> kps = createKeyPairs(kt);
+            if (GenericUtils.isEmpty(kps)) {
+                log(Level.WARNING, "No key-pairs generated for key type " + kt);
+                continue;
             }
+            
+            pairsMap.put(kt, kps);
         }
         
         return pairsMap;
     }
 
+    protected List<KeyPair> createKeyPairs(String keyType) throws GeneralSecurityException {
+        if (isEnabled(Level.FINE)) {
+            log(Level.FINE, "Generate key pairs for " + keyType);
+        }
+
+        if (RSA_KEY_TYPE.equalsIgnoreCase(keyType)) {
+            return Collections.singletonList(KeyUtils.generateKeyPair(KeyPairProvider.SSH_RSA, 1024));
+        } else if (DSS_KEY_TYPE.equalsIgnoreCase(keyType)) {
+            return Collections.singletonList(KeyUtils.generateKeyPair(KeyPairProvider.SSH_DSS, 512));
+        } else if (EC_KEY_TYPE.equalsIgnoreCase(keyType)) {
+            if (!SecurityUtils.hasEcc()) {
+                throw new InvalidKeySpecException("ECC not supported");
+            }
+
+            List<KeyPair> kps = new ArrayList<KeyPair>(ECCurves.NAMES.size());
+            for (String curveName : ECCurves.NAMES) {
+                Integer keySize = ECCurves.getCurveSize(curveName);
+                if (keySize == null) {
+                    throw new InvalidKeySpecException("Unknown curve: " + curveName);
+                }
+
+                if (isEnabled(Level.FINER)) {
+                    log(Level.FINER, "Generate key pair for curve=" + curveName);
+                }
+
+                String keyName = ECCurves.ECDSA_SHA2_PREFIX + curveName;
+                kps.add(KeyUtils.generateKeyPair(keyName, keySize.intValue()));
+            }
+            
+            return kps;
+        } else {
+            throw new InvalidKeySpecException("Unknown key type: " + keyType);
+        }
+    }
+
+    @Override
+    public boolean isOpen() {
+        return open.get();
+    }
+
     @Override
     public void close() throws IOException {
+        if (!open.getAndSet(false)) {
+            return; // already closed
+        }
+
         IOException err = null;
         if (input != null) {
             try {
@@ -380,6 +515,23 @@ public class SshKeyScan extends AbstractSimplifiedLog
             } finally {
                 input = null;
             }
+        }
+
+        if (client != null) {
+            try {
+                client.close();
+            } catch(IOException e) {
+                err = GenericUtils.accumulateException(err, e);
+            } finally {
+                try {
+                    client.stop();
+                } finally {
+                    client = null;
+                }
+            }
+        }
+        if (err != null) {
+            throw err;
         }
     }
 
@@ -409,6 +561,7 @@ public class SshKeyScan extends AbstractSimplifiedLog
                 String typeList = args[index];
                 String[] types = GenericUtils.split(typeList, ',');
                 ValidateUtils.checkTrue(GenericUtils.length(types) > 0, "No types specified for %s", optName);
+                scanner.setKeyTypes(Arrays.asList(types));
             } else if ("-p".equals(optName)) {
                 index++;
                 ValidateUtils.checkTrue(index < numArgs, "Missing %s option argument", optName);

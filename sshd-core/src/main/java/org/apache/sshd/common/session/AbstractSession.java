@@ -62,6 +62,7 @@ import org.apache.sshd.common.mac.Mac;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.EventListenerUtils;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Readable;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -1162,8 +1163,8 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
         	String paramName = SshConstants.PROPOSAL_KEX_NAMES.get(i);
         	String clientParamValue = clientProposal[i];
         	String serverParamValue = serverProposal[i];
-            String[] c = clientParamValue.split(",");
-            String[] s = serverParamValue.split(",");
+            String[] c = GenericUtils.split(clientParamValue, ',');
+            String[] s = GenericUtils.split(serverParamValue, ',');
             for (String ci : c) {
                 for (String si : s) {
                     if (ci.equals(si)) {
