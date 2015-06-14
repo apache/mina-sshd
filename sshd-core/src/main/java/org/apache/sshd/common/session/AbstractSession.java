@@ -29,6 +29,7 @@ import static org.apache.sshd.common.SshConstants.SSH_MSG_UNIMPLEMENTED;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
+import java.util.EnumMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -57,6 +58,7 @@ import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
+import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.mac.Mac;
 import org.apache.sshd.common.random.Random;
@@ -118,9 +120,10 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     protected byte[] sessionId;
     protected String serverVersion;
     protected String clientVersion;
-    protected String[] serverProposal;
-    protected String[] clientProposal;
-    protected String[] negotiated;
+    // if empty then means not-initialized
+    protected final Map<KexProposalOption,String> serverProposal = new EnumMap<KexProposalOption, String>(KexProposalOption.class);
+    protected final Map<KexProposalOption,String> clientProposal = new EnumMap<KexProposalOption, String>(KexProposalOption.class);
+    private final Map<KexProposalOption,String> negotiationResult  = new EnumMap<KexProposalOption, String>(KexProposalOption.class);
     protected byte[] I_C; // the payload of the client's SSH_MSG_KEXINIT
     protected byte[] I_S; // the payload of the factoryManager's SSH_MSG_KEXINIT
     protected KeyExchange kex;
@@ -271,11 +274,11 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     }
 
     @Override
-    public String getNegotiatedKexParameter(int paramType) {
-    	if ((paramType < 0) || (negotiated == null) || (paramType >= negotiated.length)) {
+    public String getNegotiatedKexParameter(KexProposalOption paramType) {
+    	if (paramType == null) {
     		return null;
     	} else {
-    		return negotiated[paramType];
+    		return negotiationResult.get(paramType);
     	}
     }
 
@@ -400,9 +403,16 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
                 } else if (!kexState.compareAndSet(KEX_STATE_INIT, KEX_STATE_RUN)) {
                     throw new IllegalStateException("Received SSH_MSG_KEXINIT while key exchange is running");
                 }
-                negotiate();
-                kex = NamedFactory.Utils.create(factoryManager.getKeyExchangeFactories(), negotiated[SshConstants.PROPOSAL_KEX_ALGS]);
-                kex.init(this, serverVersion.getBytes(), clientVersion.getBytes(), I_S, I_C);
+
+                {
+                    Map<KexProposalOption,String> result = negotiate();
+                    String kexAlgorithm = result.get(KexProposalOption.ALGORITHMS);
+                    kex = ValidateUtils.checkNotNull(NamedFactory.Utils.create(factoryManager.getKeyExchangeFactories(), kexAlgorithm),
+                                                     "Unknown negotiated KEX algorithm: %s",
+                                                     kexAlgorithm);
+                    kex.init(this, serverVersion.getBytes(), clientVersion.getBytes(), I_S, I_C);
+                }
+
                 sendEvent(SessionListener.Event.KexCompleted);
                 break;
             case SSH_MSG_NEWKEYS:
@@ -891,21 +901,34 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
      * Create our proposal for SSH negotiation
      *
      * @param hostKeyTypes the list of supported host key types
-     * @return an array of 10 strings holding this proposal
+     * @return The proposal {@link Map>
      */
-    protected String[] createProposal(String hostKeyTypes) {
-        return new String[] {
-                NamedResource.Utils.getNames(factoryManager.getKeyExchangeFactories()),
-                hostKeyTypes,
-                NamedResource.Utils.getNames(factoryManager.getCipherFactories()),
-                NamedResource.Utils.getNames(factoryManager.getCipherFactories()),
-                NamedResource.Utils.getNames(factoryManager.getMacFactories()),
-                NamedResource.Utils.getNames(factoryManager.getMacFactories()),
-                NamedResource.Utils.getNames(factoryManager.getCompressionFactories()),
-                NamedResource.Utils.getNames(factoryManager.getCompressionFactories()),
-                "",
-                ""
-        };
+    protected Map<KexProposalOption,String> createProposal(String hostKeyTypes) {
+        Map<KexProposalOption,String> proposal = new EnumMap<KexProposalOption, String>(KexProposalOption.class);
+        proposal.put(KexProposalOption.ALGORITHMS, NamedResource.Utils.getNames(factoryManager.getKeyExchangeFactories()));
+        proposal.put(KexProposalOption.SERVERKEYS, hostKeyTypes);
+        
+        {
+            String value = NamedResource.Utils.getNames(factoryManager.getCipherFactories());
+            proposal.put(KexProposalOption.S2CENC, value);
+            proposal.put(KexProposalOption.C2SENC, value);
+        }
+
+        {
+            String value = NamedResource.Utils.getNames(factoryManager.getMacFactories());
+            proposal.put(KexProposalOption.S2CMAC, value);
+            proposal.put(KexProposalOption.C2SMAC, value);
+        }
+        
+        {
+            String value = NamedResource.Utils.getNames(factoryManager.getCompressionFactories());
+            proposal.put(KexProposalOption.S2CCOMP, value);
+            proposal.put(KexProposalOption.C2SCOMP, value);
+        }
+        
+        proposal.put(KexProposalOption.S2CLANG, "");
+        proposal.put(KexProposalOption.C2SLANG, "");
+        return proposal;
     }
 
     /**
@@ -916,15 +939,20 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
      * @return the sent packet which must be kept for later use
      * @throws IOException if an error occurred sending the packet
      */
-    protected byte[] sendKexInit(String[] proposal) throws IOException {
+    protected byte[] sendKexInit(Map<KexProposalOption,String> proposal) throws IOException {
         log.debug("Send SSH_MSG_KEXINIT");
         Buffer buffer = createBuffer(SshConstants.SSH_MSG_KEXINIT);
         int p = buffer.wpos();
         buffer.wpos(p + 16);
         random.fill(buffer.array(), p, 16);
-        for (String s : proposal) {
-            buffer.putString(s);
+        for (KexProposalOption paramType : KexProposalOption.VALUES) {
+            String s = proposal.get(paramType);
+            if (log.isTraceEnabled()) {
+                log.trace("sendKexInit(" + paramType.getDescription() + ") " + s);
+            }
+            buffer.putString(GenericUtils.trimToEmpty(s));
         }
+
         buffer.putByte((byte) 0);
         buffer.putInt(0);
         byte[] data = buffer.getCompactData();
@@ -940,7 +968,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
      * @param proposal the remote proposal to fill
      * @return the packet data
      */
-    protected byte[] receiveKexInit(Buffer buffer, String[] proposal) {
+    protected byte[] receiveKexInit(Buffer buffer, Map<KexProposalOption,String> proposal) {
         // Recreate the packet payload which will be needed at a later time
         int size = 22;
         byte[] d = buffer.array();
@@ -950,10 +978,15 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
         // Skip 16 bytes of random data
         buffer.rpos(buffer.rpos() + 16);
         // Read proposal
-        for (int i = 0; i < proposal.length; i++) {
-            size += 4;
-            proposal[i] = buffer.getString();
-            size += proposal[i].length();
+        for (KexProposalOption paramType : KexProposalOption.VALUES) {
+            int lastPos = buffer.rpos();
+            String value = buffer.getString();
+            if (log.isTraceEnabled()) {
+                log.trace("receiveKexInit(" + paramType.getDescription() + ") " + value);
+            }
+            int curPos = buffer.rpos(), readLen = curPos - lastPos;
+            proposal.put(paramType, value);
+            size += readLen;
         }
         // Skip 5 bytes
         buffer.getByte();
@@ -1036,24 +1069,43 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
         hash.update(buf, 0, pos);
         MACs2c = hash.digest();
 
-        s2ccipher = NamedFactory.Utils.create(factoryManager.getCipherFactories(), negotiated[SshConstants.PROPOSAL_ENC_ALGS_STOC]);
-        Es2c = resizeKey(Es2c, s2ccipher.getBlockSize(), hash, K, H);
-        s2ccipher.init(isServer ? Cipher.Mode.Encrypt : Cipher.Mode.Decrypt, Es2c, IVs2c);
+        {
+            String value = getNegotiatedKexParameter(KexProposalOption.S2CENC);
+            s2ccipher = ValidateUtils.checkNotNull(NamedFactory.Utils.create(factoryManager.getCipherFactories(), value), "Unknown s2c cipher: %s", value);
+            Es2c = resizeKey(Es2c, s2ccipher.getBlockSize(), hash, K, H);
+            s2ccipher.init(isServer ? Cipher.Mode.Encrypt : Cipher.Mode.Decrypt, Es2c, IVs2c);
+        }
 
-        s2cmac = NamedFactory.Utils.create(factoryManager.getMacFactories(), negotiated[SshConstants.PROPOSAL_MAC_ALGS_STOC]);
-        MACs2c = resizeKey(MACs2c, s2cmac.getBlockSize(), hash, K, H);
-        s2cmac.init(MACs2c);
+        {
+            String value = getNegotiatedKexParameter(KexProposalOption.S2CMAC);
+            s2cmac = ValidateUtils.checkNotNull(NamedFactory.Utils.create(factoryManager.getMacFactories(), value), "Unknown s2c mac: %s", value);
+            MACs2c = resizeKey(MACs2c, s2cmac.getBlockSize(), hash, K, H);
+            s2cmac.init(MACs2c);
+        }
 
-        c2scipher = NamedFactory.Utils.create(factoryManager.getCipherFactories(), negotiated[SshConstants.PROPOSAL_ENC_ALGS_CTOS]);
-        Ec2s = resizeKey(Ec2s, c2scipher.getBlockSize(), hash, K, H);
-        c2scipher.init(isServer ? Cipher.Mode.Decrypt : Cipher.Mode.Encrypt, Ec2s, IVc2s);
+        {
+            String value = getNegotiatedKexParameter(KexProposalOption.S2CCOMP);
+            s2ccomp = NamedFactory.Utils.create(factoryManager.getCompressionFactories(), value);
+        }
 
-        c2smac = NamedFactory.Utils.create(factoryManager.getMacFactories(), negotiated[SshConstants.PROPOSAL_MAC_ALGS_CTOS]);
-        MACc2s = resizeKey(MACc2s, c2smac.getBlockSize(), hash, K, H);
-        c2smac.init(MACc2s);
+        {
+            String value = getNegotiatedKexParameter(KexProposalOption.C2SENC);
+            c2scipher = ValidateUtils.checkNotNull(NamedFactory.Utils.create(factoryManager.getCipherFactories(), value), "Unknown c2s cipher: %s", value);
+            Ec2s = resizeKey(Ec2s, c2scipher.getBlockSize(), hash, K, H);
+            c2scipher.init(isServer ? Cipher.Mode.Decrypt : Cipher.Mode.Encrypt, Ec2s, IVc2s);
+        }
 
-        s2ccomp = NamedFactory.Utils.create(factoryManager.getCompressionFactories(), negotiated[SshConstants.PROPOSAL_COMP_ALGS_STOC]);
-        c2scomp = NamedFactory.Utils.create(factoryManager.getCompressionFactories(), negotiated[SshConstants.PROPOSAL_COMP_ALGS_CTOS]);
+        {
+            String value = getNegotiatedKexParameter(KexProposalOption.C2SMAC);
+            c2smac = ValidateUtils.checkNotNull(NamedFactory.Utils.create(factoryManager.getMacFactories(), value), "Unknown c2s mac: %s", value);
+            MACc2s = resizeKey(MACc2s, c2smac.getBlockSize(), hash, K, H);
+            c2smac.init(MACc2s);
+        }
+
+        {
+            String value = getNegotiatedKexParameter(KexProposalOption.C2SCOMP);
+            c2scomp = NamedFactory.Utils.create(factoryManager.getCompressionFactories(), value);
+        }
 
         if (isServer) {
             outCipher = s2ccipher;
@@ -1154,60 +1206,71 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
 
     /**
      * Compute the negotiated proposals by merging the client and
-     * server proposal.  The negotiated proposal will be stored in
+     * server proposal. The negotiated proposal will also be stored in
      * the {@link #negotiated} property.
+     * @return The negotiated options
      */
-    protected void negotiate() {
-        String[] guess = new String[SshConstants.PROPOSAL_MAX];
-        for (int i = 0; i < SshConstants.PROPOSAL_MAX; i++) {
-        	String paramName = SshConstants.PROPOSAL_KEX_NAMES.get(i);
-        	String clientParamValue = clientProposal[i];
-        	String serverParamValue = serverProposal[i];
+    protected Map<KexProposalOption,String> negotiate() {
+        Map<KexProposalOption,String> guess = new EnumMap<KexProposalOption, String>(KexProposalOption.class);
+        for (KexProposalOption paramType : KexProposalOption.VALUES) {
+        	String clientParamValue = clientProposal.get(paramType);
+        	String serverParamValue = serverProposal.get(paramType);
             String[] c = GenericUtils.split(clientParamValue, ',');
             String[] s = GenericUtils.split(serverParamValue, ',');
             for (String ci : c) {
                 for (String si : s) {
                     if (ci.equals(si)) {
-                        guess[i] = ci;
+                        guess.put(paramType, ci);
                         break;
                     }
                 }
-                if (guess[i] != null) {
+                
+                String value = guess.get(paramType);
+                if (value != null) {
                     break;
                 }
             }
             
             // check if reached an agreement
-            if (guess[i] == null) {
-            	String	message="Unable to negotiate key exchange for " + paramName
+            String value = guess.get(paramType);
+            if (value == null) {
+            	String	message="Unable to negotiate key exchange for " + paramType.getDescription()
             				  + " (client: " + clientParamValue + " / server: " + serverParamValue + ")";
                 // OK if could not negotiate languages
-            	if ((i != SshConstants.PROPOSAL_LANG_CTOS) && (i != SshConstants.PROPOSAL_LANG_STOC)) {
-            		throw new IllegalStateException(message);
+            	if (KexProposalOption.S2CLANG.equals(paramType) || KexProposalOption.C2SLANG.equals(paramType)) {
+                    if (log.isTraceEnabled()) {
+                        log.trace(message);
+                    }
             	} else {
-            		if (log.isTraceEnabled()) {
-            			log.trace(message);
-            		}
+            		throw new IllegalStateException(message);
             	}
             } else {
             	if (log.isTraceEnabled()) {
-            		log.trace("Kex: negotiate(" + paramName + ") guess=" + guess[i]
+            		log.trace("Kex: negotiate(" +  paramType.getDescription() + ") guess=" + value
             				+ " (client: " + clientParamValue + " / server: " + serverParamValue);
             	}
             }
         }
-        negotiated = guess;
+        
+        synchronized(negotiationResult) {
+            if (!negotiationResult.isEmpty()) {
+                negotiationResult.clear(); // debug breakpoint
+            }
+            negotiationResult.putAll(guess);
+        }
 
         if (log.isDebugEnabled()) {
             log.debug("Kex: server->client {} {} {}",
-                      new Object[]{negotiated[SshConstants.PROPOSAL_ENC_ALGS_STOC],
-                            negotiated[SshConstants.PROPOSAL_MAC_ALGS_STOC],
-                            negotiated[SshConstants.PROPOSAL_COMP_ALGS_STOC]});
+                      guess.get(KexProposalOption.S2CENC),
+                      guess.get(KexProposalOption.S2CMAC),
+                      guess.get(KexProposalOption.S2CCOMP));
             log.debug("Kex: client->server {} {} {}",
-                      new Object[]{negotiated[SshConstants.PROPOSAL_ENC_ALGS_CTOS],
-                            negotiated[SshConstants.PROPOSAL_MAC_ALGS_CTOS],
-                            negotiated[SshConstants.PROPOSAL_COMP_ALGS_CTOS]});
+                      guess.get(KexProposalOption.C2SENC),
+                      guess.get(KexProposalOption.C2SMAC),
+                      guess.get(KexProposalOption.C2SCOMP));
         }
+        
+        return guess;
     }
 
     protected void requestSuccess(Buffer buffer) throws Exception{

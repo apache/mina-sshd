@@ -20,14 +20,17 @@ package org.apache.sshd.server.kex;
 
 import java.security.KeyPair;
 
+import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.kex.AbstractDH;
 import org.apache.sshd.common.kex.DHFactory;
+import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.signature.Signature;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -88,8 +91,9 @@ public class DHGServer extends AbstractDHServerKeyExchange {
 
         byte[] K_S;
         KeyPair kp = session.getHostKey();
-        String algo = session.getNegotiated(SshConstants.PROPOSAL_SERVER_HOST_KEY_ALGS);
-        Signature sig = NamedFactory.Utils.create(session.getFactoryManager().getSignatureFactories(), algo);
+        String algo = session.getNegotiatedKexParameter(KexProposalOption.SERVERKEYS);
+        FactoryManager manager = session.getFactoryManager();
+        Signature sig = ValidateUtils.checkNotNull(NamedFactory.Utils.create(manager.getSignatureFactories(), algo), "Unknown negotiated server keys: %s", algo);
         sig.init(kp.getPublic(), kp.getPrivate());
 
         buffer = new ByteArrayBuffer();

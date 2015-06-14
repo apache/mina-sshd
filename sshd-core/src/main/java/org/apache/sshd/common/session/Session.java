@@ -27,6 +27,7 @@ import org.apache.sshd.common.Service;
 import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
+import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
@@ -93,12 +94,12 @@ public interface Session extends Closeable {
 
     /**
      * Retrieve one of the negotiated values during the KEX stage
-     * @param paramType The parameter type index - one of the {@link SSHConstants}
-     *  {@code PROPOSAL_XXX} values
+     * @param paramType The request {@link KexProposalOption} value - ignored
+     * if {@code null} 
      * @return The negotiated parameter value - {@code null} if invalid
-     * parameter index or no negotiated value
+     * parameter or no negotiated value
      */
-    String getNegotiatedKexParameter(int paramType);
+    String getNegotiatedKexParameter(KexProposalOption paramType);
 
     /**
      * Retrieve a configuration property as an integer

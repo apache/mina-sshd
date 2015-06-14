@@ -51,11 +51,13 @@ import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.SshdSocketAddress;
+import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.cipher.CipherNone;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.future.DefaultSshFuture;
 import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.io.IoSession;
+import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.scp.ScpTransferEventListener;
 import org.apache.sshd.common.session.AbstractConnectionService;
 import org.apache.sshd.common.session.AbstractSession;
@@ -270,16 +272,24 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         }
         if (kexState.compareAndSet(KEX_STATE_DONE, KEX_STATE_INIT)) {
             reexchangeFuture = new DefaultSshFuture(null);
-            if (!serverProposal[SshConstants.PROPOSAL_ENC_ALGS_CTOS].matches("(^|.*,)none($|,.*)")
-                    || !serverProposal[SshConstants.PROPOSAL_ENC_ALGS_STOC].matches("(^|.*,)none($|,.*)")) {
+            
+            String c2sEncServer = serverProposal.get(KexProposalOption.C2SENC);
+            boolean c2sEncServerNone = BuiltinCiphers.Constants.isNoneCipherIncluded(c2sEncServer);
+            String s2cEncServer = serverProposal.get(KexProposalOption.S2CENC);
+            boolean s2cEncServerNone = BuiltinCiphers.Constants.isNoneCipherIncluded(s2cEncServer);
+            String c2sEncClient = clientProposal.get(KexProposalOption.C2SENC);
+            boolean c2sEncClientNone = BuiltinCiphers.Constants.isNoneCipherIncluded(c2sEncClient);
+            String s2cEncClient = clientProposal.get(KexProposalOption.S2CENC);
+            boolean s2cEncClientNone = BuiltinCiphers.Constants.isNoneCipherIncluded(s2cEncClient);
+
+            if ((!c2sEncServerNone) || (!s2cEncServerNone)) {
                 reexchangeFuture.setValue(new SshException("Server does not support none cipher"));
-            } else if (!clientProposal[SshConstants.PROPOSAL_ENC_ALGS_CTOS].matches("(^|.*,)none($|,.*)")
-                    || !clientProposal[SshConstants.PROPOSAL_ENC_ALGS_STOC].matches("(^|.*,)none($|,.*)")) {
+            } else if ((!c2sEncClientNone) || (!s2cEncClientNone)) {
                 reexchangeFuture.setValue(new SshException("Client does not support none cipher"));
             } else {
                 log.info("Switching to none cipher");
-                clientProposal[SshConstants.PROPOSAL_ENC_ALGS_CTOS] = "none";
-                clientProposal[SshConstants.PROPOSAL_ENC_ALGS_STOC] = "none";
+                clientProposal.put(KexProposalOption.C2SENC, BuiltinCiphers.Constants.NONE);
+                clientProposal.put(KexProposalOption.S2CENC, BuiltinCiphers.Constants.NONE);
                 I_C = sendKexInit(clientProposal);
             }
             return reexchangeFuture;
@@ -486,13 +496,23 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
     protected void sendKexInit() throws IOException {
         FactoryManager manager = getFactoryManager();
         String algs = NamedResource.Utils.getNames(manager.getSignatureFactories());
-        clientProposal = createProposal(algs);
-        I_C = sendKexInit(clientProposal);
+        Map<KexProposalOption,String> proposal = createProposal(algs);
+        synchronized(clientProposal) {
+            if (!clientProposal.isEmpty()) {
+                clientProposal.clear(); // debug breakpoint
+            }
+            
+            clientProposal.putAll(proposal);
+        }
+
+        I_C = sendKexInit(proposal);
     }
 
     @Override
     protected void receiveKexInit(Buffer buffer) throws IOException {
-        serverProposal = new String[SshConstants.PROPOSAL_MAX];
+        if (!serverProposal.isEmpty()) {
+            serverProposal.clear(); // debug breakpoint
+        }
         I_S = receiveKexInit(buffer, serverProposal);
     }
 

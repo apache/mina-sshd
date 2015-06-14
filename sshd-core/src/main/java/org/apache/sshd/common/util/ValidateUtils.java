@@ -30,6 +30,14 @@ public final class ValidateUtils {
         throw new UnsupportedOperationException("No instance");
     }
 
+    public static final <T> T checkNotNull(T t, String message, Object arg) {
+        if (t == null) {
+            throwIllegalArgumentException(message, arg);
+        }
+        
+        return t;
+    }
+
     public static final <T> T checkNotNull(T t, String message, Object ... args) {
         checkTrue(t != null, message, args);
         return t;
@@ -61,7 +69,11 @@ public final class ValidateUtils {
     
     public static final void checkTrue(boolean flag, String message, Object ... args) {
         if (!flag) {
-            throw new IllegalArgumentException(String.format(message, args));
+            throwIllegalArgumentException(message, args);
         }
+    }
+    
+    public static final void throwIllegalArgumentException(String message, Object ... args) {
+        throw new IllegalArgumentException(String.format(message, args));
     }
 }

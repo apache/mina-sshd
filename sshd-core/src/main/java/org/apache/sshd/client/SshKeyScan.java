@@ -57,13 +57,13 @@ import java.util.logging.Level;
 import org.apache.sshd.client.future.ConnectFuture;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.SshConfigFileReader;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.io.IoSession;
+import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionListener;
@@ -341,10 +341,9 @@ public class SshKeyScan extends AbstractSimplifiedLog
             IoSession ioSession = session.getIoSession();
             SocketAddress remoteAddress = ioSession.getRemoteAddress();
             String remoteLocation = toString(remoteAddress);
-            for (int paramType = 0; paramType < SshConstants.PROPOSAL_KEX_NAMES.size(); paramType++) {
-                String paramName = SshConstants.PROPOSAL_KEX_NAMES.get(paramType);
+            for (KexProposalOption paramType : KexProposalOption.VALUES) {
                 String paramValue = session.getNegotiatedKexParameter(paramType);
-                log(Level.FINEST, remoteLocation + "[" + paramName + "]: " + paramValue);
+                log(Level.FINEST, remoteLocation + "[" + paramType.getDescription() + "]: " + paramValue);
             }
         }
     }

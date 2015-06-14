@@ -18,9 +18,6 @@
  */
 package org.apache.sshd.common;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 
 /**
  * This interface defines constants for the SSH protocol.
@@ -82,42 +79,6 @@ public interface SshConstants {
     static final byte SSH_MSG_CHANNEL_REQUEST=                98;
     static final byte SSH_MSG_CHANNEL_SUCCESS=                99;
     static final byte SSH_MSG_CHANNEL_FAILURE=               100;
-
-    //
-    // Values for the algorithms negotiation
-    //
-
-    static final int PROPOSAL_KEX_ALGS = 0;
-    static final int PROPOSAL_SERVER_HOST_KEY_ALGS = 1;
-    static final int PROPOSAL_ENC_ALGS_CTOS = 2;
-    static final int PROPOSAL_ENC_ALGS_STOC = 3;
-    static final int PROPOSAL_MAC_ALGS_CTOS = 4;
-    static final int PROPOSAL_MAC_ALGS_STOC = 5;
-    static final int PROPOSAL_COMP_ALGS_CTOS = 6;
-    static final int PROPOSAL_COMP_ALGS_STOC = 7;
-    static final int PROPOSAL_LANG_CTOS = 8;
-    static final int PROPOSAL_LANG_STOC = 9;
-    static final int PROPOSAL_MAX = 10;
-
-    /**
-     * User-friendly names for the KEX algorithms negotiation items - the
-     * list index matches the {@code PROPOSAL_XXX} constant
-     * @see <A HREF="http://tools.ietf.org/html/rfc4253#section-7.1">RFC-4253 - section 7.1</A>
-     */
-    static final List<String> PROPOSAL_KEX_NAMES =
-            Collections.unmodifiableList(Arrays.asList(
-                    "kex algorithms",
-                    "server host key algorithms",
-                    "encryption algorithms (client to server)",
-                    "encryption algorithms (server to client)",
-                    "mac algorithms (client to server)",
-                    "mac algorithms (server to client)",
-                    "compression algorithms (client to server)",
-                    "compression algorithms (server to client)",
-                    "languages (client to server)",
-                    "languages (server to client)"
-            ));
-
 
     //
     // Disconnect error codes

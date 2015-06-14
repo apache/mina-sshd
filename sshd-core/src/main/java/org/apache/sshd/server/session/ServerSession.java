@@ -21,6 +21,7 @@ package org.apache.sshd.server.session;
 import java.io.IOException;
 import java.security.KeyPair;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.FactoryManagerUtils;
@@ -31,6 +32,7 @@ import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
+import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.GenericUtils;
@@ -58,10 +60,6 @@ public class ServerSession extends AbstractSession {
         maxKeyInterval = getLongProperty(ServerFactoryManager.REKEY_TIME_LIMIT, maxKeyInterval);
         log.info("Server session created from {}", ioSession.getRemoteAddress());
         sendServerIdentification();
-    }
-
-    public String getNegotiated(int index) {
-        return negotiated[index];
     }
 
     @Override
@@ -143,8 +141,16 @@ public class ServerSession extends AbstractSession {
                                    "sendKexInit(" + provided + ") none of the keys appears in supported list: " + supported);
         }
 
-        serverProposal = createProposal(resolvedHostKeys.toString());
-        I_S = sendKexInit(serverProposal);
+        Map<KexProposalOption,String> proposal = createProposal(resolvedHostKeys.toString());
+        synchronized(serverProposal) {
+            if (!serverProposal.isEmpty()) {
+                serverProposal.clear(); // debug breakpoint
+            }
+            
+            serverProposal.putAll(proposal);
+        }
+
+        I_S = sendKexInit(proposal);
     }
 
     @Override
@@ -172,12 +178,15 @@ public class ServerSession extends AbstractSession {
 
     @Override
     protected void receiveKexInit(Buffer buffer) throws IOException {
-        clientProposal = new String[SshConstants.PROPOSAL_MAX];
+        if (!clientProposal.isEmpty()) {
+            clientProposal.clear(); // debug breakpoint
+        }
         I_C = receiveKexInit(buffer, clientProposal);
     }
 
     public KeyPair getHostKey() {
-        return factoryManager.getKeyPairProvider().loadKey(negotiated[SshConstants.PROPOSAL_SERVER_HOST_KEY_ALGS]);
+        String value = getNegotiatedKexParameter(KexProposalOption.SERVERKEYS);
+        return factoryManager.getKeyPairProvider().loadKey(value);
     }
 
     /**

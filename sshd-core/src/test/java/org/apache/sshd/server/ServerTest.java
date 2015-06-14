@@ -44,22 +44,16 @@ import org.apache.sshd.client.session.ClientSessionImpl;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.WindowClosedException;
 import org.apache.sshd.common.io.IoSession;
+import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.session.AbstractConnectionService;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.deprecated.ClientUserAuthServiceOld;
 import org.apache.sshd.deprecated.UserAuthPassword;
-import org.apache.sshd.server.Command;
-import org.apache.sshd.server.CommandFactory;
-import org.apache.sshd.server.Environment;
-import org.apache.sshd.server.ExitCallback;
-import org.apache.sshd.server.ServerFactoryManager;
-import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.command.ScpCommandFactory;
 import org.apache.sshd.server.sftp.SftpSubsystemFactory;
 import org.apache.sshd.util.BaseTestSupport;
@@ -310,10 +304,10 @@ public class ServerTest extends BaseTestSupport {
             protected AbstractSession createSession(IoSession ioSession) throws Exception {
                 return new ClientSessionImpl(client, ioSession) {
                     @Override
-                    protected String[] createProposal(String hostKeyTypes) {
-                        String[] proposal = super.createProposal(hostKeyTypes);
-                        proposal[SshConstants.PROPOSAL_LANG_CTOS] = "en-US";
-                        proposal[SshConstants.PROPOSAL_LANG_STOC] = "en-US";
+                    protected Map<KexProposalOption,String> createProposal(String hostKeyTypes) {
+                        Map<KexProposalOption,String> proposal = super.createProposal(hostKeyTypes);
+                        proposal.put(KexProposalOption.S2CLANG, "en-US");
+                        proposal.put(KexProposalOption.C2SLANG, "en-US");
                         return proposal;
                     }
                 };

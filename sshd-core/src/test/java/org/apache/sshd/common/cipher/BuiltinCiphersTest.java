@@ -20,12 +20,14 @@
 package org.apache.sshd.common.cipher;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 
@@ -98,8 +100,18 @@ public class BuiltinCiphersTest extends BaseTestSupport {
         Set<BuiltinCiphers> avail=EnumSet.noneOf(BuiltinCiphers.class);
         Field[]             fields=BuiltinCiphers.Constants.class.getFields();
         for (Field f : fields) {
-            String          name=(String) f.get(null);
-            BuiltinCiphers  value=BuiltinCiphers.fromFactoryName(name);
+            int mods = f.getModifiers();
+            if (!Modifier.isStatic(mods)) {
+                continue;
+            }
+
+            Class<?> type = f.getType();
+            if (!String.class.isAssignableFrom(type)) {
+                continue;
+            }
+
+            String name = Objects.toString(f.get(null));
+            BuiltinCiphers value = BuiltinCiphers.fromFactoryName(name);
             assertNotNull("No match found for " + name, value);
             assertTrue(name + " re-specified", avail.add(value));
         }

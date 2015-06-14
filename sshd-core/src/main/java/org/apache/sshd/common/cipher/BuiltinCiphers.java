@@ -29,6 +29,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
@@ -338,6 +340,26 @@ public enum BuiltinCiphers implements CipherFactory {
 
     public static final class Constants {
         public static final String NONE = "none";
+        public static final Pattern NONE_CIPHER_PATTERN =
+                Pattern.compile("(^|.*,)" + NONE + "($|,.*)");
+
+        /**
+         * @param s A comma-separated list of ciphers - ignored if {@code null}/empty
+         * @return {@code true} if the {@link #NONE} cipher name appears in it
+         */
+        public static final boolean isNoneCipherIncluded(String s) {
+            if (GenericUtils.isEmpty(s)) {
+                return false;
+            }
+            
+            Matcher m = NONE_CIPHER_PATTERN.matcher(s);
+            if (m.matches()) {
+                return true;
+            } else {
+                return false;   // debug breakpoint
+            }
+        }
+
         public static final String AES128_CBC = "aes128-cbc";
         public static final String AES128_CTR = "aes128-ctr";
         public static final String AES192_CBC = "aes192-cbc";
