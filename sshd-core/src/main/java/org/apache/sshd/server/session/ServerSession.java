@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.security.KeyPair;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.FactoryManagerUtils;
@@ -30,9 +31,11 @@ import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.SshFutureListener;
+import org.apache.sshd.common.io.IoService;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.kex.KexProposalOption;
+import org.apache.sshd.common.kex.KexState;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.GenericUtils;
@@ -85,7 +88,7 @@ public class ServerSession extends AbstractSession {
 
     @Override
     protected void checkRekey() throws IOException {
-        if (kexState.get() == KEX_STATE_DONE) {
+        if (KexState.DONE.equals(kexState.get())) {
             if (   inPackets > MAX_PACKETS || outPackets > MAX_PACKETS
                 || inBytes > maxBytes || outBytes > maxBytes
                 || maxKeyInterval > 0 && System.currentTimeMillis() - lastKeyTime > maxKeyInterval)
@@ -156,7 +159,7 @@ public class ServerSession extends AbstractSession {
     @Override
     protected boolean readIdentification(Buffer buffer) throws IOException {
         clientVersion = doReadIdentification(buffer, true);
-        if (clientVersion == null) {
+        if (GenericUtils.isEmpty(clientVersion)) {
             return false;
         }
         log.debug("Client version string: {}", clientVersion);
@@ -170,7 +173,7 @@ public class ServerSession extends AbstractSession {
             });
             throw new SshException(msg);
         } else {
-            kexState.set(KEX_STATE_INIT);
+            kexState.set(KexState.INIT);
             sendKexInit();
         }
         return true;
@@ -195,15 +198,25 @@ public class ServerSession extends AbstractSession {
      * @return The current number of live <code>SshSession</code> objects associated with the user
      */
     protected int getActiveSessionCountForUser(String userName) {
+        IoService service = ioSession.getService();
+        Map<?, IoSession> sessionsMap = service.getManagedSessions();
+        if (GenericUtils.isEmpty(sessionsMap)) {
+            return 0;
+        }
+
         int totalCount = 0;
-        for (IoSession is : ioSession.getService().getManagedSessions().values()) {
+        for (IoSession is : sessionsMap.values()) {
             ServerSession session = (ServerSession) getSession(is, true);
-            if (session != null) {
-                if (session.getUsername() != null && session.getUsername().equals(userName)) {
-                    totalCount++;
-                }
+            if (session == null) {
+                continue;
+            }
+            
+            String sessionUser = session.getUsername();
+            if ((!GenericUtils.isEmpty(sessionUser)) && Objects.equals(sessionUser, userName)) {
+                totalCount++;
             }
         }
+
         return totalCount;
     }
 

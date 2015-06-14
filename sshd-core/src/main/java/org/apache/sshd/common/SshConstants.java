@@ -37,6 +37,7 @@ public interface SshConstants {
     static final byte SSH_MSG_SERVICE_REQUEST=                 5;
     static final byte SSH_MSG_SERVICE_ACCEPT=                  6;
     static final byte SSH_MSG_KEXINIT=                        20;
+        static final int MSG_KEX_COOKIE_SIZE = 16;
     static final byte SSH_MSG_NEWKEYS=                        21;
 
     static final byte SSH_MSG_KEX_FIRST=                      30;

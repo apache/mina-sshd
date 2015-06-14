@@ -58,6 +58,7 @@ import org.apache.sshd.common.future.DefaultSshFuture;
 import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.kex.KexProposalOption;
+import org.apache.sshd.common.kex.KexState;
 import org.apache.sshd.common.scp.ScpTransferEventListener;
 import org.apache.sshd.common.session.AbstractConnectionService;
 import org.apache.sshd.common.session.AbstractSession;
@@ -142,7 +143,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         authFuture = new DefaultAuthFuture(lock);
         authFuture.setAuthed(false);
         sendClientIdentification();
-        kexState.set(KEX_STATE_INIT);
+        kexState.set(KexState.INIT);
         sendKexInit();
     }
 
@@ -270,7 +271,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
                 || !((AbstractConnectionService) currentService).getChannels().isEmpty()) {
             throw new IllegalStateException("The switch to the none cipher must be done immediately after authentication");
         }
-        if (kexState.compareAndSet(KEX_STATE_DONE, KEX_STATE_INIT)) {
+        if (kexState.compareAndSet(KexState.DONE, KexState.INIT)) {
             reexchangeFuture = new DefaultSshFuture(null);
             
             String c2sEncServer = serverProposal.get(KexProposalOption.C2SENC);
@@ -442,7 +443,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
                 if (authed) { // authFuture.isSuccess()
                     cond |= AUTHED;
                 }
-                if (kexState.get() == KEX_STATE_DONE && authFuture.isFailure()) {
+                if (KexState.DONE.equals(kexState.get()) && authFuture.isFailure()) {
                     cond |= WAIT_AUTH;
                 }
                 if ((cond & mask) != 0) {
