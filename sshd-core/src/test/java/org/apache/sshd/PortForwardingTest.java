@@ -20,9 +20,12 @@ package org.apache.sshd;
 
 import static org.apache.sshd.util.Utils.getFreePort;
 
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -121,21 +124,58 @@ public class PortForwardingTest extends BaseTestSupport {
             session.setPortForwardingR(forwardedPort, "localhost", echoPort);
             Thread.sleep(100);
     
-            try(Socket s = new Socket("localhost", forwardedPort)) {
+            try(Socket s = new Socket("localhost", forwardedPort);
+                OutputStream output = s.getOutputStream();
+                InputStream input = s.getInputStream()) {
+
                 s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(10L));
 
                 String  expected = getCurrentTestName();
-                byte[]  bytes = expected.getBytes();
-                s.getOutputStream().write(bytes);
-                s.getOutputStream().flush();
+                byte[]  bytes = expected.getBytes(StandardCharsets.UTF_8);
+                output.write(bytes);
+                output.flush();
 
                 byte[]  buf = new byte[bytes.length + Long.SIZE];
-                int     n = s.getInputStream().read(buf);
-                String  res = new String(buf, 0, n);
+                int     n = input.read(buf);
+                String  res = new String(buf, 0, n, StandardCharsets.UTF_8);
                 assertEquals("Mismatched data", expected, res);
             }
     
             session.delPortForwardingR(forwardedPort);
+        } finally {
+            session.disconnect();
+        }
+    }
+
+    @Test
+    public void testRemoteForwardingSecondTimeInSameSession() throws Exception {
+        Session session = createSession();
+        try {
+            int forwardedPort = getFreePort();
+            session.setPortForwardingR(forwardedPort, "localhost", echoPort);
+            Thread.sleep(100L);
+            session.delPortForwardingR("localhost", forwardedPort);
+            Thread.sleep(100L);
+            session.setPortForwardingR(forwardedPort, "localhost", echoPort);
+            Thread.sleep(100L);
+    
+            try(Socket s = new Socket("localhost", forwardedPort);
+                OutputStream output = s.getOutputStream();
+                InputStream input = s.getInputStream()) {
+
+                s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(10L));
+                
+                String  expected = getCurrentTestName();
+                byte[]  bytes = expected.getBytes(StandardCharsets.UTF_8);
+                output.write(bytes);
+                output.flush();
+
+                byte[]  buf = new byte[bytes.length + Long.SIZE];
+                int     n = input.read(buf);
+                String  res = new String(buf, 0, n, StandardCharsets.UTF_8);
+                assertEquals("Mismatched data", expected, res);
+            }
+            session.delPortForwardingR("localhost", forwardedPort);
         } finally {
             session.disconnect();
         }
@@ -148,16 +188,19 @@ public class PortForwardingTest extends BaseTestSupport {
             SshdSocketAddress local = new SshdSocketAddress("localhost", echoPort);
             SshdSocketAddress bound = session.startRemotePortForwarding(remote, local);
     
-            try(Socket s = new Socket(bound.getHostName(), bound.getPort())) {
+            try(Socket s = new Socket(bound.getHostName(), bound.getPort());
+                OutputStream output = s.getOutputStream();
+                InputStream input = s.getInputStream()) {
+
                 s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(10L));
 
                 String  expected = getCurrentTestName();
                 byte[]  bytes = expected.getBytes();
-                s.getOutputStream().write(bytes);
-                s.getOutputStream().flush();
+                output.write(bytes);
+                output.flush();
 
                 byte[]  buf = new byte[bytes.length + Long.SIZE];
-                int     n = s.getInputStream().read(buf);
+                int     n = input.read(buf);
                 String  res = new String(buf, 0, n);
                 assertEquals("Mismatched data", expected, res);
             }
@@ -174,7 +217,10 @@ public class PortForwardingTest extends BaseTestSupport {
             SshdSocketAddress local = new SshdSocketAddress("localhost", echoPort);
             SshdSocketAddress bound = session.startRemotePortForwarding(remote, local);
 
-            try(Socket s = new Socket(bound.getHostName(), bound.getPort())) {
+            try(Socket s = new Socket(bound.getHostName(), bound.getPort());
+                OutputStream output = s.getOutputStream();
+                InputStream input = s.getInputStream()) {
+
                 s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(10L));
 
                 String  expected = getCurrentTestName();
@@ -182,10 +228,10 @@ public class PortForwardingTest extends BaseTestSupport {
                 byte[]  buf = new byte[bytes.length + Long.SIZE];
 
                 for (int i = 0; i < 1000; i++) {
-                    s.getOutputStream().write(bytes);
-                    s.getOutputStream().flush();
+                    output.write(bytes);
+                    output.flush();
 
-                    int     n = s.getInputStream().read(buf);
+                    int     n = input.read(buf);
                     String  res = new String(buf, 0, n);
                     assertEquals("Mismatched data at iteration #" + i, expected, res);
                 }
@@ -203,17 +249,20 @@ public class PortForwardingTest extends BaseTestSupport {
             int forwardedPort = getFreePort();
             session.setPortForwardingL(forwardedPort, "localhost", echoPort);
     
-            try(Socket s = new Socket("localhost", forwardedPort)) {
+            try(Socket s = new Socket("localhost", forwardedPort);
+                OutputStream output = s.getOutputStream();
+                InputStream input = s.getInputStream()) {
+
                 s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(10L));
 
                 String  expected = getCurrentTestName();
                 byte[]  bytes = expected.getBytes();
 
-                s.getOutputStream().write(bytes);
-                s.getOutputStream().flush();
+                output.write(bytes);
+                output.flush();
 
                 byte[]  buf = new byte[bytes.length + Long.SIZE];
-                int     n = s.getInputStream().read(buf);
+                int     n = input.read(buf);
                 String  res = new String(buf, 0, n);
                 assertEquals("Mismatched data", expected, res);
             }
@@ -231,17 +280,20 @@ public class PortForwardingTest extends BaseTestSupport {
             SshdSocketAddress remote = new SshdSocketAddress("localhost", echoPort);
             SshdSocketAddress bound = session.startLocalPortForwarding(local, remote);
 
-            try(Socket s = new Socket(bound.getHostName(), bound.getPort())) {
+            try(Socket s = new Socket(bound.getHostName(), bound.getPort());
+                OutputStream output = s.getOutputStream();
+                InputStream input = s.getInputStream()) {
+
                 s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(10L));
 
                 String  expected = getCurrentTestName();
                 byte[]  bytes = expected.getBytes();
 
-                s.getOutputStream().write(bytes);
-                s.getOutputStream().flush();
+                output.write(bytes);
+                output.flush();
 
                 byte[]  buf = new byte[bytes.length + Long.SIZE];
-                int     n = s.getInputStream().read(buf);
+                int     n = input.read(buf);
                 String  res = new String(buf, 0, n);
                 assertEquals("Mismatched data", expected, res);
             }
@@ -277,14 +329,17 @@ public class PortForwardingTest extends BaseTestSupport {
             String  expected = getCurrentTestName();
             byte[]  bytes = expected.getBytes();
             byte[]  buf = new byte[bytes.length + Long.SIZE];
-            try(Socket s = new Socket(bound.getHostName(), bound.getPort())) {
+            try(Socket s = new Socket(bound.getHostName(), bound.getPort());
+                OutputStream output = s.getOutputStream();
+                InputStream input = s.getInputStream()) {
+
                 s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(10L));
 
                 for (int i = 0; i < 1000; i++) {
-                    s.getOutputStream().write(bytes);
-                    s.getOutputStream().flush();
+                    output.write(bytes);
+                    output.flush();
 
-                    int     n = s.getInputStream().read(buf);
+                    int     n = input.read(buf);
                     String  res = new String(buf, 0, n);
                     assertEquals("Mismatched data at iteration #" + i, expected, res);
                 }
@@ -307,13 +362,16 @@ public class PortForwardingTest extends BaseTestSupport {
                 String  expected = getCurrentTestName();
                 byte[]  bytes = expected.getBytes();
 
-                channel.getInvertedIn().write(bytes);
-                channel.getInvertedIn().flush();
-
-                byte[]  buf = new byte[bytes.length + Long.SIZE];
-                int     n = channel.getInvertedOut().read(buf);
-                String  res = new String(buf, 0, n);
-                assertEquals("Mismatched data", expected, res);
+                try(OutputStream output = channel.getInvertedIn();
+                    InputStream input = channel.getInvertedOut()) {
+                    output.write(bytes);
+                    output.flush();
+    
+                    byte[]  buf = new byte[bytes.length + Long.SIZE];
+                    int     n = input.read(buf);
+                    String  res = new String(buf, 0, n);
+                    assertEquals("Mismatched data", expected, res);
+                }
                 channel.close(false);
             }
 
@@ -338,7 +396,7 @@ public class PortForwardingTest extends BaseTestSupport {
         
                 // 4. Make sure the NIOprocessor is not stuck
                 {
-                    Thread.sleep(1000);
+                    Thread.sleep(1000L);
                     // from here, we need to check all the threads running and find a
                     // "NioProcessor-"
                     // that is stuck on a PortForward.dispose

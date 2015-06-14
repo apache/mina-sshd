@@ -21,6 +21,7 @@ package org.apache.sshd.server.global;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.channel.RequestHandler;
+import org.apache.sshd.common.forward.TcpipForwarder;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -45,7 +46,9 @@ public class CancelTcpipForwardHandler extends AbstractLoggingBean implements Re
             if (log.isDebugEnabled()) {
                 log.debug("process(" + connectionService + ")[" + request + "] " + socketAddress + " reply=" + wantReply);
             }
-            connectionService.getTcpipForwarder().localPortForwardingCancelled(socketAddress);
+            
+            TcpipForwarder forwarder = connectionService.getTcpipForwarder(); 
+            forwarder.localPortForwardingCancelled(socketAddress);
 
             if (wantReply) {
                 Session session = connectionService.getSession();

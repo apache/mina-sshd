@@ -77,22 +77,27 @@ public class SshdSocketAddress extends SocketAddress {
         return getHostName() + ":" + getPort();
     }
 
+    protected boolean isEquivalent(SshdSocketAddress that) {
+        if (that == null) {
+            return false;
+        } else if (that == this) {
+            return true;
+        } else if ((this.getPort() == that.getPort())
+                && Objects.equals(this.getHostName(), that.getHostName())) {
+           return true;
+       } else {
+           return false;   // debug breakpoint
+       }
+    }
+
     @Override
     public boolean equals(Object o) {
-        if (this == o)
-            return true;
         if (o == null)
             return false;
         if (getClass() != o.getClass())
             return false;
 
-        SshdSocketAddress that = (SshdSocketAddress) o;
-        if ((this.getPort() == that.getPort())
-         && Objects.equals(this.getHostName(), that.getHostName())) {
-            return true;
-        } else {
-            return false;   // debug breakpoint
-        }
+        return isEquivalent((SshdSocketAddress) o);
     }
 
     @Override

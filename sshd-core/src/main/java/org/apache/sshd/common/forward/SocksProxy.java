@@ -36,8 +36,8 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
 /**
  * SOCKS proxy server, supporting simple socks4/5 protocols.
- *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @see <A HREF="https://en.wikipedia.org/wiki/SOCKS">SOCKS Wikipedia</A>
  */
 public class SocksProxy extends CloseableUtils.AbstractCloseable implements IoHandler {
 
@@ -120,6 +120,9 @@ public class SocksProxy extends CloseableUtils.AbstractCloseable implements IoHa
         }
     }
 
+    /**
+     * @see <A HREF="https://en.wikipedia.org/wiki/SOCKS#SOCKS4">SOCKS4</A>
+     */
     public class Socks4 extends Proxy {
         public Socks4(IoSession session) {
             super(session);
@@ -193,10 +196,12 @@ public class SocksProxy extends CloseableUtils.AbstractCloseable implements IoHa
 
     }
 
+    /**
+     * @see <A HREF="https://en.wikipedia.org/wiki/SOCKS#SOCKS5">SOCKS5</A>
+     */
     public class Socks5 extends Proxy {
-
-        byte[] authMethods;
-        Buffer response;
+        private byte[] authMethods;
+        private Buffer response;
 
         public Socks5(IoSession session) {
             super(session);
@@ -229,10 +234,14 @@ public class SocksProxy extends CloseableUtils.AbstractCloseable implements IoHa
                     throw new IllegalStateException("Unexpected version: " + version);
                 }
                 int cmd = buffer.getByte();
-                if (cmd != 1) {
+                if (cmd != 1) { // establish a TCP/IP stream connection
                     throw new IllegalStateException("Unsupported socks command: " + cmd);
                 }
                 final int res = buffer.getByte();
+                if (res != 0) {
+                    log.debug("No zero reserved value: " + (res & 0x00FF));
+                }
+
                 int type = buffer.getByte();
                 String host;
                 if (type == 0x01) {

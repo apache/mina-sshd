@@ -35,6 +35,7 @@ import org.apache.sshd.common.io.IoService;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  */
@@ -46,11 +47,11 @@ public abstract class Nio2Service extends CloseableUtils.AbstractInnerCloseable 
     protected final AsynchronousChannelGroup group;
 
     protected Nio2Service(FactoryManager manager, IoHandler handler, AsynchronousChannelGroup group) {
-        log.debug("Creating {}", getClass().getSimpleName());
-        this.manager = manager;
-        this.handler = handler;
+        log.trace("Creating {}", getClass().getSimpleName());
+        this.manager = ValidateUtils.checkNotNull(manager, "No factory manager provided", GenericUtils.EMPTY_OBJECT_ARRAY);
+        this.handler = ValidateUtils.checkNotNull(handler, "No I/O handler provided", GenericUtils.EMPTY_OBJECT_ARRAY);
+        this.group = ValidateUtils.checkNotNull(group, "No async. channel group provided", GenericUtils.EMPTY_OBJECT_ARRAY);
         this.sessions = new ConcurrentHashMap<Long, IoSession>();
-        this.group = group;
     }
 
     public void dispose() {
