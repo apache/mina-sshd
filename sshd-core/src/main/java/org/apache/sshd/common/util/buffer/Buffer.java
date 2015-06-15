@@ -116,11 +116,7 @@ public abstract class Buffer implements Readable {
         // TODO use Integer.BYTES for JDK-8
         ensureAvailable(Integer.SIZE / Byte.SIZE);
         getRawBytes(workBuf, 0, Integer.SIZE / Byte.SIZE);
-        long l = ((workBuf[0] << 24) & 0xff000000L)|
-                 ((workBuf[1] << 16) & 0x00ff0000L)|
-                 ((workBuf[2] <<  8) & 0x0000ff00L)|
-                 ((workBuf[3]      ) & 0x000000ffL);
-        return l;        
+        return BufferUtils.getUInt(workBuf, 0, Integer.SIZE / Byte.SIZE);
     }
 
     public long getLong() {
@@ -330,15 +326,12 @@ public abstract class Buffer implements Readable {
 
     /**
      * Writes 32 bits
-     * @param i
+     * @param i The 32-bit value
      */
     public void putInt(long i) {
         // TODO use Integer.BYTES for JDK-8
         ensureCapacity(Integer.SIZE / Byte.SIZE);
-        workBuf[0] = (byte) (i >> 24);
-        workBuf[1] = (byte) (i >> 16);
-        workBuf[2] = (byte) (i >>  8);
-        workBuf[3] = (byte) (i      );
+        BufferUtils.putUInt(i, workBuf, 0, Integer.SIZE / Byte.SIZE);
         putRawBytes(workBuf, 0, Integer.SIZE / Byte.SIZE);
     }
 

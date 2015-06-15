@@ -56,14 +56,18 @@ public abstract class AbstractSignature implements Signature {
     }
 
     @Override
-    public void update(byte[] foo, int off, int len) throws Exception {
-        signature.update(foo, off, len);
+    public void update(byte[] hash) throws Exception {
+        update(hash, 0, GenericUtils.length(hash));
+    }
+
+    @Override
+    public void update(byte[] hash, int off, int len) throws Exception {
+        signature.update(hash, off, len);
     }
 
     protected byte[] extractSig(byte[] sig) {
-        if (sig[0] == 0 && sig[1] == 0 && sig[2] == 0) {
-            int i = 0;
-            int j;
+        if ((sig[0] == 0) && (sig[1] == 0) && (sig[2] == 0)) {
+            int i = 0, j;
             j = ((sig[i++] << 24) & 0xff000000) |
                 ((sig[i++] << 16) & 0x00ff0000) |
                 ((sig[i++] <<  8) & 0x0000ff00) |
@@ -77,6 +81,7 @@ public abstract class AbstractSignature implements Signature {
             System.arraycopy(sig, i, tmp, 0, j);
             sig = tmp;
         }
+
         return sig;
     }
 

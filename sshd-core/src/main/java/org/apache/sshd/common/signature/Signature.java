@@ -34,39 +34,42 @@ public interface Signature {
     String getAlgorithm();
 
     /**
-     * Initialize this signature with the given public key and private key.
-     * If the private key is null, only signature verification can be performed.
-     *
-     * @param pubkey
-     * @param prvkey
-     * @throws Exception
+     * @param pubkey The {@link PublicKey} to be used for verifying signatures
+     * @param prvkey The {@link PrivateKey} to be used for signing - if {@code null}
+     * then only verification can be performed
+     * @throws Exception If failed to initialize
      */
     void init(PublicKey pubkey, PrivateKey prvkey) throws Exception;
 
     /**
      * Update the computed signature with the given data
-     *
-     * @param H
-     * @param off
-     * @param len
-     * @throws Exception
+     * @param hash The hash data buffer
+     * @throws Exception If failed to update
      */
-    void update(byte[] H, int off, int len) throws Exception;
+    void update(byte[] hash) throws Exception;
+
+    /**
+     * Update the computed signature with the given data
+     * @param hash The hash data buffer
+     * @param off Offset of hash data in buffer
+     * @param len Length of hash data
+     * @throws Exception If failed to update
+     */
+    void update(byte[] hash, int off, int len) throws Exception;
 
     /**
      * Verify against the given signature
      *
-     * @param sig
-     * @return
-     * @throws Exception
+     * @param sig The signed data
+     * @return {@code true} if signature is valid
+     * @throws Exception If failed to extract signed data for validation
      */
     boolean verify(byte[] sig) throws Exception;
 
     /**
      * Compute the signature
-     *
-     * @return
-     * @throws Exception
+     * @return The signature value
+     * @throws Exception If failed to calculate the signature
      */
     byte[] sign() throws Exception;
 

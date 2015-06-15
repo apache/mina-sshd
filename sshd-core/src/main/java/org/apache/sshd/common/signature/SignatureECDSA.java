@@ -23,10 +23,11 @@ import java.math.BigInteger;
 
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.common.util.io.DERParser;
+import org.apache.sshd.common.util.io.DERWriter;
 
 /**
- * Signature algorithm for EC keys using ECDSA. There 
- *
+ * Signature algorithm for EC keys using ECDSA. 
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class SignatureECDSA extends AbstractSignature {
@@ -38,71 +39,71 @@ public class SignatureECDSA extends AbstractSignature {
     @Override
     public byte[] sign() throws Exception {
         byte[] sig = signature.sign();
+        
+        // see http://tools.ietf.org/html/rfc3278#section-8.2
+        try(DERParser parser = new DERParser(sig)) {
+            int type = parser.read();
+            if (type != 0x30) {
+                throw new IOException("Invalid signature format - not a DER SEQUENCE: 0x" + Integer.toHexString(type));
+            }
+    
+            // length of remaining encoding of the 2 integers
+            int remainLen = parser.readLength();
+            /*
+             * There are supposed to be 2 INTEGERs, each encoded with:
+             * 
+             *  - one byte representing the fact that it is an INTEGER
+             *  - one byte of the integer encoding length
+             *  - at least one byte of integer data (zero length is not an option)
+             */
+            if (remainLen < (2 * 3)) {
+                throw new IOException("Invalid signature format - not enough encoded data length: " + remainLen);
+            }
 
-        if ((sig[0] != 0x30) || (sig[1] != sig.length - 2) || (sig[2] != 0x02)) {
-            throw new IOException("Invalid signature format");
+            BigInteger r = parser.readBigInteger();
+            BigInteger s = parser.readBigInteger();
+
+            // see https://tools.ietf.org/html/rfc5656#page-5
+            Buffer rsBuf = new ByteArrayBuffer();
+            rsBuf.putMPInt(r);
+            rsBuf.putMPInt(s);
+    
+            return rsBuf.getCompactData();
         }
-
-        int rLength = sig[3];
-        if ((rLength + 6 > sig.length) || (sig[4 + rLength] != 0x02)) {
-            throw new IOException("Invalid signature format");
-        }
-
-        int sLength = sig[5 + rLength];
-        if (6 + rLength + sLength > sig.length) {
-            throw new IOException("Invalid signature format");
-        }
-
-        byte[] rArray = new byte[rLength];
-        byte[] sArray = new byte[sLength];
-
-        System.arraycopy(sig, 4, rArray, 0, rLength);
-        System.arraycopy(sig, 6 + rLength, sArray, 0, sLength);
-
-        BigInteger r = new BigInteger(rArray);
-        BigInteger s = new BigInteger(sArray);
-
-        // Write the <r,s> to its own types writer.
-        Buffer rsBuf = new ByteArrayBuffer();
-        rsBuf.putMPInt(r);
-        rsBuf.putMPInt(s);
-
-        return rsBuf.getCompactData();
     }
 
     @Override
     public boolean verify(byte[] sig) throws Exception {
-        sig = extractSig(sig);
+        byte[] data = extractSig(sig);
+        Buffer rsBuf = new ByteArrayBuffer(data);
 
-        Buffer rsBuf = new ByteArrayBuffer(sig);
-        byte[] rArray = rsBuf.getMPIntAsBytes();
-        byte[] sArray = rsBuf.getMPIntAsBytes();
-
-        if (rsBuf.available() != 0) {
-            throw new IOException("Signature had padding");
+        byte[] rArray = rsBuf.getMPIntAsBytes(), rEncoding;
+        try(DERWriter w = new DERWriter(rArray.length + 4)) {     // in case length > 0x7F
+            w.writeBigInteger(rArray);
+            rEncoding = w.toByteArray();
+        }
+        
+        byte[] sArray = rsBuf.getMPIntAsBytes(), sEncoding;
+        try(DERWriter w = new DERWriter(sArray.length + 4)) {     // in case length > 0x7F
+            w.writeBigInteger(sArray);
+            sEncoding = w.toByteArray();
+        }
+        
+        int remaining = rsBuf.available();
+        if (remaining != 0) {
+            throw new IOException("Signature had padding - remaining=" + remaining);
         }
 
-        // ASN.1
-        int frst = ((rArray[0] & 0x80) != 0 ? 1 : 0);
-        int scnd = ((sArray[0] & 0x80) != 0 ? 1 : 0);
+        int length = rEncoding.length + sEncoding.length;
+        byte[] encoded;
+        try(DERWriter w = new DERWriter(1 + length + 4)) {  // in case length > 0x7F
+            w.write(0x30); // SEQUENCE
+            w.writeLength(length);
+            w.write(rEncoding);
+            w.write(sEncoding);
+            encoded = w.toByteArray();
+        }
 
-        int length = rArray.length + sArray.length + 6 + frst + scnd;
-        byte[] tmp = new byte[length];
-        tmp[0] = (byte) 0x30;
-        tmp[1] = (byte) (rArray.length + sArray.length + 4);
-        tmp[1] += frst;
-        tmp[1] += scnd;
-        tmp[2] = (byte) 0x02;
-        tmp[3] = (byte) rArray.length;
-        tmp[3] += frst;
-        System.arraycopy(rArray, 0, tmp, 4 + frst, rArray.length);
-        tmp[4 + tmp[3]] = (byte) 0x02;
-        tmp[5 + tmp[3]] = (byte) sArray.length;
-        tmp[5 + tmp[3]] += scnd;
-        System.arraycopy(sArray, 0, tmp, 6 + tmp[3] + scnd, sArray.length);
-        sig = tmp;
-
-        return signature.verify(sig);
+        return signature.verify(encoded);
     }
-
 }

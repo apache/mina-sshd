@@ -67,6 +67,12 @@ public final class ValidateUtils {
         return t;
     }
 
+    public static final void checkTrue(boolean flag, String message, long arg) {
+        if (!flag) {
+            throwIllegalArgumentException(message, Long.valueOf(arg));
+        }
+    }
+
     public static final void checkTrue(boolean flag, String message, Object arg) {
         if (!flag) {
             throwIllegalArgumentException(message, arg);

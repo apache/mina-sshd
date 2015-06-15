@@ -25,17 +25,20 @@ import java.security.spec.ECGenParameterSpec;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.RuntimeSshException;
+import org.apache.sshd.common.cipher.ECCurves;
+import org.apache.sshd.common.config.keys.ECDSAPublicKeyEntryDecoder;
 import org.apache.sshd.common.keyprovider.AbstractKeyPairProvider;
 import org.apache.sshd.common.signature.BuiltinSignatures;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.SecurityUtils;
-import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.PublickeyAuthenticator.AcceptAllPublickeyAuthenticator;
+import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.BaseTestSupport;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.Utils;
@@ -58,10 +61,13 @@ public class EcdsaTest extends BaseTestSupport {
     private SshClient client;
     private int port;
 
+    public EcdsaTest() {
+        super();
+    }
+
     @Before
     public void setUp() throws Exception {
         sshd = SshServer.setUpDefaultServer();
-//        sshd.setShellFactory(new TestEchoShellFactory());
         sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
         sshd.setSessionFactory(new org.apache.sshd.server.session.SessionFactory());
     }
@@ -78,21 +84,46 @@ public class EcdsaTest extends BaseTestSupport {
 
     @Test
     public void testECDSA_SHA2_NISTP256() throws Exception {
-        Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
+        testECDSA_SHA2_NISTP_Curve(ECCurves.NISTP256);
+    }
+
+    @Test
+    public void testECDSA_SHA2_NISTP384() throws Exception {
+        testECDSA_SHA2_NISTP_Curve(ECCurves.NISTP384);
+    }
+
+    @Test
+    public void testECDSA_SHA2_NISTP521() throws Exception {
+        testECDSA_SHA2_NISTP_Curve(ECCurves.NISTP521);
+    }
+
+    private void testECDSA_SHA2_NISTP_Curve(final String curvName) throws Exception {
+        Assume.assumeTrue("ECC not supported", SecurityUtils.hasEcc() || SecurityUtils.isBouncyCastleRegistered());
         sshd.setKeyPairProvider(new AbstractKeyPairProvider() {
-            @Override
-            public Iterable<KeyPair> loadKeys() {
-                try {
-                    ECGenParameterSpec ecGenSpec = new ECGenParameterSpec("secp256r1");
-                    KeyPairGenerator generator = SecurityUtils.getKeyPairGenerator("ECDSA");
-                    generator.initialize(ecGenSpec, new SecureRandom());
-                    KeyPair kp = generator.generateKeyPair();
-                    return Collections.singleton(kp);
-                } catch (Exception e) {
-                    throw new RuntimeSshException(e);
+                private final AtomicReference<Iterable<KeyPair>> keys=new AtomicReference<Iterable<KeyPair>>(null);
+    
+                @Override
+                public Iterable<KeyPair> loadKeys() {
+                    Iterable<KeyPair>   iter;
+                    synchronized(keys) {
+                        if ((iter=keys.get()) != null) {
+                            return iter;
+                        }
+    
+                        try {
+                            Integer keySize = ECCurves.getCurveSize(curvName);
+                            assertNotNull("No key size for curve=" + curvName, keySize);
+                            KeyPair kp = ECDSAPublicKeyEntryDecoder.INSTANCE.generateKeyPair(keySize.intValue());
+                            iter = Collections.singleton(kp);
+                            keys.set(iter);
+                        } catch (Exception e) {
+                            throw new RuntimeSshException(e);
+                        }
+                    }
+                    
+                    return iter;
                 }
-            }
-        });
+            });
         sshd.start();
         port = sshd.getPort();
 
@@ -104,7 +135,7 @@ public class EcdsaTest extends BaseTestSupport {
         client.start();
         try(ClientSession s = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
             s.addPasswordIdentity(getCurrentTestName());
-            s.auth().verify(5L, TimeUnit.SECONDS);
+            s.auth().verify(15L, TimeUnit.SECONDS);
         } finally {
             client.stop();
         }

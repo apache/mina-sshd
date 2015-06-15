@@ -59,6 +59,62 @@ public class BufferUtils {
         return sb.toString();
     }
 
+    /**
+     * @param buf A buffer holding a 32-bit unsigned integer in <B>big endian</B>
+     * format. <B>Note:</B> if more than 4 bytes are available, then only the
+     * <U>first</U> 4 bytes in the buffer will be used
+     * @return The result as a {@code long} whose 32 high-order bits are zero
+     * @see #getUInt(byte[], int, int)
+     */
+    public static long getUInt(byte ... buf) {
+        return getUInt(buf, 0, GenericUtils.length(buf));
+    }
+    
+    /**
+     * @param buf A buffer holding a 32-bit unsigned integer in <B>big endian</B>
+     * format.
+     * @param off The offset of the data in the buffer
+     * @param len The available data length. <B>Note:</B> if more than 4 bytes
+     * are available, then only the <U>first</U> 4 bytes in the buffer will be
+     * used (starting at the specified <tt>offset</tt>)
+     * @return The result as a {@code long} whose 32 high-order bits are zero
+     */
+    public static long getUInt(byte[] buf, int off, int len) {
+        // TODO use Integer.BYTES for JDK-8
+        if (len < (Integer.SIZE / Byte.SIZE)) {
+            throw new IllegalArgumentException("Not enough data for a UINT: required=" + (Integer.SIZE / Byte.SIZE) + ", available=" + len);
+        }
+
+        return ((buf[off] << 24) & 0xff000000L)
+             | ((buf[off + 1] << 16) & 0x00ff0000L)
+             | ((buf[off + 2] <<  8) & 0x0000ff00L)
+             | ((buf[off + 3]      ) & 0x000000ffL)
+             ;
+    }
+
+    /**
+     * @param value The 32-bit value 
+     * @param buf
+     * @return
+     */
+    public static int putUInt(long value, byte[] buf) {
+        return putUInt(value, buf, 0, GenericUtils.length(buf));
+    }
+
+    public static int putUInt(long value, byte[] buf, int off, int len) {
+        // TODO use Integer.BYTES for JDK-8
+        if (len < (Integer.SIZE / Byte.SIZE)) {
+            throw new IllegalArgumentException("Not enough data for a UINT: required=" + (Integer.SIZE / Byte.SIZE) + ", available=" + len);
+        }
+
+        buf[off]     = (byte) (value >> 24);
+        buf[off + 1] = (byte) (value >> 16);
+        buf[off + 2] = (byte) (value >>  8);
+        buf[off + 3] = (byte) (value & 0xFF);
+
+        return (Integer.SIZE / Byte.SIZE);
+    }
+
     public static boolean equals(byte[] a1, byte[] a2) {
         int len1 = GenericUtils.length(a1);
         int len2 = GenericUtils.length(a2);
