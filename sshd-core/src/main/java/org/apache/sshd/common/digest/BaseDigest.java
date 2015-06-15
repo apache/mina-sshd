@@ -19,8 +19,11 @@
 package org.apache.sshd.common.digest;
 
 import java.security.MessageDigest;
+import java.util.Objects;
 
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.SecurityUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * Base class for Digest algorithms based on the JCE provider.
@@ -30,7 +33,8 @@ import org.apache.sshd.common.util.SecurityUtils;
 public class BaseDigest implements Digest {
 
     private final String algorithm;
-    private int bsize;
+    private final int bsize, h;
+    private final String s;
     private MessageDigest md;
 
     /**
@@ -42,8 +46,16 @@ public class BaseDigest implements Digest {
      * @param bsize the block size of this digest
      */
     public BaseDigest(String algorithm, int bsize) {
-        this.algorithm = algorithm;
+        this.algorithm = ValidateUtils.checkNotNullAndNotEmpty(algorithm, "No algorithm", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkTrue(bsize > 0, "Invalid block size: %d", bsize);
         this.bsize = bsize;
+        this.s = getClass().getSimpleName() + "[" + algorithm + ":" + bsize + "]";
+        this.h = Objects.hashCode(algorithm) + bsize;
+    }
+
+    @Override
+    public final String getAlgorithm() {
+        return algorithm;
     }
 
     @Override
@@ -53,12 +65,17 @@ public class BaseDigest implements Digest {
 
     @Override
     public void init() throws Exception {
-        this.md = SecurityUtils.getMessageDigest(algorithm);
+        this.md = SecurityUtils.getMessageDigest(getAlgorithm());
     }
 
     @Override
-    public void update(byte[] foo, int start, int len) throws Exception {
-        md.update(foo, start, len);
+    public void update(byte[] data) throws Exception {
+        update(data, 0, GenericUtils.length(data));
+    }
+
+    @Override
+    public void update(byte[] data, int start, int len) throws Exception {
+        md.update(data, start, len);
     }
 
     @Override
@@ -66,4 +83,54 @@ public class BaseDigest implements Digest {
         return md.digest();
     }
 
+    @Override
+    public int hashCode() {
+        return h;
+    }
+
+    @Override
+    public int compareTo(Digest that) {
+        if (that == null) {
+            return (-1);    // push null(s) to end
+        } else if (this == that) {
+            return 0;
+        }
+
+        String thisAlg = getAlgorithm(), thatAlg = that.getAlgorithm();
+        int nRes = GenericUtils.safeCompare(thisAlg, thatAlg, false);
+        if (nRes != 0) {
+            return nRes;    // debug breakpoint
+        }
+        
+        if ((nRes = Integer.compare(this.getBlockSize(), that.getBlockSize())) != 0) {
+            return nRes;    // debug breakpoint
+        }
+
+        return 0;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (obj == this) {
+            return true;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        
+        int nRes = compareTo((Digest) obj);
+        if (nRes == 0) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    @Override
+    public String toString() {
+        return s;
+    }
 }

@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.common.config.keys;
 
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.Key;
@@ -42,15 +43,17 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.digest.BuiltinDigests;
 import org.apache.sshd.common.digest.Digest;
+import org.apache.sshd.common.digest.DigestUtils;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
-import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
 /**
@@ -195,12 +198,84 @@ public final class KeyUtils {
     }
 
     /**
-     * Retrieve the public key fingerprint
-     *
+     * The default {@link Factory} of {@link Digest}s initialized
+     * as the value of {@link #getDefaultFingerPrintFactory()}
+     */
+    public static final Factory<Digest> DEFAULT_FINGERPRINT_DIGEST_FACTORY = BuiltinDigests.md5;
+    private static final AtomicReference<Factory<? extends Digest>> defaultDigestHolder = 
+            new AtomicReference<Factory<? extends Digest>>(DEFAULT_FINGERPRINT_DIGEST_FACTORY);
+
+    /**
+     * @return The default {@link Factory} of {@link Digest}s used
+     * by the {@link #getFingerPrint(PublicKey)} and {@link #getFingerPrint(String)}
+     * methods
+     * @see #setDefaultFingerPrintFactory(Factory)
+     */
+    public static Factory<? extends Digest> getDefaultFingerPrintFactory() {
+        return defaultDigestHolder.get();
+    }
+
+    /**
+     * @param f The {@link Factory} of {@link Digest}s to be used - may
+     * not be {@code null}
+     */
+    public static void setDefaultFingerPrintFactory (Factory<? extends Digest> f) {
+        defaultDigestHolder.set(ValidateUtils.checkNotNull(f, "No digest factory", GenericUtils.EMPTY_OBJECT_ARRAY));
+    }
+
+    /**
      * @param key the public key - ignored if {@code null}
-     * @return the fingerprint or {@code null} if no key
+     * @return the fingerprint or {@code null} if no key.
+     * <B>Note:</B> if exception encountered then returns the exception's simple class name
+     * @see #getFingerPrint(Factory, PublicKey)
      */
     public static String getFingerPrint(PublicKey key) {
+        return getFingerPrint(getDefaultFingerPrintFactory(), key);
+    }
+
+    /**
+     * @param password The {@link String} to digest - ignored if {@code null}/empty,
+     * otherwise its UTF-8 representation is used as input for the fingerprint
+     * @return The fingerprint - {@code null} if {@code null}/empty input.
+     * <B>Note:</B> if exception encountered then returns the exception's simple class name
+     * @see #getFingerPrint(String, Charset)
+     */
+    public static String getFingerPrint(String password) {
+        return getFingerPrint(password, StandardCharsets.UTF_8);
+    }
+
+    /**
+     * @param password The {@link String} to digest - ignored if {@code null}/empty
+     * @param charset The {@link Charset} to use in order to convert the
+     * string to its byte representation to use as input for the fingerprint
+     * @return The fingerprint - {@code null} if {@code null}/empty input.
+     * <B>Note:</B> if exception encountered then returns the exception's simple class name
+     * @see #getFingerPrint(Factory, String, Charset)
+     * @see #getDefaultFingerPrintFactory()
+     */
+    public static String getFingerPrint(String password, Charset charset) {
+        return getFingerPrint(getDefaultFingerPrintFactory(), password, charset);
+    }
+
+    /**
+     * @param f The {@link Factory} to create the {@link Digest} to use
+     * @param key the public key - ignored if {@code null}
+     * @return the fingerprint or {@code null} if no key.
+     * <B>Note:</B> if exception encountered then returns the exception's simple class name
+     * @see #getFingerPrint(Digest, PublicKey)
+     */
+    public static String getFingerPrint(Factory<? extends Digest> f, PublicKey key) {
+        return getFingerPrint(f.create(), key);
+    }
+
+    /**
+     * @param d The {@link Digest} to use
+     * @param key the public key - ignored if {@code null}
+     * @return the fingerprint or {@code null} if no key.
+     * <B>Note:</B> if exception encountered then returns the exception's simple class name
+     * @see DigestUtils#getFingerPrint(Digest, byte[], int, int)
+     */
+    public static String getFingerPrint(Digest d, PublicKey key) {
         if (key == null) {
             return null;
         }
@@ -208,56 +283,94 @@ public final class KeyUtils {
         try {
             Buffer buffer = new ByteArrayBuffer();
             buffer.putRawPublicKey(key);
-            return getFingerPrint(buffer.array(), 0, buffer.wpos());
+            return DigestUtils.getFingerPrint(d, buffer.array(), 0, buffer.wpos());
         } catch(Exception e) {
             return e.getClass().getSimpleName();
         }
     }
 
-    public static String getFingerPrint(String password) {
-        if (GenericUtils.isEmpty(password)) {
+    /**
+     * @param f The {@link Factory} to create the {@link Digest} to use
+     * @param s The {@link String} to digest - ignored if {@code null}/empty,
+     * otherwise its UTF-8 representation is used as input for the fingerprint
+     * @return The fingerprint - {@code null} if {@code null}/empty input.
+     * <B>Note:</B> if exception encountered then returns the exception's simple class name
+     * @see #getFingerPrint(Digest, String, Charset)
+     */
+    public static String getFingerPrint(Factory<? extends Digest> f, String s) {
+        return getFingerPrint(f, s, StandardCharsets.UTF_8);
+    }
+
+    /**
+     * @param f The {@link Factory} to create the {@link Digest} to use
+     * @param s The {@link String} to digest - ignored if {@code null}/empty
+     * @param charset The {@link Charset} to use in order to convert the
+     * string to its byte representation to use as input for the fingerprint
+     * @return The fingerprint - {@code null} if {@code null}/empty input
+     * <B>Note:</B> if exception encountered then returns the exception's simple class name
+     * @see DigestUtils#getFingerPrint(Digest, String, Charset)
+     */
+    public static String getFingerPrint(Factory<? extends Digest> f, String s, Charset charset) {
+        return getFingerPrint(f.create(), s, charset);
+    }
+
+    /**
+     * @param d The {@link Digest} to use
+     * @param s The {@link String} to digest - ignored if {@code null}/empty,
+     * otherwise its UTF-8 representation is used as input for the fingerprint
+     * @return The fingerprint - {@code null} if {@code null}/empty input.
+     * <B>Note:</B> if exception encountered then returns the exception's simple class name
+     * @see DigestUtils#getFingerPrint(Digest, String, Charset)
+     */
+    public static String getFingerPrint(Digest d, String s) {
+        return getFingerPrint(d, s, StandardCharsets.UTF_8);
+    }
+
+    /**
+     * @param d The {@link Digest} to use to calculate the fingerprint
+     * @param s The string to digest - ignored if {@code null}/empty
+     * @param charset The {@link Charset} to use in order to convert the
+     * string to its byte representation to use as input for the fingerprint
+     * @return The fingerprint - {@code null} if {@code null}/empty input.
+     * <B>Note:</B> if exception encountered then returns the exception's simple class name
+     * @see DigestUtils#getFingerPrint(Digest, String, Charset)
+     */
+    public static String getFingerPrint(Digest d, String s, Charset charset) {
+        if (GenericUtils.isEmpty(s)) {
             return null;
         }
         
         try {
-            return getFingerPrint(password.getBytes(StandardCharsets.UTF_8));
+            return DigestUtils.getFingerPrint(d, s, charset);
         } catch(Exception e) {
             return e.getClass().getSimpleName();
         }
     }
-    
-    public static String getFingerPrint(byte ... buf) throws Exception {
-        return getFingerPrint(buf, 0, GenericUtils.length(buf));
-    }
-    
-    public static String getFingerPrint(byte[] buf, int offset, int len) throws Exception {
-        if (len <= 0) {
-            return null;
-        }
 
-        Digest md5 = BuiltinDigests.md5.create();
-        md5.init();
-        md5.update(buf, offset, len);
-
-        byte[] data = md5.digest();
-        return BufferUtils.printHex(data, 0, data.length, ':');
-    }
 
     /**
-     * Retrieve the key type
-     *
-     * @param kp a key pair
-     * @return the key type
+     * @param kp a key pair - ignored if {@code null}. If the private
+     * key is non-{@code null} then it is used to determine the type,
+     * otherwise the public one is used.
+     * @return the key type or {@code null} if cannot determine it
+     * @see #getKeyType(Key)
      */
     public static String getKeyType(KeyPair kp) {
-        return getKeyType(kp.getPrivate() != null ? kp.getPrivate() : kp.getPublic());
+        if (kp == null) {
+            return null;
+        }
+        
+        PrivateKey key = kp.getPrivate();
+        if (key != null) {
+            return getKeyType(key);
+        } else {
+            return getKeyType(kp.getPublic());
+        }
     }
 
     /**
-     * Retrieve the key type
-     *
      * @param key a public or private key
-     * @return the key type
+     * @return the key type or {@code null} if cannot determine it
      */
     public static String getKeyType(Key key) {
         if (key instanceof DSAKey) {

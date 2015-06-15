@@ -16,20 +16,21 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.sshd.common.digest;
 
 /**
- * Interface used to compute digests, based on algorithms such as MD5 or SHA1.
- * The digest implementation are compared first by the algorithm name (case
- * <U>insensitive</U> and second according to the block size
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface Digest extends DigestInformation, Comparable<Digest> {
-    void init() throws Exception;
+public interface DigestInformation {
+    /**
+     * @return The digest algorithm name
+     */
+    String getAlgorithm();
 
-    void update(byte[] data) throws Exception;
+    /**
+     * @return The number of bytes in the digest's output
+     */
+    int getBlockSize();
 
-    void update(byte[] data, int start, int len) throws Exception;
-
-    byte[] digest() throws Exception;
 }

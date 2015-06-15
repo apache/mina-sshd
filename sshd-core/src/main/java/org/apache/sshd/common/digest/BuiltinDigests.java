@@ -31,38 +31,15 @@ import org.apache.sshd.common.util.GenericUtils;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public enum BuiltinDigests implements NamedFactory<Digest> {
-    md5(Constants.MD5) {
-        @Override
-        public Digest create() {
-            return new BaseDigest("MD5", 16);
-        }
-    },
-    sha1(Constants.SHA1) {
-        @Override
-        public Digest create() {
-            return new BaseDigest("SHA-1", 20);
-        }
-    },
-    sha256(Constants.SHA256) {
-        @Override
-        public Digest create() {
-            return new BaseDigest("SHA-256", 32);
-        }
-    },
-    sha384(Constants.SHA384) {
-        @Override
-        public Digest create() {
-            return new BaseDigest("SHA-384", 48);
-        }
-    },
-    sha512(Constants.SHA512) {
-        @Override
-        public Digest create() {
-            return new BaseDigest("SHA-512", 64);
-        }
-    };
+public enum BuiltinDigests implements DigestInformation, NamedFactory<Digest> {
+    md5(Constants.MD5, "MD5", 16),
+    sha1(Constants.SHA1, "SHA-1", 20),
+    sha256(Constants.SHA256, "SHA-256", 32),
+    sha384(Constants.SHA384, "SHA-384", 48),
+    sha512(Constants.SHA512, "SHA-512", 64);
 
+    private final String algorithm;
+    private final int blockSize;
     private final String factoryName;
 
     @Override
@@ -71,12 +48,29 @@ public enum BuiltinDigests implements NamedFactory<Digest> {
     }
 
     @Override
+    public final String getAlgorithm() {
+        return algorithm;
+    }
+
+    @Override
+    public final int getBlockSize() {
+        return blockSize;
+    }
+
+    @Override
     public final String toString() {
         return getName();
     }
 
-    BuiltinDigests(String facName) {
-        factoryName = facName;
+    @Override
+    public final Digest create() {
+        return new BaseDigest(getAlgorithm(), getBlockSize());
+    }
+
+    BuiltinDigests(String factoryName, String algorithm, int blockSize) {
+        this.factoryName = factoryName;
+        this.algorithm = algorithm;
+        this.blockSize = blockSize;
     }
 
     public static final Set<BuiltinDigests> VALUES =

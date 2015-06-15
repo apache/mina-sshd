@@ -19,12 +19,19 @@
 
 package org.apache.sshd.common.config.keys;
 
+import java.security.DigestException;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 
+import org.apache.sshd.common.Factory;
+import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.cipher.ECCurves;
+import org.apache.sshd.common.digest.BaseDigest;
+import org.apache.sshd.common.digest.BuiltinDigests;
+import org.apache.sshd.common.digest.Digest;
+import org.apache.sshd.common.digest.DigestInformation;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.SecurityUtils;
@@ -100,6 +107,45 @@ public class KeyUtilsTest extends BaseTestSupport {
         }
     }
 
+    @Test
+    public void testGenerateFingerPrintOnException() {
+        for (DigestInformation info : BuiltinDigests.VALUES) {
+            final Exception thrown = new DigestException(info.getAlgorithm() + ":" + info.getBlockSize());
+            final Digest digest = new BaseDigest(info.getAlgorithm(), info.getBlockSize()) {
+                    @Override
+                    public byte[] digest() throws Exception {
+                        throw thrown;
+                    }
+                };
+            String actual = KeyUtils.getFingerPrint(new Factory<Digest>() {
+                    @Override
+                    public Digest create() {
+                        return digest;
+                    }
+                }, getCurrentTestName());
+            String expected = thrown.getClass().getSimpleName();
+            assertEquals("Mismatched fingerprint for " + thrown.getMessage(), expected, actual);
+        }
+    }
+
+    @Test
+    public void testGenerateDefaultFingerprintDigest() {
+        final Factory<? extends Digest> defaultValue = KeyUtils.getDefaultFingerPrintFactory();
+        assertNotNull("No current default fingerprint digest factory", defaultValue);
+        try {
+            for (NamedFactory<? extends Digest> f : BuiltinDigests.VALUES) {
+                KeyUtils.setDefaultFingerPrintFactory(f);
+                
+                String data = getClass().getName() + "#" + getCurrentTestName() + "(" + f.getName() + ")";
+                String expected = KeyUtils.getFingerPrint(f, data);
+                String actual = KeyUtils.getFingerPrint(data);
+                assertEquals("Mismatched fingerprint for digest=" + f.getName(), expected, actual);
+            }
+        } finally {
+            KeyUtils.setDefaultFingerPrintFactory(defaultValue); // restore the original
+        }
+    }
+
     private static KeyPair generateKeyPair(String keyType, int keySize) throws GeneralSecurityException {
         try {
             System.out.println("generateKeyPair(" + keyType + ")[" + keySize + "]");
@@ -133,5 +179,4 @@ public class KeyUtilsTest extends BaseTestSupport {
             assertTrue(prefix + ": Cloned private key not equals", KeyUtils.compareKeys(k1, k2));
         }
     }
-
 }

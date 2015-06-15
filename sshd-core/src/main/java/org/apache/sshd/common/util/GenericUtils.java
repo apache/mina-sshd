@@ -52,6 +52,20 @@ public final class GenericUtils {
         }
     }
 
+    public static final int safeCompare(String s1, String s2, boolean caseSensitive) {
+        if (s1 == s2) {
+            return 0;
+        } else if (s1 == null) {
+            return (+1);    // push null(s) to end
+        } else if (s2 == null) {
+            return (-1);    // push null(s) to end
+        } else if (caseSensitive) {
+            return s1.compareTo(s2);
+        } else {
+            return s1.compareToIgnoreCase(s2);
+        }
+    }
+
     public static final int length(CharSequence cs) {
         if (cs == null) {
             return 0;
