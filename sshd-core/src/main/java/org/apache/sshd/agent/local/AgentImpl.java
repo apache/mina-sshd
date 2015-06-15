@@ -21,19 +21,21 @@ package org.apache.sshd.agent.local;
 import java.io.IOException;
 import java.security.KeyPair;
 import java.security.PublicKey;
-import java.security.interfaces.DSAParams;
 import java.security.interfaces.DSAPublicKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPublicKey;
-import java.security.spec.ECParameterSpec;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.signature.BuiltinSignatures;
 import org.apache.sshd.common.signature.Signature;
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.Pair;
+import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * A local SSH agent implementation
@@ -71,24 +73,23 @@ public class AgentImpl implements SshAgent {
             throw new SshException("Agent closed");
         }
 
-        Pair<KeyPair, String> kp = getKeyPair(keys, key);
-        if (kp == null) {
-            throw new SshException("Key not found");
-        }
-
         try {
+            Pair<KeyPair, String> pp = ValidateUtils.checkNotNull(getKeyPair(keys, key), "Key not found", GenericUtils.EMPTY_OBJECT_ARRAY);
+            KeyPair kp = ValidateUtils.checkNotNull(pp.getFirst(), "No key pair for agent=%s", pp.getSecond());
+            PublicKey pubKey = ValidateUtils.checkNotNull(kp.getPublic(), "No public key for agent=%s", pp.getSecond());
+
             final Signature verif;
-            if (kp.getFirst().getPublic() instanceof DSAPublicKey) {
+            if (pubKey instanceof DSAPublicKey) {
                 verif = BuiltinSignatures.dsa.create();
-            } else if (kp.getFirst().getPublic() instanceof ECPublicKey) {
-                ECPublicKey pubKey = (ECPublicKey) kp.getFirst().getPublic();
-                verif = BuiltinSignatures.getByCurveSize(pubKey.getParams());
-            } else if (kp.getFirst().getPublic() instanceof RSAPublicKey) {
+            } else if (pubKey instanceof ECPublicKey) {
+                ECPublicKey ecKey = (ECPublicKey) pubKey;
+                verif = BuiltinSignatures.getByCurveSize(ecKey.getParams());
+            } else if (pubKey instanceof RSAPublicKey) {
                 verif = BuiltinSignatures.rsa.create();
             } else {
-                throw new SshException("Unsupported key type");
+                throw new SshException("Unsupported key type: " + pubKey.getClass().getSimpleName());
             }
-            verif.init(kp.getFirst().getPublic(), kp.getFirst().getPrivate());
+            verif.initSigner(kp.getPrivate());
             verif.update(data, 0, data.length);
             return verif.sign();
         } catch (IOException e) {
@@ -133,45 +134,14 @@ public class AgentImpl implements SshAgent {
         }
     }
 
-    protected static SshAgent.Pair<KeyPair, String> getKeyPair(List<SshAgent.Pair<KeyPair, String>> keys, PublicKey key) {
-        SshAgent.Pair<KeyPair, String> kp = null;
-        for (SshAgent.Pair<KeyPair, String> k : keys) {
-            if (areKeyEquals(key, k.getFirst().getPublic())) {
-                kp = k;
-                break;
+    protected static Pair<KeyPair, String> getKeyPair(List<Pair<KeyPair, String>> keys, PublicKey key) {
+        for (Pair<KeyPair, String> k : keys) {
+            KeyPair kp = k.getFirst();
+            if (KeyUtils.compareKeys(key, kp.getPublic())) {
+                return k;
             }
         }
-        return kp;
-    }
 
-    protected static boolean areKeyEquals(PublicKey k1, PublicKey k2) {
-        if (k1 instanceof DSAPublicKey && k2 instanceof DSAPublicKey) {
-            DSAPublicKey d1 = (DSAPublicKey) k1;
-            DSAPublicKey d2 = (DSAPublicKey) k2;
-            DSAParams p1 = d1.getParams();
-            DSAParams p2 = d2.getParams();
-            return d1.getY().equals(d2.getY())
-                        && p1.getG().equals(p2.getG())
-                        && p1.getP().equals(p2.getP())
-                        && p1.getQ().equals(p2.getQ());
-        } else if (k1 instanceof ECPublicKey && k2 instanceof ECPublicKey) {
-            ECPublicKey e1 = (ECPublicKey) k1;
-            ECPublicKey e2 = (ECPublicKey) k2;
-            ECParameterSpec p1 = e1.getParams();
-            ECParameterSpec p2 = e2.getParams();
-            return p1.getCofactor() == p2.getCofactor()
-                        && p1.getOrder().equals(p2.getOrder())
-                        && e1.getW().equals(e2.getW())
-                        && p1.getGenerator().equals(p2.getGenerator())
-                        && p1.getCurve().equals(p2.getCurve());
-        } else if (k1 instanceof RSAPublicKey && k2 instanceof RSAPublicKey) {
-            RSAPublicKey r1 = (RSAPublicKey) k1;
-            RSAPublicKey r2 = (RSAPublicKey) k2;
-            return r1.getModulus().equals(r2.getModulus())
-                        && r1.getPublicExponent().equals(r2.getPublicExponent());
-        } else {
-            return false;
-        }
+        return null;
     }
-
 }

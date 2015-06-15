@@ -37,6 +37,10 @@ import java.security.spec.ECField;
 import java.security.spec.ECParameterSpec;
 import java.security.spec.ECPoint;
 import java.security.spec.EllipticCurve;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -54,6 +58,15 @@ import org.junit.runner.Description;
  */
 public abstract class BaseTestSupport extends Assert {
     public static final String TEMP_SUBFOLDER_NAME="temp";
+
+    // useful test sizes for keys
+    @SuppressWarnings("boxing")
+    public static final List<Integer> DSS_SIZES =
+        Collections.unmodifiableList(Arrays.asList(512, 768, 1024));
+    @SuppressWarnings("boxing")
+    public static final List<Integer> RSA_SIZES =
+            Collections.unmodifiableList(Arrays.asList(1024, 2048, 3072, 4096));
+
     @Rule public final TestWatcher rule = new TestWatcher() {
             // TODO consider using a ThreadLocal storage for the start time - provided
             //      the code is assured to call starting/finished on the same thread
@@ -123,6 +136,18 @@ public abstract class BaseTestSupport extends Assert {
         return sb.toString();
     }
 
+    public static List<Object[]> parameterize(Collection<?> params) {
+        if (GenericUtils.isEmpty(params)) {
+            return Collections.emptyList();
+        }
+        
+        List<Object[]> result = new ArrayList<Object[]>(params.size());
+        for (Object p : params) {
+            result.add(new Object[] { p });
+        }
+
+        return result;
+    }
     /* ----------------------- Useful extra assertions --------------------- */
 
     public static void assertEquals(String message, boolean expected, boolean actual) {

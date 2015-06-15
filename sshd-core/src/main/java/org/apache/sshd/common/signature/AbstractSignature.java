@@ -18,12 +18,15 @@
  */
 package org.apache.sshd.common.signature;
 
+import java.nio.charset.StandardCharsets;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.buffer.BufferUtils;
 
 /**
  * TODO Add javadoc
@@ -43,16 +46,18 @@ public abstract class AbstractSignature implements Signature {
     public final String getAlgorithm() {
         return algorithm;
     }
+    
 
     @Override
-    public void init(PublicKey pubkey, PrivateKey prvkey) throws Exception {
+    public void initVerifier(PublicKey key) throws Exception {
         signature = SecurityUtils.getSignature(getAlgorithm());
-        if (pubkey != null) {
-            signature.initVerify(pubkey);
-        }
-        if (prvkey != null) {
-            signature.initSign(prvkey);
-        }
+        signature.initVerify(ValidateUtils.checkNotNull(key, "No public key provided", GenericUtils.EMPTY_OBJECT_ARRAY));
+    }
+
+    @Override
+    public void initSigner(PrivateKey key) throws Exception {
+        signature = SecurityUtils.getSignature(getAlgorithm());
+        signature.initSign(ValidateUtils.checkNotNull(key, "No private key provided", GenericUtils.EMPTY_OBJECT_ARRAY));
     }
 
     @Override
@@ -65,24 +70,43 @@ public abstract class AbstractSignature implements Signature {
         signature.update(hash, off, len);
     }
 
-    protected byte[] extractSig(byte[] sig) {
-        if ((sig[0] == 0) && (sig[1] == 0) && (sig[2] == 0)) {
-            int i = 0, j;
-            j = ((sig[i++] << 24) & 0xff000000) |
-                ((sig[i++] << 16) & 0x00ff0000) |
-                ((sig[i++] <<  8) & 0x0000ff00) |
-                ((sig[i++]      ) & 0x000000ff);
-            i += j;
-            j = ((sig[i++] << 24) & 0xff000000) |
-                ((sig[i++] << 16) & 0x00ff0000) |
-                ((sig[i++] << 8 ) & 0x0000ff00) |
-                ((sig[i++]      ) & 0x000000ff);
-            byte[] tmp = new byte[j];
-            System.arraycopy(sig, i, tmp, 0, j);
-            sig = tmp;
+    /**
+     *  Makes an attempt to detect if the signature is encoded or pure data
+     * @param sig The original signature
+     * @return A {@link Pair} where first value is the key type and second
+     * value is the data - {@code null} if not encoded
+     */
+    protected Pair<String,byte[]> extractEncodedSignature(byte[] sig) {
+        final int dataLen = GenericUtils.length(sig);
+        // if it is encoded then we must have at least 2 UINT32 values
+        if (dataLen < (2 * (Integer.SIZE / Byte.SIZE))) {
+            return null;
+        }
+        
+        long keyTypeLen = BufferUtils.getUInt(sig, 0, dataLen);
+        // after the key type we MUST have data bytes
+        if (keyTypeLen >= (dataLen - (Integer.SIZE / Byte.SIZE))) {
+            return null;
+        }
+        
+        int keyTypeStartPos = Integer.SIZE / Byte.SIZE;
+        int keyTypeEndPos = keyTypeStartPos + (int) keyTypeLen;
+        int remainLen = dataLen - keyTypeEndPos;
+        // must have UINT32 with the data bytes length
+        if (remainLen < (Integer.SIZE / Byte.SIZE)) {
+            return null;
+        }
+        
+        long dataBytesLen = BufferUtils.getUInt(sig, keyTypeEndPos, remainLen);
+        // make sure reported number of bytes does not exceed available
+        if (dataBytesLen > (remainLen - (Integer.SIZE / Byte.SIZE))) {
+            return null;
         }
 
-        return sig;
+        String keyType = new String(sig, keyTypeStartPos, (int) keyTypeLen, StandardCharsets.UTF_8);
+        byte[] data = new byte[(int) dataBytesLen];
+        System.arraycopy(sig, keyTypeEndPos + (Integer.SIZE / Byte.SIZE), data, 0, (int) dataBytesLen);
+        return new Pair<String,byte[]>(keyType, data);
     }
 
     @Override

@@ -39,9 +39,6 @@ import org.junit.runners.MethodSorters;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class KeyUtilsTest extends BaseTestSupport {
-    private static int[] DSS_SIZES = { 512, 768, 1024 };
-    private static int[] RSA_SIZES = { 1024, 2048, 3072, 4096 };
-
     public KeyUtilsTest() {
         super();
     }
@@ -49,7 +46,8 @@ public class KeyUtilsTest extends BaseTestSupport {
     @Test
     public void testGenerateRSAKeyPairs() throws GeneralSecurityException {
         GeneralSecurityException err = null;
-        for (int keySize : RSA_SIZES) {
+        for (Integer size : RSA_SIZES) {
+            int keySize = size.intValue();
             try {
                 KeyPair kp = generateKeyPair(KeyPairProvider.SSH_RSA, keySize);
                 testKeyPairCloning(KeyPairProvider.SSH_RSA, keySize, kp);
@@ -66,7 +64,8 @@ public class KeyUtilsTest extends BaseTestSupport {
     @Test
     public void testGenerateDSSKeyPairs() throws GeneralSecurityException {
         GeneralSecurityException err = null;
-        for (int keySize : DSS_SIZES) {
+        for (Integer size : DSS_SIZES) {
+            int keySize = size.intValue();
             try {
                 KeyPair kp = generateKeyPair(KeyPairProvider.SSH_DSS, keySize);
                 testKeyPairCloning(KeyPairProvider.SSH_DSS, keySize, kp);

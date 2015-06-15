@@ -27,6 +27,7 @@ import org.apache.sshd.client.auth.UserAuthPublicKey.UserAuthPublicKeyFactory;
 import org.apache.sshd.client.session.ClientSessionImpl;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
@@ -36,7 +37,7 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 public class UserAuthAgent extends AbstractUserAuth {
 
     private final SshAgent agent;
-    private final Iterator<SshAgent.Pair<PublicKey, String>> keys;
+    private final Iterator<Pair<PublicKey, String>> keys;
 
     public UserAuthAgent(ClientSessionImpl session, String service) throws IOException {
         super(session, service);

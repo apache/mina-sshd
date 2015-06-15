@@ -57,17 +57,21 @@ public class DERWriter extends FilterOutputStream {
     }
 
     public void writeBigInteger(byte ... bytes) throws IOException {
+        writeBigInteger(bytes, 0, GenericUtils.length(bytes));
+    }
+
+    public void writeBigInteger(byte[] bytes, int off, int len) throws IOException {
         // ASN.1 - zero padding if 1st byte is > 0x7F
-        int padLen = ((bytes[0] & 0x80) != 0) ? 1 : 0;
+        int padLen = ((len > 0) && ((bytes[off] & 0x80) != 0)) ? 1 : 0;
 
         write(0x02);    // indicate it is an INTEGER
-        writeLength(bytes.length + padLen);
+        writeLength(len + padLen);
 
         for (int index = 0; index < padLen; index++) {
             write(0);
         }
 
-        write(bytes);
+        write(bytes, off, len);
     }
 
     public void writeObject(byte tag, int len, byte ... data) throws IOException {

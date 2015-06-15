@@ -38,6 +38,8 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.signature.Signature;
+import org.apache.sshd.common.util.Pair;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
@@ -92,7 +94,7 @@ public class UserAuthPublicKey extends AbstractLoggingBean implements UserAuth {
         SshAgentFactory factory = manager.getAgentFactory();
         if (factory != null) {
             this.agent = factory.createClient(manager);
-            for (SshAgent.Pair<PublicKey, String> pair : agent.getIdentities()) {
+            for (Pair<PublicKey, String> pair : agent.getIdentities()) {
                 ids.add(new KeyAgentIdentity(agent, pair.getFirst()));
             }
         } else {
@@ -217,8 +219,12 @@ public class UserAuthPublicKey extends AbstractLoggingBean implements UserAuth {
 
         @Override
         public byte[] sign(byte[] data) throws Exception {
-            Signature verif = NamedFactory.Utils.create(manager.getSignatureFactories(), getKeyType(pair));
-            verif.init(pair.getPublic(), pair.getPrivate());
+            String keyType = getKeyType(pair);
+            Signature verif = ValidateUtils.checkNotNull(
+                    NamedFactory.Utils.create(manager.getSignatureFactories(), keyType),
+                    "No signer could be located for key type=%s",
+                    keyType);
+            verif.initSigner(pair.getPrivate());
             verif.update(data, 0, data.length);
             return verif.sign();
         }

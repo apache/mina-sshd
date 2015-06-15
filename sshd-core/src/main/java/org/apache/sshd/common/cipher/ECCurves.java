@@ -41,12 +41,13 @@ import org.apache.sshd.common.util.ValidateUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ECCurves {
+    /**
+     * Standard prefix of NISTP key types when encoded
+     */
     public static final String ECDSA_SHA2_PREFIX = "ecdsa-sha2-";
 
     public static final String NISTP256 = "nistp256";
-
     public static final String NISTP384 = "nistp384";
-
     public static final String NISTP521 = "nistp521";
 
 

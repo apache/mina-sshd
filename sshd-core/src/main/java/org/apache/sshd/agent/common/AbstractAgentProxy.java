@@ -38,6 +38,7 @@ import java.util.concurrent.ExecutorService;
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;

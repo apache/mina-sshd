@@ -24,6 +24,7 @@ import java.security.PublicKey;
 import java.util.List;
 
 import org.apache.sshd.agent.SshAgent;
+import org.apache.sshd.common.util.Pair;
 
 public class AgentDelegate implements SshAgent {
 

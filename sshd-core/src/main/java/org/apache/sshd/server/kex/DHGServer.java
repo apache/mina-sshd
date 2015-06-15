@@ -30,6 +30,7 @@ import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.signature.Signature;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
@@ -65,7 +66,7 @@ public class DHGServer extends AbstractDHServerKeyExchange {
     }
 
     protected DHGServer(DHFactory factory) {
-        this.factory = factory;
+        this.factory = ValidateUtils.checkNotNull(factory, "No factory", GenericUtils.EMPTY_OBJECT_ARRAY);
     }
 
     @Override
@@ -93,8 +94,11 @@ public class DHGServer extends AbstractDHServerKeyExchange {
         KeyPair kp = session.getHostKey();
         String algo = session.getNegotiatedKexParameter(KexProposalOption.SERVERKEYS);
         FactoryManager manager = session.getFactoryManager();
-        Signature sig = ValidateUtils.checkNotNull(NamedFactory.Utils.create(manager.getSignatureFactories(), algo), "Unknown negotiated server keys: %s", algo);
-        sig.init(kp.getPublic(), kp.getPrivate());
+        Signature sig = ValidateUtils.checkNotNull(
+                NamedFactory.Utils.create(manager.getSignatureFactories(), algo),
+                "Unknown negotiated server keys: %s",
+                algo);
+        sig.initSigner(kp.getPrivate());
 
         buffer = new ByteArrayBuffer();
         buffer.putRawPublicKey(kp.getPublic());

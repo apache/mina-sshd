@@ -21,6 +21,9 @@ package org.apache.sshd.common.signature;
 import java.io.IOException;
 import java.math.BigInteger;
 
+import org.apache.sshd.common.cipher.ECCurves;
+import org.apache.sshd.common.util.Pair;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.DERParser;
@@ -29,6 +32,7 @@ import org.apache.sshd.common.util.io.DERWriter;
 /**
  * Signature algorithm for EC keys using ECDSA. 
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @see <A HREF="http://tools.ietf.org/html/rfc3278#section-8.2">RFC3278 section 8.2</A>
  */
 public class SignatureECDSA extends AbstractSignature {
 
@@ -39,8 +43,7 @@ public class SignatureECDSA extends AbstractSignature {
     @Override
     public byte[] sign() throws Exception {
         byte[] sig = signature.sign();
-        
-        // see http://tools.ietf.org/html/rfc3278#section-8.2
+
         try(DERParser parser = new DERParser(sig)) {
             int type = parser.read();
             if (type != 0x30) {
@@ -62,8 +65,7 @@ public class SignatureECDSA extends AbstractSignature {
 
             BigInteger r = parser.readBigInteger();
             BigInteger s = parser.readBigInteger();
-
-            // see https://tools.ietf.org/html/rfc5656#page-5
+            // Write the <r,s> to its own types writer.
             Buffer rsBuf = new ByteArrayBuffer();
             rsBuf.putMPInt(r);
             rsBuf.putMPInt(s);
@@ -74,7 +76,14 @@ public class SignatureECDSA extends AbstractSignature {
 
     @Override
     public boolean verify(byte[] sig) throws Exception {
-        byte[] data = extractSig(sig);
+        byte[] data = sig;
+        Pair<String,byte[]> encoding = extractEncodedSignature(data);
+        if (encoding != null) {
+            String keyType = encoding.getFirst();
+            ValidateUtils.checkTrue(ECCurves.TYPES.contains(keyType), "Unknown curve type: %s", keyType);
+            data = encoding.getSecond();
+        }
+
         Buffer rsBuf = new ByteArrayBuffer(data);
 
         byte[] rArray = rsBuf.getMPIntAsBytes(), rEncoding;

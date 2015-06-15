@@ -18,13 +18,16 @@
  */
 package org.apache.sshd.common.signature;
 
+import org.apache.sshd.common.keyprovider.KeyPairProvider;
+import org.apache.sshd.common.util.Pair;
+import org.apache.sshd.common.util.ValidateUtils;
+
 /**
  * RSA <code>Signature</code>
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class SignatureRSA extends AbstractSignature {
-
     public SignatureRSA() {
         super("SHA1withRSA");
     }
@@ -36,8 +39,15 @@ public class SignatureRSA extends AbstractSignature {
 
     @Override
     public boolean verify(byte[] sig) throws Exception {
-        sig = extractSig(sig);
-        return signature.verify(sig);
+        byte[] data = sig;
+        Pair<String,byte[]> encoding = extractEncodedSignature(data);
+        if (encoding != null) {
+            String keyType = encoding.getFirst();
+            ValidateUtils.checkTrue(KeyPairProvider.SSH_RSA.equals(keyType), "Mismatched key type: %s", keyType);
+            data = encoding.getSecond();
+        }
+
+        return signature.verify(data);
     }
 
 }

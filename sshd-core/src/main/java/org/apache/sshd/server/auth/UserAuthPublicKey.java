@@ -23,9 +23,12 @@ import java.security.PublicKey;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.signature.Signature;
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.server.PublickeyAuthenticator;
+import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.UserAuth;
 
 /**
@@ -67,23 +70,22 @@ public class UserAuthPublicKey extends AbstractUserAuth {
         int len = buffer.getInt();
         buffer.wpos(buffer.rpos() + len);
         PublicKey key = buffer.getRawPublicKey();
-        Signature verif = NamedFactory.Utils.create(session.getFactoryManager().getSignatureFactories(), alg);
-        if (verif == null) {
-            throw new Exception("No Signature available for: " + alg);
-        }
-        verif.init(key, null);
+        ServerFactoryManager manager = session.getFactoryManager();
+        Signature verif = ValidateUtils.checkNotNull(
+                NamedFactory.Utils.create(manager.getSignatureFactories(), alg),
+                "No verifier located for algorithm=%s",
+                alg);
+        verif.initVerifier(key);
         buffer.wpos(oldLim);
 
         byte[] sig = hasSig ? buffer.getBytes() : null;
 
-        PublickeyAuthenticator authenticator = session.getFactoryManager().getPublickeyAuthenticator();
-        if (authenticator == null) {
-            throw new Exception("No PublickeyAuthenticator configured");
-        }
-
+        PublickeyAuthenticator authenticator = 
+                ValidateUtils.checkNotNull(manager.getPublickeyAuthenticator(), "No PublickeyAuthenticator configured", GenericUtils.EMPTY_OBJECT_ARRAY);
         if (!authenticator.authenticate(username, key, session)) {
             return Boolean.FALSE;
         }
+
         if (!hasSig) {
             Buffer buf = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_PK_OK);
             buf.putString(alg);

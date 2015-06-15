@@ -16,29 +16,26 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.agent;
-
-import java.io.IOException;
-import java.security.KeyPair;
-import java.security.PublicKey;
-import java.util.List;
-
-import org.apache.sshd.common.util.Pair;
+package org.apache.sshd.common.util;
 
 /**
- * SSH key agent server
+ * Represents a pair of values
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface SshAgent extends java.nio.channels.Channel {
+public class Pair<U,V> {
+    private final U first;
+    private final V second;
 
-    String SSH_AUTHSOCKET_ENV_NAME = "SSH_AUTH_SOCK";
+    public Pair(U first, V second) {
+        this.first = first;
+        this.second = second;
+    }
 
-    List<Pair<PublicKey, String>> getIdentities() throws IOException;
+    public U getFirst() {
+        return first;
+    }
 
-    byte[] sign(PublicKey key, byte[] data) throws IOException;
-
-    void addIdentity(KeyPair key, String comment) throws IOException;
-
-    void removeIdentity(PublicKey key) throws IOException;
-
-    void removeAllIdentities() throws IOException;
+    public V getSecond() {
+        return second;
+    }
 }

@@ -142,7 +142,7 @@ public enum BuiltinSignatures implements SignatureFactory {
         ValidateUtils.checkTrue(fromFactoryName(name) == null, "Extension overrides built-in: %s", name);
 
         synchronized(extensions) {
-            ValidateUtils.checkTrue(!extensions.containsKey(name), "Extension overrides existinh: %s", name);
+            ValidateUtils.checkTrue(!extensions.containsKey(name), "Extension overrides existing: %s", name);
             extensions.put(name, extension);
         }
     }

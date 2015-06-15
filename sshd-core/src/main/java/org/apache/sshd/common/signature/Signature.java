@@ -34,17 +34,22 @@ public interface Signature {
     String getAlgorithm();
 
     /**
-     * @param pubkey The {@link PublicKey} to be used for verifying signatures
-     * @param prvkey The {@link PrivateKey} to be used for signing - if {@code null}
-     * then only verification can be performed
+     * @param key The {@link PublicKey} to be used for verifying signatures
      * @throws Exception If failed to initialize
      */
-    void init(PublicKey pubkey, PrivateKey prvkey) throws Exception;
+    void initVerifier(PublicKey key) throws Exception;
+
+    /**
+     * @param prvkey The {@link PrivateKey} to be used for signing
+     * @throws Exception If failed to initialize
+     */
+    void initSigner(PrivateKey key) throws Exception;
 
     /**
      * Update the computed signature with the given data
      * @param hash The hash data buffer
      * @throws Exception If failed to update
+     * @see #update(byte[], int, int)
      */
     void update(byte[] hash) throws Exception;
 

@@ -34,6 +34,7 @@ import java.util.List;
 
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -78,10 +79,10 @@ public abstract class AbstractAgentClient extends AbstractLoggingBean {
         int cmd = req.getByte();
         switch (cmd) {
             case SSH2_AGENTC_REQUEST_IDENTITIES: {
-                List<SshAgent.Pair<PublicKey,String>> keys = agent.getIdentities();
+                List<Pair<PublicKey,String>> keys = agent.getIdentities();
                 rep.putByte(SSH2_AGENT_IDENTITIES_ANSWER);
                 rep.putInt(keys.size());
-                for (SshAgent.Pair<PublicKey,String> key : keys) {
+                for (Pair<PublicKey,String> key : keys) {
                     rep.putPublicKey(key.getFirst());
                     rep.putString(key.getSecond());
                 }

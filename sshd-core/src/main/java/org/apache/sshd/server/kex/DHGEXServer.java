@@ -83,8 +83,7 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
     }
 
     protected DHGEXServer(DHFactory factory) {
-        super();
-        this.factory = factory;
+        this.factory = ValidateUtils.checkNotNull(factory, "No factory", GenericUtils.EMPTY_OBJECT_ARRAY);
     }
 
     @Override
@@ -161,8 +160,11 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
             KeyPair kp = session.getHostKey();
             String algo = session.getNegotiatedKexParameter(KexProposalOption.SERVERKEYS);
             FactoryManager manager = session.getFactoryManager();
-            Signature sig = ValidateUtils.checkNotNull(NamedFactory.Utils.create(manager.getSignatureFactories(), algo), "Unknown negotiated server keys: %s", algo);
-            sig.init(kp.getPublic(), kp.getPrivate());
+            Signature sig = ValidateUtils.checkNotNull(
+                    NamedFactory.Utils.create(manager.getSignatureFactories(), algo),
+                    "Unknown negotiated server keys: %s",
+                    algo);
+            sig.initSigner(kp.getPrivate());
 
             buffer = new ByteArrayBuffer();
             buffer.putRawPublicKey(kp.getPublic());

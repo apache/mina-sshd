@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.client.kex;
 
+import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
@@ -27,6 +28,8 @@ import org.apache.sshd.common.kex.DHFactory;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.signature.Signature;
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
@@ -64,8 +67,7 @@ public class DHGClient extends AbstractDHClientKeyExchange {
     }
 
     protected DHGClient(DHFactory factory) {
-        super();
-        this.factory = factory;
+        this.factory = ValidateUtils.checkNotNull(factory, "No factory", GenericUtils.EMPTY_OBJECT_ARRAY);
     }
 
     @Override
@@ -121,9 +123,12 @@ public class DHGClient extends AbstractDHClientKeyExchange {
         hash.update(buffer.array(), 0, buffer.available());
         H = hash.digest();
 
-        Signature verif = NamedFactory.Utils.create(session.getFactoryManager().getSignatureFactories(), keyAlg);
-        verif.init(serverKey, null);
-        verif.update(H, 0, H.length);
+        FactoryManager manager = session.getFactoryManager();
+        Signature verif = ValidateUtils.checkNotNull(NamedFactory.Utils.create(manager.getSignatureFactories(), keyAlg),
+                            "No verifier located for algorithm=%s",
+                            keyAlg);
+        verif.initVerifier(serverKey);
+        verif.update(H);
         if (!verif.verify(sig)) {
             throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
                                    "KeyExchange signature verification failed");

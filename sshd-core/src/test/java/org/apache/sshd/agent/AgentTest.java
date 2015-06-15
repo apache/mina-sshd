@@ -37,6 +37,7 @@ import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
+import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.Environment;
@@ -74,7 +75,7 @@ public class AgentTest extends BaseTestSupport {
             Assume.assumeTrue("Native library N/A", authSocket != null);
     
             try(SshAgent client = new AgentClient(authSocket)) {
-                List<SshAgent.Pair<PublicKey, String>> keys = client.getIdentities();
+                List<Pair<PublicKey, String>> keys = client.getIdentities();
                 assertNotNull("No initial identities", keys);
                 assertEquals("Unexpected initial identities size", 0, keys.size());
         

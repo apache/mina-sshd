@@ -379,13 +379,11 @@ public abstract class Buffer implements Readable {
     }
 
     public void putMPInt(byte[] foo) {
-        int i = foo.length;
         if ((foo[0] & 0x80) != 0) {
-            i++;
-            putInt(i);
+            putInt(foo.length + 1 /* padding */);
             putByte((byte)0);
         } else {
-            putInt(i);
+            putInt(foo.length);
         }
         putRawBytes(foo);
     }
