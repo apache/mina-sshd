@@ -92,5 +92,29 @@ public interface NamedResource {
         public static String getNames(Collection<? extends NamedResource> resources) {
             return GenericUtils.join(getNameList(resources), ',');
         }
+        
+        /**
+         * @param name Name of the resource - ignored if {@code null}/empty
+         * @param c The {@link Comparator} to decide whether the {@link NamedResource#getName()}
+         * matches the <tt>name</tt> parameter
+         * @param resources The {@link NamedResource} to check - ignored if {@code null}/empty
+         * @return The <U>first</U> resource whose name matches the parameter - {@code null}
+         * if no match found
+         */
+        public static <R extends NamedResource> R findByName(String name, Comparator<? super String> c, Collection<? extends R> resources) {
+            if (GenericUtils.isEmpty(name) || GenericUtils.isEmpty(resources)) {
+                return null;
+            }
+            
+            for (R r : resources) {
+                String n = r.getName();
+                int nRes = c.compare(name, n);
+                if (nRes == 0) {
+                    return r;
+                }
+            }
+            
+            return null;
+        }
     }
 }

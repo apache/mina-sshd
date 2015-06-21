@@ -380,8 +380,14 @@ public final class KeyUtils {
         } else if (key instanceof ECKey) {
             ECKey ecKey = (ECKey) key;
             ECParameterSpec ecSpec = ecKey.getParams();
-            return ECCurves.ECDSA_SHA2_PREFIX + ECCurves.getCurveName(ecSpec);
+            ECCurves curve = ECCurves.fromCurveParameters(ecSpec);
+            if (curve == null) {
+                return null;    // debug breakpoint
+            } else {
+                return curve.getKeyType();
+            }
         }
+
         return null;
     }
 

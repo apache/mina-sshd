@@ -44,17 +44,17 @@ public interface KeyPairProvider {
     /**
      * SSH identifier for EC keys in NIST curve P-256
      */
-    String ECDSA_SHA2_NISTP256 = ECCurves.ECDSA_SHA2_PREFIX + ECCurves.NISTP256;
+    String ECDSA_SHA2_NISTP256 = ECCurves.nistp256.getKeyType();
 
     /**
      * SSH identifier for EC keys in NIST curve P-384
      */
-    String ECDSA_SHA2_NISTP384 = ECCurves.ECDSA_SHA2_PREFIX + ECCurves.NISTP384;
+    String ECDSA_SHA2_NISTP384 = ECCurves.nistp384.getKeyType();
 
     /**
      * SSH identifier for EC keys in NIST curve P-521
      */
-    String ECDSA_SHA2_NISTP521 = ECCurves.ECDSA_SHA2_PREFIX + ECCurves.NISTP521;
+    String ECDSA_SHA2_NISTP521 = ECCurves.nistp521.getKeyType();
 
     /**
      * Load available keys.

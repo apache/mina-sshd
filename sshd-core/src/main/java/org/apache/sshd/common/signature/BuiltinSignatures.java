@@ -207,22 +207,12 @@ public enum BuiltinSignatures implements SignatureFactory {
     }
 
     /**
-     * @param n The factory name - ignored if {@code null}/empty
-     * @return The matching {@link org.apache.sshd.common.signature.BuiltinSignatures} whose factory name matches
+     * @param name The factory name - ignored if {@code null}/empty
+     * @return The matching {@link BuiltinSignatures} whose factory name matches
      * (case <U>insensitive</U>) the provided name - {@code null} if no match
      */
-    public static BuiltinSignatures fromFactoryName(String n) {
-        if (GenericUtils.isEmpty(n)) {
-            return null;
-        }
-
-        for (BuiltinSignatures c : VALUES) {
-            if (n.equalsIgnoreCase(c.getName())) {
-                return c;
-            }
-        }
-
-        return null;
+    public static BuiltinSignatures fromFactoryName(String name) {
+        return NamedResource.Utils.findByName(name, String.CASE_INSENSITIVE_ORDER, VALUES);
     }
     
     /**

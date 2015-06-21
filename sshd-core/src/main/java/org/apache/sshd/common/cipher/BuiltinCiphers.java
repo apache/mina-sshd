@@ -250,22 +250,12 @@ public enum BuiltinCiphers implements CipherFactory {
     }
 
     /**
-     * @param n The factory name - ignored if {@code null}/empty
+     * @param name The factory name - ignored if {@code null}/empty
      * @return The matching {@link BuiltinCiphers} whose factory name matches
      * (case <U>insensitive</U>) the provided name - {@code null} if no match
      */
-    public static BuiltinCiphers fromFactoryName(String n) {
-        if (GenericUtils.isEmpty(n)) {
-            return null;
-        }
-
-        for (BuiltinCiphers c : VALUES) {
-            if (n.equalsIgnoreCase(c.getName())) {
-                return c;
-            }
-        }
-
-        return null;
+    public static BuiltinCiphers fromFactoryName(String name) {
+        return NamedResource.Utils.findByName(name, String.CASE_INSENSITIVE_ORDER, VALUES);
     }
 
     /**

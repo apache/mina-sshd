@@ -24,15 +24,17 @@ import java.security.spec.ECFieldFp;
 import java.security.spec.ECParameterSpec;
 import java.security.spec.ECPoint;
 import java.security.spec.EllipticCurve;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.EnumSet;
+import java.util.Set;
+import java.util.TreeSet;
 
+import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.common.OptionalFeature;
 import org.apache.sshd.common.digest.BuiltinDigests;
 import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
@@ -40,163 +42,217 @@ import org.apache.sshd.common.util.ValidateUtils;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ECCurves {
-    /**
-     * Standard prefix of NISTP key types when encoded
-     */
-    public static final String ECDSA_SHA2_PREFIX = "ecdsa-sha2-";
+public enum ECCurves implements NamedResource, OptionalFeature {
+    nistp256(Constants.NISTP256,
+             new ECParameterSpec(
+                 new EllipticCurve(
+                     new ECFieldFp(new BigInteger("FFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFF", 16)),
+                     new BigInteger("FFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFC", 16),
+                     new BigInteger("5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b", 16)),
+                 new ECPoint(
+                     new BigInteger("6B17D1F2E12C4247F8BCE6E563A440F277037D812DEB33A0F4A13945D898C296", 16),
+                     new BigInteger("4FE342E2FE1A7F9B8EE7EB4A7C0F9E162BCE33576B315ECECBB6406837BF51F5", 16)),
+                  new BigInteger("FFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551", 16),
+                  1),
+             32) {
+            @Override
+            public Digest getDigestForParams() {
+                return BuiltinDigests.sha256.create();
+            }
+        },
+    nistp384(Constants.NISTP384,
+             new ECParameterSpec(
+                 new EllipticCurve(
+                     new ECFieldFp(new BigInteger("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFFFF0000000000000000FFFFFFFF", 16)),
+                     new BigInteger("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFFFF0000000000000000FFFFFFFC", 16),
+                     new BigInteger("B3312FA7E23EE7E4988E056BE3F82D19181D9C6EFE8141120314088F5013875AC656398D8A2ED19D2A85C8EDD3EC2AEF", 16)),
+                 new ECPoint(
+                     new BigInteger("AA87CA22BE8B05378EB1C71EF320AD746E1D3B628BA79B9859F741E082542A385502F25DBF55296C3A545E3872760AB7", 16),
+                     new BigInteger("3617DE4A96262C6F5D9E98BF9292DC29F8F41DBD289A147CE9DA3113B5F0B8C00A60B1CE1D7E819D7A431D7C90EA0E5F", 16)),
+                     new BigInteger("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFC7634D81F4372DDF581A0DB248B0A77AECEC196ACCC52973", 16),
+                    1),
+             48) {
+            @Override
+            public Digest getDigestForParams() {
+                return BuiltinDigests.sha384.create();
+            }
+        },
+    nistp521(Constants.NISTP521,
+             new ECParameterSpec(
+                 new EllipticCurve(
+                     new ECFieldFp(new BigInteger("01FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", 16)),
+                     new BigInteger("01FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFC", 16),
+                     new BigInteger("0051953EB9618E1C9A1F929A21A0B68540EEA2DA725B99B315F3B8B489918EF109E156193951EC7E937B1652C0BD3BB1BF073573DF883D2C34F1EF451FD46B503F00", 16)),
+                 new ECPoint(
+                     new BigInteger("00C6858E06B70404E9CD9E3ECB662395B4429C648139053FB521F828AF606B4D3DBAA14B5E77EFE75928FE1DC127A2FFA8DE3348B3C1856A429BF97E7E31C2E5BD66", 16),
+                     new BigInteger("011839296A789A3BC0045C8A5FB42C7D1BD998F54449579B446817AFBD17273E662C97EE72995EF42640C550B9013FAD0761353C7086A272C24088BE94769FD16650", 16)),
+                     new BigInteger("01FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFA51868783BF2F966B7FCC0148F709A5D03BB5C9B8899C47AEBB6FB71E91386409", 16),
+                    1),
+             66) {
+            @Override
+            public Digest getDigestForParams() {
+                return BuiltinDigests.sha512.create();
+            }
+        };
 
-    public static final String NISTP256 = "nistp256";
-    public static final String NISTP384 = "nistp384";
-    public static final String NISTP521 = "nistp521";
+    private final String    name, keyType;
 
-
-    public static String getCurveName(ECParameterSpec params) {
-        int fieldSize = getCurveSize(params);
-        final String curveName = getCurveName(fieldSize);
-        if (GenericUtils.isEmpty(curveName)) {
-            throw new RuntimeException("invalid curve size " + fieldSize);
-        }
-        return curveName;
+    @Override   // The curve name
+    public final String getName() {
+        return name;
     }
 
     /**
-     * Key=curve name, value=num. of bits
+     * @return The standard key type used to represent this curve
      */
-    private static final Map<String,Integer> CURVENAME2SIZE =
-            Collections.unmodifiableMap(new TreeMap<String,Integer>(String.CASE_INSENSITIVE_ORDER) {
-                private static final long serialVersionUID = 1L;    // we're not serializing it
-                
-                {
-                    put(NISTP256, Integer.valueOf(256));
-                    put(NISTP384, Integer.valueOf(384));
-                    put(NISTP521, Integer.valueOf(521));
-                }
-        
-            });
+    public final String getKeyType() {
+        return keyType;
+    }
+
+    @Override
+    public final boolean isSupported() {
+        return SecurityUtils.hasEcc();
+    }
+
+    private final ECParameterSpec params;
+    public final ECParameterSpec getParameters() {
+        return params;
+    }
+
+    private final int keySize, numOctets;
 
     /**
-     * An un-modifiable {@link List} of all the known curve names
+     * @return The size (in bits) of the key
      */
-    @SuppressWarnings("synthetic-access")
-    public static final List<String> NAMES =
-            Collections.unmodifiableList(new ArrayList<String>(CURVENAME2SIZE.size()) {
-                private static final long serialVersionUID = 1L;    // we're not serializing it
-                
-                {
-                    addAll(CURVENAME2SIZE.keySet());
-                    Collections.sort(this); // as a courtesy
-                }
-            });
+    public final int getKeySize() {
+        return keySize;
+    }
 
     /**
-     * An un-modifiable {@link List} of all the known curve types according to {@code OpenSSH}
+     * @return The number of octets used to represent the point(s) for the curve
      */
-    public static final List<String> TYPES =
-            Collections.unmodifiableList(new ArrayList<String>(CURVENAME2SIZE.size()) {
-                private static final long serialVersionUID = 1L;    // we're not serializing it
-                
-                {
-                    for (String n : NAMES) {
-                        add(ECDSA_SHA2_PREFIX + n);
-                    }
+    public final int getNumPointOctets() {
+        return numOctets;
+    }
 
-                    Collections.sort(this); // as a courtesy
-                }
-            });
     /**
-     * An un-modifiable {@link List} of all the known curve sizes
+     * @return The {@link Digest} to use when hashing the curve's parameters
      */
-    @SuppressWarnings("synthetic-access")
-    public static final List<Integer> SIZES =
-            Collections.unmodifiableList(new ArrayList<Integer>(CURVENAME2SIZE.size()) {
-                    private static final long serialVersionUID = 1L;    // we're not serializing it
-                
-                    {
-                        addAll(CURVENAME2SIZE.values());
-                        Collections.sort(this); // as a courtesy
-                    }
-            });
+    public abstract Digest getDigestForParams();
+
+    ECCurves(String name, ECParameterSpec params, int numOctets) {
+        this.name = ValidateUtils.checkNotNullAndNotEmpty(name, "No curve name", GenericUtils.EMPTY_OBJECT_ARRAY);
+        this.keyType = Constants.ECDSA_SHA2_PREFIX + name;
+        this.params = ValidateUtils.checkNotNull(params, "No EC params for %s", name);
+        this.keySize = getCurveSize(params);
+        this.numOctets = numOctets;
+    }
     
     /**
-     * @param name The curve name - ignored if {@code null}/empty
-     * @return The curve size - {@code null} if unknown curve
+     * A {@link Set} of all the known curves
      */
-    public static Integer getCurveSize(String name) {
-        if (GenericUtils.isEmpty(name)) {
-            return null;
-        } else {
-            return CURVENAME2SIZE.get(name);
-        }
-    }
+    public static final Set<ECCurves> VALUES =
+            Collections.unmodifiableSet(EnumSet.allOf(ECCurves.class));
 
     /**
-     * Key=num. of bits, value=curve name
+     * A {@link Set} of all the known curves names 
      */
-    @SuppressWarnings("synthetic-access")
-    private static final Map<Integer, String> SIZE2CURVENAME = 
-            Collections.unmodifiableMap(new TreeMap<Integer, String>() {
+    public static final Set<String> NAMES =
+            Collections.unmodifiableSet(new TreeSet<String>(String.CASE_INSENSITIVE_ORDER) {
                 private static final long serialVersionUID = 1L;    // we're not serializing it
-        
+                
                 {
-                    for (Map.Entry<String,Integer> e : CURVENAME2SIZE.entrySet()) {
-                        String name = e.getKey();
-                        Integer size = e.getValue();
-                        put(size, name);
+                    for (ECCurves c : VALUES) {
+                        add(c.getName());
                     }
                 }
             });
 
     /**
-     * @param fieldSize The key size in bits
-     * @return The name of the curve - {@code null/empty} if no match found
+     * A {@link Set} of all the known curves key types 
      */
-    public static String getCurveName(int fieldSize) {
-        return SIZE2CURVENAME.get(Integer.valueOf(fieldSize));
-    }
-
-    private static final Map<String, Integer> CURVENAME2OCTECTCOUNT = 
-            Collections.unmodifiableMap(new TreeMap<String, Integer>(String.CASE_INSENSITIVE_ORDER) {
+    public static final Set<String> KEY_TYPES =
+            Collections.unmodifiableSet(new TreeSet<String>(String.CASE_INSENSITIVE_ORDER) {
                 private static final long serialVersionUID = 1L;    // we're not serializing it
-        
+                
                 {
-                    put(NISTP256, Integer.valueOf(32));
-                    put(NISTP384, Integer.valueOf(48));
-                    put(NISTP521, Integer.valueOf(66));
+                    for (ECCurves c : VALUES) {
+                        add(c.getKeyType());
+                    }
                 }
             });
 
     /**
-     * @param curveName Curve name - case <U>insensitive</U> - ignored
-     * if {@code null}/empty
-     * @return The number of octets used to represent the point(s) for
-     * the curve - {@code null} if no match found
+     * @param type The key type value - ignored if {@code null}/empty
+     * @return The matching {@link ECCurves} constant - {@code null} if
+     * no match found case <U>insensitive</U>
      */
-    public static Integer getNumPointOctets(String curveName) {
-        if (GenericUtils.isEmpty(curveName)) {
+    public static ECCurves fromKeyType(String type) {
+        if (GenericUtils.isEmpty(type)) {
             return null;
-        } else {
-            return CURVENAME2OCTECTCOUNT.get(curveName);
         }
+        
+        for (ECCurves c : VALUES) {
+            if (type.equalsIgnoreCase(c.getKeyType())) {
+                return c;
+            }
+        }
+        
+        return null;
     }
 
+    /**
+     * @param name The curve name (case <U>insensitive</U> - ignored if
+     * {@code null}/empty
+     * @return The matching {@link ECCurves} instance - {@code null} if no
+     * match found
+     */
+    public static ECCurves fromCurveName(String name) {
+        return NamedResource.Utils.findByName(name, String.CASE_INSENSITIVE_ORDER, VALUES);
+    }
+    
+    /**
+     * @param params The curve's {@link ECParameterSpec} - ignored if {@code null}
+     * @return The matching {@link ECCurves} value - {@code null} if no match found
+     * @see #getCurveSize(ECParameterSpec)
+     * @see #fromCurveSize(int)
+     */
+    public static ECCurves fromCurveParameters(ECParameterSpec params) {
+        if (params == null) {
+            return null;
+        } else {
+            return fromCurveSize(getCurveSize(params));
+        }
+    }
+    
+    /**
+     * @param keySize The key size (in bits)
+     * @return The matching {@link ECCurves} value - {@code null} if no
+     * match found
+     */
+    public static ECCurves fromCurveSize(int keySize) {
+        if (keySize <= 0) {
+            return null;
+        }
+        
+        for (ECCurves c : VALUES) {
+            if (keySize == c.getKeySize()) {
+                return c;
+            }
+        }
+        
+        return null;
+    }
+
+    /**
+     * @param params The curve's {@link ECParameterSpec}
+     * @return The curve's key size in bits
+     * @throws IllegalArgumentException if invalid parameters provided
+     */
     public static int getCurveSize(ECParameterSpec params) {
         EllipticCurve   curve = ValidateUtils.checkNotNull(params, "No EC params", GenericUtils.EMPTY_OBJECT_ARRAY).getCurve();
         ECField field = ValidateUtils.checkNotNull(curve, "No EC curve", GenericUtils.EMPTY_OBJECT_ARRAY).getField();
         return ValidateUtils.checkNotNull(field, "No EC field", GenericUtils.EMPTY_OBJECT_ARRAY).getFieldSize();
-    }
-
-    public static Digest getDigestForParams(ECParameterSpec params) {
-        int size = getCurveSize(params);
-        if (size <= 256) {
-            return BuiltinDigests.sha256.create();
-        } else if (size <= 384) {
-            return BuiltinDigests.sha384.create();
-        } else if (size <= 521) {
-            return BuiltinDigests.sha512.create();
-        } else {
-            throw new UnsupportedOperationException("Unsupported curve size for digest: " + size);
-        }
     }
 
     /**
@@ -272,61 +328,15 @@ public class ECCurves {
         System.arraycopy(input, pos, output, 0, output.length);
         return output;
     }
-
-    public static class EllipticCurves {
-        public static ECParameterSpec nistp256 = new ECParameterSpec(
-                new EllipticCurve(
-                        new ECFieldFp(new BigInteger("FFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFF", 16)),
-                        new BigInteger("FFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFC", 16),
-                        new BigInteger("5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b", 16)),
-                new ECPoint(
-                        new BigInteger("6B17D1F2E12C4247F8BCE6E563A440F277037D812DEB33A0F4A13945D898C296", 16),
-                        new BigInteger("4FE342E2FE1A7F9B8EE7EB4A7C0F9E162BCE33576B315ECECBB6406837BF51F5", 16)),
-                new BigInteger("FFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551", 16),
-                1);
-
-        public static ECParameterSpec nistp384 = new ECParameterSpec(
-                new EllipticCurve(
-                        new ECFieldFp(new BigInteger("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFFFF0000000000000000FFFFFFFF", 16)),
-                        new BigInteger("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFFFF0000000000000000FFFFFFFC", 16),
-                        new BigInteger("B3312FA7E23EE7E4988E056BE3F82D19181D9C6EFE8141120314088F5013875AC656398D8A2ED19D2A85C8EDD3EC2AEF", 16)),
-                new ECPoint(
-                        new BigInteger("AA87CA22BE8B05378EB1C71EF320AD746E1D3B628BA79B9859F741E082542A385502F25DBF55296C3A545E3872760AB7", 16),
-                        new BigInteger("3617DE4A96262C6F5D9E98BF9292DC29F8F41DBD289A147CE9DA3113B5F0B8C00A60B1CE1D7E819D7A431D7C90EA0E5F", 16)),
-                new BigInteger("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFC7634D81F4372DDF581A0DB248B0A77AECEC196ACCC52973", 16),
-                1);
-
-        public static ECParameterSpec nistp521 = new ECParameterSpec(
-                new EllipticCurve(
-                        new ECFieldFp(new BigInteger("01FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", 16)),
-                        new BigInteger("01FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFC", 16),
-                        new BigInteger("0051953EB9618E1C9A1F929A21A0B68540EEA2DA725B99B315F3B8B489918EF109E156193951EC7E937B1652C0BD3BB1BF073573DF883D2C34F1EF451FD46B503F00", 16)),
-                new ECPoint(
-                        new BigInteger("00C6858E06B70404E9CD9E3ECB662395B4429C648139053FB521F828AF606B4D3DBAA14B5E77EFE75928FE1DC127A2FFA8DE3348B3C1856A429BF97E7E31C2E5BD66", 16),
-                        new BigInteger("011839296A789A3BC0045C8A5FB42C7D1BD998F54449579B446817AFBD17273E662C97EE72995EF42640C550B9013FAD0761353C7086A272C24088BE94769FD16650", 16)),
-                new BigInteger("01FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFA51868783BF2F966B7FCC0148F709A5D03BB5C9B8899C47AEBB6FB71E91386409", 16),
-                1);
-    }
     
-    private static final class LazySpecsMapHolder {
-        private static final Map<String,ECParameterSpec> specsMap =
-                Collections.unmodifiableMap(new TreeMap<String,ECParameterSpec>(String.CASE_INSENSITIVE_ORDER) {
-                        private static final long serialVersionUID = 1L;    // we're not serializing it
-                    
-                        {
-                            put(NISTP256, EllipticCurves.nistp256);
-                            put(NISTP384, EllipticCurves.nistp384);
-                            put(NISTP521, EllipticCurves.nistp521);
-                        }
-                });
-    }
+    public static final class Constants {
+        /**
+         * Standard prefix of NISTP key types when encoded
+         */
+        public static final String ECDSA_SHA2_PREFIX = "ecdsa-sha2-";
 
-    @SuppressWarnings("synthetic-access")
-    public static ECParameterSpec getECParameterSpec(String curveName) {
-        if (GenericUtils.isEmpty(curveName)) {
-            return null;
-        } else {
-            return LazySpecsMapHolder.specsMap.get(curveName);
-        }
+        public static final String NISTP256 = "nistp256";
+        public static final String NISTP384 = "nistp384";
+        public static final String NISTP521 = "nistp521";
     }
 }

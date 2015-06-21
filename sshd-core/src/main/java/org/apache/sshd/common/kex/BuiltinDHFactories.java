@@ -110,7 +110,7 @@ public enum BuiltinDHFactories implements DHFactory {
             if (!GenericUtils.isEmpty(params)) {
                 throw new IllegalArgumentException("No accepted parameters for " + getName());
             }
-            return new ECDH(ECCurves.NISTP256);
+            return new ECDH(ECCurves.nistp256);
         }
 
         @Override
@@ -124,7 +124,7 @@ public enum BuiltinDHFactories implements DHFactory {
             if (!GenericUtils.isEmpty(params)) {
                 throw new IllegalArgumentException("No accepted parameters for " + getName());
             }
-            return new ECDH(ECCurves.NISTP384);
+            return new ECDH(ECCurves.nistp384);
         }
 
         @Override
@@ -138,7 +138,7 @@ public enum BuiltinDHFactories implements DHFactory {
             if (!GenericUtils.isEmpty(params)) {
                 throw new IllegalArgumentException("No accepted parameters for " + getName());
             }
-            return new ECDH(ECCurves.NISTP521);
+            return new ECDH(ECCurves.nistp521);
         }
 
         @Override
@@ -223,17 +223,7 @@ public enum BuiltinDHFactories implements DHFactory {
      * or {@code null} if no match found
      */
     public static final BuiltinDHFactories fromFactoryName(String name) {
-        if (GenericUtils.isEmpty(name)) {
-            return null;
-        }
-
-        for (BuiltinDHFactories f : VALUES) {
-            if (name.equalsIgnoreCase(f.getName())) {
-                return f;
-            }
-        }
-
-        return null;
+        return NamedResource.Utils.findByName(name, String.CASE_INSENSITIVE_ORDER, VALUES);
     }
 
     @Override

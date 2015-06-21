@@ -91,12 +91,12 @@ public class KeyUtilsTest extends BaseTestSupport {
         Assume.assumeTrue("No ECC support", SecurityUtils.hasEcc());
 
         GeneralSecurityException err = null;
-        for (String curveName : ECCurves.NAMES) {
-            Integer keySize = ECCurves.getCurveSize(curveName);
+        for (ECCurves curve : ECCurves.VALUES) {
+            String keyType = curve.getKeyType();
+            int keySize = curve.getKeySize();
             try {
-                String keyType = ECCurves.ECDSA_SHA2_PREFIX + curveName;
-                KeyPair kp = generateKeyPair(keyType, keySize.intValue());
-                testKeyPairCloning(keyType, keySize.intValue(), kp);
+                KeyPair kp = generateKeyPair(keyType, keySize);
+                testKeyPairCloning(keyType, keySize, kp);
             } catch(GeneralSecurityException e) {
                 err = GenericUtils.accumulateException(err, e);
             }

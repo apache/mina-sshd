@@ -55,7 +55,11 @@ public class ECDH extends AbstractDH {
     }
 
     public ECDH(String curveName) throws Exception {
-        this(ValidateUtils.checkNotNull(ECCurves.getECParameterSpec(curveName), "Unknown curve name: %s", curveName));
+        this(ValidateUtils.checkNotNull(ECCurves.fromCurveName(curveName), "Unknown curve name: %s", curveName));
+    }
+
+    public ECDH(ECCurves curve) throws Exception {
+        this(ValidateUtils.checkNotNull(curve, "No known curve instance provided", GenericUtils.EMPTY_OBJECT_ARRAY).getParameters());
     }
 
     public ECDH(ECParameterSpec paramSpec) throws Exception {
@@ -102,6 +106,7 @@ public class ECDH extends AbstractDH {
     @Override
     public Digest getHash() throws Exception {
         ValidateUtils.checkNotNull(params, "No ECParameterSpec(s)", GenericUtils.EMPTY_OBJECT_ARRAY);
-        return ECCurves.getDigestForParams(params);
+        ECCurves curve = ValidateUtils.checkNotNull(ECCurves.fromCurveParameters(params), "Unknown curve parameters", GenericUtils.EMPTY_OBJECT_ARRAY);
+        return curve.getDigestForParams();
     }
 }

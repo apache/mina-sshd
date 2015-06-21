@@ -52,11 +52,11 @@ public class SignatureECDSAFactoryTest extends AbstractSignatureFactoryTestSuppo
 
     @Parameters(name = "keySize={0}")
     public static Collection<Object[]> parameters() {
-        return parameterize(ECCurves.SIZES);
+        return parameterize(ECCurves.VALUES);
     }
     
-    public SignatureECDSAFactoryTest(int keySize) {
-        super(ECCurves.getCurveName(keySize), keySize);
+    public SignatureECDSAFactoryTest(ECCurves curve) {
+        super(curve.getName(), curve.getKeySize());
     }
 
     @Test

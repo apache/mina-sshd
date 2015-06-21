@@ -24,6 +24,7 @@ import java.util.EnumSet;
 import java.util.Set;
 
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.util.GenericUtils;
 
 /**
@@ -110,22 +111,12 @@ public enum BuiltinDigests implements DigestInformation, NamedFactory<Digest> {
     }
 
     /**
-     * @param n The factory name - ignored if {@code null}/empty
+     * @param name The factory name - ignored if {@code null}/empty
      * @return The matching {@link org.apache.sshd.common.digest.BuiltinDigests} whose factory name matches
      * (case <U>insensitive</U>) the provided name - {@code null} if no match
      */
-    public static BuiltinDigests fromFactoryName(String n) {
-        if (GenericUtils.isEmpty(n)) {
-            return null;
-        }
-
-        for (BuiltinDigests c : VALUES) {
-            if (n.equalsIgnoreCase(c.getName())) {
-                return c;
-            }
-        }
-
-        return null;
+    public static BuiltinDigests fromFactoryName(String name) {
+        return NamedResource.Utils.findByName(name, String.CASE_INSENSITIVE_ORDER, VALUES);
     }
 
     public static final class Constants {

@@ -80,7 +80,8 @@ public class SignatureECDSA extends AbstractSignature {
         Pair<String,byte[]> encoding = extractEncodedSignature(data);
         if (encoding != null) {
             String keyType = encoding.getFirst();
-            ValidateUtils.checkTrue(ECCurves.TYPES.contains(keyType), "Unknown curve type: %s", keyType);
+            ECCurves curve = ECCurves.fromKeyType(keyType);
+            ValidateUtils.checkNotNull(curve, "Unknown curve type: %s", keyType);
             data = encoding.getSecond();
         }
 

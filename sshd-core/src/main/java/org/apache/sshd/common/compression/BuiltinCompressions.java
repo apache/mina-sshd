@@ -130,18 +130,9 @@ public enum BuiltinCompressions implements CompressionFactory {
     }
 
     public static final BuiltinCompressions fromFactoryName(String name) {
-        if (GenericUtils.isEmpty(name)) {
-            return null;
-        }
-        
-        for (BuiltinCompressions c : VALUES) {
-            if (name.equalsIgnoreCase(c.getName())) {
-                return c;
-            }
-        }
-        
-        return null;
+        return NamedResource.Utils.findByName(name, String.CASE_INSENSITIVE_ORDER, VALUES);
     }
+
     /**
      * @param Compressions A comma-separated list of Compressions' names - ignored
      * if {@code null}/empty

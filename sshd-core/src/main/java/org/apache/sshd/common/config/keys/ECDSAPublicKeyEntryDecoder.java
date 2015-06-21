@@ -55,12 +55,13 @@ public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<EC
     public static final ECDSAPublicKeyEntryDecoder INSTANCE = new ECDSAPublicKeyEntryDecoder();
 
     public ECDSAPublicKeyEntryDecoder() {
-        super(ECPublicKey.class, ECPrivateKey.class, ECCurves.TYPES);
+        super(ECPublicKey.class, ECPrivateKey.class, ECCurves.KEY_TYPES);
     }
 
     @Override
     public ECPublicKey decodePublicKey(String keyType, InputStream keyData) throws IOException, GeneralSecurityException {
-        if (GenericUtils.isEmpty(keyType) || (!keyType.startsWith(ECCurves.ECDSA_SHA2_PREFIX))) {
+        ECCurves curve = ECCurves.fromKeyType(keyType);
+        if (curve == null) {
             throw new InvalidKeySpecException("Not an EC curve name: " + keyType);
         }
         
@@ -68,12 +69,8 @@ public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<EC
             throw new NoSuchProviderException("ECC not supported");
         }
 
-        String keyCurveName = keyType.substring(ECCurves.ECDSA_SHA2_PREFIX.length());
-        ECParameterSpec paramSpec = ECCurves.getECParameterSpec(keyCurveName);
-        if (paramSpec == null) {
-            throw new InvalidKeySpecException("Unknown EC key curve name: " + keyCurveName);
-        }
-        
+        String keyCurveName = curve.getName();
+        ECParameterSpec paramSpec = curve.getParameters();
         // see rfc5656 section 3.1
         String encCurveName = decodeString(keyData);
         if (!keyCurveName.equals(encCurveName)) {
@@ -137,8 +134,8 @@ public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<EC
         ValidateUtils.checkNotNull(key, "No public key provided", GenericUtils.EMPTY_OBJECT_ARRAY);
         
         ECParameterSpec params = ValidateUtils.checkNotNull(key.getParams(), "No EC parameters available", GenericUtils.EMPTY_OBJECT_ARRAY);
-        String curveName = ValidateUtils.checkNotNullAndNotEmpty(ECCurves.getCurveName(params), "Cannot determine curve name", GenericUtils.EMPTY_OBJECT_ARRAY);
-        String keyType = ECCurves.ECDSA_SHA2_PREFIX + curveName;
+        ECCurves curve = ValidateUtils.checkNotNull(ECCurves.fromCurveParameters(params), "Cannot determine curve", GenericUtils.EMPTY_OBJECT_ARRAY);
+        String keyType = curve.getKeyType(), curveName = curve.getName();
         encodeString(s, keyType);
         // see rfc5656 section 3.1
         encodeString(s, curveName);
@@ -157,18 +154,13 @@ public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<EC
 
     @Override
     public KeyPair generateKeyPair(int keySize) throws GeneralSecurityException {
-        String curveName = ECCurves.getCurveName(keySize);
-        if (GenericUtils.isEmpty(curveName)) {
+        ECCurves curve = ECCurves.fromCurveSize(keySize);
+        if (curve == null) {
             throw new InvalidKeySpecException("Unknown curve for key size=" + keySize);
         }
         
-        ECParameterSpec params = ECCurves.getECParameterSpec(curveName);
-        if (params == null) {
-            throw new InvalidKeySpecException("No curve parameters available for " + curveName);
-        }
-
         KeyPairGenerator gen = getKeyPairGenerator();
-        gen.initialize(params);
+        gen.initialize(curve.getParameters());
         return gen.generateKeyPair();
     }
 
@@ -270,12 +262,12 @@ public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<EC
                 
                 @Override
                 public void writeECPoint(OutputStream s, String curveName, ECPoint p) throws IOException {
-                    Integer elems = ECCurves.getNumPointOctets(curveName);
-                    if (elems == null) {
+                    ECCurves curve = ECCurves.fromCurveName(curveName);
+                    if (curve == null) {
                         throw new StreamCorruptedException("writeECPoint(" + name() + ")[" + curveName + "] cannot determine octets count");
                     }
                     
-                    int numElements = elems.intValue();
+                    int numElements = curve.getNumPointOctets();
                     AbstractPublicKeyEntryDecoder.encodeInt(s, 1 /* the indicator */ + 2 * numElements);
                     s.write(getIndicatorValue());
                     writeCoordinate(s, "X", p.getAffineX(), numElements);

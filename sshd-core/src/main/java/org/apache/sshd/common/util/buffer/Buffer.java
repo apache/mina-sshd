@@ -194,13 +194,16 @@ public abstract class Buffer implements Readable {
                 BigInteger y = getMPInt();
                 KeyFactory keyFactory = SecurityUtils.getKeyFactory("DSA");
                 return keyFactory.generatePublic(new DSAPublicKeySpec(y, p, q, g));
-            } else if (keyAlg.startsWith(ECCurves.ECDSA_SHA2_PREFIX)) {
-                String curveName = keyAlg.substring(ECCurves.ECDSA_SHA2_PREFIX.length());
-                ECParameterSpec params = ECCurves.getECParameterSpec(curveName);
-                return getRawECKey(curveName, params);
-            } else {
+            }
+            
+            ECCurves curve = ECCurves.fromKeyType(keyAlg);
+            if (curve == null) {
                 throw new NoSuchAlgorithmException("Unsupported raw public algorithm: " + keyAlg);
             }
+
+            String curveName = curve.getName();
+            ECParameterSpec params = curve.getParameters();
+            return getRawECKey(curveName, params);
         } catch (GeneralSecurityException e) {
             throw new SshException(e);
         }
@@ -228,9 +231,9 @@ public abstract class Buffer implements Readable {
 
     public KeyPair getKeyPair() throws SshException {
         try {
-            PublicKey pub;
-            PrivateKey prv;
-            String keyAlg = getString();
+            final PublicKey pub;
+            final PrivateKey prv;
+            final String keyAlg = getString();
             if (KeyPairProvider.SSH_RSA.equals(keyAlg)) {
                 BigInteger e = getMPInt();
                 BigInteger n = getMPInt();
@@ -252,13 +255,16 @@ public abstract class Buffer implements Readable {
                 KeyFactory keyFactory = SecurityUtils.getKeyFactory("DSA");
                 pub = keyFactory.generatePublic(new DSAPublicKeySpec(y, p, q, g));
                 prv = keyFactory.generatePrivate(new DSAPrivateKeySpec(x, p, q, g));
-            } else if (keyAlg.startsWith(ECCurves.ECDSA_SHA2_PREFIX)) {
-                String curveName = keyAlg.substring(ECCurves.ECDSA_SHA2_PREFIX.length());
-                ECParameterSpec params = ECCurves.getECParameterSpec(curveName);
-                return extractEC(curveName, params);
             } else {
-                throw new NoSuchAlgorithmException("Unsupported key pair algorithm: " + keyAlg);
+                ECCurves    curve = ECCurves.fromKeyType(keyAlg);
+                if (curve == null) {
+                    throw new NoSuchAlgorithmException("Unsupported key pair algorithm: " + keyAlg);
+                }
+                String curveName = curve.getName();
+                ECParameterSpec params = curve.getParameters();
+                return extractEC(curveName, params);
             }
+
             return new KeyPair(pub, prv);
         } catch (GeneralSecurityException e) {
             throw new SshException(e);
@@ -422,11 +428,15 @@ public abstract class Buffer implements Readable {
             putMPInt(dsaParams.getG());
             putMPInt(dsaPub.getY());
         } else if (key instanceof ECPublicKey) {
-            ECPublicKey     ecKey = (ECPublicKey) key;
+            ECPublicKey ecKey = (ECPublicKey) key;
             ECParameterSpec ecParams = ecKey.getParams();
-            String          curveName = ECCurves.getCurveName(ecParams);
-            putString(ECCurves.ECDSA_SHA2_PREFIX + curveName);
-            putString(curveName);
+            ECCurves curve = ECCurves.fromCurveParameters(ecParams);
+            if (curve == null) {
+                throw new BufferException("Unsupported EC curve parameters");
+            }
+
+            putString(curve.getKeyType());
+            putString(curve.getName());
             putBytes(ECCurves.encodeECPoint(ecKey.getW(), ecParams.getCurve()));
         } else {
             throw new BufferException("Unsupported raw public key algorithm: " + key.getAlgorithm());
@@ -459,13 +469,16 @@ public abstract class Buffer implements Readable {
             putMPInt(dsaPub.getY());
             putMPInt(dsaPrv.getX());
         } else if (pubKey instanceof ECPublicKey) {
-            ECPublicKey     ecPub = (ECPublicKey) pubKey;
-            ECPrivateKey    ecPriv = (ECPrivateKey) prvKey;
+            ECPublicKey ecPub = (ECPublicKey) pubKey;
+            ECPrivateKey ecPriv = (ECPrivateKey) prvKey;
             ECParameterSpec ecParams = ecPub.getParams();
-            String          curveName = ECCurves.getCurveName(ecParams);
+            ECCurves curve = ECCurves.fromCurveParameters(ecParams);
+            if (curve == null) {
+                throw new BufferException("Unsupported EC curve parameters");    
+            }
 
-            putString(ECCurves.ECDSA_SHA2_PREFIX + curveName);
-            putString(curveName);
+            putString(curve.getKeyType());
+            putString(curve.getName());
             putBytes(ECCurves.encodeECPoint(ecPub.getW(), ecParams.getCurve()));
             putMPInt(ecPriv.getS());
         } else {

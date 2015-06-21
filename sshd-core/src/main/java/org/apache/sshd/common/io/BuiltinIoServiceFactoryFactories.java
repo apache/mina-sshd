@@ -24,9 +24,9 @@ import java.util.EnumSet;
 import java.util.Set;
 
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.io.mina.MinaServiceFactoryFactory;
 import org.apache.sshd.common.io.nio2.Nio2ServiceFactoryFactory;
-import org.apache.sshd.common.util.GenericUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -65,18 +65,9 @@ public enum BuiltinIoServiceFactoryFactories implements NamedFactory<IoServiceFa
     
     public static final Set<BuiltinIoServiceFactoryFactories> VALUES = 
             Collections.unmodifiableSet(EnumSet.allOf(BuiltinIoServiceFactoryFactories.class));
+
     public static final BuiltinIoServiceFactoryFactories fromFactoryName(String name) {
-        if (GenericUtils.isEmpty(name)) {
-            return null;
-        }
-        
-        for (BuiltinIoServiceFactoryFactories f : VALUES) {
-            if (name.equalsIgnoreCase(f.getName())) {
-                return f;
-            }
-        }
-        
-        return null;
+        return NamedResource.Utils.findByName(name, String.CASE_INSENSITIVE_ORDER, VALUES);
     }
     
     public static final BuiltinIoServiceFactoryFactories fromFactoryClass(Class<?> clazz) {

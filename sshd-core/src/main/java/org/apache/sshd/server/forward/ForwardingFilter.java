@@ -123,17 +123,7 @@ public interface ForwardingFilter {
          * or {@code null} if no match found
          */
         public static final Type fromName(String name) {
-            if (GenericUtils.isEmpty(name)) {
-                return null;
-            }
-            
-            for (Type t : VALUES) {
-                if (name.equalsIgnoreCase(t.getName())) {
-                    return t;
-                }
-            }
-            
-            return null;
+            return NamedResource.Utils.findByName(name, String.CASE_INSENSITIVE_ORDER, VALUES);
         }
         
         /**

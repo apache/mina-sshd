@@ -474,18 +474,13 @@ public class SshKeyScan extends AbstractSimplifiedLog
             }
 
             List<KeyPair> kps = new ArrayList<KeyPair>(ECCurves.NAMES.size());
-            for (String curveName : ECCurves.NAMES) {
-                Integer keySize = ECCurves.getCurveSize(curveName);
-                if (keySize == null) {
-                    throw new InvalidKeySpecException("Unknown curve: " + curveName);
-                }
-
+            for (ECCurves curve : ECCurves.VALUES) {
+                String curveName = curve.getName();
                 if (isEnabled(Level.FINER)) {
                     log(Level.FINER, "Generate key pair for curve=" + curveName);
                 }
 
-                String keyName = ECCurves.ECDSA_SHA2_PREFIX + curveName;
-                kps.add(KeyUtils.generateKeyPair(keyName, keySize.intValue()));
+                kps.add(KeyUtils.generateKeyPair(curve.getKeyType(), curve.getKeySize()));
             }
             
             return kps;
