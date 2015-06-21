@@ -19,6 +19,7 @@
 package org.apache.sshd.common.random;
 
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.OptionalFeature;
 
 /**
  * A random factory wrapper that uses a single random instance.
@@ -26,7 +27,7 @@ import org.apache.sshd.common.NamedFactory;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SingletonRandomFactory implements Random, NamedFactory<Random> {
+public class SingletonRandomFactory implements Random, RandomFactory {
 
     private final NamedFactory<Random> factory;
     private final Random random;
@@ -34,6 +35,15 @@ public class SingletonRandomFactory implements Random, NamedFactory<Random> {
     public SingletonRandomFactory(NamedFactory<Random> factory) {
         this.factory = factory;
         this.random = factory.create();
+    }
+
+    @Override
+    public boolean isSupported() {
+        if (factory instanceof OptionalFeature) {
+            return ((OptionalFeature) factory).isSupported();
+        } else {
+            return true;
+        }
     }
 
     @Override

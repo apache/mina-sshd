@@ -19,8 +19,10 @@
 package org.apache.sshd.server.keyprovider;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -56,16 +58,17 @@ public class AbstractGeneratorHostKeyProviderTest extends BaseTestSupport {
         private final AtomicInteger writes = new AtomicInteger(0);
 
         private TestProvider(File file) {
-            super(file.getAbsolutePath(), "DSA", 512);
+            setKeySize(512);
+            setPath(file.toPath());
         }
 
         @Override
-        protected KeyPair doReadKeyPair(InputStream is) throws Exception {
+        protected KeyPair doReadKeyPair(String resourceKey, InputStream inputStream) throws IOException, GeneralSecurityException {
             return null;
         }
 
         @Override
-        protected void doWriteKeyPair(KeyPair kp, OutputStream os) throws Exception {
+        protected void doWriteKeyPair(String resourceKey, KeyPair kp, OutputStream outputStream) throws IOException, GeneralSecurityException {
             writes.incrementAndGet();
         }
 

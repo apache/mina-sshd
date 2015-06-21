@@ -32,7 +32,6 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Formatter;
 import java.util.logging.Handler;
@@ -58,10 +57,11 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.config.SshConfigFileReader;
+import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoConnectFuture;
 import org.apache.sshd.common.io.IoConnector;
-import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
+import org.apache.sshd.common.keyprovider.AbstractFileKeyPairProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.GenericUtils;
@@ -69,7 +69,6 @@ import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
 import org.apache.sshd.common.util.io.NoCloseOutputStream;
-import org.bouncycastle.openssl.PasswordFinder;
 
 /**
  * Entry point for the client side of the SSH protocol.
@@ -437,43 +436,35 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         }
 
         KeyPairProvider provider = null;
-        final List<String> files = new ArrayList<String>();
+        final List<File> files = new ArrayList<File>();
         File f = new File(System.getProperty("user.home"), ".ssh/id_dsa");
         if (f.exists() && f.isFile() && f.canRead()) {
-            files.add(f.getAbsolutePath());
+            files.add(f);
         }
         f = new File(System.getProperty("user.home"), ".ssh/id_rsa");
         if (f.exists() && f.isFile() && f.canRead()) {
-            files.add(f.getAbsolutePath());
+            files.add(f);
         }
         f = new File(System.getProperty("user.home"), ".ssh/id_ecdsa");
         if (f.exists() && f.isFile() && f.canRead()) {
-            files.add(f.getAbsolutePath());
+            files.add(f);
         }
         if (files.size() > 0) {
             // SSHD-292: we need to use a different class to load the FileKeyPairProvider
             //  in order to break the link between SshClient and BouncyCastle
             try {
                 if (SecurityUtils.isBouncyCastleRegistered()) {
-                    class KeyPairProviderLoader implements Callable<KeyPairProvider> {
+                    AbstractFileKeyPairProvider filesProvider=SecurityUtils.createFileKeyPairProvider();
+                    filesProvider.setFiles(files);
+                    filesProvider.setPasswordFinder(new FilePasswordProvider() {
+                        private final BufferedReader r = new BufferedReader(new InputStreamReader(System.in));
                         @Override
-                        public KeyPairProvider call() throws Exception {
-                            return new FileKeyPairProvider(files.toArray(new String[files.size()]), new PasswordFinder() {
-                                @Override
-                                public char[] getPassword() {
-                                    try {
-                                        System.out.println("Enter password for private key: ");
-                                        BufferedReader r = new BufferedReader(new InputStreamReader(System.in));
-                                        String password = r.readLine();
-                                        return password.toCharArray();
-                                    } catch (IOException e) {
-                                        return null;
-                                    }
-                                }
-                            });
+                        public String getPassword(String file) throws IOException {
+                            System.out.print("Enter password for private key file=" + file + ": ");
+                            return r.readLine();
                         }
-                    }
-                    provider = new KeyPairProviderLoader().call();
+                    });
+                    provider = filesProvider;
                 }
             } catch (Throwable t) {
                 System.out.println("Error loading user keys: " + t.getMessage());

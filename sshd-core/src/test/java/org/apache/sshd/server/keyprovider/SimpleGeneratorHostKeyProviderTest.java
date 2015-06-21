@@ -81,7 +81,7 @@ public class SimpleGeneratorHostKeyProviderTest extends BaseTestSupport {
         SimpleGeneratorHostKeyProvider provider = new SimpleGeneratorHostKeyProvider();
         provider.setAlgorithm(algorithm);
         provider.setOverwriteAllowed(true);
-        provider.setPath(path.getAbsolutePath());
+        provider.setFile(path.getAbsoluteFile());
         if (keySize > 0) {
             provider.setKeySize(keySize);
         }

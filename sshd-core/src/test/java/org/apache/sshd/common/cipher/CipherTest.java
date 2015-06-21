@@ -23,9 +23,6 @@ import java.io.OutputStream;
 import java.util.Arrays;
 
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.cipher.BuiltinCiphers;
-import org.apache.sshd.common.cipher.Cipher;
-import org.apache.sshd.common.random.BouncyCastleRandom;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.BaseTestSupport;
@@ -99,7 +96,7 @@ public class CipherTest extends BaseTestSupport {
 
     @Test
     public void loadTest() throws Exception {
-        Random random = new BouncyCastleRandom();
+        Random random = Utils.getRandomizerInstance();
         loadTest(BuiltinCiphers.aes128cbc, random);
         loadTest(BuiltinCiphers.blowfishcbc, random);
         loadTest(BuiltinCiphers.tripledescbc, random);

@@ -797,7 +797,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                 Path f = resolveFile(path);
                 Path abs = f.toAbsolutePath();
                 Path p = abs.normalize();
-                Boolean status = IoUtils.checkFileExists(p, IoUtils.EMPTY_OPTIONS);
+                Boolean status = IoUtils.checkFileExists(p, IoUtils.EMPTY_LINK_OPTIONS);
                 if (status == null) {
                     p = handleUnknownRealPathStatus(path, abs, p);
                 } else if (!status.booleanValue()) {

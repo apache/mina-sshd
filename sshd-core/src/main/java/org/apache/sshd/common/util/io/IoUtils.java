@@ -27,6 +27,7 @@ import java.io.OutputStream;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.Arrays;
@@ -44,13 +45,13 @@ import org.apache.sshd.common.util.OsUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class IoUtils {
-
-    public static final LinkOption[] EMPTY_OPTIONS = new LinkOption[0];
+    public static final OpenOption[] EMPTY_OPEN_OPTIONS = new OpenOption[0];
+    public static final LinkOption[] EMPTY_LINK_OPTIONS = new LinkOption[0];
     private static final LinkOption[] NO_FOLLOW_OPTIONS = new LinkOption[] { LinkOption.NOFOLLOW_LINKS };
 
     public static LinkOption[] getLinkOptions(boolean followLinks) {
         if (followLinks) {
-            return EMPTY_OPTIONS;
+            return EMPTY_LINK_OPTIONS;
         } else {    // return a clone that modifications to the array will not affect others
             return NO_FOLLOW_OPTIONS.clone();
         }

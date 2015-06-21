@@ -18,10 +18,10 @@
  */
 package org.apache.sshd.common.random;
 
-import org.apache.sshd.common.random.BouncyCastleRandom;
-import org.apache.sshd.common.random.JceRandom;
-import org.apache.sshd.common.random.Random;
+import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.util.BaseTestSupport;
+import org.apache.sshd.util.Utils;
+import org.junit.Assume;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
@@ -33,20 +33,24 @@ import org.junit.runners.MethodSorters;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class RandomTest extends BaseTestSupport {
+    public RandomTest() {
+        super();
+    }
 
     @Test
     public void testJce() {
-        long t = test(new JceRandom());
+        long t = testRandom(new JceRandom());
         System.out.println("JCE: " + t + " micro");
     }
 
     @Test
     public void testBc() {
-        long t = test(new BouncyCastleRandom());
+        Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
+        long t = testRandom(Utils.getRandomizerInstance());
         System.out.println("BC:  " + t + " micro");
     }
 
-    protected long test(Random random) {
+    private static long testRandom(Random random) {
         byte[] bytes = new byte[32];
         long l0 = System.nanoTime();
         for (int i = 0; i < 1000; i++) {

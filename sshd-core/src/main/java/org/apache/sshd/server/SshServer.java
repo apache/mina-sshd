@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.server;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -50,7 +51,6 @@ import org.apache.sshd.server.auth.gss.GSSAuthenticator;
 import org.apache.sshd.server.auth.gss.UserAuthGSS;
 import org.apache.sshd.server.command.ScpCommandFactory;
 import org.apache.sshd.server.forward.ForwardingFilter;
-import org.apache.sshd.server.keyprovider.PEMGeneratorHostKeyProvider;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.server.session.ServerConnectionService;
 import org.apache.sshd.server.session.ServerSession;
@@ -428,10 +428,11 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         sshd.setPort(port);
 
         if (SecurityUtils.isBouncyCastleRegistered()) {
-            sshd.setKeyPairProvider(new PEMGeneratorHostKeyProvider("key.pem"));
+            sshd.setKeyPairProvider(SecurityUtils.createGeneratorHostKeyProvider(new File("key.pem").toPath()));
         } else {
-            sshd.setKeyPairProvider(new SimpleGeneratorHostKeyProvider("key.ser"));
+            sshd.setKeyPairProvider(new SimpleGeneratorHostKeyProvider(new File("key.ser")));
         }
+
         if (OsUtils.isUNIX()) {
             sshd.setShellFactory(new ProcessShellFactory(new String[] { "/bin/sh", "-i", "-l" },
                                  EnumSet.of(ProcessShellFactory.TtyOptions.ONlCr)));

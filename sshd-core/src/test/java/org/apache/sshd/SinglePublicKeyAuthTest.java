@@ -58,8 +58,14 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
     private SshServer sshd;
     private int port = 0;
     private KeyPair pairRsa = Utils.createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
-    private KeyPair pairRsaBad = new SimpleGeneratorHostKeyProvider(null, "RSA").loadKey(KeyPairProvider.SSH_RSA);
+    private KeyPair pairRsaBad;
     private PublickeyAuthenticator delegate;
+
+    public SinglePublicKeyAuthTest() {
+        SimpleGeneratorHostKeyProvider provider = new SimpleGeneratorHostKeyProvider();
+        provider.setAlgorithm("RSA");
+        pairRsaBad = provider.loadKey(KeyPairProvider.SSH_RSA);
+    }
 
     @Before
     public void setUp() throws Exception {

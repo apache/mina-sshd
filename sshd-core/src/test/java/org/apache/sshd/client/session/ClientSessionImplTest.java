@@ -31,7 +31,7 @@ import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.forward.DefaultTcpipForwarderFactory;
 import org.apache.sshd.common.io.IoSession;
-import org.apache.sshd.common.random.JceRandom;
+import org.apache.sshd.common.random.JceRandomFactory;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.random.SingletonRandomFactory;
 import org.apache.sshd.util.BaseTestSupport;
@@ -54,7 +54,7 @@ public class ClientSessionImplTest extends BaseTestSupport {
         ClientFactoryManager client = Mockito.mock(ClientFactoryManager.class);
         Mockito.when(client.getTcpipForwarderFactory()).thenReturn(DefaultTcpipForwarderFactory.INSTANCE);
         
-        Factory<Random> randomFactory = new SingletonRandomFactory(JceRandom.JceRandomFactory.INSTANCE);
+        Factory<Random> randomFactory = new SingletonRandomFactory(JceRandomFactory.INSTANCE);
         Mockito.when(client.getRandomFactory()).thenReturn(randomFactory);
         
         List<ServiceFactory> serviceFactories = Arrays.asList(

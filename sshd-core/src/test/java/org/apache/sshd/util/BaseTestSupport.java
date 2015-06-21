@@ -45,6 +45,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.rules.TestName;
@@ -100,18 +101,44 @@ public abstract class BaseTestSupport extends Assert {
      * associated with the project that contains the actual class extending this
      * base class
      * @return The {@link File} representing the location of the &quot;target&quot; folder
-     * @throws IllegalStateException If failed to detect the folder
+     * @throws IllegalArgumentException If failed to detect the folder
      */
     protected File detectTargetFolder() throws IllegalStateException {
         synchronized(TEMP_SUBFOLDER_NAME) {
             if (targetFolder == null) {
-                if ((targetFolder=Utils.detectTargetFolder(getClass())) == null) {
-                    throw new IllegalStateException("Failed to detect target folder");
-                }
+                targetFolder = ValidateUtils.checkNotNull(Utils.detectTargetFolder(getClass()), "Failed to detect target folder", GenericUtils.EMPTY_OBJECT_ARRAY);
             }
         }
 
         return targetFolder;
+    }
+
+    protected File detectSourcesFolder() throws IllegalStateException {
+        File target = detectTargetFolder();
+        File parent = target.getParentFile();
+        return new File(parent, "src");
+    }
+
+    public static final String MAIN_SUBFOLDER = "main", TEST_SUBFOLDER = "test";
+    public static final String RESOURCES_SUBFOLDER = "resources";
+
+    protected File getClassResourcesFolder(String resType /* test or main */) {
+        return getClassResourcesFolder(resType, getClass());
+    }
+
+    protected File getClassResourcesFolder(String resType /* test or main */, Class<?> clazz) {
+        return getPackageResourcesFolder(resType, clazz.getPackage());
+    }
+
+    protected File getPackageResourcesFolder(String resType /* test or main */, Package pkg) {
+        return getPackageResourcesFolder(resType, pkg.getName());
+    }
+
+    protected File getPackageResourcesFolder(String resType /* test or main */, String pkgName) {
+        File src = detectSourcesFolder();
+        File root = new File(src, resType);
+        File resources = new File(root, RESOURCES_SUBFOLDER);
+        return new File(resources, pkgName.replace('.', File.separatorChar));
     }
 
     /* ------------------- Useful extra test helpers ---------------------- */

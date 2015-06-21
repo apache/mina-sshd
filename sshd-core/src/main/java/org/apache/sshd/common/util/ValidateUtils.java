@@ -43,6 +43,12 @@ public final class ValidateUtils {
         return t;
     }
 
+    public static final String checkNotNullAndNotEmpty(String t, String message, Object arg) {
+        t = checkNotNull(t, message, arg).trim();
+        checkTrue(GenericUtils.length(t) > 0, message, arg);
+        return t;
+    }
+
     public static final String checkNotNullAndNotEmpty(String t, String message, Object ... args) {
         t = checkNotNull(t, message, args).trim();
         checkTrue(GenericUtils.length(t) > 0, message, args);

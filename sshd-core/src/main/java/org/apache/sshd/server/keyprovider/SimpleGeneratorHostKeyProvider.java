@@ -18,11 +18,16 @@
  */
 package org.apache.sshd.server.keyprovider;
 
+import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
+import java.nio.file.Path;
+import java.security.GeneralSecurityException;
 import java.security.KeyPair;
+import java.security.spec.InvalidKeySpecException;
 
 /**
  * TODO Add javadoc
@@ -30,33 +35,32 @@ import java.security.KeyPair;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class SimpleGeneratorHostKeyProvider extends AbstractGeneratorHostKeyProvider {
-
     public SimpleGeneratorHostKeyProvider() {
         super();
     }
 
-    public SimpleGeneratorHostKeyProvider(String path) {
-        super(path);
+    public SimpleGeneratorHostKeyProvider(File file) {
+        this((file == null) ? null : file.toPath());
     }
 
-    public SimpleGeneratorHostKeyProvider(String path, String algorithm) {
-        super(path, algorithm);
-    }
-
-    public SimpleGeneratorHostKeyProvider(String path, String algorithm, int keySize) {
-        super(path, algorithm, keySize);
+    public SimpleGeneratorHostKeyProvider(Path path) {
+        setPath(path);
     }
 
     @Override
-    protected KeyPair doReadKeyPair(InputStream is) throws Exception {
-        try(ObjectInputStream r = new ObjectInputStream(is)) {
-            return (KeyPair) r.readObject();
+    protected KeyPair doReadKeyPair(String resourceKey, InputStream inputStream) throws IOException, GeneralSecurityException {
+        try(ObjectInputStream r = new ObjectInputStream(inputStream)) {
+            try {
+                return (KeyPair) r.readObject();
+            } catch (ClassNotFoundException e) {
+                throw new InvalidKeySpecException("Missing classes: " + e.getMessage(), e);
+            }
         }
     }
 
     @Override
-    protected void doWriteKeyPair(KeyPair kp, OutputStream os) throws Exception {
-        try(ObjectOutputStream w = new ObjectOutputStream(os)) {
+    protected void doWriteKeyPair(String resourceKey, KeyPair kp, OutputStream outputStream) throws IOException, GeneralSecurityException {
+        try(ObjectOutputStream w = new ObjectOutputStream(outputStream)) {
             w.writeObject(kp);
         }
     }

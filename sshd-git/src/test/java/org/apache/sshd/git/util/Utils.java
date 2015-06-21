@@ -23,16 +23,16 @@ import java.net.ServerSocket;
 import java.net.URISyntaxException;
 import java.net.URL;
 
-import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
+import org.apache.sshd.common.keyprovider.AbstractFileKeyPairProvider;
 
 public class Utils {
 
-    public static FileKeyPairProvider createTestHostKeyProvider() {
+    public static AbstractFileKeyPairProvider createTestHostKeyProvider() {
         return createTestKeyPairProvider("hostkey.pem");
     }
 
-    public static FileKeyPairProvider createTestKeyPairProvider(String resource) {
-        return new FileKeyPairProvider(new String[] { getFile(resource) });
+    public static AbstractFileKeyPairProvider createTestKeyPairProvider(String resource) {
+        return new AbstractFileKeyPairProvider(new String[] { getFile(resource) });
     }
 
     public static int getFreePort() throws Exception {

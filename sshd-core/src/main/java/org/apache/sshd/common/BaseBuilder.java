@@ -37,8 +37,6 @@ import org.apache.sshd.common.kex.BuiltinDHFactories;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.mac.BuiltinMacs;
 import org.apache.sshd.common.mac.Mac;
-import org.apache.sshd.common.random.BouncyCastleRandom;
-import org.apache.sshd.common.random.JceRandom;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.random.SingletonRandomFactory;
 import org.apache.sshd.common.session.ConnectionService;
@@ -76,11 +74,7 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
         }
 
         if (randomFactory == null) {
-            if (SecurityUtils.isBouncyCastleRegistered()) {
-                randomFactory = new SingletonRandomFactory(BouncyCastleRandom.BouncyCastleRandomFactory.INSTANCE);
-            } else {
-                randomFactory = new SingletonRandomFactory(JceRandom.JceRandomFactory.INSTANCE);
-            }
+            randomFactory = new SingletonRandomFactory(SecurityUtils.getRandomFactory());
         }
 
         if (cipherFactories == null) {

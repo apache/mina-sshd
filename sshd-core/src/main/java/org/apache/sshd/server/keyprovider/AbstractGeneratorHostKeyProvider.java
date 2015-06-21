@@ -19,57 +19,55 @@
 package org.apache.sshd.server.keyprovider;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.OpenOption;
+import java.nio.file.Path;
+import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.spec.AlgorithmParameterSpec;
 import java.util.Collections;
 
 import org.apache.sshd.common.keyprovider.AbstractKeyPairProvider;
-import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.SecurityUtils;
+import org.apache.sshd.common.util.io.IoUtils;
 
 /**
- * TODO Add javadoc
- *
+ * Holds a <U>single</U> {@link KeyPair} which is generated the 1st time
+ * {@link #loadKeys()} is called. If there is a file backing it up and the
+ * file exists, the key is loaded from it. Otherwise a new key pair is
+ * generated and saved (provided a path is configured and {@link #isOverwriteAllowed()}
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairProvider {
+    public static final String DEFAULT_ALGORITHM = "DSA";
+    public static final boolean DEFAULT_ALLOWED_TO_OVERWRITE = true;
 
-    private String path;
-    private String algorithm;
+    private Path path;
+    private String algorithm = DEFAULT_ALGORITHM;
     private int keySize;
     private AlgorithmParameterSpec keySpec;
     private KeyPair keyPair;
-    private boolean overwriteAllowed = true;
+    private boolean overwriteAllowed = DEFAULT_ALLOWED_TO_OVERWRITE;
 
     protected AbstractGeneratorHostKeyProvider() {
-        this(null);
+        super();
     }
 
-    protected AbstractGeneratorHostKeyProvider(String path) {
-        this(path, "DSA");
-    }
-
-    protected AbstractGeneratorHostKeyProvider(String path, String algorithm) {
-        this(path, algorithm, 0);
-    }
-
-    protected AbstractGeneratorHostKeyProvider(String path, String algorithm, int keySize) {
-        this.path = path;
-        this.algorithm = algorithm;
-        this.keySize = keySize;
-    }
-
-    public String getPath() {
+    public Path getPath() {
         return path;
     }
 
-    public void setPath(String path) {
-        this.path = path;
+    public void setFile(File file) {
+        setPath((file == null) ? null : file.toPath());
+    }
+
+    public void setPath(Path path) {
+        this.path = (path == null) ? null : path.toAbsolutePath();
     }
 
     public String getAlgorithm() {
@@ -104,25 +102,45 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
         this.overwriteAllowed = overwriteAllowed;
     }
 
-    protected abstract KeyPair doReadKeyPair(InputStream is) throws Exception;
-
-    protected abstract void doWriteKeyPair(KeyPair kp, OutputStream os) throws Exception;
-
     @Override
     public synchronized Iterable<KeyPair> loadKeys() {
+        Path keyPath = getPath();
+
         if (keyPair == null) {
-            if (!GenericUtils.isEmpty(path)) {
-                File f = new File(path);
-                if (f.exists() && f.isFile()) {
-                    keyPair = readKeyPair(f);
+            if (keyPath != null) {
+                LinkOption[]    options = IoUtils.getLinkOptions(false);
+                if (Files.exists(keyPath, options) && Files.isRegularFile(keyPath, options)) {
+                    try {
+                        keyPair = readKeyPair(keyPath, IoUtils.EMPTY_OPEN_OPTIONS);
+                    } catch(Exception e) {
+                        log.warn("Failed (" + e.getClass().getSimpleName() + ")"
+                                + " to load from " + keyPath
+                                + ": " + e.getMessage(),
+                                e);
+                    }
                 }
             }
         }
 
         if (keyPair == null) {
-            keyPair = generateKeyPair(getAlgorithm());
-            if ((keyPair != null) && (!GenericUtils.isEmpty(path))) {
-                writeKeyPair(keyPair, new File(path));
+            String alg = getAlgorithm();
+            try {
+                keyPair = generateKeyPair(alg);
+            } catch(Exception e) {
+                log.warn("Failed (" + e.getClass().getSimpleName() + ")"
+                       + " to generate " + alg + " keys: " + e.getMessage(),
+                         e);
+            }
+
+            if ((keyPair != null) && (keyPath != null)) {
+                try {
+                    writeKeyPair(keyPair, keyPath);
+                } catch(Exception e) {
+                    log.warn("Failed (" + e.getClass().getSimpleName() + ")"
+                            + " to write to " + keyPath
+                            + ": " + e.getMessage(),
+                            e);
+                }
             }
         }
 
@@ -133,41 +151,37 @@ public abstract class AbstractGeneratorHostKeyProvider extends AbstractKeyPairPr
         }
     }
 
-    private KeyPair readKeyPair(File f) {
-        try(InputStream is = new FileInputStream(f)) {
-            return doReadKeyPair(is);
-        } catch (Exception e) {
-            log.warn("Unable to read key {}: {}", f.getAbsolutePath(), e);
-            return null;
+    protected KeyPair readKeyPair(Path keyPath, OpenOption ... options) throws IOException, GeneralSecurityException {
+        try(InputStream inputStream = Files.newInputStream(keyPath, options)) {
+            return doReadKeyPair(keyPath.toString(), inputStream);
         }
     }
+    protected abstract KeyPair doReadKeyPair(String resourceKey, InputStream inputStream) throws IOException, GeneralSecurityException;
 
-    private void writeKeyPair(KeyPair kp, File f) {
-        if ((!f.exists()) || isOverwriteAllowed()) {
-            try(OutputStream os = new FileOutputStream(f)) {
-                doWriteKeyPair(kp, os);
+    protected void writeKeyPair(KeyPair kp, Path keyPath, OpenOption ... options) throws IOException, GeneralSecurityException {
+        if ((!Files.exists(keyPath)) || isOverwriteAllowed()) {
+            try(OutputStream os = Files.newOutputStream(keyPath, options)) {
+                doWriteKeyPair(keyPath.toString(), kp, os);
             } catch (Exception e) {
                 log.warn("Unable to write key {}: {}", path, e);
             }
         } else {
-            log.error("Overwriting key ({}) is disabled: using throwaway {}", f.getAbsolutePath(), kp);
+            log.error("Overwriting key ({}) is disabled: using throwaway {}", keyPath, kp);
         }
     }
+    protected abstract void doWriteKeyPair(String resourceKey, KeyPair kp, OutputStream outputStream) throws IOException, GeneralSecurityException;
 
-    private KeyPair generateKeyPair(String algorithm) {
-        try {
-            KeyPairGenerator generator = SecurityUtils.getKeyPairGenerator(algorithm);
-            if (keySpec != null) {
-                generator.initialize(keySpec);
-            } else if (keySize != 0) {
-                generator.initialize(keySize);
-            }
-            log.info("generateKeyPair(" + algorithm + ") generating host key...");
-            KeyPair kp = generator.generateKeyPair();
-            return kp;
-        } catch (Exception e) {
-            log.warn("generateKeyPair(" + algorithm + ") Unable to generate keypair", e);
-            return null;
+
+    protected KeyPair generateKeyPair(String algorithm) throws GeneralSecurityException {
+        KeyPairGenerator generator = SecurityUtils.getKeyPairGenerator(algorithm);
+        if (keySpec != null) {
+            generator.initialize(keySpec);
+            log.info("generateKeyPair(" + algorithm + ") generating host key - spec=" + keySpec.getClass().getSimpleName());
+        } else if (keySize != 0) {
+            generator.initialize(keySize);
+            log.info("generateKeyPair(" + algorithm + ") generating host key - size=" + keySize);
         }
+
+        return generator.generateKeyPair();
     }
 }

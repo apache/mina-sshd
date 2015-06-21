@@ -56,7 +56,7 @@ public class ModifiableFileWatcher extends AbstractLoggingBean {
     public ModifiableFileWatcher(Path file, LinkOption ... options) {
         this.file = ValidateUtils.checkNotNull(file, "No path to watch", GenericUtils.EMPTY_OBJECT_ARRAY);
         // use a clone to avoid being sensitive to changes in the passed array
-        this.options = (options == null) ? IoUtils.EMPTY_OPTIONS : options.clone();
+        this.options = (options == null) ? IoUtils.EMPTY_LINK_OPTIONS : options.clone();
     }
     
     /**

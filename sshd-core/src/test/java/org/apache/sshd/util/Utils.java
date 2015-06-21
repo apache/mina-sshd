@@ -41,9 +41,12 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
+import org.apache.sshd.common.Factory;
+import org.apache.sshd.common.keyprovider.AbstractFileKeyPairProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
+import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 
@@ -60,7 +63,10 @@ public class Utils {
         
         File targetFolder = ValidateUtils.checkNotNull(detectTargetFolder(Utils.class), "Failed to detect target folder", GenericUtils.EMPTY_OBJECT_ARRAY);
         File file = new File(targetFolder, "hostkey." + DEFAULT_TEST_HOST_KEY_PROVIDER_ALGORITHM.toLowerCase());
-        provider = validateKeyPairProvider(new SimpleGeneratorHostKeyProvider(file.getAbsolutePath(), DEFAULT_TEST_HOST_KEY_PROVIDER_ALGORITHM.toUpperCase()));
+        SimpleGeneratorHostKeyProvider keyProvider = new SimpleGeneratorHostKeyProvider();
+        keyProvider.setFile(file);
+        keyProvider.setAlgorithm(DEFAULT_TEST_HOST_KEY_PROVIDER_ALGORITHM);
+        provider = validateKeyPairProvider(keyProvider);
         
         KeyPairProvider prev = keyPairProviderHolder.getAndSet(provider);
         if (prev != null) { // check if somebody else beat us to it
@@ -71,17 +77,20 @@ public class Utils {
     }
 
     // uses a cached instance to avoid re-creating the keys as it is a time-consuming effort
-    private static final Map<String, FileKeyPairProvider> providersMap = new ConcurrentHashMap<String, FileKeyPairProvider>(); 
-    public static FileKeyPairProvider createTestKeyPairProvider(String resource) {
-        String file = getFile(resource);
-        FileKeyPairProvider provider = providersMap.get(file);
+    private static final Map<String, AbstractFileKeyPairProvider> providersMap = new ConcurrentHashMap<String, AbstractFileKeyPairProvider>(); 
+    public static AbstractFileKeyPairProvider createTestKeyPairProvider(String resource) {
+        File file = getFile(resource);
+        String filePath = file.getAbsolutePath();
+        AbstractFileKeyPairProvider provider = providersMap.get(filePath);
         if (provider != null) {
             return provider;
         }
 
-        provider = validateKeyPairProvider(new FileKeyPairProvider(file));
-            
-        FileKeyPairProvider prev = providersMap.put(file, provider);
+        provider = SecurityUtils.createFileKeyPairProvider();
+        provider.setFiles(Collections.singletonList(file));
+        provider = validateKeyPairProvider(provider);
+
+        AbstractFileKeyPairProvider prev = providersMap.put(filePath, provider);
         if (prev != null) { // check if somebody else beat us to it
             return prev;
         } else {
@@ -100,6 +109,11 @@ public class Utils {
         
         return provider;
     }
+    
+    public static Random getRandomizerInstance() {
+        Factory<Random> factory = SecurityUtils.getRandomFactory();
+        return factory.create();
+    }
 
     public static int getFreePort() throws Exception {
         try(ServerSocket s = new ServerSocket()) {
@@ -109,15 +123,13 @@ public class Utils {
         }
     }
 
-    private static String getFile(String resource) {
+    private static File getFile(String resource) {
         URL url = Utils.class.getClassLoader().getResource(resource);
-        File f;
         try {
-            f = new File(url.toURI());
+            return new File(url.toURI());
         } catch(URISyntaxException e) {
-            f = new File(url.getPath());
+            return new File(url.getPath());
         }
-        return f.toString();
     }
 
     public static Path resolve(Path root, String ... children) {
