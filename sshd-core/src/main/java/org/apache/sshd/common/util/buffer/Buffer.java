@@ -46,6 +46,7 @@ import java.security.spec.RSAPublicKeySpec;
 
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.cipher.ECCurves;
+import org.apache.sshd.common.config.keys.ECDSAPublicKeyEntryDecoder;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Readable;
@@ -220,9 +221,14 @@ public abstract class Buffer implements Readable {
         }
 
         byte[] octets = getBytes();
-        ECPoint w = ECCurves.decodeECPoint(octets, spec.getCurve());
-        if (w == null) {
-            throw new InvalidKeySpecException("getRawECKey(" + expectedCurve + ") cannot retrieve W value");
+        ECPoint w;
+        try {
+            w = ECDSAPublicKeyEntryDecoder.octetStringToEcPoint(octets);
+        } catch(RuntimeException e) {
+            throw new InvalidKeySpecException("getRawECKey(" + expectedCurve + ")"
+                                            + " cannot (" + e.getClass().getSimpleName() + ")"
+                                            + " retrieve W value: " + e.getMessage(),
+                                              e);
         }
 
         KeyFactory keyFactory = SecurityUtils.getKeyFactory("EC");
@@ -284,9 +290,14 @@ public abstract class Buffer implements Readable {
             throw new InvalidKeySpecException("extractEC(" + expectedCurveName + ") missing parameters for curve");
         }
 
-        ECPoint group = ECCurves.decodeECPoint(groupBytes, spec.getCurve());
-        if (group == null) {
-            throw new InvalidKeySpecException("extractEC(" + expectedCurveName + ") couldn't decode EC group for curve");
+        ECPoint group;
+        try {
+            group = ECDSAPublicKeyEntryDecoder.octetStringToEcPoint(groupBytes);
+        } catch(RuntimeException e) {
+            throw new InvalidKeySpecException("extractEC(" + expectedCurveName + ")"
+                                            + " failed (" + e.getClass().getSimpleName() + ")"
+                                            + " to decode EC group for curve: " + e.getMessage(),
+                                              e);
         }
 
         KeyFactory keyFactory = SecurityUtils.getKeyFactory("EC");
@@ -437,7 +448,7 @@ public abstract class Buffer implements Readable {
 
             putString(curve.getKeyType());
             putString(curve.getName());
-            putBytes(ECCurves.encodeECPoint(ecKey.getW(), ecParams.getCurve()));
+            putBytes(ECCurves.encodeECPoint(ecKey.getW(), ecParams));
         } else {
             throw new BufferException("Unsupported raw public key algorithm: " + key.getAlgorithm());
         }
@@ -479,7 +490,7 @@ public abstract class Buffer implements Readable {
 
             putString(curve.getKeyType());
             putString(curve.getName());
-            putBytes(ECCurves.encodeECPoint(ecPub.getW(), ecParams.getCurve()));
+            putBytes(ECCurves.encodeECPoint(ecPub.getW(), ecParams));
             putMPInt(ecPriv.getS());
         } else {
             throw new BufferException("Unsupported key pair algorithm: " + kp.getPublic().getAlgorithm());

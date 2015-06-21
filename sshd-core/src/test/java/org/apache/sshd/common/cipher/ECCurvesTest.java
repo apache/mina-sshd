@@ -101,5 +101,4 @@ public class ECCurvesTest extends BaseTestSupport {
         
         assertEquals("Mismatched listed vs. values", ECCurves.VALUES, listed);
     }
-
 }

@@ -255,44 +255,10 @@ public enum ECCurves implements NamedResource, OptionalFeature {
         return ValidateUtils.checkNotNull(field, "No EC field", GenericUtils.EMPTY_OBJECT_ARRAY).getFieldSize();
     }
 
-    /**
-     * Decode an OctetString to EllipticCurvePoint according to SECG 2.3.4
-     */
-    public static ECPoint decodeECPoint(byte[] M, EllipticCurve curve) {
-        if (M.length == 0) {
-            return null;
-        }
-
-        // M has len 2 ceil(log_2(q)/8) + 1 ?
-        int elementSize = (curve.getField().getFieldSize() + 7) / 8;
-        if (M.length != 2 * elementSize + 1) {
-            return null;
-        }
-
-        // step 3.2
-        if (M[0] != 0x04) {
-            return null;
-        }
-
-        // Step 3.3
-        byte[] xp = new byte[elementSize];
-        System.arraycopy(M, 1, xp, 0, elementSize);
-
-        // Step 3.4
-        byte[] yp = new byte[elementSize];
-        System.arraycopy(M, 1 + elementSize, yp, 0, elementSize);
-
-        ECPoint P = new ECPoint(new BigInteger(1, xp), new BigInteger(1, yp));
-
-        // TODO check point 3.5
-
-        // Step 3.6
-        return P;
+    public static byte[] encodeECPoint(ECPoint group, ECParameterSpec params) {
+        return encodeECPoint(group, params.getCurve());
     }
 
-    /**
-     * Encode EllipticCurvePoint to an OctetString
-     */
     public static byte[] encodeECPoint(ECPoint group, EllipticCurve curve) {
         // M has len 2 ceil(log_2(q)/8) + 1 ?
         int elementSize = (curve.getField().getFieldSize() + 7) / 8;

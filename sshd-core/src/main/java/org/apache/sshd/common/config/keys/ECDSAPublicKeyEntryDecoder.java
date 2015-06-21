@@ -19,6 +19,7 @@
 
 package org.apache.sshd.common.config.keys;
 
+import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -286,6 +287,18 @@ public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<EC
         }
 
         public abstract ECPoint octetStringToEcPoint(byte[] octets, int startIndex, int len);
+
+        public byte[] ecPointToOctetString(String curveName, ECPoint p) {
+            try(ByteArrayOutputStream baos = new ByteArrayOutputStream((2 * 66) + Long.SIZE)) {
+                writeECPoint(baos, curveName, p);
+                return baos.toByteArray();
+            } catch(IOException e) {
+                throw new RuntimeException("ecPointToOctetString(" + curveName + ")"
+                                         + " failed (" + e.getClass().getSimpleName() + ")"
+                                         + " to write data: " + e.getMessage(),
+                                           e);
+            } 
+        }
 
         public void writeECPoint(OutputStream s, String curveName, ECPoint p) throws IOException {
             if (s == null) {

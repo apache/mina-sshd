@@ -30,11 +30,11 @@ import java.security.spec.ECPublicKeySpec;
 import javax.crypto.KeyAgreement;
 
 import org.apache.sshd.common.cipher.ECCurves;
+import org.apache.sshd.common.config.keys.ECDSAPublicKeyEntryDecoder;
 import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ValidateUtils;
-import org.apache.sshd.common.util.buffer.BufferUtils;
 
 /**
  * Elliptic Curve Diffie-Hellman key agreement.
@@ -76,7 +76,7 @@ public class ECDH extends AbstractDH {
             KeyPair myKpair = myKpairGen.generateKeyPair();
             myKeyAgree.init(myKpair.getPrivate());
             e = ((ECPublicKey) myKpair.getPublic()).getW();
-            e_array = ECCurves.encodeECPoint(e, params.getCurve());
+            e_array = ECCurves.encodeECPoint(e, params);
         }
         return e_array;
     }
@@ -98,9 +98,7 @@ public class ECDH extends AbstractDH {
     @Override
     public void setF(byte[] f) {
         ValidateUtils.checkNotNull(params, "No ECParameterSpec(s)", GenericUtils.EMPTY_OBJECT_ARRAY);
-        if ((this.f = ECCurves.decodeECPoint(f, params.getCurve())) == null) {
-            throw new IllegalArgumentException("No EC point decoded for F=" + BufferUtils.printHex(':', f));
-        }
+        this.f = ECDSAPublicKeyEntryDecoder.octetStringToEcPoint(f);
     }
 
     @Override
