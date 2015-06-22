@@ -26,12 +26,9 @@ import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.Set;
 
+import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.session.ServerSession;
@@ -44,14 +41,6 @@ import org.apache.sshd.server.session.ServerSession;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class DefaultAuthorizedKeysAuthenticator extends AuthorizedKeysAuthenticator {
-    /**
-     * The {@link Set} of {@link PosixFilePermission} <U>not</U> allowed if strict
-     * permissions are enforced
-     */
-    public static final Set<PosixFilePermission> STRICTLY_PROHIBITED_FILE_PERMISSION =
-            Collections.unmodifiableSet(
-                    EnumSet.of(PosixFilePermission.GROUP_READ, PosixFilePermission.GROUP_WRITE, PosixFilePermission.GROUP_EXECUTE,
-                               PosixFilePermission.OTHERS_READ, PosixFilePermission.OTHERS_WRITE, PosixFilePermission.OTHERS_EXECUTE));
 
     /**
      * The default instance that enforces the same permissions regime as {@code OpenSSH}
@@ -120,19 +109,8 @@ public class DefaultAuthorizedKeysAuthenticator extends AuthorizedKeysAuthentica
             if (log.isDebugEnabled()) {
                 log.info("reloadAuthorizedKeys(" + username + ")[" + session + "] check permissions of " + path);
             }
-            
-            Collection<PosixFilePermission> perms = IoUtils.getPermissions(path);
-            // this is true for Windows as well
-            if (perms.contains(PosixFilePermission.OTHERS_EXECUTE)) {
-                throw new FileSystemException(path.toString(), path.toString(), "File is not allowed to have e(x)ecute permission");
-            }
 
-            if (OsUtils.isUNIX()) {
-                validateFilePath(path, perms, STRICTLY_PROHIBITED_FILE_PERMISSION);
-
-                Path parent=path.getParent();
-                validateFilePath(parent, IoUtils.getPermissions(parent), STRICTLY_PROHIBITED_FILE_PERMISSION);
-            }
+            KeyUtils.validateStrictKeyFilePermissions(path);
         }
 
         return super.reloadAuthorizedKeys(path, username, session);
@@ -146,14 +124,10 @@ public class DefaultAuthorizedKeysAuthenticator extends AuthorizedKeysAuthentica
      * @throws IOException If an excluded permission appears in the current ones
      */
     protected Path validateFilePath(Path path, Collection<PosixFilePermission> perms, Collection<PosixFilePermission> excluded) throws IOException {
-        if (GenericUtils.isEmpty(perms) || GenericUtils.isEmpty(excluded)) {
-            return path;
-        }
-
-        for (PosixFilePermission p : excluded) {
-            if (perms.contains(p)) {
-                throw new FileSystemException(path.toString(), path.toString(), "File is not allowed to have permission=" + p);
-            }
+        PosixFilePermission p = IoUtils.validateExcludedPermissions(perms, excluded);
+        if (p != null) {
+            String filePath = path.toString();
+            throw new FileSystemException(filePath, filePath, "File not allowed to have " + p + " permission: " + filePath);
         }
         
         return path;

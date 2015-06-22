@@ -19,7 +19,6 @@
 package org.apache.sshd.client;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
@@ -44,6 +43,7 @@ import org.apache.sshd.client.auth.UserAuthPassword;
 import org.apache.sshd.client.auth.UserAuthPublicKey;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.ClientChannel;
+import org.apache.sshd.client.config.keys.ClientIdentity;
 import org.apache.sshd.client.future.ConnectFuture;
 import org.apache.sshd.client.future.DefaultConnectFuture;
 import org.apache.sshd.client.session.ClientConnectionService;
@@ -61,8 +61,6 @@ import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoConnectFuture;
 import org.apache.sshd.common.io.IoConnector;
-import org.apache.sshd.common.keyprovider.AbstractFileKeyPairProvider;
-import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.SecurityUtils;
@@ -435,112 +433,99 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             root.setLevel(Level.FINEST);
         }
 
-        KeyPairProvider provider = null;
-        final List<File> files = new ArrayList<File>();
-        File f = new File(System.getProperty("user.home"), ".ssh/id_dsa");
-        if (f.exists() && f.isFile() && f.canRead()) {
-            files.add(f);
-        }
-        f = new File(System.getProperty("user.home"), ".ssh/id_rsa");
-        if (f.exists() && f.isFile() && f.canRead()) {
-            files.add(f);
-        }
-        f = new File(System.getProperty("user.home"), ".ssh/id_ecdsa");
-        if (f.exists() && f.isFile() && f.canRead()) {
-            files.add(f);
-        }
-        if (files.size() > 0) {
-            // SSHD-292: we need to use a different class to load the FileKeyPairProvider
-            //  in order to break the link between SshClient and BouncyCastle
-            try {
-                if (SecurityUtils.isBouncyCastleRegistered()) {
-                    AbstractFileKeyPairProvider filesProvider=SecurityUtils.createFileKeyPairProvider();
-                    filesProvider.setFiles(files);
-                    filesProvider.setPasswordFinder(new FilePasswordProvider() {
-                        private final BufferedReader r = new BufferedReader(new InputStreamReader(System.in));
-                        @Override
-                        public String getPassword(String file) throws IOException {
-                            System.out.print("Enter password for private key file=" + file + ": ");
-                            return r.readLine();
-                        }
-                    });
-                    provider = filesProvider;
-                }
-            } catch (Throwable t) {
-                System.out.println("Error loading user keys: " + t.getMessage());
-            }
-        }
-
-        SshClient client = SshClient.setUpDefaultClient();
-        Map<String,Object> props = client.getProperties();
-        props.putAll(options);
-
-        client.start();
-        client.setKeyPairProvider(provider);
-        client.setUserInteraction(new UserInteraction() {
-            @Override
-            public void welcome(String banner) {
-                System.out.println(banner);
-            }
-
-            @Override
-            public String[] interactive(String destination, String name, String instruction, String[] prompt, boolean[] echo) {
-                String[] answers = new String[prompt.length];
+        try(SshClient client = SshClient.setUpDefaultClient();
+            BufferedReader stdin = new BufferedReader(new InputStreamReader(new NoCloseInputStream(System.in)))) {
+            if (SecurityUtils.isBouncyCastleRegistered()) {
                 try {
-                    for (int i = 0; i < prompt.length; i++) {
-                        BufferedReader r = new BufferedReader(new InputStreamReader(System.in));
-                        System.out.print(prompt[i] + " ");
-                        answers[i] = r.readLine();
+                    ClientIdentity.setKeyPairProvider(client,
+                            false,  // not strict - even though we should...
+                            true,   // supportedOnly
+                            new FilePasswordProvider() {
+                                @Override
+                                public String getPassword(String file) throws IOException {
+                                    System.out.print("Enter password for private key file=" + file + ": ");
+                                    return stdin.readLine();
+                                }
+                            });
+                } catch (Throwable t) {
+                    System.out.println("Error loading user keys: " + t.getMessage());
+                }
+            }
+    
+            Map<String,Object> props = client.getProperties();
+            props.putAll(options);
+    
+            client.start();
+            client.setUserInteraction(new UserInteraction() {
+                    @Override
+                    public void welcome(String banner) {
+                        System.out.println(banner);
                     }
-                } catch (IOException e) {
-                    // ignored
+        
+                    @Override
+                    public String[] interactive(String destination, String name, String instruction, String[] prompt, boolean[] echo) {
+                        String[] answers = new String[prompt.length];
+                        try {
+                            for (int i = 0; i < prompt.length; i++) {
+                                System.out.print(prompt[i] + " ");
+                                answers[i] = stdin.readLine();
+                            }
+                        } catch (IOException e) {
+                            // ignored
+                        }
+                        return answers;
+                    }
+                });
+
+            /*
+            String authSock = System.getenv(SshAgent.SSH_AUTHSOCKET_ENV_NAME);
+            if (authSock == null && provider != null) {
+                Iterable<KeyPair> keys = provider.loadKeys();
+                AgentServer server = new AgentServer();
+                authSock = server.start();
+                SshAgent agent = new AgentClient(authSock);
+                for (KeyPair key : keys) {
+                    agent.addIdentity(key, "");
                 }
-                return answers;
+                agent.close();
+                props.put(SshAgent.SSH_AUTHSOCKET_ENV_NAME, authSock);
             }
-        });
-
-        /*
-        String authSock = System.getenv(SshAgent.SSH_AUTHSOCKET_ENV_NAME);
-        if (authSock == null && provider != null) {
-            Iterable<KeyPair> keys = provider.loadKeys();
-            AgentServer server = new AgentServer();
-            authSock = server.start();
-            SshAgent agent = new AgentClient(authSock);
-            for (KeyPair key : keys) {
-                agent.addIdentity(key, "");
-            }
-            agent.close();
-            props.put(SshAgent.SSH_AUTHSOCKET_ENV_NAME, authSock);
-        }
-        */
-
-        ClientSession session = client.connect(login, host, port).await().getSession();
-        session.auth().verify();
-
-        if (socksPort >= 0) {
-            session.startDynamicPortForwarding(new SshdSocketAddress("localhost", socksPort));
-            Thread.sleep(Long.MAX_VALUE);
-        } else {
-            ClientChannel channel;
-            if (command == null) {
-                channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
-                ((ChannelShell) channel).setAgentForwarding(agentForward);
-                channel.setIn(new NoCloseInputStream(System.in));
-            } else {
-                StringWriter w = new StringWriter();
-                for (String cmd : command) {
-                    w.append(cmd).append(" ");
+            */
+    
+            try(ClientSession session = client.connect(login, host, port).await().getSession()) {
+                session.auth().verify();
+        
+                if (socksPort >= 0) {
+                    session.startDynamicPortForwarding(new SshdSocketAddress("localhost", socksPort));
+                    Thread.sleep(Long.MAX_VALUE);
+                } else {
+                    ClientChannel channel;
+                    if (command == null) {
+                        channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
+                        ((ChannelShell) channel).setAgentForwarding(agentForward);
+                        channel.setIn(new NoCloseInputStream(System.in));
+                    } else {
+                        StringWriter w = new StringWriter();
+                        for (String cmd : command) {
+                            w.append(cmd).append(" ");
+                        }
+                        w.close();
+                        channel = session.createChannel(ClientChannel.CHANNEL_EXEC, w.toString());
+                    }
+                    
+                    try {
+                        channel.setOut(new NoCloseOutputStream(System.out));
+                        channel.setErr(new NoCloseOutputStream(System.err));
+                        channel.open().await();
+                        channel.waitFor(ClientChannel.CLOSED, 0);
+                    } finally {
+                        channel.close();
+                    }
+                    session.close(false);
                 }
-                w.close();
-                channel = session.createChannel(ClientChannel.CHANNEL_EXEC, w.toString());
+            } finally {
+                client.stop();
             }
-            channel.setOut(new NoCloseOutputStream(System.out));
-            channel.setErr(new NoCloseOutputStream(System.err));
-            channel.open().await();
-            channel.waitFor(ClientChannel.CLOSED, 0);
-            session.close(false);
-            client.stop();
         }
     }
-
 }

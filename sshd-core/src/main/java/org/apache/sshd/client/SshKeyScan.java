@@ -60,6 +60,7 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.SshConfigFileReader;
+import org.apache.sshd.common.config.keys.BuiltinIdentities;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.io.IoSession;
@@ -82,12 +83,11 @@ import org.apache.sshd.common.util.logging.LoggingUtils;
  */
 public class SshKeyScan extends AbstractSimplifiedLog
                         implements Channel, Callable<Void>, ServerKeyVerifier, SessionListener {
-    public static final String RSA_KEY_TYPE = "rsa", DSS_KEY_TYPE = "dsa", EC_KEY_TYPE = "ecdsa";
     /**
      * Default key types if not overridden from the command line
      */
-    public static final List<String> DEFAULT_KEY_TYPES =
-            Collections.unmodifiableList(Arrays.asList(RSA_KEY_TYPE, EC_KEY_TYPE));
+    public static final List<String> DEFAULT_KEY_TYPES = 
+            Collections.unmodifiableList(Arrays.asList(BuiltinIdentities.Constants.RSA, BuiltinIdentities.Constants.ECDSA));
     public static final long DEFAULT_TIMEOUT = TimeUnit.SECONDS.toMillis(5L);
     public static final Level DEFAULT_LEVEL = Level.INFO;
 
@@ -413,11 +413,11 @@ public class SshKeyScan extends AbstractSimplifiedLog
             log(Level.FINE, "Resolve signature factories for " + keyType);
         }
 
-        if (RSA_KEY_TYPE.equalsIgnoreCase(keyType)) {
+        if (BuiltinIdentities.Constants.RSA.equalsIgnoreCase(keyType)) {
             return Collections.singletonList((NamedFactory<Signature>) BuiltinSignatures.rsa);
-        } else if (DSS_KEY_TYPE.equalsIgnoreCase(keyType)) {
+        } else if (BuiltinIdentities.Constants.DSA.equalsIgnoreCase(keyType)) {
             return Collections.singletonList((NamedFactory<Signature>) BuiltinSignatures.dsa);
-        } else if (EC_KEY_TYPE.equalsIgnoreCase(keyType)) {
+        } else if (BuiltinIdentities.Constants.ECDSA.equalsIgnoreCase(keyType)) {
             List<NamedFactory<Signature>> factories = new ArrayList<NamedFactory<Signature>>(ECCurves.NAMES.size());
             for (String n : ECCurves.NAMES) {
                 if (isEnabled(Level.FINER)) {
@@ -464,11 +464,11 @@ public class SshKeyScan extends AbstractSimplifiedLog
             log(Level.FINE, "Generate key pairs for " + keyType);
         }
 
-        if (RSA_KEY_TYPE.equalsIgnoreCase(keyType)) {
+        if (BuiltinIdentities.Constants.RSA.equalsIgnoreCase(keyType)) {
             return Collections.singletonList(KeyUtils.generateKeyPair(KeyPairProvider.SSH_RSA, 1024));
-        } else if (DSS_KEY_TYPE.equalsIgnoreCase(keyType)) {
+        } else if (BuiltinIdentities.Constants.DSA.equalsIgnoreCase(keyType)) {
             return Collections.singletonList(KeyUtils.generateKeyPair(KeyPairProvider.SSH_DSS, 512));
-        } else if (EC_KEY_TYPE.equalsIgnoreCase(keyType)) {
+        } else if (BuiltinIdentities.Constants.ECDSA.equalsIgnoreCase(keyType)) {
             if (!SecurityUtils.hasEcc()) {
                 throw new InvalidKeySpecException("ECC not supported");
             }

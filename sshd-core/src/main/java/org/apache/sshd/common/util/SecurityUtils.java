@@ -30,6 +30,7 @@ import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.MessageDigest;
+import java.security.NoSuchProviderException;
 import java.security.SecureRandom;
 import java.security.Signature;
 import java.util.concurrent.Callable;
@@ -183,6 +184,28 @@ public class SecurityUtils {
                 }
             }
         }
+    }
+
+    /**
+     * @param resourceKey An identifier of the key being loaded - used as
+     * argument to the {@link FilePasswordProvider#getPassword(String)}
+     * invocation
+     * @param inputStream The {@link InputStream} for the <U>private</U> key
+     * @param provider A {@link FilePasswordProvider} - may be {@code null}
+     * if the loaded key is <U>guaranteed</U> not to be encrypted
+     * @return The loaded {@link KeyPair}
+     * @throws IOException If failed to read/parse the input stream
+     * @throws GeneralSecurityException If failed to generate the keys - specifically,
+     * {@link NoSuchProviderException} is thrown also if {@link #isBouncyCastleRegistered()}
+     * is {@code false}
+     */
+    public static KeyPair loadKeyPairIdentity(String resourceKey, InputStream inputStream, FilePasswordProvider provider)
+            throws IOException, GeneralSecurityException {
+        if (!isBouncyCastleRegistered()) {
+            throw new NoSuchProviderException("BouncyCastle not registered");
+        }
+        
+        return BouncyCastleInputStreamLoader.loadKeyPair(resourceKey, inputStream, provider);
     }
 
     /* -------------------------------------------------------------------- */

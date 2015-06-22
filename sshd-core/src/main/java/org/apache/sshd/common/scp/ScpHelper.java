@@ -577,7 +577,8 @@ public class ScpHelper extends AbstractLoggingBean {
             readAck(false);
         }
 
-        Set<PosixFilePermission> perms = IoUtils.getPermissions(path);
+        LinkOption[] options = IoUtils.getLinkOptions(false);
+        Set<PosixFilePermission> perms = IoUtils.getPermissions(path, options);
         StringBuilder buf = new StringBuilder();
         buf.append("D");
         buf.append(preserve ? getOctalPerms(perms) : "0755");
@@ -594,7 +595,6 @@ public class ScpHelper extends AbstractLoggingBean {
             listener.startFolderEvent(FileOperation.SEND, path, perms);
 
             try {
-                LinkOption[] options = IoUtils.getLinkOptions(false);
                 for (Path child : children) {
                     if (Files.isRegularFile(child, options)) {
                         sendFile(child, preserve, bufferSize);
@@ -615,8 +615,8 @@ public class ScpHelper extends AbstractLoggingBean {
         readAck(false);
     }
 
-    public static String getOctalPerms(Path path) throws IOException {
-        return getOctalPerms(IoUtils.getPermissions(path));
+    public static String getOctalPerms(Path path, LinkOption ... options) throws IOException {
+        return getOctalPerms(IoUtils.getPermissions(path, options));
     }
 
     public static String getOctalPerms(Collection<PosixFilePermission> perms) {

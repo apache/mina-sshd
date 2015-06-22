@@ -37,6 +37,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
 
 /**
@@ -113,11 +114,11 @@ public class IoUtils {
      * @throws IOException If failed to access the file system in order to
      * retrieve the permissions
      */
-    public static Set<PosixFilePermission> getPermissions(Path path) throws IOException {
+    public static Set<PosixFilePermission> getPermissions(Path path, LinkOption ... options) throws IOException {
         FileSystem          fs = path.getFileSystem();
         Collection<String>  views = fs.supportedFileAttributeViews();
         if (views.contains("posix")) {
-            return Files.getPosixFilePermissions(path, getLinkOptions(false));
+            return Files.getPosixFilePermissions(path, options);
         } else {
             return getPermissionsFromFile(path.toFile());
         }
@@ -290,5 +291,25 @@ public class IoUtils {
         }
 
         return length;
+    }
+
+    /**
+     * @param perms The current {@link PosixFilePermission}s - ignored if {@code null}/empty
+     * @param excluded The permissions <U>not</U> allowed to exist - ignored if {@code null)/empty
+     * @return The violating {@link PosixFilePermission} - {@code null}
+     * if no violating permission found
+     */
+    public static PosixFilePermission validateExcludedPermissions(Collection<PosixFilePermission> perms, Collection<PosixFilePermission> excluded) {
+        if (GenericUtils.isEmpty(perms) || GenericUtils.isEmpty(excluded)) {
+            return null;
+        }
+
+        for (PosixFilePermission p : excluded) {
+            if (perms.contains(p)) {
+                return p;
+            }
+        }
+        
+        return null;
     }
 }

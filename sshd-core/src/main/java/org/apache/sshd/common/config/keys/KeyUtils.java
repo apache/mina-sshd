@@ -18,8 +18,13 @@
  */
 package org.apache.sshd.common.config.keys;
 
+import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermission;
 import java.security.GeneralSecurityException;
 import java.security.Key;
 import java.security.KeyPair;
@@ -39,9 +44,12 @@ import java.security.spec.ECParameterSpec;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -52,9 +60,11 @@ import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.digest.DigestUtils;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.common.util.io.IoUtils;
 
 /**
  * Utility class for keys
@@ -73,8 +83,73 @@ public final class KeyUtils {
         registerPublicKeyEntryDecoder(ECDSAPublicKeyEntryDecoder.INSTANCE);
     }
 
+    /**
+     * The {@link Set} of {@link PosixFilePermission} <U>not</U> allowed if strict
+     * permissions are enforced on key files
+     */
+    public static final Set<PosixFilePermission> STRICTLY_PROHIBITED_FILE_PERMISSION =
+            Collections.unmodifiableSet(
+                    EnumSet.of(PosixFilePermission.GROUP_READ, PosixFilePermission.GROUP_WRITE, PosixFilePermission.GROUP_EXECUTE,
+                               PosixFilePermission.OTHERS_READ, PosixFilePermission.OTHERS_WRITE, PosixFilePermission.OTHERS_EXECUTE));
+
     private KeyUtils() {
         throw new UnsupportedOperationException("No instance");
+    }
+
+    /**
+     * <P>Checks if a path has strict permissions</P></BR>
+     * <UL>
+     *      <LI>
+     *      The path may not have {@link PosixFilePermission#OTHERS_EXECUTE}
+     *      permission
+     *      </LI>
+     *      
+     *      <LI>
+     *      (For {@code Unix}) The path may not have group or others permissions
+     *      </LI>
+     *      
+     *      <LI>
+     *      (For {@code Unix}) If the path is a file, then its folder may not have
+     *      group or others permissions 
+     *      </LI>
+     * </UL>
+     * @param path The {@link Path} to be checked - ignored if {@code null}
+     * or does not exist
+     * @param options The {@link LinkOption}s to use to query the file's permissions
+     * @return The violated {@link PosixFilePermission} - {@code null} if
+     * no violations detected
+     * @throws IOException If failed to retrieve the permissions
+     * @see #STRICTLY_PROHIBITED_FILE_PERMISSION
+     */
+    public static PosixFilePermission validateStrictKeyFilePermissions(Path path, LinkOption ... options) throws IOException {
+        if ((path == null) || (!Files.exists(path, options))) {
+            return null;
+        }
+
+        Collection<PosixFilePermission> perms = IoUtils.getPermissions(path, options);
+        if (GenericUtils.isEmpty(perms)) {
+            return null;
+        }
+
+        if (perms.contains(PosixFilePermission.OTHERS_EXECUTE)) {
+            return PosixFilePermission.OTHERS_EXECUTE;
+        }
+
+        if (OsUtils.isUNIX()) { 
+            PosixFilePermission p = IoUtils.validateExcludedPermissions(perms, STRICTLY_PROHIBITED_FILE_PERMISSION);
+            if (p != null) {
+                return p;
+            }
+
+            if (Files.isRegularFile(path, options)) {
+                Path parent=path.getParent();
+                if ((p = IoUtils.validateExcludedPermissions(IoUtils.getPermissions(parent, options), STRICTLY_PROHIBITED_FILE_PERMISSION)) != null) {
+                    return p;
+                }
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -153,7 +228,28 @@ public final class KeyUtils {
             return byKeyTypeDecodersMap.get(keyType);
         }
     }
-    
+
+    /**
+     * @param kp The {@link KeyPair} to examine - ignored if {@code null}
+     * @return The matching {@link PublicKeyEntryDecoder} provided <U>both</U>
+     * the public and private keys have the same decoder - {@code null} if no
+     * match found
+     * @see #getPublicKeyEntryDecoder(Key)
+     */
+    public static PublicKeyEntryDecoder<?,?> getPublicKeyEntryDecoder(KeyPair kp) {
+        if (kp == null) {
+            return null;
+        }
+        
+        PublicKeyEntryDecoder<?,?> d1 = getPublicKeyEntryDecoder(kp.getPublic());
+        PublicKeyEntryDecoder<?,?> d2 = getPublicKeyEntryDecoder(kp.getPrivate());
+        if (d1 == d2) {
+            return d1;
+        } else {
+            return null;    // some kind of mixed keys...
+        }
+    }
+
     /**
      * @param key The {@link Key} (public or private) - ignored if {@code null}
      * @return The registered {@link PublicKeyEntryDecoder} for this key or {code null} if no match found

@@ -128,7 +128,7 @@ public class ServerSession extends AbstractSession {
             }
 
             if (resolvedHostKeys == null) {
-                resolvedHostKeys = new StringBuilder();
+                resolvedHostKeys = new StringBuilder(supported.size() * 16 /* ecdsa-sha2-xxxx */);
             }
 
             if (resolvedHostKeys.length() > 0) {

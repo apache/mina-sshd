@@ -29,6 +29,9 @@ import java.io.Reader;
 import java.io.StreamCorruptedException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.OpenOption;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -58,6 +61,7 @@ import org.apache.sshd.common.signature.SignatureFactory;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Transformer;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
 import org.apache.sshd.common.util.io.NoCloseReader;
 import org.apache.sshd.server.ServerBuilder;
@@ -87,7 +91,6 @@ public class SshConfigFileReader {
         public static final boolean DEFAULT_X11_FORWARDING_VALUE=parseBooleanValue(DEFAULT_X11_FORWARDING);
     public static final String  MAX_SESSIONS_CONFIG_PROP="MaxSessions";
         public static final int DEFAULT_MAX_SESSIONS=10;
-    public static final String  HOST_KEY_CONFIG_PROP="HostKey";
     public static final String  PASSWORD_AUTH_CONFIG_PROP="PasswordAuthentication";
         public static final String  DEFAULT_PASSWORD_AUTH="no";
         public static final boolean DEFAULT_PASSWORD_AUTH_VALUE=parseBooleanValue(DEFAULT_PASSWORD_AUTH);
@@ -143,7 +146,11 @@ public class SshConfigFileReader {
     public static final String  SUBSYSTEM_CONFIG_PROP="Subsystem";
 
     public static final Properties readConfigFile(File file) throws IOException {
-        try(InputStream input=new FileInputStream(file)) {
+        return readConfigFile(file.toPath(), IoUtils.EMPTY_OPEN_OPTIONS);
+    }
+
+    public static final Properties readConfigFile(Path path, OpenOption ... options) throws IOException {
+        try(InputStream input = Files.newInputStream(path, options)) {
             return readConfigFile(input, true);
         }
     }
