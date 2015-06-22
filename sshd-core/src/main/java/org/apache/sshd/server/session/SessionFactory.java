@@ -33,15 +33,27 @@ import org.apache.sshd.server.ServerFactoryManager;
  */
 public class SessionFactory extends AbstractSessionFactory {
 
-    protected ServerFactoryManager server;
+    private ServerFactoryManager manager;
+
+    public SessionFactory() {
+        super();
+    }
+    
+    public SessionFactory(ServerFactoryManager manager) {
+        this.manager = manager;
+    }
+
+    public ServerFactoryManager getServer() {
+        return manager;
+    }
 
     public void setServer(ServerFactoryManager server) {
-        this.server = server;
+        this.manager = server;
     }
 
     @Override
     protected AbstractSession doCreateSession(IoSession ioSession) throws Exception {
-        return new ServerSession(server, ioSession);
+        return new ServerSessionImpl(getServer(), ioSession);
     }
 
 }

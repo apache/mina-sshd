@@ -35,23 +35,23 @@ public interface ServerFactoryManager extends FactoryManager {
     /**
      * Key used to retrieve the value of the maximum concurrent open session count per username
      */
-    public static final String MAX_CONCURRENT_SESSIONS = "max-concurrent-sessions";
+    String MAX_CONCURRENT_SESSIONS = "max-concurrent-sessions";
     /**
      * Key used to retrieve the value of the server identification string if not default.
      */
-    public static final String SERVER_IDENTIFICATION = "server-identification";
+    String SERVER_IDENTIFICATION = "server-identification";
     /**
      * Key used to retrieve the value in the configuration properties map
      * of the maximum number of failed authentication requests before the
      * server closes the connection.
      */
-    public static final String MAX_AUTH_REQUESTS = "max-auth-requests";
+    String MAX_AUTH_REQUESTS = "max-auth-requests";
 
     /**
      * Key used to retrieve the value of welcome banner that will be displayed
      * when a user connects to the server.
      */
-    public static final String WELCOME_BANNER = "welcome-banner";
+    String WELCOME_BANNER = "welcome-banner";
 
     /**
      * This key is used when configuring multi-step authentications.
@@ -65,34 +65,34 @@ public interface ServerFactoryManager extends FactoryManager {
      * stage, so for this example, it would not be possible to attempt
      * password or keyboard-interactive authentication before public key.
      */
-    public static final String AUTH_METHODS = "auth-methods";
+    String AUTH_METHODS = "auth-methods";
 
     /**
      * Key used to configure the timeout used when receiving a close request
      * on a channel to wait until the command cleanly exits after setting
      * an EOF on the input stream. In milliseconds.
      */
-    public static final String COMMAND_EXIT_TIMEOUT = "command-exit-timeout";
+    String COMMAND_EXIT_TIMEOUT = "command-exit-timeout";
 
     /**
      * Key re-exchange will be automatically performed after the session
      * has sent or received the given amount of bytes.
      * The default value is 1 gigabyte.
      */
-    public static final String REKEY_BYTES_LIMIT = "rekey-bytes-limit";
+    String REKEY_BYTES_LIMIT = "rekey-bytes-limit";
 
     /**
      * Key re-exchange will be automatically performed after the specified
      * amount of time has elapsed since the last key exchange. In milliseconds.
      * The default value is 1 hour.
      */
-    public static final String REKEY_TIME_LIMIT = "rekey-time-limit";
+    String REKEY_TIME_LIMIT = "rekey-time-limit";
 
     /**
      * A URL pointing to the moduli file.
      * If not specified, the default internal file will be used.
      */
-    public static final String MODULI_URL = "moduli-url";
+    String MODULI_URL = "moduli-url";
 
     /**
      * Retrieve the list of named factories for <code>UserAuth</code> objects.

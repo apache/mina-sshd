@@ -19,8 +19,11 @@
 package org.apache.sshd.server.auth;
 
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.server.PasswordAuthenticator;
+import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.UserAuth;
 import org.apache.sshd.server.session.ServerSession;
 
@@ -48,6 +51,10 @@ public class UserAuthPassword extends AbstractUserAuth {
         }
     }
 
+    public UserAuthPassword() {
+        super();
+    }
+
     @Override
     public Boolean doAuth(Buffer buffer, boolean init) throws Exception {
         if (!init) {
@@ -61,12 +68,12 @@ public class UserAuthPassword extends AbstractUserAuth {
         return Boolean.valueOf(checkPassword(session, username, password));
     }
 
-    private boolean checkPassword(ServerSession session, String username, String password) throws Exception {
-        PasswordAuthenticator auth = session.getFactoryManager().getPasswordAuthenticator();
-        if (auth != null) {
-            return auth.authenticate(username, password, session);
-        }
-        throw new Exception("No PasswordAuthenticator configured");
+    protected boolean checkPassword(ServerSession session, String username, String password) throws Exception {
+        ServerFactoryManager manager = session.getFactoryManager();
+        PasswordAuthenticator auth = ValidateUtils.checkNotNull(
+                manager.getPasswordAuthenticator(),
+                "No PasswordAuthenticator configured",
+                GenericUtils.EMPTY_OBJECT_ARRAY);
+        return auth.authenticate(username, password, session);
     }
-
 }

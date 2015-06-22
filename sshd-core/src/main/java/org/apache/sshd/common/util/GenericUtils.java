@@ -199,6 +199,14 @@ public final class GenericUtils {
         }
     }
 
+    public static final boolean isEmpty(byte[] a) {
+        if (length(a) <= 0) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     public static final int length(byte ... a) {
         if (a == null) {
             return 0;

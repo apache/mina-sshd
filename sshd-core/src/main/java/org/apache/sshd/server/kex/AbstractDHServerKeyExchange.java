@@ -23,6 +23,8 @@ import java.security.PublicKey;
 
 import org.apache.sshd.common.kex.dh.AbstractDHKeyExchange;
 import org.apache.sshd.common.session.AbstractSession;
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
@@ -39,14 +41,12 @@ public abstract class AbstractDHServerKeyExchange extends AbstractDHKeyExchange 
     @Override
     public void init(AbstractSession s, byte[] V_S, byte[] V_C, byte[] I_S, byte[] I_C) throws Exception {
         super.init(s, V_S, V_C, I_S, I_C);
-        if (!(s instanceof ServerSession)) {
-            throw new IllegalStateException("Using a server side KeyExchange on a client");
-        }
+        ValidateUtils.checkTrue(s instanceof ServerSession, "Using a server side KeyExchange on a client", GenericUtils.EMPTY_OBJECT_ARRAY);
         session = (ServerSession) s;
     }
 
     @Override
     public PublicKey getServerKey() {
-        return session.getHostKey().getPublic();
+        return ValidateUtils.checkNotNull(session.getHostKey(), "No server key pair available", GenericUtils.EMPTY_OBJECT_ARRAY).getPublic();
     }
 }

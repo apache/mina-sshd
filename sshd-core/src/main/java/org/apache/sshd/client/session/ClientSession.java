@@ -35,7 +35,6 @@ import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.scp.ScpClient;
 import org.apache.sshd.client.sftp.SftpClient;
 import org.apache.sshd.common.SshdSocketAddress;
-import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.scp.ScpTransferEventListener;
 import org.apache.sshd.common.session.Session;
@@ -238,21 +237,14 @@ public interface ClientSession extends Session {
     int waitFor(int mask, long timeout);
 
     /**
-     * Close this session.
-     */
-    @Override
-    CloseFuture close(boolean immediately);
-
-    /**
      * Access to the metadata.
      */
     Map<Object, Object> getMetadataMap();
 
     /**
-     * Return ClientFactoryManager for this session.
+     * @return The ClientFactoryManager for this session.
      */
-    @Override
-    ClientFactoryManager getFactoryManager();
+    @Override ClientFactoryManager getFactoryManager();
 
     /**
      * Switch to a none cipher for performance.

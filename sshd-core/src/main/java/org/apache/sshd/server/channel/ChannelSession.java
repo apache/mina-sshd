@@ -34,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.common.Closeable;
+import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.NamedFactory;
@@ -50,6 +51,7 @@ import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.IoUtils;
@@ -57,6 +59,7 @@ import org.apache.sshd.common.util.io.LoggingFilterOutputStream;
 import org.apache.sshd.server.AsyncCommand;
 import org.apache.sshd.server.ChannelSessionAware;
 import org.apache.sshd.server.Command;
+import org.apache.sshd.server.CommandFactory;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
 import org.apache.sshd.server.ServerFactoryManager;
@@ -457,12 +460,22 @@ public class ChannelSession extends AbstractServerChannel {
     protected boolean handleShell(Buffer buffer) throws IOException {
         // If we're already closing, ignore incoming data
         if (isClosing()) {
+            log.debug("handleShell - closing");
             return false;
         }
-        if (((ServerSession) session).getFactoryManager().getShellFactory() == null) {
+        
+        ServerFactoryManager manager = ((ServerSession) session).getFactoryManager();
+        Factory<Command> factory = manager.getShellFactory();
+        if (factory == null) {
+            log.debug("handleShell - no shell factory");
             return false;
         }
-        command = ((ServerSession) session).getFactoryManager().getShellFactory().create();
+        
+        if ((command = factory.create()) == null) {
+            log.debug("handleShell - no shell command");
+            return false;
+        }
+
         prepareCommand();
         command.start(getEnvironment());
         return true;
@@ -474,17 +487,19 @@ public class ChannelSession extends AbstractServerChannel {
             return false;
         }
         String commandLine = buffer.getString();
-        if (((ServerSession) session).getFactoryManager().getCommandFactory() == null) {
-            log.warn("Unsupported command: {}", commandLine);
+        ServerFactoryManager manager = ((ServerSession) session).getFactoryManager();
+        CommandFactory factory = manager.getCommandFactory();
+        if (factory == null) {
+            log.warn("No command factory for command: {}", commandLine);
             return false;
         }
         if (log.isInfoEnabled()) {
             log.info("Executing command: {}", commandLine);
         }
         try {
-            command = ((ServerSession) session).getFactoryManager().getCommandFactory().createCommand(commandLine);
-        } catch (IllegalArgumentException iae) {
-            // TODO: Shouldn't we log errors on the server side?
+            command = factory.createCommand(commandLine);
+        } catch (RuntimeException iae) {
+            log.warn("Failed (" + iae.getClass().getSimpleName() + ") to execute " + commandLine + ": " + iae.getMessage());
             return false;
         }
         prepareCommand();
@@ -495,13 +510,14 @@ public class ChannelSession extends AbstractServerChannel {
 
     protected boolean handleSubsystem(Buffer buffer) throws IOException {
         String subsystem = buffer.getString();
-        List<NamedFactory<Command>> factories = ((ServerSession) session).getFactoryManager().getSubsystemFactories();
-        if (factories == null) {
-            log.warn("Unsupported subsystem: {}", subsystem);
+        ServerFactoryManager manager = ((ServerSession) session).getFactoryManager();
+        List<NamedFactory<Command>> factories = manager.getSubsystemFactories();
+        if (GenericUtils.isEmpty(factories)) {
+            log.warn("No factories for subsystem: {}", subsystem);
             return false;
         }
-        command = NamedFactory.Utils.create(factories, subsystem);
-        if (command == null) {
+
+        if ((command = NamedFactory.Utils.create(factories, subsystem)) == null) {
             log.warn("Unsupported subsystem: {}", subsystem);
             return false;
         }
@@ -596,11 +612,11 @@ public class ChannelSession extends AbstractServerChannel {
     }
 
     protected boolean handleAgentForwarding(Buffer buffer) throws IOException {
-        ServerSession server = (ServerSession) session;
-        FactoryManager manager = server.getFactoryManager();
+        ValidateUtils.checkTrue(session instanceof ServerSession, "Session not a server one", GenericUtils.EMPTY_OBJECT_ARRAY);
+        FactoryManager manager = session.getFactoryManager();
         ForwardingFilter filter = manager.getTcpipForwardingFilter();
         SshAgentFactory factory = manager.getAgentFactory();
-        if ((factory == null) || (filter == null) || (!filter.canForwardAgent(server))) {
+        if ((factory == null) || (filter == null) || (!filter.canForwardAgent(session))) {
             if (log.isDebugEnabled()) {
                 log.debug("handleAgentForwarding(" + session + ")[haveFactory=" + (factory != null) + ",haveFilter=" + (filter != null) + "] filtered out");
             }
@@ -613,9 +629,10 @@ public class ChannelSession extends AbstractServerChannel {
     }
 
     protected boolean handleX11Forwarding(Buffer buffer) throws IOException {
-        ServerSession server = (ServerSession) session;
-        ForwardingFilter filter = server.getFactoryManager().getTcpipForwardingFilter();
-        if ((filter == null) || (!filter.canForwardX11(server))) {
+        ValidateUtils.checkTrue(session instanceof ServerSession, "Session not a server one", GenericUtils.EMPTY_OBJECT_ARRAY);
+        FactoryManager manager = session.getFactoryManager();
+        ForwardingFilter filter = manager.getTcpipForwardingFilter();
+        if ((filter == null) || (!filter.canForwardX11(session))) {
             if (log.isDebugEnabled()) {
                 log.debug("handleX11Forwarding(" + session + ")[haveFilter=" + (filter != null) + "] filtered out");
             }

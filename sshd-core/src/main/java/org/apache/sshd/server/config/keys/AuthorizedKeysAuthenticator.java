@@ -96,7 +96,8 @@ public class AuthorizedKeysAuthenticator extends ModifiableFileWatcher implement
         }
     }
 
-    protected PublickeyAuthenticator resolvePublickeyAuthenticator(String username, ServerSession session) throws IOException, GeneralSecurityException {
+    protected PublickeyAuthenticator resolvePublickeyAuthenticator(String username, ServerSession session)
+            throws IOException, GeneralSecurityException {
         if (checkReloadRequired()) {
             /* Start fresh - NOTE: if there is any error then we want to reject all attempts
              * since we don't want to remain with the previous data - safer that way

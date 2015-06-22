@@ -64,5 +64,4 @@ public abstract class AbstractDHKeyExchange extends AbstractLoggingBean implemen
     public byte[] getK() {
         return K;
     }
-
 }

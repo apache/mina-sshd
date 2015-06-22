@@ -35,6 +35,7 @@ import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.UserAuth;
@@ -69,13 +70,12 @@ public class ServerUserAuthService extends CloseableUtils.AbstractCloseable impl
     private int nbAuthRequests;
 
     public ServerUserAuthService(Session s) throws SshException {
-        if (!(s instanceof ServerSession)) {
-            throw new IllegalStateException("Server side service used on client side");
-        }
-        this.session = (ServerSession) s;
-        if (session.isAuthenticated()) {
+        ValidateUtils.checkTrue(s instanceof ServerSession, "Server side service used on client side", GenericUtils.EMPTY_OBJECT_ARRAY);
+        if (s.isAuthenticated()) {
             throw new SshException("Session already authenticated");
         }
+
+        this.session = (ServerSession) s;
         maxAuthRequests = session.getIntProperty(ServerFactoryManager.MAX_AUTH_REQUESTS, maxAuthRequests);
 
         userAuthFactories = new ArrayList<>(getFactoryManager().getUserAuthFactories());

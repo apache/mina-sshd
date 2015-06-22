@@ -21,6 +21,8 @@ package org.apache.sshd.common.future;
 import java.lang.reflect.Array;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
@@ -46,9 +48,6 @@ public class DefaultSshFuture<T extends SshFuture> extends AbstractLoggingBean i
         this.lock = lock != null ? lock : this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public T await() throws InterruptedException {
         if (await0(Long.MAX_VALUE, true) == null) {
@@ -58,25 +57,16 @@ public class DefaultSshFuture<T extends SshFuture> extends AbstractLoggingBean i
         return asT();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public boolean await(long timeout, TimeUnit unit) throws InterruptedException {
         return await(unit.toMillis(timeout));
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public boolean await(long timeoutMillis) throws InterruptedException {
         return await0(timeoutMillis, true) != null;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public T awaitUninterruptibly() {
         try {
@@ -88,17 +78,11 @@ public class DefaultSshFuture<T extends SshFuture> extends AbstractLoggingBean i
         return asT();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public boolean awaitUninterruptibly(long timeout, TimeUnit unit) {
         return awaitUninterruptibly(unit.toMillis(timeout));
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public boolean awaitUninterruptibly(long timeoutMillis) {
         try {
@@ -144,9 +128,6 @@ public class DefaultSshFuture<T extends SshFuture> extends AbstractLoggingBean i
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public boolean isDone() {
         synchronized (lock) {
@@ -180,15 +161,9 @@ public class DefaultSshFuture<T extends SshFuture> extends AbstractLoggingBean i
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public T addListener(SshFutureListener<T> listener) {
-        if (listener == null) {
-            throw new NullPointerException("listener");
-        }
-
+        ValidateUtils.checkNotNull(listener, "Missing listener argument", GenericUtils.EMPTY_OBJECT_ARRAY);
         boolean notifyNow = false;
         synchronized (lock) {
             if (result != null) {
@@ -215,14 +190,9 @@ public class DefaultSshFuture<T extends SshFuture> extends AbstractLoggingBean i
         return asT();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public T removeListener(SshFutureListener<T> listener) {
-        if (listener == null) {
-            throw new NullPointerException("listener");
-        }
+        ValidateUtils.checkNotNull(listener, "No listener provided", GenericUtils.EMPTY_OBJECT_ARRAY);
 
         synchronized (lock) {
             if (result == null) {

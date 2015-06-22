@@ -44,6 +44,7 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileStore;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystemAlreadyExistsException;
+import java.nio.file.FileSystemException;
 import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
@@ -180,7 +181,8 @@ public class SftpFileSystemProvider extends FileSystemProvider {
 
     @Override
     public Path getPath(URI uri) {
-        return getFileSystem(uri).getPath(uri.getPath());
+        FileSystem fs = getFileSystem(uri);
+        return fs.getPath(uri.getPath());
     }
 
     @Override
@@ -229,12 +231,16 @@ public class SftpFileSystemProvider extends FileSystemProvider {
     public DirectoryStream<Path> newDirectoryStream(Path dir, DirectoryStream.Filter<? super Path> filter) throws IOException {
         final SftpPath p = toSftpPath(dir);
         return new DirectoryStream<Path>() {
-            final SftpClient sftp = p.getFileSystem().getClient();
-            final Iterable<SftpClient.DirEntry> iter = sftp.readDir(p.toString());
+            private final SftpFileSystem fs = p.getFileSystem();
+            private final SftpClient sftp = fs.getClient();
+            private final Iterable<SftpClient.DirEntry> iter = sftp.readDir(p.toString());
+
             @Override
             public Iterator<Path> iterator() {
                 return new Iterator<Path>() {
-                    final Iterator<SftpClient.DirEntry> it = iter.iterator();
+                    @SuppressWarnings("synthetic-access")
+                    private final Iterator<SftpClient.DirEntry> it = iter.iterator();
+
                     @Override
                     public boolean hasNext() {
                         return it.hasNext();
@@ -263,7 +269,8 @@ public class SftpFileSystemProvider extends FileSystemProvider {
     @Override
     public void createDirectory(Path dir, FileAttribute<?>... attrs) throws IOException {
         SftpPath p = toSftpPath(dir);
-        try (SftpClient sftp = p.getFileSystem().getClient()) {
+        SftpFileSystem fs = p.getFileSystem();
+        try (SftpClient sftp = fs.getClient()) {
             try {
                 sftp.mkdir(dir.toString());
             } catch (SftpException e) {
@@ -293,7 +300,9 @@ public class SftpFileSystemProvider extends FileSystemProvider {
     public void delete(Path path) throws IOException {
         SftpPath p = toSftpPath(path);
         checkAccess(p, AccessMode.WRITE);
-        try (SftpClient sftp = p.getFileSystem().getClient()) {
+        
+        SftpFileSystem fs = p.getFileSystem();
+        try (SftpClient sftp = fs.getClient()) {
             BasicFileAttributes attributes = readAttributes(path, BasicFileAttributes.class);
             if (attributes.isDirectory()) {
                 sftp.rmdir(path.toString());
@@ -308,7 +317,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         SftpPath src = toSftpPath(source);
         SftpPath dst = toSftpPath(target);
         if (src.getFileSystem() != dst.getFileSystem()) {
-            throw new ProviderMismatchException("Mismatched file system providers");
+            throw new ProviderMismatchException("Mismatched file system providers for " + src + " vs. " + dst);
         }
         checkAccess(src);
 
@@ -323,9 +332,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         LinkOption[] linkOptions = IoUtils.getLinkOptions(!noFollowLinks);
 
         // attributes of source file
-        BasicFileAttributes attrs = readAttributes(source,
-                BasicFileAttributes.class,
-                linkOptions);
+        BasicFileAttributes attrs = readAttributes(source, BasicFileAttributes.class, linkOptions);
         if (attrs.isSymbolicLink())
             throw new IOException("Copying of symbolic links not supported");
 
@@ -357,9 +364,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         if (copyAttributes) {
             BasicFileAttributeView view = getFileAttributeView(target, BasicFileAttributeView.class, linkOptions);
             try {
-                view.setTimes(attrs.lastModifiedTime(),
-                        attrs.lastAccessTime(),
-                        attrs.creationTime());
+                view.setTimes(attrs.lastModifiedTime(), attrs.lastAccessTime(), attrs.creationTime());
             } catch (Throwable x) {
                 // rollback
                 try {
@@ -375,9 +380,11 @@ public class SftpFileSystemProvider extends FileSystemProvider {
     @Override
     public void move(Path source, Path target, CopyOption... options) throws IOException {
         SftpPath src = toSftpPath(source);
+        SftpFileSystem fsSrc = src.getFileSystem(); 
         SftpPath dst = toSftpPath(target);
+        
         if (src.getFileSystem() != dst.getFileSystem()) {
-            throw new ProviderMismatchException();
+            throw new ProviderMismatchException("Mismatched file system providers for " + src + " vs. " + dst);
         }
         checkAccess(src);
 
@@ -392,11 +399,10 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         LinkOption[] linkOptions = IoUtils.getLinkOptions(noFollowLinks);
 
         // attributes of source file
-        BasicFileAttributes attrs = readAttributes(source,
-                BasicFileAttributes.class,
-                linkOptions);
-        if (attrs.isSymbolicLink())
+        BasicFileAttributes attrs = readAttributes(source, BasicFileAttributes.class, linkOptions);
+        if (attrs.isSymbolicLink()) {
             throw new IOException("Copying of symbolic links not supported");
+        }
 
         // delete target if it exists and REPLACE_EXISTING is specified
         Boolean status=IoUtils.checkFileExists(target, linkOptions);
@@ -406,10 +412,11 @@ public class SftpFileSystemProvider extends FileSystemProvider {
 
         if (replaceExisting) {
             deleteIfExists(target);
-        } else if (status.booleanValue())
+        } else if (status.booleanValue()) {
             throw new FileAlreadyExistsException(target.toString());
+        }
 
-        try (SftpClient sftp = src.getFileSystem().getClient()) {
+        try (SftpClient sftp = fsSrc.getClient()) {
             sftp.rename(src.toString(), dst.toString());
         }
 
@@ -417,9 +424,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         if (copyAttributes) {
             BasicFileAttributeView view = getFileAttributeView(target, BasicFileAttributeView.class, linkOptions);
             try {
-                view.setTimes(attrs.lastModifiedTime(),
-                        attrs.lastAccessTime(),
-                        attrs.creationTime());
+                view.setTimes(attrs.lastModifiedTime(), attrs.lastAccessTime(), attrs.creationTime());
             } catch (Throwable x) {
                 // rollback
                 try {
@@ -437,7 +442,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         SftpPath p1 = toSftpPath(path1);
         SftpPath p2 = toSftpPath(path2);
         if (p1.getFileSystem() != p2.getFileSystem()) {
-            throw new ProviderMismatchException();
+            throw new ProviderMismatchException("Mismatched file system providers for " + p1 + " vs. " + p2);
         }
         checkAccess(p1);
         checkAccess(p2);
@@ -451,17 +456,18 @@ public class SftpFileSystemProvider extends FileSystemProvider {
 
     @Override
     public FileStore getFileStore(Path path) throws IOException {
-        throw new UnsupportedOperationException("getFileStore(" + path + ") N/A");
+        throw new FileSystemException(path.toString(), path.toString(), "getFileStore(" + path + ") N/A");
     }
 
     @Override
     public void createSymbolicLink(Path link, Path target, FileAttribute<?>... attrs) throws IOException {
         SftpPath l = toSftpPath(link);
+        SftpFileSystem fsLink = l.getFileSystem();
         SftpPath t = toSftpPath(target);
-        if (l.getFileSystem() != t.getFileSystem()) {
-            throw new ProviderMismatchException();
+        if (fsLink != t.getFileSystem()) {
+            throw new ProviderMismatchException("Mismatched file system providers for " + l + " vs. " + t);
         }
-        try (SftpClient client = l.getFileSystem().getClient()) {
+        try (SftpClient client = fsLink.getClient()) {
             client.symLink(l.toString(), t.toString());
         }
     }
@@ -469,8 +475,9 @@ public class SftpFileSystemProvider extends FileSystemProvider {
     @Override
     public Path readSymbolicLink(Path link) throws IOException {
         SftpPath l = toSftpPath(link);
-        try (SftpClient client = l.getFileSystem().getClient()) {
-            return l.getFileSystem().getPath(client.readLink(l.toString()));
+        SftpFileSystem fsLink = l.getFileSystem();
+        try (SftpClient client = fsLink.getClient()) {
+            return fsLink.getPath(client.readLink(l.toString()));
         }
     }
 
@@ -500,7 +507,9 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         if ((attrs == null) && !(p.isAbsolute() && p.getNameCount() == 0)) {
             throw new NoSuchFileException(path.toString());
         }
-        if (x || (w && p.getFileSystem().isReadOnly())) {
+        
+        SftpFileSystem fs = p.getFileSystem();
+        if (x || (w && fs.isReadOnly())) {
             throw new AccessDeniedException(path.toString());
         }
     }
@@ -519,8 +528,9 @@ public class SftpFileSystemProvider extends FileSystemProvider {
                 @Override
                 public PosixFileAttributes readAttributes() throws IOException {
                     SftpPath p = toSftpPath(path);
+                    SftpFileSystem fs = p.getFileSystem();
                     final SftpClient.Attributes attributes;
-                    try (SftpClient client = p.getFileSystem().getClient()) {
+                    try (SftpClient client =fs.getClient()) {
                         try {
                             if (followLinks(options)) {
                                 attributes = client.stat(p.toString());
@@ -658,8 +668,10 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             attrs = attributes.substring(i);
         }
         SftpPath p = toSftpPath(path);
-        if (!p.getFileSystem().supportedFileAttributeViews().contains(view)) {
-            throw new UnsupportedOperationException("readAttributes(" + path + ")[" + attributes + "] view not supported: " + view);
+        SftpFileSystem fs = p.getFileSystem();
+        Collection<String> views = fs.supportedFileAttributeViews();
+        if (GenericUtils.isEmpty(views) || (!views.contains(view))) {
+            throw new UnsupportedOperationException("readAttributes(" + path + ")[" + attributes + "] view " + view + " not supported: " + views);
         }
 
         PosixFileAttributes v = readAttributes(path, PosixFileAttributes.class, options);
@@ -727,8 +739,10 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             attr = attribute.substring(i);
         }
         SftpPath p = toSftpPath(path);
-        if (!p.getFileSystem().supportedFileAttributeViews().contains(view)) {
-            throw new UnsupportedOperationException("setAttribute(" + path + ")[" + attribute + "=" + value + "] view not supported: " + view);
+        SftpFileSystem fs = p.getFileSystem();
+        Collection<String> views = fs.supportedFileAttributeViews();
+        if (GenericUtils.isEmpty(views) || (!view.contains(view))) {
+            throw new UnsupportedOperationException("setAttribute(" + path + ")[" + attribute + "=" + value + "] view " + view + " not supported: " + views);
         }
 
         SftpClient.Attributes attributes = new SftpClient.Attributes();
@@ -770,17 +784,15 @@ public class SftpFileSystemProvider extends FileSystemProvider {
                 }
         }
 
-        try (SftpClient client = p.getFileSystem().getClient()) {
+        try (SftpClient client = fs.getClient()) {
             client.setStat(p.toString(), attributes);
         }
     }
 
     private SftpPath toSftpPath(Path path) {
-        if (path == null) {
-            throw new NullPointerException();
-        }
+        ValidateUtils.checkNotNull(path, "No path provided", GenericUtils.EMPTY_OBJECT_ARRAY);
         if (!(path instanceof SftpPath)) {
-            throw new ProviderMismatchException();
+            throw new ProviderMismatchException("Path is not SFTP: " + path);
         }
         return (SftpPath) path;
     }

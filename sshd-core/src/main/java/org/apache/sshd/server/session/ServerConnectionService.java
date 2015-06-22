@@ -25,6 +25,8 @@ import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.session.AbstractConnectionService;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * Server side <code>ssh-connection</code> service.
@@ -49,10 +51,9 @@ public class ServerConnectionService extends AbstractConnectionService {
 
     protected ServerConnectionService(Session s) throws SshException {
         super(s);
-        if (!(s instanceof ServerSession)) {
-            throw new IllegalStateException("Server side service used on client side");
-        }
-        ServerSession session = (ServerSession) s;
+        
+        ValidateUtils.checkTrue(s instanceof ServerSession, "Server side service used on client side", GenericUtils.EMPTY_OBJECT_ARRAY);
+
         if (!session.isAuthenticated()) {
             throw new SshException("Session is not authenticated");
         }

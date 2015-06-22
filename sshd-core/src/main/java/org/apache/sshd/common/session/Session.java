@@ -28,6 +28,7 @@ import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.kex.KexProposalOption;
+import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
@@ -70,6 +71,7 @@ public interface Session extends Closeable {
      * @return the user name.
      */
     String getUsername();
+    void setUsername(String username);
 
     /**
      * Retrieve the client version for this session.
@@ -86,9 +88,7 @@ public interface Session extends Closeable {
     String getServerVersion();
 
     /**
-     * Retrieve the FactoryManager that has created this session
-     *
-     * @return the factory manager, can not be <tt>null</tt>.
+     * @return the {@link FactoryManager} that has created this session, can not be {@code null}
      */
     FactoryManager getFactoryManager();
 
@@ -237,24 +237,44 @@ public interface Session extends Closeable {
         }
     }
 
-    public void resetIdleTimeout();
+    void resetIdleTimeout();
 
     /**
      * Check if timeout has occurred.
      * @return the timeout status, never <code>null</code>
      */
-    public TimeoutStatus getTimeoutStatus();
+    TimeoutStatus getTimeoutStatus();
 
     /**
-     * What is timeout value in milliseconds for authentication stage
-     * @return
+     * @return Timeout value in milliseconds for authentication stage
      */
-    public long getAuthTimeout();
+    long getAuthTimeout();
 
     /**
-     * What is timeout value in milliseconds for communication
-     * @return
+     * @return Timeout value in milliseconds for communication
      */
+    long getIdleTimeout();
+    
+    boolean isAuthenticated();
+    void setAuthenticated() throws IOException;
+    
+    byte[] getSessionId();
+    KeyExchange getKex();
 
-    public long getIdleTimeout();
+    /**
+     * Send a disconnect packet with the given reason and message.
+     * Once the packet has been sent, the session will be closed
+     * asynchronously.
+     *
+     * @param reason the reason code for this disconnect
+     * @param msg the text message
+     * @throws IOException if an error occurred sending the packet
+     */
+    void disconnect(int reason, String msg) throws IOException;
+
+    /**
+     * @param name Service name
+     * @throws Exception If failed to start it
+     */
+    void startService(String name) throws Exception;
 }

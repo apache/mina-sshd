@@ -57,11 +57,13 @@ public class UserAuthPublicKey extends AbstractUserAuth {
         }
     }
 
+    public UserAuthPublicKey() {
+        super();
+    }
+
     @Override
     public Boolean doAuth(Buffer buffer, boolean init) throws Exception {
-        if (!init) {
-            throw new IllegalStateException();
-        }
+        ValidateUtils.checkTrue(init, "Instance not initialized", GenericUtils.EMPTY_OBJECT_ARRAY);
         boolean hasSig = buffer.getBoolean();
         String alg = buffer.getString();
 

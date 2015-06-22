@@ -39,7 +39,7 @@ import org.apache.sshd.deprecated.UserAuthPublicKey;
 import org.apache.sshd.server.PublickeyAuthenticator.AcceptAllPublickeyAuthenticator;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.SshServer;
-import org.apache.sshd.server.session.ServerSession;
+import org.apache.sshd.server.session.ServerSessionImpl;
 import org.apache.sshd.server.session.SessionFactory;
 import org.apache.sshd.util.BaseTestSupport;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
@@ -69,7 +69,7 @@ public class AuthenticationTest extends BaseTestSupport {
         sshd.setSessionFactory(new SessionFactory() {
             @Override
             protected AbstractSession doCreateSession(IoSession ioSession) throws Exception {
-                return new TestSession(server, ioSession);
+                return new TestSession(getServer(), ioSession);
             }
         });
         sshd.start();
@@ -204,13 +204,13 @@ public class AuthenticationTest extends BaseTestSupport {
                 .auth(new UserAuthPublicKey((ClientSessionImpl) s, "ssh-connection", pair));
     }
 
-    public static class TestSession extends ServerSession {
+    public static class TestSession extends ServerSessionImpl {
         public TestSession(ServerFactoryManager server, IoSession ioSession) throws Exception {
             super(server, ioSession);
         }
         @Override
         public void handleMessage(Buffer buffer) throws Exception {
-            super.handleMessage(buffer);
+            super.handleMessage(buffer);    // debug breakpoint
         }
     }
 }

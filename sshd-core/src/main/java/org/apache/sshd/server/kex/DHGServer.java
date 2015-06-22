@@ -91,7 +91,7 @@ public class DHGServer extends AbstractDHServerKeyExchange {
         K = dh.getK();
 
         byte[] K_S;
-        KeyPair kp = session.getHostKey();
+        KeyPair kp = ValidateUtils.checkNotNull(session.getHostKey(), "No server key pair available", GenericUtils.EMPTY_OBJECT_ARRAY);
         String algo = session.getNegotiatedKexParameter(KexProposalOption.SERVERKEYS);
         FactoryManager manager = session.getFactoryManager();
         Signature sig = ValidateUtils.checkNotNull(

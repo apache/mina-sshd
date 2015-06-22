@@ -34,11 +34,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.sshd.client.ClientFactoryManager;
-import org.apache.sshd.client.ServerKeyVerifier;
-import org.apache.sshd.client.SshClient;
-import org.apache.sshd.client.UserAuth;
-import org.apache.sshd.client.UserInteraction;
 import org.apache.sshd.client.auth.UserAuthKeyboardInteractive;
 import org.apache.sshd.client.auth.UserAuthPassword;
 import org.apache.sshd.client.auth.UserAuthPublicKey;
@@ -76,8 +71,8 @@ import org.apache.sshd.common.util.io.NoCloseOutputStream;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.CommandFactory;
 import org.apache.sshd.server.PublickeyAuthenticator;
-import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.PublickeyAuthenticator.AcceptAllPublickeyAuthenticator;
+import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.UnknownCommand;
 import org.apache.sshd.server.forward.TcpipServerChannel;
@@ -918,7 +913,7 @@ public class ClientTest extends BaseTestSupport {
         try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
-            session.switchToNoneCipher().await();
+            assertTrue("Failed to switch to NONE cipher on time", session.switchToNoneCipher().await(5L, TimeUnit.SECONDS));
     
             try(ClientChannel channel = session.createSubsystemChannel(SftpConstants.SFTP_SUBSYSTEM_NAME)) {
                 channel.open().verify(5L, TimeUnit.SECONDS);

@@ -30,6 +30,10 @@ public abstract class AbstractUserAuth extends AbstractLoggingBean implements Us
     protected String service;
     protected String username;
 
+    protected AbstractUserAuth() {
+        super();
+    }
+
     @Override
     public String getUserName() {
         return username;

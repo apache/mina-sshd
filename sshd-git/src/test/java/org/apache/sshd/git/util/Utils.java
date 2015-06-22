@@ -22,8 +22,10 @@ import java.io.File;
 import java.net.ServerSocket;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.Collections;
 
 import org.apache.sshd.common.keyprovider.AbstractFileKeyPairProvider;
+import org.apache.sshd.common.util.SecurityUtils;
 
 public class Utils {
 
@@ -32,7 +34,9 @@ public class Utils {
     }
 
     public static AbstractFileKeyPairProvider createTestKeyPairProvider(String resource) {
-        return new AbstractFileKeyPairProvider(new String[] { getFile(resource) });
+        AbstractFileKeyPairProvider provider = SecurityUtils.createFileKeyPairProvider();
+        provider.setFiles(Collections.singletonList(getFile(resource)));
+        return provider;
     }
 
     public static int getFreePort() throws Exception {
@@ -44,15 +48,13 @@ public class Utils {
         }
     }
 
-    private static String getFile(String resource) {
+    private static File getFile(String resource) {
         URL url = Utils.class.getClassLoader().getResource(resource);
-        File f;
         try {
-            f = new File(url.toURI());
+            return new File(url.toURI());
         } catch(URISyntaxException e) {
-            f = new File(url.getPath());
+            return new File(url.getPath());
         }
-        return f.toString();
     }
 
     public static void deleteRecursive(File file) {

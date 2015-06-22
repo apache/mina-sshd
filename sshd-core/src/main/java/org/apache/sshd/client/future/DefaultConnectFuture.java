@@ -21,6 +21,8 @@ package org.apache.sshd.client.future;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.future.DefaultSshFuture;
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * A default implementation of {@link ConnectFuture}.
@@ -66,17 +68,13 @@ public class DefaultConnectFuture extends DefaultSshFuture<ConnectFuture> implem
 
     @Override
     public void setSession(ClientSession session) {
-        if (session == null) {
-            throw new NullPointerException("session");
-        }
+        ValidateUtils.checkNotNull(session, "No client session provided", GenericUtils.EMPTY_OBJECT_ARRAY);
         setValue(session);
     }
 
     @Override
     public void setException(Throwable exception) {
-        if (exception == null) {
-            throw new NullPointerException("exception");
-        }
+        ValidateUtils.checkNotNull(exception, "No exception provided", GenericUtils.EMPTY_OBJECT_ARRAY);
         setValue(exception);
     }
 

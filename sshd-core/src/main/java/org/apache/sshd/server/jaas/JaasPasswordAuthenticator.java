@@ -58,7 +58,7 @@ public class JaasPasswordAuthenticator extends AbstractLoggingBean implements Pa
     }
 
     @Override
-    public boolean authenticate(final String username, final String password, final ServerSession session) {
+    public boolean authenticate(String username, String password, ServerSession session) {
     	return authenticate(username, password);
     }
     

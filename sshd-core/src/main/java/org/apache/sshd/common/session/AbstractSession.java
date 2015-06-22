@@ -239,30 +239,22 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
         return clientVersion;
     }
 
+    @Override
     public KeyExchange getKex() {
         return kex;
     }
 
-    public byte [] getSessionId() {
-        return sessionId;
+    @Override
+    public byte[] getSessionId() {
+        // return a clone to avoid anyone changing the internal value
+        return GenericUtils.isEmpty(sessionId) ? sessionId : sessionId.clone();
     }
 
-
-    /**
-     * Retrieve the mina session
-     *  
-     * @return the mina session
-     */
     @Override
     public IoSession getIoSession() {
         return ioSession;
     }
 
-    /**
-     * Retrieve the factory manager
-     *
-     * @return the factory manager for this session
-     */
     @Override
     public FactoryManager getFactoryManager() {
         return factoryManager;
@@ -277,14 +269,12 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     	}
     }
 
+    @Override
     public boolean isAuthenticated() {
         return authed;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
+    @Override
     public void setAuthenticated() throws IOException {
         this.authed = true;
         sendEvent(SessionListener.Event.Authenticated);
@@ -1183,21 +1173,13 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
         return E;
     }
 
-    /**
-     * Send a disconnect packet with the given reason and message.
-     * Once the packet has been sent, the session will be closed
-     * asynchronously.
-     *
-     * @param reason the reason code for this disconnect
-     * @param msg the text message
-     * @throws IOException if an error occured sending the packet
-     */
+    @Override
     public void disconnect(int reason, String msg) throws IOException {
-        log.info("Disconnecting: {}", msg);
+        log.info("Disconnecting: {} - {}", Integer.valueOf(reason), msg);
         Buffer buffer = createBuffer(SshConstants.SSH_MSG_DISCONNECT);
         buffer.putInt(reason);
         buffer.putString(msg);
-        buffer.putString("");
+        buffer.putString("");   // language...
         // Write the packet with a timeout to ensure a timely close of the session
         // in case the consumer does not read packets anymore.
         writePacket(buffer, disconnectTimeoutMs, TimeUnit.MILLISECONDS).addListener(new SshFutureListener<IoWriteFuture>() {
@@ -1366,22 +1348,21 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
         return username;
     }
 
+    @Override
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
     public Object getLock() {
         return lock;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void addListener(SessionListener listener) {
         ValidateUtils.checkNotNull(listener, "addListener(%s) null instance", this);
         this.listeners.add(listener);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void removeListener(SessionListener listener) {
         this.listeners.remove(listener);
@@ -1406,17 +1387,79 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
         // nothing
     }
 
-    protected abstract void sendKexInit() throws IOException;
+    protected byte[] sendKexInit() throws IOException {
+        String resolvedAlgorithms = resolveAvailableSignaturesProposal();
+        if (GenericUtils.isEmpty(resolvedAlgorithms)) {
+            throw new SshException(SshConstants.SSH2_DISCONNECT_HOST_KEY_NOT_VERIFIABLE,
+                                   "sendKexInit() no resolved signatures available");
+        }
+
+        Map<KexProposalOption,String> proposal = createProposal(resolvedAlgorithms); 
+        byte[] seed = sendKexInit(proposal);
+        if (log.isDebugEnabled()) {
+            log.debug("sendKexInit(" + proposal + ") seed: " + BufferUtils.printHex(':', seed));
+        }
+        setKexSeed(seed);
+        return seed;
+    }
+
+    /**
+     * @param seed The result of the KEXINIT handshake - required for correct
+     * session key establishment
+     */
+    protected abstract void setKexSeed(byte ... seed);
+
+    /**
+     * @return A comma-separated list of all the signature protocols to be
+     * included in the proposal - {@code null}/empty if no proposal
+     * @see #getFactoryManager()
+     * @see #resolveAvailableSignaturesProposal(FactoryManager)
+     */
+    protected String resolveAvailableSignaturesProposal() {
+        return resolveAvailableSignaturesProposal(getFactoryManager());
+    }
+
+    /**
+     * @param manager The {@link FactoryManager}
+     * @return A comma-separated list of all the signature protocols to be
+     * included in the proposal - {@code null}/empty if no proposal
+     */
+    protected abstract String resolveAvailableSignaturesProposal(FactoryManager manager);
 
     protected abstract void checkKeys() throws IOException;
 
-    protected abstract void receiveKexInit(Buffer buffer) throws IOException;
+    protected void receiveKexInit(Buffer buffer) throws IOException {
+        Map<KexProposalOption,String> proposal = new EnumMap<KexProposalOption, String>(KexProposalOption.class);
+        byte[] seed = receiveKexInit(buffer, proposal);
+        receiveKexInit(proposal, seed);
+    }
+    
+    protected abstract void receiveKexInit(Map<KexProposalOption,String> proposal, byte[] seed) throws IOException;
+
+    // returns the proposal argument
+    protected Map<KexProposalOption,String> mergeProposals(Map<KexProposalOption,String> current, Map<KexProposalOption,String> proposal) {
+        if (current == proposal) {
+            return proposal; // debug breakpoint
+        }
+
+        synchronized(current) {
+            if (!current.isEmpty()) {
+                current.clear();    // debug breakpoint
+            }
+            
+            if (GenericUtils.isEmpty(proposal)) {
+                return proposal; // debug breakpoint
+            }
+            
+            current.putAll(proposal);
+        }
+        
+        return proposal;
+    }
 
     protected void serviceAccept() throws IOException {
         // nothing
     }
-
-    public abstract void startService(String name) throws Exception;
 
     /**
      * Checks whether the session has timed out (both auth and idle timeouts are checked). If the session has

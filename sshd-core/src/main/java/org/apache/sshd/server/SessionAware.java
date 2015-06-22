@@ -27,9 +27,7 @@ import org.apache.sshd.server.session.ServerSession;
 public interface SessionAware {
 
     /**
-     * Set the server session in which this shell will be executed.
-     *
-     * @param session
+     * @param session The {@link ServerSession} in which this shell will be executed.
      */
     void setSession(ServerSession session);
 }

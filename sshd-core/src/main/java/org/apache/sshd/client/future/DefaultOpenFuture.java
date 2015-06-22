@@ -22,6 +22,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.DefaultSshFuture;
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * A default implementation of {@link OpenFuture}.
@@ -80,9 +82,7 @@ public class DefaultOpenFuture extends DefaultSshFuture<OpenFuture> implements O
 
     @Override
     public void setException(Throwable exception) {
-        if (exception == null) {
-            throw new NullPointerException("exception");
-        }
+        ValidateUtils.checkNotNull(exception, "No exception provided", GenericUtils.EMPTY_OBJECT_ARRAY);
         setValue(exception);
     }
 

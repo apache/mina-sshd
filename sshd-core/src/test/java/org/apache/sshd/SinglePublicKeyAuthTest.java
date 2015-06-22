@@ -102,8 +102,7 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
         TestCachingPublicKeyAuthenticator auth = new TestCachingPublicKeyAuthenticator(new PublickeyAuthenticator() {
             @SuppressWarnings("synthetic-access")
             @Override
-            public boolean authenticate(String username, PublicKey key,
-                                        ServerSession session) {
+            public boolean authenticate(String username, PublicKey key, ServerSession session) {
                 count.putIfAbsent(KeyUtils.getFingerPrint(key), new AtomicInteger());
                 count.get(KeyUtils.getFingerPrint(key)).incrementAndGet();
                 return key.equals(pairRsa.getPublic());
@@ -139,8 +138,7 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
         delegate = new PublickeyAuthenticator() {
             @SuppressWarnings("synthetic-access")
             @Override
-            public boolean authenticate(String username, PublicKey key,
-                                        ServerSession session) {
+            public boolean authenticate(String username, PublicKey key, ServerSession session) {
                 count.putIfAbsent(KeyUtils.getFingerPrint(key), new AtomicInteger());
                 count.get(KeyUtils.getFingerPrint(key)).incrementAndGet();
                 return key.equals(pairRsa.getPublic());

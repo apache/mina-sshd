@@ -19,8 +19,11 @@
 package org.apache.sshd.common.session;
 
 import java.io.IOException;
+import java.util.Map;
 
-import org.apache.sshd.common.session.AbstractSession;
+import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.kex.KexProposalOption;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.server.SshServer;
@@ -124,15 +127,23 @@ public class AbstractSessionTest extends BaseTestSupport {
             return super.doReadIdentification(buffer, false);
         }
         @Override
-        protected void sendKexInit() throws IOException {
+        protected byte[] sendKexInit() throws IOException {
+            return GenericUtils.EMPTY_BYTE_ARRAY;
+        }
+        @Override
+        protected void receiveKexInit(Map<KexProposalOption, String> proposal, byte[] seed) throws IOException {
             // ignored
+        }
+        @Override
+        protected void setKexSeed(byte... seed) {
+            // ignored
+        }
+        @Override
+        protected String resolveAvailableSignaturesProposal(FactoryManager manager) {
+            return null;
         }
         @Override
         protected void checkKeys() {
-            // ignored
-        }
-        @Override
-        protected void receiveKexInit(Buffer buffer) throws IOException {
             // ignored
         }
         @Override

@@ -46,6 +46,10 @@ public class UserAuthNone extends AbstractUserAuth {
         }
     }
 
+    public UserAuthNone() {
+        super();
+    }
+
     @Override
     public Boolean doAuth(Buffer buffer, boolean init) {
         return Boolean.TRUE;

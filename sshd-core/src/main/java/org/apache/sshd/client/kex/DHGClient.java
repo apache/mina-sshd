@@ -107,7 +107,7 @@ public class DHGClient extends AbstractDHClientKeyExchange {
         buffer = new ByteArrayBuffer(K_S);
         serverKey = buffer.getRawPublicKey();
         final String keyAlg = KeyUtils.getKeyType(serverKey);
-        if (keyAlg == null) {
+        if (GenericUtils.isEmpty(keyAlg)) {
             throw new SshException("Unsupported server key type");
         }
 
@@ -130,8 +130,7 @@ public class DHGClient extends AbstractDHClientKeyExchange {
         verif.initVerifier(serverKey);
         verif.update(H);
         if (!verif.verify(sig)) {
-            throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
-                                   "KeyExchange signature verification failed");
+            throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED, "KeyExchange signature verification failed");
         }
         return true;
     }

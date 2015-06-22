@@ -24,6 +24,7 @@ import java.nio.file.FileSystem;
 import java.security.KeyPair;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -240,8 +241,10 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         if (username == null) {
             throw new IllegalStateException("No username specified when the session was created");
         }
+        
+        ClientUserAuthService authService = getUserAuthService();
         synchronized (lock) {
-            return authFuture = getUserAuthService().auth(identities, nextServiceName());
+            return authFuture = authService.auth(identities, nextServiceName());
         }
     }
 
@@ -268,19 +271,27 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
     @SuppressWarnings("rawtypes")
     public SshFuture switchToNoneCipher() throws IOException {
         if (!(currentService instanceof AbstractConnectionService)
-                || !((AbstractConnectionService) currentService).getChannels().isEmpty()) {
+         || !((AbstractConnectionService) currentService).getChannels().isEmpty()) {
             throw new IllegalStateException("The switch to the none cipher must be done immediately after authentication");
         }
         if (kexState.compareAndSet(KexState.DONE, KexState.INIT)) {
             reexchangeFuture = new DefaultSshFuture(null);
             
-            String c2sEncServer = serverProposal.get(KexProposalOption.C2SENC);
+            String c2sEncServer, s2cEncServer;
+            synchronized(serverProposal) {
+                c2sEncServer = serverProposal.get(KexProposalOption.C2SENC);
+                s2cEncServer  = serverProposal.get(KexProposalOption.S2CENC);
+            }
             boolean c2sEncServerNone = BuiltinCiphers.Constants.isNoneCipherIncluded(c2sEncServer);
-            String s2cEncServer = serverProposal.get(KexProposalOption.S2CENC);
             boolean s2cEncServerNone = BuiltinCiphers.Constants.isNoneCipherIncluded(s2cEncServer);
-            String c2sEncClient = clientProposal.get(KexProposalOption.C2SENC);
+
+            String c2sEncClient, s2cEncClient;
+            synchronized(clientProposal) {
+                c2sEncClient = clientProposal.get(KexProposalOption.C2SENC);
+                s2cEncClient = clientProposal.get(KexProposalOption.S2CENC);
+            }
+
             boolean c2sEncClientNone = BuiltinCiphers.Constants.isNoneCipherIncluded(c2sEncClient);
-            String s2cEncClient = clientProposal.get(KexProposalOption.S2CENC);
             boolean s2cEncClientNone = BuiltinCiphers.Constants.isNoneCipherIncluded(s2cEncClient);
 
             if ((!c2sEncServerNone) || (!s2cEncServerNone)) {
@@ -289,9 +300,17 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
                 reexchangeFuture.setValue(new SshException("Client does not support none cipher"));
             } else {
                 log.info("Switching to none cipher");
-                clientProposal.put(KexProposalOption.C2SENC, BuiltinCiphers.Constants.NONE);
-                clientProposal.put(KexProposalOption.S2CENC, BuiltinCiphers.Constants.NONE);
-                I_C = sendKexInit(clientProposal);
+                
+                Map<KexProposalOption,String> proposal = new EnumMap<KexProposalOption, String>(KexProposalOption.class);
+                synchronized(clientProposal) {
+                    proposal.putAll(clientProposal);
+                }
+
+                proposal.put(KexProposalOption.C2SENC, BuiltinCiphers.Constants.NONE);
+                proposal.put(KexProposalOption.S2CENC, BuiltinCiphers.Constants.NONE);
+
+                byte[] seed = sendKexInit(proposal);
+                setKexSeed(seed);
             }
             return reexchangeFuture;
         } else {
@@ -494,27 +513,26 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
     }
 
     @Override
-    protected void sendKexInit() throws IOException {
-        FactoryManager manager = getFactoryManager();
-        String algs = NamedResource.Utils.getNames(manager.getSignatureFactories());
-        Map<KexProposalOption,String> proposal = createProposal(algs);
-        synchronized(clientProposal) {
-            if (!clientProposal.isEmpty()) {
-                clientProposal.clear(); // debug breakpoint
-            }
-            
-            clientProposal.putAll(proposal);
-        }
-
-        I_C = sendKexInit(proposal);
+    protected byte[] sendKexInit(Map<KexProposalOption,String> proposal) throws IOException {
+        mergeProposals(clientProposal, proposal);
+        return super.sendKexInit(proposal);
     }
 
     @Override
-    protected void receiveKexInit(Buffer buffer) throws IOException {
-        if (!serverProposal.isEmpty()) {
-            serverProposal.clear(); // debug breakpoint
-        }
-        I_S = receiveKexInit(buffer, serverProposal);
+    protected void setKexSeed(byte... seed) {
+        I_C = ValidateUtils.checkNotNullAndNotEmpty(seed, "No KEX seed", GenericUtils.EMPTY_OBJECT_ARRAY);
+    }
+
+    @Override
+    protected String resolveAvailableSignaturesProposal(FactoryManager manager) {
+        // the client does not have to provide keys for the available signatures
+        return NamedResource.Utils.getNames(manager.getSignatureFactories());
+    }
+
+    @Override
+    protected void receiveKexInit(Map<KexProposalOption,String> proposal, byte[] seed) throws IOException {
+        mergeProposals(serverProposal, proposal);
+        I_S = seed;
     }
 
     @Override
@@ -557,12 +575,11 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
 
     @Override
     public void startService(String name) throws Exception {
-        throw new IllegalStateException("Starting services is not supported on the client side");
+        throw new IllegalStateException("Starting services is not supported on the client side: " + name);
     }
 
     @Override
     public Map<Object, Object> getMetadataMap() {
         return metadataMap;
     }
-
 }

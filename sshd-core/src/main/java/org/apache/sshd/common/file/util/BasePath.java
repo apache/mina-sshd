@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Objects;
 
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 
 public abstract class BasePath<T extends BasePath<T, FS>, FS extends BaseFileSystem<T>> implements Path {
 
@@ -238,9 +239,7 @@ public abstract class BasePath<T extends BasePath<T, FS>, FS extends BaseFileSys
 
     @Override
     public Path resolveSibling(Path other) {
-        if (other == null) {
-            throw new NullPointerException("Missing sibling path argument");
-        }
+        ValidateUtils.checkNotNull(other, "Missing sibling path argument", GenericUtils.EMPTY_OBJECT_ARRAY);
         T parent = getParent();
         return parent == null ? other : parent.resolve(other);
     }
@@ -357,11 +356,9 @@ public abstract class BasePath<T extends BasePath<T, FS>, FS extends BaseFileSys
 
     @SuppressWarnings("unchecked")
     private T checkPath(Path paramPath) {
-        if (paramPath == null) {
-            throw new NullPointerException();
-        }
+        ValidateUtils.checkNotNull(paramPath, "Missing path argument", GenericUtils.EMPTY_OBJECT_ARRAY);
         if (paramPath.getClass() != getClass()) {
-            throw new ProviderMismatchException();
+            throw new ProviderMismatchException("Path is not of this class: " + paramPath + "[" + paramPath.getClass().getSimpleName() + "]");
         }
         T t = (T) paramPath;
         

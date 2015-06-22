@@ -34,6 +34,7 @@ import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.random.JceRandomFactory;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.random.SingletonRandomFactory;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -70,8 +71,8 @@ public class ClientSessionImplTest extends BaseTestSupport {
             }
             
             @Override
-            protected void sendKexInit() throws IOException {
-                // ignored
+            protected byte[] sendKexInit() throws IOException {
+                return GenericUtils.EMPTY_BYTE_ARRAY;
             }
 
             @Override

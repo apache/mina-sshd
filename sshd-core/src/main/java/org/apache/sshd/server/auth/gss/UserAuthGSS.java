@@ -21,8 +21,11 @@ package org.apache.sshd.server.auth.gss;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.UserAuth;
 import org.apache.sshd.server.auth.AbstractUserAuth;
 import org.apache.sshd.server.session.ServerSession;
@@ -124,7 +127,7 @@ public class UserAuthGSS extends AbstractUserAuth {
 
                 Buffer msgbuf = new ByteArrayBuffer();
 
-                msgbuf.putBytes(session.getSessionId());
+                msgbuf.putBytes(ValidateUtils.checkNotNullAndNotEmpty(session.getSessionId(), "No current session ID", GenericUtils.EMPTY_OBJECT_ARRAY));
                 msgbuf.putByte(SshConstants.SSH_MSG_USERAUTH_REQUEST);
                 msgbuf.putString(username);
                 msgbuf.putString(service);
@@ -206,18 +209,13 @@ public class UserAuthGSS extends AbstractUserAuth {
     /**
      * Utility to get the configured GSS authenticator for the server, throwing an exception if none is available.
      *
-     * @param session The current session
-     * @return The GSS authenticator
+     * @param session The current {@link ServerSession}
+     * @return The {@link GSSAuthenticator} - never {@code null)
      * @throws Exception If no GSS authenticator is defined
      */
-    private GSSAuthenticator getAuthenticator(ServerSession session) throws Exception {
-        GSSAuthenticator ga = session.getFactoryManager().getGSSAuthenticator();
-
-        if (ga == null) {
-            throw new Exception("No GSSAuthenticator configured");
-        } else {
-            return ga;
-        }
+    protected GSSAuthenticator getAuthenticator(ServerSession session) throws Exception {
+        ServerFactoryManager manager = session.getFactoryManager();
+        return ValidateUtils.checkNotNull(manager.getGSSAuthenticator(), "No GSSAuthenticator configured", GenericUtils.EMPTY_OBJECT_ARRAY);
     }
 
     /**

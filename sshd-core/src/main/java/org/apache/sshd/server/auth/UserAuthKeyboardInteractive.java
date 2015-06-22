@@ -21,8 +21,11 @@ package org.apache.sshd.server.auth;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.server.PasswordAuthenticator;
+import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.UserAuth;
 import org.apache.sshd.server.session.ServerSession;
 
@@ -49,6 +52,10 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
         public UserAuth create() {
             return new UserAuthKeyboardInteractive();
         }
+    }
+
+    public UserAuthKeyboardInteractive() {
+        super();
     }
 
     @Override
@@ -78,12 +85,13 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
         }
     }
 
-    private boolean checkPassword(ServerSession session, String username, String password) throws Exception {
-        PasswordAuthenticator auth = session.getFactoryManager().getPasswordAuthenticator();
-        if (auth != null) {
-            return auth.authenticate(username, password, session);
-        }
-        throw new Exception("No PasswordAuthenticator configured");
+    protected boolean checkPassword(ServerSession session, String username, String password) throws Exception {
+        ServerFactoryManager manager = session.getFactoryManager();
+        PasswordAuthenticator auth = ValidateUtils.checkNotNull(
+                manager.getPasswordAuthenticator(),
+                "No PasswordAuthenticator configured",
+                GenericUtils.EMPTY_BYTE_ARRAY);
+        return auth.authenticate(username, password, session);
     }
 
 }
