@@ -174,7 +174,7 @@ public class KeepAliveTest extends BaseTestSupport {
 
                 channel.setOut(out);
                 channel.setErr(err);
-                channel.open().await();
+                channel.open().verify(9L, TimeUnit.SECONDS);
         
                 assertTrue("Latch time out", TestEchoShellFactory.TestEchoShell.latch.await(10L, TimeUnit.SECONDS));
                 int state = channel.waitFor(ClientChannel.CLOSED, WAIT);
@@ -204,7 +204,7 @@ public class KeepAliveTest extends BaseTestSupport {
 
                 channel.setOut(out);
                 channel.setErr(err);
-                channel.open().await();
+                channel.open().verify(9L, TimeUnit.SECONDS);
     
                 assertTrue("Latch time out", TestEchoShellFactory.TestEchoShell.latch.await(10L, TimeUnit.SECONDS));
                 int state = channel.waitFor(ClientChannel.CLOSED, WAIT);

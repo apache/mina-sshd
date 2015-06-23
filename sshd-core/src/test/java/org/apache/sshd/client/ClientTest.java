@@ -374,7 +374,7 @@ public class ClientTest extends BaseTestSupport {
 
                 channel.setOut(out);
                 channel.setErr(err);
-                channel.open().await();
+                channel.open().verify(9L, TimeUnit.SECONDS);
         
                 try(OutputStream pipedIn = new TeeOutputStream(sent, channel.getInvertedIn())) {
                     pipedIn.write("this is my command\n".getBytes());
@@ -494,7 +494,7 @@ public class ClientTest extends BaseTestSupport {
                 channel.setIn(inPipe);
                 channel.setOut(out);
                 channel.setErr(err);
-                channel.open().await();
+                channel.open().verify(9L, TimeUnit.SECONDS);
         
         
                 int bytes = 0;
@@ -855,7 +855,7 @@ public class ClientTest extends BaseTestSupport {
                     channel.setIn(inPipe);
                     channel.setOut(out);
                     channel.setErr(err);
-                    channel.open().await();
+                    channel.open().verify(9L, TimeUnit.SECONDS);
         
         //            ((AbstractSession) session).disconnect(SshConstants.SSH2_DISCONNECT_BY_APPLICATION, "Cancel");
                     AbstractSession cs = (AbstractSession) session;

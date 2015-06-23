@@ -22,12 +22,15 @@ package org.apache.sshd.common.kex.dh;
 import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.session.AbstractSession;
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractDHKeyExchange extends AbstractLoggingBean implements KeyExchange {
+    private AbstractSession session;
     protected byte[] V_S;
     protected byte[] V_C;
     protected byte[] I_S;
@@ -44,10 +47,15 @@ public abstract class AbstractDHKeyExchange extends AbstractLoggingBean implemen
 
     @Override
     public void init(AbstractSession s, byte[] V_S, byte[] V_C, byte[] I_S, byte[] I_C) throws Exception {
-        this.V_S = V_S;
-        this.V_C = V_C;
-        this.I_S = I_S;
-        this.I_C = I_C;
+        this.session = ValidateUtils.checkNotNull(s, "No session", GenericUtils.EMPTY_OBJECT_ARRAY);
+        this.V_S = ValidateUtils.checkNotNullAndNotEmpty(V_S, "No V_S value", GenericUtils.EMPTY_OBJECT_ARRAY);
+        this.V_C = ValidateUtils.checkNotNullAndNotEmpty(V_C, "No V_C value", GenericUtils.EMPTY_OBJECT_ARRAY);
+        this.I_S = ValidateUtils.checkNotNullAndNotEmpty(I_S, "No I_S value", GenericUtils.EMPTY_OBJECT_ARRAY);
+        this.I_C = ValidateUtils.checkNotNullAndNotEmpty(I_C, "No I_C value", GenericUtils.EMPTY_OBJECT_ARRAY);
+    }
+
+    public AbstractSession getSession() {
+        return session;
     }
 
     @Override

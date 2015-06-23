@@ -127,7 +127,7 @@ public class KexTest extends BaseTestSupport {
                         channel.setIn(inPipe);
                         channel.setOut(out);
                         channel.setErr(err);
-                        assertTrue("Channel not opened", channel.open().await().isOpened());
+                        channel.open().verify(9L, TimeUnit.SECONDS);
             
                         teeOut.write("this is my command\n".getBytes());
                         teeOut.flush();

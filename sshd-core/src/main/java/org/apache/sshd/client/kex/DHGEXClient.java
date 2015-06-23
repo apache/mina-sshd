@@ -21,6 +21,7 @@ package org.apache.sshd.client.kex;
 
 import java.math.BigInteger;
 
+import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
@@ -29,6 +30,7 @@ import org.apache.sshd.common.kex.AbstractDH;
 import org.apache.sshd.common.kex.DHFactory;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.session.AbstractSession;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -78,11 +80,11 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
     public void init(AbstractSession s, byte[] V_S, byte[] V_C, byte[] I_S, byte[] I_C) throws Exception {
         super.init(s, V_S, V_C, I_S, I_C);
         log.debug("Send SSH_MSG_KEX_DH_GEX_REQUEST");
-        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST);
+        Buffer buffer = s.createBuffer(SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST);
         buffer.putInt(min);
         buffer.putInt(prf);
         buffer.putInt(max);
-        session.writePacket(buffer);
+        s.writePacket(buffer);
 
         expected = SshConstants.SSH_MSG_KEX_DH_GEX_GROUP;
     }
@@ -106,6 +108,7 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
             e = dh.getE();
 
             log.debug("Send SSH_MSG_KEX_DH_GEX_INIT");
+            Session session = getSession();
             buffer = session.createBuffer(SshConstants.SSH_MSG_KEX_DH_GEX_INIT);
             buffer.putMPInt(e);
             session.writePacket(buffer);
@@ -145,8 +148,10 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
             hash.update(buffer.array(), 0, buffer.available());
             H = hash.digest();
 
+            Session session = getSession();
+            FactoryManager manager = session.getFactoryManager();
             Signature verif = ValidateUtils.checkNotNull(
-                    NamedFactory.Utils.create(session.getFactoryManager().getSignatureFactories(), keyAlg),
+                    NamedFactory.Utils.create(manager.getSignatureFactories(), keyAlg),
                     "No verifier located for algorithm=%s",
                     keyAlg);
             verif.initVerifier(serverKey);

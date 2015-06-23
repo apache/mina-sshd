@@ -48,7 +48,6 @@ import org.apache.sshd.client.future.ConnectFuture;
 import org.apache.sshd.client.future.DefaultConnectFuture;
 import org.apache.sshd.client.session.ClientConnectionService;
 import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.client.session.ClientSessionImpl;
 import org.apache.sshd.client.session.ClientUserAuthService;
 import org.apache.sshd.common.AbstractFactoryManager;
 import org.apache.sshd.common.Closeable;
@@ -271,7 +270,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                 } else if (future.getException() != null) {
                     connectFuture.setException(future.getException());
                 } else {
-                    ClientSessionImpl session = (ClientSessionImpl) AbstractSession.getSession(future.getSession());
+                    ClientSession session = (ClientSession) AbstractSession.getSession(future.getSession());
                     session.setUsername(username);
                     connectFuture.setSession(session);
                 }
@@ -516,7 +515,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                     try {
                         channel.setOut(new NoCloseOutputStream(System.out));
                         channel.setErr(new NoCloseOutputStream(System.err));
-                        channel.open().await();
+                        channel.open().await(); // TODO use verify and a configurable timeout
                         channel.waitFor(ClientChannel.CLOSED, 0);
                     } finally {
                         channel.close();

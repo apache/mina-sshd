@@ -20,6 +20,7 @@ package org.apache.sshd.git.pgm;
 
 import java.io.File;
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ChannelExec;
@@ -67,7 +68,7 @@ public class GitPgmCommandTest {
         SshClient client = SshClient.setUpDefaultClient();
         client.start();
 
-        ClientSession session = client.connect("sshd", "localhost", 8001).await().getSession();
+        ClientSession session = client.connect("sshd", "localhost", 8001).verify(7L, TimeUnit.SECONDS).getSession();
         session.addPasswordIdentity("sshd");
         session.auth().verify();
 

@@ -22,7 +22,7 @@ import java.io.IOException;
 import java.security.KeyPair;
 
 import org.apache.sshd.client.auth.UserAuthPublicKey.UserAuthPublicKeyFactory;
-import org.apache.sshd.client.session.ClientSessionImpl;
+import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
@@ -40,7 +40,7 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 public class UserAuthPublicKey extends AbstractUserAuth {
     private final KeyPair key;
 
-    public UserAuthPublicKey(ClientSessionImpl session, String service, KeyPair key) {
+    public UserAuthPublicKey(ClientSession session, String service, KeyPair key) {
         super(session, service);
         this.key = key;
     }

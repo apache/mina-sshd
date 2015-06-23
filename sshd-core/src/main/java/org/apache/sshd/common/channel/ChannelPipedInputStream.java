@@ -40,7 +40,7 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ChannelPipedInputStream extends InputStream implements ChannelPipedSink {
-    public static final long DEFAULT_TIMEOUT = 0;    // infinite
+    public static final long DEFAULT_TIMEOUT = 0L;
 
     private final Window localWindow;
     private final Buffer buffer = new ByteArrayBuffer();

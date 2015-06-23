@@ -32,6 +32,7 @@ import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.threads.ExecutorServiceConfigurer;
 import org.apache.sshd.server.session.ServerSession;
 
@@ -97,10 +98,10 @@ public class UnixAgentFactory implements SshAgentFactory, ExecutorServiceConfigu
 
     @Override
     public SshAgentServer createServer(ConnectionService service) throws IOException {
-        Session session = service.getSession();
-        if (!(session instanceof ServerSession)) {
-            throw new IllegalStateException("The session used to create an agent server proxy must be a server session");
-        }
+        Session session = ValidateUtils.checkNotNull(service.getSession(), "No session", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkTrue(session instanceof ServerSession,
+                                "The session used to create an agent server proxy must be a server session",
+                                GenericUtils.EMPTY_OBJECT_ARRAY);
         return new AgentServerProxy(service, getExecutorService(), isShutdownOnExit());
     }
 }

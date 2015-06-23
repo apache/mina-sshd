@@ -31,6 +31,8 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.session.AbstractConnectionService;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
@@ -58,14 +60,13 @@ public class ClientConnectionService extends AbstractConnectionService {
 
     public ClientConnectionService(Session s) throws SshException {
         super(s);
-        if (!(s instanceof ClientSessionImpl)) {
-            throw new IllegalStateException("Client side service used on server side");
-        }
+
+        ValidateUtils.checkTrue(s instanceof ClientSession, "Client side service used on server side", GenericUtils.EMPTY_OBJECT_ARRAY);
     }
 
     @Override
     public void start() {
-        if (!((ClientSessionImpl) session).isAuthenticated()) {
+        if (!((ClientSession) session).isAuthenticated()) {
             throw new IllegalStateException("Session is not authenticated");
         }
         startHeartBeat();

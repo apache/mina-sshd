@@ -20,7 +20,7 @@ package org.apache.sshd.deprecated;
 
 import java.io.IOException;
 
-import org.apache.sshd.client.session.ClientSessionImpl;
+import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.util.buffer.Buffer;
 
@@ -32,7 +32,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
 public class UserAuthPassword extends AbstractUserAuth {
     private final String password;
 
-    public UserAuthPassword(ClientSessionImpl session, String service, String password) {
+    public UserAuthPassword(ClientSession session, String service, String password) {
         super(session, service);
         this.password = password;
     }

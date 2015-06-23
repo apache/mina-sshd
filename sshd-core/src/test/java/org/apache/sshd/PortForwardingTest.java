@@ -357,7 +357,7 @@ public class PortForwardingTest extends BaseTestSupport {
             SshdSocketAddress remote = new SshdSocketAddress("localhost", echoPort);
 
             try(ChannelDirectTcpip channel = session.createDirectTcpipChannel(local, remote)) {
-                channel.open().await();
+                channel.open().verify(9L, TimeUnit.SECONDS);
 
                 String  expected = getCurrentTestName();
                 byte[]  bytes = expected.getBytes();

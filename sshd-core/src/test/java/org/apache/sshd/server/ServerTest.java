@@ -123,7 +123,8 @@ public class ServerTest extends BaseTestSupport {
             while ((res & ClientSession.CLOSED) == 0) {
                 nbTrials ++;
                 s.getService(ClientUserAuthServiceOld.class)
-                        .auth(new UserAuthPassword((ClientSessionImpl) s, "ssh-connection", "buggy"));
+                 .auth(new UserAuthPassword(s, "ssh-connection", "buggy"))
+                 ;
                 res = s.waitFor(ClientSession.CLOSED | ClientSession.WAIT_AUTH, 5000);
                 if (res == ClientSession.TIMEOUT) {
                     throw new TimeoutException();
@@ -153,7 +154,8 @@ public class ServerTest extends BaseTestSupport {
                 nbTrials++;
                 assertTrue(nbTrials < 100);
                 authFuture = s.getService(ClientUserAuthServiceOld.class)
-                        .auth(new UserAuthPassword((ClientSessionImpl) s, "ssh-connection", "buggy"));
+                              .auth(new UserAuthPassword(s, "ssh-connection", "buggy"))
+                              ;
                 assertTrue("Authentication wait failed", authFuture.await(5000));
                 assertTrue("Authentication not done", authFuture.isDone());
                 assertFalse("Authentication unexpectedly successful", authFuture.isSuccess());
@@ -215,7 +217,7 @@ public class ServerTest extends BaseTestSupport {
                 ByteArrayOutputStream err = new ByteArrayOutputStream()) {
                 shell.setOut(out);
                 shell.setErr(err);
-                shell.open().await();
+                shell.open().verify(9L, TimeUnit.SECONDS);
                 int res = s.waitFor(ClientSession.CLOSED, 2 * IDLE_TIMEOUT);
                 assertEquals("Session should be closed", ClientSession.CLOSED | ClientSession.AUTHED, res);
             }

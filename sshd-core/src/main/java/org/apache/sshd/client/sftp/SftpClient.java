@@ -281,6 +281,16 @@ public interface SftpClient extends Closeable {
     // default values used if none specified
     int MIN_BUFFER_SIZE=Byte.MAX_VALUE, MIN_READ_BUFFER_SIZE=MIN_BUFFER_SIZE, MIN_WRITE_BUFFER_SIZE=MIN_BUFFER_SIZE;
     int IO_BUFFER_SIZE=32 * 1024, DEFAULT_READ_BUFFER_SIZE=IO_BUFFER_SIZE, DEFAULT_WRITE_BUFFER_SIZE=IO_BUFFER_SIZE;
+    long DEFAULT_WAIT_TIMEOUT=TimeUnit.SECONDS.toMillis(30L);
+
+    /**
+     * Property that can be used on the {@link org.apache.sshd.common.FactoryManager}
+     * to control the internal timeout used by the client to open a channel.
+     * If not specified then {@link #DEFAULT_CHANNEL_OPEN_TIMEOUT} value
+     * is used
+     */
+    String SFTP_CHANNEL_OPEN_TIMEOUT = "sftp-channel-open-timeout";
+        long DEFAULT_CHANNEL_OPEN_TIMEOUT = DEFAULT_WAIT_TIMEOUT;
 
     InputStream read(String path) throws IOException;
     InputStream read(String path, int bufferSize) throws IOException;

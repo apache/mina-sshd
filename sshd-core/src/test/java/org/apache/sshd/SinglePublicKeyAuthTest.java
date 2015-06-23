@@ -117,7 +117,8 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
             try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
                 session.addPublicKeyIdentity(pairRsaBad);
                 session.addPublicKeyIdentity(pairRsa);
-                assertTrue(session.auth().await().isSuccess());
+                session.auth().verify(5L, TimeUnit.SECONDS);
+
                 assertEquals(2, count.size());
                 assertTrue(count.containsKey(KeyUtils.getFingerPrint(pairRsaBad.getPublic())));
                 assertTrue(count.containsKey(KeyUtils.getFingerPrint(pairRsa.getPublic())));

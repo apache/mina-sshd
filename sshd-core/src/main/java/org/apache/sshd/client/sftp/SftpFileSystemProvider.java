@@ -31,7 +31,6 @@ import static org.apache.sshd.common.sftp.SftpConstants.S_IXUSR;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.net.URI;
 import java.nio.channels.FileChannel;
@@ -89,7 +88,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class SftpFileSystemProvider extends FileSystemProvider {
-    public static final String  READ_BUFFER_PROP_NAME = "read-buffer-size", WRITE_BUFFER_PROP_NAME="write-buffer-size";
+    public static final String READ_BUFFER_PROP_NAME = "sftp-fs-read-buffer-size";
+        public static final int DEFAULT_READ_BUFFER_SIZE = SftpClient.DEFAULT_READ_BUFFER_SIZE;
+    public static final String WRITE_BUFFER_PROP_NAME = "sftp-fs-write-buffer-size";
+        public static final int DEFAULT_WRITE_BUFFER_SIZE = SftpClient.DEFAULT_WRITE_BUFFER_SIZE;
+    public static final String CONNECT_TIME_PROP_NAME = "sftp-fs-connect-time";
+        public static final long DEFAULT_CONNECT_TIME = SftpClient.DEFAULT_WAIT_TIMEOUT;
 
     private final SshClient client;
     private final Map<String, SftpFileSystem> fileSystems = new HashMap<String, SftpFileSystem>();
@@ -132,12 +136,15 @@ public class SftpFileSystemProvider extends FileSystemProvider {
 
             ClientSession session=null;
             try {
-                session = client.connect(ui[0], host, port).await().getSession();
+                session = client.connect(ui[0], host, port)
+                                .verify(FactoryManagerUtils.getLongProperty(env, CONNECT_TIME_PROP_NAME, DEFAULT_CONNECT_TIME))
+                                .getSession()
+                                ;
                 session.addPasswordIdentity(ui[1]);
                 session.auth().verify();
                 fileSystem = new SftpFileSystem(this, session);
-                fileSystem.setReadBufferSize(FactoryManagerUtils.getIntProperty(env, READ_BUFFER_PROP_NAME, SftpClient.DEFAULT_READ_BUFFER_SIZE));
-                fileSystem.setWriteBufferSize(FactoryManagerUtils.getIntProperty(env, WRITE_BUFFER_PROP_NAME, SftpClient.DEFAULT_WRITE_BUFFER_SIZE));
+                fileSystem.setReadBufferSize(FactoryManagerUtils.getIntProperty(env, READ_BUFFER_PROP_NAME, DEFAULT_READ_BUFFER_SIZE));
+                fileSystem.setWriteBufferSize(FactoryManagerUtils.getIntProperty(env, WRITE_BUFFER_PROP_NAME, DEFAULT_WRITE_BUFFER_SIZE));
                 fileSystems.put(authority, fileSystem);
                 return fileSystem;
             } catch(Exception e) {
@@ -156,8 +163,6 @@ public class SftpFileSystemProvider extends FileSystemProvider {
                 
                 if (e instanceof IOException) {
                     throw (IOException) e;
-                } else if (e instanceof InterruptedException) {
-                    throw (IOException) new InterruptedIOException("Interrupted while waiting for connection to " + host + ":" + port).initCause(e);
                 } else if (e instanceof RuntimeException) {
                     throw (RuntimeException) e;
                 } else {

@@ -18,29 +18,6 @@
  */
 package org.apache.sshd.common.session;
 
-import java.io.IOException;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.apache.sshd.agent.common.AgentForwardSupport;
-import org.apache.sshd.client.channel.AbstractClientChannel;
-import org.apache.sshd.client.future.OpenFuture;
-import org.apache.sshd.common.Closeable;
-import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.SshConstants;
-import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.channel.Channel;
-import org.apache.sshd.common.channel.RequestHandler;
-import org.apache.sshd.common.forward.TcpipForwarder;
-import org.apache.sshd.common.future.SshFutureListener;
-import org.apache.sshd.common.util.CloseableUtils;
-import org.apache.sshd.common.util.buffer.Buffer;
-import org.apache.sshd.server.channel.OpenChannelException;
-import org.apache.sshd.server.x11.X11ForwardSupport;
-
 import static org.apache.sshd.common.SshConstants.SSH_MSG_CHANNEL_CLOSE;
 import static org.apache.sshd.common.SshConstants.SSH_MSG_CHANNEL_DATA;
 import static org.apache.sshd.common.SshConstants.SSH_MSG_CHANNEL_EOF;
@@ -55,6 +32,33 @@ import static org.apache.sshd.common.SshConstants.SSH_MSG_GLOBAL_REQUEST;
 import static org.apache.sshd.common.SshConstants.SSH_MSG_REQUEST_FAILURE;
 import static org.apache.sshd.common.SshConstants.SSH_MSG_REQUEST_SUCCESS;
 
+import java.io.IOException;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.apache.sshd.agent.common.AgentForwardSupport;
+import org.apache.sshd.client.channel.AbstractClientChannel;
+import org.apache.sshd.client.future.OpenFuture;
+import org.apache.sshd.common.Closeable;
+import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.channel.Channel;
+import org.apache.sshd.common.channel.RequestHandler;
+import org.apache.sshd.common.forward.TcpipForwarder;
+import org.apache.sshd.common.forward.TcpipForwarderFactory;
+import org.apache.sshd.common.future.SshFutureListener;
+import org.apache.sshd.common.util.CloseableUtils;
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.server.channel.OpenChannelException;
+import org.apache.sshd.server.x11.X11ForwardSupport;
+
 /**
  * Base implementation of ConnectionService.
  *
@@ -67,7 +71,7 @@ public abstract class AbstractConnectionService extends CloseableUtils.AbstractI
     /** Next channel identifier */
     protected final AtomicInteger nextChannelId = new AtomicInteger(0);
 
-    protected final Session session;
+    protected final AbstractSession session;
 
     /** The tcpip forwarder */
     protected final TcpipForwarder tcpipForwarder;
@@ -76,10 +80,17 @@ public abstract class AbstractConnectionService extends CloseableUtils.AbstractI
     protected boolean allowMoreSessions = true;
 
     protected AbstractConnectionService(Session session) {
-        this.session = session;
+        ValidateUtils.checkTrue(session instanceof AbstractSession, "Not an AbstractSession", GenericUtils.EMPTY_OBJECT_ARRAY);
+        this.session = (AbstractSession) session;
+        FactoryManager manager = session.getFactoryManager();
         agentForward = new AgentForwardSupport(this);
         x11Forward = new X11ForwardSupport(this);
-        tcpipForwarder = session.getFactoryManager().getTcpipForwarderFactory().create(this);
+        
+        TcpipForwarderFactory factory = ValidateUtils.checkNotNull(
+                manager.getTcpipForwarderFactory(),
+                "No forwarder factory",
+                GenericUtils.EMPTY_OBJECT_ARRAY);
+        tcpipForwarder = factory.create(this);
     }
 
     public Collection<Channel> getChannels() {
@@ -88,7 +99,7 @@ public abstract class AbstractConnectionService extends CloseableUtils.AbstractI
 
     @Override
     public AbstractSession getSession() {
-        return (AbstractSession) session;
+        return session;
     }
 
     @Override
@@ -438,11 +449,11 @@ public abstract class AbstractConnectionService extends CloseableUtils.AbstractI
     }
 
     protected void requestSuccess(Buffer buffer) throws Exception {
-        ((AbstractSession) session).requestSuccess(buffer);
+        session.requestSuccess(buffer);
     }
 
     protected void requestFailure(Buffer buffer) throws Exception {
-        ((AbstractSession) session).requestFailure(buffer);
+        session.requestFailure(buffer);
     }
 
     @Override

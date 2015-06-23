@@ -141,7 +141,7 @@ public class AgentTest extends BaseTestSupport {
                             channel1.setOut(out);
                             channel1.setErr(err);
                             channel1.setAgentForwarding(true);
-                            channel1.open().await();
+                            channel1.open().verify(9L, TimeUnit.SECONDS);
                             
                             try(OutputStream pipedIn = channel1.getInvertedIn()) {
                                 synchronized (shellFactory.shell) {
@@ -164,7 +164,7 @@ public class AgentTest extends BaseTestSupport {
                                             channel2.setOut(shellFactory.shell.getOut());
                                             channel2.setErr(shellFactory.shell.getErr());
                                             channel2.setAgentForwarding(true);
-                                            channel2.open().await();
+                                            channel2.open().verify(9L, TimeUnit.SECONDS);
                                     
                                             pipedIn.write("foo\n".getBytes());
                                             pipedIn.flush();

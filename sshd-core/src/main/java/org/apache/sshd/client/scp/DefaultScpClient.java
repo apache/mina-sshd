@@ -79,10 +79,8 @@ public class DefaultScpClient extends AbstractScpClient {
     @Override
     public void download(String remote, OutputStream local) throws IOException {
         String cmd = createReceiveCommand(remote, Collections.<Option>emptyList());
-        ChannelExec channel = clientSession.createExecChannel(cmd);
+        ChannelExec channel = openCommandChannel(clientSession, cmd);
         try {
-            channel.open().await(); // TODO use verify + configurable timeout
-
             // NOTE: we use a mock file system since we expect no invocations for it
             ScpHelper helper = new ScpHelper(channel.getInvertedOut(), channel.getInvertedIn(), new MockFileSystem(remote), listener);
             helper.receiveFileStream(local, ScpHelper.DEFAULT_RECEIVE_BUFFER_SIZE);
@@ -94,10 +92,8 @@ public class DefaultScpClient extends AbstractScpClient {
     @Override
     protected void download(String remote, FileSystem fs, Path local, Collection<Option> options) throws IOException {
         String cmd = createReceiveCommand(remote, options);
-        ChannelExec channel = clientSession.createExecChannel(cmd);
+        ChannelExec channel = openCommandChannel(clientSession, cmd);
         try {
-            channel.open().await(); // TODO use verify + configurable timeout
-
             ScpHelper helper = new ScpHelper(channel.getInvertedOut(), channel.getInvertedIn(), fs, listener);
             helper.receive(local,
                            options.contains(Option.Recursive),
@@ -117,9 +113,7 @@ public class DefaultScpClient extends AbstractScpClient {
                           : ValidateUtils.checkNotNullAndNotEmpty(remote.substring(namePos + 1), "No name value in remote=%s", remote)
                           ;
         final String cmd = createSendCommand(remote, (time != null) ? EnumSet.of(Option.PreserveAttributes) : Collections.<Option>emptySet());
-        ChannelExec channel = clientSession.createExecChannel(cmd);
-        channel.open().await();   // TODO use verify + configurable timeout
-
+        ChannelExec channel = openCommandChannel(clientSession, cmd);
         try {
             ScpHelper helper = new ScpHelper(channel.getInvertedOut(), channel.getInvertedIn(), new MockFileSystem(remote), listener);
             final Path mockPath = new MockPath(remote);
@@ -172,11 +166,9 @@ public class DefaultScpClient extends AbstractScpClient {
         if (local.size() > 1) {
             options = addTargetIsDirectory(options);
         }
-        
-        String cmd = createSendCommand(remote, options);
-        ChannelExec channel = clientSession.createExecChannel(cmd);
-        channel.open().await();    // TODO use verify + configurable timeout
 
+        String cmd = createSendCommand(remote, options);
+        ChannelExec channel = openCommandChannel(clientSession, cmd);
         try {
             FactoryManager manager = clientSession.getFactoryManager();
             FileSystemFactory factory = manager.getFileSystemFactory();

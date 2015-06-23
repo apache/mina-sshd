@@ -21,20 +21,27 @@ package org.apache.sshd.server.x11;
 import java.io.IOException;
 import java.net.BindException;
 import java.net.InetSocketAddress;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.channel.AbstractClientChannel;
 import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.Closeable;
+import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoHandler;
+import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.session.ConnectionService;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.CloseableUtils;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Readable;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
@@ -44,6 +51,13 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 public class X11ForwardSupport extends CloseableUtils.AbstractInnerCloseable implements IoHandler {
 
     private static String xauthCommand = System.getProperty("sshd.xauthCommand", "xauth");
+    /**
+     * Configuration value on the {@link FactoryManager} to control the
+     * channel open timeout. If not specified then {@link #DEFAULT_CHANNEL_OPEN_TIMEOUT}
+     * value is used
+     */
+    public static final String CHANNEL_OPEN_TIMEOUT_PROP = "x11-fwd-open-timeout";
+        public static final long DEFAULT_CHANNEL_OPEN_TIMEOUT = TimeUnit.SECONDS.toMillis(30L);
 
     public static final int X11_DISPLAY_OFFSET = 10;
     public static final int MAX_DISPLAYS = 1000;
@@ -57,7 +71,6 @@ public class X11ForwardSupport extends CloseableUtils.AbstractInnerCloseable imp
     private IoAcceptor acceptor;
 
     public X11ForwardSupport(ConnectionService service) {
-        super();
         this.service = service;
     }
 
@@ -83,7 +96,10 @@ public class X11ForwardSupport extends CloseableUtils.AbstractInnerCloseable imp
         }
 
         if (acceptor == null) {
-            acceptor = service.getSession().getFactoryManager().getIoServiceFactory().createAcceptor(this);
+            Session session = ValidateUtils.checkNotNull(service.getSession(), "No session", GenericUtils.EMPTY_OBJECT_ARRAY);
+            FactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No factory manager", GenericUtils.EMPTY_OBJECT_ARRAY);
+            IoServiceFactory factory = ValidateUtils.checkNotNull(manager.getIoServiceFactory(), "No I/O service factory", GenericUtils.EMPTY_OBJECT_ARRAY);
+            acceptor = factory.createAcceptor(this);
         }
 
         int displayNumber, port;
@@ -134,13 +150,7 @@ public class X11ForwardSupport extends CloseableUtils.AbstractInnerCloseable imp
         ChannelForwardedX11 channel = new ChannelForwardedX11(session);
         session.setAttribute(ChannelForwardedX11.class, channel);
         this.service.registerChannel(channel);
-        OpenFuture future = channel.open().await();
-        Throwable t = future.getException();
-        if (t instanceof Exception) {
-            throw (Exception) t;
-        } else if (t != null) {
-            throw new Exception(t);
-        }
+        channel.open().verify(FactoryManagerUtils.getLongProperty(this.service.getSession(), CHANNEL_OPEN_TIMEOUT_PROP, DEFAULT_CHANNEL_OPEN_TIMEOUT));
     }
 
     @Override

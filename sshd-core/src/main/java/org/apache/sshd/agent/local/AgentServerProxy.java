@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.SshAgentServer;
 import org.apache.sshd.client.future.OpenFuture;
+import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -47,11 +48,7 @@ public class AgentServerProxy extends AbstractLoggingBean implements SshAgentSer
         try {
             AgentForwardedChannel channel = new AgentForwardedChannel();
             this.service.registerChannel(channel);
-            OpenFuture future = channel.open().await();
-            Throwable t = future.getException();
-            if (t != null) {
-                throw t;
-            }
+            channel.open().verify(FactoryManagerUtils.getLongProperty(this.service.getSession(), CHANNEL_OPEN_TIMEOUT_PROP, DEFAULT_CHANNEL_OPEN_TIMEOUT));
             return channel.getAgent();
         } catch(Throwable t) {
             if (log.isDebugEnabled()) {

@@ -27,7 +27,6 @@ import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.session.ClientConnectionService;
 import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.client.session.ClientSessionImpl;
 import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
@@ -188,21 +187,21 @@ public class AuthenticationTest extends BaseTestSupport {
     }
 
     private AuthFuture authPassword(ClientSession s, String user, String pswd) throws IOException {
-        ((ClientSessionImpl) s).setUsername(user);
+        s.setUsername(user);
         return s.getService(ClientUserAuthServiceOld.class)
-                .auth(new UserAuthPassword((ClientSessionImpl) s, "ssh-connection", pswd));
+                .auth(new UserAuthPassword(s, "ssh-connection", pswd));
     }
 
     private AuthFuture authInteractive(ClientSession s, String user, String pswd) throws IOException {
-        ((ClientSessionImpl) s).setUsername(user);
+        s.setUsername(user);
         return s.getService(ClientUserAuthServiceOld.class)
-                .auth(new UserAuthKeyboardInteractive((ClientSessionImpl) s, "ssh-connection", pswd));
+                .auth(new UserAuthKeyboardInteractive(s, "ssh-connection", pswd));
     }
 
     private AuthFuture authPublicKey(ClientSession s, String user, KeyPair pair) throws IOException {
-        ((ClientSessionImpl) s).setUsername(user);
+        s.setUsername(user);
         return s.getService(ClientUserAuthServiceOld.class)
-                .auth(new UserAuthPublicKey((ClientSessionImpl) s, "ssh-connection", pair));
+                .auth(new UserAuthPublicKey(s, "ssh-connection", pair));
     }
 
     public static class TestSession extends ServerSessionImpl {

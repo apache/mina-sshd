@@ -106,6 +106,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.sshd.client.SftpException;
 import org.apache.sshd.client.channel.ChannelSubsystem;
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.sftp.SftpConstants;
 import org.apache.sshd.common.util.GenericUtils;
@@ -145,7 +146,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
             }
         });
         this.channel.setErr(new ByteArrayOutputStream(Byte.MAX_VALUE));
-        this.channel.open().await();       // TODO use verify + configurable timeout
+        this.channel.open().verify(FactoryManagerUtils.getLongProperty(clientSession, SFTP_CHANNEL_OPEN_TIMEOUT, DEFAULT_CHANNEL_OPEN_TIMEOUT));
         this.channel.onClose(new Runnable() {
             @SuppressWarnings("synthetic-access")
             @Override

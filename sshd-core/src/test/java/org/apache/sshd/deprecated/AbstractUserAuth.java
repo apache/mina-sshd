@@ -18,16 +18,16 @@
  */
 package org.apache.sshd.deprecated;
 
-import org.apache.sshd.client.session.ClientSessionImpl;
+import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
  */
 public abstract class AbstractUserAuth extends AbstractLoggingBean implements UserAuth {
-    protected final ClientSessionImpl session;
+    protected final ClientSession session;
     protected final String service;
 
-    protected AbstractUserAuth(ClientSessionImpl session, String service) {
+    protected AbstractUserAuth(ClientSession session, String service) {
         this.session = session;
         this.service = service;
     }

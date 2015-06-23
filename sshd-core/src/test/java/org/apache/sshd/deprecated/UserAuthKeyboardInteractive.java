@@ -27,7 +27,7 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import org.apache.sshd.client.UserInteraction;
-import org.apache.sshd.client.session.ClientSessionImpl;
+import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.util.buffer.Buffer;
 
@@ -41,7 +41,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
 
     private final String password;
 
-    public UserAuthKeyboardInteractive(ClientSessionImpl session, String service, String password) {
+    public UserAuthKeyboardInteractive(ClientSession session, String service, String password) {
         super(session, service);
         this.password = password;
     }

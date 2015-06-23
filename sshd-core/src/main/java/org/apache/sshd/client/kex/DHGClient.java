@@ -27,6 +27,7 @@ import org.apache.sshd.common.kex.AbstractDH;
 import org.apache.sshd.common.kex.DHFactory;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.session.AbstractSession;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -81,7 +82,8 @@ public class DHGClient extends AbstractDHClientKeyExchange {
         log.debug("Send SSH_MSG_KEXDH_INIT");
         Buffer buffer = s.createBuffer(SshConstants.SSH_MSG_KEXDH_INIT);
         buffer.putMPInt(e);
-        session.writePacket(buffer);
+        
+        s.writePacket(buffer);
     }
 
     protected AbstractDH getDH() throws Exception {
@@ -123,6 +125,7 @@ public class DHGClient extends AbstractDHClientKeyExchange {
         hash.update(buffer.array(), 0, buffer.available());
         H = hash.digest();
 
+        Session session = getSession();
         FactoryManager manager = session.getFactoryManager();
         Signature verif = ValidateUtils.checkNotNull(NamedFactory.Utils.create(manager.getSignatureFactories(), keyAlg),
                             "No verifier located for algorithm=%s",

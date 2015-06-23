@@ -26,9 +26,10 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.agent.SshAgentServer;
-import org.apache.sshd.client.future.OpenFuture;
+import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.session.ConnectionService;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
@@ -43,6 +44,14 @@ import org.apache.tomcat.jni.Status;
  * The server side fake agent, acting as an agent, but actually forwarding the requests to the auth channel on the client side.
  */
 public class AgentServerProxy extends AbstractLoggingBean implements SshAgentServer, ExecutorServiceCarrier {
+    /**
+     * Property that can be set on the {@link Session} in order to control
+     * the authentication timeout (millis). If not specified then
+     * {@link #DEFAULT_AUTH_SOCKET_TIMEOUT} is used
+     */
+    public static final String AUTH_SOCKET_TIMEOUT = "ssh-agent-server-proxy-auth-socket-timeout";
+        public static final int DEFAULT_AUTH_SOCKET_TIMEOUT = 10000000;
+
     private final ConnectionService service;
     private final String authSocket;
     private final long pool;
@@ -93,16 +102,12 @@ public class AgentServerProxy extends AbstractLoggingBean implements SshAgentSer
                                     if (!isOpen()) {
                                         break;
                                     }
-                                    Socket.timeoutSet(clientSock, 10000000);    // TODO allow to configure this
+
+                                    Session session = AgentServerProxy.this.service.getSession();
+                                    Socket.timeoutSet(clientSock, FactoryManagerUtils.getIntProperty(session, AUTH_SOCKET_TIMEOUT, DEFAULT_AUTH_SOCKET_TIMEOUT));
                                     AgentForwardedChannel channel = new AgentForwardedChannel(clientSock);
                                     AgentServerProxy.this.service.registerChannel(channel);
-                                    OpenFuture future = channel.open().await();
-                                    Throwable t = future.getException();
-                                    if (t instanceof Exception) {
-                                        throw (Exception) t;
-                                    } else if (t != null) {
-                                        throw new Exception(t);
-                                    }
+                                    channel.open().verify(FactoryManagerUtils.getLongProperty(session, CHANNEL_OPEN_TIMEOUT_PROP, DEFAULT_CHANNEL_OPEN_TIMEOUT));
                                 } catch (Exception e) {
                                     if (isOpen()) {
                                         log.info(e.getClass().getSimpleName() + " while authentication forwarding: " + e.getMessage(), e);

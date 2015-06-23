@@ -138,7 +138,7 @@ public class LoadTest extends BaseTestSupport {
                     channel.setErr(err);
 
                     try {
-                        channel.open().await();
+                        channel.open().verify(9L, TimeUnit.SECONDS);
                         try(OutputStream pipedIn = channel.getInvertedIn()) {
                             msg += "\nexit\n";
                             pipedIn.write(msg.getBytes());

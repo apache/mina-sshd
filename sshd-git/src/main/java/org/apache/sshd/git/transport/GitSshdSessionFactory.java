@@ -21,11 +21,14 @@ package org.apache.sshd.git.transport;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.eclipse.jgit.errors.TransportException;
@@ -42,6 +45,25 @@ import org.eclipse.jgit.util.FS;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class GitSshdSessionFactory extends SshSessionFactory {
+    /**
+     * Property used to configure the SSHD {@link FactoryManager} with
+     * the default timeout (millis) to connect to the remote SSH server.
+     * If not specified then {@link #DEFAULT_CONNECT_TIMEOUT} is used
+     */
+    public static final String CONNECT_TIMEOUT_PROP = "git-ssh-connect-timeout";
+        public static final long DEFAULT_CONNECT_TIMEOUT = TimeUnit.SECONDS.toMillis(30L);
+
+    /**
+     * Property used to configure the SSHD {@link FactoryManager} with
+     * the default timeout (millis) to authenticate with the remote SSH server.
+     * If not specified then {@link #DEFAULT_AUTH_TIMEOUT} is used
+     */
+    public static final String AUTH_TIMEOUT_PROP = "git-ssh-connect-timeout";
+        public static final long DEFAULT_AUTH_TIMEOUT = TimeUnit.SECONDS.toMillis(15L);
+
+    public GitSshdSessionFactory() {
+        super();
+    }
 
     @Override
     public RemoteSession getSession(URIish uri, CredentialsProvider credentialsProvider, FS fs, int tms) throws TransportException {
@@ -57,7 +79,6 @@ public class GitSshdSessionFactory extends SshSessionFactory {
     }
 
     public class SshdSession implements RemoteSession {
-
         private final SshClient client;
         private final ClientSession session;
 
@@ -82,16 +103,19 @@ public class GitSshdSessionFactory extends SshSessionFactory {
             }
 
             client = createClient();
+
             client.start();
-            session = client.connect(user, host, port).await().getSession();
+            session = client.connect(user, host, port)
+                            .verify(FactoryManagerUtils.getLongProperty(client, CONNECT_TIMEOUT_PROP, DEFAULT_CONNECT_TIMEOUT))
+                            .getSession()
+                            ;
             if (pass != null) {
                 session.addPasswordIdentity(pass);
             }
             if (pass2 != null) {
                 session.addPasswordIdentity(new String(pass2));
             }
-            session.auth().verify();
-
+            session.auth().verify(FactoryManagerUtils.getLongProperty(client, AUTH_TIMEOUT_PROP, DEFAULT_AUTH_TIMEOUT);
         }
 
         @Override
