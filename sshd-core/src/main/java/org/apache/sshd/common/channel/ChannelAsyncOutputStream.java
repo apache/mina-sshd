@@ -22,9 +22,7 @@ import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.SshConstants;
-import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.CloseFuture;
-import org.apache.sshd.common.future.DefaultSshFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoOutputStream;
 import org.apache.sshd.common.io.IoWriteFuture;
@@ -69,7 +67,7 @@ public class ChannelAsyncOutputStream extends CloseableUtils.AbstractCloseable i
     protected synchronized void doWriteIfPossible(boolean resume) {
         final IoWriteFutureImpl future = pendingWrite.get();
         if (future != null) {
-            final Buffer buffer = future.buffer;
+            final Buffer buffer = future.getBuffer();
             final int total = buffer.available();
             if (total > 0) {
                 final int length = Math.min(Math.min(channel.getRemoteWindow().getSize(), total), channel.getRemoteWindow().getPacketSize());
@@ -115,47 +113,5 @@ public class ChannelAsyncOutputStream extends CloseableUtils.AbstractCloseable i
     @Override
     public String toString() {
         return "ChannelAsyncOutputStream[" + channel + "]";
-    }
-
-    public static class IoWriteFutureImpl extends DefaultSshFuture<IoWriteFuture> implements IoWriteFuture {
-
-        final Buffer buffer;
-
-        public IoWriteFutureImpl(Buffer buffer) {
-            super(null);
-            this.buffer = buffer;
-        }
-
-        public Buffer getBuffer() {
-            return buffer;
-        }
-
-        @Override
-        public void verify() throws SshException {
-            try {
-                await();
-            }
-            catch (InterruptedException e) {
-                throw new SshException("Interrupted", e);
-            }
-            if (!isWritten()) {
-                throw new SshException("Write failed", getException());
-            }
-        }
-
-        @Override
-        public boolean isWritten() {
-            return getValue() instanceof Boolean;
-        }
-
-        @Override
-        public Throwable getException() {
-            Object v = getValue();
-            if (v instanceof Throwable) {
-                return (Throwable) v;
-            } else {
-                return null;
-            }
-        }
     }
 }

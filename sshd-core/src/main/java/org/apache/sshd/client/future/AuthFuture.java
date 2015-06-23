@@ -18,9 +18,9 @@
  */
 package org.apache.sshd.client.future;
 
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.SshFuture;
 
 /**
@@ -31,21 +31,21 @@ import org.apache.sshd.common.future.SshFuture;
 public interface AuthFuture extends SshFuture<AuthFuture> {
     /**
      * Wait and verify that the authentication succeeded.
-     * @throws SshException if the authentication failed for any reason
+     * @throws IOException if the authentication failed for any reason
      */
-    void verify() throws SshException;
+    void verify() throws IOException;
 
     /**
      * Wait and verify that the authentication succeeded within the specified timeout.
-     * @throws SshException if the authentication failed for any reason
+     * @throws IOException if the authentication failed for any reason
      */
-    void verify(long timeout, TimeUnit unit) throws SshException;
+    void verify(long timeout, TimeUnit unit) throws IOException;
 
     /**
      * Wait and verify that the authentication succeeded within the specified timeout.
-     * @throws SshException if the authentication failed for any reason
+     * @throws IOException if the authentication failed for any reason
      */
-    void verify(long timeoutMillis) throws SshException;
+    void verify(long timeoutMillis) throws IOException;
 
     /**
      * Returns the cause of the connection failure.

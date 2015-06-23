@@ -21,6 +21,7 @@ package org.apache.sshd;
 import java.io.IOException;
 import java.security.KeyPair;
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.future.AuthFuture;
@@ -87,7 +88,7 @@ public class AuthenticationTest extends BaseTestSupport {
     public void testWrongPassword() throws Exception {
         try(SshClient client = SshClient.setUpDefaultClient()) {
             client.start();
-            try(ClientSession s = client.connect("user", "localhost", port).await().getSession()) {
+            try(ClientSession s = client.connect("user", "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
                 s.addPasswordIdentity("bad password");
                 assertTrue(s.auth().await().isFailure());
 
@@ -105,7 +106,7 @@ public class AuthenticationTest extends BaseTestSupport {
 
             client.start();
                 
-            try(ClientSession s = client.connect(null, "localhost", port).await().getSession()) {
+            try(ClientSession s = client.connect(null, "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
                 s.waitFor(ClientSession.CLOSED | ClientSession.WAIT_AUTH, 0);
         
                 assertFalse("Unexpected user1 password auth success", authPassword(s, "user1", "the-password").await().isSuccess());
@@ -129,7 +130,7 @@ public class AuthenticationTest extends BaseTestSupport {
             ));
             client.start();
             
-            try(ClientSession s = client.connect(null, "localhost", port).await().getSession()) {
+            try(ClientSession s = client.connect(null, "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
                 s.waitFor(ClientSession.CLOSED | ClientSession.WAIT_AUTH, 0);
         
                 assertFalse("Unexpected password auth sucess", authPassword(s, getCurrentTestName(), getCurrentTestName()).await().isSuccess());
@@ -150,7 +151,7 @@ public class AuthenticationTest extends BaseTestSupport {
             ));
             client.start();
             
-            try(ClientSession s = client.connect(null, "localhost", port).await().getSession()) {
+            try(ClientSession s = client.connect(null, "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
                 s.waitFor(ClientSession.CLOSED | ClientSession.WAIT_AUTH, 0);
         
                 KeyPair pair = Utils.createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
@@ -172,7 +173,7 @@ public class AuthenticationTest extends BaseTestSupport {
             ));
             client.start();
             
-            try(ClientSession s = client.connect(null, "localhost", port).await().getSession()) {
+            try(ClientSession s = client.connect(null, "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
                 s.waitFor(ClientSession.CLOSED | ClientSession.WAIT_AUTH, 0);
         
                 KeyPair pair = Utils.createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);

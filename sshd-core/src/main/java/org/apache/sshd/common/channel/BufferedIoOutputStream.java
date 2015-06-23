@@ -36,8 +36,8 @@ import org.apache.sshd.common.util.buffer.Buffer;
 public class BufferedIoOutputStream extends CloseableUtils.AbstractInnerCloseable implements IoOutputStream {
 
     private final IoOutputStream out;
-    private final Queue<ChannelAsyncOutputStream.IoWriteFutureImpl> writes = new ConcurrentLinkedQueue<ChannelAsyncOutputStream.IoWriteFutureImpl>();
-    private final AtomicReference<ChannelAsyncOutputStream.IoWriteFutureImpl> currentWrite = new AtomicReference<ChannelAsyncOutputStream.IoWriteFutureImpl>();
+    private final Queue<IoWriteFutureImpl> writes = new ConcurrentLinkedQueue<IoWriteFutureImpl>();
+    private final AtomicReference<IoWriteFutureImpl> currentWrite = new AtomicReference<IoWriteFutureImpl>();
 
     public BufferedIoOutputStream(IoOutputStream out) {
         this.out = out;
@@ -45,7 +45,7 @@ public class BufferedIoOutputStream extends CloseableUtils.AbstractInnerCloseabl
 
     @Override
     public IoWriteFuture write(Buffer buffer) {
-        final ChannelAsyncOutputStream.IoWriteFutureImpl future = new ChannelAsyncOutputStream.IoWriteFutureImpl(buffer);
+        final IoWriteFutureImpl future = new IoWriteFutureImpl(buffer);
         if (isClosing()) {
             future.setValue(new IOException("Closed"));
         } else {
@@ -56,7 +56,7 @@ public class BufferedIoOutputStream extends CloseableUtils.AbstractInnerCloseabl
     }
 
     private void startWriting() {
-        final ChannelAsyncOutputStream.IoWriteFutureImpl future = writes.peek();
+        final IoWriteFutureImpl future = writes.peek();
         if (future != null) {
             if (currentWrite.compareAndSet(null, future)) {
                 out.write(future.getBuffer()).addListener(new SshFutureListener<IoWriteFuture>() {

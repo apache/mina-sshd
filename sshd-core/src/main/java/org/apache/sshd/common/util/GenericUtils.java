@@ -361,6 +361,25 @@ public final class GenericUtils {
     }
     
     /**
+     * @param t The original {@link Throwable} - ignored if {@code null}
+     * @return If {@link Throwable#getCause()} is non-{@code null} then
+     * the cause, otherwise the original exception - {@code null} if
+     * the original exception was {@code null}
+     */
+    public static Throwable resolveExceptionCause(Throwable t) {
+        if (t == null) {
+            return t;
+        }
+        
+        Throwable c = t.getCause();
+        if (c == null) {
+            return t;
+        } else {
+            return c;
+        }
+    }
+
+    /**
      * Used to &quot;accumulate&quot; exceptions of the <U>same type</U>. If the
      * current exception is {@code null} then the new one becomes the current,
      * otherwise the new one is added as a <U>suppressed</U> exception to the

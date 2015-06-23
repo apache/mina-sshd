@@ -18,32 +18,20 @@
  */
 package org.apache.sshd.common.io;
 
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 public interface IoReadFuture extends SshFuture<IoReadFuture> {
-
     /**
      * Wait and verify that the read succeeded.
-     * @throws SshException if the action failed for any reason
+     * @throws IOException if the action failed for any reason
      */
-    void verify() throws SshException;
-
-
-    /**
-     * Wait and verify that the read succeeded within the specified timeout.
-     * @throws SshException if the action failed for any reason
-     */
-    void verify(long timeout, TimeUnit unit) throws SshException;
-
-    /**
-     * Wait and verify that the authentication succeeded within the specified timeout.
-     * @throws SshException if the action failed for any reason
-     */
-    void verify(long timeoutMillis) throws SshException;
+    void verify() throws IOException;
+    void verify(long timeout, TimeUnit unit) throws IOException;
+    void verify(long timeoutMillis) throws IOException;
 
     Buffer getBuffer();
 

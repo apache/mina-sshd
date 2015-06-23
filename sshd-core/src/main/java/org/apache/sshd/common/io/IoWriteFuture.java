@@ -18,17 +18,19 @@
  */
 package org.apache.sshd.common.io;
 
-import org.apache.sshd.common.SshException;
+import java.io.IOException;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.sshd.common.future.SshFuture;
 
 public interface IoWriteFuture extends SshFuture<IoWriteFuture> {
-
     /**
      * Wait and verify that the write succeeded.
-     *
-     * @throws SshException if the write failed for any reason
+     * @throws IOException if the write failed for any reason
      */
-    void verify() throws SshException;
+    void verify() throws IOException;
+    void verify(long count, TimeUnit unit) throws IOException;
+    void verify(long timeout) throws IOException;
 
     /**
      * Returns <tt>true</tt> if the write operation is finished successfully.

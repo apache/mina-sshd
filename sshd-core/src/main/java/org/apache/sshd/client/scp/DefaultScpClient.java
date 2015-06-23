@@ -20,7 +20,6 @@ package org.apache.sshd.client.scp;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.nio.file.FileSystem;
 import java.nio.file.Path;
@@ -82,11 +81,7 @@ public class DefaultScpClient extends AbstractScpClient {
         String cmd = createReceiveCommand(remote, Collections.<Option>emptyList());
         ChannelExec channel = clientSession.createExecChannel(cmd);
         try {
-            try {
-                channel.open().await();
-            } catch (InterruptedException e) {
-                throw (IOException) new InterruptedIOException("Interrupted while await channel open for download of " + remote).initCause(e);
-            }
+            channel.open().await(); // TODO use verify + configurable timeout
 
             // NOTE: we use a mock file system since we expect no invocations for it
             ScpHelper helper = new ScpHelper(channel.getInvertedOut(), channel.getInvertedIn(), new MockFileSystem(remote), listener);
@@ -101,11 +96,7 @@ public class DefaultScpClient extends AbstractScpClient {
         String cmd = createReceiveCommand(remote, options);
         ChannelExec channel = clientSession.createExecChannel(cmd);
         try {
-            try {
-                channel.open().await();
-            } catch (InterruptedException e) {
-                throw (IOException) new InterruptedIOException("Interrupted while await channel open for download of " + remote + " to " + local).initCause(e);
-            }
+            channel.open().await(); // TODO use verify + configurable timeout
 
             ScpHelper helper = new ScpHelper(channel.getInvertedOut(), channel.getInvertedIn(), fs, listener);
             helper.receive(local,
@@ -127,11 +118,7 @@ public class DefaultScpClient extends AbstractScpClient {
                           ;
         final String cmd = createSendCommand(remote, (time != null) ? EnumSet.of(Option.PreserveAttributes) : Collections.<Option>emptySet());
         ChannelExec channel = clientSession.createExecChannel(cmd);
-        try {
-            channel.open().await();
-        } catch (InterruptedException e) {
-            throw (IOException) new InterruptedIOException("Interrupted while await channel open for stream upload to " + remote).initCause(e);
-        }
+        channel.open().await();   // TODO use verify + configurable timeout
 
         try {
             ScpHelper helper = new ScpHelper(channel.getInvertedOut(), channel.getInvertedIn(), new MockFileSystem(remote), listener);
@@ -188,11 +175,7 @@ public class DefaultScpClient extends AbstractScpClient {
         
         String cmd = createSendCommand(remote, options);
         ChannelExec channel = clientSession.createExecChannel(cmd);
-        try {
-            channel.open().await();
-        } catch (InterruptedException e) {
-            throw (IOException) new InterruptedIOException("Interrupted while await channel open for upload to " + remote).initCause(e);
-        }
+        channel.open().await();    // TODO use verify + configurable timeout
 
         try {
             FactoryManager manager = clientSession.getFactoryManager();

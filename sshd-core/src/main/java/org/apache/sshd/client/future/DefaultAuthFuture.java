@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.client.future;
 
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.SshException;
@@ -37,31 +38,24 @@ public class DefaultAuthFuture extends DefaultSshFuture<AuthFuture> implements A
     }
 
     @Override   // TODO for JDK-8 make this a default method
-    public void verify() throws SshException {
+    public void verify() throws IOException {
         verify(Long.MAX_VALUE);
     }
 
     @Override   // TODO for JDK-8 make this a default method
-    public void verify(long timeout, TimeUnit unit) throws SshException {
+    public void verify(long timeout, TimeUnit unit) throws IOException {
         verify(unit.toMillis(timeout));        
     }
 
     @Override
-    public void verify(long timeoutMillis) throws SshException {
-        try {
-            if (!await(timeoutMillis)) {
-                throw new SshException("Authentication timeout afer " + timeoutMillis);
-            }
-        } catch (InterruptedException e) {
-            throw new SshException("Authentication interrupted", e);
-        }
-
-        if (!isSuccess()) {
-            throw new SshException("Authentication failed", getException());
+    public void verify(long timeoutMillis) throws IOException {
+        Boolean result = verifyResult(Boolean.class, timeoutMillis);
+        if (!result.booleanValue()) {
+            throw new SshException("Authentication failed");
         }
     }
 
-    @Override
+    @Override   // TODO for JDK-8 make this a default method
     public Throwable getException() {
         Object v = getValue();
         if (v instanceof Throwable) {
@@ -71,24 +65,24 @@ public class DefaultAuthFuture extends DefaultSshFuture<AuthFuture> implements A
         }
     }
 
-    @Override
+    @Override   // TODO for JDK-8 make this a default method
     public boolean isSuccess() {
         Object v = getValue();
         return (v instanceof Boolean) && ((Boolean) v).booleanValue();
     }
 
-    @Override
+    @Override   // TODO for JDK-8 make this a default method
     public boolean isFailure() {
         Object v = getValue();
         return (v instanceof Boolean) && (!((Boolean) v).booleanValue());
     }
 
-    @Override
+    @Override   // TODO for JDK-8 make this a default method
     public void setAuthed(boolean authed) {
         setValue(Boolean.valueOf(authed));
     }
 
-    @Override
+    @Override   // TODO for JDK-8 make this a default method
     public void setException(Throwable exception) {
         ValidateUtils.checkNotNull(exception, "No exception provided", GenericUtils.EMPTY_OBJECT_ARRAY);
         setValue(exception);

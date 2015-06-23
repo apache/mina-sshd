@@ -25,6 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Deque;
 import java.util.LinkedList;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ClientChannel;
@@ -98,7 +99,7 @@ public class WindowAdjustTest {
         try(SshClient client = SshClient.setUpDefaultClient()) {
             client.start();
     
-            try(final ClientSession session = client.connect("admin", "localhost", port).await().getSession()) {
+            try(final ClientSession session = client.connect("admin", "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
                 session.addPasswordIdentity("admin");
                 session.auth().verify();
         

@@ -287,12 +287,12 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     /**
      * Stop the SSH server.  This method will block until all resources are actually disposed.
      */
-    public void stop() throws InterruptedException {
+    public void stop() throws IOException {
         stop(false);
     }
 
-    public void stop(boolean immediately) throws InterruptedException {
-        close(immediately).await();
+    public void stop(boolean immediately) throws IOException {
+        close(immediately).await(); // TODO use verify + configurable timeout
     }
 
     public void open() throws IOException {

@@ -134,22 +134,18 @@ public class DefaultSftpClient extends AbstractSftpClient {
         this.clientSession = clientSession;
         this.channel = clientSession.createSubsystemChannel(SftpConstants.SFTP_SUBSYSTEM_NAME);
         this.messages = new HashMap<>();
-        try {
-            this.channel.setOut(new OutputStream() {
-                @Override
-                public void write(int b) throws IOException {
-                    write(new byte[] { (byte) b }, 0, 1);
-                }
-                @Override
-                public void write(byte[] b, int off, int len) throws IOException {
-                    data(b, off, len);
-                }
-            });
-            this.channel.setErr(new ByteArrayOutputStream());
-            this.channel.open().await();
-        } catch (InterruptedException e) {
-            throw (IOException) new InterruptedIOException("Interrupted while await channel open").initCause(e);
-        }
+        this.channel.setOut(new OutputStream() {
+            @Override
+            public void write(int b) throws IOException {
+                write(new byte[] { (byte) b }, 0, 1);
+            }
+            @Override
+            public void write(byte[] b, int off, int len) throws IOException {
+                data(b, off, len);
+            }
+        });
+        this.channel.setErr(new ByteArrayOutputStream(Byte.MAX_VALUE));
+        this.channel.open().await();       // TODO use verify + configurable timeout
         this.channel.onClose(new Runnable() {
             @SuppressWarnings("synthetic-access")
             @Override

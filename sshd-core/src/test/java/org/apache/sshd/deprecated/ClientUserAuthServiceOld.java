@@ -120,9 +120,9 @@ public class ClientUserAuthServiceOld extends CloseableUtils.AbstractCloseable i
         while (!this.authFuture.isDone()) {
             log.debug("waiting to send authentication");
             try {
-                this.authFuture.await();
-            } catch (InterruptedException e) {
-                log.debug("Unexpected interrupt", e);
+                this.authFuture.await();    // TODO use verify + configurable timeout
+            } catch (IOException e) {
+                log.debug("Unexpected exception", e);
                 throw new RuntimeException(e);
             }
         }
@@ -130,8 +130,10 @@ public class ClientUserAuthServiceOld extends CloseableUtils.AbstractCloseable i
             log.debug("already authenticated");
             throw new IllegalStateException("Already authenticated");
         }
-        if (this.authFuture.getException() != null) {
-            log.debug("probably closed", this.authFuture.getException());
+        
+        Throwable err = this.authFuture.getException();
+        if (err != null) {
+            log.debug("probably closed", err);
             return false;
         }
         if (!this.authFuture.isFailure()) {

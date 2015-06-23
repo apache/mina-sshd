@@ -22,6 +22,7 @@ import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.client.SshClient;
@@ -113,7 +114,7 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
         try(SshClient client = SshClient.setUpDefaultClient()) {
             client.start();
             
-            try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+            try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
                 session.addPublicKeyIdentity(pairRsaBad);
                 session.addPublicKeyIdentity(pairRsa);
                 assertTrue(session.auth().await().isSuccess());
@@ -148,7 +149,7 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
         try(SshClient client = SshClient.setUpDefaultClient()) {
             client.start();
             
-            try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+            try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
                 session.addPublicKeyIdentity(pairRsaBad);
                 session.addPublicKeyIdentity(pairRsa);
                 assertTrue("Failed to authenticate", session.auth().await().isSuccess());

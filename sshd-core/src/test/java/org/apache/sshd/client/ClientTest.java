@@ -190,7 +190,7 @@ public class ClientTest extends BaseTestSupport {
         FactoryManagerUtils.updateProperty(client, FactoryManager.WINDOW_SIZE, 1024);
         client.start();
 
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
 
@@ -282,7 +282,7 @@ public class ClientTest extends BaseTestSupport {
     public void testCommandDeadlock() throws Exception {
         client.start();
 
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
             
@@ -314,7 +314,7 @@ public class ClientTest extends BaseTestSupport {
     public void testClient() throws Exception {
         client.start();
 
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
             
@@ -363,7 +363,7 @@ public class ClientTest extends BaseTestSupport {
     public void testClientInverted() throws Exception {
         client.start();
         
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
             
@@ -407,7 +407,7 @@ public class ClientTest extends BaseTestSupport {
     public void testClientWithCustomChannel() throws Exception {
         client.start();
         
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
     
@@ -431,7 +431,7 @@ public class ClientTest extends BaseTestSupport {
     public void testClientClosingStream() throws Exception {
         client.start();
         
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
     
@@ -480,7 +480,7 @@ public class ClientTest extends BaseTestSupport {
 //        FactoryManagerUtils.updateProperty(sshd, SshServer.MAX_PACKET_SIZE, 0x1000);
         client.start();
         
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
 
@@ -535,7 +535,7 @@ public class ClientTest extends BaseTestSupport {
     public void testOpenChannelOnClosedSession() throws Exception {
         client.start();
         
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
             
@@ -561,7 +561,7 @@ public class ClientTest extends BaseTestSupport {
         authLatch = new CountDownLatch(1);
         client.start();
         
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
 
             AuthFuture authFuture = session.auth();
@@ -580,7 +580,7 @@ public class ClientTest extends BaseTestSupport {
     public void testCloseCleanBeforeChannelOpened() throws Exception {
         client.start();
         
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
 
@@ -610,7 +610,7 @@ public class ClientTest extends BaseTestSupport {
         channelLatch = new CountDownLatch(1);
         client.start();
 
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
 
@@ -640,7 +640,7 @@ public class ClientTest extends BaseTestSupport {
     public void testPublicKeyAuth() throws Exception {
         client.start();
         
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             KeyPair pair = Utils.createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
             session.addPublicKeyIdentity(pair);
             session.auth().verify(5L, TimeUnit.SECONDS);
@@ -654,7 +654,7 @@ public class ClientTest extends BaseTestSupport {
         client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(UserAuthPublicKey.UserAuthPublicKeyFactory.INSTANCE));
         client.start();
         
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPublicKeyIdentity(Utils.createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA));
             session.auth().verify(5L, TimeUnit.SECONDS);
         } finally {
@@ -677,7 +677,7 @@ public class ClientTest extends BaseTestSupport {
         SimpleGeneratorHostKeyProvider provider = new SimpleGeneratorHostKeyProvider();
         provider.setAlgorithm("RSA");
 
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPublicKeyIdentity(provider.loadKey(KeyPairProvider.SSH_RSA));
             session.addPublicKeyIdentity(pair);
             session.auth().verify(5L, TimeUnit.SECONDS);
@@ -691,7 +691,7 @@ public class ClientTest extends BaseTestSupport {
         client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthPassword.UserAuthPasswordFactory()));
         client.start();
         
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
         } finally {
@@ -704,7 +704,7 @@ public class ClientTest extends BaseTestSupport {
         client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthPassword.UserAuthPasswordFactory()));
         client.start();
         
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getClass().getSimpleName());
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
@@ -718,7 +718,7 @@ public class ClientTest extends BaseTestSupport {
         client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(UserAuthKeyboardInteractive.UserAuthKeyboardInteractiveFactory.INSTANCE));
         client.start();
         
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
         } finally {
@@ -731,7 +731,7 @@ public class ClientTest extends BaseTestSupport {
         client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(UserAuthKeyboardInteractive.UserAuthKeyboardInteractiveFactory.INSTANCE));
         client.start();
         
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getClass().getSimpleName());
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
@@ -760,7 +760,7 @@ public class ClientTest extends BaseTestSupport {
         });
         client.start();
         
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             AuthFuture future = session.auth();
             future.await();
             assertTrue("Unexpected authentication success", future.isFailure());
@@ -780,7 +780,7 @@ public class ClientTest extends BaseTestSupport {
                         .<NamedFactory<UserAuth>> asList(UserAuthKeyboardInteractive.UserAuthKeyboardInteractiveFactory.INSTANCE));
         client.start();
 
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.setUserInteraction(new UserInteraction() {
                     @Override
                     public void welcome(String banner) {
@@ -813,7 +813,7 @@ public class ClientTest extends BaseTestSupport {
                         .<NamedFactory<UserAuth>> asList(new UserAuthKeyboardInteractive.UserAuthKeyboardInteractiveFactory()));
         client.start();
         
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.setUserInteraction(new UserInteraction() {
                 @Override
                 public void welcome(String banner) {
@@ -842,7 +842,7 @@ public class ClientTest extends BaseTestSupport {
         try {
             client.start();
             
-            try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+            try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
                 session.addPasswordIdentity(getCurrentTestName());
                 session.auth().verify(5L, TimeUnit.SECONDS);
                 
@@ -896,7 +896,7 @@ public class ClientTest extends BaseTestSupport {
         );
         client.start();
         
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.waitFor(ClientSession.WAIT_AUTH, TimeUnit.SECONDS.toMillis(10L));
             assertTrue(ok.get());
         } finally {
@@ -910,7 +910,7 @@ public class ClientTest extends BaseTestSupport {
         client.getCipherFactories().add(BuiltinCiphers.none);
         client.start();
         
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
             assertTrue("Failed to switch to NONE cipher on time", session.switchToNoneCipher().await(5L, TimeUnit.SECONDS));

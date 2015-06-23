@@ -208,8 +208,8 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
     public void stop() {
         try {
-            close(true).await();
-        } catch (InterruptedException e) {
+            close(true).await();    // TODO use verify + configurable timeout
+        } catch (IOException e) {
             log.debug("Exception caught while stopping client", e);
         }
     }

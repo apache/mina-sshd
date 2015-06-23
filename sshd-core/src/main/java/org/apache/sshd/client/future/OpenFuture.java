@@ -18,9 +18,9 @@
  */
 package org.apache.sshd.client.future;
 
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.SshFuture;
 
 /**
@@ -29,24 +29,13 @@ import org.apache.sshd.common.future.SshFuture;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface OpenFuture extends SshFuture<OpenFuture> {
-
     /**
      * Wait and verify that the channel has been successfully opened.
-     * @throws SshException if the action failed for any reason
+     * @throws IOException if the action failed for any reason
      */
-    void verify() throws SshException;
-
-    /**
-     * Wait and verify that the channel has been successfully opened within the specified timeout.
-     * @throws SshException if the action failed for any reason
-     */
-    void verify(long timeout, TimeUnit unit) throws SshException;
-
-    /**
-     * Wait and verify that the authentication succeeded within the specified timeout.
-     * @throws SshException if the action failed for any reason
-     */
-    void verify(long timeoutMillis) throws SshException;
+    void verify() throws IOException;
+    void verify(long timeout, TimeUnit unit) throws IOException;
+    void verify(long timeoutMillis) throws IOException;
 
     /**
      * Returns the cause of the connection failure.

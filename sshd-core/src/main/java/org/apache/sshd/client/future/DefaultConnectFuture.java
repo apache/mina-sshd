@@ -18,9 +18,13 @@
  */
 package org.apache.sshd.client.future;
 
+import java.io.IOException;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.future.DefaultSshFuture;
+import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
@@ -30,12 +34,28 @@ import org.apache.sshd.common.util.ValidateUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class DefaultConnectFuture extends DefaultSshFuture<ConnectFuture> implements ConnectFuture {
-
     public DefaultConnectFuture(Object lock) {
         super(lock);
     }
 
-    @Override
+    @Override   // TODO in JDK-8 make this a default method
+    public ConnectFuture verify(long count, TimeUnit unit) throws IOException {
+        return verify(unit.toMillis(count));
+    }
+    
+    @Override   // TODO in JDK-8 make this a default method
+    public ConnectFuture verify(long timeout) throws IOException {
+        long startTime = System.nanoTime();
+        ClientSession session = verifyResult(ClientSession.class, timeout);
+        long endTime = System.nanoTime();
+        if (log.isDebugEnabled()) {
+            IoSession ioSession = session.getIoSession();
+            log.debug("Connected to " + ioSession.getRemoteAddress() + " after " + (endTime - startTime) + " nanos");
+        }
+        return this;
+    }
+
+    @Override   // TODO in JDK-8 make this a default method
     public ClientSession getSession() {
         Object v = getValue();
         if (v instanceof RuntimeException) {
@@ -51,7 +71,7 @@ public class DefaultConnectFuture extends DefaultSshFuture<ConnectFuture> implem
         }
     }
 
-    @Override
+    @Override   // TODO in JDK-8 make this a default method
     public Throwable getException() {
         Object v = getValue();
         if (v instanceof Throwable) {
@@ -61,21 +81,20 @@ public class DefaultConnectFuture extends DefaultSshFuture<ConnectFuture> implem
         }
     }
 
-    @Override
+    @Override   // TODO in JDK-8 make this a default method
     public boolean isConnected() {
         return getValue() instanceof ClientSession;
     }
 
-    @Override
+    @Override   // TODO in JDK-8 make this a default method
     public void setSession(ClientSession session) {
         ValidateUtils.checkNotNull(session, "No client session provided", GenericUtils.EMPTY_OBJECT_ARRAY);
         setValue(session);
     }
 
-    @Override
+    @Override   // TODO in JDK-8 make this a default method
     public void setException(Throwable exception) {
         ValidateUtils.checkNotNull(exception, "No exception provided", GenericUtils.EMPTY_OBJECT_ARRAY);
         setValue(exception);
     }
-
 }

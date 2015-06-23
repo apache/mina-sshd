@@ -32,9 +32,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.FactoryManagerUtils;
-import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.CloseFuture;
-import org.apache.sshd.common.future.DefaultSshFuture;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoService;
 import org.apache.sshd.common.io.IoSession;
@@ -59,8 +57,8 @@ public class Nio2Session extends CloseableUtils.AbstractCloseable implements IoS
     private final SocketAddress localAddress;
     private final SocketAddress remoteAddress;
     private final FactoryManager manager;
-    private final Queue<DefaultIoWriteFuture> writes = new LinkedTransferQueue<DefaultIoWriteFuture>();
-    private final AtomicReference<DefaultIoWriteFuture> currentWrite = new AtomicReference<DefaultIoWriteFuture>();
+    private final Queue<Nio2DefaultIoWriteFuture> writes = new LinkedTransferQueue<Nio2DefaultIoWriteFuture>();
+    private final AtomicReference<Nio2DefaultIoWriteFuture> currentWrite = new AtomicReference<Nio2DefaultIoWriteFuture>();
 
     public Nio2Session(Nio2Service service, FactoryManager manager, IoHandler handler, AsynchronousSocketChannel socket) throws IOException {
         this.service = service;
@@ -117,7 +115,7 @@ public class Nio2Session extends CloseableUtils.AbstractCloseable implements IoS
         }
 
         ByteBuffer buf = ByteBuffer.wrap(buffer.array(), buffer.rpos(), buffer.available());
-        final DefaultIoWriteFuture future = new DefaultIoWriteFuture(null, buf);
+        final Nio2DefaultIoWriteFuture future = new Nio2DefaultIoWriteFuture(null, buf);
         if (isClosing()) {
             Throwable exc = new ClosedChannelException();
             future.setException(exc);
@@ -153,7 +151,7 @@ public class Nio2Session extends CloseableUtils.AbstractCloseable implements IoS
     @Override
     protected void doCloseImmediately() {
         for (;;) {
-            DefaultIoWriteFuture future = writes.poll();
+            Nio2DefaultIoWriteFuture future = writes.poll();
             if (future != null) {
                 future.setException(new ClosedChannelException());
             } else {
@@ -250,16 +248,17 @@ public class Nio2Session extends CloseableUtils.AbstractCloseable implements IoS
 
     @SuppressWarnings("synthetic-access")
     private void startWriting() {
-        final DefaultIoWriteFuture future = writes.peek();
+        final Nio2DefaultIoWriteFuture future = writes.peek();
         if (future != null) {
             if (currentWrite.compareAndSet(null, future)) {
                 try {
-                    socket.write(future.buffer, null, new Nio2CompletionHandler<Integer, Object>() {
+                    final ByteBuffer buffer = future.getBuffer();
+                    socket.write(buffer, null, new Nio2CompletionHandler<Integer, Object>() {
                         @Override
                         protected void onCompleted(Integer result, Object attachment) {
-                            if (future.buffer.hasRemaining()) {
+                            if (buffer.hasRemaining()) {
                                 try {
-                                    socket.write(future.buffer, null, this);
+                                    socket.write(buffer, null, this);
                                 } catch (Throwable t) {
                                     log.debug("Exception caught while writing", t);
                                     future.setWritten();
@@ -290,45 +289,6 @@ public class Nio2Session extends CloseableUtils.AbstractCloseable implements IoS
                     throw e;
                 }
             }
-        }
-    }
-
-    static class DefaultIoWriteFuture extends DefaultSshFuture<IoWriteFuture> implements IoWriteFuture {
-        private final ByteBuffer buffer;
-        DefaultIoWriteFuture(Object lock, ByteBuffer buffer) {
-            super(lock);
-            this.buffer = buffer;
-        }
-        @Override
-        public void verify() throws SshException {
-            try {
-                await();
-            }
-            catch (InterruptedException e) {
-                throw new SshException("Interrupted", e);
-            }
-            if (!isWritten()) {
-                throw new SshException("Write failed", getException());
-            }
-        }
-
-        @Override
-        public boolean isWritten() {
-            return getValue() instanceof Boolean;
-        }
-        public void setWritten() {
-            setValue(Boolean.TRUE);
-        }
-        @Override
-        public Throwable getException() {
-            Object v = getValue();
-            return v instanceof Throwable ? (Throwable) v : null;
-        }
-        public void setException(Throwable exception) {
-            if (exception == null) {
-                throw new IllegalArgumentException("exception");
-            }
-            setValue(exception);
         }
     }
 

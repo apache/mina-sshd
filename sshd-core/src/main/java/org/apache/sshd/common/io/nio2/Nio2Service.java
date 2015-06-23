@@ -56,8 +56,8 @@ public abstract class Nio2Service extends CloseableUtils.AbstractInnerCloseable 
 
     public void dispose() {
         try {
-            close(true).await();
-        } catch (InterruptedException e) {
+            close(true).await();    // TODO use verify+(configurable) timeout
+        } catch (IOException e) {
             log.debug("Exception caught while closing", e);
         }
     }

@@ -135,29 +135,26 @@ public class ChannelAsyncInputStream extends CloseableUtils.AbstractCloseable im
         }
 
         @Override   // TODO for JDK-8 make this a default method
-        public void verify() throws SshException {
+        public void verify() throws IOException {
             verify(Long.MAX_VALUE);
         }
 
         @Override   // TODO for JDK-8 make this a default method
-        public void verify(long timeout, TimeUnit unit) throws SshException {
+        public void verify(long timeout, TimeUnit unit) throws IOException {
             verify(unit.toMillis(timeout));        
         }
 
-        @Override
-        public void verify(long timeoutMillis) throws SshException {
-            try {
-                if (!await(timeoutMillis)) {
-                    throw new SshException("Timed out after " + timeoutMillis);
-                }
-            } catch (InterruptedException e) {
-                throw new SshException("Interrupted", e);
-            }
-            if (getValue() instanceof Throwable) {
-                throw new SshException("Write failed", getException());
+        @Override   // TODO for JDK-8 make this a default method
+        public void verify(long timeoutMillis) throws IOException {
+            long startTime = System.nanoTime();
+            Number result = verifyResult(Number.class, timeoutMillis);
+            long endTime = System.nanoTime();
+            if (log.isDebugEnabled()) {
+                log.debug("Read " + result + " bytes after " + (endTime - startTime) + " nanos");
             }
         }
-        @Override
+
+        @Override   // TODO for JDK-8 make this a default method
         public int getRead() {
             Object v = getValue();
             if (v instanceof RuntimeException) {
@@ -166,14 +163,14 @@ public class ChannelAsyncInputStream extends CloseableUtils.AbstractCloseable im
                 throw (Error) v;
             } else if (v instanceof Throwable) {
                 throw (RuntimeSshException) new RuntimeSshException("Error reading from channel.").initCause((Throwable) v);
-            } else if (v instanceof Integer) {
-                return ((Integer) v).intValue();
+            } else if (v instanceof Number) {
+                return ((Number) v).intValue();
             } else {
                 throw new IllegalStateException("Unknown read value type: " + ((v == null) ? "null" : v.getClass().getName()));
             }
         }
 
-        @Override
+        @Override   // TODO for JDK-8 make this a default method
         public Throwable getException() {
             Object v = getValue();
             if (v instanceof Throwable) {

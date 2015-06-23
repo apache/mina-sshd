@@ -18,6 +18,9 @@
  */
 package org.apache.sshd.client.future;
 
+import java.io.IOException;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.future.SshFuture;
 
@@ -30,6 +33,10 @@ public interface ConnectFuture extends SshFuture<ConnectFuture> {
 
     ClientSession getSession();
 
+    // wait and verify that connection succeeded within specified timeout
+    ConnectFuture verify(long count, TimeUnit unit) throws IOException;
+    ConnectFuture verify(long timeout) throws IOException;
+    
     /**
      * Returns the cause of the connection failure.
      *

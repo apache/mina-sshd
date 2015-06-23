@@ -1513,68 +1513,6 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
         return idleTimeoutMs;
     }
 
-    /**
-     * Future holding a packet pending key exchange termination.
-     */
-    protected static class PendingWriteFuture extends DefaultSshFuture<IoWriteFuture>
-            implements IoWriteFuture, SshFutureListener<IoWriteFuture> {
-
-        private final Buffer buffer;
-
-        protected PendingWriteFuture(Buffer buffer) {
-            super(null);
-            this.buffer = buffer;
-        }
-
-        public Buffer getBuffer() {
-            return buffer;
-        }
-
-        @Override
-        public void verify() throws SshException {
-            try {
-                await();
-            }
-            catch (InterruptedException e) {
-                throw new SshException("Interrupted", e);
-            }
-            if (!isWritten()) {
-                throw new SshException("Write failed", getException());
-            }
-        }
-
-        @Override
-        public boolean isWritten() {
-            return getValue() instanceof Boolean;
-        }
-
-        @Override
-        public Throwable getException() {
-            Object v = getValue();
-            return v instanceof Throwable ? (Throwable) v : null;
-        }
-
-        public void setWritten() {
-            setValue(Boolean.TRUE);
-        }
-
-        public void setException(Throwable cause) {
-            if (cause == null) {
-                throw new IllegalArgumentException("No cause specified");
-            }
-            setValue(cause);
-        }
-
-        @Override
-        public void operationComplete(IoWriteFuture future) {
-            if (future.isWritten()) {
-                setWritten();
-            } else {
-                setException(future.getException());
-            }
-        }
-    }
-
     @Override
     public String toString() {
         return getClass().getSimpleName() + "[" + getUsername() + "@" + getIoSession().getRemoteAddress() + "]";

@@ -158,7 +158,7 @@ public class WindowTest extends BaseTestSupport {
         FactoryManagerUtils.updateProperty(client, FactoryManager.WINDOW_SIZE, 1024);
         client.start();
         
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
 
@@ -206,7 +206,7 @@ public class WindowTest extends BaseTestSupport {
 
         client.start();
         
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
             
@@ -260,7 +260,7 @@ public class WindowTest extends BaseTestSupport {
 
         client.start();
         
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
 

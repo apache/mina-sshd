@@ -16,33 +16,34 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.future;
+package org.apache.sshd.common.io.nio2;
+
+import java.nio.ByteBuffer;
+
+import org.apache.sshd.common.io.AbstractIoWriteFuture;
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 
 /**
- * A default implementation of {@link CloseFuture}.
- *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class DefaultCloseFuture extends DefaultSshFuture<CloseFuture> implements CloseFuture {
+public class Nio2DefaultIoWriteFuture extends AbstractIoWriteFuture {
+    private final ByteBuffer buffer;
 
-    /**
-     * Create a new instance
-     */
-    public DefaultCloseFuture(Object lock) {
+    public Nio2DefaultIoWriteFuture(Object lock, ByteBuffer buffer) {
         super(lock);
+        this.buffer = buffer;
     }
 
-    @Override   // TODO for JDK-8 make this a default method
-    public boolean isClosed() {
-        if (isDone()) {
-            return ((Boolean) getValue()).booleanValue();
-        } else {
-            return false;
-        }
+    public ByteBuffer getBuffer() {
+        return buffer;
     }
 
-    @Override   // TODO for JDK-8 make this a default method
-    public void setClosed() {
+    public void setWritten() {
         setValue(Boolean.TRUE);
+    }
+
+    public void setException(Throwable exception) {
+        setValue(ValidateUtils.checkNotNull(exception, "No exception specified", GenericUtils.EMPTY_OBJECT_ARRAY));
     }
 }

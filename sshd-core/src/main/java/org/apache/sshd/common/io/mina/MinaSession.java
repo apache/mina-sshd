@@ -25,13 +25,14 @@ import org.apache.mina.core.future.IoFuture;
 import org.apache.mina.core.future.IoFutureListener;
 import org.apache.mina.core.future.WriteFuture;
 import org.apache.sshd.common.Closeable;
-import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.DefaultCloseFuture;
-import org.apache.sshd.common.future.DefaultSshFuture;
+import org.apache.sshd.common.io.AbstractIoWriteFuture;
 import org.apache.sshd.common.io.IoService;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.util.CloseableUtils;
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
@@ -115,46 +116,6 @@ public class MinaSession extends CloseableUtils.AbstractInnerCloseable implement
 
     @Override
     public IoWriteFuture write(Buffer buffer) {
-        class Future extends DefaultSshFuture<IoWriteFuture> implements IoWriteFuture {
-            Future(Object lock) {
-                super(lock);
-            }
-
-            @Override
-            public void verify() throws SshException {
-                try {
-                    await();
-                }
-                catch (InterruptedException e) {
-                    throw new SshException("Interrupted", e);
-                }
-                if (!isWritten()) {
-                    throw new SshException("Write failed", getException());
-                }
-            }
-
-            @Override
-            public boolean isWritten() {
-                return getValue() instanceof Boolean;
-            }
-
-            public void setWritten() {
-                setValue(Boolean.TRUE);
-            }
-
-            @Override
-            public Throwable getException() {
-                Object v = getValue();
-                return v instanceof Throwable ? (Throwable) v : null;
-            }
-
-            public void setException(Throwable exception) {
-                if (exception == null) {
-                    throw new IllegalArgumentException("exception");
-                }
-                setValue(exception);
-            }
-        }
         final Future future = new Future(null);
         session.write(MinaSupport.asIoBuffer(buffer)).addListener(new IoFutureListener<WriteFuture>() {
             @Override
@@ -167,6 +128,20 @@ public class MinaSession extends CloseableUtils.AbstractInnerCloseable implement
             }
         });
         return future;
+    }
+
+    private static class Future extends AbstractIoWriteFuture {
+        Future(Object lock) {
+            super(lock);
+        }
+
+        public void setWritten() {
+            setValue(Boolean.TRUE);
+        }
+
+        public void setException(Throwable exception) {
+            setValue(ValidateUtils.checkNotNull(exception, "No exception specified", GenericUtils.EMPTY_OBJECT_ARRAY));
+        }
     }
 
     @Override

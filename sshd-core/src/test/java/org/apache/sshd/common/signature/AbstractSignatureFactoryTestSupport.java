@@ -123,7 +123,7 @@ public abstract class AbstractSignatureFactoryTestSupport extends BaseTestSuppor
         client = SshClient.setUpDefaultClient();
         client.setSignatureFactories(signatures);
         client.start();
-        try(ClientSession s = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+        try(ClientSession s = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             s.addPasswordIdentity(getCurrentTestName());
             // allow a rather long timeout since generating some keys may take some time
             s.auth().verify(30L, TimeUnit.SECONDS);

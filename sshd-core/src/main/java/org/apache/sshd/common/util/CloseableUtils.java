@@ -19,7 +19,6 @@
 package org.apache.sshd.common.util;
 
 import java.io.IOException;
-import java.io.InterruptedIOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -56,11 +55,7 @@ public final class CloseableUtils {
 
         if ((!closeable.isClosed()) && (!closeable.isClosing())) {
             CloseFuture future=closeable.close(true);
-            try {
-                future.await();
-            } catch(InterruptedException e) {
-                throw new InterruptedIOException(e.getClass().getSimpleName() + " while await future closure: " + e.getMessage());
-            }
+            future.await();  // TODO use verify + configurable timeout
         }
     }
 

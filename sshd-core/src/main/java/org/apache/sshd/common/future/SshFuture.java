@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.common.future;
 
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -33,22 +34,27 @@ public interface SshFuture<T extends SshFuture> {
      * Wait for the asynchronous operation to complete.
      * The attached listeners will be notified when the operation is
      * completed.
+     * @return The {@code this} instance
+     * @throws IOException if failed - specifically {@link java.io.InterruptedIOException}
+     * if waiting was interrupted
      */
-    T await() throws InterruptedException;
+    T await() throws IOException;
 
     /**
      * Wait for the asynchronous operation to complete with the specified timeout.
-     *
-     * @return <tt>true</tt> if the operation is completed.
+     * @return {@code true} if the operation is completed.
+     * @throws IOException if failed - specifically {@link java.io.InterruptedIOException}
+     * if waiting was interrupted
      */
-    boolean await(long timeout, TimeUnit unit) throws InterruptedException;
+    boolean await(long timeout, TimeUnit unit) throws IOException;
 
     /**
      * Wait for the asynchronous operation to complete with the specified timeout.
-     *
-     * @return <tt>true</tt> if the operation is completed.
+     * @return {@code true} if the operation is completed.
+     * @throws IOException if failed - specifically {@link java.io.InterruptedIOException}
+     * if waiting was interrupted
      */
-    boolean await(long timeoutMillis) throws InterruptedException;
+    boolean await(long timeoutMillis) throws IOException;
 
     /**
      * Wait for the asynchronous operation to complete uninterruptibly.
@@ -63,7 +69,7 @@ public interface SshFuture<T extends SshFuture> {
      * Wait for the asynchronous operation to complete with the specified timeout
      * uninterruptibly.
      *
-     * @return <tt>true</tt> if the operation is completed.
+     * @return {@code true} if the operation is completed.
      */
     boolean awaitUninterruptibly(long timeout, TimeUnit unit);
 
@@ -71,7 +77,7 @@ public interface SshFuture<T extends SshFuture> {
      * Wait for the asynchronous operation to complete with the specified timeout
      * uninterruptibly.
      *
-     * @return <tt>true</tt> if the operation is finished.
+     * @return {@code true} if the operation is finished.
      */
     boolean awaitUninterruptibly(long timeoutMillis);
 

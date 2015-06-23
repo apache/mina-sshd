@@ -117,7 +117,7 @@ public class ServerTest extends BaseTestSupport {
         ));
         client.start();
         
-        try(ClientSession s = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+        try(ClientSession s = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             int nbTrials = 0;
             int res = 0;
             while ((res & ClientSession.CLOSED) == 0) {
@@ -146,7 +146,7 @@ public class ServerTest extends BaseTestSupport {
                 new ClientConnectionService.Factory()
         ));
         client.start();
-        try(ClientSession s = client.connect(getCurrentTestName(), "localhost", port).await().getSession()) {
+        try(ClientSession s = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             int nbTrials = 0;
             AuthFuture authFuture;
             do {
@@ -173,7 +173,7 @@ public class ServerTest extends BaseTestSupport {
 
         client = SshClient.setUpDefaultClient();
         client.start();
-        try(ClientSession s = client.connect("test", "localhost", port).await().getSession()) {
+        try(ClientSession s = client.connect("test", "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             int res = s.waitFor(ClientSession.CLOSED, 2 * AUTH_TIMEOUT);
             assertEquals("Session should be closed", ClientSession.CLOSED | ClientSession.WAIT_AUTH, res);
         } finally {
@@ -206,7 +206,7 @@ public class ServerTest extends BaseTestSupport {
 
         client = SshClient.setUpDefaultClient();
         client.start();
-        try(ClientSession s = client.connect("test", "localhost", port).await().getSession()) {
+        try(ClientSession s = client.connect("test", "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             s.addPasswordIdentity("test");
             s.auth().verify(5L, TimeUnit.SECONDS);
 
@@ -263,7 +263,7 @@ public class ServerTest extends BaseTestSupport {
         client = SshClient.setUpDefaultClient();
         client.start();
 
-        try(ClientSession s = client.connect("test", "localhost", port).await().getSession()) {
+        try(ClientSession s = client.connect("test", "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             s.addPasswordIdentity("test");
             s.auth().verify(5L, TimeUnit.SECONDS);
 
@@ -314,7 +314,7 @@ public class ServerTest extends BaseTestSupport {
             }
         });
         client.start();
-        try(ClientSession s = client.connect("test", "localhost", port).await().getSession()) {
+        try(ClientSession s = client.connect("test", "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             s.close(false);
         } finally {
             client.stop();
@@ -365,7 +365,7 @@ public class ServerTest extends BaseTestSupport {
 	            }
 	        });
 
-        try(ClientSession s = client.connect("test", "localhost", port).await().getSession()) {
+        try(ClientSession s = client.connect("test", "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             s.addPasswordIdentity("test");
             s.auth().verify(5L, TimeUnit.SECONDS);
             assertEquals("Mismatched client events count", 1, clientEventCount.get());
@@ -423,7 +423,7 @@ public class ServerTest extends BaseTestSupport {
             }
             
             try {
-                try(ClientSession s = client.connect("test", "localhost", port).await().getSession()) {
+                try(ClientSession s = client.connect("test", "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
                     s.addPasswordIdentity("test");
                     s.auth().verify(5L, TimeUnit.SECONDS);
                 }
