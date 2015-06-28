@@ -264,7 +264,9 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     public String getNegotiatedKexParameter(KexProposalOption paramType) {
     	if (paramType == null) {
     		return null;
-    	} else {
+    	}
+
+    	synchronized(negotiationResult) {
     		return negotiationResult.get(paramType);
     	}
     }
@@ -1206,8 +1208,8 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     /**
      * Compute the negotiated proposals by merging the client and
      * server proposal. The negotiated proposal will also be stored in
-     * the {@link #negotiated} property.
-     * @return The negotiated options
+     * the {@link #negotiationResult} property.
+     * @return The negotiated options {@link Map}
      */
     protected Map<KexProposalOption,String> negotiate() {
         Map<KexProposalOption,String> guess = new EnumMap<KexProposalOption, String>(KexProposalOption.class);
@@ -1246,11 +1248,15 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
             } else {
             	if (log.isTraceEnabled()) {
             		log.trace("Kex: negotiate(" +  paramType.getDescription() + ") guess=" + value
-            				+ " (client: " + clientParamValue + " / server: " + serverParamValue);
+            				+ " (client: " + clientParamValue + " / server: " + serverParamValue + ")");
             	}
             }
         }
         
+        return setNegotiationResult(guess);
+    }
+
+    protected Map<KexProposalOption,String> setNegotiationResult(Map<KexProposalOption,String> guess) {
         synchronized(negotiationResult) {
             if (!negotiationResult.isEmpty()) {
                 negotiationResult.clear(); // debug breakpoint

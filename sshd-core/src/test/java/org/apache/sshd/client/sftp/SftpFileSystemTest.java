@@ -105,7 +105,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
     @Test
     public void testFileSystem() throws IOException {
         Path targetPath = detectTargetFolder().toPath();
-        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
+        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         Utils.deleteRecursive(lclSftp);
 
         try(FileSystem fs = FileSystems.newFileSystem(
@@ -224,7 +224,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
     @Test
     public void testAttributes() throws IOException {
         Path targetPath = detectTargetFolder().toPath();
-        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
+        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         Utils.deleteRecursive(lclSftp);
 
         try(FileSystem fs = FileSystems.newFileSystem(

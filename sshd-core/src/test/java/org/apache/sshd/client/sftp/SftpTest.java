@@ -140,7 +140,7 @@ public class SftpTest extends BaseTestSupport {
 
                 Path targetPath = detectTargetFolder().toPath();
                 Path parentPath = targetPath.getParent();
-                Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
+                Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
                 Path clientFolder = lclSftp.resolve("client");
                 Path testFile = clientFolder.resolve(getCurrentTestName() + ".txt");
                 String file = Utils.resolveRelativeRemotePath(parentPath, testFile);
@@ -236,7 +236,7 @@ public class SftpTest extends BaseTestSupport {
                 session.auth().verify(5L, TimeUnit.SECONDS);
 
                 Path targetPath = detectTargetFolder().toPath();
-                Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
+                Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
                 Utils.deleteRecursive(lclSftp);
                 Files.createDirectories(lclSftp);
 
@@ -319,7 +319,7 @@ public class SftpTest extends BaseTestSupport {
                 session.auth().verify(5L, TimeUnit.SECONDS);
         
                 Path targetPath = detectTargetFolder().toPath();
-                Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
+                Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
                 Utils.deleteRecursive(lclSftp);
                 Files.createDirectories(lclSftp);
 
@@ -419,7 +419,7 @@ public class SftpTest extends BaseTestSupport {
         String d = getCurrentTestName() + "\n";
 
         Path targetPath = detectTargetFolder().toPath();
-        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
+        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         Utils.deleteRecursive(lclSftp);
         Files.createDirectories(lclSftp);
 
@@ -446,7 +446,7 @@ public class SftpTest extends BaseTestSupport {
     @Test
     public void testReadWriteWithOffset() throws Exception {
         Path targetPath = detectTargetFolder().toPath();
-        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
+        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         Utils.deleteRecursive(lclSftp);
         Files.createDirectories(lclSftp);
 
@@ -530,7 +530,7 @@ public class SftpTest extends BaseTestSupport {
                 session.auth().verify(5L, TimeUnit.SECONDS);
         
                 Path targetPath = detectTargetFolder().toPath();
-                Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
+                Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
                 Utils.deleteRecursive(lclSftp);
                 Files.createDirectories(lclSftp);
 
@@ -580,7 +580,7 @@ public class SftpTest extends BaseTestSupport {
         Assume.assumeTrue("Skip non-Unix O/S", OsUtils.isUNIX());
 
         Path targetPath = detectTargetFolder().toPath();
-        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
+        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         Utils.deleteRecursive(lclSftp);
         Files.createDirectories(lclSftp);
 
