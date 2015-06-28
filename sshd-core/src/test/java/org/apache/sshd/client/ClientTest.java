@@ -29,6 +29,10 @@ import java.net.SocketAddress;
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -65,6 +69,7 @@ import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.sftp.SftpConstants;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.Transformer;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.NoCloseOutputStream;
@@ -292,8 +297,8 @@ public class ClientTest extends BaseTestSupport {
 
                 channel.setOut(stdout);
                 channel.setErr(stderr);
-                channel.open().await();
-                Thread.sleep(100);
+                channel.open().verify(9L, TimeUnit.SECONDS);
+                Thread.sleep(100L);
                 try {
                     for (int i = 0; i < 100; i++) {
                         channel.getInvertedIn().write("a".getBytes());
@@ -567,8 +572,8 @@ public class ClientTest extends BaseTestSupport {
             AuthFuture authFuture = session.auth();
             CloseFuture closeFuture = session.close(false);
             authLatch.countDown();
-            authFuture.await();
-            closeFuture.await();
+            assertTrue("Authentication writing not completed in time", authFuture.await(11L, TimeUnit.SECONDS));
+            assertTrue("Session closing not complete in time", closeFuture.await(8L, TimeUnit.SECONDS));
             assertNotNull("No authentication exception", authFuture.getException());
             assertTrue("Future not closed", closeFuture.isClosed());
         } finally {
@@ -595,8 +600,8 @@ public class ClientTest extends BaseTestSupport {
 
                 OpenFuture openFuture = channel.open();
                 CloseFuture closeFuture = session.close(false);
-                openFuture.await();
-                closeFuture.await();
+                assertTrue("Channel not open in time", openFuture.await(11L, TimeUnit.SECONDS));
+                assertTrue("Session closing not complete in time", closeFuture.await(8L, TimeUnit.SECONDS));
                 assertTrue("Not open", openFuture.isOpened());
                 assertTrue("Not closed", closeFuture.isClosed());
             }
@@ -626,8 +631,8 @@ public class ClientTest extends BaseTestSupport {
                 OpenFuture openFuture = channel.open();
                 CloseFuture closeFuture = session.close(true);
                 channelLatch.countDown();
-                openFuture.await();
-                closeFuture.await();
+                assertTrue("Channel not open in time", openFuture.await(11L, TimeUnit.SECONDS));
+                assertTrue("Session closing not complete in time", closeFuture.await(8L, TimeUnit.SECONDS));
                 assertNotNull("No open exception", openFuture.getException());
                 assertTrue("Not closed", closeFuture.isClosed());
             }
@@ -740,6 +745,107 @@ public class ClientTest extends BaseTestSupport {
         }
     }
 
+    @Test   // see SSHD-504
+    public void testKeyboardInteractivePasswordPromptLocationIndependence() throws Exception {
+        final Collection<String> mismatchedPrompts = new LinkedList<String>();
+        client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthKeyboardInteractive.UserAuthKeyboardInteractiveFactory() {
+                @Override
+                public UserAuth create() {
+                    return new UserAuthKeyboardInteractive() {
+                        @Override
+                        protected boolean useCurrentPassword(String password, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
+                            boolean expected = GenericUtils.length(password) > 0;
+                            boolean actual = super.useCurrentPassword(password, name, instruction, lang, prompt, echo);
+                            if (expected != actual) {
+                                System.err.println("Mismatched usage result for prompt=" + prompt[0] + ": expected=" + expected + ", actual=actual");
+                                mismatchedPrompts.add(prompt[0]);
+                            }
+                            return actual;
+                        }
+                    };
+                }
+            }));
+        client.start();
+
+        final Transformer<String,String> stripper = new Transformer<String,String>() {
+                @Override
+                public String transform(String input) {
+                    int pos = GenericUtils.isEmpty(input) ? (-1) : input.lastIndexOf(':');
+                    if (pos < 0) {
+                        return input;
+                    } else {
+                        return input.substring(0, pos);
+                    }
+                }
+            };
+        final List<Transformer<String,String>> xformers = 
+                Collections.unmodifiableList(Arrays.<Transformer<String,String>>asList(
+                            new Transformer<String,String>() {  // prefixed
+                                    @Override
+                                    public String transform(String input) {
+                                        return getCurrentTestName() + " " + input;
+                                    }
+                                },
+                            new Transformer<String,String>() {  // suffixed
+                                    @Override
+                                    public String transform(String input) {
+                                        return stripper.transform(input) + " " + getCurrentTestName() + ":";
+                                    }
+                                },
+                            new Transformer<String,String>() {  // infix
+                                    @Override
+                                    public String transform(String input) {
+                                        return getCurrentTestName() + " " + stripper.transform(input) + " " + getCurrentTestName() + ":";
+                                    }
+                                }
+                        ));
+        sshd.setUserAuthFactories(Arrays.<NamedFactory<org.apache.sshd.server.UserAuth>>asList(
+                new org.apache.sshd.server.auth.UserAuthKeyboardInteractive.UserAuthKeyboardInteractiveFactory() {
+                    private int xformerIndex;
+
+                    @Override
+                    public org.apache.sshd.server.UserAuth create() {
+                        return new org.apache.sshd.server.auth.UserAuthKeyboardInteractive() {
+    
+                            @SuppressWarnings("synthetic-access")
+                            @Override
+                            protected String getInteractionPrompt() {
+                                String original = super.getInteractionPrompt();
+                                if (xformerIndex < xformers.size()) {
+                                    Transformer<String,String> x = xformers.get(xformerIndex);
+                                    xformerIndex++;
+                                    return x.transform(original);
+                                } else {
+                                    return original;
+                                }
+                            }
+                        };
+                    }
+            }));
+
+        try {
+            for (int index = 0; index < xformers.size(); index++) {
+                try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(700L, TimeUnit.SECONDS).getSession()) {
+                    String password = "bad-" + getCurrentTestName() + "-" + index;
+                    session.addPasswordIdentity(password);
+                    
+                    AuthFuture future = session.auth();
+                    assertTrue("Failed to verify password=" + password + " in time", future.await(500L, TimeUnit.SECONDS));
+                    assertFalse("Unexpected success for password=" + password, future.isSuccess());
+                    session.removePasswordIdentity(password);
+                }
+            }
+
+            try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(700L, TimeUnit.SECONDS).getSession()) {
+                session.addPasswordIdentity(getCurrentTestName());
+                session.auth().verify(500L, TimeUnit.SECONDS);
+                assertTrue("Mismatched prompts evaluation results", mismatchedPrompts.isEmpty());
+            }
+        } finally {
+            client.stop();
+        }
+    }
+
     @Test
     public void testKeyboardInteractiveWithFailures() throws Exception {
         final AtomicInteger count = new AtomicInteger();
@@ -753,7 +859,7 @@ public class ClientTest extends BaseTestSupport {
                 // ignored
             }
             @Override
-            public String[] interactive(String destination, String name, String instruction, String[] prompt, boolean[] echo) {
+            public String[] interactive(String destination, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
                 count.incrementAndGet();
                 return new String[] { "bad" };
             }
@@ -788,7 +894,7 @@ public class ClientTest extends BaseTestSupport {
                     }
         
                     @Override
-                    public String[] interactive(String destination, String name, String instruction,
+                    public String[] interactive(String destination, String name, String instruction, String lang,
                                                 String[] prompt, boolean[] echo) {
                         count.incrementAndGet();
                         return new String[] { getCurrentTestName() };
@@ -821,14 +927,14 @@ public class ClientTest extends BaseTestSupport {
                 }
     
                 @Override
-                public String[] interactive(String destination, String name, String instruction,
+                public String[] interactive(String destination, String name, String instruction, String lang,
                                             String[] prompt, boolean[] echo) {
-                    count.incrementAndGet();
-                    return new String[] { "bad" };
+                    int attemptId = count.incrementAndGet();
+                    return new String[] { "bad#" + attemptId };
                 }
             });
             AuthFuture future = session.auth();
-            future.await();
+            assertTrue("Authentication not completed in time", future.await(11L, TimeUnit.SECONDS));
             assertTrue("Authentication not, marked as failure", future.isFailure());
             assertEquals("Mismatched authentication retry count", MAX_PROMPTS, count.get());
         } finally {
@@ -864,7 +970,7 @@ public class ClientTest extends BaseTestSupport {
                     buffer.putString("Cancel");
                     buffer.putString("");
                     IoWriteFuture f = cs.writePacket(buffer);
-                    f.await();
+                    assertTrue("Packet writing not completed in time", f.await(11L, TimeUnit.SECONDS));
                     suspend(cs.getIoSession());
     
                     TestEchoShellFactory.TestEchoShell.latch.await();

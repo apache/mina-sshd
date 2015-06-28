@@ -1,6 +1,7 @@
 target/
 Servers/
 .metadata/
+.recommenders/
 .settings/
 RemoteSystemsTempFiles/
 .classpath

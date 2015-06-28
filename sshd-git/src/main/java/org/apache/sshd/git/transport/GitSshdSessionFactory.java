@@ -115,7 +115,7 @@ public class GitSshdSessionFactory extends SshSessionFactory {
             if (pass2 != null) {
                 session.addPasswordIdentity(new String(pass2));
             }
-            session.auth().verify(FactoryManagerUtils.getLongProperty(client, AUTH_TIMEOUT_PROP, DEFAULT_AUTH_TIMEOUT);
+            session.auth().verify(FactoryManagerUtils.getLongProperty(client, AUTH_TIMEOUT_PROP, DEFAULT_AUTH_TIMEOUT));
         }
 
         @Override

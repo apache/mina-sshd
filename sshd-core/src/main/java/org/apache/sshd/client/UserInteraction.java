@@ -20,8 +20,8 @@ package org.apache.sshd.client;
 
 /**
  * Interface used by the ssh client to communicate with the end user.
- *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @see <a href="https://www.ietf.org/rfc/rfc4256.txt">RFC 4256</A>
  */
 public interface UserInteraction {
 
@@ -35,6 +35,7 @@ public interface UserInteraction {
     String[] interactive(String destination,
                          String name,
                          String instruction,
+                         String lang,
                          String[] prompt,
                          boolean[] echo);
 }

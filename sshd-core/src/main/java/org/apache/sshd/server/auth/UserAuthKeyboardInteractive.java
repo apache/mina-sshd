@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.server.auth;
 
+import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
@@ -30,12 +31,10 @@ import org.apache.sshd.server.UserAuth;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
- * TODO Add javadoc
- *
+ * Issue a &quot;keyboard-interactive&quot; command according to <A HREF="https://www.ietf.org/rfc/rfc4256.txt">RFC4256</A>
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class UserAuthKeyboardInteractive extends AbstractUserAuth {
-
     public static class UserAuthKeyboardInteractiveFactory implements NamedFactory<UserAuth> {
         public static final UserAuthKeyboardInteractiveFactory INSTANCE = new UserAuthKeyboardInteractiveFactory();
 
@@ -54,6 +53,18 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
         }
     }
 
+    // configuration parameters on the FactoryManager to configure the message values
+    public static final String KB_INTERACTIVE_NAME_PROP = "kb-interactive-name";
+        public static final String DEFAULT_KB_INTERACTIVE_NAME = "Password authentication";
+    public static final String KB_INTERACTIVE_INSTRUCTION_PROP = "kb-interactive-instruction";
+        public static final String DEFAULT_KB_INTERACTIVE_INSTRUCTION = "";
+    public static final String KB_INTERACTIVE_LANG_PROP = "kb-interactive-language";
+        public static final String DEFAULT_KB_INTERACTIVE_LANG = "en-US";
+    public static final String KB_INTERACTIVE_PROMPT_PROP = "kb-interactive-prompt";
+        public static final String DEFAULT_KB_INTERACTIVE_PROMPT = "Password: ";
+    public static final String KB_INTERACTIVE_ECHO_PROMPT_PROP = "kb-interactive-echo-prompt";
+        public static final boolean DEFAULT_KB_INTERACTIVE_ECHO_PROMPT = false;
+
     public UserAuthKeyboardInteractive() {
         super();
     }
@@ -63,12 +74,12 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
         if (init) {
             // Prompt for password
             buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_INFO_REQUEST);
-            buffer.putString("Password authentication");
-            buffer.putString("");
-            buffer.putString("en-US");
+            buffer.putString(getInteractionName());
+            buffer.putString(getInteractionInstruction());
+            buffer.putString(getInteractionLanguage());
             buffer.putInt(1);
-            buffer.putString("Password: ");
-            buffer.putBoolean(false);
+            buffer.putString(getInteractionPrompt());
+            buffer.putBoolean(isInteractionPromptEchoEnabled());
             session.writePacket(buffer);
             return null;
         } else {
@@ -77,12 +88,39 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
                 throw new SshException("Received unexpected message: " + cmd);
             }
             int num = buffer.getInt();
+            /*
+             * According to RFC4256:
+             * 
+             *      If the num-responses field does not match the num-prompts
+             *      field in the request message, the server MUST send a failure
+             *      message.
+             */
             if (num != 1) {
                 throw new SshException("Expected 1 response from user but received " + num);
             }
             String password = buffer.getString();
             return Boolean.valueOf(checkPassword(session, username, password));
         }
+    }
+
+    protected String getInteractionName() {
+        return FactoryManagerUtils.getStringProperty(session, KB_INTERACTIVE_NAME_PROP, DEFAULT_KB_INTERACTIVE_NAME);
+    }
+
+    protected String getInteractionInstruction() {
+        return FactoryManagerUtils.getStringProperty(session, KB_INTERACTIVE_INSTRUCTION_PROP, DEFAULT_KB_INTERACTIVE_INSTRUCTION);
+    }
+
+    protected String getInteractionLanguage() {
+        return FactoryManagerUtils.getStringProperty(session, KB_INTERACTIVE_LANG_PROP, DEFAULT_KB_INTERACTIVE_LANG);
+    }
+
+    protected String getInteractionPrompt() {
+        return FactoryManagerUtils.getStringProperty(session, KB_INTERACTIVE_PROMPT_PROP, DEFAULT_KB_INTERACTIVE_PROMPT);
+    }
+
+    protected boolean isInteractionPromptEchoEnabled() {
+        return FactoryManagerUtils.getBooleanProperty(session, KB_INTERACTIVE_ECHO_PROMPT_PROP, DEFAULT_KB_INTERACTIVE_ECHO_PROMPT);
     }
 
     protected boolean checkPassword(ServerSession session, String username, String password) throws Exception {
@@ -93,5 +131,4 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
                 GenericUtils.EMPTY_BYTE_ARRAY);
         return auth.authenticate(username, password, session);
     }
-
 }

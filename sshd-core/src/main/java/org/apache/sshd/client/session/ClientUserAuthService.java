@@ -81,10 +81,11 @@ public class ClientUserAuthService extends CloseableUtils.AbstractCloseable impl
         }
         session = (ClientSessionImpl) s;
         authFuture = new DefaultAuthFuture(session.getLock());
-        authFactories = session.getFactoryManager().getUserAuthFactories();
+        ClientFactoryManager manager = session.getFactoryManager();
+        authFactories = manager.getUserAuthFactories();
         clientMethods = new ArrayList<>();
 
-        String prefs = FactoryManagerUtils.getString(session, ClientFactoryManager.PREFERRED_AUTHS);
+        String prefs = FactoryManagerUtils.getString(manager, ClientFactoryManager.PREFERRED_AUTHS);
         if (!GenericUtils.isEmpty(prefs)) {
             for (String pref : prefs.split(",")) {
                 if (NamedFactory.Utils.get(authFactories, pref) != null) {

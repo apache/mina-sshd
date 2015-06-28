@@ -86,7 +86,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
                         UserInteraction ui = session.getFactoryManager().getUserInteraction();
                         if (ui != null) {
                             String dest = session.getUsername() + "@" + session.getIoSession().getRemoteAddress().toString();
-                            rep = ui.interactive(dest, name, instruction, prompt, echo);
+                            rep = ui.interactive(dest, name, instruction, language_tag, prompt, echo);
                         }
                     }
                     if (rep == null) {

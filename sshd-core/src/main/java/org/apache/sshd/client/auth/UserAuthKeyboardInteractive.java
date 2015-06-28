@@ -38,8 +38,8 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
- * TODO Add javadoc
- *
+ * Manages a &quot;keyboard-interactive&quot; exchange according to
+ * <A HREF="https://www.ietf.org/rfc/rfc4256.txt">RFC4256</A>
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class UserAuthKeyboardInteractive extends AbstractLoggingBean implements UserAuth {
@@ -83,7 +83,7 @@ public class UserAuthKeyboardInteractive extends AbstractLoggingBean implements 
             }
         }
         this.passwords = pwds.iterator();
-        this.maxTrials = session.getIntProperty(ClientFactoryManager.PASSWORD_PROMPTS, 3);
+        this.maxTrials = session.getIntProperty(ClientFactoryManager.PASSWORD_PROMPTS, ClientFactoryManager.DEFAULT_PASSWORD_PROMPTS);
     }
 
     @Override
@@ -96,7 +96,11 @@ public class UserAuthKeyboardInteractive extends AbstractLoggingBean implements 
             } else {
                 return false;
             }
-            log.debug("Send SSH_MSG_USERAUTH_REQUEST for keyboard-interactive");
+            
+            String username = session.getUsername();
+            if (log.isDebugEnabled()) {
+                log.debug("Send SSH_MSG_USERAUTH_REQUEST for keyboard-interactive - user={}, service={}", username, service);
+            }
             buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST);
             buffer.putString(session.getUsername());
             buffer.putString(service);
@@ -106,6 +110,7 @@ public class UserAuthKeyboardInteractive extends AbstractLoggingBean implements 
             session.writePacket(buffer);
             return true;
         }
+
         byte cmd = buffer.getByte();
         if (cmd == SSH_MSG_USERAUTH_INFO_REQUEST) {
             log.debug("Received SSH_MSG_USERAUTH_INFO_REQUEST");
@@ -113,38 +118,39 @@ public class UserAuthKeyboardInteractive extends AbstractLoggingBean implements 
             String instruction = buffer.getString();
             String language_tag = buffer.getString();
             if (log.isDebugEnabled()) {
-                log.debug("SSH_MSG_USERAUTH_INFO_REQUEST {} {} {}", name, instruction, language_tag);
+                log.debug("SSH_MSG_USERAUTH_INFO_REQUEST name={} instruction={} language={}", name, instruction, language_tag);
             }
+
             int num = buffer.getInt();
             String[] prompt = new String[num];
             boolean[] echo = new boolean[num];
             for (int i = 0; i < num; i++) {
+                // according to RFC4256: "The prompt field(s) MUST NOT be empty strings."
                 prompt[i] = buffer.getString();
                 echo[i] = (buffer.getByte() != 0);
             }
             
             if (log.isDebugEnabled()) {
-                log.debug("Promt: {}", Arrays.toString(prompt));
+                log.debug("Prompt: {}", Arrays.toString(prompt));
                 log.debug("Echo: {}", echo);
             }
 
-            String[] rep = null;
-            if (num == 0) {
-                rep = GenericUtils.EMPTY_STRING_ARRAY;
-            } else if (num == 1 && current != null && !echo[0] && prompt[0].toLowerCase().startsWith("password:")) {
-                rep = new String[] { current };
-            } else {
-                UserInteraction ui = session.getUserInteraction();
-                if (ui == null) {
-                    ui = session.getFactoryManager().getUserInteraction();
-                }
-                if (ui != null) {
-                    String dest = session.getUsername() + "@" + session.getIoSession().getRemoteAddress().toString();
-                    rep = ui.interactive(dest, name, instruction, prompt, echo);
-                }
-            }
+            String[] rep = getUserResponses(name, instruction, language_tag, prompt, echo);
             if (rep == null) {
                 return false;
+            }
+
+            /*
+             * According to RFC4256:
+             * 
+             *      If the num-responses field does not match the num-prompts
+             *      field in the request message, the server MUST send a failure
+             *      message.
+             *
+             * However it is the server's (!) responsibility to fail, so we only warn...
+             */
+            if (num != rep.length) {
+                log.warn("Mismatched prompts (" + num + ") vs. responses count (" + rep.length + ")");
             }
 
             buffer = session.createBuffer(SSH_MSG_USERAUTH_INFO_RESPONSE);
@@ -155,8 +161,74 @@ public class UserAuthKeyboardInteractive extends AbstractLoggingBean implements 
             session.writePacket(buffer);
             return true;
         }
-        throw new IllegalStateException("Received unknown packet");
+        throw new IllegalStateException("Received unknown packet: cmd=" + cmd);
     }
+
+    protected String getCurrentPasswordCandidate() {
+        return current;
+    }
+
+    /**
+     * @param name The interaction name - may be empty
+     * @param instruction The instruction - may be empty
+     * @param lang The language tag - may be empty
+     * @param prompt The prompts - may be empty
+     * @param echo Whether to echo the response for the prompt or not - same
+     * length as the prompts
+     * @return The response for each prompt - if {@code null} then the assumption
+     * is that some internal error occurred and no response is sent. <B>Note:</B>
+     * according to <A HREF="https://www.ietf.org/rfc/rfc4256.txt">RFC4256</A>
+     * the number of responses should be <U>exactly</U> the same as the number
+     * of prompts. However, since it is the <U>server's</U> responsibility to
+     * enforce this we do not validate the response (other than logging it as
+     * a warning...)  
+     */
+    protected String[] getUserResponses(String name, String instruction, String lang, String[] prompt, boolean[] echo) {
+        int num = GenericUtils.length(prompt);
+        if (num == 0) {
+            return GenericUtils.EMPTY_STRING_ARRAY;
+        }
+
+        String candidate = getCurrentPasswordCandidate();
+        if (useCurrentPassword(candidate, name, instruction, lang, prompt, echo)) { 
+            return new String[] { candidate };
+        } else {
+            UserInteraction ui = session.getUserInteraction();
+            if (ui == null) {
+                ClientFactoryManager manager = session.getFactoryManager(); 
+                ui = manager.getUserInteraction();
+            }
+
+            if (ui != null) {
+                String dest = session.getUsername() + "@" + session.getIoSession().getRemoteAddress().toString();
+                return ui.interactive(dest, name, instruction, lang, prompt, echo);
+            }
+        }
+        
+        return null;
+    }
+
+    protected boolean useCurrentPassword(String password, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
+        int num = GenericUtils.length(prompt);
+        if ((num != 1) || (password == null) || echo[0]) {
+            return false;
+        }
+
+        // check that prompt is something like "XXX password YYY:"
+        String value = prompt[0].toLowerCase();
+        int passPos = value.lastIndexOf("password");
+        if (passPos < 0) {  // no password keyword in prompt
+            return false;
+        }
+
+        int sepPos = value.lastIndexOf(':');
+        if (sepPos <= passPos) {    // no prompt separator or separator before the password keyword
+            return false;
+        }
+        
+        return true;
+    }
+
 
     @Override
     public void destroy() {

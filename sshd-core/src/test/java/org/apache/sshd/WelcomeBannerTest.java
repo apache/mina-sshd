@@ -74,7 +74,7 @@ public class WelcomeBannerTest extends BaseTestSupport {
                     welcome.set(banner);
                 }
                 @Override
-                public String[] interactive(String destination, String name, String instruction, String[] prompt, boolean[] echo) {
+                public String[] interactive(String destination, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
                     return null;
                 }
             });

@@ -462,7 +462,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                     }
         
                     @Override
-                    public String[] interactive(String destination, String name, String instruction, String[] prompt, boolean[] echo) {
+                    public String[] interactive(String destination, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
                         String[] answers = new String[prompt.length];
                         try {
                             for (int i = 0; i < prompt.length; i++) {

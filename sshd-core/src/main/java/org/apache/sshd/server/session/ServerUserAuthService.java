@@ -58,6 +58,7 @@ public class ServerUserAuthService extends CloseableUtils.AbstractCloseable impl
         }
     }
 
+    public static final int DEFAULT_MAX_AUTH_REQUESTS = 20;
     private final ServerSession session;
     private List<NamedFactory<UserAuth>> userAuthFactories;
     private List<List<String>> authMethods;
@@ -66,7 +67,7 @@ public class ServerUserAuthService extends CloseableUtils.AbstractCloseable impl
     private String authService;
     private UserAuth currentAuth;
 
-    private int maxAuthRequests = 20;
+    private int maxAuthRequests;
     private int nbAuthRequests;
 
     public ServerUserAuthService(Session s) throws SshException {
@@ -76,13 +77,13 @@ public class ServerUserAuthService extends CloseableUtils.AbstractCloseable impl
         }
 
         this.session = (ServerSession) s;
-        maxAuthRequests = session.getIntProperty(ServerFactoryManager.MAX_AUTH_REQUESTS, maxAuthRequests);
+        maxAuthRequests = session.getIntProperty(ServerFactoryManager.MAX_AUTH_REQUESTS, DEFAULT_MAX_AUTH_REQUESTS);
 
-        userAuthFactories = new ArrayList<>(getFactoryManager().getUserAuthFactories());
+        ServerFactoryManager  manager=getFactoryManager();
+        userAuthFactories = new ArrayList<>(manager.getUserAuthFactories());
         // Get authentication methods
         authMethods = new ArrayList<>();
         
-        ServerFactoryManager  manager=getFactoryManager();
         String mths = FactoryManagerUtils.getString(manager, ServerFactoryManager.AUTH_METHODS);
         if (GenericUtils.isEmpty(mths)) {
             for (NamedFactory<UserAuth> uaf : manager.getUserAuthFactories()) {

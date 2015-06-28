@@ -22,7 +22,6 @@ import java.util.List;
 
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.forward.TcpipForwarderFactory;
 
 /**
  * The <code>ClientFactoryManager</code> enable the retrieval of additional
@@ -33,26 +32,40 @@ import org.apache.sshd.common.forward.TcpipForwarderFactory;
 public interface ClientFactoryManager extends FactoryManager {
 
     /**
-     * Key used to set the heartbeat interval in milliseconds (0 to disable which is the default value)
+     * Key used to set the heartbeat interval in milliseconds (0 to disable = default)
      */
-    public static final String HEARTBEAT_INTERVAL = "hearbeat-interval";
+    String HEARTBEAT_INTERVAL = "hearbeat-interval";
+        /**
+         * Default value for {@link #HEARTBEAT_INTERVAL} if none configured
+         */
+        long DEFAULT_HEARTBEAT_INTERVAL = 0L;
 
     /**
-     * Key used to check the hearbeat request that should be sent to the server (default is keepalive@sshd.apache.org).
+     * Key used to check the heartbeat request that should be sent to the server
      */
-    public static final String HEARTBEAT_REQUEST = "heartbeat-request";
+    String HEARTBEAT_REQUEST = "heartbeat-request";
+        /**
+         * Default value for {@link ClientFactoryManager#HEARTBEAT_REQUEST} is none configured
+         */
+        String DEFAULT_KEEP_ALIVE_HEARTBEAT_STRING = "keepalive@sshd.apache.org";
 
     /**
      * Ordered comma separated list of authentications methods.
      * Authentications methods accepted by the server will be tried in the given order.
+     * If not configured or {@code null}/empty, then the session's {@link #getUserAuthFactories()}
+     * is used as-is
      */
-    public static final String PREFERRED_AUTHS = "preferred-auths";
+    String PREFERRED_AUTHS = "preferred-auths";
 
     /**
      * Specifies the number of password prompts before giving up.
-     * The argument to this keyword must be an integer.  The default is 3.
+     * The argument to this keyword must be an integer.
      */
-    public static final String PASSWORD_PROMPTS = "password-prompts";
+    String PASSWORD_PROMPTS = "password-prompts";
+        /**
+         * Default value for {@link #PASSWORD_PROMPTS} if none configured
+         */
+        int DEFAULT_PASSWORD_PROMPTS = 3;
 
     /**
      * Retrieve the server key verifier to be used to check the key when connecting
@@ -63,25 +76,14 @@ public interface ClientFactoryManager extends FactoryManager {
     ServerKeyVerifier getServerKeyVerifier();
 
     /**
-     * Retrieve the TcpipForwarder factory to be used to accept incoming connections
-     * and forward data.
-     *
-     * @return A <code>TcpipForwarderFactory</code>
-     */
-    @Override
-    TcpipForwarderFactory getTcpipForwarderFactory();
-
-    /**
-     * Retrieve the UserInteraction object to communicate with the user.
-     *
-     * @return A <code>UserInteraction</code> or <code>null</code>
+     * @return A {@link UserInteraction} object to communicate with the user
+     * (may be {@code null} to indicate that no such communication is allowed)
      */
     UserInteraction getUserInteraction();
 
     /**
-     * Retrieve a list of UserAuth factories.
-     *
-     * @return a list of named <code>UserAuth</code> factories, never <code>null</code>
+     * @return a {@link List} of {@link UserAuth} {@link NamedFactory}-ies - never
+     * {@code null}/empty
      */
     List<NamedFactory<UserAuth>> getUserAuthFactories();
 

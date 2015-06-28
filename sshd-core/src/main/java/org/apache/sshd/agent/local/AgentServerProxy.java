@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.SshAgentServer;
-import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.util.GenericUtils;

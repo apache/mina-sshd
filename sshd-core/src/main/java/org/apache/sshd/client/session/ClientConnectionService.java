@@ -41,10 +41,6 @@ import org.apache.sshd.common.util.buffer.Buffer;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ClientConnectionService extends AbstractConnectionService {
-
-    public static final String DEFAULT_KEEP_ALIVE_HEARTBEAT_STRING = "keepalive@sshd.apache.org";
-    public static final long DEFAULT_HEARTBEAT_INTERVAL = 0L;
-
     public static class Factory implements ServiceFactory {
 
         @Override
@@ -73,7 +69,7 @@ public class ClientConnectionService extends AbstractConnectionService {
     }
 
     protected void startHeartBeat() {
-        long interval = FactoryManagerUtils.getLongProperty(session, ClientFactoryManager.HEARTBEAT_INTERVAL, DEFAULT_HEARTBEAT_INTERVAL);
+        long interval = FactoryManagerUtils.getLongProperty(session, ClientFactoryManager.HEARTBEAT_INTERVAL, ClientFactoryManager.DEFAULT_HEARTBEAT_INTERVAL);
         if (interval > 0L) {
             FactoryManager manager = session.getFactoryManager();
             ScheduledExecutorService service = manager.getScheduledExecutorService();
@@ -90,7 +86,7 @@ public class ClientConnectionService extends AbstractConnectionService {
     }
 
     protected void sendHeartBeat() {
-        String request = FactoryManagerUtils.getStringProperty(session, ClientFactoryManager.HEARTBEAT_REQUEST, DEFAULT_KEEP_ALIVE_HEARTBEAT_STRING);
+        String request = FactoryManagerUtils.getStringProperty(session, ClientFactoryManager.HEARTBEAT_REQUEST, ClientFactoryManager.DEFAULT_KEEP_ALIVE_HEARTBEAT_STRING);
         try {
             Buffer buf = session.createBuffer(SshConstants.SSH_MSG_GLOBAL_REQUEST);
             buf.putString(request);
