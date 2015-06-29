@@ -464,6 +464,7 @@
                                 <exclude>sshd-pam/**</exclude>
 									<!-- Eclipse files -->
 								<exclude>.metadata/**</exclude>
+								<exclude>.recommenders/**</exclude>
 								<exclude>RemoteSystemsTempFiles/**</exclude>
 								<exclude>.project</exclude>
 								<exclude>.classpath</exclude>
