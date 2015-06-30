@@ -24,15 +24,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.PosixFilePermission;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -61,12 +62,13 @@ import org.junit.runners.MethodSorters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import ch.ethz.ssh2.Connection;
-import ch.ethz.ssh2.SCPClient;
-
 import com.jcraft.jsch.ChannelExec;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
+
+import ch.ethz.ssh2.Connection;
+import ch.ethz.ssh2.ConnectionInfo;
+import ch.ethz.ssh2.SCPClient;
 
 /**
  * Test for SCP support.
@@ -711,42 +713,50 @@ public class ScpTest extends BaseTestSupport {
 
     @Test
     public void testWithGanymede() throws Exception {
-        // begin client config
+        Path targetPath = detectTargetFolder().toPath();
+        Path parentPath = targetPath.getParent();
+        Path scpRoot = Utils.resolve(targetPath, ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
+        Utils.deleteRecursive(scpRoot);
+
+        byte[] expected = (getClass().getName() + "#" + getCurrentTestName()).getBytes(StandardCharsets.UTF_8);
+        Path remoteDir = assertHierarchyTargetFolderExists(scpRoot.resolve("remote"));
+        String remotePath = Utils.resolveRelativeRemotePath(parentPath, remoteDir);
+        String fileName = getCurrentTestName() + ".txt";
+        Path remoteFile = remoteDir.resolve(fileName);
+        String mode = ScpHelper.getOctalPerms(EnumSet.of(
+                    PosixFilePermission.OTHERS_READ, PosixFilePermission.OTHERS_WRITE,
+                    PosixFilePermission.GROUP_READ, PosixFilePermission.GROUP_WRITE,
+                    PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE
+                ));
+
         final Connection conn = new Connection("localhost", port);
         try {
-            conn.connect(null, 5000, 0);
-            conn.authenticateWithPassword("sshd", "sshd");
+            ConnectionInfo info = conn.connect(null, (int) TimeUnit.SECONDS.toMillis(5L), (int) TimeUnit.SECONDS.toMillis(11L));
+            System.out.println("Connected: kex=" + info.keyExchangeAlgorithm + ", key-type=" + info.serverHostKeyAlgorithm
+                             + ", c2senc=" + info.clientToServerCryptoAlgorithm + ", s2cenc=" + info.serverToClientCryptoAlgorithm
+                             + ", c2mac=" + info.clientToServerMACAlgorithm + ", s2cmac=" + info.serverToClientMACAlgorithm);
+            conn.authenticateWithPassword(getCurrentTestName(), getCurrentTestName());
+
             final SCPClient scp_client = new SCPClient(conn);
-            final Properties props = new Properties();
-            props.setProperty("test", "test-passed");
-            File f = new File("target/scp/gan");
-            Utils.deleteRecursive(f);
-            f.mkdirs();
-            assertTrue(f.exists());
-    
-            String name = "test.properties";
-            scp_client.put(toBytes(props, ""), name, "target/scp/gan");
-            assertTrue(new File(f, name).exists());
-            assertTrue(new File(f, name).delete());
-    
-            name = "test2.properties";
-            scp_client.put(toBytes(props, ""), name, "target/scp/gan");
-            assertTrue(new File(f, name).exists());
-            assertTrue(new File(f, name).delete());
-    
-            assertTrue(f.delete());
+            try(OutputStream output = scp_client.put(fileName, expected.length, remotePath, mode)) {
+                output.write(expected);
+            }
+            
+            assertTrue("Remote file not created: " + remoteFile, Files.exists(remoteFile));
+            byte[] remoteData = Files.readAllBytes(remoteFile);
+            assertArrayEquals("Mismatched remote put data", expected, remoteData);
+            
+            Arrays.fill(remoteData, (byte) 0);  // make sure we start with a clean slate 
+            try(InputStream input = scp_client.get(remotePath + "/" + fileName)) {
+                int readLen = input.read(remoteData);
+                assertEquals("Mismatched remote get data size", expected.length, readLen);
+                // make sure we reached EOF
+                assertEquals("Unexpected extra data after read expected size", (-1), input.read());
+            }
+
+            assertArrayEquals("Mismatched remote get data", expected, remoteData);
         } finally {
             conn.close();
-        }
-    }
-
-    private byte[] toBytes(final Properties properties, final String comments) {
-        try(ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-            properties.store(baos, comments);
-            baos.close();
-            return baos.toByteArray();
-        } catch(IOException cause) {
-            throw new RuntimeException("Failed to output properties to byte[]", cause);
         }
     }
 

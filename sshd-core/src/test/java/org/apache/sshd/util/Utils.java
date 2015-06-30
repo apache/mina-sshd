@@ -29,6 +29,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.security.CodeSource;
 import java.security.KeyPair;
@@ -190,10 +191,11 @@ public class Utils {
      * are deleted recursively and then the directory itself.
      * @param path The file {@link Path} to be deleted - ignored if {@code null}
      * or does not exist anymore
+     * @param options The {@link LinkOption}s to use
      * @return The <tt>path</tt> argument
      * @throws IOException If failed to access/remove some file(s)
      */
-    public static Path deleteRecursive(Path path) throws IOException {
+    public static Path deleteRecursive(Path path, LinkOption ... options) throws IOException {
         if ((path == null) || (!Files.exists(path))) {
             return path;
         }
@@ -201,7 +203,7 @@ public class Utils {
         if (Files.isDirectory(path)) {
             try(DirectoryStream<Path> ds = Files.newDirectoryStream(path)) {
                 for (Path child : ds) {
-                    deleteRecursive(child);
+                    deleteRecursive(child, options);
                 }
             }
         }

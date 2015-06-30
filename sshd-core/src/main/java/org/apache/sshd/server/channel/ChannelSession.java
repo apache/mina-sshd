@@ -493,13 +493,13 @@ public class ChannelSession extends AbstractServerChannel {
             log.warn("No command factory for command: {}", commandLine);
             return false;
         }
-        if (log.isInfoEnabled()) {
-            log.info("Executing command: {}", commandLine);
+        if (log.isDebugEnabled()) {
+            log.debug("Executing command: {}", commandLine);
         }
         try {
             command = factory.createCommand(commandLine);
         } catch (RuntimeException iae) {
-            log.warn("Failed (" + iae.getClass().getSimpleName() + ") to execute " + commandLine + ": " + iae.getMessage());
+            log.warn("Failed (" + iae.getClass().getSimpleName() + ") to create command for " + commandLine + ": " + iae.getMessage());
             return false;
         }
         prepareCommand();

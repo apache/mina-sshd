@@ -153,11 +153,11 @@ public class PortForwardingTest extends BaseTestSupport {
         try {
             int forwardedPort = getFreePort();
             session.setPortForwardingR(forwardedPort, "localhost", echoPort);
-            Thread.sleep(150L);
+            Thread.sleep(155L);
             session.delPortForwardingR("localhost", forwardedPort);
-            Thread.sleep(150L);
+            Thread.sleep(155L);
             session.setPortForwardingR(forwardedPort, "localhost", echoPort);
-            Thread.sleep(150L);
+            Thread.sleep(155L);
     
             try(Socket s = new Socket("localhost", forwardedPort);
                 OutputStream output = s.getOutputStream();
