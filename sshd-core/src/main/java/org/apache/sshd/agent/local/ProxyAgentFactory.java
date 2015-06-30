@@ -39,9 +39,13 @@ public class ProxyAgentFactory implements SshAgentFactory {
 
     private final Map<String, AgentServerProxy> proxies = new ConcurrentHashMap<String, AgentServerProxy>();
 
+    public ProxyAgentFactory() {
+        super();
+    }
+
     @Override
     public NamedFactory<Channel> getChannelForwardingFactory() {
-        return new ChannelAgentForwarding.ChannelAgentForwardingFactory();
+        return ChannelAgentForwarding.ChannelAgentForwardingFactory.INSTANCE;
     }
 
     @Override

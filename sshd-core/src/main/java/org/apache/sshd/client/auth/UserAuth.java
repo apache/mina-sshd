@@ -16,8 +16,11 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.server.auth;
+package org.apache.sshd.client.auth;
 
+import java.util.Collection;
+
+import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
@@ -25,32 +28,12 @@ import org.apache.sshd.common.util.buffer.Buffer;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class UserAuthNone extends AbstractUserAuth {
+public interface UserAuth {
 
-    public static class UserAuthNoneFactory implements UserAuthFactory {
-        public static final UserAuthNoneFactory INSTANCE = new UserAuthNoneFactory();
+    void init(ClientSession session, String service, Collection<?> identities) throws Exception;
 
-        public UserAuthNoneFactory() {
-            super();
-        }
+    boolean process(Buffer buffer) throws Exception;
 
-        @Override
-        public String getName() {
-            return "none";
-        }
-        @Override
-        public UserAuth create() {
-            return new UserAuthNone();
-        }
-    }
-
-    public UserAuthNone() {
-        super();
-    }
-
-    @Override
-    public Boolean doAuth(Buffer buffer, boolean init) {
-        return Boolean.TRUE;
-    }
+    void destroy();
 
 }

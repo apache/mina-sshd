@@ -20,6 +20,8 @@ package org.apache.sshd.client;
 
 import java.util.List;
 
+import org.apache.sshd.client.auth.UserAuth;
+import org.apache.sshd.client.auth.UserInteraction;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 

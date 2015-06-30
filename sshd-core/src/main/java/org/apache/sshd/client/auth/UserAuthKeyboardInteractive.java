@@ -28,10 +28,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.apache.sshd.client.ClientFactoryManager;
-import org.apache.sshd.client.UserAuth;
-import org.apache.sshd.client.UserInteraction;
 import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -44,7 +41,7 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  */
 public class UserAuthKeyboardInteractive extends AbstractLoggingBean implements UserAuth {
 
-    public static class UserAuthKeyboardInteractiveFactory implements NamedFactory<UserAuth> {
+    public static class UserAuthKeyboardInteractiveFactory implements UserAuthFactory {
         public static final UserAuthKeyboardInteractiveFactory INSTANCE = new UserAuthKeyboardInteractiveFactory();
 
         public UserAuthKeyboardInteractiveFactory() {

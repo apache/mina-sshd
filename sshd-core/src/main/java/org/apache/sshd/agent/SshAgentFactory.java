@@ -31,11 +31,10 @@ import org.apache.sshd.common.session.ConnectionService;
 public interface SshAgentFactory {
 
     /**
-     * Retrieve the channel factory used to create channels on the client side.
      * The channels are requested by the ssh server when forwarding a client request.
      * The channel will receive agent requests and need to forward them to the agent,
      * either local or through another proxy.
-     * @return
+     * @return The channel factory used to create channels on the client side
      */
     NamedFactory<Channel> getChannelForwardingFactory();
 

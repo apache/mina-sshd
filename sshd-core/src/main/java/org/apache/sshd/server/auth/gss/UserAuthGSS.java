@@ -18,7 +18,6 @@
  */
 package org.apache.sshd.server.auth.gss;
 
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.util.GenericUtils;
@@ -26,8 +25,9 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.server.ServerFactoryManager;
-import org.apache.sshd.server.UserAuth;
 import org.apache.sshd.server.auth.AbstractUserAuth;
+import org.apache.sshd.server.auth.UserAuth;
+import org.apache.sshd.server.auth.UserAuthFactory;
 import org.apache.sshd.server.session.ServerSession;
 import org.ietf.jgss.GSSContext;
 import org.ietf.jgss.GSSCredential;
@@ -107,10 +107,10 @@ public class UserAuthGSS extends AbstractUserAuth {
         else
         {
             byte msg = buffer.getByte();
-            if (!(msg == SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE ||
-                    msg == SshConstants.SSH_MSG_USERAUTH_GSSAPI_MIC && context.isEstablished())) {
+            if (!((msg == SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE)
+               || (msg == SshConstants.SSH_MSG_USERAUTH_GSSAPI_MIC) && context.isEstablished())) {
                 throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
-                        "Packet not supported by user authentication method");
+                        "Packet not supported by user authentication method: " + msg);
             }
 
             log.debug("In krb5.next: msg = " + msg);
@@ -236,7 +236,7 @@ public class UserAuthGSS extends AbstractUserAuth {
     /**
      * Factory class.
      */
-    public static class UserAuthGSSFactory implements NamedFactory<UserAuth> {
+    public static class UserAuthGSSFactory implements UserAuthFactory {
         public static final UserAuthGSSFactory INSTANCE = new UserAuthGSSFactory();
         
         public UserAuthGSSFactory() {

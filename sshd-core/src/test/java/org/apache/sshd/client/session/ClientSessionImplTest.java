@@ -59,8 +59,8 @@ public class ClientSessionImplTest extends BaseTestSupport {
         Mockito.when(client.getRandomFactory()).thenReturn(randomFactory);
         
         List<ServiceFactory> serviceFactories = Arrays.asList(
-                    new ClientUserAuthService.Factory(),
-                    new ClientConnectionService.Factory()
+                    ClientUserAuthService.ClientUserAuthServiceFactory.INSTANCE,
+                    ClientConnectionService.ClientConnectionServiceFactory.INSTANCE
                 );
         Mockito.when(client.getServiceFactories()).thenReturn(serviceFactories);
 

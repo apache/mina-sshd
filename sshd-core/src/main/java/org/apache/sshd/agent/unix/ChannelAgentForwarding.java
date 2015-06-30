@@ -28,9 +28,9 @@ import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.FactoryManagerUtils;
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.Channel;
+import org.apache.sshd.common.channel.ChannelFactory;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
@@ -49,7 +49,7 @@ import org.apache.tomcat.jni.Status;
  */
 public class ChannelAgentForwarding extends AbstractServerChannel {
 
-    public static class ChannelAgentForwardingFactory implements NamedFactory<Channel>, ExecutorServiceCarrier {
+    public static class ChannelAgentForwardingFactory implements ChannelFactory, ExecutorServiceCarrier {
         public static final ChannelAgentForwardingFactory INSTANCE = new ChannelAgentForwardingFactory();
         
         public ChannelAgentForwardingFactory() {

@@ -20,9 +20,9 @@ package org.apache.sshd.server.global;
 
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshdSocketAddress;
-import org.apache.sshd.common.channel.RequestHandler;
 import org.apache.sshd.common.forward.TcpipForwarder;
 import org.apache.sshd.common.session.ConnectionService;
+import org.apache.sshd.common.session.ConnectionServiceRequestHandler;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
@@ -32,8 +32,9 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class CancelTcpipForwardHandler extends AbstractLoggingBean implements RequestHandler<ConnectionService> {
+public class CancelTcpipForwardHandler extends AbstractLoggingBean implements ConnectionServiceRequestHandler {
     public static final String REQUEST = "cancel-tcpip-forward";
+    public static final CancelTcpipForwardHandler INSTANCE = new CancelTcpipForwardHandler();
 
     public CancelTcpipForwardHandler() {
         super();
@@ -58,8 +59,10 @@ public class CancelTcpipForwardHandler extends AbstractLoggingBean implements Re
                 buffer.putInt(port);
                 session.writePacket(buffer);
             }
+
             return Result.Replied;
         }
+
         return Result.Unsupported;
     }
 

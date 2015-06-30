@@ -37,6 +37,7 @@ import org.apache.sshd.common.kex.DHG;
 import org.apache.sshd.common.kex.DHGroupData;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.kex.KeyExchange;
+import org.apache.sshd.common.kex.KeyExchangeFactory;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.signature.Signature;
@@ -61,8 +62,8 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
     protected byte expected;
     protected boolean oldRequest;
 
-    public static NamedFactory<KeyExchange> newFactory(final DHFactory factory) {
-        return new NamedFactory<KeyExchange>() {
+    public static KeyExchangeFactory newFactory(final DHFactory factory) {
+        return new KeyExchangeFactory() {
             @Override
             public KeyExchange create() {
                 return new DHGEXServer(factory);

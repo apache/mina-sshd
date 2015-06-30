@@ -18,13 +18,11 @@
  */
 package org.apache.sshd.server.auth;
 
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.server.PasswordAuthenticator;
 import org.apache.sshd.server.ServerFactoryManager;
-import org.apache.sshd.server.UserAuth;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
@@ -34,7 +32,7 @@ import org.apache.sshd.server.session.ServerSession;
  */
 public class UserAuthPassword extends AbstractUserAuth {
 
-    public static class UserAuthPasswordFactory implements NamedFactory<UserAuth> {
+    public static class UserAuthPasswordFactory implements UserAuthFactory {
         public static final UserAuthPasswordFactory INSTANCE = new UserAuthPasswordFactory();
         
         public UserAuthPasswordFactory() {

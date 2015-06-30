@@ -37,6 +37,7 @@ import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoHandler;
+import org.apache.sshd.common.io.IoHandlerFactory;
 import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.session.ConnectionService;
@@ -57,7 +58,7 @@ import org.apache.sshd.server.forward.ForwardingFilter;
 public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable implements TcpipForwarder {
 
     private final ConnectionService service;
-    private final Factory<IoHandler> socksProxyIoHandlerFactory = new Factory<IoHandler>() {
+    private final IoHandlerFactory socksProxyIoHandlerFactory = new IoHandlerFactory() {
             @Override
             public IoHandler create() {
                 return new SocksProxy(getConnectionService());
@@ -68,7 +69,7 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
     private final Map<Integer, SshdSocketAddress> remoteToLocal = new HashMap<Integer, SshdSocketAddress>();
     private final Map<Integer, SocksProxy> dynamicLocal = new HashMap<Integer, SocksProxy>();
     private final Set<LocalForwardingEntry> localForwards = new HashSet<LocalForwardingEntry>();
-    private final Factory<IoHandler> staticIoHandlerFactory = new Factory<IoHandler>() {
+    private final IoHandlerFactory staticIoHandlerFactory = new IoHandlerFactory() {
             @Override
             public IoHandler create() {
                 return new StaticIoHandler();

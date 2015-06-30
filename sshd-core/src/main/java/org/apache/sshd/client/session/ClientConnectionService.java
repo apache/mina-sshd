@@ -41,7 +41,12 @@ import org.apache.sshd.common.util.buffer.Buffer;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ClientConnectionService extends AbstractConnectionService {
-    public static class Factory implements ServiceFactory {
+    public static class ClientConnectionServiceFactory implements ServiceFactory {
+        public static final ClientConnectionServiceFactory INSTANCE = new ClientConnectionServiceFactory();
+
+        public ClientConnectionServiceFactory() {
+            super();
+        }
 
         @Override
         public String getName() {

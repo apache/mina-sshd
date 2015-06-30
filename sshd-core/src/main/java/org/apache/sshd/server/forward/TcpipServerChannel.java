@@ -27,10 +27,10 @@ import java.util.concurrent.ExecutorService;
 import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.channel.Channel;
+import org.apache.sshd.common.channel.ChannelFactory;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
@@ -54,7 +54,7 @@ import org.apache.sshd.server.channel.OpenChannelException;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class TcpipServerChannel extends AbstractServerChannel {
-    public abstract static class TcpipFactory implements NamedFactory<Channel>, ExecutorServiceCarrier {
+    public abstract static class TcpipFactory implements ChannelFactory, ExecutorServiceCarrier {
         private final ForwardingFilter.Type type;
 
         protected TcpipFactory(ForwardingFilter.Type type) {

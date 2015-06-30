@@ -24,8 +24,8 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.apache.sshd.client.ClientFactoryManager;
-import org.apache.sshd.client.UserAuth;
-import org.apache.sshd.client.UserInteraction;
+import org.apache.sshd.client.auth.UserAuth;
+import org.apache.sshd.client.auth.UserInteraction;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.DefaultAuthFuture;
 import org.apache.sshd.common.FactoryManagerUtils;
@@ -46,7 +46,12 @@ import org.apache.sshd.common.util.buffer.Buffer;
  */
 public class ClientUserAuthService extends CloseableUtils.AbstractCloseable implements Service {
 
-    public static class Factory implements ServiceFactory {
+    public static class ClientUserAuthServiceFactory implements ServiceFactory {
+        public static final ClientUserAuthServiceFactory INSTANCE = new ClientUserAuthServiceFactory();
+
+        public ClientUserAuthServiceFactory() {
+            super();
+        }
 
         @Override
         public String getName() {

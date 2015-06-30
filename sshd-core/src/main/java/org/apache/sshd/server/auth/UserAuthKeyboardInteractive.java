@@ -19,7 +19,6 @@
 package org.apache.sshd.server.auth;
 
 import org.apache.sshd.common.FactoryManagerUtils;
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.util.GenericUtils;
@@ -27,7 +26,6 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.server.PasswordAuthenticator;
 import org.apache.sshd.server.ServerFactoryManager;
-import org.apache.sshd.server.UserAuth;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
@@ -35,7 +33,7 @@ import org.apache.sshd.server.session.ServerSession;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class UserAuthKeyboardInteractive extends AbstractUserAuth {
-    public static class UserAuthKeyboardInteractiveFactory implements NamedFactory<UserAuth> {
+    public static class UserAuthKeyboardInteractiveFactory implements UserAuthFactory {
         public static final UserAuthKeyboardInteractiveFactory INSTANCE = new UserAuthKeyboardInteractiveFactory();
 
         public UserAuthKeyboardInteractiveFactory() {

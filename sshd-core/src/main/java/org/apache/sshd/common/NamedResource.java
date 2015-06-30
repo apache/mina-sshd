@@ -95,11 +95,21 @@ public interface NamedResource {
         
         /**
          * @param name Name of the resource - ignored if {@code null}/empty
+         * @param resources The {@link NamedResource} to check - ignored if {@code null}/empty
+         * @return The <U>first</U> resource whose name matches case <U>sensitive</U>
+         * the given name - {@code null} if no match found
+         */
+        public static <R extends NamedResource> R findByName(String name, Collection<? extends R> resources) {
+            return findByName(name, GenericUtils.CASE_SENSITIVE_ORDER, resources);
+        }
+
+        /**
+         * @param name Name of the resource - ignored if {@code null}/empty
          * @param c The {@link Comparator} to decide whether the {@link NamedResource#getName()}
          * matches the <tt>name</tt> parameter
          * @param resources The {@link NamedResource} to check - ignored if {@code null}/empty
-         * @return The <U>first</U> resource whose name matches the parameter - {@code null}
-         * if no match found
+         * @return The <U>first</U> resource whose name matches the parameter (by invoking
+         * {@link Comparator#compare(Object, Object)} - {@code null} if no match found
          */
         public static <R extends NamedResource> R findByName(String name, Comparator<? super String> c, Collection<? extends R> resources) {
             if (GenericUtils.isEmpty(name) || GenericUtils.isEmpty(resources)) {

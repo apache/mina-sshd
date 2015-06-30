@@ -31,44 +31,39 @@ public interface Cipher  {
     }
 
     /**
-     * Retrieves the size of the initialization vector
-     *
-     * @return
+     * @return Size of the initialization vector (in bytes)
      */
     int getIVSize();
 
     /**
-     * Retrieves the block size for this cipher
-     *
-     * @return
+     * @return The block size (in bytes) for this cipher
      */
     int getBlockSize();
 
     /**
      * Initialize the cipher for encryption or decryption with
-     * the given private key and initialization vector
-     *
-     * @param mode
-     * @param key
-     * @param iv
-     * @throws Exception
+     * the given key and initialization vector
+     * @param mode Encrypt/Decrypt initialization
+     * @param key Key bytes
+     * @param iv Initialization vector bytes
+     * @throws Exception If failed to initialize
      */
     void init(Mode mode, byte[] key, byte[] iv) throws Exception;
 
     /**
      * Performs in-place encryption or decryption on the given data.
      * @param input The input/output bytes
-     * @throws Exception
+     * @throws Exception If failed to execute
+     * @see #update(byte[], int, int)
      */
-    void update(byte[] input) throws Exception;
+    void update(byte[] input) throws Exception; // TODO make this a default method in JDK-8
 
     /**
      * Performs in-place encryption or decryption on the given data.
-     * 
-     * @param input
-     * @param inputOffset
-     * @param inputLen
-     * @throws Exception
+     * @param input The input/output bytes
+     * @param inputOffset The offset of the data in the data buffer
+     * @param inputLen The number of bytes to update - starting at the given offset
+     * @throws Exception If failed to execute
      */
     void update(byte[] input, int inputOffset, int inputLen) throws Exception;
 

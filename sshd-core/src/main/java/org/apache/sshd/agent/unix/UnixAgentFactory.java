@@ -40,17 +40,17 @@ public class UnixAgentFactory implements SshAgentFactory, ExecutorServiceConfigu
     private ExecutorService executor;
     private boolean shutdownExecutor;
     private final NamedFactory<Channel> factory = new ChannelAgentForwarding.ChannelAgentForwardingFactory() {
-        @Override
-        public ExecutorService getExecutorService() {
-            return UnixAgentFactory.this.getExecutorService();
-        }
-
-        @Override
-        public boolean isShutdownOnExit() {
-            return UnixAgentFactory.this.isShutdownOnExit();
-        }
-        
-    };
+            @Override
+            public ExecutorService getExecutorService() {
+                return UnixAgentFactory.this.getExecutorService();
+            }
+    
+            @Override
+            public boolean isShutdownOnExit() {
+                return UnixAgentFactory.this.isShutdownOnExit();
+            }
+            
+        };
 
     public UnixAgentFactory() {
         super();

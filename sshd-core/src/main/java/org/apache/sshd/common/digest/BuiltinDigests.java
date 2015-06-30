@@ -32,7 +32,7 @@ import org.apache.sshd.common.util.GenericUtils;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public enum BuiltinDigests implements DigestInformation, NamedFactory<Digest> {
+public enum BuiltinDigests implements DigestInformation, DigestFactory {
     md5(Constants.MD5, "MD5", 16),
     sha1(Constants.SHA1, "SHA-1", 20),
     sha256(Constants.SHA256, "SHA-256", 32),

@@ -18,8 +18,6 @@
  */
 package org.apache.sshd.client.auth;
 
-import static org.apache.sshd.common.config.keys.KeyUtils.getKeyType;
-
 import java.io.IOException;
 import java.security.KeyPair;
 import java.security.PublicKey;
@@ -30,13 +28,12 @@ import java.util.List;
 
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.SshAgentFactory;
-import org.apache.sshd.client.UserAuth;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
-import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -51,7 +48,7 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  */
 public class UserAuthPublicKey extends AbstractLoggingBean implements UserAuth {
 
-    public static class UserAuthPublicKeyFactory implements NamedFactory<UserAuth> {
+    public static class UserAuthPublicKeyFactory implements UserAuthFactory {
         public static final String NAME = "publickey";
         public static final UserAuthPublicKeyFactory INSTANCE = new UserAuthPublicKeyFactory();
 
@@ -117,8 +114,9 @@ public class UserAuthPublicKey extends AbstractLoggingBean implements UserAuth {
             if (keys.hasNext()) {
                 current = keys.next();
                 PublicKey key = current.getPublicKey();
-                String algo = getKeyType(key);
-                log.debug("Send SSH_MSG_USERAUTH_REQUEST for publickey");
+                String algo = KeyUtils.getKeyType(key);
+                log.debug("Send SSH_MSG_USERAUTH_REQUEST request publickey algo={}", algo);
+
                 buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST);
                 buffer.putString(session.getUsername());
                 buffer.putString(service);
@@ -129,13 +127,16 @@ public class UserAuthPublicKey extends AbstractLoggingBean implements UserAuth {
                 session.writePacket(buffer);
                 return true;
             }
+            
+            log.debug("No more keys to send");
             return false;
         }
+
         byte cmd = buffer.getByte();
         if (cmd == SshConstants.SSH_MSG_USERAUTH_PK_OK) {
             PublicKey key = current.getPublicKey();
-            String algo = getKeyType(key);
-            log.debug("Send SSH_MSG_USERAUTH_REQUEST for publickey");
+            String algo = KeyUtils.getKeyType(key);
+            log.debug("Send SSH_MSG_USERAUTH_REQUEST reply publickey algo={}", algo);
             buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST);
             buffer.putString(session.getUsername());
             buffer.putString(service);
@@ -145,7 +146,7 @@ public class UserAuthPublicKey extends AbstractLoggingBean implements UserAuth {
             buffer.putPublicKey(key);
 
             Buffer bs = new ByteArrayBuffer();
-            bs.putBytes(((AbstractSession) session).getKex().getH());
+            bs.putBytes(session.getKex().getH());
             bs.putByte(SshConstants.SSH_MSG_USERAUTH_REQUEST);
             bs.putString(session.getUsername());
             bs.putString(service);
@@ -153,8 +154,8 @@ public class UserAuthPublicKey extends AbstractLoggingBean implements UserAuth {
             bs.putByte((byte) 1);
             bs.putString(algo);
             bs.putPublicKey(key);
-            byte[] sig = current.sign(bs.getCompactData());
 
+            byte[] sig = current.sign(bs.getCompactData());
             bs = new ByteArrayBuffer();
             bs.putString(algo);
             bs.putBytes(sig);
@@ -164,7 +165,7 @@ public class UserAuthPublicKey extends AbstractLoggingBean implements UserAuth {
             return true;
         }
 
-        throw new IllegalStateException("Received unknown packet");
+        throw new IllegalStateException("Received unknown packet: cmd=" + cmd);
     }
 
     @Override
@@ -219,7 +220,7 @@ public class UserAuthPublicKey extends AbstractLoggingBean implements UserAuth {
 
         @Override
         public byte[] sign(byte[] data) throws Exception {
-            String keyType = getKeyType(pair);
+            String keyType = KeyUtils.getKeyType(pair);
             Signature verif = ValidateUtils.checkNotNull(
                     NamedFactory.Utils.create(manager.getSignatureFactories(), keyType),
                     "No signer could be located for key type=%s",

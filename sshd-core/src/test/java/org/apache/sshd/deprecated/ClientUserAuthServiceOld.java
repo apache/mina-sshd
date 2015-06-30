@@ -20,7 +20,7 @@ package org.apache.sshd.deprecated;
 
 import java.io.IOException;
 
-import org.apache.sshd.client.UserInteraction;
+import org.apache.sshd.client.auth.UserInteraction;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.DefaultAuthFuture;
 import org.apache.sshd.client.session.ClientSessionImpl;

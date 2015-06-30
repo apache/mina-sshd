@@ -28,6 +28,7 @@ import org.apache.sshd.common.kex.AbstractDH;
 import org.apache.sshd.common.kex.DHFactory;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.kex.KeyExchange;
+import org.apache.sshd.common.kex.KeyExchangeFactory;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.GenericUtils;
@@ -44,8 +45,8 @@ public class DHGServer extends AbstractDHServerKeyExchange {
     protected final DHFactory factory;
     protected AbstractDH dh;
 
-    public static NamedFactory<KeyExchange> newFactory(final DHFactory factory) {
-        return new NamedFactory<KeyExchange>() {
+    public static KeyExchangeFactory newFactory(final DHFactory factory) {
+        return new KeyExchangeFactory() {
             @Override
             public KeyExchange create() {
                 return new DHGServer(factory);

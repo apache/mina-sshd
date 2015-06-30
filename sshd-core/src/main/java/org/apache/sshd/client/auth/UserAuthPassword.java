@@ -23,9 +23,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.sshd.client.UserAuth;
 import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
@@ -37,7 +35,7 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  */
 public class UserAuthPassword extends AbstractLoggingBean implements UserAuth {
 
-    public static class UserAuthPasswordFactory implements NamedFactory<UserAuth> {
+    public static class UserAuthPasswordFactory implements UserAuthFactory {
         public static final UserAuthPasswordFactory INSTANCE = new UserAuthPasswordFactory();
 
         public UserAuthPasswordFactory() {

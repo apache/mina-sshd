@@ -16,41 +16,21 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.server.auth;
 
-import org.apache.sshd.common.util.buffer.Buffer;
+package org.apache.sshd.common.channel;
+
+import org.apache.sshd.common.util.Transformer;
 
 /**
- * TODO Add javadoc
- *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class UserAuthNone extends AbstractUserAuth {
-
-    public static class UserAuthNoneFactory implements UserAuthFactory {
-        public static final UserAuthNoneFactory INSTANCE = new UserAuthNoneFactory();
-
-        public UserAuthNoneFactory() {
-            super();
-        }
-
-        @Override
-        public String getName() {
-            return "none";
-        }
-        @Override
-        public UserAuth create() {
-            return new UserAuthNone();
-        }
-    }
-
-    public UserAuthNone() {
-        super();
-    }
-
-    @Override
-    public Boolean doAuth(Buffer buffer, boolean init) {
-        return Boolean.TRUE;
-    }
-
+public interface ChannelRequestHandler extends RequestHandler<Channel> {
+    // required because of generics issues
+    Transformer<ChannelRequestHandler,RequestHandler<Channel>> CHANN2HNDLR =
+            new Transformer<ChannelRequestHandler, RequestHandler<Channel>>() {
+                @Override
+                public RequestHandler<Channel> transform(ChannelRequestHandler input) {
+                    return input;
+                }
+            };
 }

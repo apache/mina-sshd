@@ -32,7 +32,7 @@ import org.apache.sshd.common.channel.AbstractChannel;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelAsyncInputStream;
 import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
-import org.apache.sshd.common.channel.RequestHandler;
+import org.apache.sshd.common.channel.ChannelRequestHandler;
 import org.apache.sshd.common.io.IoInputStream;
 import org.apache.sshd.common.io.IoOutputStream;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -328,7 +328,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         return exitStatus;
     }
 
-    private class ExitStatusChannelRequestHandler implements RequestHandler<Channel> {
+    private class ExitStatusChannelRequestHandler implements ChannelRequestHandler {
         public ExitStatusChannelRequestHandler() {
             super();
         }
@@ -345,7 +345,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         }
     }
 
-    private class ExitSignalChannelRequestHandler implements RequestHandler<Channel> {
+    private class ExitSignalChannelRequestHandler implements ChannelRequestHandler {
         public ExitSignalChannelRequestHandler() {
             super();
         }

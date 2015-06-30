@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Transformer;
 
 /**
@@ -50,7 +49,6 @@ public interface NamedFactory<T> extends Factory<T>, NamedResource {
         /**
          * Create an instance of the specified name by looking up the needed factory
          * in the list.
-         * 
          * @param factories list of available factories
          * @param name the factory name to use
          * @param <T> type of object to create
@@ -67,7 +65,6 @@ public interface NamedFactory<T> extends Factory<T>, NamedResource {
 
         /**
          * Get a comma separated list of the factory names from the given list.
-         *
          * @param factories list of available factories
          * @return a comma separated list of factory names
          * @deprecated Use {@link NamedResource.Utils#getNames(Collection)}
@@ -79,7 +76,6 @@ public interface NamedFactory<T> extends Factory<T>, NamedResource {
 
         /**
          * Remove the factory identified by the name from the list.
-         *
          * @param factories list of factories
          * @param name the name of the factory to remove
          * @param <T> type of object to create
@@ -95,23 +91,15 @@ public interface NamedFactory<T> extends Factory<T>, NamedResource {
 
         /**
          * Retrieve the factory identified by its name from the list.
-         *
          * @param factories list of available factories
-         * @param name the name of the factory to retrieve
-         * @param <T> type of object create by the factories
-         * @return a factory or <code>null</code> if not found in the list
+         * @param name the name of the factory to retrieve - ignored if {@code null}/empty
+         * @param <T> type of object create by the factories - ignored if {@code null}/empty
+         * @return A (case <U>insensitive</U>) matching factory or {@code null} if not found in the list
+         * @deprecated Use {@link NamedResource.Utils#findByName(String, java.util.Comparator, Collection)
          */
+        @Deprecated
         public static <T> NamedFactory<T> get(Collection<? extends NamedFactory<T>> factories, String name) {
-            if (GenericUtils.isEmpty(factories)) {
-                return null;
-            }
-
-            for (NamedFactory<T> f : factories) {
-                if (f.getName().equals(name)) {
-                    return f;
-                }
-            }
-            return null;
+            return NamedResource.Utils.findByName(name, String.CASE_INSENSITIVE_ORDER, factories);
         }
 
         public static final <S extends OptionalFeature,T,E extends NamedFactory<T>> List<NamedFactory<T>> setUpTransformedFactories(

@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.util.Collection;
 
 import org.apache.sshd.common.session.Session;
-import org.apache.sshd.common.util.GenericUtils;
 
 public interface ServiceFactory extends NamedResource {
     Service create(Session session) throws IOException;
@@ -31,27 +30,22 @@ public interface ServiceFactory extends NamedResource {
      * Utility class to help using NamedFactories
      */
     public static class Utils {
-
         /**
          * Create an instance of the specified name by looking up the needed factory
-         * in the list.
-         *
+         * in the list (case <U>insensitive</U>.
          * @param factories list of available factories
          * @param name the factory name to use
          * @return a newly created object or <code>null</code> if the factory is not in the list
+         * @throws IOException if session creation failed
+         * @see ServiceFactory#create(Session)
          */
         public static Service create(Collection<? extends ServiceFactory> factories, String name, Session session) throws IOException {
-            if (GenericUtils.isEmpty(factories)) {
+            ServiceFactory factory = NamedResource.Utils.findByName(name, String.CASE_INSENSITIVE_ORDER, factories);
+            if (factory == null) {
                 return null;
+            } else {
+                return factory.create(session);
             }
-
-            for (ServiceFactory f : factories) {
-                if (f.getName().equals(name)) {
-                    return f.create(session);
-                }
-            }
-
-            return null;
         }
     }
 }

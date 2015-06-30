@@ -100,7 +100,7 @@ public class AuthenticationTest extends BaseTestSupport {
         try(SshClient client = SshClient.setUpDefaultClient()) {
             client.setServiceFactories(Arrays.asList(
                     new ClientUserAuthServiceOld.Factory(),
-                    new ClientConnectionService.Factory()
+                    ClientConnectionService.ClientConnectionServiceFactory.INSTANCE
             ));
 
             client.start();
@@ -125,7 +125,7 @@ public class AuthenticationTest extends BaseTestSupport {
         try(SshClient client = SshClient.setUpDefaultClient()) {
             client.setServiceFactories(Arrays.asList(
                     new ClientUserAuthServiceOld.Factory(),
-                    new ClientConnectionService.Factory()
+                    ClientConnectionService.ClientConnectionServiceFactory.INSTANCE
             ));
             client.start();
             
@@ -146,7 +146,7 @@ public class AuthenticationTest extends BaseTestSupport {
         try(SshClient client = SshClient.setUpDefaultClient()) {
             client.setServiceFactories(Arrays.asList(
                     new ClientUserAuthServiceOld.Factory(),
-                    new ClientConnectionService.Factory()
+                    ClientConnectionService.ClientConnectionServiceFactory.INSTANCE
             ));
             client.start();
             
@@ -168,7 +168,7 @@ public class AuthenticationTest extends BaseTestSupport {
         try(SshClient client = SshClient.setUpDefaultClient()) {
             client.setServiceFactories(Arrays.asList(
                     new ClientUserAuthServiceOld.Factory(),
-                    new ClientConnectionService.Factory()
+                    ClientConnectionService.ClientConnectionServiceFactory.INSTANCE
             ));
             client.start();
             

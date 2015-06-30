@@ -31,6 +31,7 @@ import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.digest.BaseDigest;
 import org.apache.sshd.common.digest.BuiltinDigests;
 import org.apache.sshd.common.digest.Digest;
+import org.apache.sshd.common.digest.DigestFactory;
 import org.apache.sshd.common.digest.DigestInformation;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
@@ -117,7 +118,12 @@ public class KeyUtilsTest extends BaseTestSupport {
                         throw thrown;
                     }
                 };
-            String actual = KeyUtils.getFingerPrint(new Factory<Digest>() {
+            String actual = KeyUtils.getFingerPrint(new DigestFactory() {
+                    @Override
+                    public String getName() {
+                        return getCurrentTestName();
+                    }
+
                     @Override
                     public Digest create() {
                         return digest;

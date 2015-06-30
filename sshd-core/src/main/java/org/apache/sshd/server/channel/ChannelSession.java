@@ -41,9 +41,10 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
+import org.apache.sshd.common.channel.ChannelFactory;
 import org.apache.sshd.common.channel.ChannelOutputStream;
+import org.apache.sshd.common.channel.ChannelRequestHandler;
 import org.apache.sshd.common.channel.PtyMode;
-import org.apache.sshd.common.channel.RequestHandler;
 import org.apache.sshd.common.file.FileSystemAware;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.future.CloseFuture;
@@ -79,7 +80,7 @@ public class ChannelSession extends AbstractServerChannel {
 
     public static final long DEFAULT_COMMAND_EXIT_TIMEOUT = 5000;
 
-    public static class ChannelSessionFactory implements NamedFactory<Channel> {
+    public static class ChannelSessionFactory implements ChannelFactory {
         public static final ChannelSessionFactory   INSTANCE = new ChannelSessionFactory();
 
         public ChannelSessionFactory() {
@@ -315,6 +316,14 @@ public class ChannelSession extends AbstractServerChannel {
         throw new UnsupportedOperationException("Server channel does not support extended data");
     }
 
+    /**
+     * @param type The request type
+     * @param buffer The {@link Buffer} containing extra request-specific content
+     * @return A {@link Boolean} representing the success/failure of handling
+     * the request - {@code null} if unknown request received
+     * @throws IOException If request requires some extra response and failed
+     * to generate it
+     */
     public Boolean handleRequest(String type, Buffer buffer) throws IOException {
         if ("env".equals(type)) {
             return Boolean.valueOf(handleEnv(buffer));
@@ -332,7 +341,7 @@ public class ChannelSession extends AbstractServerChannel {
             return Boolean.valueOf(handleBreak(buffer));
         }
         if ("shell".equals(type)) {
-            if (this.type == null && handleShell(buffer)) {
+            if ((this.type == null) && handleShell(buffer)) {
                 this.type = type;
                 return Boolean.TRUE;
             } else {
@@ -340,7 +349,7 @@ public class ChannelSession extends AbstractServerChannel {
             }
         }
         if ("exec".equals(type)) {
-            if (this.type == null && handleExec(buffer)) {
+            if ((this.type == null) && handleExec(buffer)) {
                 this.type = type;
                 return Boolean.TRUE;
             } else {
@@ -348,7 +357,7 @@ public class ChannelSession extends AbstractServerChannel {
             }
         }
         if ("subsystem".equals(type)) {
-            if (this.type == null && handleSubsystem(buffer)) {
+            if ((this.type == null) && handleSubsystem(buffer)) {
                 this.type = type;
                 return Boolean.TRUE;
             } else {
@@ -369,7 +378,7 @@ public class ChannelSession extends AbstractServerChannel {
         String value = buffer.getString();
         addEnvVariable(name, value);
         if (log.isDebugEnabled()) {
-            log.debug("env for channel {}: {} = {}", new Object[] { Integer.valueOf(id), name, value });
+            log.debug("env for channel {}: {} = {}", Integer.valueOf(id), name, value);
         }
         return true;
     }
@@ -402,11 +411,12 @@ public class ChannelSession extends AbstractServerChannel {
         }
         if (log.isDebugEnabled()) {
             log.debug("pty for channel {}: term={}, size=({} - {}), pixels=({}, {}), modes=[{}]",
-                      new Object[] { Integer.valueOf(id), term, 
-                                     Integer.valueOf(tColumns), Integer.valueOf(tRows),
-                                     Integer.valueOf(tWidth), Integer.valueOf(tHeight),
-                                     ptyModes });
+                      Integer.valueOf(id), term, 
+                      Integer.valueOf(tColumns), Integer.valueOf(tRows),
+                      Integer.valueOf(tWidth), Integer.valueOf(tHeight),
+                      ptyModes);
         }
+
         addEnvVariable(Environment.ENV_TERM, term);
         addEnvVariable(Environment.ENV_COLUMNS, Integer.toString(tColumns));
         addEnvVariable(Environment.ENV_LINES, Integer.toString(tRows));
@@ -420,9 +430,9 @@ public class ChannelSession extends AbstractServerChannel {
         int tHeight = buffer.getInt();
         if (log.isDebugEnabled()) {
             log.debug("window-change for channel {}: ({} - {}), ({}, {})",
-                      new Object[] { Integer.valueOf(id),
-                                     Integer.valueOf(tColumns), Integer.valueOf(tRows),
-                                     Integer.valueOf(tWidth), Integer.valueOf(tHeight) });
+                      Integer.valueOf(id),
+                      Integer.valueOf(tColumns), Integer.valueOf(tRows),
+                      Integer.valueOf(tWidth), Integer.valueOf(tHeight));
         }
 
         final StandardEnvironment e = getEnvironment();
@@ -486,6 +496,7 @@ public class ChannelSession extends AbstractServerChannel {
         if (isClosing()) {
             return false;
         }
+
         String commandLine = buffer.getString();
         ServerFactoryManager manager = ((ServerSession) session).getFactoryManager();
         CommandFactory factory = manager.getCommandFactory();
@@ -493,15 +504,18 @@ public class ChannelSession extends AbstractServerChannel {
             log.warn("No command factory for command: {}", commandLine);
             return false;
         }
+
         if (log.isDebugEnabled()) {
             log.debug("Executing command: {}", commandLine);
         }
+
         try {
             command = factory.createCommand(commandLine);
         } catch (RuntimeException iae) {
             log.warn("Failed (" + iae.getClass().getSimpleName() + ") to create command for " + commandLine + ": " + iae.getMessage());
             return false;
         }
+
         prepareCommand();
         // Launch command
         command.start(getEnvironment());
@@ -521,6 +535,7 @@ public class ChannelSession extends AbstractServerChannel {
             log.warn("Unsupported subsystem: {}", subsystem);
             return false;
         }
+
         prepareCommand();
         // Launch command
         command.start(getEnvironment());
@@ -674,7 +689,7 @@ public class ChannelSession extends AbstractServerChannel {
         }
     }
 
-    private class ChannelSessionRequestHandler implements RequestHandler<Channel> {
+    private class ChannelSessionRequestHandler implements ChannelRequestHandler {
         public ChannelSessionRequestHandler() {
             super();
         }

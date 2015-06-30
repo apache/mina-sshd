@@ -113,7 +113,7 @@ public class ServerTest extends BaseTestSupport {
         client = SshClient.setUpDefaultClient();
         client.setServiceFactories(Arrays.asList(
                 new ClientUserAuthServiceOld.Factory(),
-                new ClientConnectionService.Factory()
+                ClientConnectionService.ClientConnectionServiceFactory.INSTANCE
         ));
         client.start();
         
@@ -144,7 +144,7 @@ public class ServerTest extends BaseTestSupport {
         client = SshClient.setUpDefaultClient();
         client.setServiceFactories(Arrays.asList(
                 new ClientUserAuthServiceOld.Factory(),
-                new ClientConnectionService.Factory()
+                ClientConnectionService.ClientConnectionServiceFactory.INSTANCE
         ));
         client.start();
         try(ClientSession s = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {

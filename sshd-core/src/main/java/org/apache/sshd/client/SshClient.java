@@ -38,9 +38,12 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
+import org.apache.sshd.agent.SshAgentFactory;
+import org.apache.sshd.client.auth.UserAuth;
 import org.apache.sshd.client.auth.UserAuthKeyboardInteractive;
 import org.apache.sshd.client.auth.UserAuthPassword;
 import org.apache.sshd.client.auth.UserAuthPublicKey;
+import org.apache.sshd.client.auth.UserInteraction;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.config.keys.ClientIdentity;
@@ -166,26 +169,28 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         ValidateUtils.checkNotNull(getServerKeyVerifier(), "ServerKeyVerifier not set", GenericUtils.EMPTY_OBJECT_ARRAY);
 
         // Register the additional agent forwarding channel if needed
-        if (getAgentFactory() != null) {
+        SshAgentFactory agentFactory = getAgentFactory();
+        if (agentFactory != null) {
             List<NamedFactory<Channel>> factories = getChannelFactories();
             if (GenericUtils.isEmpty(factories)) {
                 factories = new ArrayList<NamedFactory<Channel>>();
             } else {
                 factories = new ArrayList<NamedFactory<Channel>>(factories);
             }
-            factories.add(getAgentFactory().getChannelForwardingFactory());
+            factories.add(ValidateUtils.checkNotNull(agentFactory.getChannelForwardingFactory(), "No agent channel forwarding factory for %s", agentFactory));
+
             setChannelFactories(factories);
         }
 
         if (GenericUtils.isEmpty(getServiceFactories())) {
             setServiceFactories(Arrays.asList(
-                    new ClientUserAuthService.Factory(),
-                    new ClientConnectionService.Factory()
+                    ClientUserAuthService.ClientUserAuthServiceFactory.INSTANCE,
+                    ClientConnectionService.ClientConnectionServiceFactory.INSTANCE
             ));
         }
 
         if (GenericUtils.isEmpty(getUserAuthFactories())) {
-            setUserAuthFactories(Arrays.asList(
+            setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(
                     UserAuthPublicKey.UserAuthPublicKeyFactory.INSTANCE,
                     UserAuthKeyboardInteractive.UserAuthKeyboardInteractiveFactory.INSTANCE,
                     UserAuthPassword.UserAuthPasswordFactory.INSTANCE

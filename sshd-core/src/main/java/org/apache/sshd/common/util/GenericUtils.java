@@ -36,9 +36,23 @@ import java.util.TreeSet;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public final class GenericUtils {
-    public static final byte[]      EMPTY_BYTE_ARRAY={ };
-    public static final String[]    EMPTY_STRING_ARRAY={ };
-    public static final Object[]    EMPTY_OBJECT_ARRAY={ };
+    public static final byte[]   EMPTY_BYTE_ARRAY = { };
+    public static final String[] EMPTY_STRING_ARRAY = { };
+    public static final Object[] EMPTY_OBJECT_ARRAY = { };
+    
+    /**
+     * The complement of {@link String#CASE_INSENSITIVE_ORDER}
+     */
+    public static final Comparator<String> CASE_SENSITIVE_ORDER = new Comparator<String>() {
+            @Override
+            public int compare(String s1, String s2) {
+                if (s1 == s2) {
+                    return 0;
+                } else {
+                    return s1.compareTo(s2);
+                }
+            }
+        };
 
     private GenericUtils() {
         throw new UnsupportedOperationException("No instance");

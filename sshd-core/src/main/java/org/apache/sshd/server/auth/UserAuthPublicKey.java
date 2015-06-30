@@ -29,7 +29,6 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.server.PublickeyAuthenticator;
 import org.apache.sshd.server.ServerFactoryManager;
-import org.apache.sshd.server.UserAuth;
 
 /**
  * TODO Add javadoc
@@ -38,7 +37,7 @@ import org.apache.sshd.server.UserAuth;
  */
 public class UserAuthPublicKey extends AbstractUserAuth {
 
-    public static class UserAuthPublicKeyFactory implements NamedFactory<UserAuth> {
+    public static class UserAuthPublicKeyFactory implements UserAuthFactory {
         public static final String NAME = "publickey";
 
         public static final UserAuthPublicKeyFactory INSTANCE = new UserAuthPublicKeyFactory();

@@ -38,9 +38,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.sshd.client.auth.UserAuth;
 import org.apache.sshd.client.auth.UserAuthKeyboardInteractive;
 import org.apache.sshd.client.auth.UserAuthPassword;
 import org.apache.sshd.client.auth.UserAuthPublicKey;
+import org.apache.sshd.client.auth.UserInteraction;
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.ClientChannel;
@@ -799,12 +801,12 @@ public class ClientTest extends BaseTestSupport {
                                     }
                                 }
                         ));
-        sshd.setUserAuthFactories(Arrays.<NamedFactory<org.apache.sshd.server.UserAuth>>asList(
+        sshd.setUserAuthFactories(Arrays.<NamedFactory<org.apache.sshd.server.auth.UserAuth>>asList(
                 new org.apache.sshd.server.auth.UserAuthKeyboardInteractive.UserAuthKeyboardInteractiveFactory() {
                     private int xformerIndex;
 
                     @Override
-                    public org.apache.sshd.server.UserAuth create() {
+                    public org.apache.sshd.server.auth.UserAuth create() {
                         return new org.apache.sshd.server.auth.UserAuthKeyboardInteractive() {
     
                             @SuppressWarnings("synthetic-access")

@@ -26,6 +26,7 @@ import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.kex.AbstractDH;
 import org.apache.sshd.common.kex.DHFactory;
 import org.apache.sshd.common.kex.KeyExchange;
+import org.apache.sshd.common.kex.KeyExchangeFactory;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.signature.Signature;
@@ -46,8 +47,8 @@ public class DHGClient extends AbstractDHClientKeyExchange {
     protected final DHFactory factory;
     protected AbstractDH dh;
 
-    public static final NamedFactory<KeyExchange> newFactory(final DHFactory delegate) {
-        return new NamedFactory<KeyExchange>() {
+    public static final KeyExchangeFactory newFactory(final DHFactory delegate) {
+        return new KeyExchangeFactory() {
             @Override
             public String getName() {
                 return delegate.getName();

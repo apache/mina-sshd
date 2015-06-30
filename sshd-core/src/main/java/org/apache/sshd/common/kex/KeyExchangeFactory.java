@@ -16,41 +16,22 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.server.auth;
 
-import org.apache.sshd.common.util.buffer.Buffer;
+package org.apache.sshd.common.kex;
+
+import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.util.Transformer;
 
 /**
- * TODO Add javadoc
- *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class UserAuthNone extends AbstractUserAuth {
-
-    public static class UserAuthNoneFactory implements UserAuthFactory {
-        public static final UserAuthNoneFactory INSTANCE = new UserAuthNoneFactory();
-
-        public UserAuthNoneFactory() {
-            super();
-        }
-
+public interface KeyExchangeFactory extends NamedFactory<KeyExchange> {
+    // required because of generics issues
+    Transformer<KeyExchangeFactory,NamedFactory<KeyExchange>> FAC2NAMED=new Transformer<KeyExchangeFactory,NamedFactory<KeyExchange>>() {
         @Override
-        public String getName() {
-            return "none";
+        public NamedFactory<KeyExchange> transform(KeyExchangeFactory input) {
+            return input;
         }
-        @Override
-        public UserAuth create() {
-            return new UserAuthNone();
-        }
-    }
-
-    public UserAuthNone() {
-        super();
-    }
-
-    @Override
-    public Boolean doAuth(Buffer buffer, boolean init) {
-        return Boolean.TRUE;
-    }
+    };
 
 }

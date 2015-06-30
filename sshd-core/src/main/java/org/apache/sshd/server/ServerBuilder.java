@@ -24,9 +24,12 @@ import java.util.List;
 
 import org.apache.sshd.common.BaseBuilder;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.channel.Channel;
+import org.apache.sshd.common.channel.RequestHandler;
 import org.apache.sshd.common.kex.BuiltinDHFactories;
 import org.apache.sshd.common.kex.DHFactory;
 import org.apache.sshd.common.kex.KeyExchange;
+import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.util.Transformer;
 import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.config.keys.DefaultAuthorizedKeysAuthenticator;
@@ -74,16 +77,16 @@ public class ServerBuilder extends BaseBuilder<SshServer, ServerBuilder> {
             keyExchangeFactories = setUpDefaultKeyExchanges(false);
         }
         if (channelFactories == null) {
-            channelFactories = Arrays.asList(
+            channelFactories = Arrays.<NamedFactory<Channel>>asList(
                     ChannelSession.ChannelSessionFactory.INSTANCE,
                     TcpipServerChannel.DirectTcpipFactory.INSTANCE);
         }
         if (globalRequestHandlers == null) {
-            globalRequestHandlers = Arrays.asList(
-                    new KeepAliveHandler(),
-                    new NoMoreSessionsHandler(),
-                    new TcpipForwardHandler(),
-                    new CancelTcpipForwardHandler());
+            globalRequestHandlers = Arrays.<RequestHandler<ConnectionService>>asList(
+                    KeepAliveHandler.INSTANCE,
+                    NoMoreSessionsHandler.INSTANCE,
+                    TcpipForwardHandler.INSTANCE,
+                    CancelTcpipForwardHandler.INSTANCE);
         }
         if (factory == null) {
             factory = SshServer.DEFAULT_SSH_SERVER_FACTORY;

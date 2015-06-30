@@ -16,24 +16,22 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.client;
 
-import java.util.Collection;
+package org.apache.sshd.common.digest;
 
-import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.util.Transformer;
 
 /**
- * TODO Add javadoc
- *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface UserAuth {
-
-    void init(ClientSession session, String service, Collection<?> identities) throws Exception;
-
-    boolean process(Buffer buffer) throws Exception;
-
-    void destroy();
+public interface DigestFactory extends NamedFactory<Digest> {
+    // required because of generics issues
+    Transformer<DigestFactory,NamedFactory<Digest>> FAC2NAMED=new Transformer<DigestFactory,NamedFactory<Digest>>() {
+        @Override
+        public NamedFactory<Digest> transform(DigestFactory input) {
+            return input;
+        }
+    };
 
 }
