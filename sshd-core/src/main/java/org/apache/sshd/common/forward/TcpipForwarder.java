@@ -28,11 +28,16 @@ public interface TcpipForwarder extends Closeable {
 
     /**
      * Start forwarding the given local address on the client to the given address on the server.
+     * @param remote The remote address
+     * @param local The local address
+     * @throws IOException If failed to handle request
      */
     SshdSocketAddress startLocalPortForwarding(SshdSocketAddress local, SshdSocketAddress remote) throws IOException;
 
     /**
      * Stop forwarding the given local address.
+     * @param local The local address
+     * @throws IOException If failed to handle request
      */
     void stopLocalPortForwarding(SshdSocketAddress local) throws IOException;
 
@@ -51,34 +56,37 @@ public interface TcpipForwarder extends Closeable {
      *    <li>"127.0.0.1" and "::1" indicate listening on the loopback interfaces for
      *              IPv4 and IPv6 respectively</li>
      * </ul>
-     *
+     * @param remote The remote address
+     * @param local The local address
+     * @throws IOException If failed to handle request
      */
     SshdSocketAddress startRemotePortForwarding(SshdSocketAddress remote, SshdSocketAddress local) throws IOException;
 
     /**
      * Stop forwarding of the given remote address.
+     * @param remote The remote {@link SshdSocketAddress}
+     * @throws IOException If failed to handle request
      */
     void stopRemotePortForwarding(SshdSocketAddress remote) throws IOException;
 
     /**
-     * Retrieve the local address that the remote port is forwarded to
-     * @param remotePort
-     * @return
+     * @param remotePort The remote port
+     * @return The local {@link SshdSocketAddress} that the remote port is forwarded to
      */
     SshdSocketAddress getForwardedPort(int remotePort);
 
     /**
      * Called when the other side requested a remote port forward.
-     * @param local
-     * @return the list of bound local addresses
-     * @throws IOException
+     * @param local The request address
+     * @return The bound local addresses
+     * @throws IOException If failed to handle request
      */
     SshdSocketAddress localPortForwardingRequested(SshdSocketAddress local) throws IOException;
 
     /**
      * Called when the other side cancelled a remote port forward.
-     * @param local
-     * @throws IOException
+     * @param local The local {@link SshdSocketAddress}
+     * @throws IOException If failed to handle request
      */
     void localPortForwardingCancelled(SshdSocketAddress local) throws IOException;
 

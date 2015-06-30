@@ -33,13 +33,15 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class CancelTcpipForwardHandler extends AbstractLoggingBean implements RequestHandler<ConnectionService> {
+    public static final String REQUEST = "cancel-tcpip-forward";
+
     public CancelTcpipForwardHandler() {
         super();
     }
 
     @Override
     public Result process(ConnectionService connectionService, String request, boolean wantReply, Buffer buffer) throws Exception {
-        if ("cancel-tcpip-forward".equals(request)) {
+        if (REQUEST.equals(request)) {
             String address = buffer.getString();
             int port = buffer.getInt();
             SshdSocketAddress socketAddress = new SshdSocketAddress(address, port);

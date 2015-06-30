@@ -32,6 +32,6 @@ public interface TcpipForwarderFactory {
      * @param service the service the connections are forwarded through
      * @return the TcpipForwarder that will listen for connections and set up forwarding
      */
-    public TcpipForwarder create(ConnectionService service);
+    TcpipForwarder create(ConnectionService service);
 
 }

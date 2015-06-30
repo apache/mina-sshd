@@ -26,6 +26,7 @@ import java.util.concurrent.ExecutorService;
 
 import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
+import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshdSocketAddress;
@@ -143,7 +144,8 @@ public class TcpipServerChannel extends AbstractServerChannel {
         }
 
         Session session = getSession();
-        ForwardingFilter filter = session.getFactoryManager().getTcpipForwardingFilter();
+        FactoryManager manager = session.getFactoryManager();
+        ForwardingFilter filter = manager.getTcpipForwardingFilter();
         if ((address == null) || (filter == null) || (!filter.canConnect(type, address, session))) {
             if (log.isDebugEnabled()) {
                 log.debug("doInit(" + session + ")[" + type + "][haveFilter=" + (filter != null) + "] filtered out " + address);
@@ -183,8 +185,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
                 close(true);
             }
         };
-        connector = getSession().getFactoryManager().getIoServiceFactory()
-                .createConnector(handler);
+        connector = manager.getIoServiceFactory().createConnector(handler);
         IoConnectFuture future = connector.connect(address.toInetSocketAddress());
         future.addListener(new SshFutureListener<IoConnectFuture>() {
             @SuppressWarnings("synthetic-access")
