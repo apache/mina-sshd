@@ -85,7 +85,7 @@ public class CredentialHelper {
          * Get the configuration entries for a name.
          *
          * @param name The name
-         * @return The entries, or <code>null</code> if the name is not known
+         * @return The entries, or {@code null} if the name is not known
          */
 
         @Override

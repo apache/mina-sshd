@@ -98,44 +98,44 @@ public interface ServerFactoryManager extends FactoryManager {
     /**
      * Retrieve the list of named factories for <code>UserAuth</code> objects.
      *
-     * @return a list of named <code>UserAuth</code> factories, never <code>null</code>
+     * @return a list of named <code>UserAuth</code> factories, never {@code null}
      */
     List<NamedFactory<UserAuth>> getUserAuthFactories();
 
     /**
      * Retrieve the <code>PublickeyAuthenticator</code> to be used by SSH server.
      * If no authenticator has been configured (i.e. this method returns
-     * <code>null</code>), then client authentication requests based on keys will be
+     * {@code null}), then client authentication requests based on keys will be
      * rejected.
      *
-     * @return the <code>PublickeyAuthenticato</code> or <code>null</code>
+     * @return the <code>PublickeyAuthenticato</code> or {@code null}
      */
     PublickeyAuthenticator getPublickeyAuthenticator();
 
     /**
      * Retrieve the <code>PasswordAuthenticator</code> to be used by the SSH server.
      * If no authenticator has been configured (i.e. this method returns
-     * <code>null</code>), then client authentication requests based on passwords
+     * {@code null}), then client authentication requests based on passwords
      * will be rejected.
      *
-     * @return the <code>PasswordAuthenticator</code> or <code>null</code>
+     * @return the <code>PasswordAuthenticator</code> or {@code null}
      */
     PasswordAuthenticator getPasswordAuthenticator();
 
     /**
      * Retrieve the <code>GSSAuthenticator</code> to be used by the SSH server.
      * If no authenticator has been configured (i.e. this method returns
-     * <code>null</code>), then client authentication requests based on gssapi 
+     * {@code null}), then client authentication requests based on gssapi 
      * will be rejected.
      *
-     * @return the <code>GSSAuthenticator</code> or <code>null</code>
+     * @return the <code>GSSAuthenticator</code> or {@code null}
      */
     GSSAuthenticator getGSSAuthenticator();
 
     /**
      * Retrieve the <code>ShellFactory</code> object to be used to create shells.
      *
-     * @return a valid <code>ShellFactory</code> object or <code>null</code> if shells
+     * @return a valid <code>ShellFactory</code> object or {@code null} if shells
      *         are not supported on this server
      */
     Factory<Command> getShellFactory();
@@ -143,7 +143,7 @@ public interface ServerFactoryManager extends FactoryManager {
     /**
      * Retrieve the <code>CommandFactory</code> to be used to process commands requests.
      *
-     * @return a valid <code>CommandFactory</code> object or <code>null</code> if commands
+     * @return a valid <code>CommandFactory</code> object or {@code null} if commands
      *         are not supported on this server
      */
     CommandFactory getCommandFactory();
@@ -153,7 +153,7 @@ public interface ServerFactoryManager extends FactoryManager {
      * be used to create subsystems.
      *
      * @return a list of named <code>CommandFactory.Command</code> factories
-     *         or <code>null</code> if subsystems are not supported on this server
+     *         or {@code null} if subsystems are not supported on this server
      */
     List<NamedFactory<Command>> getSubsystemFactories();
 

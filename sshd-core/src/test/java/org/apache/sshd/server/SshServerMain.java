@@ -19,8 +19,6 @@
 
 package org.apache.sshd.server;
 
-import org.apache.sshd.server.SshServer;
-
 /**
  * Just a test class used to invoke {@link SshServer#main(String[])} in
  * order to have logging - which is in {@code test} scope

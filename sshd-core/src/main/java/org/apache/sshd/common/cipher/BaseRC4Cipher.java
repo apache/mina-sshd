@@ -18,9 +18,9 @@
  */
 package org.apache.sshd.common.cipher;
 
-import org.apache.sshd.common.util.SecurityUtils;
-
 import javax.crypto.spec.SecretKeySpec;
+
+import org.apache.sshd.common.util.SecurityUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>

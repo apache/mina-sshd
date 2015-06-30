@@ -58,6 +58,10 @@ public class AuthenticationTest extends BaseTestSupport {
     private SshServer sshd;
     private int port;
 
+    public AuthenticationTest() {
+        super();
+    }
+
     @Before
     public void setUp() throws Exception {
         sshd = SshServer.setUpDefaultServer();

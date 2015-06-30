@@ -229,7 +229,7 @@ public class Utils {
      * @param anchor An anchor {@link Class} whose container we want to use
      * as the starting point for the &quot;target&quot; folder lookup up the
      * hierarchy
-     * @return The &quot;target&quot; <U>folder</U> - <code>null</code> if not found
+     * @return The &quot;target&quot; <U>folder</U> - {@code null} if not found
      * @see #detectTargetFolder(File)
      */
     public static final File detectTargetFolder(Class<?> anchor) {
@@ -240,7 +240,7 @@ public class Utils {
      * @param clazz A {@link Class} object
      * @return A {@link File} of the location of the class bytes container
      * - e.g., the root folder, the containing JAR, etc.. Returns
-     * <code>null</code> if location could not be resolved
+     * {@code null} if location could not be resolved
      * @throws IllegalArgumentException If location is not a valid
      * {@link File} location
      * @see #getClassContainerLocationURI(Class)
@@ -260,7 +260,7 @@ public class Utils {
      * @param clazz A {@link Class} object
      * @return A {@link URI} to the location of the class bytes container
      * - e.g., the root folder, the containing JAR, etc.. Returns
-     * <code>null</code> if location could not be resolved
+     * {@code null} if location could not be resolved
      * @throws URISyntaxException if location is not a valid URI
      * @see #getClassContainerLocationURL(Class)
      */
@@ -273,7 +273,7 @@ public class Utils {
      * @param clazz A {@link Class} object
      * @return A {@link URL} to the location of the class bytes container
      * - e.g., the root folder, the containing JAR, etc.. Returns
-     * <code>null</code> if location could not be resolved
+     * {@code null} if location could not be resolved
      */
     public static final URL getClassContainerLocationURL(Class<?> clazz) {
         ProtectionDomain    pd=clazz.getProtectionDomain();
@@ -305,7 +305,7 @@ public class Utils {
      * Converts a {@link URL} that may refer to an internal resource to
      * a {@link File} representing is &quot;source&quot; container (e.g.,
      * if it is a resource in a JAR, then the result is the JAR's path)
-     * @param url The {@link URL} - ignored if <code>null</code>
+     * @param url The {@link URL} - ignored if {@code null}
      * @return The matching {@link File}
      * @throws MalformedURLException If source URL does not refer to a
      * file location
@@ -338,7 +338,7 @@ public class Utils {
      * Converts a {@link URI} that may refer to an internal resource to
      * a {@link File} representing is &quot;source&quot; container (e.g.,
      * if it is a resource in a JAR, then the result is the JAR's path)
-     * @param uri The {@link URI} - ignored if <code>null</code>
+     * @param uri The {@link URI} - ignored if {@code null}
      * @return The matching {@link File}
      * @throws MalformedURLException If source URI does not refer to a
      * file location
@@ -364,7 +364,7 @@ public class Utils {
     }
 
     /**
-     * @param uri The {@link URI} value - ignored if <code>null</code>
+     * @param uri The {@link URI} value - ignored if {@code null}
      * @return The URI(s) source path where {@link #JAR_URL_PREFIX} and
      * any sub-resource are stripped
      * @see #getURLSource(String)
@@ -374,7 +374,7 @@ public class Utils {
     }
 
     /**
-     * @param url The {@link URL} value - ignored if <code>null</code>
+     * @param url The {@link URL} value - ignored if {@code null}
      * @return The URL(s) source path where {@link #JAR_URL_PREFIX} and
      * any sub-resource are stripped
      * @see #getURLSource(String)
@@ -391,7 +391,7 @@ public class Utils {
 
     /**
      * @param externalForm The {@link URL#toExternalForm()} string - ignored if
-     * <code>null</code>/empty
+     * {@code null}/empty
      * @return The URL(s) source path where {@link #JAR_URL_PREFIX} and
      * any sub-resource are stripped
      */
@@ -472,7 +472,7 @@ public class Utils {
     /**
      * @param clazz The request {@link Class}
      * @return A {@link URL} to the location of the <code>.class</code> file
-     * - <code>null</code> if location could not be resolved
+     * - {@code null} if location could not be resolved
      */
     public static final URL getClassBytesURL(Class<?> clazz) {
         String  className=clazz.getName();
@@ -517,7 +517,7 @@ public class Utils {
      * @param anchorFile An anchor {@link File} we want to use
      * as the starting point for the &quot;target&quot; or &quot;build&quot; folder
      * lookup up the hierarchy
-     * @return The &quot;target&quot; <U>folder</U> - <code>null</code> if not found
+     * @return The &quot;target&quot; <U>folder</U> - {@code null} if not found
      */
     public static final File detectTargetFolder (File anchorFile) {
         for (File   file=anchorFile; file != null; file=file.getParentFile()) {

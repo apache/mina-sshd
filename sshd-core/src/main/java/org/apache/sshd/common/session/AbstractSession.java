@@ -203,13 +203,13 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     /**
      * Retrieve the session from the MINA session.
      * If the session has not been attached and allowNull is <code>false</code>,
-     * an IllegalStateException will be thrown, else a <code>null</code> will
+     * an IllegalStateException will be thrown, else a {@code null} will
      * be returned
      *
      * @param ioSession the MINA session
-     * @param allowNull if <code>true</code>, a <code>null</code> value may be
+     * @param allowNull if <code>true</code>, a {@code null} value may be
      *        returned if no session is attached
-     * @return the session attached to the MINA session or <code>null</code>
+     * @return the session attached to the MINA session or {@code null}
      */
     public static AbstractSession getSession(IoSession ioSession, boolean allowNull) {
         AbstractSession session = (AbstractSession) ioSession.getAttribute(SESSION);
@@ -842,11 +842,11 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     /**
      * Read the remote identification from this buffer.
      * If more data is needed, the buffer will be reset to its original state
-     * and a <code>null</code> value will be returned.  Else the identification
+     * and a {@code null} value will be returned.  Else the identification
      * string will be returned and the data read will be consumed from the buffer.
      *
      * @param buffer the buffer containing the identification string
-     * @return the remote identification or <code>null</code> if more data is needed
+     * @return the remote identification or {@code null} if more data is needed
      */
     protected String doReadIdentification(Buffer buffer, boolean server) {
         byte[] data = new byte[256];

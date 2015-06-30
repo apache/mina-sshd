@@ -160,7 +160,7 @@ public interface Session extends Closeable {
      * else it will wait forever.
      *
      * @param buffer the buffer containing the global request
-     * @return the return buffer if the request was successful, <code>null</code> otherwise.
+     * @return the return buffer if the request was successful, {@code null} otherwise.
      * @throws java.io.IOException if an error occurred when encoding sending the packet
      */
     Buffer request(Buffer buffer) throws IOException;
@@ -241,7 +241,7 @@ public interface Session extends Closeable {
 
     /**
      * Check if timeout has occurred.
-     * @return the timeout status, never <code>null</code>
+     * @return the timeout status, never {@code null}
      */
     TimeoutStatus getTimeoutStatus();
 

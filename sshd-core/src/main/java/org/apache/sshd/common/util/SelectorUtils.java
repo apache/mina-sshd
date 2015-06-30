@@ -65,9 +65,9 @@ public final class SelectorUtils {
      * and <code>str=b</code> will yield <code>true</code>.</p>
      *
      * @param pattern The pattern to match against. Must not be
-     *                <code>null</code>.
+     *                {@code null}.
      * @param str     The path to match, as a String. Must not be
-     *                <code>null</code>.
+     *                {@code null}.
      * @return whether or not a given path matches the start of a given
      *         pattern up to the first "**".
      */
@@ -84,9 +84,9 @@ public final class SelectorUtils {
      * and <code>str=b</code> will yield <code>true</code>.</p>
      *
      * @param pattern         The pattern to match against. Must not be
-     *                        <code>null</code>.
+     *                        {@code null}.
      * @param str             The path to match, as a String. Must not be
-     *                        <code>null</code>.
+     *                        {@code null}.
      * @param isCaseSensitive Whether or not matching should be performed
      *                        case sensitively.
      * @return whether or not a given path matches the start of a given
@@ -162,9 +162,9 @@ public final class SelectorUtils {
      * Tests whether or not a given path matches a given pattern.
      *
      * @param pattern The pattern to match against. Must not be
-     *                <code>null</code>.
+     *                {@code null}.
      * @param str     The path to match, as a String. Must not be
-     *                <code>null</code>.
+     *                {@code null}.
      * @return <code>true</code> if the pattern matches against the string,
      *         or <code>false</code> otherwise.
      */
@@ -176,9 +176,9 @@ public final class SelectorUtils {
      * Tests whether or not a given path matches a given pattern.
      *
      * @param pattern         The pattern to match against. Must not be
-     *                        <code>null</code>.
+     *                        {@code null}.
      * @param str             The path to match, as a String. Must not be
-     *                        <code>null</code>.
+     *                        {@code null}.
      * @param isCaseSensitive Whether or not matching should be performed
      *                        case sensitively.
      * @return <code>true</code> if the pattern matches against the string,
@@ -342,9 +342,9 @@ public final class SelectorUtils {
      * '?' means one and only one character
      *
      * @param pattern The pattern to match against.
-     *                Must not be <code>null</code>.
+     *                Must not be {@code null}.
      * @param str     The string which must be matched against the pattern.
-     *                Must not be <code>null</code>.
+     *                Must not be {@code null}.
      * @return <code>true</code> if the string matches against the pattern,
      *         or <code>false</code> otherwise.
      */
@@ -359,9 +359,9 @@ public final class SelectorUtils {
      * '?' means one and only one character
      *
      * @param pattern         The pattern to match against.
-     *                        Must not be <code>null</code>.
+     *                        Must not be {@code null}.
      * @param str             The string which must be matched against the pattern.
-     *                        Must not be <code>null</code>.
+     *                        Must not be {@code null}.
      * @param isCaseSensitive Whether or not matching should be performed
      *                        case sensitively.
      * @return <code>true</code> if the string matches against the pattern,
@@ -513,7 +513,7 @@ public final class SelectorUtils {
      * Breaks a path up into a Vector of path elements, tokenizing on
      * <code>File.separator</code>.
      *
-     * @param path Path to tokenize. Must not be <code>null</code>.
+     * @param path Path to tokenize. Must not be {@code null}.
      * @return a List of path elements from the tokenized path
      */
     public static List<String> tokenizePath(String path) {

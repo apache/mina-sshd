@@ -167,7 +167,7 @@ public interface FactoryManager {
      * value is a {@code long} then it will be parsed into one. Also, if
      * the mapped value is an {@code Integer} but a {@code long} is expected,
      * then it will be converted into one.
-     * @return a valid <code>Map</code> containing configuration values, never <code>null</code>
+     * @return a valid <code>Map</code> containing configuration values, never {@code null}
      */
     Map<String,Object> getProperties();
 
@@ -186,35 +186,35 @@ public interface FactoryManager {
     /**
      * Retrieve the list of named factories for <code>KeyExchange</code>.
      *
-     * @return a list of named <code>KeyExchange</code> factories, never <code>null</code>
+     * @return a list of named <code>KeyExchange</code> factories, never {@code null}
      */
     List<NamedFactory<KeyExchange>> getKeyExchangeFactories();
 
     /**
      * Retrieve the list of named factories for <code>Cipher</code>.
      *
-     * @return a list of named <code>Cipher</code> factories, never <code>null</code>
+     * @return a list of named <code>Cipher</code> factories, never {@code null}
      */
     List<NamedFactory<Cipher>> getCipherFactories();
 
     /**
      * Retrieve the list of named factories for <code>Compression</code>.
      *
-     * @return a list of named <code>Compression</code> factories, never <code>null</code>
+     * @return a list of named <code>Compression</code> factories, never {@code null}
      */
     List<NamedFactory<Compression>> getCompressionFactories();
 
     /**
      * Retrieve the list of named factories for <code>Mac</code>.
      *
-     * @return a list of named <code>Mac</code> factories, never <code>null</code>
+     * @return a list of named <code>Mac</code> factories, never {@code null}
      */
     List<NamedFactory<Mac>> getMacFactories();
 
     /**
      * Retrieve the list of named factories for <code>Signature</code>.
      *
-     * @return a list of named <code>Signature</code> factories, never <code>null</code>
+     * @return a list of named <code>Signature</code> factories, never {@code null}
      */
     List<NamedFactory<Signature>> getSignatureFactories();
 
@@ -222,21 +222,21 @@ public interface FactoryManager {
      * Retrieve the <code>KeyPairProvider</code> that will be used to find
      * the host key to use on the server side or the user key on the client side.
      *
-     * @return the <code>KeyPairProvider</code>, never <code>null</code>
+     * @return the <code>KeyPairProvider</code>, never {@code null}
      */
     KeyPairProvider getKeyPairProvider();
 
     /**
      * Retrieve the <code>Random</code> factory to be used.
      *
-     * @return the <code>Random</code> factory, never <code>null</code>
+     * @return the <code>Random</code> factory, never {@code null}
      */
     Factory<Random> getRandomFactory();
 
     /**
      * Retrieve the list of named factories for <code>Channel</code> objects.
      *
-     * @return a list of named <code>Channel</code> factories, never <code>null</code>
+     * @return a list of named <code>Channel</code> factories, never {@code null}
      */
     List<NamedFactory<Channel>> getChannelFactories();
 
@@ -250,16 +250,16 @@ public interface FactoryManager {
     /**
      * Retrieve the <code>ScheduledExecutorService</code> to be used.
      *
-     * @return the <code>ScheduledExecutorService</code>, never <code>null</code>
+     * @return the <code>ScheduledExecutorService</code>, never {@code null}
      */
     ScheduledExecutorService getScheduledExecutorService();
 
     /**
      * Retrieve the <code>ForwardingFilter</code> to be used by the SSH server.
      * If no filter has been configured (i.e. this method returns
-     * <code>null</code>), then all forwarding requests will be rejected.
+     * {@code null}), then all forwarding requests will be rejected.
      *
-     * @return the <code>ForwardingFilter</code> or <code>null</code>
+     * @return the <code>ForwardingFilter</code> or {@code null}
      */
     ForwardingFilter getTcpipForwardingFilter();
 
@@ -273,7 +273,7 @@ public interface FactoryManager {
     /**
      * Retrieve the <code>FileSystemFactory</code> to be used to traverse the file system.
      *
-     * @return a valid <code>FileSystemFactory</code> object or <code>null</code> if file based
+     * @return a valid <code>FileSystemFactory</code> object or {@code null} if file based
      *         interactions are not supported on this server
      */
     FileSystemFactory getFileSystemFactory();
@@ -281,7 +281,7 @@ public interface FactoryManager {
     /**
      * Retrieve the list of SSH <code>Service</code> factories.
      *
-     * @return a list of named <code>Service</code> factories, never <code>null</code>
+     * @return a list of named <code>Service</code> factories, never {@code null}
      */
     List<ServiceFactory> getServiceFactories();
 

@@ -58,17 +58,17 @@ public interface KeyPairProvider {
 
     /**
      * Load available keys.
-     * @return an {@link Iterable} instance of available keys, never <code>null</code>
+     * @return an {@link Iterable} instance of available keys, never {@code null}
      */
     Iterable<KeyPair> loadKeys();
 
     /**
      * Load a key of the specified type which can be "ssh-rsa", "ssh-dss", or
      * "ecdsa-sha2-nistp{256,384,521}". If there is no key of this type, return
-     * <code>null</code>
+     * {@code null}
      *
      * @param type the type of key to load
-     * @return a valid key pair or <code>null</code>
+     * @return a valid key pair or {@code null}
      */
     KeyPair loadKey(String type);
 

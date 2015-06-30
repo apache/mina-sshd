@@ -150,7 +150,7 @@ public class DirectoryScanner {
      * <code>File.separatorChar</code>.
      *
      * @param basedir The base directory to scan.
-     *                Must not be <code>null</code>.
+     *                Must not be {@code null}.
      */
     public void setBasedir(String basedir) {
         setBasedir(new File(basedir.replace('/', File.separatorChar).replace(
@@ -162,7 +162,7 @@ public class DirectoryScanner {
      * scanned recursively.
      *
      * @param basedir The base directory for scanning.
-     *                Should not be <code>null</code>.
+     *                Should not be {@code null}.
      */
     public void setBasedir(File basedir) {
         this.basedir = basedir;
@@ -186,10 +186,10 @@ public class DirectoryScanner {
      * <p>When a pattern ends with a '/' or '\', "**" is appended.</p>
      *
      * @param includes A list of include patterns.
-     *                 May be <code>null</code>, indicating that all files
-     *                 should be included. If a non-<code>null</code>
+     *                 May be {@code null}, indicating that all files
+     *                 should be included. If a non-{@code null}
      *                 list is given, all elements must be
-     *                 non-<code>null</code>.
+     *                 non-{@code null}.
      */
     public void setIncludes(String[] includes) {
         if (includes == null) {
@@ -209,7 +209,7 @@ public class DirectoryScanner {
      * then the files must pass muster there, as well.
      *
      * @throws IllegalStateException if the base directory was set
-     *                               incorrectly (i.e. if it is <code>null</code>, doesn't exist,
+     *                               incorrectly (i.e. if it is {@code null}, doesn't exist,
      *                               or isn't a directory).
      */
     public String[] scan() throws IllegalStateException {
@@ -241,10 +241,10 @@ public class DirectoryScanner {
      * matching of includes, excludes, and the selectors.  When a directory
      * is found, it is scanned recursively.
      *
-     * @param dir   The directory to scan. Must not be <code>null</code>.
+     * @param dir   The directory to scan. Must not be {@code null}.
      * @param vpath The path relative to the base directory (needed to
      *              prevent problems with an absolute path when using
-     *              dir). Must not be <code>null</code>.
+     *              dir). Must not be {@code null}.
      */
     protected void scandir(File dir, String vpath) {
         String[] newfiles = dir.list();
@@ -288,7 +288,7 @@ public class DirectoryScanner {
      * Tests whether or not a name matches against at least one include
      * pattern.
      *
-     * @param name The name to match. Must not be <code>null</code>.
+     * @param name The name to match. Must not be {@code null}.
      * @return <code>true</code> when the name matches against at least one
      *         include pattern, or <code>false</code> otherwise.
      */
@@ -305,7 +305,7 @@ public class DirectoryScanner {
      * Tests whether or not a name matches the start of at least one include
      * pattern.
      *
-     * @param name The name to match. Must not be <code>null</code>.
+     * @param name The name to match. Must not be {@code null}.
      * @return <code>true</code> when the name matches against the start of at
      *         least one include pattern, or <code>false</code> otherwise.
      */
@@ -321,8 +321,8 @@ public class DirectoryScanner {
     /**
      * Normalizes the pattern, e.g. converts forward and backward slashes to the platform-specific file separator.
      *
-     * @param pattern The pattern to normalize, must not be <code>null</code>.
-     * @return The normalized pattern, never <code>null</code>.
+     * @param pattern The pattern to normalize, must not be {@code null}.
+     * @return The normalized pattern, never {@code null}.
      */
     private String normalizePattern(String pattern) {
         pattern = pattern.trim();
@@ -348,7 +348,7 @@ public class DirectoryScanner {
      * <p>Replace a String with another String inside a larger String,
      * for the first <code>max</code> values of the search String.</p>
      *
-     * <p>A <code>null</code> reference passed to this method is a no-op.</p>
+     * <p>A {@code null} reference passed to this method is a no-op.</p>
      *
      * @param text text to search and replace in
      * @param repl String to search for

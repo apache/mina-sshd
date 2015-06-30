@@ -62,7 +62,7 @@ public class GSSAuthenticator {
      * implementation uses a Kerberos key table.
      *
      * @param mgr The GSS manager
-     * @return The credential; if the result is <code>null</code> gssapi authentication fails immediately
+     * @return The credential; if the result is {@code null} gssapi authentication fails immediately
      * @throws UnknownHostException If the local host name could not be determined
      * @throws LoginException       If the subject could not be found
      * @throws GSSException         If the credential could not be obtained

@@ -296,8 +296,8 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
 
     /**
      * @param line Original line from an <code>authorized_keys</code> file
-     * @return {@link AuthorizedKeyEntry} or <code>null</code> if the line is
-     * <code>null</code>/empty or a comment line
+     * @return {@link AuthorizedKeyEntry} or {@code null} if the line is
+     * {@code null}/empty or a comment line
      * @throws IllegalArgumentException If failed to parse/decode the line
      * @see #COMMENT_CHAR
      */

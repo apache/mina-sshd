@@ -53,7 +53,6 @@ import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.deprecated.ClientUserAuthServiceOld;
-import org.apache.sshd.deprecated.UserAuthPassword;
 import org.apache.sshd.server.command.ScpCommandFactory;
 import org.apache.sshd.server.sftp.SftpSubsystemFactory;
 import org.apache.sshd.util.BaseTestSupport;
@@ -123,7 +122,7 @@ public class ServerTest extends BaseTestSupport {
             while ((res & ClientSession.CLOSED) == 0) {
                 nbTrials ++;
                 s.getService(ClientUserAuthServiceOld.class)
-                 .auth(new UserAuthPassword(s, "ssh-connection", "buggy"))
+                 .auth(new org.apache.sshd.deprecated.UserAuthPassword(s, "ssh-connection", "buggy"))
                  ;
                 res = s.waitFor(ClientSession.CLOSED | ClientSession.WAIT_AUTH, 5000);
                 if (res == ClientSession.TIMEOUT) {
@@ -154,7 +153,7 @@ public class ServerTest extends BaseTestSupport {
                 nbTrials++;
                 assertTrue(nbTrials < 100);
                 authFuture = s.getService(ClientUserAuthServiceOld.class)
-                              .auth(new UserAuthPassword(s, "ssh-connection", "buggy"))
+                              .auth(new org.apache.sshd.deprecated.UserAuthPassword(s, "ssh-connection", "buggy"))
                               ;
                 assertTrue("Authentication wait failed", authFuture.await(5000));
                 assertTrue("Authentication not done", authFuture.isDone());

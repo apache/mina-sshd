@@ -35,7 +35,7 @@ public interface ServiceFactory extends NamedResource {
          * in the list (case <U>insensitive</U>.
          * @param factories list of available factories
          * @param name the factory name to use
-         * @return a newly created object or <code>null</code> if the factory is not in the list
+         * @return a newly created object or {@code null} if the factory is not in the list
          * @throws IOException if session creation failed
          * @see ServiceFactory#create(Session)
          */

@@ -92,15 +92,22 @@ public interface NamedResource {
         public static String getNames(Collection<? extends NamedResource> resources) {
             return GenericUtils.join(getNameList(resources), ',');
         }
-        
+      
         /**
+         * Remove the resource identified by the name from the list.
          * @param name Name of the resource - ignored if {@code null}/empty
+         * @param c The {@link Comparator} to decide whether the {@link NamedResource#getName()}
+         * matches the <tt>name</tt> parameter
          * @param resources The {@link NamedResource} to check - ignored if {@code null}/empty
-         * @return The <U>first</U> resource whose name matches case <U>sensitive</U>
-         * the given name - {@code null} if no match found
+         * @return the removed resource from the list or {@code null} if not in the list
          */
-        public static <R extends NamedResource> R findByName(String name, Collection<? extends R> resources) {
-            return findByName(name, GenericUtils.CASE_SENSITIVE_ORDER, resources);
+        public static <R extends NamedResource> R removeByName(String name, Comparator<? super String> c, Collection<? extends R> resources) {
+            R r = findByName(name, c, resources);
+            if (r != null) {
+                resources.remove(r);
+            }
+            
+            return r;
         }
 
         /**

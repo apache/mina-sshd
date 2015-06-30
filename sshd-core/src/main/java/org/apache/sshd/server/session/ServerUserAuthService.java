@@ -97,7 +97,8 @@ public class ServerUserAuthService extends CloseableUtils.AbstractCloseable impl
         // Verify all required methods are supported
         for (List<String> l : authMethods) {
             for (String m : l) {
-                if (NamedFactory.Utils.get(userAuthFactories, m) == null) {
+                NamedFactory<UserAuth> factory = NamedResource.Utils.findByName(m, String.CASE_INSENSITIVE_ORDER, userAuthFactories);
+                if (factory == null) {
                     throw new SshException("Configured method is not supported: " + m);
                 }
             }
@@ -151,7 +152,8 @@ public class ServerUserAuthService extends CloseableUtils.AbstractCloseable impl
             if (log.isDebugEnabled()) {
                 log.debug("Authenticating user '{}' with service '{}' and method '{}'", username, service, method);
             }
-            NamedFactory<UserAuth> factory = NamedFactory.Utils.get(userAuthFactories, method);
+
+            NamedFactory<UserAuth> factory = NamedResource.Utils.findByName(method, String.CASE_INSENSITIVE_ORDER, userAuthFactories);
             if (factory != null) {
                 currentAuth = factory.create();
                 try {
@@ -164,7 +166,7 @@ public class ServerUserAuthService extends CloseableUtils.AbstractCloseable impl
         } else  {
             if (this.currentAuth == null) {
                 // This should not happen
-                throw new IllegalStateException();
+                throw new IllegalStateException("No current authentication mechanism for cmd=" + (cmd & 0xFF));
             }
             if (log.isDebugEnabled()) {
                 log.debug("Received authentication message {}", Integer.valueOf(cmd & 0xFF));
@@ -174,7 +176,7 @@ public class ServerUserAuthService extends CloseableUtils.AbstractCloseable impl
                 authed = currentAuth.next(buffer);
             } catch (Exception e) {
                 // Continue
-                log.debug("Authentication failed: {}", e.getMessage());
+                log.debug("Failed ({}) to authenticate: {}", e.getClass().getSimpleName(), e.getMessage());
             }
         }
 
@@ -187,7 +189,7 @@ public class ServerUserAuthService extends CloseableUtils.AbstractCloseable impl
 
             boolean success = false;
             for (List<String> l : authMethods) {
-                if (!l.isEmpty() && l.get(0).equals(authMethod)) {
+                if ((GenericUtils.size(l) > 0) && l.get(0).equals(authMethod)) {
                     l.remove(0);
                     success |= l.isEmpty();
                 }
@@ -225,7 +227,7 @@ public class ServerUserAuthService extends CloseableUtils.AbstractCloseable impl
                 buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_FAILURE);
                 StringBuilder sb = new StringBuilder();
                 for (List<String> l : authMethods) {
-                    if (!l.isEmpty()) {
+                    if (GenericUtils.size(l) > 0) {
                         if (sb.length() > 0) {
                             sb.append(",");
                         }
@@ -245,7 +247,7 @@ public class ServerUserAuthService extends CloseableUtils.AbstractCloseable impl
             buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_FAILURE);
             StringBuilder sb = new StringBuilder();
             for (List<String> l : authMethods) {
-                if (!l.isEmpty()) {
+                if (GenericUtils.size(l) > 0) {
                     String m = l.get(0);
                     if (!"none".equals(m)) {
                         if (sb.length() > 0) {

@@ -28,7 +28,6 @@ import java.security.PublicKey;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.local.LocalAgentFactory;
 import org.apache.sshd.agent.local.ProxyAgentFactory;
 import org.apache.sshd.agent.unix.AgentClient;
@@ -41,8 +40,8 @@ import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.Environment;
-import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.PublickeyAuthenticator.AcceptAllPublickeyAuthenticator;
+import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.forward.ForwardingFilter;
 import org.apache.sshd.util.BaseTestSupport;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
