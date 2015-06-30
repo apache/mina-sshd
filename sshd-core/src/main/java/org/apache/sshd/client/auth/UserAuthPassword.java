@@ -35,23 +35,6 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  */
 public class UserAuthPassword extends AbstractLoggingBean implements UserAuth {
 
-    public static class UserAuthPasswordFactory implements UserAuthFactory {
-        public static final UserAuthPasswordFactory INSTANCE = new UserAuthPasswordFactory();
-
-        public UserAuthPasswordFactory() {
-            super();
-        }
-
-        @Override
-        public String getName() {
-            return "password";
-        }
-        @Override
-        public UserAuth create() {
-            return new UserAuthPassword();
-        }
-    }
-
     private ClientSession session;
     private String service;
     private Iterator<String> passwords;

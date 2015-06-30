@@ -27,6 +27,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -40,22 +41,23 @@ import java.util.logging.Logger;
 
 import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.client.auth.UserAuth;
-import org.apache.sshd.client.auth.UserAuthKeyboardInteractive;
-import org.apache.sshd.client.auth.UserAuthPassword;
-import org.apache.sshd.client.auth.UserAuthPublicKey;
+import org.apache.sshd.client.auth.UserAuthKeyboardInteractiveFactory;
+import org.apache.sshd.client.auth.UserAuthPasswordFactory;
+import org.apache.sshd.client.auth.UserAuthPublicKeyFactory;
 import org.apache.sshd.client.auth.UserInteraction;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.config.keys.ClientIdentity;
 import org.apache.sshd.client.future.ConnectFuture;
 import org.apache.sshd.client.future.DefaultConnectFuture;
-import org.apache.sshd.client.session.ClientConnectionService;
+import org.apache.sshd.client.session.ClientConnectionServiceFactory;
 import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.client.session.ClientUserAuthService;
+import org.apache.sshd.client.session.ClientUserAuthServiceFactory;
 import org.apache.sshd.common.AbstractFactoryManager;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.config.SshConfigFileReader;
@@ -161,6 +163,18 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         this.userAuthFactories = userAuthFactories;
     }
 
+    public static final List<NamedFactory<UserAuth>> DEFAULT_USER_AUTH_FACTORIES =
+            Collections.unmodifiableList(Arrays.<NamedFactory<UserAuth>>asList(
+                    UserAuthPublicKeyFactory.INSTANCE,
+                    UserAuthKeyboardInteractiveFactory.INSTANCE,
+                    UserAuthPasswordFactory.INSTANCE
+                ));
+    public static final List<ServiceFactory> DEFAULT_SERVICE_FACTORIES =
+            Collections.unmodifiableList(Arrays.asList(
+                    ClientUserAuthServiceFactory.INSTANCE,
+                    ClientConnectionServiceFactory.INSTANCE
+                ));
+
     @Override
     protected void checkConfig() {
         super.checkConfig();
@@ -183,18 +197,11 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         }
 
         if (GenericUtils.isEmpty(getServiceFactories())) {
-            setServiceFactories(Arrays.asList(
-                    ClientUserAuthService.ClientUserAuthServiceFactory.INSTANCE,
-                    ClientConnectionService.ClientConnectionServiceFactory.INSTANCE
-            ));
+            setServiceFactories(DEFAULT_SERVICE_FACTORIES);
         }
 
         if (GenericUtils.isEmpty(getUserAuthFactories())) {
-            setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(
-                    UserAuthPublicKey.UserAuthPublicKeyFactory.INSTANCE,
-                    UserAuthKeyboardInteractive.UserAuthKeyboardInteractiveFactory.INSTANCE,
-                    UserAuthPassword.UserAuthPasswordFactory.INSTANCE
-            ));
+            setUserAuthFactories(DEFAULT_USER_AUTH_FACTORIES);
         }
     }
 

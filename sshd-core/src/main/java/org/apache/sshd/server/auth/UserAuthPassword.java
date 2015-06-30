@@ -21,8 +21,8 @@ package org.apache.sshd.server.auth;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
-import org.apache.sshd.server.PasswordAuthenticator;
 import org.apache.sshd.server.ServerFactoryManager;
+import org.apache.sshd.server.auth.password.PasswordAuthenticator;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
@@ -31,23 +31,6 @@ import org.apache.sshd.server.session.ServerSession;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class UserAuthPassword extends AbstractUserAuth {
-
-    public static class UserAuthPasswordFactory implements UserAuthFactory {
-        public static final UserAuthPasswordFactory INSTANCE = new UserAuthPasswordFactory();
-        
-        public UserAuthPasswordFactory() {
-            super();
-        }
-
-        @Override
-        public String getName() {
-            return "password";
-        }
-        @Override
-        public UserAuth create() {
-            return new UserAuthPassword();
-        }
-    }
 
     public UserAuthPassword() {
         super();

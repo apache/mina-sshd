@@ -38,7 +38,7 @@ import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.future.AuthFuture;
-import org.apache.sshd.client.session.ClientConnectionService;
+import org.apache.sshd.client.session.ClientConnectionServiceFactory;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.ClientSessionImpl;
 import org.apache.sshd.common.FactoryManager;
@@ -112,7 +112,7 @@ public class ServerTest extends BaseTestSupport {
         client = SshClient.setUpDefaultClient();
         client.setServiceFactories(Arrays.asList(
                 new ClientUserAuthServiceOld.Factory(),
-                ClientConnectionService.ClientConnectionServiceFactory.INSTANCE
+                ClientConnectionServiceFactory.INSTANCE
         ));
         client.start();
         
@@ -143,7 +143,7 @@ public class ServerTest extends BaseTestSupport {
         client = SshClient.setUpDefaultClient();
         client.setServiceFactories(Arrays.asList(
                 new ClientUserAuthServiceOld.Factory(),
-                ClientConnectionService.ClientConnectionServiceFactory.INSTANCE
+                ClientConnectionServiceFactory.INSTANCE
         ));
         client.start();
         try(ClientSession s = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {

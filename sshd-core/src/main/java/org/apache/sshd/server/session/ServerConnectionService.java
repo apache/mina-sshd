@@ -20,8 +20,6 @@ package org.apache.sshd.server.session;
 
 import java.io.IOException;
 
-import org.apache.sshd.common.Service;
-import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.session.AbstractConnectionService;
 import org.apache.sshd.common.session.Session;
@@ -34,20 +32,6 @@ import org.apache.sshd.common.util.ValidateUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ServerConnectionService extends AbstractConnectionService {
-
-    public static class Factory implements ServiceFactory {
-
-        @Override
-        public String getName() {
-            return "ssh-connection";
-        }
-
-        @Override
-        public Service create(Session session) throws IOException {
-            return new ServerConnectionService(session);
-        }
-    }
-
 
     protected ServerConnectionService(Session s) throws SshException {
         super(s);

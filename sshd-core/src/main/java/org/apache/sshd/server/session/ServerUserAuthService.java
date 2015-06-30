@@ -18,7 +18,6 @@
  */
 package org.apache.sshd.server.session;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -29,7 +28,6 @@ import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.Service;
-import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.session.Session;
@@ -44,19 +42,6 @@ import org.apache.sshd.server.auth.UserAuth;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ServerUserAuthService extends CloseableUtils.AbstractCloseable implements Service {
-
-    public static class Factory implements ServiceFactory {
-
-        @Override
-        public String getName() {
-            return "ssh-userauth";
-        }
-
-        @Override
-        public Service create(Session session) throws IOException {
-            return new ServerUserAuthService(session);
-        }
-    }
 
     public static final int DEFAULT_MAX_AUTH_REQUESTS = 20;
     private final ServerSession session;

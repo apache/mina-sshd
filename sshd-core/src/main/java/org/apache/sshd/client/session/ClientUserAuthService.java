@@ -32,7 +32,6 @@ import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.Service;
-import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.session.Session;
@@ -46,24 +45,6 @@ import org.apache.sshd.common.util.buffer.Buffer;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ClientUserAuthService extends CloseableUtils.AbstractCloseable implements Service {
-
-    public static class ClientUserAuthServiceFactory implements ServiceFactory {
-        public static final ClientUserAuthServiceFactory INSTANCE = new ClientUserAuthServiceFactory();
-
-        public ClientUserAuthServiceFactory() {
-            super();
-        }
-
-        @Override
-        public String getName() {
-            return "ssh-userauth";
-        }
-
-        @Override
-        public Service create(Session session) throws IOException {
-            return new ClientUserAuthService(session);
-        }
-    }
 
     /**
      * The AuthFuture that is being used by the current auth request.  This encodes the state.

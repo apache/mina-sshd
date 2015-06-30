@@ -26,8 +26,6 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.auth.AbstractUserAuth;
-import org.apache.sshd.server.auth.UserAuth;
-import org.apache.sshd.server.auth.UserAuthFactory;
 import org.apache.sshd.server.session.ServerSession;
 import org.ietf.jgss.GSSContext;
 import org.ietf.jgss.GSSCredential;
@@ -230,37 +228,6 @@ public class UserAuthGSS extends AbstractUserAuth {
         } catch (GSSException e) {
             // won't happen
             return null;
-        }
-    }
-
-    /**
-     * Factory class.
-     */
-    public static class UserAuthGSSFactory implements UserAuthFactory {
-        public static final UserAuthGSSFactory INSTANCE = new UserAuthGSSFactory();
-        
-        public UserAuthGSSFactory() {
-            super();
-        }
-
-        /**
-         * Get the name of the authentication method.
-         *
-         * @return Tge name, always 'gssapi-with-mic' here.
-         */
-        @Override
-        public String getName() {
-            return "gssapi-with-mic";
-        }
-
-        /**
-         * Create a new authenticator instance.
-         *
-         * @return The instance
-         */
-        @Override
-        public UserAuth create() {
-            return new UserAuthGSS();
         }
     }
 }

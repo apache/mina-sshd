@@ -27,23 +27,6 @@ import org.apache.sshd.common.util.buffer.Buffer;
  */
 public class UserAuthNone extends AbstractUserAuth {
 
-    public static class UserAuthNoneFactory implements UserAuthFactory {
-        public static final UserAuthNoneFactory INSTANCE = new UserAuthNoneFactory();
-
-        public UserAuthNoneFactory() {
-            super();
-        }
-
-        @Override
-        public String getName() {
-            return "none";
-        }
-        @Override
-        public UserAuth create() {
-            return new UserAuthNone();
-        }
-    }
-
     public UserAuthNone() {
         super();
     }

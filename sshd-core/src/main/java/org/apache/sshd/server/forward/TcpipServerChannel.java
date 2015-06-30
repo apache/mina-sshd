@@ -89,22 +89,6 @@ public class TcpipServerChannel extends AbstractServerChannel {
         }
     }
 
-    public static class DirectTcpipFactory extends TcpipFactory {
-        public static final DirectTcpipFactory  INSTANCE = new DirectTcpipFactory();
-
-        public DirectTcpipFactory() {
-            super(ForwardingFilter.Type.Direct);
-        }
-    }
-
-    public static class ForwardedTcpipFactory extends TcpipFactory {
-        public static final ForwardedTcpipFactory INSTANCE = new ForwardedTcpipFactory();
-        
-        public ForwardedTcpipFactory() {
-            super(ForwardingFilter.Type.Forwarded);
-        }
-    }
-
     private final ForwardingFilter.Type type;
     private IoConnector connector;
     private IoSession ioSession;

@@ -40,8 +40,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.client.auth.UserAuth;
 import org.apache.sshd.client.auth.UserAuthKeyboardInteractive;
-import org.apache.sshd.client.auth.UserAuthPassword;
-import org.apache.sshd.client.auth.UserAuthPublicKey;
+import org.apache.sshd.client.auth.UserAuthKeyboardInteractiveFactory;
+import org.apache.sshd.client.auth.UserAuthPasswordFactory;
+import org.apache.sshd.client.auth.UserAuthPublicKeyFactory;
 import org.apache.sshd.client.auth.UserInteraction;
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ChannelShell;
@@ -77,16 +78,18 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.NoCloseOutputStream;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.CommandFactory;
-import org.apache.sshd.server.PublickeyAuthenticator;
-import org.apache.sshd.server.PublickeyAuthenticator.AcceptAllPublickeyAuthenticator;
 import org.apache.sshd.server.SshServer;
+import org.apache.sshd.server.auth.pubkey.AcceptAllPublickeyAuthenticator;
+import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
 import org.apache.sshd.server.channel.ChannelSession;
+import org.apache.sshd.server.channel.ChannelSessionFactory;
 import org.apache.sshd.server.command.UnknownCommand;
-import org.apache.sshd.server.forward.TcpipServerChannel;
+import org.apache.sshd.server.forward.DirectTcpipFactory;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
-import org.apache.sshd.server.session.ServerConnectionService;
+import org.apache.sshd.server.session.ServerConnectionServiceFactory;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.session.ServerUserAuthService;
+import org.apache.sshd.server.session.ServerUserAuthServiceFactory;
 import org.apache.sshd.util.AsyncEchoShellFactory;
 import org.apache.sshd.util.BaseTestSupport;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
@@ -134,7 +137,7 @@ public class ClientTest extends BaseTestSupport {
         sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
         sshd.setPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);
         sshd.setServiceFactories(Arrays.asList(
-                new ServerUserAuthService.Factory() {
+                new ServerUserAuthServiceFactory() {
                     @Override
                     public Service create(Session session) throws IOException {
                         return new ServerUserAuthService(session) {
@@ -147,10 +150,10 @@ public class ClientTest extends BaseTestSupport {
                         };
                     }
                 },
-                new ServerConnectionService.Factory()
-        ));
+                ServerConnectionServiceFactory.INSTANCE
+            ));
         sshd.setChannelFactories(Arrays.<NamedFactory<Channel>>asList(
-                new ChannelSession.ChannelSessionFactory() {
+                new ChannelSessionFactory() {
                     @Override
                     public Channel create() {
                         return new ChannelSession() {
@@ -172,7 +175,7 @@ public class ClientTest extends BaseTestSupport {
                         };
                     }
                 },
-                TcpipServerChannel.DirectTcpipFactory.INSTANCE));
+                DirectTcpipFactory.INSTANCE));
         sshd.start();
         port = sshd.getPort();
 
@@ -658,7 +661,7 @@ public class ClientTest extends BaseTestSupport {
 
     @Test
     public void testPublicKeyAuthNew() throws Exception {
-        client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(UserAuthPublicKey.UserAuthPublicKeyFactory.INSTANCE));
+        client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(UserAuthPublicKeyFactory.INSTANCE));
         client.start();
         
         try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
@@ -678,7 +681,7 @@ public class ClientTest extends BaseTestSupport {
                 return key.equals(pair.getPublic());
             }
         });
-        client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(UserAuthPublicKey.UserAuthPublicKeyFactory.INSTANCE));
+        client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(UserAuthPublicKeyFactory.INSTANCE));
         client.start();
 
         SimpleGeneratorHostKeyProvider provider = new SimpleGeneratorHostKeyProvider();
@@ -695,7 +698,7 @@ public class ClientTest extends BaseTestSupport {
 
     @Test
     public void testPasswordAuthNew() throws Exception {
-        client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthPassword.UserAuthPasswordFactory()));
+        client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthPasswordFactory()));
         client.start();
         
         try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
@@ -708,7 +711,7 @@ public class ClientTest extends BaseTestSupport {
 
     @Test
     public void testPasswordAuthNewWithFailureOnFirstIdentity() throws Exception {
-        client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthPassword.UserAuthPasswordFactory()));
+        client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthPasswordFactory()));
         client.start();
         
         try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
@@ -722,7 +725,7 @@ public class ClientTest extends BaseTestSupport {
 
     @Test
     public void testKeyboardInteractiveAuthNew() throws Exception {
-        client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(UserAuthKeyboardInteractive.UserAuthKeyboardInteractiveFactory.INSTANCE));
+        client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(UserAuthKeyboardInteractiveFactory.INSTANCE));
         client.start();
         
         try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
@@ -735,7 +738,7 @@ public class ClientTest extends BaseTestSupport {
 
     @Test
     public void testKeyboardInteractiveAuthNewWithFailureOnFirstIdentity() throws Exception {
-        client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(UserAuthKeyboardInteractive.UserAuthKeyboardInteractiveFactory.INSTANCE));
+        client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(UserAuthKeyboardInteractiveFactory.INSTANCE));
         client.start();
         
         try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
@@ -750,7 +753,7 @@ public class ClientTest extends BaseTestSupport {
     @Test   // see SSHD-504
     public void testKeyboardInteractivePasswordPromptLocationIndependence() throws Exception {
         final Collection<String> mismatchedPrompts = new LinkedList<String>();
-        client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthKeyboardInteractive.UserAuthKeyboardInteractiveFactory() {
+        client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthKeyboardInteractiveFactory() {
                 @Override
                 public UserAuth create() {
                     return new UserAuthKeyboardInteractive() {
@@ -802,7 +805,7 @@ public class ClientTest extends BaseTestSupport {
                                 }
                         ));
         sshd.setUserAuthFactories(Arrays.<NamedFactory<org.apache.sshd.server.auth.UserAuth>>asList(
-                new org.apache.sshd.server.auth.UserAuthKeyboardInteractive.UserAuthKeyboardInteractiveFactory() {
+                new org.apache.sshd.server.auth.UserAuthKeyboardInteractiveFactory() {
                     private int xformerIndex;
 
                     @Override
@@ -854,7 +857,7 @@ public class ClientTest extends BaseTestSupport {
         final int MAX_PROMPTS = 3;
         FactoryManagerUtils.updateProperty(client, ClientFactoryManager.PASSWORD_PROMPTS, MAX_PROMPTS);
 
-        client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthKeyboardInteractive.UserAuthKeyboardInteractiveFactory()));
+        client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthKeyboardInteractiveFactory()));
         client.setUserInteraction(new UserInteraction() {
             @Override
             public void welcome(String banner) {
@@ -885,7 +888,7 @@ public class ClientTest extends BaseTestSupport {
         FactoryManagerUtils.updateProperty(client, ClientFactoryManager.PASSWORD_PROMPTS, MAX_PROMPTS);
 
         client.setUserAuthFactories(Arrays
-                        .<NamedFactory<UserAuth>> asList(UserAuthKeyboardInteractive.UserAuthKeyboardInteractiveFactory.INSTANCE));
+                        .<NamedFactory<UserAuth>> asList(UserAuthKeyboardInteractiveFactory.INSTANCE));
         client.start();
 
         try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
@@ -918,7 +921,7 @@ public class ClientTest extends BaseTestSupport {
         final int MAX_PROMPTS = 3;
         FactoryManagerUtils.updateProperty(client, ClientFactoryManager.PASSWORD_PROMPTS, MAX_PROMPTS);
         client.setUserAuthFactories(Arrays
-                        .<NamedFactory<UserAuth>> asList(new UserAuthKeyboardInteractive.UserAuthKeyboardInteractiveFactory()));
+                        .<NamedFactory<UserAuth>> asList(new UserAuthKeyboardInteractiveFactory()));
         client.start();
         
         try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {

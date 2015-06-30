@@ -24,8 +24,8 @@ import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
-import org.apache.sshd.server.PasswordAuthenticator;
 import org.apache.sshd.server.ServerFactoryManager;
+import org.apache.sshd.server.auth.password.PasswordAuthenticator;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
@@ -33,24 +33,6 @@ import org.apache.sshd.server.session.ServerSession;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class UserAuthKeyboardInteractive extends AbstractUserAuth {
-    public static class UserAuthKeyboardInteractiveFactory implements UserAuthFactory {
-        public static final UserAuthKeyboardInteractiveFactory INSTANCE = new UserAuthKeyboardInteractiveFactory();
-
-        public UserAuthKeyboardInteractiveFactory() {
-            super();
-        }
-
-        @Override
-        public String getName() {
-            return "keyboard-interactive";
-        }
-
-        @Override
-        public UserAuth create() {
-            return new UserAuthKeyboardInteractive();
-        }
-    }
-
     // configuration parameters on the FactoryManager to configure the message values
     public static final String KB_INTERACTIVE_NAME_PROP = "kb-interactive-name";
         public static final String DEFAULT_KB_INTERACTIVE_NAME = "Password authentication";

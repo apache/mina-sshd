@@ -24,6 +24,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -34,6 +35,7 @@ import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.io.IoSession;
@@ -45,19 +47,24 @@ import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.server.auth.UserAuth;
-import org.apache.sshd.server.auth.UserAuthKeyboardInteractive;
-import org.apache.sshd.server.auth.UserAuthPassword;
-import org.apache.sshd.server.auth.UserAuthPublicKey;
+import org.apache.sshd.server.auth.UserAuthKeyboardInteractiveFactory;
+import org.apache.sshd.server.auth.UserAuthPasswordFactory;
+import org.apache.sshd.server.auth.UserAuthPublicKeyFactory;
 import org.apache.sshd.server.auth.gss.GSSAuthenticator;
-import org.apache.sshd.server.auth.gss.UserAuthGSS;
+import org.apache.sshd.server.auth.gss.UserAuthGSSFactory;
+import org.apache.sshd.server.auth.password.PasswordAuthenticator;
+import org.apache.sshd.server.auth.pubkey.AcceptAllPublickeyAuthenticator;
+import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
 import org.apache.sshd.server.command.ScpCommandFactory;
+import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
 import org.apache.sshd.server.forward.ForwardingFilter;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
-import org.apache.sshd.server.session.ServerConnectionService;
+import org.apache.sshd.server.session.ServerConnectionServiceFactory;
 import org.apache.sshd.server.session.ServerSession;
-import org.apache.sshd.server.session.ServerUserAuthService;
+import org.apache.sshd.server.session.ServerUserAuthServiceFactory;
 import org.apache.sshd.server.session.SessionFactory;
 import org.apache.sshd.server.sftp.SftpSubsystemFactory;
+import org.apache.sshd.server.shell.InteractiveProcessShellFactory;
 import org.apache.sshd.server.shell.ProcessShellFactory;
 
 /**
@@ -205,8 +212,22 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         this.tcpipForwardingFilter = forwardingFilter;
     }
 
+    public static final List<ServiceFactory> DEFAULT_SERVICE_FACTORIES =
+            Collections.unmodifiableList(Arrays.asList(
+                    ServerUserAuthServiceFactory.INSTANCE,
+                    ServerConnectionServiceFactory.INSTANCE
+            ));
+    public static final UserAuthPublicKeyFactory DEFAULT_USER_AUTH_PUBLIC_KEY_FACTORY =
+            UserAuthPublicKeyFactory.INSTANCE;
+    public static final UserAuthGSSFactory DEFAULT_USER_AUTH_GSS_FACTORY =
+            UserAuthGSSFactory.INSTANCE;
+    public static final UserAuthPasswordFactory DEFAULT_USER_AUTH_PASSWORD_FACTORY =
+            UserAuthPasswordFactory.INSTANCE;
+    public static final UserAuthKeyboardInteractiveFactory DEFAULT_USER_AUTH_KB_INTERACTIVE_FACTORY =
+            UserAuthKeyboardInteractiveFactory.INSTANCE;
+
     @Override
-    protected void checkConfig() {
+    protected void checkConfig() { 
         super.checkConfig();
 
         ValidateUtils.checkTrue(getPort() >= 0 /* zero means not set yet */, "Bad port number: %d", Integer.valueOf(getPort()));
@@ -214,14 +235,16 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         if (GenericUtils.isEmpty(getUserAuthFactories())) {
             List<NamedFactory<UserAuth>> factories = new ArrayList<NamedFactory<UserAuth>>();
             if (getPasswordAuthenticator() != null) {
-                factories.add(UserAuthPassword.UserAuthPasswordFactory.INSTANCE);
-                factories.add(UserAuthKeyboardInteractive.UserAuthKeyboardInteractiveFactory.INSTANCE);
+                factories.add(DEFAULT_USER_AUTH_PASSWORD_FACTORY);
+                factories.add(DEFAULT_USER_AUTH_KB_INTERACTIVE_FACTORY);
             }
+
             if (getPublickeyAuthenticator() != null) {
-                factories.add(UserAuthPublicKey.UserAuthPublicKeyFactory.INSTANCE);
+                factories.add(DEFAULT_USER_AUTH_PUBLIC_KEY_FACTORY);
             }
+
             if (getGSSAuthenticator() != null) {
-              factories.add(UserAuthGSS.UserAuthGSSFactory.INSTANCE);
+                factories.add(DEFAULT_USER_AUTH_GSS_FACTORY);
             }
             
             ValidateUtils.checkTrue(factories.size() > 0, "UserAuthFactories not set", GenericUtils.EMPTY_OBJECT_ARRAY); 
@@ -233,10 +256,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         ValidateUtils.checkNotNull(getFileSystemFactory(), "FileSystemFactory not set", GenericUtils.EMPTY_OBJECT_ARRAY);
 
         if (GenericUtils.isEmpty(getServiceFactories())) {
-            setServiceFactories(Arrays.asList(
-                    new ServerUserAuthService.Factory(),
-                    new ServerConnectionService.Factory()
-            ));
+            setServiceFactories(DEFAULT_SERVICE_FACTORIES);
         }
     }
 
@@ -434,21 +454,15 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
             sshd.setKeyPairProvider(new SimpleGeneratorHostKeyProvider(new File("key.ser")));
         }
 
-        if (OsUtils.isUNIX()) {
-            sshd.setShellFactory(new ProcessShellFactory(new String[] { "/bin/sh", "-i", "-l" },
-                                 EnumSet.of(ProcessShellFactory.TtyOptions.ONlCr)));
-        } else {
-            sshd.setShellFactory(new ProcessShellFactory(new String[] { "cmd.exe "},
-                                 EnumSet.of(ProcessShellFactory.TtyOptions.Echo, ProcessShellFactory.TtyOptions.ICrNl, ProcessShellFactory.TtyOptions.ONlCr)));
-        }
+        sshd.setShellFactory(InteractiveProcessShellFactory.INSTANCE);
         sshd.setPasswordAuthenticator(new PasswordAuthenticator() {
-            @Override
-            public boolean authenticate(String username, String password, ServerSession session) {
-                return username != null && username.equals(password);
-            }
-        });
-        sshd.setPublickeyAuthenticator(PublickeyAuthenticator.AcceptAllPublickeyAuthenticator.INSTANCE);
-        sshd.setTcpipForwardingFilter(ForwardingFilter.AcceptAllForwardingFilter.INSTANCE);
+                @Override
+                public boolean authenticate(String username, String password, ServerSession session) {
+                    return username != null && username.equals(password);
+                }
+            });
+        sshd.setPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);
+        sshd.setTcpipForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
         sshd.setCommandFactory(new ScpCommandFactory.Builder().withDelegate(new CommandFactory() {
             @Override
             public Command createCommand(String command) {

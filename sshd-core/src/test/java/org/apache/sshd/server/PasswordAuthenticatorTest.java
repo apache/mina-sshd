@@ -23,7 +23,10 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Random;
 
-import org.apache.sshd.server.PasswordAuthenticator.StaticPasswordAuthenticator;
+import org.apache.sshd.server.auth.password.AcceptAllPasswordAuthenticator;
+import org.apache.sshd.server.auth.password.PasswordAuthenticator;
+import org.apache.sshd.server.auth.password.RejectAllPasswordAuthenticator;
+import org.apache.sshd.server.auth.password.StaticPasswordAuthenticator;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.util.BaseTestSupport;
 import org.junit.FixMethodOrder;
@@ -41,12 +44,12 @@ public class PasswordAuthenticatorTest extends BaseTestSupport {
 
     @Test
     public void testAcceptAllPasswordAuthenticator() throws Exception {
-        testStaticPasswordAuthenticator(PasswordAuthenticator.AcceptAllPasswordAuthenticator.INSTANCE);
+        testStaticPasswordAuthenticator(AcceptAllPasswordAuthenticator.INSTANCE);
     }
 
     @Test
     public void testRejectAllPasswordAuthenticator() throws Exception {
-        testStaticPasswordAuthenticator(PasswordAuthenticator.RejectAllPasswordAuthenticator.INSTANCE);
+        testStaticPasswordAuthenticator(RejectAllPasswordAuthenticator.INSTANCE);
     }
 
     private void testStaticPasswordAuthenticator(StaticPasswordAuthenticator authenticator) throws Exception {

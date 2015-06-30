@@ -48,7 +48,9 @@ import org.apache.sshd.common.config.keys.PublicKeyEntryDecoder;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
 import org.apache.sshd.common.util.io.NoCloseReader;
-import org.apache.sshd.server.PublickeyAuthenticator;
+import org.apache.sshd.server.auth.pubkey.KeySetPublickeyAuthenticator;
+import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
+import org.apache.sshd.server.auth.pubkey.RejectAllPublickeyAuthenticator;
 
 /**
  * Represents an entry in the user's {@code authorized_keys} file according
@@ -133,9 +135,9 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
     public static final PublickeyAuthenticator fromAuthorizedEntries(Collection<? extends AuthorizedKeyEntry> entries) throws IOException, GeneralSecurityException  {
         Collection<PublicKey> keys = resolveAuthorizedKeys(entries); 
         if (GenericUtils.isEmpty(keys)) {
-            return PublickeyAuthenticator.RejectAllPublickeyAuthenticator.INSTANCE;
+            return RejectAllPublickeyAuthenticator.INSTANCE;
         } else {
-            return new PublickeyAuthenticator.KeySetPublickeyAuthenticator(keys);
+            return new KeySetPublickeyAuthenticator(keys);
         }
     }
     

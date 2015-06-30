@@ -32,7 +32,8 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.ModifiableFileWatcher;
-import org.apache.sshd.server.PublickeyAuthenticator;
+import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
+import org.apache.sshd.server.auth.pubkey.RejectAllPublickeyAuthenticator;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
@@ -45,7 +46,7 @@ import org.apache.sshd.server.session.ServerSession;
  */
 public class AuthorizedKeysAuthenticator extends ModifiableFileWatcher implements PublickeyAuthenticator {
     private final AtomicReference<PublickeyAuthenticator> delegateHolder =  // assumes initially reject-all
-            new AtomicReference<PublickeyAuthenticator>(PublickeyAuthenticator.RejectAllPublickeyAuthenticator.INSTANCE);
+            new AtomicReference<PublickeyAuthenticator>(RejectAllPublickeyAuthenticator.INSTANCE);
 
     public AuthorizedKeysAuthenticator(File file) {
         this(ValidateUtils.checkNotNull(file, "No file to watch", GenericUtils.EMPTY_OBJECT_ARRAY).toPath());
@@ -102,7 +103,7 @@ public class AuthorizedKeysAuthenticator extends ModifiableFileWatcher implement
             /* Start fresh - NOTE: if there is any error then we want to reject all attempts
              * since we don't want to remain with the previous data - safer that way
              */
-            delegateHolder.set(PublickeyAuthenticator.RejectAllPublickeyAuthenticator.INSTANCE);
+            delegateHolder.set(RejectAllPublickeyAuthenticator.INSTANCE);
 
             Path path = getPath();
             if (exists()) {

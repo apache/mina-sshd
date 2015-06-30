@@ -20,6 +20,7 @@
 package org.apache.sshd.server;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.sshd.common.BaseBuilder;
@@ -31,9 +32,10 @@ import org.apache.sshd.common.kex.DHFactory;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.util.Transformer;
-import org.apache.sshd.server.channel.ChannelSession;
+import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
+import org.apache.sshd.server.channel.ChannelSessionFactory;
 import org.apache.sshd.server.config.keys.DefaultAuthorizedKeysAuthenticator;
-import org.apache.sshd.server.forward.TcpipServerChannel;
+import org.apache.sshd.server.forward.DirectTcpipFactory;
 import org.apache.sshd.server.global.CancelTcpipForwardHandler;
 import org.apache.sshd.server.global.KeepAliveHandler;
 import org.apache.sshd.server.global.NoMoreSessionsHandler;
@@ -70,32 +72,44 @@ public class ServerBuilder extends BaseBuilder<SshServer, ServerBuilder> {
         return this;
     }
 
-    @Override
-    protected ServerBuilder fillWithDefaultValues() {
-        super.fillWithDefaultValues();
-        if (keyExchangeFactories == null) {
-            keyExchangeFactories = setUpDefaultKeyExchanges(false);
-        }
-        if (channelFactories == null) {
-            channelFactories = Arrays.<NamedFactory<Channel>>asList(
-                    ChannelSession.ChannelSessionFactory.INSTANCE,
-                    TcpipServerChannel.DirectTcpipFactory.INSTANCE);
-        }
-        if (globalRequestHandlers == null) {
-            globalRequestHandlers = Arrays.<RequestHandler<ConnectionService>>asList(
+    public static final List<NamedFactory<Channel>> DEFAULT_CHANNEL_FACTORIES =
+            Collections.unmodifiableList(Arrays.<NamedFactory<Channel>>asList(
+                    ChannelSessionFactory.INSTANCE,
+                    DirectTcpipFactory.INSTANCE
+                ));
+    public static final List<RequestHandler<ConnectionService>> DEFAULT_GLOBAL_REQUEST_HANDLERS =
+            Collections.unmodifiableList(Arrays.<RequestHandler<ConnectionService>>asList(
                     KeepAliveHandler.INSTANCE,
                     NoMoreSessionsHandler.INSTANCE,
                     TcpipForwardHandler.INSTANCE,
-                    CancelTcpipForwardHandler.INSTANCE);
+                    CancelTcpipForwardHandler.INSTANCE
+                ));
+    public static final PublickeyAuthenticator DEFAULT_PUBLIC_KEY_AUTHENTICATOR = DefaultAuthorizedKeysAuthenticator.INSTANCE;
+
+    @Override
+    protected ServerBuilder fillWithDefaultValues() {
+        super.fillWithDefaultValues();
+
+        if (keyExchangeFactories == null) {
+            keyExchangeFactories = setUpDefaultKeyExchanges(false);
         }
+
+        if (channelFactories == null) {
+            channelFactories = DEFAULT_CHANNEL_FACTORIES;
+        }
+
+        if (globalRequestHandlers == null) {
+            globalRequestHandlers = DEFAULT_GLOBAL_REQUEST_HANDLERS;
+        }
+
+        if (pubkeyAuthenticator == null) {
+            pubkeyAuthenticator = DEFAULT_PUBLIC_KEY_AUTHENTICATOR;
+        }
+
         if (factory == null) {
             factory = SshServer.DEFAULT_SSH_SERVER_FACTORY;
         }
         
-        if (pubkeyAuthenticator == null) {
-            pubkeyAuthenticator = DefaultAuthorizedKeysAuthenticator.INSTANCE;
-        }
-
         return me();
     }
 

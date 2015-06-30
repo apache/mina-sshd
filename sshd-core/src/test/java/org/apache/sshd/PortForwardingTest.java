@@ -55,7 +55,7 @@ import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.server.SshServer;
-import org.apache.sshd.server.forward.ForwardingFilter;
+import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
 import org.apache.sshd.server.global.CancelTcpipForwardHandler;
 import org.apache.sshd.server.global.TcpipForwardHandler;
 import org.apache.sshd.util.BaseTestSupport;
@@ -99,7 +99,7 @@ public class PortForwardingTest extends BaseTestSupport {
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setShellFactory(new EchoShellFactory());
         sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
-        sshd.setTcpipForwardingFilter(ForwardingFilter.AcceptAllForwardingFilter.INSTANCE);
+        sshd.setTcpipForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
         sshd.start();
         
         if (!requestsQ.isEmpty()) {
@@ -603,7 +603,7 @@ public class PortForwardingTest extends BaseTestSupport {
         client = SshClient.setUpDefaultClient();
         FactoryManagerUtils.updateProperty(client, FactoryManager.WINDOW_SIZE, 2048);
         FactoryManagerUtils.updateProperty(client, FactoryManager.MAX_PACKET_SIZE, 256);
-        client.setTcpipForwardingFilter(ForwardingFilter.AcceptAllForwardingFilter.INSTANCE);
+        client.setTcpipForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
         client.start();
 
         ClientSession session = client.connect(getCurrentTestName(), "localhost", sshPort).verify(7L, TimeUnit.SECONDS).getSession();

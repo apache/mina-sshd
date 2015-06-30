@@ -47,7 +47,7 @@ public class LocalAgentFactory implements SshAgentFactory {
 
     @Override
     public NamedFactory<Channel> getChannelForwardingFactory() {
-        return ChannelAgentForwarding.ChannelAgentForwardingFactory.INSTANCE;
+        return ChannelAgentForwardingFactory.INSTANCE;
     }
 
     @Override

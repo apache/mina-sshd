@@ -33,6 +33,8 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
 public class NativeFileSystemFactory extends AbstractLoggingBean implements FileSystemFactory {
+    public static final NativeFileSystemFactory INSTANCE = new NativeFileSystemFactory();
+
     private boolean createHome;
 
     public NativeFileSystemFactory() {

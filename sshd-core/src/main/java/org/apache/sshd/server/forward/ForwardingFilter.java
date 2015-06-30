@@ -27,7 +27,6 @@ import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
  * Determines if a forwarding request will be permitted.
@@ -161,80 +160,4 @@ public interface ForwardingFilter {
      * @return true if the socket is permitted; false if it must be denied.
      */
     boolean canConnect(Type type, SshdSocketAddress address, Session session);
-    
-    /**
-     * A {@link ForwardingFilter} implementation that returns the same &quot;static&quot;
-     * result for <U>all</U> the queries.
-     */
-    public static class StaticDecisionForwardingFilter extends AbstractLoggingBean implements ForwardingFilter {
-        private final boolean acceptance;
-
-        /**
-         * @param acceptance The acceptance status for <U>all</U> the queries
-         */
-        public StaticDecisionForwardingFilter(boolean acceptance) {
-            this.acceptance = acceptance;
-        }
-        
-        public final boolean isAccepted() {
-            return acceptance;
-        }
-
-        @Override
-        public boolean canForwardAgent(Session session) {
-            return checkAcceptance("auth-agent-req@openssh.com", session, SshdSocketAddress.LOCALHOST_ADDRESS);
-        }
-
-        @Override
-        public boolean canForwardX11(Session session) {
-            return checkAcceptance("x11-req", session, SshdSocketAddress.LOCALHOST_ADDRESS);
-        }
-
-        @Override
-        public boolean canListen(SshdSocketAddress address, Session session) {
-            return checkAcceptance("tcpip-forward", session, address);
-        }
-
-        @Override
-        public boolean canConnect(Type type, SshdSocketAddress address, Session session) {
-            return checkAcceptance(type.getName(), session, address);
-        }
-        
-        /**
-         * @param request The SSH request that ultimately led to this filter being consulted
-         * @param session The requesting {@link Session}
-         * @param target The request target - may be {@link SshdSocketAddress#LOCALHOST_ADDRESS}
-         * if no real target
-         * @return The (static) {@link #isAccepted()} flag
-         */
-        protected boolean checkAcceptance(String request, Session session, SshdSocketAddress target) {
-            boolean accepted = isAccepted();
-            if (log.isDebugEnabled()) {
-                log.debug("checkAcceptance(" + request + ")[" + session + "] acceptance for target=" + target + " is " + accepted);
-            }
-            return accepted;
-        }
-    }
-    
-    /**
-     * A {@link ForwardingFilter} that accepts all requests
-     */
-    public static class AcceptAllForwardingFilter extends StaticDecisionForwardingFilter {
-        public static final AcceptAllForwardingFilter INSTANCE = new AcceptAllForwardingFilter();
-
-        public AcceptAllForwardingFilter() {
-            super(true);
-        }
-    }
-
-    /**
-     * A {@link ForwardingFilter} that rejects all requests
-     */
-    public static class RejectAllForwardingFilter extends StaticDecisionForwardingFilter {
-        public static final RejectAllForwardingFilter INSTANCE = new RejectAllForwardingFilter();
-
-        public RejectAllForwardingFilter() {
-            super(false);
-        }
-    }
 }

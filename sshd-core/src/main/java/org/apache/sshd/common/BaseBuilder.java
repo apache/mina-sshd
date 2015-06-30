@@ -45,6 +45,7 @@ import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.ObjectBuilder;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.server.forward.ForwardingFilter;
+import org.apache.sshd.server.forward.RejectAllForwardingFilter;
 
 /**
  * Base class for dedicated client/server instance builders
@@ -68,6 +69,13 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
         super();
     }
 
+    // Compression is not enabled by default
+    public static final List<NamedFactory<Compression>> DEFAULT_COMPRESSION_FACTORIES =
+            Collections.unmodifiableList(Arrays.<NamedFactory<Compression>>asList(BuiltinCompressions.none));
+    public static final FileSystemFactory DEFAULT_FILE_SYSTEM_FACTORY = NativeFileSystemFactory.INSTANCE;
+    public static final ForwardingFilter DEFAULT_FORWARDING_FILTER = RejectAllForwardingFilter.INSTANCE;
+    public static final TcpipForwarderFactory DEFAULT_FORWARDER_FACTORY = DefaultTcpipForwarderFactory.INSTANCE;
+
     protected S fillWithDefaultValues() {
         if (signatureFactories == null) {
             signatureFactories = setUpDefaultSignatures(false);
@@ -81,15 +89,8 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
             cipherFactories = setUpDefaultCiphers(false);
         }
 
-        // Compression is not enabled by default
-        //if (compressionFactories == null) {
-        //    compressionFactories = Arrays.<NamedFactory<Compression>>asList(
-        //            new CompressionNone.Factory(),
-        //            new CompressionZlib.Factory(),
-        //            new CompressionDelayedZlib.Factory());
-        //}
         if (compressionFactories == null) {
-            compressionFactories = Arrays.<NamedFactory<Compression>>asList(BuiltinCompressions.none);
+            compressionFactories = DEFAULT_COMPRESSION_FACTORIES;
         }
 
         if (macFactories == null) {
@@ -97,15 +98,15 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
         }
 
         if (fileSystemFactory == null) {
-            fileSystemFactory = new NativeFileSystemFactory();
+            fileSystemFactory = DEFAULT_FILE_SYSTEM_FACTORY;
         }
 
         if (forwardingFilter == null) {
-            forwardingFilter = ForwardingFilter.RejectAllForwardingFilter.INSTANCE;
+            forwardingFilter = DEFAULT_FORWARDING_FILTER;
         }
 
         if (tcpipForwarderFactory == null) {
-            tcpipForwarderFactory = DefaultTcpipForwarderFactory.INSTANCE;
+            tcpipForwarderFactory = DEFAULT_FORWARDER_FACTORY;
         }
 
         return me();

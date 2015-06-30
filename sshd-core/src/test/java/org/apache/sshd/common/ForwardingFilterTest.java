@@ -20,8 +20,10 @@
 package org.apache.sshd.common;
 
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
 import org.apache.sshd.server.forward.ForwardingFilter;
-import org.apache.sshd.server.forward.ForwardingFilter.StaticDecisionForwardingFilter;
+import org.apache.sshd.server.forward.RejectAllForwardingFilter;
+import org.apache.sshd.server.forward.StaticDecisionForwardingFilter;
 import org.apache.sshd.util.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -55,12 +57,12 @@ public class ForwardingFilterTest extends BaseTestSupport {
     }
     @Test
     public void testAcceptAllForwardingFilter() {
-        testStaticDecisionForwardingFilter(ForwardingFilter.AcceptAllForwardingFilter.INSTANCE, true);
+        testStaticDecisionForwardingFilter(AcceptAllForwardingFilter.INSTANCE, true);
     }
 
     @Test
     public void testRejectAllForwardingFilter() {
-        testStaticDecisionForwardingFilter(ForwardingFilter.RejectAllForwardingFilter.INSTANCE, false);
+        testStaticDecisionForwardingFilter(RejectAllForwardingFilter.INSTANCE, false);
     }
 
     private static void testStaticDecisionForwardingFilter(StaticDecisionForwardingFilter filter, boolean expected) {

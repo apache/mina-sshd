@@ -27,8 +27,8 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
-import org.apache.sshd.server.PublickeyAuthenticator;
 import org.apache.sshd.server.ServerFactoryManager;
+import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
 
 /**
  * TODO Add javadoc
@@ -36,25 +36,6 @@ import org.apache.sshd.server.ServerFactoryManager;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class UserAuthPublicKey extends AbstractUserAuth {
-
-    public static class UserAuthPublicKeyFactory implements UserAuthFactory {
-        public static final String NAME = "publickey";
-
-        public static final UserAuthPublicKeyFactory INSTANCE = new UserAuthPublicKeyFactory();
-
-        public UserAuthPublicKeyFactory() {
-            super();
-        }
-
-        @Override
-        public String getName() {
-            return NAME;
-        }
-        @Override
-        public UserAuth create() {
-            return new UserAuthPublicKey();
-        }
-    }
 
     public UserAuthPublicKey() {
         super();

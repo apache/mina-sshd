@@ -25,7 +25,10 @@ import java.util.Arrays;
 import java.util.Random;
 
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.server.PublickeyAuthenticator.StaticPublickeyAuthenticator;
+import org.apache.sshd.server.auth.pubkey.AcceptAllPublickeyAuthenticator;
+import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
+import org.apache.sshd.server.auth.pubkey.RejectAllPublickeyAuthenticator;
+import org.apache.sshd.server.auth.pubkey.StaticPublickeyAuthenticator;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.util.BaseTestSupport;
 import org.junit.FixMethodOrder;
@@ -44,12 +47,12 @@ public class PublickeyAuthenticatorTest extends BaseTestSupport {
 
     @Test
     public void testAcceptAllPublickeyAuthenticator() throws Exception {
-        testStaticPublickeyAuthenticator(PublickeyAuthenticator.AcceptAllPublickeyAuthenticator.INSTANCE);
+        testStaticPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);
     }
 
     @Test
     public void testRejectAllPublickeyAuthenticator() throws Exception {
-        testStaticPublickeyAuthenticator(PublickeyAuthenticator.RejectAllPublickeyAuthenticator.INSTANCE);
+        testStaticPublickeyAuthenticator(RejectAllPublickeyAuthenticator.INSTANCE);
     }
 
     private void testStaticPublickeyAuthenticator(StaticPublickeyAuthenticator authenticator) throws Exception {

@@ -40,9 +40,9 @@ import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.Environment;
-import org.apache.sshd.server.PublickeyAuthenticator.AcceptAllPublickeyAuthenticator;
 import org.apache.sshd.server.SshServer;
-import org.apache.sshd.server.forward.ForwardingFilter;
+import org.apache.sshd.server.auth.pubkey.AcceptAllPublickeyAuthenticator;
+import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
 import org.apache.sshd.util.BaseTestSupport;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.EchoShellFactory;
@@ -112,7 +112,7 @@ public class AgentTest extends BaseTestSupport {
             sshd1.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
             sshd1.setPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);
             sshd1.setAgentFactory(agentFactory);
-            sshd1.setTcpipForwardingFilter(ForwardingFilter.AcceptAllForwardingFilter.INSTANCE);
+            sshd1.setTcpipForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
             sshd1.start();
             
             final int port1 = sshd1.getPort();
@@ -121,7 +121,7 @@ public class AgentTest extends BaseTestSupport {
                 sshd2.setShellFactory(new TestEchoShellFactory());
                 sshd2.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
                 sshd2.setPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);
-                sshd1.setTcpipForwardingFilter(ForwardingFilter.AcceptAllForwardingFilter.INSTANCE);
+                sshd1.setTcpipForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
                 sshd2.setAgentFactory(new ProxyAgentFactory());
                 sshd2.start();
     

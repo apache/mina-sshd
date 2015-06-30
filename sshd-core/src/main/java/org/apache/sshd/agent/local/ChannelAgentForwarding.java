@@ -26,8 +26,6 @@ import org.apache.sshd.agent.common.AbstractAgentClient;
 import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.SshConstants;
-import org.apache.sshd.common.channel.Channel;
-import org.apache.sshd.common.channel.ChannelFactory;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
@@ -39,24 +37,6 @@ import org.apache.sshd.server.channel.AbstractServerChannel;
  * The client side channel that will receive requests forwards by the SSH server.
  */
 public class ChannelAgentForwarding extends AbstractServerChannel {
-
-    public static class ChannelAgentForwardingFactory implements ChannelFactory {
-        public static final ChannelAgentForwardingFactory INSTANCE = new ChannelAgentForwardingFactory();
-
-        public ChannelAgentForwardingFactory() {
-            super();
-        }
-
-        @Override
-        public String getName() {
-            return "auth-agent@openssh.com";
-        }
-
-        @Override
-        public Channel create() {
-            return new ChannelAgentForwarding();
-        }
-    }
 
     private String authSocket;
     private long pool;

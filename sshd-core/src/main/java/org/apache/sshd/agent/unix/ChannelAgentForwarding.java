@@ -29,14 +29,11 @@ import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.SshConstants;
-import org.apache.sshd.common.channel.Channel;
-import org.apache.sshd.common.channel.ChannelFactory;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
-import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.channel.AbstractServerChannel;
 import org.apache.tomcat.jni.Local;
@@ -48,37 +45,6 @@ import org.apache.tomcat.jni.Status;
  * The client side channel that will receive requests forwards by the SSH server.
  */
 public class ChannelAgentForwarding extends AbstractServerChannel {
-
-    public static class ChannelAgentForwardingFactory implements ChannelFactory, ExecutorServiceCarrier {
-        public static final ChannelAgentForwardingFactory INSTANCE = new ChannelAgentForwardingFactory();
-        
-        public ChannelAgentForwardingFactory() {
-            super();
-        }
-
-        @Override
-        public String getName() {
-            return "auth-agent@openssh.com";
-        }
-
-        @Override   // user can override to provide an alternative
-        public ExecutorService getExecutorService() {
-            return null;
-        }
-
-        @Override
-        public boolean isShutdownOnExit() {
-            return false;
-        }
-
-        @Override
-        public Channel create() {
-            ChannelAgentForwarding  channel = new ChannelAgentForwarding();
-            channel.setExecutorService(getExecutorService());
-            channel.setShutdownOnExit(isShutdownOnExit());
-            return channel;
-        }
-    }
 
     private String authSocket;
     private long pool;

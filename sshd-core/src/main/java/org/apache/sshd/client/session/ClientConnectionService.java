@@ -25,8 +25,6 @@ import java.util.concurrent.TimeUnit;
 import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.FactoryManagerUtils;
-import org.apache.sshd.common.Service;
-import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.session.AbstractConnectionService;
@@ -41,24 +39,6 @@ import org.apache.sshd.common.util.buffer.Buffer;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ClientConnectionService extends AbstractConnectionService {
-    public static class ClientConnectionServiceFactory implements ServiceFactory {
-        public static final ClientConnectionServiceFactory INSTANCE = new ClientConnectionServiceFactory();
-
-        public ClientConnectionServiceFactory() {
-            super();
-        }
-
-        @Override
-        public String getName() {
-            return "ssh-connection";
-        }
-
-        @Override
-        public Service create(Session session) throws IOException {
-            return new ClientConnectionService(session);
-        }
-    }
-
     public ClientConnectionService(Session s) throws SshException {
         super(s);
 

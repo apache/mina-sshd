@@ -41,23 +41,6 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  */
 public class UserAuthKeyboardInteractive extends AbstractLoggingBean implements UserAuth {
 
-    public static class UserAuthKeyboardInteractiveFactory implements UserAuthFactory {
-        public static final UserAuthKeyboardInteractiveFactory INSTANCE = new UserAuthKeyboardInteractiveFactory();
-
-        public UserAuthKeyboardInteractiveFactory() {
-            super();
-        }
-
-        @Override
-        public String getName() {
-            return "keyboard-interactive";
-        }
-        @Override
-        public UserAuth create() {
-            return new UserAuthKeyboardInteractive();
-        }
-    }
-
     private ClientSession session;
     private String service;
     private Iterator<String> passwords;

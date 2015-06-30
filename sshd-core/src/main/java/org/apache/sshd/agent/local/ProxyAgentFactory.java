@@ -45,7 +45,7 @@ public class ProxyAgentFactory implements SshAgentFactory {
 
     @Override
     public NamedFactory<Channel> getChannelForwardingFactory() {
-        return ChannelAgentForwarding.ChannelAgentForwardingFactory.INSTANCE;
+        return ChannelAgentForwardingFactory.INSTANCE;
     }
 
     @Override

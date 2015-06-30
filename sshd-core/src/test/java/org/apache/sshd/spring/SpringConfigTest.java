@@ -16,10 +16,12 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd;
+package org.apache.sshd.spring;
 
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 
+import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.BaseTestSupport;
 import org.apache.sshd.util.JSchLogger;
@@ -50,7 +52,9 @@ public class SpringConfigTest extends BaseTestSupport {
 
     @Before
     public void setUp() throws Exception {
-        context = new ClassPathXmlApplicationContext("classpath:spring.xml");
+        Class<?> clazz = getClass();
+        Package pkg = clazz.getPackage();
+        context = new ClassPathXmlApplicationContext("classpath:" + pkg.getName().replace('.', '/') + "/" + clazz.getSimpleName() + ".xml");
     }
 
     @After
@@ -62,7 +66,8 @@ public class SpringConfigTest extends BaseTestSupport {
 
     @Test
     public void testSpringConfig() throws Exception {
-        int port = ((SshServer) context.getBean("sshServer")).getPort();
+        SshServer server = context.getBean(SshServer.class);
+        int port = server.getPort();
 
         JSchLogger.init();
         JSch sch = new JSch();
@@ -74,8 +79,9 @@ public class SpringConfigTest extends BaseTestSupport {
             Channel c = s.openChannel("shell");
             c.connect();
         
+            String command = OsUtils.isWin32() ? "dir" : "ls";
             try(OutputStream os = c.getOutputStream()) {
-                os.write("this is my command".getBytes());
+                os.write(command.getBytes(StandardCharsets.UTF_8));
                 os.flush();
                 Thread.sleep(100);
             } finally {

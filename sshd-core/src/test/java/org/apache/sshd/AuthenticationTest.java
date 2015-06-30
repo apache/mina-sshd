@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.future.AuthFuture;
-import org.apache.sshd.client.session.ClientConnectionService;
+import org.apache.sshd.client.session.ClientConnectionServiceFactory;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.io.IoSession;
@@ -36,9 +36,9 @@ import org.apache.sshd.deprecated.ClientUserAuthServiceOld;
 import org.apache.sshd.deprecated.UserAuthKeyboardInteractive;
 import org.apache.sshd.deprecated.UserAuthPassword;
 import org.apache.sshd.deprecated.UserAuthPublicKey;
-import org.apache.sshd.server.PublickeyAuthenticator.AcceptAllPublickeyAuthenticator;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.SshServer;
+import org.apache.sshd.server.auth.pubkey.AcceptAllPublickeyAuthenticator;
 import org.apache.sshd.server.session.ServerSessionImpl;
 import org.apache.sshd.server.session.SessionFactory;
 import org.apache.sshd.util.BaseTestSupport;
@@ -104,7 +104,7 @@ public class AuthenticationTest extends BaseTestSupport {
         try(SshClient client = SshClient.setUpDefaultClient()) {
             client.setServiceFactories(Arrays.asList(
                     new ClientUserAuthServiceOld.Factory(),
-                    ClientConnectionService.ClientConnectionServiceFactory.INSTANCE
+                    ClientConnectionServiceFactory.INSTANCE
             ));
 
             client.start();
@@ -129,7 +129,7 @@ public class AuthenticationTest extends BaseTestSupport {
         try(SshClient client = SshClient.setUpDefaultClient()) {
             client.setServiceFactories(Arrays.asList(
                     new ClientUserAuthServiceOld.Factory(),
-                    ClientConnectionService.ClientConnectionServiceFactory.INSTANCE
+                    ClientConnectionServiceFactory.INSTANCE
             ));
             client.start();
             
@@ -150,7 +150,7 @@ public class AuthenticationTest extends BaseTestSupport {
         try(SshClient client = SshClient.setUpDefaultClient()) {
             client.setServiceFactories(Arrays.asList(
                     new ClientUserAuthServiceOld.Factory(),
-                    ClientConnectionService.ClientConnectionServiceFactory.INSTANCE
+                    ClientConnectionServiceFactory.INSTANCE
             ));
             client.start();
             
@@ -172,7 +172,7 @@ public class AuthenticationTest extends BaseTestSupport {
         try(SshClient client = SshClient.setUpDefaultClient()) {
             client.setServiceFactories(Arrays.asList(
                     new ClientUserAuthServiceOld.Factory(),
-                    ClientConnectionService.ClientConnectionServiceFactory.INSTANCE
+                    ClientConnectionServiceFactory.INSTANCE
             ));
             client.start();
             

@@ -20,6 +20,7 @@
 package org.apache.sshd.client;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.sshd.client.kex.DHGClient;
@@ -32,7 +33,7 @@ import org.apache.sshd.common.kex.BuiltinDHFactories;
 import org.apache.sshd.common.kex.DHFactory;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.util.Transformer;
-import org.apache.sshd.server.forward.TcpipServerChannel;
+import org.apache.sshd.server.forward.ForwardedTcpipFactory;
 
 /**
  * SshClient builder
@@ -62,22 +63,30 @@ public class ClientBuilder extends BaseBuilder<SshClient, ClientBuilder> {
         return me();
     }
 
+    public static final List<NamedFactory<Channel>> DEFAULT_CHANNEL_FACTORIES =
+            Collections.unmodifiableList(Arrays.<NamedFactory<Channel>>asList(ForwardedTcpipFactory.INSTANCE));
+    public static final ServerKeyVerifier DEFAULT_SERVER_KEY_VERIFIER = AcceptAllServerKeyVerifier.INSTANCE;
+
     @Override
     protected ClientBuilder fillWithDefaultValues() {
         super.fillWithDefaultValues();
+
         if (keyExchangeFactories == null) {
             keyExchangeFactories = setUpDefaultKeyExchanges(false);
         }
+
         if (channelFactories == null) {
-            channelFactories = Arrays.<NamedFactory<Channel>>asList(
-                    TcpipServerChannel.ForwardedTcpipFactory.INSTANCE);
+            channelFactories = DEFAULT_CHANNEL_FACTORIES;
         }
+
         if (serverKeyVerifier == null) {
-            serverKeyVerifier = AcceptAllServerKeyVerifier.INSTANCE;
+            serverKeyVerifier = DEFAULT_SERVER_KEY_VERIFIER;
         }
+
         if (factory == null) {
             factory = SshClient.DEFAULT_SSH_CLIENT_FACTORY;
         }
+
         return me();
     }
 

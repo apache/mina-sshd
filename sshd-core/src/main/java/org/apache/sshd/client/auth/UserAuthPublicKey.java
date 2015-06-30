@@ -48,24 +48,6 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  */
 public class UserAuthPublicKey extends AbstractLoggingBean implements UserAuth {
 
-    public static class UserAuthPublicKeyFactory implements UserAuthFactory {
-        public static final String NAME = "publickey";
-        public static final UserAuthPublicKeyFactory INSTANCE = new UserAuthPublicKeyFactory();
-
-        public UserAuthPublicKeyFactory() {
-            super();
-        }
-
-        @Override
-        public String getName() {
-            return NAME;
-        }
-        @Override
-        public UserAuth create() {
-            return new UserAuthPublicKey();
-        }
-    }
-
     private ClientSession session;
     private String service;
     private SshAgent agent;

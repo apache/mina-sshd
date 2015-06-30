@@ -39,7 +39,7 @@ import org.apache.sshd.server.session.ServerSession;
 public class UnixAgentFactory implements SshAgentFactory, ExecutorServiceConfigurer {
     private ExecutorService executor;
     private boolean shutdownExecutor;
-    private final NamedFactory<Channel> factory = new ChannelAgentForwarding.ChannelAgentForwardingFactory() {
+    private final NamedFactory<Channel> factory = new ChannelAgentForwardingFactory() {
             @Override
             public ExecutorService getExecutorService() {
                 return UnixAgentFactory.this.getExecutorService();

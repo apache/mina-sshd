@@ -47,13 +47,16 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.CommandFactory;
-import org.apache.sshd.server.PublickeyAuthenticator.AcceptAllPublickeyAuthenticator;
 import org.apache.sshd.server.SshServer;
+import org.apache.sshd.server.auth.pubkey.AcceptAllPublickeyAuthenticator;
 import org.apache.sshd.server.channel.ChannelSession;
+import org.apache.sshd.server.channel.ChannelSessionFactory;
 import org.apache.sshd.server.command.UnknownCommand;
-import org.apache.sshd.server.forward.TcpipServerChannel;
+import org.apache.sshd.server.forward.DirectTcpipFactory;
 import org.apache.sshd.server.session.ServerConnectionService;
+import org.apache.sshd.server.session.ServerConnectionServiceFactory;
 import org.apache.sshd.server.session.ServerUserAuthService;
+import org.apache.sshd.server.session.ServerUserAuthServiceFactory;
 import org.apache.sshd.util.AsyncEchoShellFactory;
 import org.apache.sshd.util.BaseTestSupport;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
@@ -96,23 +99,23 @@ public class WindowTest extends BaseTestSupport {
         sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
         sshd.setPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);
         sshd.setServiceFactories(Arrays.asList(
-                new ServerUserAuthService.Factory() {
-                    @Override
-                    public Service create(Session session) throws IOException {
-                        return new ServerUserAuthService(session) {
-                            @SuppressWarnings("synthetic-access")
-                            @Override
-                            public void process(byte cmd, Buffer buffer) throws Exception {
-                                authLatch.await();
-                                super.process(cmd, buffer);
-                            }
-                        };
-                    }
-                },
-                new ServerConnectionService.Factory()
-        ));
+                new ServerUserAuthServiceFactory() {
+                        @Override
+                        public Service create(Session session) throws IOException {
+                            return new ServerUserAuthService(session) {
+                                @SuppressWarnings("synthetic-access")
+                                @Override
+                                public void process(byte cmd, Buffer buffer) throws Exception {
+                                    authLatch.await();
+                                    super.process(cmd, buffer);
+                                }
+                            };
+                        }
+                    },
+                ServerConnectionServiceFactory.INSTANCE
+            ));
         sshd.setChannelFactories(Arrays.<NamedFactory<Channel>>asList(
-                new ChannelSession.ChannelSessionFactory() {
+                new ChannelSessionFactory() {
                     @Override
                     public Channel create() {
                         return new ChannelSession() {
@@ -134,7 +137,7 @@ public class WindowTest extends BaseTestSupport {
                         };
                     }
                 },
-                TcpipServerChannel.DirectTcpipFactory.INSTANCE));
+                DirectTcpipFactory.INSTANCE));
         sshd.start();
         port = sshd.getPort();
 

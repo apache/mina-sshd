@@ -29,7 +29,7 @@ import java.security.PublicKey;
 import java.util.Collection;
 
 import org.apache.sshd.common.util.io.IoUtils;
-import org.apache.sshd.server.PublickeyAuthenticator;
+import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
 import org.apache.sshd.util.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;

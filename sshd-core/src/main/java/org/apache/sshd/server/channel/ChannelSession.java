@@ -41,7 +41,6 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
-import org.apache.sshd.common.channel.ChannelFactory;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.channel.ChannelRequestHandler;
 import org.apache.sshd.common.channel.PtyMode;
@@ -79,24 +78,6 @@ import org.apache.sshd.server.x11.X11ForwardSupport;
 public class ChannelSession extends AbstractServerChannel {
 
     public static final long DEFAULT_COMMAND_EXIT_TIMEOUT = 5000;
-
-    public static class ChannelSessionFactory implements ChannelFactory {
-        public static final ChannelSessionFactory   INSTANCE = new ChannelSessionFactory();
-
-        public ChannelSessionFactory() {
-            super();
-        }
-
-        @Override
-        public String getName() {
-            return "session";
-        }
-
-        @Override
-        public Channel create() {
-            return new ChannelSession();
-        }
-    }
 
     protected static class StandardEnvironment implements Environment {
 

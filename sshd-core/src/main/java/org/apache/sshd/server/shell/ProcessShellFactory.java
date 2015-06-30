@@ -23,10 +23,14 @@ import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.sshd.common.Factory;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
@@ -49,18 +53,19 @@ public class ProcessShellFactory extends AbstractLoggingBean implements Factory<
     }
 
     private String[] command;
-    private EnumSet<TtyOptions> ttyOptions;
+    private final Set<TtyOptions> ttyOptions;
 
     public ProcessShellFactory() {
+        this(GenericUtils.EMPTY_STRING_ARRAY);
     }
 
     public ProcessShellFactory(String[] command) {
         this(command, EnumSet.noneOf(TtyOptions.class));
     }
 
-    public ProcessShellFactory(String[] command, EnumSet<TtyOptions> ttyOptions) {
+    public ProcessShellFactory(String[] command, Collection<TtyOptions> ttyOptions) {
         this.command = command;
-        this.ttyOptions = ttyOptions;
+        this.ttyOptions = GenericUtils.isEmpty(ttyOptions) ? Collections.<TtyOptions>emptySet() : GenericUtils.of(ttyOptions);
     }
 
     public String[] getCommand() {
