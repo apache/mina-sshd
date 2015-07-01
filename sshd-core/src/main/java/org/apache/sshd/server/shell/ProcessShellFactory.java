@@ -31,6 +31,7 @@ import java.util.Set;
 
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
@@ -44,12 +45,30 @@ import org.apache.sshd.server.Command;
  */
 public class ProcessShellFactory extends AbstractLoggingBean implements Factory<Command> {
 
-    public enum TtyOptions {
+    public static enum TtyOptions {
         Echo,
         INlCr,
         ICrNl,
         ONlCr,
-        OCrNl
+        OCrNl;
+        
+        
+        public static final Set<TtyOptions> LINUX_OPTIONS =
+                Collections.unmodifiableSet(EnumSet.of(TtyOptions.ONlCr));
+        public static final Set<TtyOptions> WINDOWS_OPTIONS =
+                Collections.unmodifiableSet(EnumSet.of(TtyOptions.Echo, TtyOptions.ICrNl, TtyOptions.ONlCr));
+
+        public static Set<TtyOptions> resolveDefaultTtyOptions() {
+            return resolveTtyOptions(OsUtils.isWin32());
+        }
+
+        public static Set<TtyOptions> resolveTtyOptions(boolean isWin32) {
+            if (isWin32) {
+                return WINDOWS_OPTIONS;
+            } else {
+                return LINUX_OPTIONS;
+            }
+        }
     }
 
     private String[] command;
@@ -60,7 +79,7 @@ public class ProcessShellFactory extends AbstractLoggingBean implements Factory<
     }
 
     public ProcessShellFactory(String[] command) {
-        this(command, EnumSet.noneOf(TtyOptions.class));
+        this(command, TtyOptions.resolveDefaultTtyOptions());
     }
 
     public ProcessShellFactory(String[] command, Collection<TtyOptions> ttyOptions) {

@@ -16,9 +16,9 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.server.sftp;
+package org.apache.sshd.server.subsystem.sftp;
 
-import static org.apache.sshd.common.sftp.SftpConstants.*;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.*;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;

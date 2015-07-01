@@ -16,12 +16,12 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.client.sftp;
+package org.apache.sshd.client.subsystem.sftp;
 
-import static org.apache.sshd.common.sftp.SftpConstants.S_IFDIR;
-import static org.apache.sshd.common.sftp.SftpConstants.S_IFLNK;
-import static org.apache.sshd.common.sftp.SftpConstants.S_IFMT;
-import static org.apache.sshd.common.sftp.SftpConstants.S_IFREG;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IFDIR;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IFLNK;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IFMT;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IFREG;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -34,13 +34,14 @@ import java.util.EnumSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.sshd.client.subsystem.SubsystemClient;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  */
-public interface SftpClient extends Closeable {
+public interface SftpClient extends SubsystemClient {
 
     enum OpenMode {
         Read,
@@ -237,10 +238,10 @@ public interface SftpClient extends Closeable {
     void rename(String oldPath, String newPath, Collection<CopyMode> options) throws IOException;
 
     int read(Handle handle, long fileOffset, byte[] dst) throws IOException;
-    int read(Handle handle, long fileOffset, byte[] dst, int dstoff, int len) throws IOException;
+    int read(Handle handle, long fileOffset, byte[] dst, int dstOffset, int len) throws IOException;
 
     void write(Handle handle, long fileOffset, byte[] src) throws IOException;
-    void write(Handle handle, long fileOffset, byte[] src, int srcoff, int len) throws IOException;
+    void write(Handle handle, long fileOffset, byte[] src, int srcOffset, int len) throws IOException;
 
     void mkdir(String path) throws IOException;
 
@@ -250,7 +251,7 @@ public interface SftpClient extends Closeable {
 
     DirEntry[] readDir(Handle handle) throws IOException;
 
-    String canonicalPath(String canonical) throws IOException;
+    String canonicalPath(String path) throws IOException;
 
     Attributes stat(String path) throws IOException;
 

@@ -312,4 +312,17 @@ public class IoUtils {
         
         return null;
     }
+
+    /**
+     * @param path The {@link Path} to check
+     * @param options The {@link LinkOption}s to use when checking if path is a directory
+     * @return The same input path if it is a directory
+     * @throws UnsupportedOperationException if input path not a directory
+     */
+    public static Path ensureDirectory(Path path, LinkOption ... options) {
+        if (!Files.isDirectory(path, options)) {
+            throw new UnsupportedOperationException("Not a directory: " + path);
+        }
+        return path;
+    }
 }

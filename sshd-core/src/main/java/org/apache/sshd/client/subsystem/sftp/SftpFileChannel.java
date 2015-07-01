@@ -16,9 +16,9 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.client.sftp;
+package org.apache.sshd.client.subsystem.sftp;
 
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FX_LOCK_CONFLICT;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FX_LOCK_CONFLICT;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

@@ -33,7 +33,6 @@ import java.nio.file.FileStore;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystemAlreadyExistsException;
 import java.nio.file.FileSystemNotFoundException;
-import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
@@ -73,42 +72,52 @@ public class RootedFileSystemProvider extends FileSystemProvider {
     @Override
     public FileSystem newFileSystem(URI uri, Map<String, ?> env) throws IOException {
         Path path = uriToPath(uri);
-        synchronized (fileSystems)
-        {
-            Path localPath2 = null;
-            if (ensureDirectory(path))
-            {
-                localPath2 = path.toRealPath();
-                if (this.fileSystems.containsKey(localPath2)) {
-                    throw new FileSystemAlreadyExistsException();
-                }
+        Path localPath2 = ensureDirectory(path).toRealPath();
+
+        RootedFileSystem rootedFs=null;
+        synchronized (fileSystems) {
+            if (!this.fileSystems.containsKey(localPath2)) {
+                rootedFs = new RootedFileSystem(this, path, env);
+                this.fileSystems.put(localPath2, rootedFs);
             }
-            RootedFileSystem rootedFs = new RootedFileSystem(this, path, env);
-            this.fileSystems.put(localPath2, rootedFs);
-            return rootedFs;
         }
+
+        // do all the throwing outside the synchronized block to minimize its lock time
+        if (rootedFs == null) {
+            throw new FileSystemAlreadyExistsException("newFileSystem(" + uri + ") already mapped " + localPath2);
+        }
+
+        return rootedFs;
     }
 
     @Override
     public FileSystem getFileSystem(URI uri) {
-        synchronized (fileSystems) {
-            RootedFileSystem fileSystem = null;
-            try {
-                fileSystem = fileSystems.get(uriToPath(uri).toRealPath());
-            } catch (IOException ignore) {
-                // ignored
-            }
-            if (fileSystem == null) {
-                throw new FileSystemNotFoundException(uri.toString());
-            }
-            return fileSystem;
+        Path path = uriToPath(uri);
+        Path real;
+        try {
+            real = path.toRealPath();
+        } catch (IOException e) {
+            FileSystemNotFoundException err = new FileSystemNotFoundException(uri.toString());
+            err.initCause(e);
+            throw err;
         }
+
+        RootedFileSystem fileSystem = null;
+        synchronized (fileSystems) {
+            fileSystem = fileSystems.get(real);
+        }
+
+        // do all the throwing outside the synchronized block to minimize its lock time
+        if (fileSystem == null) {
+            throw new FileSystemNotFoundException(uri.toString());
+        }
+
+        return fileSystem;
     }
 
     @Override
     public FileSystem newFileSystem(Path path, Map<String, ?> env) throws IOException {
-        ensureDirectory(path);
-        return new RootedFileSystem(this, path, env);
+        return new RootedFileSystem(this, ensureDirectory(path), env);
     }
 
     protected Path uriToPath(URI uri) {
@@ -130,11 +139,8 @@ public class RootedFileSystemProvider extends FileSystemProvider {
         }
     }
 
-    private boolean ensureDirectory(Path path) {
-        if (!Files.isDirectory(path, IoUtils.getLinkOptions(false))) {
-            throw new UnsupportedOperationException("Not a directory: " + path);
-        }
-        return true;
+    private static Path ensureDirectory(Path path) {
+        return IoUtils.ensureDirectory(path, IoUtils.getLinkOptions(false));
     }
 
     @Override

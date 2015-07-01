@@ -17,20 +17,15 @@
  * under the License.
  */
 
-package org.apache.sshd.server.sftp;
+package org.apache.sshd.client.subsystem;
 
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.Set;
+import java.nio.channels.Channel;
+
+import org.apache.sshd.common.NamedResource;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public enum UnsupportedAttributePolicy {
-    Ignore,
-    Warn,
-    ThrowException;
-
-    public static final Set<UnsupportedAttributePolicy> VALUES =
-            Collections.unmodifiableSet(EnumSet.allOf(UnsupportedAttributePolicy.class));
+public interface SubsystemClient extends NamedResource, Channel {
+    // marker interface for subsystems
 }

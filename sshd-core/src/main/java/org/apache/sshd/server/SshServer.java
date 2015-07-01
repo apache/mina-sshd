@@ -25,7 +25,6 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,7 +42,6 @@ import org.apache.sshd.common.io.mina.MinaServiceFactory;
 import org.apache.sshd.common.io.nio2.Nio2ServiceFactory;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.server.auth.UserAuth;
@@ -63,9 +61,9 @@ import org.apache.sshd.server.session.ServerConnectionServiceFactory;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.session.ServerUserAuthServiceFactory;
 import org.apache.sshd.server.session.SessionFactory;
-import org.apache.sshd.server.sftp.SftpSubsystemFactory;
 import org.apache.sshd.server.shell.InteractiveProcessShellFactory;
 import org.apache.sshd.server.shell.ProcessShellFactory;
+import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 
 /**
  * The SshServer class is the main entry point for the server side of the SSH protocol.
@@ -390,16 +388,18 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         boolean error = false;
         Map<String, String> options = new LinkedHashMap<String, String>();
 
-        for (int i = 0; i < args.length; i++) {
-            if ("-p".equals(args[i])) {
-                if (i + 1 >= args.length) {
-                    System.err.println("option requires an argument: " + args[i]);
+        int numArgs = GenericUtils.length(args);
+        for (int i = 0; i < numArgs; i++) {
+            String argName = args[i];
+            if ("-p".equals(argName)) {
+                if (i + 1 >= numArgs) {
+                    System.err.println("option requires an argument: " + argName);
                     break;
                 }
                 port = Integer.parseInt(args[++i]);
-            } else if ("-io".equals(args[i])) {
-                if (i + 1 >= args.length) {
-                    System.err.println("option requires an argument: " + args[i]);
+            } else if ("-io".equals(argName)) {
+                if (i + 1 >= numArgs) {
+                    System.err.println("option requires an argument: " + argName);
                     break;
                 }
                 provider = args[++i];
@@ -408,12 +408,12 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
                 } else if ("nio2".endsWith(provider)) {
                     System.setProperty(IoServiceFactory.class.getName(), Nio2ServiceFactory.class.getName());
                 } else {
-                    System.err.println("provider should be mina or nio2: " + args[i]);
+                    System.err.println("provider should be mina or nio2: " + argName);
                     break;
                 }
-            } else if ("-o".equals(args[i])) {
-                if (i + 1 >= args.length) {
-                    System.err.println("option requires and argument: " + args[i]);
+            } else if ("-o".equals(argName)) {
+                if (i + 1 >= numArgs) {
+                    System.err.println("option requires and argument: " + argName);
                     error = true;
                     break;
                 }
@@ -425,12 +425,12 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
                     break;
                 }
                 options.put(opt.substring(0, idx), opt.substring(idx + 1));
-            } else if (args[i].startsWith("-")) {
-                System.err.println("illegal option: " + args[i]);
+            } else if (argName.startsWith("-")) {
+                System.err.println("illegal option: " + argName);
                 error = true;
                 break;
             } else {
-                System.err.println("extra argument: " + args[i]);
+                System.err.println("extra argument: " + argName);
                 error = true;
                 break;
             }
@@ -458,23 +458,17 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         sshd.setPasswordAuthenticator(new PasswordAuthenticator() {
                 @Override
                 public boolean authenticate(String username, String password, ServerSession session) {
-                    return username != null && username.equals(password);
+                    return (username != null) && username.equals(password);
                 }
             });
         sshd.setPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);
         sshd.setTcpipForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
         sshd.setCommandFactory(new ScpCommandFactory.Builder().withDelegate(new CommandFactory() {
-            @Override
-            public Command createCommand(String command) {
-                EnumSet<ProcessShellFactory.TtyOptions> ttyOptions;
-                if (OsUtils.isUNIX()) {
-                    ttyOptions = EnumSet.of(ProcessShellFactory.TtyOptions.ONlCr);
-                } else {
-                    ttyOptions = EnumSet.of(ProcessShellFactory.TtyOptions.Echo, ProcessShellFactory.TtyOptions.ICrNl, ProcessShellFactory.TtyOptions.ONlCr);
+                @Override
+                public Command createCommand(String command) {
+                    return new ProcessShellFactory(GenericUtils.split(command, ' ')).create();
                 }
-                return new ProcessShellFactory(command.split(" "), ttyOptions).create();
-            }
-        }).build());
+            }).build());
         sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(new SftpSubsystemFactory()));
         sshd.start();
 

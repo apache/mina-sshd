@@ -28,7 +28,7 @@ import org.apache.sshd.git.util.EchoShellFactory;
 import org.apache.sshd.git.util.Utils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.SshServer;
-import org.apache.sshd.server.sftp.SftpSubsystemFactory;
+import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.SshSessionFactory;

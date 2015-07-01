@@ -19,10 +19,6 @@
 
 package org.apache.sshd.server.shell;
 
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.Set;
-
 import org.apache.sshd.common.util.OsUtils;
 
 /**
@@ -34,6 +30,10 @@ public class InteractiveProcessShellFactory extends ProcessShellFactory {
     private static final String[] LINUX_COMMAND = { "/bin/sh", "-i", "-l" };
     private static final String[] WINDOWS_COMMAND = { "cmd.exe" };
 
+    public static String[] resolveDefaultInteractiveCommand() {
+        return resolveInteractiveCommand(OsUtils.isWin32());
+    }
+
     public static String[] resolveInteractiveCommand(boolean isWin32) {
         // return clone(s) to avoid inadvertent modification
         if (isWin32) {
@@ -42,23 +42,10 @@ public class InteractiveProcessShellFactory extends ProcessShellFactory {
             return LINUX_COMMAND.clone();
         }
     }
-    
-    public static final Set<TtyOptions> LINUX_OPTIONS =
-            Collections.unmodifiableSet(EnumSet.of(TtyOptions.ONlCr));
-    public static final Set<TtyOptions> WINDOWS_OPTIONS =
-            Collections.unmodifiableSet(EnumSet.of(TtyOptions.Echo, TtyOptions.ICrNl, TtyOptions.ONlCr));
-
-    public static Set<TtyOptions> resolveTtyOptions(boolean isWin32) {
-        if (isWin32) {
-            return WINDOWS_OPTIONS;
-        } else {
-            return LINUX_OPTIONS;
-        }
-    }
 
     public static final InteractiveProcessShellFactory INSTANCE = new InteractiveProcessShellFactory();
 
     public InteractiveProcessShellFactory() {
-        super(resolveInteractiveCommand(OsUtils.isWin32()), resolveTtyOptions(OsUtils.isWin32()));
+        super(resolveDefaultInteractiveCommand(), TtyOptions.resolveDefaultTtyOptions());
     }
 }

@@ -33,7 +33,7 @@ import org.apache.sshd.client.channel.ChannelSubsystem;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.scp.ScpClient;
-import org.apache.sshd.client.sftp.SftpClient;
+import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.scp.ScpTransferEventListener;

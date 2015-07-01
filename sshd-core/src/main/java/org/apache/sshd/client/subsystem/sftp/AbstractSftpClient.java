@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.sshd.client.sftp;
+package org.apache.sshd.client.subsystem.sftp;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 
+import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
@@ -37,6 +38,11 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
         super();
     }
     
+    @Override
+    public String getName() {
+        return SftpConstants.SFTP_SUBSYSTEM_NAME;
+    }
+
     @Override
     public CloseableHandle open(String path) throws IOException {
         return open(path, Collections.<OpenMode>emptySet());

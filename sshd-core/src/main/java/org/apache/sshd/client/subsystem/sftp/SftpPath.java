@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.client.sftp;
+package org.apache.sshd.client.subsystem.sftp;
 
 import java.io.IOException;
 import java.nio.file.FileSystem;

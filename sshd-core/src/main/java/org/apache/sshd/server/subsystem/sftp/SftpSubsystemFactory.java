@@ -17,20 +17,20 @@
  * under the License.
  */
 
-package org.apache.sshd.server.sftp;
+package org.apache.sshd.server.subsystem.sftp;
 
 import java.util.concurrent.ExecutorService;
 
-import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.sftp.SftpConstants;
+import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.ObjectBuilder;
 import org.apache.sshd.common.util.threads.ExecutorServiceConfigurer;
 import org.apache.sshd.server.Command;
+import org.apache.sshd.server.subsystem.SubsystemFactory;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SftpSubsystemFactory implements NamedFactory<Command>, Cloneable, ExecutorServiceConfigurer {
+public class SftpSubsystemFactory implements SubsystemFactory, Cloneable, ExecutorServiceConfigurer {
     public static final String NAME = SftpConstants.SFTP_SUBSYSTEM_NAME;
     public static final UnsupportedAttributePolicy DEFAULT_POLICY = UnsupportedAttributePolicy.Warn;
 

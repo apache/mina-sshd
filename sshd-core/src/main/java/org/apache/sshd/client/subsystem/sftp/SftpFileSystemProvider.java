@@ -16,18 +16,18 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.client.sftp;
+package org.apache.sshd.client.subsystem.sftp;
 
-import static org.apache.sshd.common.sftp.SftpConstants.SFTP_V3;
-import static org.apache.sshd.common.sftp.SftpConstants.S_IRGRP;
-import static org.apache.sshd.common.sftp.SftpConstants.S_IROTH;
-import static org.apache.sshd.common.sftp.SftpConstants.S_IRUSR;
-import static org.apache.sshd.common.sftp.SftpConstants.S_IWGRP;
-import static org.apache.sshd.common.sftp.SftpConstants.S_IWOTH;
-import static org.apache.sshd.common.sftp.SftpConstants.S_IWUSR;
-import static org.apache.sshd.common.sftp.SftpConstants.S_IXGRP;
-import static org.apache.sshd.common.sftp.SftpConstants.S_IXOTH;
-import static org.apache.sshd.common.sftp.SftpConstants.S_IXUSR;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SFTP_V3;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IRGRP;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IROTH;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IRUSR;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IWGRP;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IWOTH;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IWUSR;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IXGRP;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IXOTH;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IXUSR;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -76,11 +76,11 @@ import org.apache.sshd.client.ClientBuilder;
 import org.apache.sshd.client.SftpException;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.client.sftp.SftpClient.Attributes;
+import org.apache.sshd.client.subsystem.sftp.SftpClient.Attributes;
 import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.config.SshConfigFileReader;
-import org.apache.sshd.common.sftp.SftpConstants;
+import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;

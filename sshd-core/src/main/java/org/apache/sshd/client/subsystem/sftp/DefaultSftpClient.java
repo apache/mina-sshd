@@ -16,76 +16,76 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.client.sftp;
+package org.apache.sshd.client.subsystem.sftp;
 
-import static org.apache.sshd.common.sftp.SftpConstants.ACE4_APPEND_DATA;
-import static org.apache.sshd.common.sftp.SftpConstants.ACE4_READ_ATTRIBUTES;
-import static org.apache.sshd.common.sftp.SftpConstants.ACE4_READ_DATA;
-import static org.apache.sshd.common.sftp.SftpConstants.ACE4_WRITE_ATTRIBUTES;
-import static org.apache.sshd.common.sftp.SftpConstants.ACE4_WRITE_DATA;
-import static org.apache.sshd.common.sftp.SftpConstants.SFTP_V3;
-import static org.apache.sshd.common.sftp.SftpConstants.SFTP_V4;
-import static org.apache.sshd.common.sftp.SftpConstants.SFTP_V5;
-import static org.apache.sshd.common.sftp.SftpConstants.SFTP_V6;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FILEXFER_ATTR_ACCESSTIME;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FILEXFER_ATTR_ACMODTIME;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FILEXFER_ATTR_ALL;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FILEXFER_ATTR_CREATETIME;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FILEXFER_ATTR_MODIFYTIME;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FILEXFER_ATTR_OWNERGROUP;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FILEXFER_ATTR_PERMISSIONS;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FILEXFER_ATTR_SIZE;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FILEXFER_ATTR_SUBSECOND_TIMES;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FILEXFER_ATTR_UIDGID;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FILEXFER_TYPE_DIRECTORY;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FILEXFER_TYPE_REGULAR;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FILEXFER_TYPE_SYMLINK;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXF_APPEND;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXF_CREAT;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXF_CREATE_NEW;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXF_CREATE_TRUNCATE;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXF_EXCL;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXF_OPEN_EXISTING;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXF_OPEN_OR_CREATE;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXF_READ;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXF_TRUNC;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXF_TRUNCATE_EXISTING;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXF_WRITE;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_ATTRS;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_BLOCK;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_CLOSE;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_DATA;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_FSETSTAT;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_FSTAT;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_HANDLE;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_INIT;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_LINK;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_LSTAT;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_MKDIR;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_NAME;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_OPEN;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_OPENDIR;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_READ;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_READDIR;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_READLINK;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_REALPATH;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_REMOVE;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_RENAME;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_RENAME_ATOMIC;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_RENAME_OVERWRITE;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_RMDIR;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_SETSTAT;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_STAT;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_STATUS;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_SYMLINK;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_UNBLOCK;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_VERSION;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FXP_WRITE;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FX_EOF;
-import static org.apache.sshd.common.sftp.SftpConstants.SSH_FX_OK;
-import static org.apache.sshd.common.sftp.SftpConstants.S_IFDIR;
-import static org.apache.sshd.common.sftp.SftpConstants.S_IFLNK;
-import static org.apache.sshd.common.sftp.SftpConstants.S_IFREG;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.ACE4_APPEND_DATA;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.ACE4_READ_ATTRIBUTES;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.ACE4_READ_DATA;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.ACE4_WRITE_ATTRIBUTES;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.ACE4_WRITE_DATA;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SFTP_V3;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SFTP_V4;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SFTP_V5;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SFTP_V6;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FILEXFER_ATTR_ACCESSTIME;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FILEXFER_ATTR_ACMODTIME;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FILEXFER_ATTR_ALL;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FILEXFER_ATTR_CREATETIME;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FILEXFER_ATTR_MODIFYTIME;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FILEXFER_ATTR_OWNERGROUP;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FILEXFER_ATTR_PERMISSIONS;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FILEXFER_ATTR_SIZE;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FILEXFER_ATTR_SUBSECOND_TIMES;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FILEXFER_ATTR_UIDGID;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FILEXFER_TYPE_DIRECTORY;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FILEXFER_TYPE_REGULAR;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FILEXFER_TYPE_SYMLINK;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXF_APPEND;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXF_CREAT;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXF_CREATE_NEW;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXF_CREATE_TRUNCATE;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXF_EXCL;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXF_OPEN_EXISTING;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXF_OPEN_OR_CREATE;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXF_READ;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXF_TRUNC;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXF_TRUNCATE_EXISTING;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXF_WRITE;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_ATTRS;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_BLOCK;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_CLOSE;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_DATA;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_FSETSTAT;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_FSTAT;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_HANDLE;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_INIT;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_LINK;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_LSTAT;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_MKDIR;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_NAME;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_OPEN;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_OPENDIR;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_READ;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_READDIR;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_READLINK;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_REALPATH;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_REMOVE;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_RENAME;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_RENAME_ATOMIC;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_RENAME_OVERWRITE;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_RMDIR;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_SETSTAT;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_STAT;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_STATUS;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_SYMLINK;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_UNBLOCK;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_VERSION;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_WRITE;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FX_EOF;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FX_OK;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IFDIR;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IFLNK;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IFREG;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
@@ -108,7 +108,7 @@ import org.apache.sshd.client.channel.ChannelSubsystem;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.sftp.SftpConstants;
+import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -171,8 +171,13 @@ public class DefaultSftpClient extends AbstractSftpClient {
     }
 
     @Override
+    public boolean isOpen() {
+        return this.channel.isOpen();
+    }
+
+    @Override
     public void close() throws IOException {
-        if (this.channel.isOpen()) {
+        if (isOpen()) {
             this.channel.close(false);
         }
     }

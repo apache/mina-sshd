@@ -17,39 +17,22 @@
  * under the License.
  */
 
-package org.apache.sshd.client.sftp;
+package org.apache.sshd.server.subsystem;
 
-import java.io.IOException;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import org.apache.sshd.client.sftp.SftpClient.CloseableHandle;
-import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.util.Transformer;
+import org.apache.sshd.server.Command;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class DefaultCloseableHandle extends CloseableHandle {
-    private final AtomicBoolean open = new AtomicBoolean(true);
-    private final SftpClient client;
-
-    public DefaultCloseableHandle(SftpClient client, String id) {
-        super(id);
-        this.client = ValidateUtils.checkNotNull(client, "No client for id=%s", id);
-    }
-
-    public final SftpClient getSftpClient() {
-        return client;
-    }
-
-    @Override
-    public boolean isOpen() {
-        return open.get();
-    }
-
-    @Override
-    public void close() throws IOException {
-        if (open.getAndSet(false)) {
-            client.close(this);
+public interface SubsystemFactory extends NamedFactory<Command> {
+    // required because of generics issues
+    Transformer<SubsystemFactory,NamedFactory<Command>> FAC2NAMED=new Transformer<SubsystemFactory,NamedFactory<Command>>() {
+        @Override
+        public NamedFactory<Command> transform(SubsystemFactory input) {
+            return input;
         }
-    }
+    };
+
 }
