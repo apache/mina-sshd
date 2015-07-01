@@ -28,7 +28,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
@@ -230,22 +229,22 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                 options.add(StandardOpenOption.WRITE);
             }
             switch (flags & SSH_FXF_ACCESS_DISPOSITION) {
-            case SSH_FXF_CREATE_NEW:
-                options.add(StandardOpenOption.CREATE_NEW);
-                break;
-            case SSH_FXF_CREATE_TRUNCATE:
-                options.add(StandardOpenOption.CREATE);
-                options.add(StandardOpenOption.TRUNCATE_EXISTING);
-                break;
-            case SSH_FXF_OPEN_EXISTING:
-                break;
-            case SSH_FXF_OPEN_OR_CREATE:
-                options.add(StandardOpenOption.CREATE);
-                break;
-            case SSH_FXF_TRUNCATE_EXISTING:
-                options.add(StandardOpenOption.TRUNCATE_EXISTING);
-                break;
-            default:    // ignored
+                case SSH_FXF_CREATE_NEW:
+                    options.add(StandardOpenOption.CREATE_NEW);
+                    break;
+                case SSH_FXF_CREATE_TRUNCATE:
+                    options.add(StandardOpenOption.CREATE);
+                    options.add(StandardOpenOption.TRUNCATE_EXISTING);
+                    break;
+                case SSH_FXF_OPEN_EXISTING:
+                    break;
+                case SSH_FXF_OPEN_OR_CREATE:
+                    options.add(StandardOpenOption.CREATE);
+                    break;
+                case SSH_FXF_TRUNCATE_EXISTING:
+                    options.add(StandardOpenOption.TRUNCATE_EXISTING);
+                    break;
+                default:    // ignored
             }
             if ((flags & SSH_FXF_APPEND_DATA) != 0) {
                 options.add(StandardOpenOption.APPEND);
@@ -465,7 +464,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         int id = buffer.getInt();
         if (log.isDebugEnabled()) {
             log.debug("process(length={}, type={}, id={})",
-                      new Object[] { Integer.valueOf(length), Integer.valueOf(type), Integer.valueOf(id) });
+                      Integer.valueOf(length), Integer.valueOf(type), Integer.valueOf(id));
         }
 
         switch (type) {
@@ -547,27 +546,28 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     protected void doExtended(Buffer buffer, int id) throws IOException {
         String extension = buffer.getString();
         switch (extension) {
-        case "text-seek":
-            doTextSeek(buffer, id);
-            break;
-        case "version-select":
-            doVersionSelect(buffer, id);
-            break;
-        default:
-            log.info("Received unsupported SSH_FXP_EXTENDED({})", extension);
-            sendStatus(id, SSH_FX_OP_UNSUPPORTED, "Command SSH_FXP_EXTENDED(" + extension + ") is unsupported or not implemented");
-            break;
+            case "text-seek":
+                doTextSeek(buffer, id);
+                break;
+            case "version-select":
+                doVersionSelect(buffer, id);
+                break;
+            default:
+                log.info("Received unsupported SSH_FXP_EXTENDED({})", extension);
+                sendStatus(id, SSH_FX_OP_UNSUPPORTED, "Command SSH_FXP_EXTENDED(" + extension + ") is unsupported or not implemented");
+                break;
         }
     }
 
     protected void doTextSeek(Buffer buffer, int id) throws IOException {
         String handle = buffer.getString();
         long line = buffer.getLong();
+        Handle h = handles.get(handle);
         if (log.isDebugEnabled()) {
-            log.debug("Received SSH_FXP_EXTENDED(text-seek) (handle={}, line={})", handle, Long.valueOf(line));
+            log.debug("Received SSH_FXP_EXTENDED(text-seek) (handle={}[{}], line={})", handle, h, Long.valueOf(line));
         }
 
-        // TODO : implement text-seek
+        // TODO : implement text-seek - see https://tools.ietf.org/html/draft-ietf-secsh-filexfer-03#section-6.3
         sendStatus(id, SSH_FX_OP_UNSUPPORTED, "Command SSH_FXP_EXTENDED(text-seek) is unsupported or not implemented");
     }
 
@@ -642,17 +642,18 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         long length = buffer.getLong();
         int mask = buffer.getInt();
         
-        if (log.isDebugEnabled()) {
-            log.debug("Received SSH_FXP_BLOCK (handle={}, offset={}, length={}, mask=0x{})",
-                      new Object[] { handle, Long.valueOf(offset), Long.valueOf(length), Integer.toHexString(mask) });
-        }
-
         try {
             Handle p = handles.get(handle);
+            if (log.isDebugEnabled()) {
+                log.debug("Received SSH_FXP_BLOCK (handle={}[{}], offset={}, length={}, mask=0x{})",
+                          handle, p, Long.valueOf(offset), Long.valueOf(length), Integer.toHexString(mask));
+            }
+
             if (!(p instanceof FileHandle)) {
                 sendStatus(id, SSH_FX_INVALID_HANDLE, handle);
                 return;
             }
+
             FileHandle fileHandle = (FileHandle) p;
             fileHandle.lock(offset, length, mask);
             sendStatus(id, SSH_FX_OK, "");
@@ -665,17 +666,18 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         String handle = buffer.getString();
         long offset = buffer.getLong();
         long length = buffer.getLong();
-        if (log.isDebugEnabled()) {
-            log.debug("Received SSH_FXP_UNBLOCK (handle={}, offset={}, length={})",
-                      new Object[] { handle, Long.valueOf(offset), Long.valueOf(length) });
-        }
-
         try {
             Handle p = handles.get(handle);
+            if (log.isDebugEnabled()) {
+                log.debug("Received SSH_FXP_UNBLOCK (handle={}[{}], offset={}, length={})",
+                          handle, p, Long.valueOf(offset), Long.valueOf(length));
+            }
+
             if (!(p instanceof FileHandle)) {
                 sendStatus(id, SSH_FX_INVALID_HANDLE, handle);
                 return;
             }
+
             FileHandle fileHandle = (FileHandle) p;
             boolean found = fileHandle.unlock(offset, length);
             sendStatus(id, found ? SSH_FX_OK : SSH_FX_NO_MATCHING_BYTE_RANGE_LOCK, "");
@@ -690,7 +692,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         boolean symLink = buffer.getBoolean();
         if (log.isDebugEnabled()) {
             log.debug("Received SSH_FXP_LINK (linkpath={}, targetpath={}, symlink={})",
-                      new Object[] { linkpath, targetpath, Boolean.valueOf(symLink) });
+                      linkpath, targetpath, Boolean.valueOf(symLink));
         }
 
         try {
@@ -748,8 +750,9 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         }
         if (log.isDebugEnabled()) {
             log.debug("Received SSH_FXP_RENAME (oldPath={}, newPath={}, flags=0x{})",
-                       new Object[] { oldPath, newPath, Integer.toHexString(flags) });
+                       oldPath, newPath, Integer.toHexString(flags));
         }
+
         try {
             List<CopyOption> opts = new ArrayList<>();
             if ((flags & SSH_FXP_RENAME_ATOMIC) != 0) {
@@ -774,7 +777,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             flags = buffer.getInt();
         }
         if (log.isDebugEnabled()) {
-            log.debug("Received SSH_FXP_STAT (path={}, flags={})", path, "0x" + Integer.toHexString(flags));
+            log.debug("Received SSH_FXP_STAT (path={}, flags=0x{})", path, Integer.toHexString(flags));
         }
         try {
             Path p = resolveFile(path);
@@ -877,7 +880,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         String path = buffer.getString();
         Map<String, Object> attrs = readAttrs(buffer);
 
-        log.debug("Received SSH_FXP_MKDIR (path={})", path);
+        log.debug("Received SSH_FXP_MKDIR (path={}, attrs={})", path, attrs);
         // attrs
         try {
             Path            p = resolveFile(path);
@@ -927,8 +930,9 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
 
     protected void doReadDir(Buffer buffer, int id) throws IOException {
         String handle = buffer.getString();
-        log.debug("Received SSH_FXP_READDIR (handle={})", handle);
         Handle p = handles.get(handle);
+        log.debug("Received SSH_FXP_READDIR (handle={}[{}])", handle, p);
+
         try {
             if (!(p instanceof DirectoryHandle)) {
                 sendStatus(id, SSH_FX_INVALID_HANDLE, handle);
@@ -1041,7 +1045,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             flags = buffer.getInt();
         }
         if (log.isDebugEnabled()) {
-            log.debug("Received SSH_FXP_FSTAT (handle={}, flags={})", handle, "0x" + Integer.toHexString(flags));
+            log.debug("Received SSH_FXP_FSTAT (handle={}, flags=0x{})", handle, Integer.toHexString(flags));
         }
         try {
             Handle p = handles.get(handle);
@@ -1062,7 +1066,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             flags = buffer.getInt();
         }
         if (log.isDebugEnabled()) {
-            log.debug("Received SSH_FXP_LSTAT (path={}, flags={})", path, "0x" + Integer.toHexString(flags));
+            log.debug("Received SSH_FXP_LSTAT (path={}, flags=0x{})", path, Integer.toHexString(flags));
         }
         try {
             Path p = resolveFile(path);
@@ -1077,19 +1081,23 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         long offset = buffer.getLong();
         int length = buffer.getInt();
         if (length < 0) {
-            throw new IllegalStateException();
+            throw new IllegalStateException("Bad length (" + length + ") for writing to " + handle);
         }
-        if (buffer.available() < length) {
-            throw new BufferUnderflowException();
+
+        int remaining = buffer.available();
+        if (remaining < length) {
+            throw new IllegalStateException("Not enough buffer data for writing to " + handle + ": required=" + length + ", available=" + remaining);
         }
+
         byte[] data = buffer.array();
         int doff = buffer.rpos();
-        if (log.isDebugEnabled()) {
-            log.debug("Received SSH_FXP_WRITE (handle={}, offset={}, data=byte[{}])",
-                      new Object[] { handle, Long.valueOf(offset), Integer.valueOf(length) });
-        }
         try {
             Handle p = handles.get(handle);
+            if (log.isDebugEnabled()) {
+                log.debug("Received SSH_FXP_WRITE (handle={}[{}], offset={}, data=byte[{}])",
+                          handle, p, Long.valueOf(offset), Integer.valueOf(length));
+            }
+
             if (!(p instanceof FileHandle)) {
                 sendStatus(id, SSH_FX_INVALID_HANDLE, handle);
             } else {
@@ -1106,12 +1114,13 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         String handle = buffer.getString();
         long offset = buffer.getLong();
         int len = buffer.getInt();
-        if (log.isDebugEnabled()) {
-            log.debug("Received SSH_FXP_READ (handle={}, offset={}, length={})",
-                      new Object[]{handle, Long.valueOf(offset), Integer.valueOf(len) });
-        }
         try {
             Handle p = handles.get(handle);
+            if (log.isDebugEnabled()) {
+                log.debug("Received SSH_FXP_READ (handle={}[{}], offset={}, length={})",
+                          handle, p, Long.valueOf(offset), Integer.valueOf(len));
+            }
+
             if (!(p instanceof FileHandle)) {
                 sendStatus(id, SSH_FX_INVALID_HANDLE, handle);
             } else {
@@ -1138,9 +1147,9 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
 
     protected void doClose(Buffer buffer, int id) throws IOException {
         String handle = buffer.getString();
-        log.debug("Received SSH_FXP_CLOSE (handle={})", handle);
         try {
             Handle h = handles.get(handle);
+            log.debug("Received SSH_FXP_CLOSE (handle={}[{}])", handle, h);
             if (h == null) {
                 sendStatus(id, SSH_FX_INVALID_HANDLE, handle, "");
             } else {
@@ -1154,9 +1163,10 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     }
 
     protected void doOpen(Buffer buffer, int id) throws IOException {
+        int curHandleCount = handles.size();
         int maxHandleCount = FactoryManagerUtils.getIntProperty(session, MAX_OPEN_HANDLES_PER_SESSION, Integer.MAX_VALUE);
-        if (handles.size() > maxHandleCount) {
-            sendStatus(id, SSH_FX_FAILURE, "Too many open handles");
+        if (curHandleCount > maxHandleCount) {
+            sendStatus(id, SSH_FX_FAILURE, "Too many open handles: current=" + curHandleCount + ", max.=" + maxHandleCount);
             return;
         }
 
@@ -1170,16 +1180,16 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             int flags = pflags;
             pflags = 0;
             switch (flags & (SSH_FXF_READ | SSH_FXF_WRITE)) {
-            case SSH_FXF_READ:
-                access |= ACE4_READ_DATA | ACE4_READ_ATTRIBUTES;
-                break;
-            case SSH_FXF_WRITE:
-                access |= ACE4_WRITE_DATA | ACE4_WRITE_ATTRIBUTES;
-                break;
-            default:
-                access |= ACE4_READ_DATA | ACE4_READ_ATTRIBUTES;
-                access |= ACE4_WRITE_DATA | ACE4_WRITE_ATTRIBUTES;
-                break;
+                case SSH_FXF_READ:
+                    access |= ACE4_READ_DATA | ACE4_READ_ATTRIBUTES;
+                    break;
+                case SSH_FXF_WRITE:
+                    access |= ACE4_WRITE_DATA | ACE4_WRITE_ATTRIBUTES;
+                    break;
+                default:
+                    access |= ACE4_READ_DATA | ACE4_READ_ATTRIBUTES;
+                    access |= ACE4_WRITE_DATA | ACE4_WRITE_ATTRIBUTES;
+                    break;
             }
             if ((flags & SSH_FXF_APPEND) != 0) {
                 access |= ACE4_APPEND_DATA;
@@ -1204,7 +1214,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         Map<String, Object> attrs = readAttrs(buffer);
         if (log.isDebugEnabled()) {
             log.debug("Received SSH_FXP_OPEN (path={}, access=0x{}, pflags=0x{}, attrs={})",
-                      new Object[]{path, Integer.toHexString(access), Integer.toHexString(pflags), attrs});
+                      path, Integer.toHexString(access), Integer.toHexString(pflags), attrs);
         }
         try {
             Path file = resolveFile(path);
@@ -1493,34 +1503,34 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         if (perms != null) {
             for (PosixFilePermission p : perms) {
                 switch (p) {
-                case OWNER_READ:
-                    pf |= S_IRUSR;
-                    break;
-                case OWNER_WRITE:
-                    pf |= S_IWUSR;
-                    break;
-                case OWNER_EXECUTE:
-                    pf |= S_IXUSR;
-                    break;
-                case GROUP_READ:
-                    pf |= S_IRGRP;
-                    break;
-                case GROUP_WRITE:
-                    pf |= S_IWGRP;
-                    break;
-                case GROUP_EXECUTE:
-                    pf |= S_IXGRP;
-                    break;
-                case OTHERS_READ:
-                    pf |= S_IROTH;
-                    break;
-                case OTHERS_WRITE:
-                    pf |= S_IWOTH;
-                    break;
-                case OTHERS_EXECUTE:
-                    pf |= S_IXOTH;
-                    break;
-                default: // ignored
+                    case OWNER_READ:
+                        pf |= S_IRUSR;
+                        break;
+                    case OWNER_WRITE:
+                        pf |= S_IWUSR;
+                        break;
+                    case OWNER_EXECUTE:
+                        pf |= S_IXUSR;
+                        break;
+                    case GROUP_READ:
+                        pf |= S_IRGRP;
+                        break;
+                    case GROUP_WRITE:
+                        pf |= S_IWGRP;
+                        break;
+                    case GROUP_EXECUTE:
+                        pf |= S_IXGRP;
+                        break;
+                    case OTHERS_READ:
+                        pf |= S_IROTH;
+                        break;
+                    case OTHERS_WRITE:
+                        pf |= S_IWOTH;
+                        break;
+                    case OTHERS_EXECUTE:
+                        pf |= S_IXOTH;
+                        break;
+                    default: // ignored
                 }
             }
         }
@@ -1715,47 +1725,47 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             String view = null;
             Object value = attributes.get(attribute);
             switch (attribute) {
-            case "size": {
-                long newSize = ((Number) value).longValue();
-                try (FileChannel channel = FileChannel.open(file, StandardOpenOption.WRITE)) {
-                    channel.truncate(newSize);
-                }
-                continue;
-            }
-            case "uid":
-                view = "unix";
-                break;
-            case "gid":
-                view = "unix";
-                break;
-            case "owner":
-                view = "posix";
-                value = toUser(file, (UserPrincipal) value);
-                break;
-            case "group":
-                view = "posix";
-                value = toGroup(file, (GroupPrincipal) value);
-                break;
-            case "permissions":
-                if (OsUtils.isWin32()) {
-                    @SuppressWarnings("unchecked")
-                    Collection<PosixFilePermission> perms = (Collection<PosixFilePermission>) value;
-                    IoUtils.setPermissionsToFile(file.toFile(), perms);
+                case "size": {
+                    long newSize = ((Number) value).longValue();
+                    try (FileChannel channel = FileChannel.open(file, StandardOpenOption.WRITE)) {
+                        channel.truncate(newSize);
+                    }
                     continue;
                 }
-                view = "posix";
-                break;
-
-            case "creationTime":
-                view = "basic";
-                break;
-            case "lastModifiedTime":
-                view = "basic";
-                break;
-            case "lastAccessTime":
-                view = "basic";
-                break;
-            default:    // ignored
+                case "uid":
+                    view = "unix";
+                    break;
+                case "gid":
+                    view = "unix";
+                    break;
+                case "owner":
+                    view = "posix";
+                    value = toUser(file, (UserPrincipal) value);
+                    break;
+                case "group":
+                    view = "posix";
+                    value = toGroup(file, (GroupPrincipal) value);
+                    break;
+                case "permissions":
+                    if (OsUtils.isWin32()) {
+                        @SuppressWarnings("unchecked")
+                        Collection<PosixFilePermission> perms = (Collection<PosixFilePermission>) value;
+                        IoUtils.setPermissionsToFile(file.toFile(), perms);
+                        continue;
+                    }
+                    view = "posix";
+                    break;
+    
+                case "creationTime":
+                    view = "basic";
+                    break;
+                case "lastModifiedTime":
+                    view = "basic";
+                    break;
+                case "lastAccessTime":
+                    view = "basic";
+                    break;
+                default:    // ignored
             }
             if (view != null && value != null) {
                 try {
@@ -1873,19 +1883,19 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         if (version >= SFTP_V4) {
             byte type = buffer.getByte();
             switch (type) {
-            case SSH_FILEXFER_TYPE_REGULAR:
-                attrs.put("isRegular", Boolean.TRUE);
-                break;
-            case SSH_FILEXFER_TYPE_DIRECTORY:
-                attrs.put("isDirectory", Boolean.TRUE);
-                break;
-            case SSH_FILEXFER_TYPE_SYMLINK:
-                attrs.put("isSymbolicLink", Boolean.TRUE);
-                break;
-            case SSH_FILEXFER_TYPE_UNKNOWN:
-                attrs.put("isOther", Boolean.TRUE);
-                break;
-            default:    // ignored
+                case SSH_FILEXFER_TYPE_REGULAR:
+                    attrs.put("isRegular", Boolean.TRUE);
+                    break;
+                case SSH_FILEXFER_TYPE_DIRECTORY:
+                    attrs.put("isDirectory", Boolean.TRUE);
+                    break;
+                case SSH_FILEXFER_TYPE_SYMLINK:
+                    attrs.put("isSymbolicLink", Boolean.TRUE);
+                    break;
+                case SSH_FILEXFER_TYPE_UNKNOWN:
+                    attrs.put("isOther", Boolean.TRUE);
+                    break;
+                default:    // ignored
             }
         }
         if ((flags & SSH_FILEXFER_ATTR_SIZE) != 0) {

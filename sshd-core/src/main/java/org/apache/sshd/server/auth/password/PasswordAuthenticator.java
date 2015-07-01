@@ -29,7 +29,7 @@ public interface PasswordAuthenticator {
      * Check the validity of a password.
      * @param username The username credential
      * @param password The provided password
-     * @param session The {@link ServerSession} attemtpting the authentication
+     * @param session The {@link ServerSession} attempting the authentication
      * @return {@code true} indicating if authentication succeeded
      */
     boolean authenticate(String username, String password, ServerSession session);

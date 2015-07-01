@@ -21,10 +21,10 @@ package org.apache.sshd.common.kex;
 import java.math.BigInteger;
 
 import org.apache.sshd.common.digest.Digest;
+import org.apache.sshd.common.util.GenericUtils;
 
 /**
  * Base class for the Diffie-Hellman key agreement.
- * 
  */
 public abstract class AbstractDH {
 
@@ -51,18 +51,33 @@ public abstract class AbstractDH {
 
     public abstract Digest getHash() throws Exception;
 
-    // The shared secret returned by KeyAgreement.generateSecret() is
-    // a byte array, which can (by chance, roughly 1 out of 256 times)
-    // begin with zero byte (some JCE providers might strip this, though).
-    // In SSH, the shared secret is an integer, so we need to strip
-    // the leading zero(es).
-    protected static byte[] stripLeadingZeroes(byte[] x) {
-        int i = 0;
-        while ((i < x.length - 1) && (x[i] == 0)) {
-            i++;
+    /**
+     * The shared secret returned by {@link javax.crypto.KeyAgreement#generateSecret()}
+     * is a byte array, which can (by chance, roughly 1 out of 256 times) begin
+     * with zero byte (some JCE providers might strip this, though). In SSH,
+     * the shared secret is an integer, so we need to strip the leading zero(es).
+     * @param x The original array
+     * @return An (possibly) sub-array guaranteed to start with a non-zero byte 
+     * @see <A HREF="https://issues.apache.org/jira/browse/SSHD-330">SSHD-330</A>
+     * @throws IllegalArgumentException If all zeroes array
+     */
+    public static byte[] stripLeadingZeroes(byte[] x) {
+        int length = GenericUtils.length(x);
+        for (int i = 0; i < x.length; i++) {
+            if (x[i] == 0) {
+                continue;
+            }
+
+            if (i == 0) {   // 1st byte is non-zero so nothing to do
+                return x;
+            }
+
+            byte[] ret = new byte[length - i];
+            System.arraycopy(x, i, ret, 0, ret.length);
+            return ret;
         }
-        byte[] ret = new byte[x.length - i];
-        System.arraycopy(x, i, ret, 0, ret.length);
-        return ret;
+        
+        // all zeroes
+        throw new IllegalArgumentException("No non-zero values in generated secret");
     }
 }
