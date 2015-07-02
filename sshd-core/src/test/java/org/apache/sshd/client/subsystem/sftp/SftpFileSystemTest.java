@@ -40,16 +40,21 @@ import java.nio.file.attribute.PosixFilePermissions;
 import java.nio.file.attribute.UserPrincipalLookupService;
 import java.nio.file.attribute.UserPrincipalNotFoundException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import org.apache.sshd.client.SshClient;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.file.root.RootedFileSystemProvider;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.Command;
@@ -111,8 +116,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
         Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         Utils.deleteRecursive(lclSftp);
 
-        try(FileSystem fs = FileSystems.newFileSystem(
-                URI.create("sftp://" + getCurrentTestName() + ":" + getCurrentTestName() + "@localhost:" + port + "/"),
+        try(FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(),
                 new TreeMap<String,Object>() {
                     private static final long serialVersionUID = 1L;    // we're not serializing it
                 
@@ -230,8 +234,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
         Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         Utils.deleteRecursive(lclSftp);
 
-        try(FileSystem fs = FileSystems.newFileSystem(
-                URI.create("sftp://" + getCurrentTestName() + ":" + getCurrentTestName() + "@localhost:" + port + "/"),
+        try(FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(),
                 new TreeMap<String,Object>() {
                     private static final long serialVersionUID = 1L;    // we're not serializing it
                 
@@ -289,8 +292,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
 
     @Test
     public void testFileStore() throws IOException {
-        try(FileSystem fs = FileSystems.newFileSystem(
-                URI.create("sftp://" + getCurrentTestName() + ":" + getCurrentTestName() + "@localhost:" + port + "/"), Collections.<String,Object>emptyMap())) {
+        try(FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(), Collections.<String,Object>emptyMap())) {
             Iterable<FileStore> iter = fs.getFileStores();
             assertTrue("Not a list", iter instanceof List<?>);
             
@@ -309,5 +311,63 @@ public class SftpFileSystemTest extends BaseTestSupport {
                 assertTrue("Unsupported view type: " + type.getSimpleName(), store.supportsFileAttributeView(type));
             }
         }
+    }
+
+    @Test
+    public void testMultipleFileStoresOnSameProvider() throws IOException {
+        try(SshClient client = SshClient.setUpDefaultClient()) {
+            client.start();
+
+            SftpFileSystemProvider provider = new SftpFileSystemProvider(client);
+            Collection<SftpFileSystem> fsList = new LinkedList<>();
+            try {
+                Collection<String> idSet = new HashSet<>();
+                for (int index=0; index < 4; index++) {
+                    String credentials = getCurrentTestName() + "-user-" + index;
+                    SftpFileSystem expected = provider.newFileSystem(createFileSystemURI(credentials), Collections.<String,Object>emptyMap());
+                    fsList.add(expected);
+
+                    String id = expected.getId();
+                    assertTrue("Non unique file system id: " + id, idSet.add(id));
+                    
+                    SftpFileSystem actual = provider.getFileSystem(id);
+                    assertSame("Mismatched cached instances for " + id, expected, actual);
+                    System.out.println("Created file system id: " + id);
+                }
+                
+                for (SftpFileSystem fs : fsList) {
+                    String id = fs.getId();
+                    fs.close();
+                    assertNull("File system not removed from cache: " + id, provider.getFileSystem(id));
+                }
+            } finally {
+                IOException err = null;
+                for (FileSystem fs : fsList) {
+                    try {
+                        fs.close();
+                    } catch(IOException e) {
+                        err = GenericUtils.accumulateException(err, e);
+                    }
+                }
+
+                client.stop();
+
+                if (err != null) {
+                    throw err;
+                }
+            }
+        }        
+    }
+
+    private URI createDefaultFileSystemURI() {
+        return createFileSystemURI(getCurrentTestName());
+    }
+
+    private URI createFileSystemURI(String username) {
+        return createFileSystemURI(username, port);
+    }
+
+    private static URI createFileSystemURI(String username, int port) {
+        return SftpFileSystemProvider.createFileSystemURI("localhost", port, username, username);
     }
 }

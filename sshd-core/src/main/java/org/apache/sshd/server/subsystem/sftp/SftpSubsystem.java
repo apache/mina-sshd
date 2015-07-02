@@ -113,7 +113,13 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     public static final int LOWER_SFTP_IMPL = SFTP_V3; // Working implementation from v3
     public static final int HIGHER_SFTP_IMPL = SFTP_V6; //  .. up to
     public static final String ALL_SFTP_IMPL;
-    public static final int  MAX_PACKET_LENGTH = 1024 * 16;
+    
+    /**
+     * Force the use of a max. packet length - especially for {@link #doReadDir(Buffer, int)}
+     * @see #DEFAULT_MAX_PACKET_LENGTH
+     */
+    public static final String MAX_PACKET_LENGTH_PROP = "sftp-max-packet-length";
+        public static final int  DEFAULT_MAX_PACKET_LENGTH = 1024 * 16;
 
     static {
         StringBuilder sb = new StringBuilder(2 * (1 + (HIGHER_SFTP_IMPL - LOWER_SFTP_IMPL)));
@@ -939,12 +945,13 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                 return;
             }
             
-            if (((DirectoryHandle) p).isDone()) {
+            DirectoryHandle dh = (DirectoryHandle) p;
+            if (dh.isDone()) {
                 sendStatus(id, SSH_FX_EOF, "", "");
                 return;
             }
 
-            Path            file = p.getFile();
+            Path            file = dh.getFile();
             LinkOption[]    options = IoUtils.getLinkOptions(false);
             Boolean         status = IoUtils.checkFileExists(file, options);
             if (status == null) {
@@ -958,7 +965,6 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             } else if (!Files.isReadable(file)) {
                 sendStatus(id, SSH_FX_PERMISSION_DENIED, file.toString());
             } else {
-                DirectoryHandle dh = (DirectoryHandle) p;
                 if (dh.hasNext()) {
                     // There is at least one file in the directory.
                     // Send only a few files at a time to not create packets of a too
@@ -1374,8 +1380,9 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         buffer.putInt(id);
         int wpos = buffer.wpos();
         buffer.putInt(0);
-        int nb = 0;
-        while (files.hasNext() && (buffer.wpos() < MAX_PACKET_LENGTH)) {
+
+        int nb = 0, maxSize = FactoryManagerUtils.getIntProperty(session, MAX_PACKET_LENGTH_PROP, DEFAULT_MAX_PACKET_LENGTH);
+        while (files.hasNext() && (buffer.wpos() < maxSize)) {
             Path    f = files.next();
             String  shortName = getShortName(f);
             buffer.putString(shortName, StandardCharsets.UTF_8);

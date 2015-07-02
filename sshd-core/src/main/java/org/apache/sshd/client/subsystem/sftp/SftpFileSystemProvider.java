@@ -138,8 +138,8 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         return SftpConstants.SFTP_SUBSYSTEM_NAME;
     }
 
-    @Override
-    public FileSystem newFileSystem(URI uri, Map<String, ?> env) throws IOException {
+    @Override // NOTE: co-variant return
+    public SftpFileSystem newFileSystem(URI uri, Map<String, ?> env) throws IOException {
         String host = ValidateUtils.checkNotNullAndNotEmpty(uri.getHost(), "Host not provided", GenericUtils.EMPTY_OBJECT_ARRAY);
         int port = uri.getPort();
         if (port <= 0) {
@@ -150,7 +150,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         String[] ui = GenericUtils.split(userInfo, ':');
         ValidateUtils.checkTrue(GenericUtils.length(ui) == 2, "Invalid user info: %s", userInfo);
         String username = ui[0], password = ui[1];
-        String id = getFileSystemIdentifier(host, port, userInfo);
+        String id = getFileSystemIdentifier(host, port, username);
 
         SftpFileSystem fileSystem;
         synchronized (fileSystems) {
@@ -158,6 +158,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
                 throw new FileSystemAlreadyExistsException(id);
             }
 
+            // TODO try and find a way to avoid doing this while locking the file systems cache
             ClientSession session=null;
             try {
                 session = client.connect(username, host, port)
@@ -199,18 +200,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
     }
 
     public SftpFileSystem newFileSystem(ClientSession session) throws IOException {
-        IoSession ioSession = session.getIoSession();
-        SocketAddress addr = ioSession.getRemoteAddress();
-        String username = session.getUsername();
-        String userauth = username + ":" + session.toString();
-        String id;
-        if (addr instanceof InetSocketAddress) {
-            InetSocketAddress inetAddr = (InetSocketAddress) addr;
-            id = getFileSystemIdentifier(inetAddr.getHostString(), inetAddr.getPort(), userauth);
-        } else {
-            id = getFileSystemIdentifier(addr.toString(), SshConfigFileReader.DEFAULT_PORT, userauth);
-        }
-        
+        String id = getFileSystemIdentifier(session);
         SftpFileSystem fileSystem;
         synchronized (fileSystems) {
             if ((fileSystem=fileSystems.get(id)) != null) {
@@ -255,7 +245,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
      * @param id File system identifier - ignored if {@code null}/empty
      * @return The cached {@link SftpFileSystem} - {@code null} if no match
      */
-    protected SftpFileSystem getFileSystem(String id) {
+    public SftpFileSystem getFileSystem(String id) {
         if (GenericUtils.isEmpty(id)) {
             return null;
         }
@@ -980,11 +970,47 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         return p;
     }
 
+    /**
+     * Uses the host, port and username to create a unique identifier
+     * @param uri The {@link URI} - <B>Note:</B> not checked to make sure
+     * that the scheme is {@code sftp://}
+     * @return The unique identifier
+     * @see #getFileSystemIdentifier(String, int, String)
+     */
     public static final String getFileSystemIdentifier(URI uri) {
-        return getFileSystemIdentifier(uri.getHost(), uri.getPort(), uri.getUserInfo());
+        String userInfo = ValidateUtils.checkNotNullAndNotEmpty(uri.getUserInfo(), "UserInfo not provided", GenericUtils.EMPTY_OBJECT_ARRAY);
+        String[] ui = GenericUtils.split(userInfo, ':');
+        ValidateUtils.checkTrue(GenericUtils.length(ui) == 2, "Invalid user info: %s", userInfo);
+        return getFileSystemIdentifier(uri.getHost(), uri.getPort(), ui[0]);
     }
     
-    public static final String getFileSystemIdentifier(String host, int port, String userAuth) {
-        return userAuth;
+    /**
+     * Uses the remote host address, port and current username to create a unique identifier
+     * @param session The {@link ClientSession}
+     * @return The unique identifier
+     * @see #getFileSystemIdentifier(String, int, String)
+     */
+    public static final String getFileSystemIdentifier(ClientSession session) {
+        IoSession ioSession = session.getIoSession();
+        SocketAddress addr = ioSession.getRemoteAddress();
+        String username = session.getUsername();
+        if (addr instanceof InetSocketAddress) {
+            InetSocketAddress inetAddr = (InetSocketAddress) addr;
+            return getFileSystemIdentifier(inetAddr.getHostString(), inetAddr.getPort(), username);
+        } else {
+            return getFileSystemIdentifier(addr.toString(), SshConfigFileReader.DEFAULT_PORT, username);
+        }
+    }
+
+    public static final String getFileSystemIdentifier(String host, int port, String username) {
+        return new StringBuilder(GenericUtils.length(host) + 1 + /* port */ + 5 + 1 + GenericUtils.length(username))
+                .append(GenericUtils.trimToEmpty(host))
+                .append(':').append((port <= 0) ? SshConfigFileReader.DEFAULT_PORT : port)
+                .append(':').append(GenericUtils.trimToEmpty(username))
+                .toString();
+    }
+
+    public static final URI createFileSystemURI(String host, int port, String username, String password) {
+        return URI.create(SftpConstants.SFTP_SUBSYSTEM_NAME + "://" + username + ":" + password + "@" + host + ":" + port + "/");
     }
 }
