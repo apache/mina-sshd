@@ -45,7 +45,7 @@ import org.apache.sshd.common.util.OsUtils;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class IoUtils {
+public final class IoUtils {
     public static final OpenOption[] EMPTY_OPEN_OPTIONS = new OpenOption[0];
     public static final LinkOption[] EMPTY_LINK_OPTIONS = new LinkOption[0];
     private static final LinkOption[] NO_FOLLOW_OPTIONS = new LinkOption[] { LinkOption.NOFOLLOW_LINKS };
@@ -324,5 +324,28 @@ public class IoUtils {
             throw new UnsupportedOperationException("Not a directory: " + path);
         }
         return path;
+    }
+
+    /**
+     * @param options The {@link LinkOption}s - OK if {@code null}/empty
+     * @return {@code true} if the link options are {@code null}/empty or do
+     * not contain {@link LinkOption#NOFOLLOW_LINKS}, {@code false} otherwise
+     * (i.e., the array is not empty and contains the special value)
+     */
+    public static boolean followLinks(LinkOption... options) {
+        if (GenericUtils.isEmpty(options)) {
+            return true;
+        }
+
+        for (LinkOption localLinkOption : options) {
+            if (localLinkOption == LinkOption.NOFOLLOW_LINKS) {
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    private IoUtils() {
+        throw new UnsupportedOperationException("No instance");
     }
 }

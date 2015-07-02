@@ -830,20 +830,20 @@ public class ClientTest extends BaseTestSupport {
 
         try {
             for (int index = 0; index < xformers.size(); index++) {
-                try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(700L, TimeUnit.SECONDS).getSession()) {
+                try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7, TimeUnit.SECONDS).getSession()) {
                     String password = "bad-" + getCurrentTestName() + "-" + index;
                     session.addPasswordIdentity(password);
                     
                     AuthFuture future = session.auth();
-                    assertTrue("Failed to verify password=" + password + " in time", future.await(500L, TimeUnit.SECONDS));
+                    assertTrue("Failed to verify password=" + password + " in time", future.await(5L, TimeUnit.SECONDS));
                     assertFalse("Unexpected success for password=" + password, future.isSuccess());
                     session.removePasswordIdentity(password);
                 }
             }
 
-            try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(700L, TimeUnit.SECONDS).getSession()) {
+            try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
                 session.addPasswordIdentity(getCurrentTestName());
-                session.auth().verify(500L, TimeUnit.SECONDS);
+                session.auth().verify(5L, TimeUnit.SECONDS);
                 assertTrue("Mismatched prompts evaluation results", mismatchedPrompts.isEmpty());
             }
         } finally {

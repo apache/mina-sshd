@@ -1254,6 +1254,10 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         buffer.putString("versions");
         buffer.putString(all);
 
+        // TODO text-seek - see http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-13.txt
+        // TODO space-available - see http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt
+        // TODO home-directory - see http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt
+
         // supported
         buffer.putString("supported");
         buffer.putInt(5 * 4); // length of 5 integers
@@ -1297,6 +1301,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         // extension-count
         buffer.putInt(0);
 
+        // TODO vendor-id see http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt
         /*
         buffer.putString("acl-supported");
         buffer.putInt(4);

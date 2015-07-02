@@ -32,6 +32,8 @@ import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IXUSR;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.net.URI;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
@@ -63,7 +65,9 @@ import java.nio.file.attribute.PosixFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.UserPrincipal;
 import java.nio.file.spi.FileSystemProvider;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -72,14 +76,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.sshd.client.ClientBuilder;
 import org.apache.sshd.client.SftpException;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.Attributes;
+import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.config.SshConfigFileReader;
+import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -94,6 +99,15 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         public static final int DEFAULT_WRITE_BUFFER_SIZE = SftpClient.DEFAULT_WRITE_BUFFER_SIZE;
     public static final String CONNECT_TIME_PROP_NAME = "sftp-fs-connect-time";
         public static final long DEFAULT_CONNECT_TIME = SftpClient.DEFAULT_WAIT_TIMEOUT;
+    public static final String AUTH_TIME_PROP_NAME = "sftp-fs-auth-time";
+        public static final long DEFAULT_AUTH_TIME = SftpClient.DEFAULT_WAIT_TIMEOUT;
+
+    public static final Set<Class<? extends FileAttributeView>> SUPPORTED_VIEWS =
+            Collections.unmodifiableSet(
+                    new HashSet<Class<? extends FileAttributeView>>(
+                            Arrays.<Class<? extends FileAttributeView>>asList(
+                                    BasicFileAttributeView.class, PosixFileAttributeView.class
+                            )));
 
     private final SshClient client;
     private final Map<String, SftpFileSystem> fileSystems = new HashMap<String, SftpFileSystem>();
@@ -103,14 +117,20 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         this(null);
     }
 
+    /**
+     * @param client The {@link SshClient} to use - if {@code null} then a
+     * default one will be setup and started. Otherwise, it is assumed that
+     * the client has already been started
+     * @see SshClient#setUpDefaultClient()
+     */
     public SftpFileSystemProvider(SshClient client) {
         this.log = LoggerFactory.getLogger(getClass());
         if (client == null) {
             // TODO: make this configurable using system properties
-            client = ClientBuilder.builder().build();
+            client = SshClient.setUpDefaultClient();
+            client.start();
         }
         this.client = client;
-        this.client.start();
     }
 
     @Override
@@ -120,33 +140,35 @@ public class SftpFileSystemProvider extends FileSystemProvider {
 
     @Override
     public FileSystem newFileSystem(URI uri, Map<String, ?> env) throws IOException {
+        String host = ValidateUtils.checkNotNullAndNotEmpty(uri.getHost(), "Host not provided", GenericUtils.EMPTY_OBJECT_ARRAY);
+        int port = uri.getPort();
+        if (port <= 0) {
+            port = SshConfigFileReader.DEFAULT_PORT;
+        }
+
+        String userInfo = ValidateUtils.checkNotNullAndNotEmpty(uri.getUserInfo(), "UserInfo not provided", GenericUtils.EMPTY_OBJECT_ARRAY);
+        String[] ui = GenericUtils.split(userInfo, ':');
+        ValidateUtils.checkTrue(GenericUtils.length(ui) == 2, "Invalid user info: %s", userInfo);
+        String username = ui[0], password = ui[1];
+        String id = getFileSystemIdentifier(host, port, userInfo);
+
+        SftpFileSystem fileSystem;
         synchronized (fileSystems) {
-            String authority = uri.getAuthority();
-            SftpFileSystem fileSystem = fileSystems.get(authority);
-            if (fileSystem != null) {
-                throw new FileSystemAlreadyExistsException(authority);
-            }
-            String host = ValidateUtils.checkNotNullAndNotEmpty(uri.getHost(), "Host not provided", GenericUtils.EMPTY_OBJECT_ARRAY);
-            String userInfo = ValidateUtils.checkNotNullAndNotEmpty(uri.getUserInfo(), "UserInfo not provided", GenericUtils.EMPTY_OBJECT_ARRAY);
-            String[] ui = GenericUtils.split(userInfo, ':');
-            int port = uri.getPort();
-            if (port <= 0) {
-                port = SshConfigFileReader.DEFAULT_PORT;
+            if ((fileSystem = fileSystems.get(id)) != null) {
+                throw new FileSystemAlreadyExistsException(id);
             }
 
             ClientSession session=null;
             try {
-                session = client.connect(ui[0], host, port)
+                session = client.connect(username, host, port)
                                 .verify(FactoryManagerUtils.getLongProperty(env, CONNECT_TIME_PROP_NAME, DEFAULT_CONNECT_TIME))
                                 .getSession()
                                 ;
-                session.addPasswordIdentity(ui[1]);
-                session.auth().verify();
-                fileSystem = new SftpFileSystem(this, session);
-                fileSystem.setReadBufferSize(FactoryManagerUtils.getIntProperty(env, READ_BUFFER_PROP_NAME, DEFAULT_READ_BUFFER_SIZE));
-                fileSystem.setWriteBufferSize(FactoryManagerUtils.getIntProperty(env, WRITE_BUFFER_PROP_NAME, DEFAULT_WRITE_BUFFER_SIZE));
-                fileSystems.put(authority, fileSystem);
-                return fileSystem;
+                session.addPasswordIdentity(password);
+                session.auth().verify(FactoryManagerUtils.getLongProperty(env, AUTH_TIME_PROP_NAME, DEFAULT_AUTH_TIME));
+
+                fileSystem = new SftpFileSystem(this, id, session);
+                fileSystems.put(id, fileSystem);
             } catch(Exception e) {
                 if (session != null) {
                     try {
@@ -170,17 +192,76 @@ public class SftpFileSystemProvider extends FileSystemProvider {
                 }
             }
         }
+        
+        fileSystem.setReadBufferSize(FactoryManagerUtils.getIntProperty(env, READ_BUFFER_PROP_NAME, DEFAULT_READ_BUFFER_SIZE));
+        fileSystem.setWriteBufferSize(FactoryManagerUtils.getIntProperty(env, WRITE_BUFFER_PROP_NAME, DEFAULT_WRITE_BUFFER_SIZE));
+        return fileSystem;
+    }
+
+    public SftpFileSystem newFileSystem(ClientSession session) throws IOException {
+        IoSession ioSession = session.getIoSession();
+        SocketAddress addr = ioSession.getRemoteAddress();
+        String username = session.getUsername();
+        String userauth = username + ":" + session.toString();
+        String id;
+        if (addr instanceof InetSocketAddress) {
+            InetSocketAddress inetAddr = (InetSocketAddress) addr;
+            id = getFileSystemIdentifier(inetAddr.getHostString(), inetAddr.getPort(), userauth);
+        } else {
+            id = getFileSystemIdentifier(addr.toString(), SshConfigFileReader.DEFAULT_PORT, userauth);
+        }
+        
+        SftpFileSystem fileSystem;
+        synchronized (fileSystems) {
+            if ((fileSystem=fileSystems.get(id)) != null) {
+                throw new FileSystemAlreadyExistsException(id);
+            }
+
+            fileSystem = new SftpFileSystem(this, id, session);
+            fileSystems.put(id, fileSystem);
+        }
+        
+        FactoryManager manager = session.getFactoryManager();
+        fileSystem.setReadBufferSize(FactoryManagerUtils.getIntProperty(manager, READ_BUFFER_PROP_NAME, DEFAULT_READ_BUFFER_SIZE));
+        fileSystem.setWriteBufferSize(FactoryManagerUtils.getIntProperty(manager, WRITE_BUFFER_PROP_NAME, DEFAULT_WRITE_BUFFER_SIZE));
+        return fileSystem;
     }
 
     @Override
     public FileSystem getFileSystem(URI uri) {
+        String id = getFileSystemIdentifier(uri);
+        SftpFileSystem fs = getFileSystem(id);
+        if (fs == null) {
+            throw new FileSystemNotFoundException(id);
+        }
+        return fs;
+    }
+
+    /**
+     * @param id File system identifier - ignored if {@code null}/empty
+     * @return The removed {@link SftpFileSystem} - {@code null} if no match
+     */
+    public SftpFileSystem removeFileSystem(String id) {
+        if (GenericUtils.isEmpty(id)) {
+            return null;
+        }
+
         synchronized (fileSystems) {
-            String authority = uri.getAuthority();
-            SftpFileSystem fileSystem = fileSystems.get(authority);
-            if (fileSystem == null) {
-                throw new FileSystemNotFoundException(authority);
-            }
-            return fileSystem;
+            return fileSystems.remove(id);
+        }
+    }
+
+    /**
+     * @param id File system identifier - ignored if {@code null}/empty
+     * @return The cached {@link SftpFileSystem} - {@code null} if no match
+     */
+    protected SftpFileSystem getFileSystem(String id) {
+        if (GenericUtils.isEmpty(id)) {
+            return null;
+        }
+
+        synchronized (fileSystems) {
+            return fileSystems.get(id);
         }
     }
 
@@ -461,7 +542,19 @@ public class SftpFileSystemProvider extends FileSystemProvider {
 
     @Override
     public FileStore getFileStore(Path path) throws IOException {
-        throw new FileSystemException(path.toString(), path.toString(), "getFileStore(" + path + ") N/A");
+        FileSystem fs = path.getFileSystem();
+        if (!(fs instanceof SftpFileSystem)) {
+            throw new FileSystemException(path.toString(), path.toString(), "getFileStore(" + path + ") path not attached to an SFTP file system");
+        }
+        
+        SftpFileSystem sftpFs = (SftpFileSystem) fs;
+        String id = sftpFs.getId();
+        SftpFileSystem cached = getFileSystem(id);
+        if (cached != sftpFs) {
+            throw new FileSystemException(path.toString(), path.toString(), "Mismatched file system instance for id=" + id);
+        }
+        
+        return sftpFs.getFileStores().get(0);
     }
 
     @Override
@@ -519,11 +612,10 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         }
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public <V extends FileAttributeView> V getFileAttributeView(final Path path, Class<V> type, final LinkOption... options) {
-        if (type.isAssignableFrom(PosixFileAttributeView.class)) {
-            return (V) new PosixFileAttributeView() {
+        if (isSupportedFileAttributeView(type)) {
+            return type.cast(new PosixFileAttributeView() {
                 @Override
                 public String name() {
                     return "view";
@@ -537,7 +629,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
                     final SftpClient.Attributes attributes;
                     try (SftpClient client =fs.getClient()) {
                         try {
-                            if (followLinks(options)) {
+                            if (IoUtils.followLinks(options)) {
                                 attributes = client.stat(p.toString());
                             } else {
                                 attributes = client.lstat(p.toString());
@@ -645,9 +737,17 @@ public class SftpFileSystemProvider extends FileSystemProvider {
                 public void setOwner(UserPrincipal owner) throws IOException {
                     setAttribute(path, "owner", owner, options);
                 }
-            };
+            });
         } else {
             throw new UnsupportedOperationException("getFileAttributeView(" + path + ") view not supported: " + type.getSimpleName());
+        }
+    }
+
+    public boolean isSupportedFileAttributeView(Class<?> type) {
+        if ((type != null) && SUPPORTED_VIEWS.contains(type)) {
+            return true;
+        } else {
+            return false;   // debug breakpoint 
         }
     }
 
@@ -802,48 +902,6 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         return (SftpPath) path;
     }
 
-    static boolean followLinks(LinkOption... paramVarArgs) {
-        boolean bool = true;
-        for (LinkOption localLinkOption : paramVarArgs) {
-            if (localLinkOption == LinkOption.NOFOLLOW_LINKS) {
-                bool = false;
-            }
-        }
-        return bool;
-    }
-
-    private Set<PosixFilePermission> permissionsToAttributes(int perms) {
-        Set<PosixFilePermission> p = new HashSet<>();
-        if ((perms & S_IRUSR) != 0) {
-            p.add(PosixFilePermission.OWNER_READ);
-        }
-        if ((perms & S_IWUSR) != 0) {
-            p.add(PosixFilePermission.OWNER_WRITE);
-        }
-        if ((perms & S_IXUSR) != 0) {
-            p.add(PosixFilePermission.OWNER_EXECUTE);
-        }
-        if ((perms & S_IRGRP) != 0) {
-            p.add(PosixFilePermission.GROUP_READ);
-        }
-        if ((perms & S_IWGRP) != 0) {
-            p.add(PosixFilePermission.GROUP_WRITE);
-        }
-        if ((perms & S_IXGRP) != 0) {
-            p.add(PosixFilePermission.GROUP_EXECUTE);
-        }
-        if ((perms & S_IROTH) != 0) {
-            p.add(PosixFilePermission.OTHERS_READ);
-        }
-        if ((perms & S_IWOTH) != 0) {
-            p.add(PosixFilePermission.OTHERS_WRITE);
-        }
-        if ((perms & S_IXOTH) != 0) {
-            p.add(PosixFilePermission.OTHERS_EXECUTE);
-        }
-        return p;
-    }
-
     protected int attributesToPermissions(Path path, Collection<PosixFilePermission> perms) {
         if (GenericUtils.isEmpty(perms)) {
             return 0;
@@ -889,4 +947,44 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         return pf;
     }
 
+
+    public static Set<PosixFilePermission> permissionsToAttributes(int perms) {
+        Set<PosixFilePermission> p = new HashSet<>();
+        if ((perms & S_IRUSR) != 0) {
+            p.add(PosixFilePermission.OWNER_READ);
+        }
+        if ((perms & S_IWUSR) != 0) {
+            p.add(PosixFilePermission.OWNER_WRITE);
+        }
+        if ((perms & S_IXUSR) != 0) {
+            p.add(PosixFilePermission.OWNER_EXECUTE);
+        }
+        if ((perms & S_IRGRP) != 0) {
+            p.add(PosixFilePermission.GROUP_READ);
+        }
+        if ((perms & S_IWGRP) != 0) {
+            p.add(PosixFilePermission.GROUP_WRITE);
+        }
+        if ((perms & S_IXGRP) != 0) {
+            p.add(PosixFilePermission.GROUP_EXECUTE);
+        }
+        if ((perms & S_IROTH) != 0) {
+            p.add(PosixFilePermission.OTHERS_READ);
+        }
+        if ((perms & S_IWOTH) != 0) {
+            p.add(PosixFilePermission.OTHERS_WRITE);
+        }
+        if ((perms & S_IXOTH) != 0) {
+            p.add(PosixFilePermission.OTHERS_EXECUTE);
+        }
+        return p;
+    }
+
+    public static final String getFileSystemIdentifier(URI uri) {
+        return getFileSystemIdentifier(uri.getHost(), uri.getPort(), uri.getUserInfo());
+    }
+    
+    public static final String getFileSystemIdentifier(String host, int port, String userAuth) {
+        return userAuth;
+    }
 }

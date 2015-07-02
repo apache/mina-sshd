@@ -19,6 +19,8 @@
 package org.apache.sshd.common.file.root;
 
 import java.io.IOException;
+import java.nio.file.FileStore;
+import java.nio.file.FileSystem;
 import java.nio.file.Path;
 import java.nio.file.attribute.UserPrincipalLookupService;
 import java.util.Map;
@@ -32,11 +34,13 @@ import org.apache.sshd.common.file.util.ImmutableList;
  */
 public class RootedFileSystem extends BaseFileSystem<RootedPath> {
 
-    private Path rootPath;
+    private final Path rootPath;
+    private final FileSystem rootFs;
 
     public RootedFileSystem(RootedFileSystemProvider fileSystemProvider, Path root, Map<String, ?> env) {
         super(fileSystemProvider);
         this.rootPath = root;
+        this.rootFs = root.getFileSystem();
     }
 
     public Path getRoot() {
@@ -50,26 +54,36 @@ public class RootedFileSystem extends BaseFileSystem<RootedPath> {
 
     @Override
     public boolean isOpen() {
-        return getRoot().getFileSystem().isOpen();
+        return rootFs.isOpen();
     }
 
     @Override
     public boolean isReadOnly() {
-        return getRoot().getFileSystem().isReadOnly();
+        return rootFs.isReadOnly();
     }
 
     @Override
     public Set<String> supportedFileAttributeViews() {
-        return rootPath.getFileSystem().supportedFileAttributeViews();
+        return rootFs.supportedFileAttributeViews();
     }
 
     @Override
     public UserPrincipalLookupService getUserPrincipalLookupService() {
-        return getRoot().getFileSystem().getUserPrincipalLookupService();
+        return rootFs.getUserPrincipalLookupService();
     }
 
     @Override
     protected RootedPath create(String root, ImmutableList<String> names) {
         return new RootedPath(this, root, names);
+    }
+
+    @Override
+    public Iterable<FileStore> getFileStores() {
+        return rootFs.getFileStores();
+    }
+
+    @Override
+    public String toString() {
+        return rootPath.toString();
     }
 }

@@ -32,6 +32,7 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.FileStore;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystemAlreadyExistsException;
+import java.nio.file.FileSystemException;
 import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.LinkOption;
 import java.nio.file.OpenOption;
@@ -92,27 +93,18 @@ public class RootedFileSystemProvider extends FileSystemProvider {
 
     @Override
     public FileSystem getFileSystem(URI uri) {
-        Path path = uriToPath(uri);
-        Path real;
         try {
-            real = path.toRealPath();
-        } catch (IOException e) {
+            FileSystem fileSystem = getFileSystem(uriToPath(uri));
+            if (fileSystem == null) {
+                throw new FileSystemNotFoundException(uri.toString());
+            }
+
+            return fileSystem;
+        } catch(IOException e) {
             FileSystemNotFoundException err = new FileSystemNotFoundException(uri.toString());
             err.initCause(e);
             throw err;
         }
-
-        RootedFileSystem fileSystem = null;
-        synchronized (fileSystems) {
-            fileSystem = fileSystems.get(real);
-        }
-
-        // do all the throwing outside the synchronized block to minimize its lock time
-        if (fileSystem == null) {
-            throw new FileSystemNotFoundException(uri.toString());
-        }
-
-        return fileSystem;
     }
 
     @Override
@@ -276,7 +268,34 @@ public class RootedFileSystemProvider extends FileSystemProvider {
 
     @Override
     public FileStore getFileStore(Path path) throws IOException {
-        throw new UnsupportedOperationException("getFileStore(" + path + ") N/A");
+        FileSystem fileSystem = getFileSystem(path);
+        if (fileSystem == null) {
+            throw new FileSystemNotFoundException(path.toString());
+        }
+
+        Iterable<FileStore> stores = fileSystem.getFileStores();
+        if (stores == null) {
+            throw new FileSystemException(path.toString(), path.toString(), "No stores");
+        }
+        
+        for (FileStore s : stores) {
+            return s;
+        }
+
+        throw new FileSystemException(path.toString(), path.toString(), "empty stores");
+    }
+
+    protected RootedFileSystem getFileSystem(Path path) throws IOException {
+        try {
+            Path real = path.toRealPath();
+            synchronized (fileSystems) {
+                return fileSystems.get(real);
+            }
+        } catch (IOException e) {
+            FileSystemNotFoundException err = new FileSystemNotFoundException(path.toString());
+            err.initCause(e);
+            throw err;
+        }
     }
 
     @Override

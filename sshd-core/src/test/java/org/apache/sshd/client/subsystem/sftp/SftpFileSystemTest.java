@@ -25,6 +25,7 @@ import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.FileStore;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -32,6 +33,7 @@ import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.FileAttributeView;
 import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.GroupPrincipal;
 import java.nio.file.attribute.PosixFilePermissions;
@@ -39,11 +41,10 @@ import java.nio.file.attribute.UserPrincipalLookupService;
 import java.nio.file.attribute.UserPrincipalNotFoundException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-import org.apache.sshd.client.subsystem.sftp.SftpClient;
-import org.apache.sshd.client.subsystem.sftp.SftpFileSystemProvider;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.file.root.RootedFileSystemProvider;
@@ -283,6 +284,30 @@ public class SftpFileSystemTest extends BaseTestSupport {
         try(FileSystem fs = FileSystems.newFileSystem(URI.create("root:" + rootNative.toUri().toString() + "!/"), null)) {
             Path dir = Files.createDirectories(fs.getPath("test/foo"));
             System.out.println("Created " + dir);
+        }
+    }
+
+    @Test
+    public void testFileStore() throws IOException {
+        try(FileSystem fs = FileSystems.newFileSystem(
+                URI.create("sftp://" + getCurrentTestName() + ":" + getCurrentTestName() + "@localhost:" + port + "/"), Collections.<String,Object>emptyMap())) {
+            Iterable<FileStore> iter = fs.getFileStores();
+            assertTrue("Not a list", iter instanceof List<?>);
+            
+            List<FileStore> list = (List<FileStore>) iter;
+            assertEquals("Mismatched stores count", 1, list.size());
+            
+            FileStore store = list.get(0);
+            assertEquals("Mismatched type", SftpConstants.SFTP_SUBSYSTEM_NAME, store.type());
+            assertFalse("Read-only ?", store.isReadOnly());
+            
+            for (String name : SftpFileSystem.SUPPORTED_VIEWS) {
+                assertTrue("Unsupported view name: " + name, store.supportsFileAttributeView(name));
+            }
+            
+            for (Class<? extends FileAttributeView> type : SftpFileSystemProvider.SUPPORTED_VIEWS) {
+                assertTrue("Unsupported view type: " + type.getSimpleName(), store.supportsFileAttributeView(type));
+            }
         }
     }
 }
