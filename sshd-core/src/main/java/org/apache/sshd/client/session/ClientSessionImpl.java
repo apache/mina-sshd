@@ -509,7 +509,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
 
     protected void sendClientIdentification() {
         FactoryManager manager = getFactoryManager();
-        clientVersion = "SSH-2.0-" + manager.getVersion();
+        clientVersion = DEFAULT_SSH_VERSION_PREFIX + manager.getVersion();
         sendIdentification(clientVersion);
     }
 

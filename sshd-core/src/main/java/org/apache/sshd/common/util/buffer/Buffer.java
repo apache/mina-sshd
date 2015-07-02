@@ -43,6 +43,8 @@ import java.security.spec.ECPublicKeySpec;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPrivateCrtKeySpec;
 import java.security.spec.RSAPublicKeySpec;
+import java.util.Collection;
+import java.util.Objects;
 
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.cipher.ECCurves;
@@ -381,6 +383,31 @@ public abstract class Buffer implements Readable {
     public void putBytes(byte[] b, int off, int len) {
         putInt(len);
         putRawBytes(b, off, len);
+    }
+
+    /**
+     * Encodes the {@link Objects#toString(Object)} value of each member
+     * @param objects The objects to be encoded in the buffer
+     * @see #putStringList(Collection, Charset)
+     */
+    public void putStringList(Collection<?> objects) {
+        putStringList(objects, StandardCharsets.UTF_8);
+    }
+
+    /**
+     * Encodes the {@link Objects#toString(Object)} value of each member
+     * @param objects The objects to be encoded in the buffer
+     * @param charset The {@link Charset} to use for encoding
+     * @see #putString(String, Charset)
+     */
+    public void putStringList(Collection<?> objects, Charset charset) {
+        if (GenericUtils.isEmpty(objects)) {
+            return;
+        }
+        
+        for (Object o : objects) {
+            putString(Objects.toString(o), charset);
+        }
     }
 
     public void putString(String string) {

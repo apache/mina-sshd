@@ -18,11 +18,9 @@
  */
 package org.apache.sshd.common;
 
-import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -32,6 +30,7 @@ import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.RequestHandler;
 import org.apache.sshd.common.cipher.Cipher;
 import org.apache.sshd.common.compression.Compression;
+import org.apache.sshd.common.config.VersionProperties;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.forward.TcpipForwarderFactory;
 import org.apache.sshd.common.io.DefaultIoServiceFactoryFactory;
@@ -68,7 +67,6 @@ public abstract class AbstractFactoryManager extends CloseableUtils.AbstractInne
     protected List<NamedFactory<Signature>> signatureFactories;
     protected Factory<Random> randomFactory;
     protected KeyPairProvider keyPairProvider;
-    protected String version;
     protected List<NamedFactory<Channel>> channelFactories;
     protected SshAgentFactory agentFactory;
     protected ScheduledExecutorService executor;
@@ -82,7 +80,7 @@ public abstract class AbstractFactoryManager extends CloseableUtils.AbstractInne
     protected ScheduledFuture<?> timeoutListenerFuture;
 
     protected AbstractFactoryManager() {
-        loadVersion();
+        super();
     }
 
     @Override
@@ -177,20 +175,7 @@ public abstract class AbstractFactoryManager extends CloseableUtils.AbstractInne
 
     @Override
     public String getVersion() {
-        return version;
-    }
-
-    protected void loadVersion() {
-        this.version = "SSHD-UNKNOWN";
-        try {
-            try (InputStream input = getClass().getClassLoader().getResourceAsStream("org/apache/sshd/sshd-version.properties")) {
-                Properties props = new Properties();
-                props.load(input);
-                this.version = props.getProperty("version").toUpperCase();
-            }
-        } catch (Exception e) {
-            log.warn("Unable to load version from resources. Missing org/apache/sshd/sshd-version.properties ?", e);
-        }
+        return FactoryManagerUtils.getStringProperty(VersionProperties.getVersionProperties(), "sshd-version", DEFAULT_VERSION).toUpperCase();
     }
 
     @Override

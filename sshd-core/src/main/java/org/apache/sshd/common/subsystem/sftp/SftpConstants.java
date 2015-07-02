@@ -21,7 +21,7 @@ package org.apache.sshd.common.subsystem.sftp;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SftpConstants {
+public final class SftpConstants {
     public static String SFTP_SUBSYSTEM_NAME = "sftp";
 
     public static final int SSH_FXP_INIT =             1;
@@ -220,4 +220,16 @@ public class SftpConstants {
     public static int SFTP_V4 = 4;
     public static int SFTP_V5 = 5;
     public static int SFTP_V6 = 6;
+    
+    // (Some) names of known extensions
+    public static final String EXT_VERSIONS = "versions";
+    public static final String EXT_NEWLINE = "newline";
+    public static final String EXT_VENDORID = "vendor-id";
+    public static final String EXT_SUPPORTED = "supported";
+    public static final String EXT_SUPPORTED2 = "supported2";
+    public static final String EXT_VERSELECT = "version-select";
+
+    private SftpConstants() {
+        throw new UnsupportedOperationException("No instance");
+    }
 }

@@ -1,0 +1,74 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+package org.apache.sshd.common.subsystem.sftp.extensions;
+
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+
+/**
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ */
+public abstract class AbstractParser<T> implements ExtensionParser<T> {
+    private final String name;
+
+    protected AbstractParser(String name) {
+        this.name = ValidateUtils.checkNotNullAndNotEmpty(name, "No extension name", GenericUtils.EMPTY_OBJECT_ARRAY);
+    }
+
+    @Override
+    public final String getName() {
+        return name;
+    }
+
+    @Override   // TODO in JDK-8 make this a default method
+    public T transform(byte[] input) {
+        return parse(input);
+    }
+    
+    @Override   // TODO in JDK-8 make this a default method
+    public T parse(byte[] input) {
+        return parse(input, 0, GenericUtils.length(input));
+    }
+    
+    @Override   // TODO in JDK-8 make this a default method
+    public T parse(byte[] input, int offset, int len) {
+        return parse(new ByteArrayBuffer(input, offset, len));
+    }
+    
+    protected String parseStringBytes(Buffer buffer) {
+        return parseStringBytes(buffer, StandardCharsets.UTF_8);
+    }
+
+    protected String parseStringBytes(Buffer buffer, Charset charset) {
+        int available = buffer.available();
+        if (available <= 0) {
+            return "";
+        }
+        
+        byte[] buf = new byte[available];
+        buffer.getRawBytes(buf);
+        return new String(buf, charset);
+    }
+}

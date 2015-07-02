@@ -93,23 +93,35 @@ public class BufferUtils {
     }
 
     /**
+     * Writes a 32-bit value in network order (i.e., MSB 1st)
      * @param value The 32-bit value 
-     * @param buf
-     * @return
+     * @param buf The buffer
+     * @return The number of bytes used in the buffer
+     * @throws IllegalArgumentException if not enough space available
+     * @see #putUInt(long, byte[], int, int)
      */
     public static int putUInt(long value, byte[] buf) {
         return putUInt(value, buf, 0, GenericUtils.length(buf));
     }
 
+    /**
+     * Writes a 32-bit value in network order (i.e., MSB 1st)
+     * @param value The 32-bit value 
+     * @param buf The buffer
+     * @param off The offset to write the value
+     * @param len The available space
+     * @return The number of bytes used in the buffer
+     * @throws IllegalArgumentException if not enough space available
+     */
     public static int putUInt(long value, byte[] buf, int off, int len) {
         // TODO use Integer.BYTES for JDK-8
         if (len < (Integer.SIZE / Byte.SIZE)) {
             throw new IllegalArgumentException("Not enough data for a UINT: required=" + (Integer.SIZE / Byte.SIZE) + ", available=" + len);
         }
 
-        buf[off]     = (byte) (value >> 24);
-        buf[off + 1] = (byte) (value >> 16);
-        buf[off + 2] = (byte) (value >>  8);
+        buf[off]     = (byte) ((value >> 24) & 0xFF);
+        buf[off + 1] = (byte) ((value >> 16) & 0xFF);
+        buf[off + 2] = (byte) ((value >>  8) & 0xFF);
         buf[off + 3] = (byte) (value & 0xFF);
 
         return (Integer.SIZE / Byte.SIZE);
@@ -146,5 +158,28 @@ public class BufferUtils {
             j <<= 1;
         }
         return j;
+    }
+    
+    /**
+     * Used for encodings where we don't know the data length before adding it
+     * to the buffer. The idea is to place a 32-bit &quot;placeholder&quot;,
+     * encode the data and then return back to the placeholder and update the
+     * length. The method calculates the encoded data length, moves the write
+     * position to the specified placeholder position, updates the length value
+     * and then moves the write position it back to its original value.
+     * @param buffer The {@link Buffer}
+     * @param lenPos The offset in the buffer where the length placeholder is
+     * to be update - <B>Note:</B> assumption is that the encoded data start
+     * <U>immediately</U> after the placeholder
+     * @return The amount of data that has been encoded
+     */
+    public static int updateLengthPlaceholder(Buffer buffer, int lenPos) {
+        int startPos = lenPos + (Integer.SIZE / Byte.SIZE);
+        int endPos = buffer.wpos();
+        int dataLength = endPos - startPos;
+        buffer.wpos(lenPos);
+        buffer.putInt(dataLength);
+        buffer.wpos(endPos);
+        return dataLength;
     }
 }

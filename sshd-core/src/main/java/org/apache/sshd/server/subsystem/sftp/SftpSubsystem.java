@@ -21,7 +21,6 @@ package org.apache.sshd.server.subsystem.sftp;
 import static org.apache.sshd.common.subsystem.sftp.SftpConstants.*;
 
 import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -60,6 +59,7 @@ import java.nio.file.attribute.UserPrincipal;
 import java.nio.file.attribute.UserPrincipalLookupService;
 import java.security.Principal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
@@ -77,12 +77,16 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.FactoryManagerUtils;
+import org.apache.sshd.common.config.VersionProperties;
 import org.apache.sshd.common.file.FileSystemAware;
+import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.SelectorUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
@@ -121,6 +125,29 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     public static final String MAX_PACKET_LENGTH_PROP = "sftp-max-packet-length";
         public static final int  DEFAULT_MAX_PACKET_LENGTH = 1024 * 16;
 
+    /**
+     * Allows controlling reports of which client extensions are supported
+     * (and reported via &quot;support&quot; and &quot;support2&quot; server
+     * extensions) as a comma-separate list of names. <B>Note:</B> requires
+     * overriding the {@link #executeExtendedCommand(Buffer, int, String)}
+     * command accordingly. If empty string is set then no server extensions
+     * are reported
+     * @see #DEFAULT_SUPPORTED_CLIENT_EXTENSIONS
+     */
+    public static final String CLIENT_EXTENSIONS_PROP = "sftp-client-extensions";
+        /**
+         * The default reported supported client extensions
+         */
+        public static final Set<String> DEFAULT_SUPPORTED_CLIENT_EXTENSIONS =
+                // TODO text-seek - see http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-13.txt
+                // TODO space-available - see http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt
+                // TODO home-directory - see http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt
+                Collections.unmodifiableSet(
+                        GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER,
+                                Arrays.asList(
+                                        SftpConstants.EXT_VERSELECT
+                                )));
+
     static {
         StringBuilder sb = new StringBuilder(2 * (1 + (HIGHER_SFTP_IMPL - LOWER_SFTP_IMPL)));
         for (int v = LOWER_SFTP_IMPL; v <= HIGHER_SFTP_IMPL; v++) {
@@ -142,7 +169,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
 	private ExecutorService executors;
 	private boolean shutdownExecutor;
 	private Future<?> pendingFuture;
-
+	private final byte[] workBuf = new byte[Integer.SIZE / Byte.SIZE]; // TODO in JDK-8 use Integer.BYTES
     private FileSystem fileSystem = FileSystems.getDefault();
     private Path defaultDir = fileSystem.getPath(System.getProperty("user.dir"));
 
@@ -366,6 +393,10 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         }
     }
 
+    public int getVersion() {
+        return version;
+    }
+
     public final UnsupportedAttributePolicy getUnsupportedAttributePolicy() {
         return unsupportedAttributePolicy;
     }
@@ -550,12 +581,21 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     }
 
     protected void doExtended(Buffer buffer, int id) throws IOException {
-        String extension = buffer.getString();
+        executeExtendedCommand(buffer, id, buffer.getString());
+    }
+
+    /**
+     * @param buffer The command {@link Buffer}
+     * @param id  The request id
+     * @param extension The extension name
+     * @throws IOException If failed to execute the extension
+     */
+    protected void executeExtendedCommand(Buffer buffer, int id, String extension) throws IOException {
         switch (extension) {
             case "text-seek":
                 doTextSeek(buffer, id);
                 break;
-            case "version-select":
+            case SftpConstants.EXT_VERSELECT:
                 doVersionSelect(buffer, id);
                 break;
             default:
@@ -578,27 +618,47 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     }
 
     protected void doVersionSelect(Buffer buffer, int id) throws IOException {
-        String ver = buffer.getString();
+        String proposed = buffer.getString();
+        Boolean result = validateProposedVersion(id, proposed);
+        if (result == null) {   // response sent internally
+            return;
+        } if (result.booleanValue()) {
+            version = Integer.parseInt(proposed);
+            sendStatus(id, SSH_FX_OK, "");
+        } else {
+            sendStatus(id, SSH_FX_FAILURE, "Unsupported version " + proposed);
+        }
+    }
+
+    /**
+     * @param id The request id
+     * @param proposed The proposed value
+     * @return A {@link Boolean} indicating whether to accept/reject the proposal.
+     * If {@code null} then rejection response has been sent, otherwise and
+     * appropriate response is generated
+     * @throws IOException If failed send an independent rejection response
+     */
+    protected Boolean validateProposedVersion(int id, String proposed) throws IOException {
         if (log.isDebugEnabled()) {
-            log.debug("Received SSH_FXP_EXTENDED(version-select) (version={})", Integer.valueOf(version));
+            log.debug("Received SSH_FXP_EXTENDED(version-select) (version={})", proposed);
         }
         
-        if (GenericUtils.length(ver) == 1) {
-            char digit = ver.charAt(0);
-            if ((digit >= '0') && (digit <= '9')) {
-                int value = digit - '0';
-                String all = checkVersionCompatibility(id, value, SSH_FX_FAILURE);
-                if (GenericUtils.isEmpty(all)) {    // validation failed
-                    return;
-                }
-
-                version = value;
-                sendStatus(id, SSH_FX_OK, "");
-                return;
-            }
+        if (GenericUtils.length(proposed) != 1) {
+            return Boolean.FALSE;
         }
 
-        sendStatus(id, SSH_FX_FAILURE, "Unsupported version " + ver);
+        char digit = proposed.charAt(0);
+        if ((digit < '0') || (digit > '9')) {
+            return Boolean.FALSE;
+        }
+
+        int value = digit - '0';
+        String all = checkVersionCompatibility(id, value, SSH_FX_FAILURE);
+        if (GenericUtils.isEmpty(all)) {    // validation failed
+            return null;
+        } else {
+            return Boolean.TRUE;
+        }
     }
 
     /**
@@ -631,7 +691,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
 
         if (log.isTraceEnabled()) {
             log.trace("checkVersionCompatibility(id={}) - proposed={}, available={}",
-                      new Object[] { Integer.valueOf(id), Integer.valueOf(proposed), available });
+                      Integer.valueOf(id), Integer.valueOf(proposed), available);
         }
 
         if ((proposed < low) || (proposed > hig)) {
@@ -1249,24 +1309,105 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         }
 
         buffer.clear();
+
         buffer.putByte((byte) SSH_FXP_VERSION);
         buffer.putInt(version);
+        appendExtensions(buffer, all);
 
-        // newline
-        buffer.putString("newline");
-        buffer.putString(System.getProperty("line.separator"));
+        send(buffer);
+    }
 
-        // versions
-        buffer.putString("versions");
-        buffer.putString(all);
+    protected void appendExtensions(Buffer buffer, String supportedVersions) {
+        appendVersionsExtension(buffer, supportedVersions);
+        appendNewlineExtension(buffer, System.getProperty("line.separator"));
+        appendVendorIdExtension(buffer, VersionProperties.getVersionProperties());
 
-        // TODO text-seek - see http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-13.txt
-        // TODO space-available - see http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt
-        // TODO home-directory - see http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt
+        /* TODO updateAvailableExtensions(extensions, appendAclSupportedExtension(...)
+            buffer.putString("acl-supported");
+            buffer.putInt(4);
+            // capabilities
+            buffer.putInt(0);
+        */
 
-        // supported
-        buffer.putString("supported");
-        buffer.putInt(5 * 4); // length of 5 integers
+        Collection<String> extras = getSupportedClientExtensions();
+        appendSupportedExtension(buffer, extras);
+        appendSupported2Extension(buffer, extras);
+    }
+
+    protected Collection<String> getSupportedClientExtensions() {
+        String value = FactoryManagerUtils.getString(session, CLIENT_EXTENSIONS_PROP);
+        if (value == null) {
+            return DEFAULT_SUPPORTED_CLIENT_EXTENSIONS;
+        }
+        
+        if (value.length() <= 0) {  // means don't report any extensions
+            return Collections.<String>emptyList();
+        }
+
+        String[] comps = GenericUtils.split(value, ',');
+        return Arrays.asList(comps);
+    }
+    /**
+     * Appends the &quot;versions&quot; extension to the buffer. <B>Note:</B>
+     * if overriding this method make sure you either do not append anything
+     * or use the correct extension name
+     * @param buffer The {@link Buffer} to append to
+     * @param value The recommended value
+     * @see SftpConstants#EXT_VERSIONS
+     */
+    protected void appendVersionsExtension(Buffer buffer, String value) {
+        buffer.putString(EXT_VERSIONS);
+        buffer.putString(value);
+    }
+
+    /**
+     * Appends the &quot;newline&quot; extension to the buffer. <B>Note:</B>
+     * if overriding this method make sure you either do not append anything
+     * or use the correct extension name
+     * @param buffer The {@link Buffer} to append to
+     * @param value The recommended value
+     * @see SftpConstants#EXT_NEWLINE
+     */
+    protected void appendNewlineExtension(Buffer buffer, String value) {
+        buffer.putString(EXT_NEWLINE);
+        buffer.putString(value);
+    }
+    
+    /**
+     * Appends the &quot;vendor-id&quot; extension to the buffer. <B>Note:</B>
+     * if overriding this method make sure you either do not append anything
+     * or use the correct extension name
+     * @param buffer The {@link Buffer} to append to
+     * @param versionProperties The currently available version properties
+     * @see SftpConstants#EXT_VENDORID
+     * @see <A HREF="http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt">DRAFT 09 - section 4.4</A>
+     */
+    protected void appendVendorIdExtension(Buffer buffer, Map<String,?> versionProperties) {
+        buffer.putString(EXT_VENDORID);
+        
+        // placeholder for length
+        int lenPos = buffer.wpos();
+        buffer.putInt(0);
+        buffer.putString(FactoryManagerUtils.getStringProperty(versionProperties, "groupId", getClass().getPackage().getName()));   // vendor-name
+        buffer.putString(FactoryManagerUtils.getStringProperty(versionProperties, "artifactId", getClass().getSimpleName()));       // product-name
+        buffer.putString(FactoryManagerUtils.getStringProperty(versionProperties, "version", FactoryManager.DEFAULT_VERSION));      // product-version
+        buffer.putLong(0L); // product-build-number
+        BufferUtils.updateLengthPlaceholder(buffer, lenPos);
+    }
+
+    /**
+     * Appends the &quot;supported&quot; extension to the buffer. <B>Note:</B>
+     * if overriding this method make sure you either do not append anything
+     * or use the correct extension name
+     * @param buffer The {@link Buffer} to append to
+     * @param extras The extra extensions that are available and can be reported
+     * - may be {@code null}/empty
+     */
+    protected void appendSupportedExtension(Buffer buffer, Collection<String> extras) {
+        buffer.putString(EXT_SUPPORTED);
+        
+        int lenPos = buffer.wpos();
+        buffer.putInt(0); // length placeholder
         // supported-attribute-mask
         buffer.putInt(SSH_FILEXFER_ATTR_SIZE | SSH_FILEXFER_ATTR_PERMISSIONS
                 | SSH_FILEXFER_ATTR_ACCESSTIME | SSH_FILEXFER_ATTR_CREATETIME
@@ -1281,10 +1422,26 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         buffer.putInt(0);
         // max-read-size
         buffer.putInt(0);
-
-        // supported2
-        buffer.putString("supported2");
-        buffer.putInt(8 * 4); // length of 7 integers + 2 shorts
+        // supported extensions
+        buffer.putStringList(extras);
+        
+        BufferUtils.updateLengthPlaceholder(buffer, lenPos);
+    }
+    
+    /**
+     * Appends the &quot;supported2&quot; extension to the buffer. <B>Note:</B>
+     * if overriding this method make sure you either do not append anything
+     * or use the correct extension name
+     * @param buffer The {@link Buffer} to append to
+     * @param extras The extra extensions that are available and can be reported
+     * - may be {@code null}/empty
+     * @see SftpConstants#EXT_SUPPORTED
+     */
+    protected void appendSupported2Extension(Buffer buffer, Collection<String> extras) {
+        buffer.putString(EXT_SUPPORTED2);
+        
+        int lenPos = buffer.wpos();
+        buffer.putInt(0); // length placeholder
         // supported-attribute-mask
         buffer.putInt(SSH_FILEXFER_ATTR_SIZE | SSH_FILEXFER_ATTR_PERMISSIONS
                 | SSH_FILEXFER_ATTR_ACCESSTIME | SSH_FILEXFER_ATTR_CREATETIME
@@ -1306,16 +1463,10 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         buffer.putInt(0);
         // extension-count
         buffer.putInt(0);
+        // supported extensions
+        buffer.putStringList(extras);
 
-        // TODO vendor-id see http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt
-        /*
-        buffer.putString("acl-supported");
-        buffer.putInt(4);
-        // capabilities
-        buffer.putInt(0);
-        */
-
-        send(buffer);
+        BufferUtils.updateLengthPlaceholder(buffer, lenPos);
     }
 
     protected void sendHandle(int id, String handle) throws IOException {
@@ -2135,10 +2286,11 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     }
 
     protected void send(Buffer buffer) throws IOException {
-        DataOutputStream dos = new DataOutputStream(out);
-        dos.writeInt(buffer.available());
-        dos.write(buffer.array(), buffer.rpos(), buffer.available());
-        dos.flush();
+        int len = buffer.available();
+        int used = BufferUtils.putUInt(len & 0xFFFFL, workBuf);
+        out.write(workBuf, 0, used);
+        out.write(buffer.array(), buffer.rpos(), len);
+        out.flush();
     }
 
     @Override

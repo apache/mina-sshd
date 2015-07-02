@@ -51,8 +51,6 @@ import org.apache.sshd.server.ServerFactoryManager;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ServerSessionImpl extends AbstractSession implements ServerSession {
-    public static final String  DEFAULT_SSH_VERSION_PREFIX="SSH-2.0-";
-
     protected static final long MAX_PACKETS = (1l << 31);
 
     private long maxBytes = 1024 * 1024 * 1024;   // 1 GB

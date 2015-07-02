@@ -31,6 +31,7 @@ import java.nio.channels.Channel;
 import java.nio.file.attribute.FileTime;
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -218,6 +219,11 @@ public interface SftpClient extends SubsystemClient {
     }
 
     int getVersion();
+
+    /**
+     * @return An (unmodifiable) {@link Map} of the reported server extensions.
+     */
+    Map<String,byte[]> getServerExtensions();
 
     boolean isClosing();
 

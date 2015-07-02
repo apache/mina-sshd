@@ -97,9 +97,11 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.attribute.FileTime;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -129,7 +131,8 @@ public class DefaultSftpClient extends AbstractSftpClient {
     private final Buffer receiveBuffer = new ByteArrayBuffer();
     private boolean closing;
     private int version;
-    private final Map<String, byte[]> extensions = new HashMap<>();
+    private final Map<String,byte[]> extensions = new TreeMap<String,byte[]>(String.CASE_INSENSITIVE_ORDER);
+    private final Map<String,byte[]> exposedExtensions = Collections.unmodifiableMap(extensions);
 
     public DefaultSftpClient(ClientSession clientSession) throws IOException {
         this.clientSession = clientSession;
@@ -163,6 +166,11 @@ public class DefaultSftpClient extends AbstractSftpClient {
     @Override
     public int getVersion() {
         return version;
+    }
+
+    @Override
+    public Map<String, byte[]> getServerExtensions() {
+        return exposedExtensions;
     }
 
     @Override
@@ -325,14 +333,16 @@ public class DefaultSftpClient extends AbstractSftpClient {
             buffer = messages.remove(messages.keySet().iterator().next());
 
         }
+
         int length = buffer.getInt();
-        int type = buffer.getByte();
+        int type = buffer.getByte() & 0xFF;
         int id = buffer.getInt();
         if (type == SSH_FXP_VERSION) {
             if (id < SFTP_V3) {
                 throw new SshException("Unsupported sftp version " + id);
             }
             version = id;
+
             while (buffer.available() > 0) {
                 String name = buffer.getString();
                 byte[] data = buffer.getBytes();

@@ -30,6 +30,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -188,6 +189,11 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> {
         @Override
         public int getVersion() {
             return delegate.getVersion();
+        }
+
+        @Override
+        public Map<String, byte[]> getServerExtensions() {
+            return delegate.getServerExtensions();
         }
 
         @Override

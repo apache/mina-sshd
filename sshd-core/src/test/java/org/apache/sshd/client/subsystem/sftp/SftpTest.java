@@ -36,18 +36,19 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.Map;
 import java.util.Random;
 import java.util.Vector;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.file.root.RootedFileSystemProvider;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
+import org.apache.sshd.common.subsystem.sftp.extensions.ParserUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.IoUtils;
@@ -568,6 +569,37 @@ public class SftpTest extends BaseTestSupport {
                     }
 
                     sftp.rename(file1Path, file2Path, SftpClient.CopyMode.Overwrite);
+                }
+            } finally {
+                client.stop();
+            }
+        }
+    }
+
+    @Test
+    public void testServerExtensionsDeclarations() throws Exception {
+        try(SshClient client = SshClient.setUpDefaultClient()) {
+            client.start();
+            
+            try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+                session.addPasswordIdentity(getCurrentTestName());
+                session.auth().verify(5L, TimeUnit.SECONDS);
+
+                try(SftpClient sftp = session.createSftpClient()) {
+                    Map<String,byte[]> extensions = sftp.getServerExtensions();
+                    for (String name : new String[] {
+                            SftpConstants.EXT_NEWLINE, SftpConstants.EXT_VERSIONS,
+                            // SftpConstants.EXT_VENDORID,
+                            SftpConstants.EXT_SUPPORTED, SftpConstants.EXT_SUPPORTED2
+                        }) {
+                        assertTrue("Missing extension=" + name, extensions.containsKey(name));
+                    }
+                    
+                    Map<String,?> data = ParserUtils.parse(extensions);
+                    for (Map.Entry<String,?> de : data.entrySet()) {
+                        System.out.append('\t').append(de.getKey()).append(": ").println(de.getValue());
+                    }
+                        
                 }
             } finally {
                 client.stop();
