@@ -229,6 +229,9 @@ public final class SftpConstants {
     public static final String EXT_SUPPORTED2 = "supported2";
     public static final String EXT_VERSELECT = "version-select";
     public static final String EXT_COPYFILE = "copy-file";
+    public static final String EXT_MD5HASH = "md5-hash";
+    public static final String EXT_MD5HASH_HANDLE = "md5-hash-handle";
+        public static final int MD5_QUICK_HASH_SIZE = 2048;
 
     private SftpConstants() {
         throw new UnsupportedOperationException("No instance");

@@ -60,6 +60,7 @@ import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.command.ScpCommandFactory;
+import org.apache.sshd.server.subsystem.sftp.SftpSubsystem;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 import org.apache.sshd.util.BaseTestSupport;
 import org.apache.sshd.util.BogusPasswordAuthenticator;
@@ -618,13 +619,7 @@ public class SftpTest extends BaseTestSupport {
         }
     }
 
-    private static Set<String> EXPECTED_EXTENSIONS = 
-            Collections.unmodifiableSet(
-                    GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER,
-                            Arrays.asList(
-                                    SftpConstants.EXT_VERSELECT,
-                                    SftpConstants.EXT_COPYFILE
-                            )));
+    private static Set<String> EXPECTED_EXTENSIONS = SftpSubsystem.DEFAULT_SUPPORTED_CLIENT_EXTENSIONS; 
     private static void assertSupportedExtensions(String extName, Collection<String> extensionNames) {
         assertEquals(extName + "[count]", EXPECTED_EXTENSIONS.size(), GenericUtils.size(extensionNames));
 
