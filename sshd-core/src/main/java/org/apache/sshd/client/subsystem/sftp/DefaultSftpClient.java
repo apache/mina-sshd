@@ -88,8 +88,6 @@ import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IFLNK;
 import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IFREG;
 
 import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
@@ -114,10 +112,9 @@ import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.InputStreamWithChannel;
-import org.apache.sshd.common.util.io.NoCloseInputStream;
-import org.apache.sshd.common.util.io.NoCloseOutputStream;
 import org.apache.sshd.common.util.io.OutputStreamWithChannel;
 
 /**
@@ -129,6 +126,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
     private final Map<Integer, Buffer> messages;
     private final AtomicInteger cmdId = new AtomicInteger(100);
     private final Buffer receiveBuffer = new ByteArrayBuffer();
+    private final byte[] workBuf = new byte[Integer.SIZE / Byte.SIZE];  // TODO in JDK-8 use Integer.BYTES
     private boolean closing;
     private int version;
     private final Map<String,byte[]> extensions = new TreeMap<String,byte[]>(String.CASE_INSENSITIVE_ORDER);
@@ -259,15 +257,12 @@ public class DefaultSftpClient extends AbstractSftpClient {
 
     protected int send(int cmd, Buffer buffer) throws IOException {
         int id = cmdId.incrementAndGet();
-        
-        try(DataOutputStream dos = new DataOutputStream(new NoCloseOutputStream(channel.getInvertedIn()))) {
-            dos.writeInt(5 + buffer.available());
-            dos.writeByte(cmd);
-            dos.writeInt(id);
-            dos.write(buffer.array(), buffer.rpos(), buffer.available());
-            dos.flush();
-        }
-
+        OutputStream dos = channel.getInvertedIn();
+        BufferUtils.writeInt(dos, 1 /* cmd */ + (Integer.SIZE / Byte.SIZE) /* id */ + buffer.available(), workBuf);
+        dos.write(cmd);
+        BufferUtils.writeInt(dos, id, workBuf);
+        dos.write(buffer.array(), buffer.rpos(), buffer.available());
+        dos.flush();
         return id;
     }
 
@@ -291,35 +286,37 @@ public class DefaultSftpClient extends AbstractSftpClient {
     }
 
     protected Buffer read() throws IOException {
-        try(DataInputStream dis=new DataInputStream(new NoCloseInputStream(channel.getInvertedOut()))) {
-            int length = dis.readInt();
-            if (length < 5) {
-                throw new IllegalArgumentException("Bad length: " + length);
-            }
-            Buffer buffer = new ByteArrayBuffer(length + 4);
-            buffer.putInt(length);
-            int nb = length;
-            while (nb > 0) {
-                int readLen = dis.read(buffer.array(), buffer.wpos(), nb);
-                if (readLen < 0) {
-                    throw new IllegalArgumentException("Premature EOF while read " + length + " bytes - remaining=" + nb);
-                }
-                buffer.wpos(buffer.wpos() + readLen);
-                nb -= readLen;
-            }
-
-            return buffer;
+        InputStream dis = channel.getInvertedOut();
+        int length = BufferUtils.readInt(dis, workBuf);
+        // must have at least command + length
+        // TODO in jdk-8 use Integer.BYTES
+        if (length < (1 + (Integer.SIZE / Byte.SIZE))) {
+            throw new IllegalArgumentException("Bad length: " + length);
         }
+
+        // TODO in jdk-8 use Integer.BYTES
+        Buffer buffer = new ByteArrayBuffer(length + (Integer.SIZE / Byte.SIZE));
+        buffer.putInt(length);
+        int nb = length;
+        while (nb > 0) {
+            int readLen = dis.read(buffer.array(), buffer.wpos(), nb);
+            if (readLen < 0) {
+                throw new IllegalArgumentException("Premature EOF while read " + length + " bytes - remaining=" + nb);
+            }
+            buffer.wpos(buffer.wpos() + readLen);
+            nb -= readLen;
+        }
+
+        return buffer;
     }
 
     protected void init() throws IOException {
         // Init packet
-        try(DataOutputStream dos = new DataOutputStream(new NoCloseOutputStream(channel.getInvertedIn()))) {
-            dos.writeInt(5);
-            dos.writeByte(SSH_FXP_INIT);
-            dos.writeInt(SFTP_V6);
-            dos.flush();
-        }
+        OutputStream dos = channel.getInvertedIn();
+        BufferUtils.writeInt(dos, 5 /* total length */, workBuf);
+        dos.write(SSH_FXP_INIT);
+        BufferUtils.writeInt(dos, SFTP_V6, workBuf);
+        dos.flush();
 
         Buffer buffer;
         synchronized (messages) {

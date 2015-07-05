@@ -18,7 +18,13 @@
  */
 package org.apache.sshd.common.util.buffer;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.StreamCorruptedException;
+
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.io.IoUtils;
 
 /**
  * TODO Add javadoc
@@ -60,6 +66,71 @@ public class BufferUtils {
     }
 
     /**
+     * Read a 32-bit value in network order
+     * @param input The {@link InputStream}
+     * @param buf Work buffer to use
+     * @return The read 32-bit value
+     * @throws IOException If failed to read 4 bytes or not enough room in
+     * @see #readInt(InputStream, byte[], int, int)
+     */
+    public static int readInt(InputStream input, byte[] buf) throws IOException {
+        return readInt(input, buf, 0, GenericUtils.length(buf));
+    }
+
+    /**
+     * Read a 32-bit value in network order
+     * @param input The {@link InputStream}
+     * @param buf Work buffer to use
+     * @param offset Offset in buffer to us
+     * @param len Available length - must have at least 4 bytes available
+     * @return The read 32-bit value
+     * @throws IOException If failed to read 4 bytes or not enough room in
+     * work buffer
+     * @see #readUInt(InputStream, byte[], int, int)
+     */
+    public static int readInt(InputStream input, byte[] buf, int offset, int len) throws IOException {
+        return (int) readUInt(input, buf, offset, len);
+    }
+
+    /**
+     * Read a 32-bit value in network order
+     * @param input The {@link InputStream}
+     * @param buf Work buffer to use
+     * @return The read 32-bit value
+     * @throws IOException If failed to read 4 bytes or not enough room in
+     * @see #readUInt(InputStream, byte[], int, int)
+     */
+    public static long readUInt(InputStream input, byte[] buf) throws IOException {
+        return readUInt(input, buf, 0, GenericUtils.length(buf));
+    }
+
+    /**
+     * Read a 32-bit value in network order
+     * @param input The {@link InputStream}
+     * @param buf Work buffer to use
+     * @param offset Offset in buffer to us
+     * @param len Available length - must have at least 4 bytes available
+     * @return The read 32-bit value
+     * @throws IOException If failed to read 4 bytes or not enough room in
+     * work buffer
+     * @see #getUInt(byte[], int, int)
+     */
+    public static long readUInt(InputStream input, byte[] buf, int offset, int len) throws IOException {
+        try {
+            // TODO use Integer.BYTES for JDK-8
+            if (len < (Integer.SIZE / Byte.SIZE)) {
+                throw new IllegalArgumentException("Not enough data for a UINT: required=" + (Integer.SIZE / Byte.SIZE) + ", available=" + len);
+            }
+
+            // TODO use Integer.BYTES for JDK-8
+            IoUtils.readFully(input, buf, offset, Integer.SIZE / Byte.SIZE);
+            return getUInt(buf, offset, len);
+        } catch(IllegalArgumentException e) {
+            throw new StreamCorruptedException(e.getMessage());
+        }
+    }
+
+    /**
      * @param buf A buffer holding a 32-bit unsigned integer in <B>big endian</B>
      * format. <B>Note:</B> if more than 4 bytes are available, then only the
      * <U>first</U> 4 bytes in the buffer will be used
@@ -90,6 +161,59 @@ public class BufferUtils {
              | ((buf[off + 2] <<  8) & 0x0000ff00L)
              | ((buf[off + 3]      ) & 0x000000ffL)
              ;
+    }
+
+    /**
+     * Writes a 32-bit value in network order (i.e., MSB 1st)
+     * @param value The 32-bit value 
+     * @param buf A work buffer to use - must have enough space to contain 4 bytes
+     * @throws IOException If failed to write the value or work buffer to small
+     * @see #writeInt(OutputStream, long, byte[], int, int)
+     */
+    public static void writeInt(OutputStream output, int value, byte[] buf) throws IOException {
+        writeUInt(output, value, buf, 0, GenericUtils.length(buf));
+    }
+
+    /**
+     * Writes a 32-bit value in network order (i.e., MSB 1st)
+     * @param value The 32-bit value 
+     * @param buf A work buffer to use - must have enough space to contain 4 bytes
+     * @param off The offset to write the value
+     * @param len The available space
+     * @throws IOException If failed to write the value or work buffer to small
+     * @see #writeUInt(OutputStream, long, byte[], int, int)
+     */
+    public static void writeInt(OutputStream output, int value, byte[] buf, int off, int len) throws IOException {
+        writeUInt(output, value & 0xFFFFFFFFL, buf, off, len);
+    }
+
+    /**
+     * Writes a 32-bit value in network order (i.e., MSB 1st)
+     * @param value The 32-bit value 
+     * @param buf A work buffer to use - must have enough space to contain 4 bytes
+     * @throws IOException If failed to write the value or work buffer to small
+     * @see #writeUInt(OutputStream, long, byte[], int, int)
+     */
+    public static void writeUInt(OutputStream output, long value, byte[] buf) throws IOException {
+        writeUInt(output, value, buf, 0, GenericUtils.length(buf));
+    }
+
+    /**
+     * Writes a 32-bit value in network order (i.e., MSB 1st)
+     * @param value The 32-bit value 
+     * @param buf A work buffer to use - must have enough space to contain 4 bytes
+     * @param off The offset to write the value
+     * @param len The available space
+     * @throws IOException If failed to write the value or work buffer to small
+     * @see #putUInt(long, byte[], int, int)
+     */
+    public static void writeUInt(OutputStream output, long value, byte[] buf, int off, int len) throws IOException {
+        try {
+            int writeLen = putUInt(value, buf, off, len);
+            output.write(buf, off, writeLen);
+        } catch(IllegalArgumentException e) {
+            throw new StreamCorruptedException(e.getMessage());
+        }
     }
 
     /**
