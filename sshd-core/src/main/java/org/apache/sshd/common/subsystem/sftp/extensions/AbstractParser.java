@@ -19,13 +19,8 @@
 
 package org.apache.sshd.common.subsystem.sftp.extensions;
 
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
-import org.apache.sshd.common.util.buffer.Buffer;
-import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -50,25 +45,5 @@ public abstract class AbstractParser<T> implements ExtensionParser<T> {
     @Override   // TODO in JDK-8 make this a default method
     public T parse(byte[] input) {
         return parse(input, 0, GenericUtils.length(input));
-    }
-    
-    @Override   // TODO in JDK-8 make this a default method
-    public T parse(byte[] input, int offset, int len) {
-        return parse(new ByteArrayBuffer(input, offset, len));
-    }
-    
-    protected String parseStringBytes(Buffer buffer) {
-        return parseStringBytes(buffer, StandardCharsets.UTF_8);
-    }
-
-    protected String parseStringBytes(Buffer buffer, Charset charset) {
-        int available = buffer.available();
-        if (available <= 0) {
-            return "";
-        }
-        
-        byte[] buf = new byte[available];
-        buffer.getRawBytes(buf);
-        return new String(buf, charset);
-    }
+    }   
 }

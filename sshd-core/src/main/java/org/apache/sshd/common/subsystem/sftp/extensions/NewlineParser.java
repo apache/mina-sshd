@@ -24,7 +24,6 @@ import java.nio.charset.StandardCharsets;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.extensions.NewlineParser.Newline;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 
 /**
@@ -53,11 +52,6 @@ public class NewlineParser extends AbstractParser<Newline> {
 
     public NewlineParser() {
         super(SftpConstants.EXT_NEWLINE);
-    }
-
-    @Override
-    public Newline parse(Buffer buffer) {
-        return parse(parseStringBytes(buffer));
     }
     
     @Override

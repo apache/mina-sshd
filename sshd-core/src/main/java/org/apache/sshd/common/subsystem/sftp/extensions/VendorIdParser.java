@@ -22,6 +22,7 @@ package org.apache.sshd.common.subsystem.sftp.extensions;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.extensions.VendorIdParser.VendorId;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -51,6 +52,10 @@ public class VendorIdParser extends AbstractParser<VendorId> {
     }
 
     @Override
+    public VendorId parse(byte[] input, int offset, int len) {
+        return parse(new ByteArrayBuffer(input, offset, len));
+    }
+
     public VendorId parse(Buffer buffer) {
         VendorId id = new VendorId();
         id.vendorName = buffer.getString();

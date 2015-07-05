@@ -27,7 +27,6 @@ import java.util.Collections;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.extensions.VersionsParser.Versions;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -53,11 +52,6 @@ public class VersionsParser extends AbstractParser<Versions> {
 
     public VersionsParser() {
         super(SftpConstants.EXT_VERSIONS);
-    }
-
-    @Override
-    public Versions parse(Buffer buffer) {
-        return parse(parseStringBytes(buffer));
     }
     
     @Override

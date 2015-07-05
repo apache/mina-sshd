@@ -21,7 +21,6 @@ package org.apache.sshd.common.subsystem.sftp.extensions;
 
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.util.Transformer;
-import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -29,10 +28,4 @@ import org.apache.sshd.common.util.buffer.Buffer;
 public interface ExtensionParser<T> extends NamedResource, Transformer<byte[], T> {
     T parse(byte[] input);
     T parse(byte[] input, int offset, int len);
-
-    /**
-     * @param buffer A {@link Buffer} containing the encoded extension data
-     * @return The decode extension data
-     */
-    T parse(Buffer buffer);
 }
