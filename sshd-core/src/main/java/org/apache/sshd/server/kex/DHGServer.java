@@ -81,7 +81,7 @@ public class DHGServer extends AbstractDHServerKeyExchange {
 
     @Override
     public boolean next(Buffer buffer) throws Exception {
-        byte cmd = buffer.getByte();
+        int cmd = buffer.getUByte();
         if (cmd != SshConstants.SSH_MSG_KEXDH_INIT) {
             throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED, 
                                    "Protocol error: expected packet " + SshConstants.SSH_MSG_KEXDH_INIT + ", got " + cmd);

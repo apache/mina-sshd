@@ -143,7 +143,7 @@ public class ClientTest extends BaseTestSupport {
                         return new ServerUserAuthService(session) {
                             @SuppressWarnings("synthetic-access")
                             @Override
-                            public void process(byte cmd, Buffer buffer) throws Exception {
+                            public void process(int cmd, Buffer buffer) throws Exception {
                                 authLatch.await();
                                 super.process(cmd, buffer);
                             }

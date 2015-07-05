@@ -105,7 +105,7 @@ public class ServerUserAuthService extends CloseableUtils.AbstractCloseable impl
     }
 
     @Override
-    public void process(byte cmd, Buffer buffer) throws Exception {
+    public void process(int cmd, Buffer buffer) throws Exception {
         Boolean authed = Boolean.FALSE;
 
         if (cmd == SshConstants.SSH_MSG_USERAUTH_REQUEST) {

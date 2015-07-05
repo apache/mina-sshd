@@ -91,7 +91,7 @@ public class UserAuthKeyboardInteractive extends AbstractLoggingBean implements 
             return true;
         }
 
-        byte cmd = buffer.getByte();
+        int cmd = buffer.getUByte();
         if (cmd == SSH_MSG_USERAUTH_INFO_REQUEST) {
             log.debug("Received SSH_MSG_USERAUTH_INFO_REQUEST");
             String name = buffer.getString();
@@ -107,7 +107,7 @@ public class UserAuthKeyboardInteractive extends AbstractLoggingBean implements 
             for (int i = 0; i < num; i++) {
                 // according to RFC4256: "The prompt field(s) MUST NOT be empty strings."
                 prompt[i] = buffer.getString();
-                echo[i] = (buffer.getByte() != 0);
+                echo[i] = buffer.getBoolean();
             }
             
             if (log.isDebugEnabled()) {

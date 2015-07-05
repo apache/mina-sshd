@@ -335,7 +335,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
         }
 
         int length = buffer.getInt();
-        int type = buffer.getByte() & 0xFF;
+        int type = buffer.getUByte();
         int id = buffer.getInt();
         if (type == SSH_FXP_VERSION) {
             if (id < SFTP_V3) {
@@ -364,7 +364,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
 
     protected void checkStatus(Buffer buffer) throws IOException {
         int length = buffer.getInt();
-        int type = buffer.getByte();
+        int type = buffer.getUByte();
         int id = buffer.getInt();
         if (type == SSH_FXP_STATUS) {
             int substatus = buffer.getInt();
@@ -384,7 +384,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
 
     protected String checkHandle(Buffer buffer) throws IOException {
         int length = buffer.getInt();
-        int type = buffer.getByte();
+        int type = buffer.getUByte();
         int id = buffer.getInt();
         if (type == SSH_FXP_STATUS) {
             int substatus = buffer.getInt();
@@ -404,7 +404,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
 
     protected Attributes checkAttributes(Buffer buffer) throws IOException {
         int length = buffer.getInt();
-        int type = buffer.getByte();
+        int type = buffer.getUByte();
         int id = buffer.getInt();
         if (type == SSH_FXP_STATUS) {
             int substatus = buffer.getInt();
@@ -423,7 +423,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
 
     protected String checkOneName(Buffer buffer) throws IOException {
         int length = buffer.getInt();
-        int type = buffer.getByte();
+        int type = buffer.getUByte();
         int id = buffer.getInt();
         if (type == SSH_FXP_STATUS) {
             int substatus = buffer.getInt();
@@ -475,7 +475,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
                 attrs.mtime = buffer.getInt();
             }
         } else if (version >= SFTP_V4) {
-            attrs.type = buffer.getByte();
+            attrs.type = buffer.getUByte();
             if ((flags & SSH_FILEXFER_ATTR_SIZE) != 0) {
                 attrs.flags.add(Attribute.Size);
                 attrs.size = buffer.getLong();
@@ -596,7 +596,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
                 }
             }
             buffer.putInt(flags);
-            buffer.putByte(attributes.type);
+            buffer.putByte((byte) attributes.type);
             if ((flags & SSH_FILEXFER_ATTR_SIZE) != 0) {
                 buffer.putLong(attributes.size);
             }
@@ -757,7 +757,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
 
     protected int checkData(Buffer buffer, int dstoff, byte[] dst) throws IOException {
         int length = buffer.getInt();
-        int type = buffer.getByte();
+        int type = buffer.getUByte();
         int id = buffer.getInt();
         if (type == SSH_FXP_STATUS) {
             int substatus = buffer.getInt();
@@ -836,7 +836,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
 
     protected DirEntry[] checkDir(Buffer buffer) throws IOException {
         int length = buffer.getInt();
-        int type = buffer.getByte();
+        int type = buffer.getUByte();
         int id = buffer.getInt();
         if (type == SSH_FXP_STATUS) {
             int substatus = buffer.getInt();

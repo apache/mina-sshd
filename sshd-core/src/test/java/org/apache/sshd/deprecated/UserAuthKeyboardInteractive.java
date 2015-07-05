@@ -59,7 +59,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
             session.writePacket(buffer);
             return Result.Continued;
         } else {
-            byte cmd = buffer.getByte();
+            int cmd = buffer.getUByte();
             switch (cmd) {
                 case SSH_MSG_USERAUTH_INFO_REQUEST:
                     log.debug("Received SSH_MSG_USERAUTH_INFO_REQUEST");
@@ -72,7 +72,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
                     boolean[] echo = new boolean[num];
                     for (int i = 0; i < num; i++) {
                         prompt[i] = buffer.getString();
-                        echo[i] = (buffer.getByte() != 0);
+                        echo[i] = buffer.getBoolean();
                     }
                     log.debug("Promt: {}", Arrays.toString(prompt));
                     log.debug("Echo: {}", echo);
@@ -107,7 +107,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
                     log.debug("Received SSH_MSG_USERAUTH_FAILURE");
                     return Result.Failure;
                 default:
-                    log.debug("Received unknown packet {}", Byte.valueOf(cmd));
+                    log.debug("Received unknown packet {}", Integer.valueOf(cmd));
                     return Result.Continued;
             }
         }

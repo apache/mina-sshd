@@ -328,7 +328,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     }
 
     protected void doHandleMessage(Buffer buffer) throws Exception {
-        byte cmd = buffer.getByte();
+        int cmd = buffer.getUByte();
         switch (cmd) {
             case SSH_MSG_DISCONNECT: {
                 int code = buffer.getInt();
@@ -443,7 +443,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
         checkRekey();
     }
 
-    protected void validateKexState(byte cmd, KexState expected) {
+    protected void validateKexState(int cmd, KexState expected) {
         KexState actual = kexState.get();
         if (!expected.equals(actual)) {
             throw new IllegalStateException("Received KEX command=" + cmd + " while in state=" + actual + " instead of " + expected);
@@ -778,7 +778,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
                     // Increment incoming packet sequence number
                     seqi = (seqi + 1) & 0xffffffffL;
                     // Get padding
-                    byte pad = decoderBuffer.getByte();
+                    int pad = decoderBuffer.getUByte();
                     Buffer buf;
                     int wpos = decoderBuffer.wpos();
                     // Decompress if needed

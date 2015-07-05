@@ -24,6 +24,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.CopyOption;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
@@ -47,6 +48,7 @@ import org.apache.sshd.common.util.OsUtils;
  */
 public final class IoUtils {
     public static final OpenOption[] EMPTY_OPEN_OPTIONS = new OpenOption[0];
+    public static final CopyOption[] EMPTY_COPY_OPTIONS = new CopyOption[0];
     public static final LinkOption[] EMPTY_LINK_OPTIONS = new LinkOption[0];
     private static final LinkOption[] NO_FOLLOW_OPTIONS = new LinkOption[] { LinkOption.NOFOLLOW_LINKS };
 

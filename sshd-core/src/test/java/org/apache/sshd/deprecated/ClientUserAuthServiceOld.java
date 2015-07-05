@@ -91,7 +91,7 @@ public class ClientUserAuthServiceOld extends CloseableUtils.AbstractCloseable i
     }
 
     @Override
-    public void process(byte cmd, Buffer buffer) throws Exception {
+    public void process(int cmd, Buffer buffer) throws Exception {
         if (this.authFuture.isSuccess()) {
             throw new IllegalStateException("UserAuth message delivered to authenticated client");
         } else if (this.authFuture.isDone()) {

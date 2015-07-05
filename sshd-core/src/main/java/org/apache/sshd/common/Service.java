@@ -37,10 +37,11 @@ public interface Service extends Closeable {
 
     /**
      * Service the request.
-     * @param buffer
-     * @throws Exception
+     * @param cmd The incoming command type
+     * @param buffer The {@link Buffer} containing optional command parameters
+     * @throws Exception If failed to process the command
      */
-    void process(byte cmd, Buffer buffer) throws Exception;
+    void process(int cmd, Buffer buffer) throws Exception;
 
     /**
      * Close the service.

@@ -63,7 +63,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
             session.writePacket(buffer);
             return null;
         } else {
-            byte cmd = buffer.getByte();
+            int cmd = buffer.getUByte();
             if (cmd != SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE) {
                 throw new SshException("Received unexpected message: " + cmd);
             }

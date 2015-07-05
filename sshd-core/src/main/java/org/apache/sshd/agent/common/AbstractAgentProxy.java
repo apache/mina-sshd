@@ -77,7 +77,7 @@ public abstract class AbstractAgentProxy extends AbstractLoggingBean implements 
     public List<Pair<PublicKey, String>> getIdentities() throws IOException {
         Buffer buffer = createBuffer(SSH2_AGENTC_REQUEST_IDENTITIES);
         buffer = request(prepare(buffer));
-        int type = buffer.getByte();
+        int type = buffer.getUByte();
         if (type != SSH2_AGENT_IDENTITIES_ANSWER) {
             throw new SshException("Bad agent identities answer: " + type);
         }
@@ -103,7 +103,7 @@ public abstract class AbstractAgentProxy extends AbstractLoggingBean implements 
         buffer.putInt(0);
         buffer = request(prepare(buffer));
         
-        byte responseType = buffer.getByte(); 
+        int responseType = buffer.getUByte(); 
         if (responseType != SSH2_AGENT_SIGN_RESPONSE) {
             throw new SshException("Bad signing response type: " + (responseType & 0xFF));
         }
@@ -128,7 +128,7 @@ public abstract class AbstractAgentProxy extends AbstractLoggingBean implements 
         buffer = request(prepare(buffer));
         
         int available = buffer.available();
-        byte response = (available >= 1) ? buffer.getByte() : -1;
+        int response = (available >= 1) ? buffer.getUByte() : -1;
         if ((available != 1) || (response != SSH_AGENT_SUCCESS)) {
             throw new SshException("Bad addIdentity response (" + (response & 0xFF) + ") - available=" + available);
         }
@@ -145,7 +145,7 @@ public abstract class AbstractAgentProxy extends AbstractLoggingBean implements 
         buffer = request(prepare(buffer));
 
         int available = buffer.available();
-        byte response = (available >= 1) ? buffer.getByte() : -1;
+        int response = (available >= 1) ? buffer.getUByte() : -1;
         if ((available != 1) || (response != SSH_AGENT_SUCCESS)) {
             throw new SshException("Bad removeIdentity response (" + (response & 0xFF) + ") - available=" + available);
         }
@@ -160,7 +160,7 @@ public abstract class AbstractAgentProxy extends AbstractLoggingBean implements 
         buffer = request(prepare(buffer));
 
         int available = buffer.available();
-        byte response = (available >= 1) ? buffer.getByte() : -1;
+        int response = (available >= 1) ? buffer.getUByte() : -1;
         if ((available != 1) || (response != SSH_AGENT_SUCCESS)) {
             throw new SshException("Bad removeAllIdentities response (" + (response & 0xFF) + ") - available=" + available);
         }

@@ -69,7 +69,7 @@ public class SocksProxy extends CloseableUtils.AbstractCloseable implements IoHa
         buffer.putBuffer(message);
         Proxy proxy = proxies.get(session);
         if (proxy == null) {
-            int version = buffer.getByte();
+            int version = buffer.getUByte();
             if (version == 0x04) {
                 proxy = new Socks4(session);
             } else if (version == 0x05) {
@@ -112,11 +112,11 @@ public class SocksProxy extends CloseableUtils.AbstractCloseable implements IoHa
         }
 
         protected int getUByte(Buffer buffer) {
-            return buffer.getByte() & 0xFF;
+            return buffer.getUByte();
         }
 
         protected int getUShort(Buffer buffer) {
-            return (getUByte(buffer) << 8) + getUByte(buffer);
+            return (getUByte(buffer) << Byte.SIZE) + getUByte(buffer);
         }
     }
 
@@ -132,7 +132,7 @@ public class SocksProxy extends CloseableUtils.AbstractCloseable implements IoHa
         @Override
         protected void onMessage(Buffer buffer) throws IOException {
             if (channel == null) {
-                int cmd = buffer.getByte();
+                int cmd = buffer.getUByte();
                 if (cmd != 1) {
                     throw new IllegalStateException("Unsupported socks command: " + cmd);
                 }
@@ -233,16 +233,16 @@ public class SocksProxy extends CloseableUtils.AbstractCloseable implements IoHa
                 if (version != 0x05) {
                     throw new IllegalStateException("Unexpected version: " + version);
                 }
-                int cmd = buffer.getByte();
+                int cmd = buffer.getUByte();
                 if (cmd != 1) { // establish a TCP/IP stream connection
                     throw new IllegalStateException("Unsupported socks command: " + cmd);
                 }
-                final int res = buffer.getByte();
+                final int res = buffer.getUByte();
                 if (res != 0) {
-                    log.debug("No zero reserved value: " + (res & 0x00FF));
+                    log.debug("No zero reserved value: " + res);
                 }
 
-                int type = buffer.getByte();
+                int type = buffer.getUByte();
                 String host;
                 if (type == 0x01) {
                     host = Integer.toString(getUByte(buffer)) + "."

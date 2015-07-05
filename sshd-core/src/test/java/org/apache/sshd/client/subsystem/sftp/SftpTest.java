@@ -34,10 +34,12 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.Vector;
 import java.util.concurrent.TimeUnit;
 
@@ -49,6 +51,9 @@ import org.apache.sshd.common.file.root.RootedFileSystemProvider;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.extensions.ParserUtils;
+import org.apache.sshd.common.subsystem.sftp.extensions.Supported2Parser.Supported2;
+import org.apache.sshd.common.subsystem.sftp.extensions.SupportedParser.Supported;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.IoUtils;
@@ -589,7 +594,7 @@ public class SftpTest extends BaseTestSupport {
                     Map<String,byte[]> extensions = sftp.getServerExtensions();
                     for (String name : new String[] {
                             SftpConstants.EXT_NEWLINE, SftpConstants.EXT_VERSIONS,
-                            // SftpConstants.EXT_VENDORID,
+                            SftpConstants.EXT_VENDORID,
                             SftpConstants.EXT_SUPPORTED, SftpConstants.EXT_SUPPORTED2
                         }) {
                         assertTrue("Missing extension=" + name, extensions.containsKey(name));
@@ -597,13 +602,34 @@ public class SftpTest extends BaseTestSupport {
                     
                     Map<String,?> data = ParserUtils.parse(extensions);
                     for (Map.Entry<String,?> de : data.entrySet()) {
-                        System.out.append('\t').append(de.getKey()).append(": ").println(de.getValue());
+                        String extName = de.getKey();
+                        Object extValue = de.getValue();
+                        System.out.append('\t').append(extName).append(": ").println(extValue);
+                        if (SftpConstants.EXT_SUPPORTED.equalsIgnoreCase(extName)) {
+                            assertSupportedExtensions(extName, ((Supported) extValue).extensionNames);
+                        } else if (SftpConstants.EXT_SUPPORTED2.equalsIgnoreCase(extName)) {
+                            assertSupportedExtensions(extName, ((Supported2) extValue).extensionNames);
+                        }
                     }
-                        
                 }
             } finally {
                 client.stop();
             }
+        }
+    }
+
+    private static Set<String> EXPECTED_EXTENSIONS = 
+            Collections.unmodifiableSet(
+                    GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER,
+                            Arrays.asList(
+                                    SftpConstants.EXT_VERSELECT,
+                                    SftpConstants.EXT_COPYFILE
+                            )));
+    private static void assertSupportedExtensions(String extName, Collection<String> extensionNames) {
+        assertEquals(extName + "[count]", EXPECTED_EXTENSIONS.size(), GenericUtils.size(extensionNames));
+
+        for (String name : EXPECTED_EXTENSIONS) {
+            assertTrue(extName + " - missing " + name, extensionNames.contains(name));
         }
     }
 

@@ -155,7 +155,7 @@ public abstract class AbstractConnectionService extends CloseableUtils.AbstractI
     }
 
     @Override
-    public void process(byte cmd, Buffer buffer) throws Exception {
+    public void process(int cmd, Buffer buffer) throws Exception {
         switch (cmd) {
             case SSH_MSG_CHANNEL_OPEN:
                 channelOpen(buffer);
@@ -320,7 +320,7 @@ public abstract class AbstractConnectionService extends CloseableUtils.AbstractI
         Channel channel = channels.get(Integer.valueOf(recipient));
         if (channel == null) {
             buffer.rpos(buffer.rpos() - 5);
-            byte cmd = buffer.getByte();
+            int cmd = buffer.getUByte();
             throw new SshException("Received " + cmd + " on unknown channel " + recipient);
         }
         return channel;

@@ -50,7 +50,7 @@ public class UserAuthPassword extends AbstractUserAuth {
             session.writePacket(buffer);
             return Result.Continued;
         } else {
-            byte cmd = buffer.getByte();
+            int cmd = buffer.getUByte();
             if (cmd == SshConstants.SSH_MSG_USERAUTH_SUCCESS) {
                 log.debug("Received SSH_MSG_USERAUTH_SUCCESS");
                 return Result.Success;

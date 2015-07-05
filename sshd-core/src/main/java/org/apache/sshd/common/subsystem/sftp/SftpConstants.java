@@ -228,6 +228,7 @@ public final class SftpConstants {
     public static final String EXT_SUPPORTED = "supported";
     public static final String EXT_SUPPORTED2 = "supported2";
     public static final String EXT_VERSELECT = "version-select";
+    public static final String EXT_COPYFILE = "copy-file";
 
     private SftpConstants() {
         throw new UnsupportedOperationException("No instance");

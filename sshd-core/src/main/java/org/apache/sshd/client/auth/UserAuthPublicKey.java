@@ -114,7 +114,7 @@ public class UserAuthPublicKey extends AbstractLoggingBean implements UserAuth {
             return false;
         }
 
-        byte cmd = buffer.getByte();
+        int cmd = buffer.getUByte();
         if (cmd == SshConstants.SSH_MSG_USERAUTH_PK_OK) {
             PublicKey key = current.getPublicKey();
             String algo = KeyUtils.getKeyType(key);

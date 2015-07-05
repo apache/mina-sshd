@@ -92,7 +92,7 @@ public class UserAuthPublicKey extends AbstractUserAuth {
                 throw (IOException) new IOException("Error performing public key authentication").initCause(e);
             }
         } else {
-            byte cmd = buffer.getByte();
+            int cmd = buffer.getUByte();
             if (cmd == SshConstants.SSH_MSG_USERAUTH_SUCCESS) {
                 log.debug("Received SSH_MSG_USERAUTH_SUCCESS");
                 return Result.Success;
@@ -100,7 +100,7 @@ public class UserAuthPublicKey extends AbstractUserAuth {
                 log.debug("Received SSH_MSG_USERAUTH_FAILURE");
                 return Result.Failure;
             } else {
-                log.debug("Received unknown packet {}", Byte.valueOf(cmd));
+                log.debug("Received unknown packet {}", Integer.valueOf(cmd));
                 // TODO: check packets
                 return Result.Continued;
             }

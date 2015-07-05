@@ -43,7 +43,11 @@ import java.security.spec.ECPublicKeySpec;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPrivateCrtKeySpec;
 import java.security.spec.RSAPublicKeySpec;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Objects;
 
 import org.apache.sshd.common.SshException;
@@ -104,11 +108,25 @@ public abstract class Buffer implements Readable {
        Read methods
      ======================*/
 
+    public int getUByte() {
+        return getByte() & 0xFF;
+    }
+
     public byte getByte() {
         // TODO use Byte.BYTES for JDK-8
         ensureAvailable(Byte.SIZE / Byte.SIZE);
         getRawBytes(workBuf, 0, Byte.SIZE / Byte.SIZE);
         return workBuf[0];
+    }
+
+    public short getShort() {
+        // TODO use Short.BYTES for JDK-8
+        ensureAvailable(Short.SIZE / Byte.SIZE);
+        getRawBytes(workBuf, 0, Short.SIZE / Byte.SIZE);
+        short v = (short) (((workBuf[1] << Byte.SIZE) & 0xFF00)
+                         | ((workBuf[0] ) & 0xF))
+                ;
+        return v;
     }
 
     public int getInt() {
@@ -146,6 +164,89 @@ public abstract class Buffer implements Readable {
         return getString(StandardCharsets.UTF_8);
     }
 
+    /**
+     * @param usePrependedLength If {@code true} then there is a 32-bit
+     * value indicating the number of strings to read. Otherwise, the
+     * method will use a &quot;greedy&quot; reading of strings while more
+     * data available
+     * @return A {@link Collection} of the read strings
+     * @see #getStringList(boolean, Charset)
+     */
+    public Collection<String> getStringList(boolean usePrependedLength) {
+        return getStringList(usePrependedLength, StandardCharsets.UTF_8);
+    }
+
+    /**
+     * @param usePrependedLength If {@code true} then there is a 32-bit
+     * value indicating the number of strings to read. Otherwise, the
+     * method will use a &quot;greedy&quot; reading of strings while more
+     * data available
+     * @param charset The {@link Charset} to use for the string
+     * @return A {@link Collection} of the read strings
+     * @see {@link #getStringList(int, Charset)}
+     * @see {@link #getAvailableStrings()} 
+     */
+    public Collection<String> getStringList(boolean usePrependedLength, Charset charset) {
+        if (usePrependedLength) {
+            int count = getInt();
+            return getStringList(count, charset);
+        } else {
+            return getAvailableStrings(charset);
+        }
+    }
+
+    /**
+     * @return The remaining data as a list of strings
+     * @see #getAvailableStrings(Charset)
+     */
+    public Collection<String> getAvailableStrings() {
+        return getAvailableStrings(StandardCharsets.UTF_8);
+    }
+
+    /**
+     * @param charset The {@link Charset} to use for the strings
+     * @return The remaining data as a list of strings
+     * @see #available()
+     * @see #getString(Charset)
+     */
+    public Collection<String> getAvailableStrings(Charset charset) {
+        Collection<String> list = new LinkedList<String>();
+        while(available() > 0) {
+            String s = getString(charset);
+            list.add(s);
+        }
+        
+        return list;
+    }
+
+    /**
+     * @param count The <U>exact</V> number of strings to read - can be zero
+     * @return A {@link List} with the specified number of strings
+     * @see #getStringList(int, Charset)
+     */
+    public List<String> getStringList(int count) {
+        return getStringList(count, StandardCharsets.UTF_8);
+    }
+
+    /**
+     * @param count The <U>exact</V> number of strings to read - can be zero
+     * @param charset The {@link Charset} of the strings
+     * @return A {@link List} with the specified number of strings
+     */
+    public List<String> getStringList(int count, Charset charset) {
+        if (count == 0) {
+            return Collections.emptyList();
+        }
+        
+        List<String> list = new ArrayList<String>(count);
+        for (int index = 0; index < count; index++) {
+            String s = getString(charset);
+            list.add(s);
+        }
+        
+        return list;
+    }
+    
     public abstract String getString(Charset charset);
 
     public BigInteger getMPInt() {
@@ -386,22 +487,33 @@ public abstract class Buffer implements Readable {
     }
 
     /**
-     * Encodes the {@link Objects#toString(Object)} value of each member
-     * @param objects The objects to be encoded in the buffer
-     * @see #putStringList(Collection, Charset)
+     * Encodes the {@link Objects#toString(Object)} value of each member.
+     * @param objects The objects to be encoded in the buffer - OK if
+     * {@code null}/empty
+     * @param prependLength If {@code true} then the list is preceded by
+     * a 32-bit count of the number of members in the list 
+     * @see #putStringList(Collection, Charset, boolean)
      */
-    public void putStringList(Collection<?> objects) {
-        putStringList(objects, StandardCharsets.UTF_8);
+    public void putStringList(Collection<?> objects, boolean prependLength) {
+        putStringList(objects, StandardCharsets.UTF_8, prependLength);
     }
 
     /**
      * Encodes the {@link Objects#toString(Object)} value of each member
-     * @param objects The objects to be encoded in the buffer
+     * @param objects The objects to be encoded in the buffer - OK if
+     * {@code null}/empty
      * @param charset The {@link Charset} to use for encoding
+     * @param prependLength If {@code true} then the list is preceded by
+     * a 32-bit count of the number of members in the list 
      * @see #putString(String, Charset)
      */
-    public void putStringList(Collection<?> objects, Charset charset) {
-        if (GenericUtils.isEmpty(objects)) {
+    public void putStringList(Collection<?> objects, Charset charset, boolean prependLength) {
+        int numObjects = GenericUtils.size(objects);
+        if (prependLength) {
+            putInt(numObjects);
+        }
+
+        if (numObjects <= 0) {
             return;
         }
         

@@ -40,7 +40,9 @@ public final class ParserUtils {
                     Arrays.<ExtensionParser<?>>asList(
                             VendorIdParser.INSTANCE,
                             NewlineParser.INSTANCE,
-                            VersionsParser.INSTANCE
+                            VersionsParser.INSTANCE,
+                            SupportedParser.INSTANCE,
+                            Supported2Parser.INSTANCE
                     ));
 
     private static final Map<String,ExtensionParser<?>> parsersMap = new TreeMap<String,ExtensionParser<?>>(String.CASE_INSENSITIVE_ORDER) {

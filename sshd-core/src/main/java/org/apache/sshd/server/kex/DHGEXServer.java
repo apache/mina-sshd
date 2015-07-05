@@ -95,7 +95,7 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
 
     @Override
     public boolean next(Buffer buffer) throws Exception {
-        byte cmd = buffer.getByte();
+        int cmd = buffer.getUByte();
 
         if (cmd == SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST_OLD && expected == SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST) {
             log.debug("Received SSH_MSG_KEX_DH_GEX_REQUEST_OLD");

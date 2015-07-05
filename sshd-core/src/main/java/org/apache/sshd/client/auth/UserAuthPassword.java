@@ -75,7 +75,7 @@ public class UserAuthPassword extends AbstractLoggingBean implements UserAuth {
             }
             return false;
         }
-        byte cmd = buffer.getByte();
+        int cmd = buffer.getUByte();
         if (cmd == SshConstants.SSH_MSG_USERAUTH_PASSWD_CHANGEREQ) {
             String prompt = buffer.getString();
             String lang = buffer.getString();

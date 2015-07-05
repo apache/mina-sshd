@@ -76,7 +76,7 @@ public abstract class AbstractAgentClient extends AbstractLoggingBean {
     }
 
     protected void process(Buffer req, Buffer rep) throws Exception {
-        int cmd = req.getByte();
+        int cmd = req.getUByte();
         switch (cmd) {
             case SSH2_AGENTC_REQUEST_IDENTITIES: {
                 List<Pair<PublicKey,String>> keys = agent.getIdentities();

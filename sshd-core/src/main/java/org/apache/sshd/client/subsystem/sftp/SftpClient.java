@@ -90,7 +90,7 @@ public interface SftpClient extends SubsystemClient {
     public static class Attributes {
         public final Set<Attribute> flags = EnumSet.noneOf(Attribute.class);
         public long size;
-        public byte type;
+        public int type;
         public int uid;
         public int gid;
         public int perms;

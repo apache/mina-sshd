@@ -96,7 +96,7 @@ public class UserAuthAgent extends AbstractUserAuth {
                 return Result.Failure;
             }
         } else {
-            byte cmd = buffer.getByte();
+            int cmd = buffer.getUByte();
             if (cmd == SshConstants.SSH_MSG_USERAUTH_SUCCESS) {
                 log.info("Received SSH_MSG_USERAUTH_SUCCESS");
                 agent.close();
@@ -112,7 +112,7 @@ public class UserAuthAgent extends AbstractUserAuth {
                 }
             } else {
                 // TODO: check packets
-                log.info("Received unknown packet: {}", Byte.valueOf(cmd));
+                log.info("Received unknown packet: {}", Integer.valueOf(cmd));
                 return Result.Continued;
             }
         }

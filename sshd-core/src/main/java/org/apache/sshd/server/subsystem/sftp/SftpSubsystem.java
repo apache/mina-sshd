@@ -145,7 +145,8 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                 Collections.unmodifiableSet(
                         GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER,
                                 Arrays.asList(
-                                        SftpConstants.EXT_VERSELECT
+                                        SftpConstants.EXT_VERSELECT,
+                                        SftpConstants.EXT_COPYFILE
                                 )));
 
     static {
@@ -497,7 +498,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
 
     protected void process(Buffer buffer) throws IOException {
         int length = buffer.getInt();
-        int type = buffer.getByte();
+        int type = buffer.getUByte();
         int id = buffer.getInt();
         if (log.isDebugEnabled()) {
             log.debug("process(length={}, type={}, id={})",
@@ -597,6 +598,9 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                 break;
             case SftpConstants.EXT_VERSELECT:
                 doVersionSelect(buffer, id);
+                break;
+            case SftpConstants.EXT_COPYFILE:
+                doCopyFile(buffer, id);
                 break;
             default:
                 log.info("Received unsupported SSH_FXP_EXTENDED({})", extension);
@@ -819,17 +823,42 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                        oldPath, newPath, Integer.toHexString(flags));
         }
 
+        List<CopyOption> opts = new ArrayList<>();
+        if ((flags & SSH_FXP_RENAME_ATOMIC) != 0) {
+            opts.add(StandardCopyOption.ATOMIC_MOVE);
+        }
+        if ((flags & SSH_FXP_RENAME_OVERWRITE) != 0) {
+            opts.add(StandardCopyOption.REPLACE_EXISTING);
+        }
         try {
-            List<CopyOption> opts = new ArrayList<>();
-            if ((flags & SSH_FXP_RENAME_ATOMIC) != 0) {
-                opts.add(StandardCopyOption.ATOMIC_MOVE);
-            }
-            if ((flags & SSH_FXP_RENAME_OVERWRITE) != 0) {
-                opts.add(StandardCopyOption.REPLACE_EXISTING);
-            }
             Path o = resolveFile(oldPath);
             Path n = resolveFile(newPath);
             Files.move(o, n, opts.toArray(new CopyOption[opts.size()]));
+            sendStatus(id, SSH_FX_OK, "");
+        } catch (IOException e) {
+            sendStatus(id, e);
+        }
+    }
+
+    // see https://tools.ietf.org/html/draft-ietf-secsh-filexfer-extensions-00#section-6
+    protected void doCopyFile(Buffer buffer, int id) throws IOException {
+        String srcFile = buffer.getString();
+        String dstFile = buffer.getString();
+        boolean overwriteDestination = buffer.getBoolean();
+        if (log.isDebugEnabled()) {
+            log.debug("SSH_FXP_EXTENDED[{}] (src={}, dst={}, overwrite=0x{})",
+                       SftpConstants.EXT_COPYFILE, srcFile, dstFile, Boolean.valueOf(overwriteDestination));
+        }
+        
+        CopyOption[] opts = overwriteDestination
+                ? new CopyOption[] { StandardCopyOption.REPLACE_EXISTING }
+                : IoUtils.EMPTY_COPY_OPTIONS
+                ;
+
+        try {
+            Path src = resolveFile(srcFile);
+            Path dst = resolveFile(dstFile);
+            Files.copy(src, dst, opts);
             sendStatus(id, SSH_FX_OK, "");
         } catch (IOException e) {
             sendStatus(id, e);
@@ -877,7 +906,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                 // Read control byte
                 int control = 0;
                 if (buffer.available() > 0) {
-                    control = buffer.getByte();
+                    control = buffer.getUByte();
                 }
                 List<String> paths = new ArrayList<>();
                 while (buffer.available() > 0) {
@@ -1423,7 +1452,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         // max-read-size
         buffer.putInt(0);
         // supported extensions
-        buffer.putStringList(extras);
+        buffer.putStringList(extras, false);
         
         BufferUtils.updateLengthPlaceholder(buffer, lenPos);
     }
@@ -1436,6 +1465,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
      * @param extras The extra extensions that are available and can be reported
      * - may be {@code null}/empty
      * @see SftpConstants#EXT_SUPPORTED
+     * @see <A HREF="https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#page-10">DRAFT 13 section 5.4</A>
      */
     protected void appendSupported2Extension(Buffer buffer, Collection<String> extras) {
         buffer.putString(EXT_SUPPORTED2);
@@ -1459,12 +1489,10 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         buffer.putShort(0);
         // supported-block-vector
         buffer.putShort(0);
-        // attrib-extension-count
-        buffer.putInt(0);
-        // extension-count
-        buffer.putInt(0);
-        // supported extensions
-        buffer.putStringList(extras);
+        // attrib-extension-count + attributes name
+        buffer.putStringList(Collections.<String>emptyList(), true);
+        // extension-count + supported extensions
+        buffer.putStringList(extras, true);
 
         BufferUtils.updateLengthPlaceholder(buffer, lenPos);
     }
@@ -2044,7 +2072,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         Map<String, Object> attrs = new HashMap<>();
         int flags = buffer.getInt();
         if (version >= SFTP_V4) {
-            byte type = buffer.getByte();
+            int type = buffer.getUByte();
             switch (type) {
                 case SSH_FILEXFER_TYPE_REGULAR:
                     attrs.put("isRegular", Boolean.TRUE);

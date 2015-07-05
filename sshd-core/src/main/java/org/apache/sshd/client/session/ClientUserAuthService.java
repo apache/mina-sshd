@@ -115,7 +115,7 @@ public class ClientUserAuthService extends CloseableUtils.AbstractCloseable impl
     }
 
     @Override
-    public void process(byte cmd, Buffer buffer) throws Exception {
+    public void process(int cmd, Buffer buffer) throws Exception {
         if (this.authFuture.isSuccess()) {
             throw new IllegalStateException("UserAuth message delivered to authenticated client");
         } else if (this.authFuture.isDone()) {
@@ -143,7 +143,7 @@ public class ClientUserAuthService extends CloseableUtils.AbstractCloseable impl
      * @throws java.io.IOException
      */
     private void processUserAuth(Buffer buffer) throws Exception {
-        byte cmd = buffer.getByte();
+        int cmd = buffer.getUByte();
         if (cmd == SshConstants.SSH_MSG_USERAUTH_SUCCESS) {
             log.info("Received SSH_MSG_USERAUTH_SUCCESS");
             log.debug("Succeeded with {}", userAuth);
