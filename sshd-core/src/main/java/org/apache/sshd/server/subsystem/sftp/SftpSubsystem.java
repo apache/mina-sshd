@@ -178,7 +178,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
 	private final byte[] workBuf = new byte[Integer.SIZE / Byte.SIZE]; // TODO in JDK-8 use Integer.BYTES
     private FileSystem fileSystem = FileSystems.getDefault();
     private Path defaultDir = fileSystem.getPath(System.getProperty("user.dir"));
-
+    private long requestsCount;
     private int version;
     private final Map<String, byte[]> extensions = new HashMap<>();
     private final Map<String, Handle> handles = new HashMap<>();
@@ -591,6 +591,10 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                 log.warn("Unknown command type received: {}", Integer.valueOf(type));
                 sendStatus(id, SSH_FX_OP_UNSUPPORTED, "Command " + type + " is unsupported or not implemented");
         }
+
+        if (type != SSH_FXP_INIT) {
+            requestsCount++;
+        }
     }
 
     protected void doExtended(Buffer buffer, int id) throws IOException {
@@ -774,17 +778,33 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             sendStatus(id, e);
         }
     }
-    
+
     protected void doVersionSelect(Buffer buffer, int id) throws IOException {
+        /*
+         * The 'version-select' MUST be the first request from the client to the
+         * server; if it is not, the server MUST fail the request and close the
+         * channel.
+         */
+        if (requestsCount > 0L) {
+           sendStatus(id, SSH_FX_FAILURE, "Version selection not the 1st request");
+           session.close(true);
+           return;
+        }
+
         String proposed = buffer.getString();
         Boolean result = validateProposedVersion(id, proposed);
+        /*
+         * "MUST then close the channel without processing any further requests"
+         */
         if (result == null) {   // response sent internally
+            session.close(true);
             return;
         } if (result.booleanValue()) {
             version = Integer.parseInt(proposed);
             sendStatus(id, SSH_FX_OK, "");
         } else {
             sendStatus(id, SSH_FX_FAILURE, "Unsupported version " + proposed);
+            session.close(true);
         }
     }
 

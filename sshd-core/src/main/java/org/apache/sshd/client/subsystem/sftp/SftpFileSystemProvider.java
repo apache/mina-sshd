@@ -110,11 +110,16 @@ public class SftpFileSystemProvider extends FileSystemProvider {
                             )));
 
     private final SshClient client;
+    private final SftpVersionSelector selector;
     private final Map<String, SftpFileSystem> fileSystems = new HashMap<String, SftpFileSystem>();
     protected final Logger log;
 
     public SftpFileSystemProvider() {
-        this(null);
+        this((SshClient) null);
+    }
+
+    public SftpFileSystemProvider(SftpVersionSelector selector) {
+        this(null, selector);
     }
 
     /**
@@ -124,7 +129,12 @@ public class SftpFileSystemProvider extends FileSystemProvider {
      * @see SshClient#setUpDefaultClient()
      */
     public SftpFileSystemProvider(SshClient client) {
+        this(client, SftpVersionSelector.CURRENT);
+    }
+
+    public SftpFileSystemProvider(SshClient client, SftpVersionSelector selector) {
         this.log = LoggerFactory.getLogger(getClass());
+        this.selector = ValidateUtils.checkNotNull(selector, "No SFTP version selector provided", GenericUtils.EMPTY_OBJECT_ARRAY);
         if (client == null) {
             // TODO: make this configurable using system properties
             client = SshClient.setUpDefaultClient();
@@ -136,6 +146,10 @@ public class SftpFileSystemProvider extends FileSystemProvider {
     @Override
     public String getScheme() {
         return SftpConstants.SFTP_SUBSYSTEM_NAME;
+    }
+
+    public final SftpVersionSelector getSftpVersionSelector() {
+        return selector;
     }
 
     @Override // NOTE: co-variant return
@@ -168,7 +182,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
                 session.addPasswordIdentity(password);
                 session.auth().verify(FactoryManagerUtils.getLongProperty(env, AUTH_TIME_PROP_NAME, DEFAULT_AUTH_TIME));
 
-                fileSystem = new SftpFileSystem(this, id, session);
+                fileSystem = new SftpFileSystem(this, id, session, getSftpVersionSelector());
                 fileSystems.put(id, fileSystem);
             } catch(Exception e) {
                 if (session != null) {
@@ -207,7 +221,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
                 throw new FileSystemAlreadyExistsException(id);
             }
 
-            fileSystem = new SftpFileSystem(this, id, session);
+            fileSystem = new SftpFileSystem(this, id, session, getSftpVersionSelector());
             fileSystems.put(id, fileSystem);
         }
         

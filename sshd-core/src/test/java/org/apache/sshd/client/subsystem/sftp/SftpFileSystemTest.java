@@ -47,8 +47,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.client.SshClient;
+import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.file.root.RootedFileSystemProvider;
@@ -111,11 +114,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
     }
 
     @Test
-    public void testFileSystem() throws IOException {
-        Path targetPath = detectTargetFolder().toPath();
-        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
-        Utils.deleteRecursive(lclSftp);
-
+    public void testFileSystem() throws Exception {
         try(FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(),
                 new TreeMap<String,Object>() {
                     private static final long serialVersionUID = 1L;    // we're not serializing it
@@ -125,106 +124,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
                         put(SftpFileSystemProvider.WRITE_BUFFER_PROP_NAME, Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE));
                     }
             })) {
-
-            Iterable<Path> rootDirs = fs.getRootDirectories();
-            for (Path root : rootDirs) {
-                String  rootName = root.toString();
-                try (DirectoryStream<Path> ds = Files.newDirectoryStream(root)) {
-                    for (Path child : ds) {
-                        System.out.append('\t').append('[').append(rootName).append("] ").println(child);
-                    }
-                } catch(IOException | RuntimeException e) {
-                    // TODO on Windows one might get share problems for *.sys files
-                    // e.g. "C:\hiberfil.sys: The process cannot access the file because it is being used by another process"
-                    // for now, Windows is less of a target so we are lenient with it
-                    if (OsUtils.isWin32()) {
-                        System.err.println(e.getClass().getSimpleName() + " while accessing children of root=" + root + ": " + e.getMessage());
-                    } else {
-                        throw e;
-                    }
-                }
-            }
-
-            Path current = fs.getPath(".").toRealPath().normalize();
-            System.out.append("CWD: ").println(current);
-
-            Path parentPath = targetPath.getParent();
-            Path clientFolder = lclSftp.resolve("client");
-            String remFile1Path = Utils.resolveRelativeRemotePath(parentPath, clientFolder.resolve(getCurrentTestName() + "-1.txt"));
-            Path file1 = fs.getPath(remFile1Path);
-            Files.createDirectories(file1.getParent());
-
-            String  expected="Hello world: " + getCurrentTestName();
-            {
-                Files.write(file1, expected.getBytes());
-                String buf = new String(Files.readAllBytes(file1));
-                assertEquals("Mismatched read test data", expected, buf);
-            }
-    
-            String remFile2Path = Utils.resolveRelativeRemotePath(parentPath, clientFolder.resolve(getCurrentTestName() + "-2.txt"));
-            Path file2 = fs.getPath(remFile2Path);
-            String remFile3Path = Utils.resolveRelativeRemotePath(parentPath, clientFolder.resolve(getCurrentTestName() + "-3.txt"));
-            Path file3 = fs.getPath(remFile3Path);
-            try {
-                Files.move(file2, file3);
-                fail("Unexpected success in moving " + file2 + " => " + file3);
-            } catch (NoSuchFileException e) {
-                // expected
-            }
-
-            Files.write(file2, "h".getBytes());
-            try {
-                Files.move(file1, file2);
-                fail("Unexpected success in moving " + file1 + " => " + file2);
-            } catch (FileAlreadyExistsException e) {
-                // expected
-            }
-            Files.move(file1, file2, StandardCopyOption.REPLACE_EXISTING);
-            Files.move(file2, file1);
-    
-            Map<String, Object> attrs = Files.readAttributes(file1, "*");
-            System.out.append(file1.toString()).append(" attributes: ").println(attrs);
-    
-            // TODO: symbolic links only work for absolute files
-    //        Path link = fs.getPath("target/sftp/client/test2.txt");
-    //        Files.createSymbolicLink(link, link.relativize(file));
-    //        assertTrue(Files.isSymbolicLink(link));
-    //        assertEquals("test.txt", Files.readSymbolicLink(link).toString());
-    
-            // TODO there are many issues with Windows and symbolic links - for now they are of a lesser interest
-            if (OsUtils.isUNIX()) {
-                Path link = fs.getPath(remFile2Path);
-                Path linkParent = link.getParent();
-                Path relPath = linkParent.relativize(file1);
-                Files.createSymbolicLink(link, relPath);
-                assertTrue("Not a symbolic link: " + link, Files.isSymbolicLink(link));
-
-                Path symLink = Files.readSymbolicLink(link);
-                assertEquals("mismatched symbolic link name", relPath.toString(), symLink.toString());
-                Files.delete(link);
-            }
-    
-            attrs = Files.readAttributes(file1, "*", LinkOption.NOFOLLOW_LINKS);
-            System.out.append(file1.toString()).append(" no-follow attributes: ").println(attrs);
-    
-            assertEquals("Mismatched symlink data", expected, new String(Files.readAllBytes(file1)));
-    
-            try (FileChannel channel = FileChannel.open(file1)) {
-                try (FileLock lock = channel.lock()) {
-                    System.out.println("Locked " + lock.toString());
-    
-                    try (FileChannel channel2 = FileChannel.open(file1)) {
-                        try (FileLock lock2 = channel2.lock()) {
-                            System.out.println("Locked " + lock2.toString());
-                            fail("Unexpected success in re-locking " + file1);
-                        } catch (OverlappingFileLockException e) {
-                            // expected
-                        }
-                    }
-                }
-            }
-    
-            Files.delete(file1);
+            testFileSystem(fs);
         }
     }
 
@@ -357,6 +257,161 @@ public class SftpFileSystemTest extends BaseTestSupport {
                 }
             }
         }        
+    }
+
+    @Test
+    public void testSftpVersionSelector() throws Exception {
+        final AtomicInteger selected = new AtomicInteger(-1);
+        SftpVersionSelector selector = new SftpVersionSelector() {
+                @Override
+                public int selectVersion(int current, List<Integer> available) {
+                    int numAvailable = GenericUtils.size(available);
+                    Integer maxValue = null;
+                    if (numAvailable == 1) {
+                        maxValue = available.get(0);
+                    } else {
+                        for (Integer v : available) {
+                            if (v.intValue() == current) {
+                                continue;
+                            }
+                            
+                            if ((maxValue == null) || (maxValue.intValue() < v.intValue())) {
+                                maxValue = v;
+                            }
+                        }
+                    }
+
+                    selected.set(maxValue.intValue());
+                    return selected.get();
+                }
+            };
+        try(SshClient client = SshClient.setUpDefaultClient()) {
+            client.start();
+            
+            try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+                session.addPasswordIdentity(getCurrentTestName());
+                session.auth().verify(5L, TimeUnit.SECONDS);
+
+                try(FileSystem fs = session.createSftpFileSystem(selector)) {
+                    assertTrue("Not an SftpFileSystem", fs instanceof SftpFileSystem);
+                    
+                    try(SftpClient sftp = ((SftpFileSystem) fs).getClient()) {
+                        assertEquals("Mismatched negotiated version", selected.get(), sftp.getVersion());
+                    }
+
+                    testFileSystem(fs);
+                }
+            } finally {
+                client.stop();
+            }
+        }
+
+    }
+    
+    private void testFileSystem(FileSystem fs) throws Exception {
+        Iterable<Path> rootDirs = fs.getRootDirectories();
+        for (Path root : rootDirs) {
+            String  rootName = root.toString();
+            try (DirectoryStream<Path> ds = Files.newDirectoryStream(root)) {
+                for (Path child : ds) {
+                    System.out.append('\t').append('[').append(rootName).append("] ").println(child);
+                }
+            } catch(IOException | RuntimeException e) {
+                // TODO on Windows one might get share problems for *.sys files
+                // e.g. "C:\hiberfil.sys: The process cannot access the file because it is being used by another process"
+                // for now, Windows is less of a target so we are lenient with it
+                if (OsUtils.isWin32()) {
+                    System.err.println(e.getClass().getSimpleName() + " while accessing children of root=" + root + ": " + e.getMessage());
+                } else {
+                    throw e;
+                }
+            }
+        }
+
+        Path targetPath = detectTargetFolder().toPath();
+        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+        Utils.deleteRecursive(lclSftp);
+
+        Path current = fs.getPath(".").toRealPath().normalize();
+        System.out.append("CWD: ").println(current);
+
+        Path parentPath = targetPath.getParent();
+        Path clientFolder = lclSftp.resolve("client");
+        String remFile1Path = Utils.resolveRelativeRemotePath(parentPath, clientFolder.resolve(getCurrentTestName() + "-1.txt"));
+        Path file1 = fs.getPath(remFile1Path);
+        Files.createDirectories(file1.getParent());
+
+        String  expected="Hello world: " + getCurrentTestName();
+        {
+            Files.write(file1, expected.getBytes());
+            String buf = new String(Files.readAllBytes(file1));
+            assertEquals("Mismatched read test data", expected, buf);
+        }
+
+        String remFile2Path = Utils.resolveRelativeRemotePath(parentPath, clientFolder.resolve(getCurrentTestName() + "-2.txt"));
+        Path file2 = fs.getPath(remFile2Path);
+        String remFile3Path = Utils.resolveRelativeRemotePath(parentPath, clientFolder.resolve(getCurrentTestName() + "-3.txt"));
+        Path file3 = fs.getPath(remFile3Path);
+        try {
+            Files.move(file2, file3);
+            fail("Unexpected success in moving " + file2 + " => " + file3);
+        } catch (NoSuchFileException e) {
+            // expected
+        }
+
+        Files.write(file2, "h".getBytes());
+        try {
+            Files.move(file1, file2);
+            fail("Unexpected success in moving " + file1 + " => " + file2);
+        } catch (FileAlreadyExistsException e) {
+            // expected
+        }
+        Files.move(file1, file2, StandardCopyOption.REPLACE_EXISTING);
+        Files.move(file2, file1);
+
+        Map<String, Object> attrs = Files.readAttributes(file1, "*");
+        System.out.append(file1.toString()).append(" attributes: ").println(attrs);
+
+        // TODO: symbolic links only work for absolute files
+//        Path link = fs.getPath("target/sftp/client/test2.txt");
+//        Files.createSymbolicLink(link, link.relativize(file));
+//        assertTrue(Files.isSymbolicLink(link));
+//        assertEquals("test.txt", Files.readSymbolicLink(link).toString());
+
+        // TODO there are many issues with Windows and symbolic links - for now they are of a lesser interest
+        if (OsUtils.isUNIX()) {
+            Path link = fs.getPath(remFile2Path);
+            Path linkParent = link.getParent();
+            Path relPath = linkParent.relativize(file1);
+            Files.createSymbolicLink(link, relPath);
+            assertTrue("Not a symbolic link: " + link, Files.isSymbolicLink(link));
+
+            Path symLink = Files.readSymbolicLink(link);
+            assertEquals("mismatched symbolic link name", relPath.toString(), symLink.toString());
+            Files.delete(link);
+        }
+
+        attrs = Files.readAttributes(file1, "*", LinkOption.NOFOLLOW_LINKS);
+        System.out.append(file1.toString()).append(" no-follow attributes: ").println(attrs);
+
+        assertEquals("Mismatched symlink data", expected, new String(Files.readAllBytes(file1)));
+
+        try (FileChannel channel = FileChannel.open(file1)) {
+            try (FileLock lock = channel.lock()) {
+                System.out.println("Locked " + lock.toString());
+
+                try (FileChannel channel2 = FileChannel.open(file1)) {
+                    try (FileLock lock2 = channel2.lock()) {
+                        System.out.println("Locked " + lock2.toString());
+                        fail("Unexpected success in re-locking " + file1);
+                    } catch (OverlappingFileLockException e) {
+                        // expected
+                    }
+                }
+            }
+        }
+
+        Files.delete(file1);
     }
 
     private URI createDefaultFileSystemURI() {

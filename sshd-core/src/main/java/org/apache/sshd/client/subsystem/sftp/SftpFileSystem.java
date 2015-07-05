@@ -42,6 +42,7 @@ import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.file.util.BaseFileSystem;
 import org.apache.sshd.common.file.util.ImmutableList;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 public class SftpFileSystem extends BaseFileSystem<SftpPath> {
@@ -57,6 +58,7 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> {
 
     private final String id;
     private final ClientSession session;
+    private final SftpVersionSelector selector;
     private final Queue<SftpClient> pool;
     private final ThreadLocal<Wrapper> wrappers = new ThreadLocal<>();
     private SftpPath defaultDir;
@@ -64,15 +66,20 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> {
     private int writeBufferSize = SftpClient.DEFAULT_WRITE_BUFFER_SIZE;
     private final List<FileStore> stores;
 
-    public SftpFileSystem(SftpFileSystemProvider provider, String id, ClientSession session) throws IOException {
+    public SftpFileSystem(SftpFileSystemProvider provider, String id, ClientSession session, SftpVersionSelector selector) throws IOException {
         super(provider);
         this.id = id;
         this.session = session;
+        this.selector = ValidateUtils.checkNotNull(selector, "No SFTP version selector provided", GenericUtils.EMPTY_OBJECT_ARRAY);
         this.stores = Collections.unmodifiableList(Collections.<FileStore>singletonList(new SftpFileStore(id, this)));
         this.pool = new LinkedBlockingQueue<>(FactoryManagerUtils.getIntProperty(session, POOL_SIZE_PROP, DEFAULT_POOL_SIZE));
         try (SftpClient client = getClient()) {
             defaultDir = getPath(client.canonicalPath("."));
         }
+    }
+
+    public final SftpVersionSelector getSftpVersionSelector() {
+        return selector;
     }
 
     public final String getId() {
@@ -129,7 +136,7 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> {
             while (wrapper == null) {
                 SftpClient client = pool.poll();
                 if (client == null) {
-                    client = session.createSftpClient();
+                    client = session.createSftpClient(getSftpVersionSelector());
                 }
                 if (!client.isClosing()) {
                     wrapper = new Wrapper(client, getReadBufferSize(), getWriteBufferSize());

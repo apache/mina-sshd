@@ -45,6 +45,7 @@ import org.apache.sshd.client.subsystem.sftp.DefaultSftpClient;
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.client.subsystem.sftp.SftpFileSystem;
 import org.apache.sshd.client.subsystem.sftp.SftpFileSystemProvider;
+import org.apache.sshd.client.subsystem.sftp.SftpVersionSelector;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.Service;
@@ -397,17 +398,34 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
 
     @Override
     public SftpClient createSftpClient() throws IOException {
-        return new DefaultSftpClient(this);
+        return createSftpClient(SftpVersionSelector.CURRENT);
+    }
+
+    @Override
+    public SftpClient createSftpClient(SftpVersionSelector selector) throws IOException {
+        DefaultSftpClient client = new DefaultSftpClient(this);
+        client.negotiateVersion(selector);
+        return client;
     }
 
     @Override
     public FileSystem createSftpFileSystem() throws IOException {
-        return createSftpFileSystem(SftpClient.DEFAULT_READ_BUFFER_SIZE, SftpClient.DEFAULT_WRITE_BUFFER_SIZE);
+        return createSftpFileSystem(SftpVersionSelector.CURRENT);
+    }
+
+    @Override
+    public FileSystem createSftpFileSystem(SftpVersionSelector selector) throws IOException {
+        return createSftpFileSystem(selector, SftpClient.DEFAULT_READ_BUFFER_SIZE, SftpClient.DEFAULT_WRITE_BUFFER_SIZE);
     }
 
     @Override
     public FileSystem createSftpFileSystem(int readBufferSize, int writeBufferSize) throws IOException {
-        SftpFileSystemProvider provider = new SftpFileSystemProvider((org.apache.sshd.client.SshClient) factoryManager);
+        return createSftpFileSystem(SftpVersionSelector.CURRENT, readBufferSize, writeBufferSize);
+    }
+
+    @Override
+    public FileSystem createSftpFileSystem(SftpVersionSelector selector, int readBufferSize, int writeBufferSize) throws IOException {
+        SftpFileSystemProvider provider = new SftpFileSystemProvider((org.apache.sshd.client.SshClient) factoryManager, selector);
         SftpFileSystem  fs = provider.newFileSystem(this);
         fs.setReadBufferSize(readBufferSize);
         fs.setWriteBufferSize(writeBufferSize);

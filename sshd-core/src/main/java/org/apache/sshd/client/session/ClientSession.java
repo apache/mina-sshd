@@ -34,6 +34,7 @@ import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.scp.ScpClient;
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
+import org.apache.sshd.client.subsystem.sftp.SftpVersionSelector;
 import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.scp.ScpTransferEventListener;
@@ -174,11 +175,24 @@ public interface ClientSession extends Session {
 
     /**
      * Create an SFTP client from this session.
+     * @return The created {@link SftpClient}
+     * @throws IOException if failed to create the client
      */
     SftpClient createSftpClient() throws IOException;
+    /**
+     * @param selector The {@link SftpVersionSelector} to use - <B>Note:</B>
+     * if the server does not support versions re-negotiation then the
+     * selector will be presented with only one &quot;choice&quot; - the
+     * current version
+     * @return The created {@link SftpClient}
+     * @throws IOException If failed to create the client or re-negotiate
+     */
+    SftpClient createSftpClient(SftpVersionSelector selector) throws IOException;
 
     FileSystem createSftpFileSystem() throws IOException;
+    FileSystem createSftpFileSystem(SftpVersionSelector selector) throws IOException;
     FileSystem createSftpFileSystem(int readBufferSize, int writeBufferSize) throws IOException;
+    FileSystem createSftpFileSystem(SftpVersionSelector selector, int readBufferSize, int writeBufferSize) throws IOException;
 
     /**
      * Start forwarding the given local address on the client to the given address on the server.
