@@ -25,15 +25,23 @@ import java.io.OutputStream;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.sshd.client.subsystem.sftp.extensions.BuiltinSftpClientExtensions;
+import org.apache.sshd.client.subsystem.sftp.extensions.SftpClientExtension;
+import org.apache.sshd.client.subsystem.sftp.extensions.SftpClientExtensionFactory;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
+import org.apache.sshd.common.subsystem.sftp.extensions.ParserUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractSftpClient extends AbstractLoggingBean implements SftpClient {
+public abstract class AbstractSftpClient extends AbstractLoggingBean implements SftpClient, RawSftpClient {
+    private final AtomicReference<Map<String,Object>> parsedExtensionsHolder = new AtomicReference<Map<String,Object>>(null);
+
     protected AbstractSftpClient() {
         super();
     }
@@ -126,5 +134,37 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
     @Override
     public void symLink(String linkPath, String targetPath) throws IOException {
         link(linkPath, targetPath, true);
+    }
+
+    @Override
+    public <E extends SftpClientExtension> E getExtension(Class<? extends E> extensionType) {
+        Object  instance = getExtension(BuiltinSftpClientExtensions.fromType(extensionType));
+        if (instance == null) {
+            return null;
+        } else {
+            return extensionType.cast(instance);
+        }
+    }
+
+    @Override
+    public SftpClientExtension getExtension(String extensionName) {
+        return getExtension(BuiltinSftpClientExtensions.fromName(extensionName));
+    }
+    
+    protected SftpClientExtension getExtension(SftpClientExtensionFactory factory) {
+        if (factory == null) {
+            return null;
+        }
+
+        Map<String,byte[]> extensions = getServerExtensions();
+        Map<String,Object> parsed = parsedExtensionsHolder.get();
+        if (parsed == null) {
+            if ((parsed=ParserUtils.parse(extensions)) == null) {
+                parsed = Collections.<String,Object>emptyMap();
+            }
+            parsedExtensionsHolder.set(parsed);
+        }
+
+        return factory.create(this, this, extensions, parsed);
     }
 }

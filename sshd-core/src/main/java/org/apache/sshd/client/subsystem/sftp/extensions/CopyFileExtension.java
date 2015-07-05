@@ -17,19 +17,20 @@
  * under the License.
  */
 
-package org.apache.sshd.client.subsystem;
+package org.apache.sshd.client.subsystem.sftp.extensions;
 
-import java.nio.channels.Channel;
-
-import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.common.NamedResource;
+import java.io.IOException;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @see <A HREF="https://tools.ietf.org/html/draft-ietf-secsh-filexfer-extensions-00#section-6">copy-file</A> extension
  */
-public interface SubsystemClient extends NamedResource, Channel {
+public interface CopyFileExtension extends SftpClientExtension {
     /**
-     * @return The underlying {@link ClientSession} used
+     * @param src The (<U>remote</U>) file source path
+     * @param dst The (<U>remote</U>) file destination path
+     * @param overwriteDestination If {@code true} then OK to override destination if exists
+     * @throws IOException If failed to execute the command or extension not supported
      */
-    ClientSession getClientSession();
+    void copyFile(String src, String dst, boolean overwriteDestination) throws IOException;
 }

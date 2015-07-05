@@ -30,8 +30,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
@@ -43,9 +45,18 @@ import java.util.Set;
 import java.util.Vector;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.sshd.client.SftpException;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.client.subsystem.sftp.SftpClient.CloseableHandle;
+import org.apache.sshd.client.subsystem.sftp.extensions.BuiltinSftpClientExtensions;
+import org.apache.sshd.client.subsystem.sftp.extensions.CopyFileExtension;
+import org.apache.sshd.client.subsystem.sftp.extensions.MD5FileExtension;
+import org.apache.sshd.client.subsystem.sftp.extensions.MD5HandleExtension;
+import org.apache.sshd.client.subsystem.sftp.extensions.SftpClientExtension;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.digest.BuiltinDigests;
+import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.file.root.RootedFileSystemProvider;
 import org.apache.sshd.common.session.Session;
@@ -55,6 +66,7 @@ import org.apache.sshd.common.subsystem.sftp.extensions.Supported2Parser.Support
 import org.apache.sshd.common.subsystem.sftp.extensions.SupportedParser.Supported;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
+import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.Command;
@@ -78,7 +90,6 @@ import org.junit.runners.MethodSorters;
 
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.SftpException;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class SftpTest extends BaseTestSupport {
@@ -520,7 +531,7 @@ public class SftpTest extends BaseTestSupport {
                 real = c.realpath(path + "/foobar");
                 System.out.println(real);
                 fail("Expected SftpException");
-            } catch (SftpException e) {
+            } catch (com.jcraft.jsch.SftpException e) {
                 // ok
             }
         } finally {
@@ -530,20 +541,20 @@ public class SftpTest extends BaseTestSupport {
 
     @Test
     public void testRename() throws Exception {
+        Path targetPath = detectTargetFolder().toPath();
+        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+        Utils.deleteRecursive(lclSftp);
+        Files.createDirectories(lclSftp);
+
+        Path parentPath = targetPath.getParent();
+        Path clientFolder = assertHierarchyTargetFolderExists(lclSftp.resolve("client"));
+
         try(SshClient client = SshClient.setUpDefaultClient()) {
             client.start();
             
             try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
                 session.addPasswordIdentity(getCurrentTestName());
                 session.auth().verify(5L, TimeUnit.SECONDS);
-        
-                Path targetPath = detectTargetFolder().toPath();
-                Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
-                Utils.deleteRecursive(lclSftp);
-                Files.createDirectories(lclSftp);
-
-                Path parentPath = targetPath.getParent();
-                Path clientFolder = assertHierarchyTargetFolderExists(lclSftp.resolve("client"));
         
                 try(SftpClient sftp = session.createSftpClient()) {
                     Path file1 = clientFolder.resolve(getCurrentTestName() + "-1.txt");
@@ -583,6 +594,152 @@ public class SftpTest extends BaseTestSupport {
     }
 
     @Test
+    public void testCopyFileExtension() throws Exception {
+        Path targetPath = detectTargetFolder().toPath();
+        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+        Utils.deleteRecursive(lclSftp);
+        Files.createDirectories(lclSftp);
+
+        byte[] data = (getClass().getName() + "#" + getCurrentTestName()).getBytes(StandardCharsets.UTF_8);
+        Path srcFile = lclSftp.resolve("src.txt");
+        Files.write(srcFile, data, IoUtils.EMPTY_OPEN_OPTIONS);
+
+        Path parentPath = targetPath.getParent();
+        String srcPath = Utils.resolveRelativeRemotePath(parentPath, srcFile);
+        Path dstFile = lclSftp.resolve("dst.txt");
+        String dstPath = Utils.resolveRelativeRemotePath(parentPath, dstFile);
+        
+        LinkOption[] options = IoUtils.getLinkOptions(false);
+        assertFalse("Destination file unexpectedly exists", Files.exists(dstFile, options));
+
+        try(SshClient client = SshClient.setUpDefaultClient()) {
+            client.start();
+            
+            try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+                session.addPasswordIdentity(getCurrentTestName());
+                session.auth().verify(5L, TimeUnit.SECONDS);
+                
+                try(SftpClient sftp = session.createSftpClient()) {
+                    CopyFileExtension ext = assertExtensionCreated(sftp, CopyFileExtension.class);
+                    ext.copyFile(srcPath, dstPath, false);
+                    assertTrue("Source file not preserved", Files.exists(srcFile, options));
+                    assertTrue("Destination file not created", Files.exists(dstFile, options));
+                    
+                    byte[] actual = Files.readAllBytes(dstFile);
+                    assertArrayEquals("Mismatched copied data", data, actual);
+                    
+                    try {
+                        ext.copyFile(srcPath, dstPath, false);
+                        fail("Unexpected success to overwrite existing destination: " + dstFile);
+                    } catch(IOException e) {
+                        assertTrue("Not an SftpException", e instanceof SftpException);
+                    }
+                }
+            } finally {
+                client.stop();
+            }
+        }
+    }
+
+    @Test
+    public void testMD5HashExtensionOnSmallFile() throws Exception {
+        testMD5HashExtension((getClass().getName() + "#" + getCurrentTestName()).getBytes(StandardCharsets.UTF_8));
+    }
+
+    @Test
+    public void testMD5HashExtensionOnLargeFile() throws Exception {
+        byte[] seed = (getClass().getName() + "#" + getCurrentTestName() + System.getProperty("line.separator")).getBytes(StandardCharsets.UTF_8);
+        final int TEST_SIZE = Byte.SIZE * SftpConstants.MD5_QUICK_HASH_SIZE; 
+        try(ByteArrayOutputStream baos=new ByteArrayOutputStream(TEST_SIZE + seed.length)) {
+            while (baos.size() < TEST_SIZE) {
+                baos.write(seed);
+            }
+
+            testMD5HashExtension(baos.toByteArray());
+        }
+    }
+
+    private void testMD5HashExtension(byte[] data) throws Exception {
+        Path targetPath = detectTargetFolder().toPath();
+        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+        Utils.deleteRecursive(lclSftp);
+        Files.createDirectories(lclSftp);
+
+        Digest digest = BuiltinDigests.md5.create();
+        digest.init();
+        digest.update(data);
+
+        byte[] expectedHash = digest.digest();
+        byte[] quickHash = expectedHash;
+        if (data.length > SftpConstants.MD5_QUICK_HASH_SIZE) {
+            byte[] quickData = new byte[SftpConstants.MD5_QUICK_HASH_SIZE];
+            System.arraycopy(data, 0, quickData, 0, quickData.length);
+            digest = BuiltinDigests.md5.create();
+            digest.init();
+            digest.update(quickData);
+            quickHash = digest.digest();
+        }
+
+        Path srcFile = lclSftp.resolve("src.txt");
+        Files.write(srcFile, data, IoUtils.EMPTY_OPEN_OPTIONS);
+
+        Path parentPath = targetPath.getParent();
+        String srcPath = Utils.resolveRelativeRemotePath(parentPath, srcFile);
+        String srcFolder = Utils.resolveRelativeRemotePath(parentPath, srcFile.getParent());
+
+        try(SshClient client = SshClient.setUpDefaultClient()) {
+            client.start();
+            
+            try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+                session.addPasswordIdentity(getCurrentTestName());
+                session.auth().verify(5L, TimeUnit.SECONDS);
+                
+                try(SftpClient sftp = session.createSftpClient()) {
+                    MD5FileExtension file = assertExtensionCreated(sftp, MD5FileExtension.class);
+                    try {
+                        byte[] actual = file.getHash(srcFolder, 0L, 0L, quickHash);
+                        fail("Unexpected file success on folder=" + srcFolder + ": " + BufferUtils.printHex(':', actual));
+                    } catch(IOException e) {    // expected - not allowed to hash a folder
+                        assertTrue("Not an SftpException", e instanceof SftpException);
+                    }
+
+                    MD5HandleExtension hndl = assertExtensionCreated(sftp, MD5HandleExtension.class);
+                    try(CloseableHandle dirHandle = sftp.openDir(srcFolder)) {
+                        try {
+                            byte[] actual = hndl.getHash(dirHandle, 0L, 0L, quickHash);
+                            fail("Unexpected handle success on folder=" + srcFolder + ": " + BufferUtils.printHex(':', actual));
+                        } catch(IOException e) {    // expected - not allowed to hash a folder
+                            assertTrue("Not an SftpException", e instanceof SftpException);
+                        }
+                    }
+
+                    try(CloseableHandle fileHandle = sftp.open(srcPath, SftpClient.OpenMode.Read)) {
+                        for (byte[] qh : new byte[][] { GenericUtils.EMPTY_BYTE_ARRAY, quickHash }) {
+                            for (boolean useFile : new boolean[] { true, false }) {
+                                byte[] actualHash = useFile ? file.getHash(srcPath, 0L, 0L, qh) : hndl.getHash(fileHandle, 0L, 0L, qh);
+                                String type = useFile ? file.getClass().getSimpleName() : hndl.getClass().getSimpleName();
+                                if (!Arrays.equals(expectedHash, actualHash)) {
+                                    fail("Mismatched hash for quick=" + BufferUtils.printHex(':', qh) + " using " + type
+                                       + ": expected=" + BufferUtils.printHex(':', expectedHash)
+                                       + ", actual=" + BufferUtils.printHex(':', actualHash));
+                                }
+                            }
+                        }
+                    }
+                }
+            } finally {
+                client.stop();
+            }
+        }
+    }
+    private static <E extends SftpClientExtension> E assertExtensionCreated(SftpClient sftp, Class<E> type) {
+        E instance = sftp.getExtension(type);
+        assertNotNull("Extension not created: " + type.getSimpleName(), instance);
+        assertTrue("Extension not supported: " + instance.getName(), instance.isSupported());
+        return instance;
+    }
+
+    @Test
     public void testServerExtensionsDeclarations() throws Exception {
         try(SshClient client = SshClient.setUpDefaultClient()) {
             client.start();
@@ -611,6 +768,14 @@ public class SftpTest extends BaseTestSupport {
                         } else if (SftpConstants.EXT_SUPPORTED2.equalsIgnoreCase(extName)) {
                             assertSupportedExtensions(extName, ((Supported2) extValue).extensionNames);
                         }
+                    }
+                    
+                    for (BuiltinSftpClientExtensions type : BuiltinSftpClientExtensions.VALUES) {
+                        String extensionName = type.getName();
+                        SftpClientExtension instance = sftp.getExtension(extensionName);
+                        assertNotNull("Extension not implemented:" + extensionName, instance);
+                        assertEquals("Mismatched instance name", extensionName, instance.getName());
+                        assertTrue("Extension not supported: " + extensionName, instance.isSupported());
                     }
                 }
             } finally {

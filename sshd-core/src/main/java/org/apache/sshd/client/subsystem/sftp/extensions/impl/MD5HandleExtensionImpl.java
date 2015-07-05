@@ -17,19 +17,27 @@
  * under the License.
  */
 
-package org.apache.sshd.client.subsystem;
+package org.apache.sshd.client.subsystem.sftp.extensions.impl;
 
-import java.nio.channels.Channel;
+import java.io.IOException;
+import java.util.Collection;
 
-import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.client.subsystem.sftp.RawSftpClient;
+import org.apache.sshd.client.subsystem.sftp.SftpClient;
+import org.apache.sshd.client.subsystem.sftp.extensions.MD5HandleExtension;
+import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface SubsystemClient extends NamedResource, Channel {
-    /**
-     * @return The underlying {@link ClientSession} used
-     */
-    ClientSession getClientSession();
+public class MD5HandleExtensionImpl extends AbstractMD5HashExtension implements MD5HandleExtension {
+    public MD5HandleExtensionImpl(SftpClient client, RawSftpClient raw, Collection<String> extra) {
+        super(SftpConstants.EXT_MD5HASH_HANDLE, client, raw, extra);
+    }
+
+    @Override
+    public byte[] getHash(SftpClient.Handle handle, long offset, long length, byte[] quickHash) throws IOException {
+        return doGetHash(handle.id, offset, length, quickHash);
+    }
+
 }

@@ -27,7 +27,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
+import org.apache.sshd.common.subsystem.sftp.extensions.Supported2Parser.Supported2;
+import org.apache.sshd.common.subsystem.sftp.extensions.SupportedParser.Supported;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
@@ -116,6 +119,27 @@ public final class ParserUtils {
                 return new ArrayList<ExtensionParser<?>>(parsersMap.values());
             }
         }
+    }
+
+    public static final Set<String> supportedExtensions(Map<String,?> parsed) {
+        if (GenericUtils.isEmpty(parsed)) {
+            return Collections.emptySet();
+        }
+        
+        Supported sup = (Supported) parsed.get(SupportedParser.INSTANCE.getName());
+        Collection<String> extra = (sup == null) ? null : sup.extensionNames;
+        Supported2 sup2 = (Supported2) parsed.get(Supported2Parser.INSTANCE.getName());
+        Collection<String> extra2 = (sup2 == null) ? null : sup2.extensionNames;
+        if (GenericUtils.isEmpty(extra)) {
+            return GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER, extra2);
+        } else if (GenericUtils.isEmpty(extra2)) {
+            return GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER, extra);
+        }
+        
+        Set<String> result = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
+        result.addAll(extra);
+        result.addAll(extra2);
+        return result;
     }
 
     /**

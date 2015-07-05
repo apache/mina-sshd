@@ -167,6 +167,11 @@ public class DefaultSftpClient extends AbstractSftpClient {
     }
 
     @Override
+    public ClientSession getClientSession() {
+        return clientSession;
+    }
+
+    @Override
     public Map<String, byte[]> getServerExtensions() {
         return exposedExtensions;
     }
@@ -255,18 +260,20 @@ public class DefaultSftpClient extends AbstractSftpClient {
         }
     }
 
-    protected int send(int cmd, Buffer buffer) throws IOException {
+    @Override
+    public int send(int cmd, Buffer buffer) throws IOException {
         int id = cmdId.incrementAndGet();
         OutputStream dos = channel.getInvertedIn();
         BufferUtils.writeInt(dos, 1 /* cmd */ + (Integer.SIZE / Byte.SIZE) /* id */ + buffer.available(), workBuf);
-        dos.write(cmd);
+        dos.write(cmd & 0xFF);
         BufferUtils.writeInt(dos, id, workBuf);
         dos.write(buffer.array(), buffer.rpos(), buffer.available());
         dos.flush();
         return id;
     }
 
-    protected Buffer receive(int id) throws IOException {
+    @Override
+    public Buffer receive(int id) throws IOException {
         synchronized (messages) {
             while (true) {
                 if (closing) {

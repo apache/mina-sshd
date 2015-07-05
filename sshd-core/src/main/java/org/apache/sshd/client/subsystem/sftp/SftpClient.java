@@ -36,6 +36,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.subsystem.SubsystemClient;
+import org.apache.sshd.client.subsystem.sftp.extensions.SftpClientExtension;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
@@ -313,4 +314,22 @@ public interface SftpClient extends SubsystemClient {
     OutputStream write(String path, Collection<OpenMode> mode) throws IOException;
     OutputStream write(String path, int bufferSize, Collection<OpenMode> mode) throws IOException;
 
+    /**
+     * @param extensionType The extension type
+     * @return The extension instance - <B>Note:</B> it is up to the caller
+     * to invoke {@link SftpClientExtension#isSupported()} - {@code null} if
+     * this extension type is not implemented by the client
+     * @see #getServerExtensions()
+     */
+    <E extends SftpClientExtension> E getExtension(Class<? extends E> extensionType);
+
+    /**
+     * @param extensionName The extension name
+     * @return The {@link SftpClientExtension} name - ignored if {@code null}/empty
+     * @return The extension instance - <B>Note:</B> it is up to the caller
+     * to invoke {@link SftpClientExtension#isSupported()} - {@code null} if
+     * this extension type is not implemented by the client
+     * @see #getServerExtensions()
+     */
+    SftpClientExtension getExtension(String extensionName);
 }

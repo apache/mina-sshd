@@ -17,19 +17,26 @@
  * under the License.
  */
 
-package org.apache.sshd.client.subsystem;
+package org.apache.sshd.client.subsystem.sftp.extensions;
 
-import java.nio.channels.Channel;
+import java.io.IOException;
 
-import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.client.subsystem.sftp.SftpClient;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface SubsystemClient extends NamedResource, Channel {
+public interface MD5HandleExtension extends SftpClientExtension {
     /**
-     * @return The underlying {@link ClientSession} used
+     * @param handle The (remote) file {@link SftpClient.Handle}
+     * @param offset The offset to start calculating the hash
+     * @param length The number of data bytes to calculate the hash on - if
+     * greater than available, then up to whatever is available
+     * @param quickHash A quick-hash of the 1st 2048 bytes - ignored if {@code null}/empty
+     * @return The hash value if the quick hash matches (or {@code null}/empty), or
+     * {@code null}/empty if the quick hash is provided and it does not match
+     * @throws IOException If failed to calculate the hash
      */
-    ClientSession getClientSession();
+    byte[] getHash(SftpClient.Handle handle, long offset, long length, byte[] quickHash) throws IOException;
+
 }

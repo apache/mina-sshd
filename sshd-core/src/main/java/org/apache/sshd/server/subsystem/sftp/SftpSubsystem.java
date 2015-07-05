@@ -690,9 +690,12 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             }
             
             Digest digest = BuiltinDigests.md5.create();
+            digest.init();
+
             byte[] workBuf = new byte[(int) Math.min(effectiveLength, SftpConstants.MD5_QUICK_HASH_SIZE)];
             ByteBuffer bb = ByteBuffer.wrap(workBuf);
             boolean hashMatches = false;
+            byte[] hashValue = null;
 
             try(FileChannel channel = FileChannel.open(path, StandardOpenOption.READ)) {
                 channel.position(startOffset);
@@ -706,33 +709,54 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                  *      this case.
                  */
                 if (GenericUtils.length(quickCheckHash) <= 0) {
-                    // TODO consider allowing it - e.g., if the requested effective length is <= than some (configurable) threshold
-                    throw new UnsupportedOperationException(targetType + " w/o q quick check hash is not supported");
+                    // TODO consider limiting it - e.g., if the requested effective length is <= than some (configurable) threshold
+                    hashMatches = true;
+                } else {
+                    int readLen = channel.read(bb);
+                    effectiveLength -= readLen;
+                    digest.update(workBuf, 0, readLen);
+    
+                    hashValue = digest.digest();
+                    hashMatches = Arrays.equals(quickCheckHash, hashValue);
+                    if (hashMatches) {
+                        /*
+                         * Need to re-initialize the digester due to the Javadoc:
+                         * 
+                         *      "The digest method can be called once for a given number
+                         *       of updates. After digest has been called, the MessageDigest
+                         *       object is reset to its initialized state." 
+                         */
+                        if (effectiveLength > 0L) {
+                            digest = BuiltinDigests.md5.create();
+                            digest.init();
+                            digest.update(workBuf, 0, readLen);
+                            hashValue = null;   // start again
+                        }
+                    } else {
+                        if (log.isTraceEnabled()) {
+                            log.trace("doMD5Hash({})[{}] offset={}, length={} - quick-hash mismatched expected={}, actual={}",
+                                      targetType, target, Long.valueOf(startOffset), Long.valueOf(length),
+                                      BufferUtils.printHex(':', quickCheckHash), BufferUtils.printHex(':', hashValue));
+                        }
+                    }
                 }
-                
-                int readLen = channel.read(bb);
-                effectiveLength -= readLen;
-                digest.update(workBuf, 0, readLen);
 
-                byte[] hashValue = digest.digest();
-                hashMatches = Arrays.equals(quickCheckHash, hashValue);
                 if (hashMatches) {
                     while(effectiveLength > 0L) {
                         bb.clear();
-                        readLen = channel.read(bb); 
+                        int readLen = channel.read(bb); 
                         effectiveLength -= readLen;
                         digest.update(workBuf, 0, readLen);
                     }
-                } else {
-                    if (log.isTraceEnabled()) {
-                        log.trace("doMD5Hash({})[{}] offset={}, length={} - quick-hash mismatched expected={}, actual={}",
-                                  targetType, target, Long.valueOf(startOffset), Long.valueOf(length),
-                                  BufferUtils.printHex(':', quickCheckHash), BufferUtils.printHex(':', hashValue));
+                    
+                    if (hashValue == null) {    // check if did any more iterations after the quick hash
+                        hashValue = digest.digest();
                     }
+                } else {
+                    hashValue = GenericUtils.EMPTY_BYTE_ARRAY;
                 }
             }
 
-            byte[] hashValue = hashMatches ? digest.digest() : GenericUtils.EMPTY_BYTE_ARRAY;
             if (log.isDebugEnabled()) {
                 log.debug("doMD5Hash({})[{}] offset={}, length={}, quick-hash={} - match={}, hash={}",
                           targetType, target, Long.valueOf(startOffset), Long.valueOf(length), BufferUtils.printHex(':', quickCheckHash),

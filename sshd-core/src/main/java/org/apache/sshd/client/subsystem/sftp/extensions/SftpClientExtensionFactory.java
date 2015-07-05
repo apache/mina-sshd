@@ -17,19 +17,19 @@
  * under the License.
  */
 
-package org.apache.sshd.client.subsystem;
+package org.apache.sshd.client.subsystem.sftp.extensions;
 
-import java.nio.channels.Channel;
+import java.util.Map;
 
-import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.client.subsystem.sftp.RawSftpClient;
+import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.common.NamedResource;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface SubsystemClient extends NamedResource, Channel {
-    /**
-     * @return The underlying {@link ClientSession} used
-     */
-    ClientSession getClientSession();
+public interface SftpClientExtensionFactory extends NamedResource {
+    // TODO make this a default method for JDK-8
+    SftpClientExtension create(SftpClient client, RawSftpClient raw);
+    SftpClientExtension create(SftpClient client, RawSftpClient raw, Map<String,byte[]> extensions, Map<String,?> parsed);
 }

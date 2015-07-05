@@ -17,19 +17,28 @@
  * under the License.
  */
 
-package org.apache.sshd.client.subsystem;
+package org.apache.sshd.client.subsystem.sftp;
 
-import java.nio.channels.Channel;
+import java.io.IOException;
 
-import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface SubsystemClient extends NamedResource, Channel {
+public interface RawSftpClient {
     /**
-     * @return The underlying {@link ClientSession} used
+     * @param cmd Command to send - <B>Note:</B> only lower 8-bits are used
+     * @param buffer The {@link Buffer} containing the command data
+     * @return The assigned request id
+     * @throws IOException if failed to send command
      */
-    ClientSession getClientSession();
+    int send(int cmd, Buffer buffer) throws IOException;
+    
+    /**
+     * @param id The expected request id
+     * @return The received response {@link Buffer} containing the request id
+     * @throws IOException If connection closed or interrupted
+     */
+    Buffer receive(int id) throws IOException;
 }

@@ -17,19 +17,18 @@
  * under the License.
  */
 
-package org.apache.sshd.client.subsystem;
+package org.apache.sshd.client.subsystem.sftp.extensions;
 
-import java.nio.channels.Channel;
-
-import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.common.OptionalFeature;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface SubsystemClient extends NamedResource, Channel {
+public interface SftpClientExtension extends NamedResource, OptionalFeature {
     /**
-     * @return The underlying {@link ClientSession} used
+     * @return The {@link SftpClient} used to issue the extended command
      */
-    ClientSession getClientSession();
+    SftpClient getClient();
 }

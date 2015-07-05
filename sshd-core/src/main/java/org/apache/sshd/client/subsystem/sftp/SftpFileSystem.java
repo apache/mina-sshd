@@ -21,6 +21,7 @@ package org.apache.sshd.client.subsystem.sftp;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.StreamCorruptedException;
 import java.nio.file.FileStore;
 import java.nio.file.FileSystemException;
 import java.nio.file.attribute.GroupPrincipal;
@@ -41,6 +42,7 @@ import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.file.util.BaseFileSystem;
 import org.apache.sshd.common.file.util.ImmutableList;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.buffer.Buffer;
 
 public class SftpFileSystem extends BaseFileSystem<SftpPath> {
     public static final String POOL_SIZE_PROP = "sftp-fs-pool-size";
@@ -189,6 +191,11 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> {
         @Override
         public int getVersion() {
             return delegate.getVersion();
+        }
+
+        @Override
+        public ClientSession getClientSession() {
+            return delegate.getClientSession();
         }
 
         @Override
@@ -445,6 +452,32 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> {
                 throw new IOException("unlock" + handle + ")[offset=" + offset + ", length=" + length + "] client is closed");
             }
             delegate.unlock(handle, offset, length);
+        }
+
+        @Override
+        public int send(int cmd, Buffer buffer) throws IOException {
+            if (!isOpen()) {
+                throw new IOException("send(cmd=" + cmd + ") client is closed");
+            }
+            
+            if (delegate instanceof RawSftpClient) {
+                return ((RawSftpClient) delegate).send(cmd, buffer);
+            } else {
+                throw new StreamCorruptedException("send(cmd=" + cmd + ") delegate is not a " + RawSftpClient.class.getSimpleName());
+            }
+        }
+
+        @Override
+        public Buffer receive(int id) throws IOException {
+            if (!isOpen()) {
+                throw new IOException("receive(id=" + id + ") client is closed");
+            }
+            
+            if (delegate instanceof RawSftpClient) {
+                return ((RawSftpClient) delegate).receive(id);
+            } else {
+                throw new StreamCorruptedException("receive(id=" + id + ") delegate is not a " + RawSftpClient.class.getSimpleName());
+            }
         }
     }
 
