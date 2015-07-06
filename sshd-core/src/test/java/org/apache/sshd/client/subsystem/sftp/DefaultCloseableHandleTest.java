@@ -20,10 +20,9 @@
 package org.apache.sshd.client.subsystem.sftp;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.apache.sshd.client.subsystem.sftp.DefaultCloseableHandle;
-import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.CloseableHandle;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.Handle;
 import org.apache.sshd.util.BaseTestSupport;
@@ -46,14 +45,14 @@ public class DefaultCloseableHandleTest extends BaseTestSupport {
 
     @Test
     public void testChannelBehavior() throws IOException {
-        final String id = getCurrentTestName();
+        final byte[] id = getCurrentTestName().getBytes(StandardCharsets.UTF_8);
         SftpClient client = Mockito.mock(SftpClient.class);
         Mockito.doAnswer(new Answer<Void>() {
                 @Override
                 public Void answer(InvocationOnMock invocation) throws Throwable {
                     Object[] args = invocation.getArguments();
                     Handle handle = (Handle) args[0];
-                    assertEquals("Mismatched closing handle", id, handle.id);
+                    assertArrayEquals("Mismatched closing handle", id, handle.getIdentifier());
                     return null;
                 }
             }).when(client).close(Matchers.any(Handle.class));
@@ -82,7 +81,7 @@ public class DefaultCloseableHandleTest extends BaseTestSupport {
                 }
             }).when(client).close(Matchers.any(Handle.class));
 
-        CloseableHandle handle = new DefaultCloseableHandle(client, getCurrentTestName());
+        CloseableHandle handle = new DefaultCloseableHandle(client, getCurrentTestName().getBytes(StandardCharsets.UTF_8));
         for (int index=0; index < Byte.SIZE; index++) {
             handle.close();
         }

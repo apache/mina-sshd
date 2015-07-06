@@ -584,6 +584,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             if (error) {
                 System.err.println("usage: ssh [-A|-a] [-v[v][v]] [-D socksPort] [-l login] [-p port] [-o option=value] hostname/user@host [command]");
                 System.exit(-1);
+                return;
             }
 
             try(SshClient client = (SshClient) session.getFactoryManager()) {

@@ -41,8 +41,9 @@ public class BufferUtils {
         return printHex(array, 0, GenericUtils.length(array), sep);
     }
 
+    public static final char DEFAULT_HEX_SEPARATOR = ' ', EMPTY_HEX_SEPARATOR = '\0';
     public static String printHex(byte[] array, int offset, int len) {
-        return printHex(array, offset, len, ' ');
+        return printHex(array, offset, len, DEFAULT_HEX_SEPARATOR);
     }
 
     public static final String  HEX_DIGITS="0123456789abcdef";
@@ -55,7 +56,7 @@ public class BufferUtils {
         StringBuilder sb = new StringBuilder(len * 3 /* 2 HEX + sep */);
         for (int curOffset = offset, maxOffset = offset + len; curOffset < maxOffset; curOffset++) {
             byte b = array[curOffset];
-            if (sb.length() > 0) {
+            if ((sb.length() > 0) && (sep != EMPTY_HEX_SEPARATOR)) {
                 sb.append(sep);
             }
             sb.append(HEX_DIGITS.charAt((b >> 4) & 0x0F));

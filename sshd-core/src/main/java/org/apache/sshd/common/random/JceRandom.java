@@ -25,7 +25,7 @@ import java.security.SecureRandom;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class JceRandom implements Random {
+public class JceRandom extends AbstractRandom {
 
     private byte[] tmp = new byte[16];
     private final SecureRandom random = new SecureRandom();

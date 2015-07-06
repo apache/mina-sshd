@@ -18,17 +18,6 @@
  */
 package org.apache.sshd.client.subsystem.sftp;
 
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SFTP_V3;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IRGRP;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IROTH;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IRUSR;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IWGRP;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IWOTH;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IWUSR;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IXGRP;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IXOTH;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IXUSR;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -390,7 +379,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
                 sftp.mkdir(dir.toString());
             } catch (SftpException e) {
                 int sftpStatus=e.getStatus();
-                if ((sftp.getVersion() == SFTP_V3) && (sftpStatus == SftpConstants.SSH_FX_FAILURE)) {
+                if ((sftp.getVersion() == SftpConstants.SFTP_V3) && (sftpStatus == SftpConstants.SSH_FX_FAILURE)) {
                     try {
                         Attributes attributes = sftp.stat(dir.toString());
                         if (attributes != null) {
@@ -940,31 +929,31 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         for (PosixFilePermission p : perms) {
             switch (p) {
                 case OWNER_READ:
-                    pf |= S_IRUSR;
+                    pf |= SftpConstants.S_IRUSR;
                     break;
                 case OWNER_WRITE:
-                    pf |= S_IWUSR;
+                    pf |= SftpConstants.S_IWUSR;
                     break;
                 case OWNER_EXECUTE:
-                    pf |= S_IXUSR;
+                    pf |= SftpConstants.S_IXUSR;
                     break;
                 case GROUP_READ:
-                    pf |= S_IRGRP;
+                    pf |= SftpConstants.S_IRGRP;
                     break;
                 case GROUP_WRITE:
-                    pf |= S_IWGRP;
+                    pf |= SftpConstants.S_IWGRP;
                     break;
                 case GROUP_EXECUTE:
-                    pf |= S_IXGRP;
+                    pf |= SftpConstants.S_IXGRP;
                     break;
                 case OTHERS_READ:
-                    pf |= S_IROTH;
+                    pf |= SftpConstants.S_IROTH;
                     break;
                 case OTHERS_WRITE:
-                    pf |= S_IWOTH;
+                    pf |= SftpConstants.S_IWOTH;
                     break;
                 case OTHERS_EXECUTE:
-                    pf |= S_IXOTH;
+                    pf |= SftpConstants.S_IXOTH;
                     break;
                 default:
                     if (log.isTraceEnabled()) {
@@ -976,37 +965,140 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         return pf;
     }
 
+    public static String getRWXPermissions(int perms) {
+        StringBuilder sb=new StringBuilder(10 /* 3 * rwx + (d)irectory */);
+        if ((perms & SftpConstants.S_IFLNK) != 0) {
+            sb.append('l');
+        } else if ((perms & SftpConstants.S_IFDIR) != 0) {
+            sb.append('d');
+        } else {
+            sb.append('-');
+        }
+
+        if ((perms & SftpConstants.S_IRUSR) != 0) {
+            sb.append('r');
+        } else {
+            sb.append('-');
+        }
+        if ((perms & SftpConstants.S_IWUSR) != 0) {
+            sb.append('w');
+        } else {
+            sb.append('-');
+        }
+        if ((perms & SftpConstants.S_IXUSR) != 0) {
+            sb.append('x');
+        } else {
+            sb.append('-');
+        }
+
+        if ((perms & SftpConstants.S_IRGRP) != 0) {
+            sb.append('r');
+        } else {
+            sb.append('-');
+        }
+        if ((perms & SftpConstants.S_IWGRP) != 0) {
+            sb.append('w');
+        } else {
+            sb.append('-');
+        }
+        if ((perms & SftpConstants.S_IXGRP) != 0) {
+            sb.append('x');
+        } else {
+            sb.append('-');
+        }
+
+        if ((perms & SftpConstants.S_IROTH) != 0) {
+            sb.append('r');
+        } else {
+            sb.append('-');
+        }
+        if ((perms & SftpConstants.S_IWOTH) != 0) {
+            sb.append('w');
+        } else {
+            sb.append('-');
+        }
+        if ((perms & SftpConstants.S_IXOTH) != 0) {
+            sb.append('x');
+        } else {
+            sb.append('-');
+        }
+        
+        return sb.toString();
+    }
+
+    public static String getOctalPermissions(int perms) {
+        return getOctalPermissions(permissionsToAttributes(perms));
+    }
 
     public static Set<PosixFilePermission> permissionsToAttributes(int perms) {
         Set<PosixFilePermission> p = new HashSet<>();
-        if ((perms & S_IRUSR) != 0) {
+        if ((perms & SftpConstants.S_IRUSR) != 0) {
             p.add(PosixFilePermission.OWNER_READ);
         }
-        if ((perms & S_IWUSR) != 0) {
+        if ((perms & SftpConstants.S_IWUSR) != 0) {
             p.add(PosixFilePermission.OWNER_WRITE);
         }
-        if ((perms & S_IXUSR) != 0) {
+        if ((perms & SftpConstants.S_IXUSR) != 0) {
             p.add(PosixFilePermission.OWNER_EXECUTE);
         }
-        if ((perms & S_IRGRP) != 0) {
+        if ((perms & SftpConstants.S_IRGRP) != 0) {
             p.add(PosixFilePermission.GROUP_READ);
         }
-        if ((perms & S_IWGRP) != 0) {
+        if ((perms & SftpConstants.S_IWGRP) != 0) {
             p.add(PosixFilePermission.GROUP_WRITE);
         }
-        if ((perms & S_IXGRP) != 0) {
+        if ((perms & SftpConstants.S_IXGRP) != 0) {
             p.add(PosixFilePermission.GROUP_EXECUTE);
         }
-        if ((perms & S_IROTH) != 0) {
+        if ((perms & SftpConstants.S_IROTH) != 0) {
             p.add(PosixFilePermission.OTHERS_READ);
         }
-        if ((perms & S_IWOTH) != 0) {
+        if ((perms & SftpConstants.S_IWOTH) != 0) {
             p.add(PosixFilePermission.OTHERS_WRITE);
         }
-        if ((perms & S_IXOTH) != 0) {
+        if ((perms & SftpConstants.S_IXOTH) != 0) {
             p.add(PosixFilePermission.OTHERS_EXECUTE);
         }
         return p;
+    }
+
+    public static String getOctalPermissions(Collection<PosixFilePermission> perms) {
+        int pf = 0;
+
+        for (PosixFilePermission p : perms) {
+            switch (p) {
+                case OWNER_READ:
+                    pf |= SftpConstants.S_IRUSR;
+                    break;
+                case OWNER_WRITE:
+                    pf |= SftpConstants.S_IWUSR;
+                    break;
+                case OWNER_EXECUTE:
+                    pf |= SftpConstants.S_IXUSR;
+                    break;
+                case GROUP_READ:
+                    pf |= SftpConstants.S_IRGRP;
+                    break;
+                case GROUP_WRITE:
+                    pf |= SftpConstants.S_IWGRP;
+                    break;
+                case GROUP_EXECUTE:
+                    pf |= SftpConstants.S_IXGRP;
+                    break;
+                case OTHERS_READ:
+                    pf |= SftpConstants.S_IROTH;
+                    break;
+                case OTHERS_WRITE:
+                    pf |= SftpConstants.S_IWOTH;
+                    break;
+                case OTHERS_EXECUTE:
+                    pf |= SftpConstants.S_IXOTH;
+                    break;
+                default:    // ignored
+            }
+        }
+
+        return String.format("%04o", Integer.valueOf(pf));
     }
 
     /**

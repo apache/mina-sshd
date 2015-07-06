@@ -37,7 +37,7 @@ public class MD5HandleExtensionImpl extends AbstractMD5HashExtension implements 
 
     @Override
     public byte[] getHash(SftpClient.Handle handle, long offset, long length, byte[] quickHash) throws IOException {
-        return doGetHash(handle.id, offset, length, quickHash);
+        return doGetHash(handle.getIdentifier(), offset, length, quickHash);
     }
 
 }

@@ -16,33 +16,19 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.sshd.common.random;
 
 /**
- * A pseudo random number generator.
- *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface Random {
-    /**
-     * Fill the buffer with random values
-     * @param bytes The bytes to fill
-     * @see #fill(byte[], int, int)
-     */
-    void fill(byte[] bytes);    // TODO in JDK-8 make this a default method
-
-    /**
-     * Fill part of bytes with random values.
-     * @param bytes byte array to be filled.
-     * @param start index to start filling at.
-     * @param len length of segment to fill.
-     */
-    void fill(byte[] bytes, int start, int len);
-
-    /**
-     * Returns a pseudo-random uniformly distributed {@code int}
-     * in the half-open range [0, n).
-     */
-    int random(int n);
-
+public abstract class AbstractRandom implements Random {
+    protected AbstractRandom() {
+        super();
+    }
+    
+    @Override     // TODO in JDK-8 make this a default method
+    public void fill(byte[] bytes) {
+        fill(bytes, 0, bytes.length);
+    }
 }

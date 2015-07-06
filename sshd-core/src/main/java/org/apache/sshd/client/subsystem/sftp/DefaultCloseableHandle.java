@@ -32,7 +32,7 @@ public class DefaultCloseableHandle extends CloseableHandle {
     private final AtomicBoolean open = new AtomicBoolean(true);
     private final SftpClient client;
 
-    public DefaultCloseableHandle(SftpClient client, String id) {
+    public DefaultCloseableHandle(SftpClient client, byte[] id) {
         super(id);
         this.client = ValidateUtils.checkNotNull(client, "No client for id=%s", id);
     }

@@ -16,33 +16,16 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.random;
+
+package org.apache.sshd.client.subsystem.sftp;
 
 /**
- * A pseudo random number generator.
- *
+ * Just a test class used to invoke {@link SftpCommand#main(String[])} in
+ * order to have logging - which is in {@code test} scope
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface Random {
-    /**
-     * Fill the buffer with random values
-     * @param bytes The bytes to fill
-     * @see #fill(byte[], int, int)
-     */
-    void fill(byte[] bytes);    // TODO in JDK-8 make this a default method
-
-    /**
-     * Fill part of bytes with random values.
-     * @param bytes byte array to be filled.
-     * @param start index to start filling at.
-     * @param len length of segment to fill.
-     */
-    void fill(byte[] bytes, int start, int len);
-
-    /**
-     * Returns a pseudo-random uniformly distributed {@code int}
-     * in the half-open range [0, n).
-     */
-    int random(int n);
-
+public class SftpCommandMain {
+    public static void main(String[] args) throws Exception {
+        SftpCommand.main(args);
+    }
 }

@@ -723,7 +723,7 @@ public class ScpTest extends BaseTestSupport {
         String remotePath = Utils.resolveRelativeRemotePath(parentPath, remoteDir);
         String fileName = getCurrentTestName() + ".txt";
         Path remoteFile = remoteDir.resolve(fileName);
-        String mode = ScpHelper.getOctalPerms(EnumSet.of(
+        String mode = ScpHelper.getOctalPermissions(EnumSet.of(
                     PosixFilePermission.OTHERS_READ, PosixFilePermission.OTHERS_WRITE,
                     PosixFilePermission.GROUP_READ, PosixFilePermission.GROUP_WRITE,
                     PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE

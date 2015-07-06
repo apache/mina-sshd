@@ -27,7 +27,7 @@ import org.apache.sshd.common.OptionalFeature;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SingletonRandomFactory implements Random, RandomFactory {
+public class SingletonRandomFactory extends AbstractRandom implements RandomFactory {
 
     private final NamedFactory<Random> factory;
     private final Random random;

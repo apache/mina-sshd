@@ -38,11 +38,15 @@ public abstract class AbstractMD5HashExtension extends AbstractSftpClientExtensi
         super(name, client, raw, extras);
     }
 
-    protected byte[] doGetHash(String target, long offset, long length, byte[] quickHash) throws IOException {
+    protected byte[] doGetHash(Object target, long offset, long length, byte[] quickHash) throws IOException {
         Buffer buffer = new ByteArrayBuffer();
         String opcode = getName();
         buffer.putString(opcode);
-        buffer.putString(target);
+        if (target instanceof CharSequence) {
+            buffer.putString(target.toString());
+        } else {
+            buffer.putBytes((byte[]) target);
+        }
         buffer.putLong(offset);
         buffer.putLong(length);
         buffer.putBytes((quickHash == null) ? GenericUtils.EMPTY_BYTE_ARRAY : quickHash);

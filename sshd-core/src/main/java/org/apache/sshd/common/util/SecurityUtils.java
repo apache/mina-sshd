@@ -42,6 +42,7 @@ import javax.crypto.Mac;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.keyprovider.AbstractClassLoadableResourceKeyPairProvider;
 import org.apache.sshd.common.keyprovider.AbstractFileKeyPairProvider;
+import org.apache.sshd.common.random.AbstractRandom;
 import org.apache.sshd.common.random.JceRandomFactory;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.random.RandomFactory;
@@ -312,7 +313,7 @@ public class SecurityUtils {
      *
      * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
      */
-    private static class BouncyCastleRandom implements Random {
+    private static class BouncyCastleRandom extends AbstractRandom {
 
         private final RandomGenerator random;
 

@@ -72,21 +72,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.config.VersionProperties;
 import org.apache.sshd.common.digest.BuiltinDigests;
 import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.file.FileSystemAware;
+import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.SelectorUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -110,6 +112,16 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
      * Properties key for the maximum of available open handles per session.
      */
     public static final String MAX_OPEN_HANDLES_PER_SESSION = "max-open-handles-per-session";
+        public static final int DEFAULT_MAX_OPEN_HANDLES = Integer.MAX_VALUE;
+
+    /**
+     * Size in bytes of the opaque handle value
+     * @see #DEFAULT_FILE_HANDLE_SIZE
+     */
+    public static final String FILE_HANDLE_SIZE = "sftp-handle-size";
+        public static final int MIN_FILE_FILE_HANDLE_SIZE = 4;  // ~uint32
+        public static final int DEFAULT_FILE_HANDLE_SIZE = 16;
+        public static final int MAX_FILE_FILE_HANDLE_SIZE = 64;  // ~sha512 
 
     /**
      * Force the use of a given sftp version
@@ -170,12 +182,14 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     private OutputStream out;
     private OutputStream err;
     private Environment env;
+    private Random randomizer;
+    private int fileHandleSize = DEFAULT_FILE_HANDLE_SIZE;
     private ServerSession session;
-    private boolean closed = false;
+    private boolean closed;
 	private ExecutorService executors;
 	private boolean shutdownExecutor;
 	private Future<?> pendingFuture;
-	private final byte[] workBuf = new byte[Integer.SIZE / Byte.SIZE]; // TODO in JDK-8 use Integer.BYTES
+	private byte[] workBuf = new byte[Math.max(DEFAULT_FILE_HANDLE_SIZE, Integer.SIZE / Byte.SIZE)]; // TODO in JDK-8 use Integer.BYTES
     private FileSystem fileSystem = FileSystems.getDefault();
     private Path defaultDir = fileSystem.getPath(System.getProperty("user.dir"));
     private long requestsCount;
@@ -428,6 +442,17 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     @Override
     public void setSession(ServerSession session) {
         this.session = session;
+        
+        FactoryManager manager = session.getFactoryManager();
+        Factory<? extends Random> factory = manager.getRandomFactory();
+        this.randomizer = factory.create();
+        this.fileHandleSize = FactoryManagerUtils.getIntProperty(manager, FILE_HANDLE_SIZE, DEFAULT_FILE_HANDLE_SIZE);
+        ValidateUtils.checkTrue(this.fileHandleSize >= MIN_FILE_FILE_HANDLE_SIZE, "File handle size too small: %d", this.fileHandleSize);
+        ValidateUtils.checkTrue(this.fileHandleSize <= MAX_FILE_FILE_HANDLE_SIZE, "File handle size too big: %d", this.fileHandleSize);
+
+        if (workBuf.length < this.fileHandleSize) {
+            workBuf = new byte[this.fileHandleSize];
+        }
     }
 
     @Override
@@ -707,8 +732,8 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             Digest digest = BuiltinDigests.md5.create();
             digest.init();
 
-            byte[] workBuf = new byte[(int) Math.min(effectiveLength, SftpConstants.MD5_QUICK_HASH_SIZE)];
-            ByteBuffer bb = ByteBuffer.wrap(workBuf);
+            byte[] digestBuf = new byte[(int) Math.min(effectiveLength, SftpConstants.MD5_QUICK_HASH_SIZE)];
+            ByteBuffer bb = ByteBuffer.wrap(digestBuf);
             boolean hashMatches = false;
             byte[] hashValue = null;
 
@@ -729,7 +754,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                 } else {
                     int readLen = channel.read(bb);
                     effectiveLength -= readLen;
-                    digest.update(workBuf, 0, readLen);
+                    digest.update(digestBuf, 0, readLen);
     
                     hashValue = digest.digest();
                     hashMatches = Arrays.equals(quickCheckHash, hashValue);
@@ -744,7 +769,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                         if (effectiveLength > 0L) {
                             digest = BuiltinDigests.md5.create();
                             digest.init();
-                            digest.update(workBuf, 0, readLen);
+                            digest.update(digestBuf, 0, readLen);
                             hashValue = null;   // start again
                         }
                     } else {
@@ -761,7 +786,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                         bb.clear();
                         int readLen = channel.read(bb); 
                         effectiveLength -= readLen;
-                        digest.update(workBuf, 0, readLen);
+                        digest.update(digestBuf, 0, readLen);
                     }
                     
                     if (hashValue == null) {    // check if did any more iterations after the quick hash
@@ -1282,7 +1307,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             } else if (!Files.isReadable(p)) {
                 sendStatus(id, SSH_FX_PERMISSION_DENIED, path);
             } else {
-                String handle = UUID.randomUUID().toString();
+                String handle = generateFileHandle(p);
                 handles.put(handle, new DirectoryHandle(p));
                 sendHandle(id, handle);
             }
@@ -1447,7 +1472,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
 
     protected void doOpen(Buffer buffer, int id) throws IOException {
         int curHandleCount = handles.size();
-        int maxHandleCount = FactoryManagerUtils.getIntProperty(session, MAX_OPEN_HANDLES_PER_SESSION, Integer.MAX_VALUE);
+        int maxHandleCount = FactoryManagerUtils.getIntProperty(session, MAX_OPEN_HANDLES_PER_SESSION, DEFAULT_MAX_OPEN_HANDLES);
         if (curHandleCount > maxHandleCount) {
             sendStatus(id, SSH_FX_FAILURE, "Too many open handles: current=" + curHandleCount + ", max.=" + maxHandleCount);
             return;
@@ -1512,12 +1537,20 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         }
         try {
             Path file = resolveFile(path);
-            String handle = UUID.randomUUID().toString();
+            String handle = generateFileHandle(file);
             handles.put(handle, new FileHandle(file, pflags, access, attrs));
             sendHandle(id, handle);
         } catch (IOException e) {
             sendStatus(id, e);
         }
+    }
+
+    // we stringify our handles and treat them as such on decoding as well as it is easier to use as a map key
+    protected String generateFileHandle(Path file) {
+        randomizer.fill(workBuf, 0, fileHandleSize);
+        String handle = BufferUtils.printHex(workBuf, 0, fileHandleSize, BufferUtils.EMPTY_HEX_SEPARATOR);
+        log.trace("generateFileHandle({}) {}", file, handle);
+        return handle;
     }
 
     protected void doInit(Buffer buffer, int id) throws IOException {

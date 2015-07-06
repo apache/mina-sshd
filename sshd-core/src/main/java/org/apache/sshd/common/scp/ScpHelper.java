@@ -213,7 +213,7 @@ public class ScpHelper extends AbstractLoggingBean {
             throw new IOException("Expected a D message but got '" + header + "'");
         }
 
-        Set<PosixFilePermission> perms = parseOctalPerms(header.substring(1, 5));
+        Set<PosixFilePermission> perms = parseOctalPermissions(header.substring(1, 5));
         int length = Integer.parseInt(header.substring(6, header.indexOf(' ', 6)));
         String name = header.substring(header.indexOf(' ', 6) + 1);
 
@@ -310,7 +310,7 @@ public class ScpHelper extends AbstractLoggingBean {
             throw new IOException("receiveStream(" + resolver + ") buffer size (" + bufferSize + ") below minimum (" + MIN_RECEIVE_BUFFER_SIZE + ")");
         }
 
-        Set<PosixFilePermission> perms = parseOctalPerms(header.substring(1, 5));
+        Set<PosixFilePermission> perms = parseOctalPermissions(header.substring(1, 5));
         final long length = Long.parseLong(header.substring(6, header.indexOf(' ', 6)));
         String name = header.substring(header.indexOf(' ', 6) + 1);
         if (length < 0L) { // TODO consider throwing an exception...
@@ -528,7 +528,7 @@ public class ScpHelper extends AbstractLoggingBean {
         }
 
         Set<PosixFilePermission> perms = EnumSet.copyOf(resolver.getPermissions());
-        String octalPerms = preserve ? getOctalPerms(perms) : "0644";
+        String octalPerms = preserve ? getOctalPermissions(perms) : "0644";
         String fileName = resolver.getFileName();
         String cmd = new StringBuilder(octalPerms.length() + fileName.length() + Long.SIZE /* some extra delimiters */)
             .append('C').append(octalPerms)
@@ -581,7 +581,7 @@ public class ScpHelper extends AbstractLoggingBean {
         Set<PosixFilePermission> perms = IoUtils.getPermissions(path, options);
         StringBuilder buf = new StringBuilder();
         buf.append("D");
-        buf.append(preserve ? getOctalPerms(perms) : "0755");
+        buf.append(preserve ? getOctalPermissions(perms) : "0755");
         buf.append(" ");
         buf.append("0"); // length
         buf.append(" ");
@@ -615,11 +615,11 @@ public class ScpHelper extends AbstractLoggingBean {
         readAck(false);
     }
 
-    public static String getOctalPerms(Path path, LinkOption ... options) throws IOException {
-        return getOctalPerms(IoUtils.getPermissions(path, options));
+    public static String getOctalPermissions(Path path, LinkOption ... options) throws IOException {
+        return getOctalPermissions(IoUtils.getPermissions(path, options));
     }
 
-    public static String getOctalPerms(Collection<PosixFilePermission> perms) {
+    public static String getOctalPermissions(Collection<PosixFilePermission> perms) {
         int pf = 0;
 
         for (PosixFilePermission p : perms) {
@@ -658,13 +658,13 @@ public class ScpHelper extends AbstractLoggingBean {
         return String.format("%04o", Integer.valueOf(pf));
     }
 
-    public static Set<PosixFilePermission> setOctalPerms(Path path, String str) throws IOException {
-        Set<PosixFilePermission> perms = parseOctalPerms(str);
+    public static Set<PosixFilePermission> setOctalPermissions(Path path, String str) throws IOException {
+        Set<PosixFilePermission> perms = parseOctalPermissions(str);
         IoUtils.setPermissions(path, perms);
         return perms;
     }
 
-    public static Set<PosixFilePermission> parseOctalPerms(String str) {
+    public static Set<PosixFilePermission> parseOctalPermissions(String str) {
         int perms = Integer.parseInt(str, 8);
         Set<PosixFilePermission> p = EnumSet.noneOf(PosixFilePermission.class);
         if ((perms & S_IRUSR) != 0) {

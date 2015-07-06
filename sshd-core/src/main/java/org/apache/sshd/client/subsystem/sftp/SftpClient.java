@@ -40,6 +40,8 @@ import org.apache.sshd.client.subsystem.SubsystemClient;
 import org.apache.sshd.client.subsystem.sftp.extensions.SftpClientExtension;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.buffer.BufferUtils;
+import org.bouncycastle.util.Arrays;
 
 /**
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
@@ -72,19 +74,56 @@ public interface SftpClient extends SubsystemClient {
     }
 
     public static class Handle {
-        public final String id;
-        public Handle(String id) {
-            this.id = ValidateUtils.checkNotNullAndNotEmpty(id, "No handle ID", GenericUtils.EMPTY_OBJECT_ARRAY);
+        private final byte[] id;
+
+        public Handle(byte[] id) {
+            // clone the original so the handle is imutable
+            this.id = ValidateUtils.checkNotNullAndNotEmpty(id, "No handle ID", GenericUtils.EMPTY_OBJECT_ARRAY).clone();
         }
-        
+
+        /**
+         * @return A <U>cloned</U> instance of the identifier in order to
+         * avoid inadvertent modifications to the handle contents
+         */
+        public byte[] getIdentifier() {
+            return id.clone();
+        }
+
+        @Override
+        public int hashCode() {
+            return Arrays.hashCode(id);
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj == null) {
+                return false;
+            }
+            
+            if (obj == this) {
+                return true;
+            }
+
+            // we do not ask getClass() == obj.getClass() in order to allow for derived classes equality
+            if (!(obj instanceof Handle)) {
+                return false;
+            }
+            
+            if (Arrays.areEqual(id, ((Handle) obj).id)) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+
         @Override
         public String toString() {
-            return id;
+            return BufferUtils.printHex(BufferUtils.EMPTY_HEX_SEPARATOR, id);
         }
     }
 
     public static abstract class CloseableHandle extends Handle implements Channel, Closeable {
-        protected CloseableHandle(String id) {
+        protected CloseableHandle(byte[] id) {
             super(id);
         }
     }
