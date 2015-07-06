@@ -175,7 +175,7 @@ public class SftpTest extends BaseTestSupport {
                 try (SftpClient sftp = session.createSftpClient()) {
                     boolean	isWindows = OsUtils.isWin32();
             
-                    try(SftpClient.CloseableHandle h = sftp.open(file, EnumSet.of(SftpClient.OpenMode.Read))) {
+                    try(SftpClient.CloseableHandle h = sftp.open(file /* no mode == read */)) {
                         // NOTE: on Windows files are always readable
                         // see https://svn.apache.org/repos/asf/harmony/enhanced/java/branches/java6/classlib/modules/luni/src/test/api/windows/org/apache/harmony/luni/tests/java/io/WinFileTest.java
                         assertTrue("Empty read should have failed on " + file, isWindows);
@@ -224,7 +224,7 @@ public class SftpTest extends BaseTestSupport {
                         sftp.write(h, 3, "-".getBytes(), 0, 1);
                     }
 
-                    try(SftpClient.CloseableHandle h = sftp.open(file, EnumSet.of(SftpClient.OpenMode.Read))) {
+                    try(SftpClient.CloseableHandle h = sftp.open(file /* no mode == read */)) {
                         // NOTE: on Windows files are always readable
                         assertTrue("Data read should have failed on " + file, isWindows);
                     } catch (IOException e) {
@@ -236,7 +236,7 @@ public class SftpTest extends BaseTestSupport {
                     javaFile.setReadable(true, false);
             
                     byte[] buf = new byte[3];
-                    try(SftpClient.CloseableHandle h = sftp.open(file, EnumSet.of(SftpClient.OpenMode.Read))) {
+                    try(SftpClient.CloseableHandle h = sftp.open(file /* no mode == read */)) {
                         int l = sftp.read(h, 2l, buf, 0, 3);
                         assertEquals("Mismatched read data", "2-4", new String(buf, 0, l));
                     }

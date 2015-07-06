@@ -538,6 +538,17 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
 
     @Override
     public CloseableHandle open(String path, Collection<OpenMode> options) throws IOException {
+        if (!isOpen()) {
+            throw new IOException("open(" + path + ")[" + options + "] client is closed");
+        }
+
+        /*
+         * Be consistent with FileChannel#open - if no mode specified then READ is assumed
+         */
+        if (GenericUtils.isEmpty(options)) {
+            options = EnumSet.of(OpenMode.Read);
+        }
+
         Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE /* some extra fields */);
         buffer.putString(path);
         int version = getVersion(), mode = 0;
@@ -599,6 +610,10 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
 
     @Override
     public void close(Handle handle) throws IOException {
+        if (!isOpen()) {
+            throw new IOException("close(" + handle + ") client is closed");
+        }
+
         Buffer buffer = new ByteArrayBuffer(handle.id.length() + Long.SIZE /* some extra fields */);
         buffer.putString(handle.id);
         checkStatus(receive(send(SSH_FXP_CLOSE, buffer)));
@@ -606,6 +621,10 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
 
     @Override
     public void remove(String path) throws IOException {
+        if (!isOpen()) {
+            throw new IOException("remove(" + path + ") client is closed");
+        }
+
         Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE /* some extra fields */);
         buffer.putString(path);
         checkStatus(receive(send(SSH_FXP_REMOVE, buffer)));
@@ -613,6 +632,10 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
 
     @Override
     public void rename(String oldPath, String newPath, Collection<CopyMode> options) throws IOException {
+        if (!isOpen()) {
+            throw new IOException("rename(" + oldPath + " => " + newPath + ")[" + options + "] client is closed");
+        }
+
         Buffer buffer = new ByteArrayBuffer(oldPath.length() + newPath.length() + Long.SIZE /* some extra fields */);
         buffer.putString(oldPath);
         buffer.putString(newPath);
@@ -643,12 +666,16 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
     }
 
     @Override
-    public int read(Handle handle, long fileOffset, byte[] dst, int dstoff, int len) throws IOException {
+    public int read(Handle handle, long fileOffset, byte[] dst, int dstOffset, int len) throws IOException {
+        if (!isOpen()) {
+            throw new IOException("read(" + handle + "/" + fileOffset + ")[" + dstOffset + "/" + len + "] client is closed");
+        }
+
         Buffer buffer = new ByteArrayBuffer(handle.id.length() + Long.SIZE /* some extra fields */);
         buffer.putString(handle.id);
         buffer.putLong(fileOffset);
         buffer.putInt(len);
-        return checkData(receive(send(SSH_FXP_READ, buffer)), dstoff, dst);
+        return checkData(receive(send(SSH_FXP_READ, buffer)), dstOffset, dst);
     }
 
     protected int checkData(Buffer buffer, int dstoff, byte[] dst) throws IOException {
@@ -678,28 +705,35 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
     }
 
     @Override
-    public void write(Handle handle, long fileOffset, byte[] src, int srcoff, int len) throws IOException {
+    public void write(Handle handle, long fileOffset, byte[] src, int srcOffset, int len) throws IOException {
         // do some bounds checking first
-        if ((fileOffset < 0) || (srcoff < 0) || (len < 0)) {
+        if ((fileOffset < 0) || (srcOffset < 0) || (len < 0)) {
             throw new IllegalArgumentException("write(" + handle + ") please ensure all parameters "
                                              + " are non-negative values: file-offset=" + fileOffset
-                                             + ", src-offset=" + srcoff + ", len=" + len);
+                                             + ", src-offset=" + srcOffset + ", len=" + len);
         }
-        if ((srcoff + len) > src.length) {
+        if ((srcOffset + len) > src.length) {
             throw new IllegalArgumentException("write(" + handle + ")"
-                                             + " cannot read bytes " + srcoff + " to " + (srcoff + len)
+                                             + " cannot read bytes " + srcOffset + " to " + (srcOffset + len)
                                              + " when array is only of length " + src.length);
+        }
+        if (!isOpen()) {
+            throw new IOException("write(" + handle + "/" + fileOffset + ")[" + srcOffset + "/" + len + "] client is closed");
         }
 
         Buffer buffer = new ByteArrayBuffer(handle.id.length() + len + Long.SIZE /* some extra fields */);
         buffer.putString(handle.id);
         buffer.putLong(fileOffset);
-        buffer.putBytes(src, srcoff, len);
+        buffer.putBytes(src, srcOffset, len);
         checkStatus(receive(send(SSH_FXP_WRITE, buffer)));
     }
 
     @Override
     public void mkdir(String path) throws IOException {
+        if (!isOpen()) {
+            throw new IOException("mkdir(" + path + ") client is closed");
+        }
+
         Buffer buffer = new ByteArrayBuffer(path.length() +  Long.SIZE /* some extra fields */);
         buffer.putString(path, StandardCharsets.UTF_8);
         buffer.putInt(0);
@@ -714,6 +748,10 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
 
     @Override
     public void rmdir(String path) throws IOException {
+        if (!isOpen()) {
+            throw new IOException("rmdir(" + path + ") client is closed");
+        }
+
         Buffer buffer = new ByteArrayBuffer(path.length() +  Long.SIZE /* some extra fields */);
         buffer.putString(path);
         checkStatus(receive(send(SSH_FXP_RMDIR, buffer)));
@@ -721,6 +759,10 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
 
     @Override
     public CloseableHandle openDir(String path) throws IOException {
+        if (!isOpen()) {
+            throw new IOException("openDir(" + path + ") client is closed");
+        }
+
         Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE /* some extra fields */);
         buffer.putString(path);
         return new DefaultCloseableHandle(this, checkHandle(receive(send(SSH_FXP_OPENDIR, buffer))));
@@ -728,6 +770,10 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
 
     @Override
     public DirEntry[] readDir(Handle handle) throws IOException {
+        if (!isOpen()) {
+            throw new IOException("readDir(" + handle + ") client is closed");
+        }
+
         Buffer buffer = new ByteArrayBuffer(handle.id.length() + Long.SIZE /* some extra fields */);
         buffer.putString(handle.id);
         return checkDir(receive(send(SSH_FXP_READDIR, buffer)));
@@ -770,6 +816,10 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
 
     @Override
     public String canonicalPath(String path) throws IOException {
+        if (!isOpen()) {
+            throw new IOException("canonicalPath(" + path + ") client is closed");
+        }
+
         Buffer buffer = new ByteArrayBuffer();
         buffer.putString(path);
         return checkOneName(receive(send(SSH_FXP_REALPATH, buffer)));
@@ -777,6 +827,10 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
 
     @Override
     public Attributes stat(String path) throws IOException {
+        if (!isOpen()) {
+            throw new IOException("stat(" + path + ") client is closed");
+        }
+
         Buffer buffer = new ByteArrayBuffer();
         buffer.putString(path);
 
@@ -790,6 +844,10 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
 
     @Override
     public Attributes lstat(String path) throws IOException {
+        if (!isOpen()) {
+            throw new IOException("lstat(" + path + ") client is closed");
+        }
+
         Buffer buffer = new ByteArrayBuffer();
         buffer.putString(path);
 
@@ -803,6 +861,10 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
 
     @Override
     public Attributes stat(Handle handle) throws IOException {
+        if (!isOpen()) {
+            throw new IOException("stat(" + handle + ") client is closed");
+        }
+
         Buffer buffer = new ByteArrayBuffer();
         buffer.putString(handle.id);
 
@@ -816,6 +878,10 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
 
     @Override
     public void setStat(String path, Attributes attributes) throws IOException {
+        if (!isOpen()) {
+            throw new IOException("setStat(" + path + ")[" + attributes + "] client is closed");
+        }
+
         Buffer buffer = new ByteArrayBuffer();
         buffer.putString(path);
         writeAttributes(buffer, attributes);
@@ -824,6 +890,10 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
 
     @Override
     public void setStat(Handle handle, Attributes attributes) throws IOException {
+        if (!isOpen()) {
+            throw new IOException("setStat(" + handle + ")[" + attributes + "] client is closed");
+        }
+
         Buffer buffer = new ByteArrayBuffer();
         buffer.putString(handle.id);
         writeAttributes(buffer, attributes);
@@ -832,6 +902,10 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
 
     @Override
     public String readLink(String path) throws IOException {
+        if (!isOpen()) {
+            throw new IOException("readLink(" + path + ") client is closed");
+        }
+
         Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE /* some extra fields */);
         buffer.putString(path);
         return checkOneName(receive(send(SSH_FXP_READLINK, buffer)));
@@ -839,6 +913,10 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
 
     @Override
     public void link(String linkPath, String targetPath, boolean symbolic) throws IOException {
+        if (!isOpen()) {
+            throw new IOException("link(" + linkPath + " => " + targetPath + ")[symbolic=" + symbolic + "] client is closed");
+        }
+
         Buffer buffer = new ByteArrayBuffer(linkPath.length() + targetPath.length() + Long.SIZE /* some extra fields */);
         int version = getVersion();
         if (version < SFTP_V6) {
@@ -858,6 +936,10 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
 
     @Override
     public void lock(Handle handle, long offset, long length, int mask) throws IOException {
+        if (!isOpen()) {
+            throw new IOException("lock(" + handle + ")[offset=" + offset + ", length=" + length + ", mask=0x" + Integer.toHexString(mask) + "] client is closed");
+        }
+
         Buffer buffer = new ByteArrayBuffer();
         buffer.putString(handle.id);
         buffer.putLong(offset);
@@ -868,6 +950,10 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
 
     @Override
     public void unlock(Handle handle, long offset, long length) throws IOException {
+        if (!isOpen()) {
+            throw new IOException("unlock" + handle + ")[offset=" + offset + ", length=" + length + "] client is closed");
+        }
+
         Buffer buffer = new ByteArrayBuffer();
         buffer.putString(handle.id);
         buffer.putLong(offset);
@@ -877,6 +963,10 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
 
     @Override
     public Iterable<DirEntry> readDir(final String path) throws IOException {
+        if (!isOpen()) {
+            throw new IOException("readDir(" + path + ") client is closed");
+        }
+
         return new Iterable<DirEntry>() {
             @Override
             public Iterator<DirEntry> iterator() {
@@ -957,6 +1047,10 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             throw new IllegalArgumentException("Insufficient read buffer size: " + bufferSize + ", min.=" + MIN_READ_BUFFER_SIZE);
         }
 
+        if (!isOpen()) {
+            throw new IOException("read(" + path + ")[" + mode + "] size=" + bufferSize + ": client is closed");
+        }
+
         return new InputStreamWithChannel() {
             private byte[] bb = new byte[1];
             private byte[] buffer = new byte[bufferSize];
@@ -1029,6 +1123,10 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
     public OutputStream write(final String path, final int bufferSize, final Collection<OpenMode> mode) throws IOException {
         if (bufferSize < MIN_WRITE_BUFFER_SIZE) {
             throw new IllegalArgumentException("Insufficient write buffer size: " + bufferSize + ", min.=" + MIN_WRITE_BUFFER_SIZE);
+        }
+
+        if (!isOpen()) {
+            throw new IOException("write(" + path + ")[" + mode + "] size=" + bufferSize + ": client is closed");
         }
 
         return new OutputStreamWithChannel() {

@@ -1440,11 +1440,22 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         }
 
         String path = buffer.getString();
+
+        /*
+         * Be consistent with FileChannel#open - if no mode specified then READ is assumed
+         */
         int access = 0;
         if (version >= SFTP_V5) {
-            access = buffer.getInt();
+            if ((access=buffer.getInt()) == 0) {
+                access = ACE4_READ_DATA | ACE4_READ_ATTRIBUTES;
+            }
         }
+
         int pflags = buffer.getInt();
+        if (pflags == 0) {
+            pflags = SSH_FXF_READ;
+        }
+
         if (version < SFTP_V5) {
             int flags = pflags;
             pflags = 0;

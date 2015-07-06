@@ -232,8 +232,32 @@ public interface SftpClient extends SubsystemClient {
     // Low level API
     //
 
+    /**
+     * Opens a remote file for read
+     * @param path The remote path
+     * @return The file's {@link CloseableHandle}
+     * @throws IOException If failed to open the remote file
+     */
     CloseableHandle open(String path) throws IOException;
+
+    /**
+     * Opens a remote file with the specified mode(s)
+     * @param path The remote path
+     * @param options The desired mode - if none specified
+     * then {@link OpenMode#Read} is assumed
+     * @return The file's {@link CloseableHandle}
+     * @throws IOException If failed to open the remote file
+     */
     CloseableHandle open(String path, OpenMode ... options) throws IOException;
+
+    /**
+     * Opens a remote file with the specified mode(s)
+     * @param path The remote path
+     * @param options The desired mode - if none specified
+     * then {@link OpenMode#Read} is assumed
+     * @return The file's {@link CloseableHandle}
+     * @throws IOException If failed to open the remote file
+     */
     CloseableHandle open(String path, Collection<OpenMode> options) throws IOException;
 
     void close(Handle handle) throws IOException;
