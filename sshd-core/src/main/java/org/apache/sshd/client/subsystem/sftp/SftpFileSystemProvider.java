@@ -73,6 +73,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -328,18 +329,42 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             @Override
             public Iterator<Path> iterator() {
                 return new Iterator<Path>() {
+                    private boolean dotIgnored, dotdotIgnored;
+                    private SftpClient.DirEntry curEntry = nextEntry();
+
                     @SuppressWarnings("synthetic-access")
                     private final Iterator<SftpClient.DirEntry> it = iter.iterator();
 
                     @Override
                     public boolean hasNext() {
-                        return it.hasNext();
+                        return (curEntry != null);
                     }
 
                     @Override
                     public Path next() {
-                        SftpClient.DirEntry entry = it.next();
+                        if (curEntry == null) {
+                            throw new NoSuchElementException("No next entry");
+                        }
+
+                        SftpClient.DirEntry entry = curEntry;
+                        curEntry = nextEntry();
                         return p.resolve(entry.filename);
+                    }
+
+                    private SftpClient.DirEntry nextEntry() {
+                        while(it.hasNext()) {
+                            SftpClient.DirEntry entry = it.next();
+                            String name = entry.filename;
+                            if (".".equals(name) && (!dotIgnored)) {
+                                dotIgnored = true;
+                            } else if ("..".equals(name) && (!dotdotIgnored)) {
+                                dotdotIgnored = true;
+                            } else {
+                                return entry;
+                            }
+                        }
+                        
+                        return null;
                     }
 
                     @Override

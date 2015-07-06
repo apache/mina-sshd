@@ -19,8 +19,10 @@
 package org.apache.sshd.client;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.InetSocketAddress;
@@ -65,6 +67,7 @@ import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoConnectFuture;
 import org.apache.sshd.common.io.IoConnector;
+import org.apache.sshd.common.keyprovider.AbstractFileKeyPairProvider;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.SecurityUtils;
@@ -317,6 +320,170 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
           Main class implementation
      *=================================*/
 
+    // NOTE: ClientSession#getFactoryManager is the SshClient
+    public static ClientSession setupClientSession(
+            String portOption, final BufferedReader stdin, final PrintStream stdout, final PrintStream stderr, String ... args)
+                    throws Exception {
+
+        int port = -1;
+        String host = null;
+        String login = null;
+        boolean error = false;
+        List<File> identities = new ArrayList<File>();
+        Map<String, String> options = new LinkedHashMap<String, String>();
+        int numArgs = GenericUtils.length(args);
+        for (int i = 0; i < numArgs; i++) {
+            String argName = args[i];
+            if (portOption.equals(argName)) {
+                if (i + 1 >= numArgs) {
+                    stderr.println("option requires an argument: " + argName);
+                    error = true;
+                    break;
+                }
+                
+                if (port > 0) {
+                    stderr.println(argName + " option value re-specified: " + port);
+                    error = true;
+                    break;
+                }
+                
+                if ((port=Integer.parseInt(args[++i])) <= 0) {
+                    stderr.println("Bad option value for " + argName + ": " + port);
+                    error = true;
+                    break;
+                }
+            } else if ("-i".equals(argName)) {
+                if (i + 1 >= numArgs) {
+                    stderr.println("option requires and argument: " + argName);
+                    error = true;
+                    break;
+                }
+                
+                File f = new File(args[++i]);
+                identities.add(f);
+            } else if ("-o".equals(argName)) {
+                if (i + 1 >= numArgs) {
+                    stderr.println("option requires and argument: " + argName);
+                    error = true;
+                    break;
+                }
+                String opt = args[++i];
+                int idx = opt.indexOf('=');
+                if (idx <= 0) {
+                    stderr.println("bad syntax for option: " + opt);
+                    error = true;
+                    break;
+                }
+                options.put(opt.substring(0, idx), opt.substring(idx + 1));
+            } else if ("-l".equals(argName)) {
+                if (i + 1 >= numArgs) {
+                    stderr.println("option requires an argument: " + argName);
+                    error = true;
+                    break;
+                }
+                
+                if (login != null) {
+                    stderr.println(argName + " option value re-specified: " + port);
+                    error = true;
+                    break;
+                }
+
+                login = args[++i];
+            } else if (argName.charAt(0) != '-') {
+                host = argName;
+                if (login == null) {
+                    int pos = host.indexOf('@');  // check if user@host
+                    if (pos > 0) {
+                        login = host.substring(0, pos);
+                        host = host.substring(pos + 1);
+                    }
+                }
+            }
+        }
+        
+        if ((!error) && GenericUtils.isEmpty(host)) {
+            stderr.println("Hostname not specified");
+            error = true;
+        }
+
+        if (login == null) {
+            login = System.getProperty("user.name");
+        }
+        
+        if (port <= 0) {
+            port = SshConfigFileReader.DEFAULT_PORT;
+        }
+        
+        if (error) {
+            return null;
+        }
+
+        SshClient client = SshClient.setUpDefaultClient();
+        try {
+            if (SecurityUtils.isBouncyCastleRegistered()) {
+                try {
+                    if (GenericUtils.isEmpty(identities)) {
+                        ClientIdentity.setKeyPairProvider(client,
+                                false,  // not strict - even though we should...
+                                true,   // supportedOnly
+                                new FilePasswordProvider() {
+                                    @Override
+                                    public String getPassword(String file) throws IOException {
+                                        stdout.print("Enter password for private key file=" + file + ": ");
+                                        return stdin.readLine();
+                                    }
+                                });
+                    } else {
+                        AbstractFileKeyPairProvider provider = SecurityUtils.createFileKeyPairProvider();
+                        provider.setFiles(identities);
+                        client.setKeyPairProvider(provider);
+                    }
+                } catch (Throwable t) {
+                    stderr.println("Error loading user keys: " + t.getMessage());
+                }
+            }
+
+            Map<String,Object> props = client.getProperties();
+            props.putAll(options);
+    
+            client.start();
+            client.setUserInteraction(new UserInteraction() {
+                    @Override
+                    public void welcome(String banner) {
+                        stdout.println(banner);
+                    }
+        
+                    @Override
+                    public String[] interactive(String destination, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
+                        int numPropmts = GenericUtils.length(prompt);
+                        String[] answers = new String[numPropmts];
+                        try {
+                            for (int i = 0; i < numPropmts; i++) {
+                                stdout.print(prompt[i] + " ");
+                                answers[i] = stdin.readLine();
+                            }
+                        } catch (IOException e) {
+                            // ignored
+                        }
+                        return answers;
+                    }
+                });
+            
+            // TODO use a configurable wait time
+            ClientSession session = client.connect(login, host, port).await().getSession();
+            try {
+                session.auth().verify();    // TODO use a configurable wait time
+                return session;
+            } catch(Exception e) {
+                session.close(true);
+                throw e;
+            }
+        } catch(Exception e) {
+            client.close();
+            throw e;
+        }
+    }
+
     public static void main(String[] args) throws Exception {
         Handler fh = new ConsoleHandler();
         fh.setLevel(Level.FINEST);
@@ -347,93 +514,55 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         }
         root.addHandler(fh);
 
-        int port = SshConfigFileReader.DEFAULT_PORT;
-        String host = null;
-        String login = System.getProperty("user.name");
+        PrintStream stdout=System.out, stderr=System.err;
         boolean agentForward = false;
         List<String> command = null;
         int logLevel = 0;
         int socksPort = -1;
+        int numArgs = GenericUtils.length(args);
         boolean error = false;
-        List<String> identities = new ArrayList<String>();
-        Map<String, String> options = new LinkedHashMap<String, String>();
-
-        for (int i = 0; i < args.length; i++) {
-            if (command == null && "-p".equals(args[i])) {
-                if (i + 1 >= args.length) {
-                    System.err.println("option requires an argument: " + args[i]);
+        String target = null;
+        for (int i = 0; i < numArgs; i++) {
+            String argName = args[i];
+            if (command == null && "-D".equals(argName)) {
+                if (i + 1 >= numArgs) {
+                    System.err.println("option requires an argument: " + argName);
                     error = true;
                     break;
                 }
-                port = Integer.parseInt(args[++i]);
-            } else if (command == null && "-D".equals(args[i])) {
-                if (i + 1 >= args.length) {
-                    System.err.println("option requires an argument: " + args[i]);
+                if (socksPort > 0) {
+                    stderr.println(argName + " option value re-specified: " + socksPort);
                     error = true;
                     break;
                 }
-                socksPort = Integer.parseInt(args[++i]);
-            } else if (command == null && "-l".equals(args[i])) {
-                if (i + 1 >= args.length) {
-                    System.err.println("option requires an argument: " + args[i]);
+                
+                if ((socksPort=Integer.parseInt(args[++i])) <= 0) {
+                    stderr.println("Bad option value for " + argName + ": " + socksPort);
                     error = true;
                     break;
                 }
-                login = args[++i];
-            } else if (command == null && "-v".equals(args[i])) {
+            } else if (command == null && "-v".equals(argName)) {
                 logLevel += 1;
-            } else if (command == null && "-vv".equals(args[i])) {
+            } else if (command == null && "-vv".equals(argName)) {
                 logLevel += 2;
-            } else if (command == null && "-vvv".equals(args[i])) {
+            } else if (command == null && "-vvv".equals(argName)) {
                 logLevel += 3;
-            } else if (command == null && "-A".equals(args[i])) {
+            } else if (command == null && "-A".equals(argName)) {
                 agentForward = true;
-            } else if (command == null && "-a".equals(args[i])) {
+            } else if (command == null && "-a".equals(argName)) {
                 agentForward = false;
-            } else if (command == null && "-i".equals(args[i])) {
-                if (i + 1 >= args.length) {
-                    System.err.println("option requires and argument: " + args[i]);
-                    error = true;
-                    break;
-                }
-                identities.add(args[++i]);
-            } else if (command == null && "-o".equals(args[i])) {
-                if (i + 1 >= args.length) {
-                    System.err.println("option requires and argument: " + args[i]);
-                    error = true;
-                    break;
-                }
-                String opt = args[++i];
-                int idx = opt.indexOf('=');
-                if (idx <= 0) {
-                    System.err.println("bad syntax for option: " + opt);
-                    error = true;
-                    break;
-                }
-                options.put(opt.substring(0, idx), opt.substring(idx + 1));
-            } else if (command == null && args[i].startsWith("-")) {
-                System.err.println("illegal option: " + args[i]);
-                error = true;
-                break;
             } else {
-                if (command == null && host == null) {
-                    host = args[i];
+                if (command == null && target == null) {
+                    target = argName;
                 } else {
                     if (command == null) {
                         command = new ArrayList<String>();
                     }
-                    command.add(args[i]);
+                    command.add(argName);
                 }
             }
         }
-        if (host == null) {
-            System.err.println("hostname required");
-            error = true;
-        }
-        if (error) {
-            System.err.println("usage: ssh [-A|-a] [-v[v][v]] [-D socksPort] [-l login] [-p port] [-o option=value] hostname [command]");
-            System.exit(-1);
-        }
+
         if (logLevel <= 0) {
             root.setLevel(Level.WARNING);
         } else if (logLevel == 1) {
@@ -444,98 +573,71 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             root.setLevel(Level.FINEST);
         }
 
-        try(SshClient client = SshClient.setUpDefaultClient();
-            BufferedReader stdin = new BufferedReader(new InputStreamReader(new NoCloseInputStream(System.in)))) {
-            if (SecurityUtils.isBouncyCastleRegistered()) {
-                try {
-                    ClientIdentity.setKeyPairProvider(client,
-                            false,  // not strict - even though we should...
-                            true,   // supportedOnly
-                            new FilePasswordProvider() {
-                                @Override
-                                public String getPassword(String file) throws IOException {
-                                    System.out.print("Enter password for private key file=" + file + ": ");
-                                    return stdin.readLine();
-                                }
-                            });
-                } catch (Throwable t) {
-                    System.out.println("Error loading user keys: " + t.getMessage());
+        ClientSession session=null;
+        try(BufferedReader stdin = new BufferedReader(new InputStreamReader(new NoCloseInputStream(System.in)))) {
+            if (!error) {
+                if ((session=setupClientSession("-p", stdin, stdout, stderr, args)) == null) {
+                    error = true;
                 }
             }
-    
-            Map<String,Object> props = client.getProperties();
-            props.putAll(options);
-    
-            client.start();
-            client.setUserInteraction(new UserInteraction() {
-                    @Override
-                    public void welcome(String banner) {
-                        System.out.println(banner);
-                    }
-        
-                    @Override
-                    public String[] interactive(String destination, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
-                        String[] answers = new String[prompt.length];
-                        try {
-                            for (int i = 0; i < prompt.length; i++) {
-                                System.out.print(prompt[i] + " ");
-                                answers[i] = stdin.readLine();
-                            }
-                        } catch (IOException e) {
-                            // ignored
-                        }
-                        return answers;
-                    }
-                });
 
-            /*
-            String authSock = System.getenv(SshAgent.SSH_AUTHSOCKET_ENV_NAME);
-            if (authSock == null && provider != null) {
-                Iterable<KeyPair> keys = provider.loadKeys();
-                AgentServer server = new AgentServer();
-                authSock = server.start();
-                SshAgent agent = new AgentClient(authSock);
-                for (KeyPair key : keys) {
-                    agent.addIdentity(key, "");
-                }
-                agent.close();
-                props.put(SshAgent.SSH_AUTHSOCKET_ENV_NAME, authSock);
+            if (error) {
+                System.err.println("usage: ssh [-A|-a] [-v[v][v]] [-D socksPort] [-l login] [-p port] [-o option=value] hostname/user@host [command]");
+                System.exit(-1);
             }
-            */
+
+            try(SshClient client = (SshClient) session.getFactoryManager()) {
+                /*
+                String authSock = System.getenv(SshAgent.SSH_AUTHSOCKET_ENV_NAME);
+                if (authSock == null && provider != null) {
+                    Iterable<KeyPair> keys = provider.loadKeys();
+                    AgentServer server = new AgentServer();
+                    authSock = server.start();
+                    SshAgent agent = new AgentClient(authSock);
+                    for (KeyPair key : keys) {
+                        agent.addIdentity(key, "");
+                    }
+                    agent.close();
+                    props.put(SshAgent.SSH_AUTHSOCKET_ENV_NAME, authSock);
+                }
+                */
     
-            try(ClientSession session = client.connect(login, host, port).await().getSession()) {
-                session.auth().verify();
-        
-                if (socksPort >= 0) {
-                    session.startDynamicPortForwarding(new SshdSocketAddress("localhost", socksPort));
-                    Thread.sleep(Long.MAX_VALUE);
-                } else {
-                    ClientChannel channel;
-                    if (command == null) {
-                        channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
-                        ((ChannelShell) channel).setAgentForwarding(agentForward);
-                        channel.setIn(new NoCloseInputStream(System.in));
+                try {
+                    if (socksPort >= 0) {
+                        session.startDynamicPortForwarding(new SshdSocketAddress("localhost", socksPort));
+                        Thread.sleep(Long.MAX_VALUE);
                     } else {
-                        StringWriter w = new StringWriter();
-                        for (String cmd : command) {
-                            w.append(cmd).append(" ");
+                        ClientChannel channel;
+                        if (command == null) {
+                            channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
+                            ((ChannelShell) channel).setAgentForwarding(agentForward);
+                            channel.setIn(new NoCloseInputStream(System.in));
+                        } else {
+                            StringWriter w = new StringWriter();
+                            for (String cmd : command) {
+                                w.append(cmd).append(" ");
+                            }
+                            w.close();
+                            channel = session.createChannel(ClientChannel.CHANNEL_EXEC, w.toString());
                         }
-                        w.close();
-                        channel = session.createChannel(ClientChannel.CHANNEL_EXEC, w.toString());
+                        
+                        try {
+                            channel.setOut(new NoCloseOutputStream(System.out));
+                            channel.setErr(new NoCloseOutputStream(System.err));
+                            channel.open().await(); // TODO use verify and a configurable timeout
+                            channel.waitFor(ClientChannel.CLOSED, 0);
+                        } finally {
+                            channel.close();
+                        }
+                        session.close(false);
                     }
-                    
-                    try {
-                        channel.setOut(new NoCloseOutputStream(System.out));
-                        channel.setErr(new NoCloseOutputStream(System.err));
-                        channel.open().await(); // TODO use verify and a configurable timeout
-                        channel.waitFor(ClientChannel.CLOSED, 0);
-                    } finally {
-                        channel.close();
-                    }
-                    session.close(false);
+                } finally {
+                    client.stop();
                 }
             } finally {
-                client.stop();
+                if (session != null) {
+                    session.close();
+                }
             }
         }
     }

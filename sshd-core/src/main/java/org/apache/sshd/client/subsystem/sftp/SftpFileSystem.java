@@ -312,7 +312,7 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> {
         }
 
         @Override
-        public DirEntry[] readDir(Handle handle) throws IOException {
+        public List<DirEntry> readDir(Handle handle) throws IOException {
             if (!isOpen()) {
                 throw new IOException("readDir(" + handle + ") client is closed");
             }

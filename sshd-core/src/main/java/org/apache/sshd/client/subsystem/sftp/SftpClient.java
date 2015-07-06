@@ -31,6 +31,7 @@ import java.nio.channels.Channel;
 import java.nio.file.attribute.FileTime;
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -280,7 +281,17 @@ public interface SftpClient extends SubsystemClient {
 
     CloseableHandle openDir(String path) throws IOException;
 
-    DirEntry[] readDir(Handle handle) throws IOException;
+    /**
+     * @param handle Directory {@link Handle} to read from
+     * @return A {@link List} of entries - {@code null} to indicate no more entries
+     * <B>Note:</B> the list may be <U>incomplete</U> since the client and
+     * server have some internal imposed limit on the number of entries they
+     * can process. Therefore several calls to this method may be required
+     * (until {@code null}). In order to iterate over all the entries use
+     * {@link #readDir(String)}
+     * @throws IOException If failed to access the remote site
+     */
+    List<DirEntry> readDir(Handle handle) throws IOException;
 
     String canonicalPath(String path) throws IOException;
 
@@ -308,6 +319,13 @@ public interface SftpClient extends SubsystemClient {
     // High level API
     //
 
+    /**
+     * @param path The remote directory path
+     * @return An {@link Iterable} that can be used to iterate over all the
+     * directory entries (unlike {@link #readDir(Handle)})
+     * @throws IOException If failed to access the remote site
+     * @see #readDir(Handle)
+     */
     Iterable<DirEntry> readDir(String path) throws IOException;
 
     // default values used if none specified

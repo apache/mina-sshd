@@ -208,7 +208,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     }
 
     protected static class DirectoryHandle extends Handle implements Iterator<Path> {
-        private boolean done;
+        private boolean done, sendDotDot;
         // the directory should be read once at "open directory"
         private DirectoryStream<Path> ds;
         private Iterator<Path> fileList;
@@ -216,6 +216,9 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         public DirectoryHandle(Path file) throws IOException {
             super(file);
             ds = Files.newDirectoryStream(file);
+            
+            Path parent = file.getParent();
+            sendDotDot = (parent != null);  // if no parent then no need to send ".."
             fileList = ds.iterator();
         }
 
@@ -225,6 +228,14 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
 
         public void setDone(boolean done) {
             this.done = done;
+        }
+
+        public boolean isSendDotDot() {
+            return sendDotDot;
+        }
+        
+        public void setSendDotDot(boolean sendIt) {
+            sendDotDot = sendIt;
         }
 
         @Override
@@ -1228,12 +1239,12 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             } else if (!Files.isReadable(file)) {
                 sendStatus(id, SSH_FX_PERMISSION_DENIED, file.toString());
             } else {
-                if (dh.hasNext()) {
-                    // There is at least one file in the directory.
+                if (dh.isSendDotDot() || dh.hasNext()) {
+                    // There is at least one file in the directory or we need to send the "..".
                     // Send only a few files at a time to not create packets of a too
                     // large size or have a timeout to occur.
-                    sendName(id, dh);
-                    if (!dh.hasNext()) {
+                    sendDirEntries(id, dh);
+                    if ((!dh.isSendDotDot()) && (!dh.hasNext())) {
                         // if no more files to send
                         dh.setDone(true);
                         dh.clearFileList();
@@ -1252,11 +1263,14 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
 
     protected void doOpenDir(Buffer buffer, int id) throws IOException {
         String path = buffer.getString();
-        log.debug("Received SSH_FXP_OPENDIR (path={})", path);
+        Path f = resolveFile(path);
+        Path abs = f.toAbsolutePath();
+        Path p = abs.normalize();
+        log.debug("Received SSH_FXP_OPENDIR (path={})[{}]", path, p);
+
         try {
-            Path            p = resolveFile(path);
-            LinkOption[]    options = IoUtils.getLinkOptions(false);
-            Boolean         status = IoUtils.checkFileExists(p, options);
+            LinkOption[] options = IoUtils.getLinkOptions(false);
+            Boolean status = IoUtils.checkFileExists(p, options);
             if (status == null) {
                 throw new AccessDeniedException("Cannot determine open-dir existence of " + p);
             }
@@ -1738,7 +1752,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         send(buffer);
     }
 
-    protected void sendName(int id, Iterator<Path> files) throws IOException {
+    protected void sendDirEntries(int id, DirectoryHandle files) throws IOException {
         Buffer buffer = new ByteArrayBuffer();
         buffer.putByte((byte) SSH_FXP_NAME);
         buffer.putInt(id);
@@ -1746,13 +1760,22 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         buffer.putInt(0);
 
         int nb = 0, maxSize = FactoryManagerUtils.getIntProperty(session, MAX_PACKET_LENGTH_PROP, DEFAULT_MAX_PACKET_LENGTH);
-        while (files.hasNext() && (buffer.wpos() < maxSize)) {
-            Path    f = files.next();
-            String  shortName = getShortName(f);
-            buffer.putString(shortName, StandardCharsets.UTF_8);
+        while((files.isSendDotDot() || files.hasNext()) && (buffer.wpos() < maxSize)) {
+            Path f;
+            String  shortName;
+            if (files.isSendDotDot()) {
+                f = files.getFile().getParent();
+                shortName = "..";
+                files.setSendDotDot(false); // do not send it again
+            } else {
+                f = files.next();
+                shortName = getShortName(f);
+            }
+
+            buffer.putString(shortName);
             if (version == SFTP_V3) {
                 String  longName = getLongName(f);
-                buffer.putString(longName, StandardCharsets.UTF_8); // Format specified in the specs
+                buffer.putString(longName);
                 if (log.isTraceEnabled()) {
                     log.trace("sendName(id=" + id + ")[" + nb + "] - " + shortName + " [" + longName + "]");
                 }

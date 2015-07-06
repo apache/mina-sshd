@@ -39,6 +39,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -803,9 +804,23 @@ public class SftpTest extends BaseTestSupport {
         }            
 
         try(SftpClient.CloseableHandle h = sftp.openDir(dir)) {
-            SftpClient.DirEntry[] dirEntries = sftp.readDir(h);
+            List<SftpClient.DirEntry> dirEntries = sftp.readDir(h);
             assertNotNull("No dir entries", dirEntries);
-            assertEquals("Mismatced number of dir entries", 1, dirEntries.length);
+            
+            boolean dotFiltered = false, dotdotFiltered = false;
+            for (Iterator<SftpClient.DirEntry> it = dirEntries.iterator(); it.hasNext(); ) {
+                SftpClient.DirEntry entry = it.next();
+                String name = entry.filename;
+                if (".".equals(name) && (!dotFiltered)) {
+                    it.remove();
+                    dotFiltered = true;
+                } else if ("..".equals(name) && (!dotdotFiltered)) {
+                    it.remove();
+                    dotdotFiltered = true;
+                }
+            }
+
+            assertEquals("Mismatched number of dir entries", 1, dirEntries.size());
             assertNull("Unexpected entry read", sftp.readDir(h));
         }
 
@@ -832,9 +847,17 @@ public class SftpTest extends BaseTestSupport {
         assertTrue("Test directory not reported as such", attributes.isDirectory());
 
         int nb = 0;
+        boolean dotFiltered = false, dotdotFiltered = false;
         for (SftpClient.DirEntry entry : sftp.readDir(dir)) {
             assertNotNull("Unexpected null entry", entry);
-            nb++;
+            String name = entry.filename;
+            if (".".equals(name) && (!dotFiltered)) {
+                dotFiltered = true;
+            } else if ("..".equals(name) && (!dotdotFiltered)) {
+                dotdotFiltered = true;
+            } else {
+                nb++;
+            }
         }
         assertEquals("Mismatched read dir entries", 1, nb);
 

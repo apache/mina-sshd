@@ -314,6 +314,9 @@ public class SftpFileSystemTest extends BaseTestSupport {
             String  rootName = root.toString();
             try (DirectoryStream<Path> ds = Files.newDirectoryStream(root)) {
                 for (Path child : ds) {
+                    String name = child.getFileName().toString();
+                    assertNotEquals("Unexpected dot name", ".", name);
+                    assertNotEquals("Unexpected dotdot name", "..", name);
                     System.out.append('\t').append('[').append(rootName).append("] ").println(child);
                 }
             } catch(IOException | RuntimeException e) {

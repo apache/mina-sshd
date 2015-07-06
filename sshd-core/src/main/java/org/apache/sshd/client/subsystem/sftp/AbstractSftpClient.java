@@ -91,10 +91,12 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.attribute.FileTime;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -769,7 +771,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
     }
 
     @Override
-    public DirEntry[] readDir(Handle handle) throws IOException {
+    public List<DirEntry> readDir(Handle handle) throws IOException {
         if (!isOpen()) {
             throw new IOException("readDir(" + handle + ") client is closed");
         }
@@ -779,7 +781,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
         return checkDir(receive(send(SSH_FXP_READDIR, buffer)));
     }
 
-    protected DirEntry[] checkDir(Buffer buffer) throws IOException {
+    protected List<DirEntry> checkDir(Buffer buffer) throws IOException {
         int length = buffer.getInt();
         int type = buffer.getUByte();
         int id = buffer.getInt();
@@ -796,7 +798,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             throw new SftpException(substatus, msg);
         } else if (type == SSH_FXP_NAME) {
             int len = buffer.getInt();
-            DirEntry[] entries = new DirEntry[len];
+            List<DirEntry> entries = new ArrayList<DirEntry>(len);
             for (int i = 0; i < len; i++) {
                 String name = buffer.getString();
                 int version = getVersion();
@@ -806,7 +808,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
                     log.trace("checkDir(id={})[{}] ({})[{}]: {}", Integer.valueOf(id), Integer.valueOf(i), name, longName, attrs);
                 }
 
-                entries[i] = new DirEntry(name, longName, attrs);
+                entries.add(new DirEntry(name, longName, attrs));
             }
             return entries;
         } else {
@@ -972,7 +974,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             public Iterator<DirEntry> iterator() {
                 return new Iterator<DirEntry>() {
                     private CloseableHandle handle;
-                    private DirEntry[] entries;
+                    private List<DirEntry> entries;
                     private int index;
 
                     {
@@ -982,13 +984,13 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
 
                     @Override
                     public boolean hasNext() {
-                        return (entries != null) && (index < entries.length);
+                        return (entries != null) && (index < entries.size());
                     }
 
                     @Override
                     public DirEntry next() {
-                        DirEntry entry = entries[index++];
-                        if (index >= entries.length) {
+                        DirEntry entry = entries.get(index++);
+                        if (index >= entries.size()) {
                             load();
                         }
                         return entry;
