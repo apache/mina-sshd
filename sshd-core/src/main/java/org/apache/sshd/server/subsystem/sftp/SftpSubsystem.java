@@ -119,9 +119,20 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
      * @see #DEFAULT_FILE_HANDLE_SIZE
      */
     public static final String FILE_HANDLE_SIZE = "sftp-handle-size";
-        public static final int MIN_FILE_FILE_HANDLE_SIZE = 4;  // ~uint32
+        public static final int MIN_FILE_HANDLE_SIZE = 4;  // ~uint32
         public static final int DEFAULT_FILE_HANDLE_SIZE = 16;
-        public static final int MAX_FILE_FILE_HANDLE_SIZE = 64;  // ~sha512 
+        public static final int MAX_FILE_HANDLE_SIZE = 64;  // ~sha512 
+
+    /**
+     * Max. rounds to attempt to create a unique file handle - if all handles
+     * already in use after these many rounds, then an exception is thrown
+     * @see #generateFileHandle(Path) 
+     * @see #DEFAULT_FILE_HANDLE_ROUNDS
+     */
+    public static final String MAX_FILE_HANDLE_RAND_ROUNDS = "sftp-handle-rand-max-rounds";
+        public static final int MIN_FILE_HANDLE_ROUNDS = 1;
+        public static final int DEFAULT_FILE_HANDLE_ROUNDS = MIN_FILE_HANDLE_SIZE;
+        public static final int MAX_FILE_HANDLE_ROUNDS = MAX_FILE_HANDLE_SIZE;
 
     /**
      * Force the use of a given sftp version
@@ -138,7 +149,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
      */
     public static final String MAX_PACKET_LENGTH_PROP = "sftp-max-packet-length";
         public static final int  DEFAULT_MAX_PACKET_LENGTH = 1024 * 16;
-
+   
     /**
      * Allows controlling reports of which client extensions are supported
      * (and reported via &quot;support&quot; and &quot;support2&quot; server
@@ -184,6 +195,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     private Environment env;
     private Random randomizer;
     private int fileHandleSize = DEFAULT_FILE_HANDLE_SIZE;
+    private int maxFileHandleRounds = DEFAULT_FILE_HANDLE_ROUNDS;
     private ServerSession session;
     private boolean closed;
 	private ExecutorService executors;
@@ -222,7 +234,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     }
 
     protected static class DirectoryHandle extends Handle implements Iterator<Path> {
-        private boolean done, sendDotDot;
+        private boolean done, sendDotDot, sendDot=true;
         // the directory should be read once at "open directory"
         private DirectoryStream<Path> ds;
         private Iterator<Path> fileList;
@@ -240,16 +252,24 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             return done;
         }
 
-        public void setDone(boolean done) {
-            this.done = done;
+        public void markDone() {
+            this.done = true;
+        }
+
+        public boolean isSendDot() {
+            return sendDot;
+        }
+        
+        public void markDotSent() {
+            sendDot = false;
         }
 
         public boolean isSendDotDot() {
             return sendDotDot;
         }
         
-        public void setSendDotDot(boolean sendIt) {
-            sendDotDot = sendIt;
+        public void markDotDotSent() {
+            sendDotDot = false;
         }
 
         @Override
@@ -446,10 +466,15 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         FactoryManager manager = session.getFactoryManager();
         Factory<? extends Random> factory = manager.getRandomFactory();
         this.randomizer = factory.create();
-        this.fileHandleSize = FactoryManagerUtils.getIntProperty(manager, FILE_HANDLE_SIZE, DEFAULT_FILE_HANDLE_SIZE);
-        ValidateUtils.checkTrue(this.fileHandleSize >= MIN_FILE_FILE_HANDLE_SIZE, "File handle size too small: %d", this.fileHandleSize);
-        ValidateUtils.checkTrue(this.fileHandleSize <= MAX_FILE_FILE_HANDLE_SIZE, "File handle size too big: %d", this.fileHandleSize);
 
+        this.fileHandleSize = FactoryManagerUtils.getIntProperty(manager, FILE_HANDLE_SIZE, DEFAULT_FILE_HANDLE_SIZE);
+        ValidateUtils.checkTrue(this.fileHandleSize >= MIN_FILE_HANDLE_SIZE, "File handle size too small: %d", this.fileHandleSize);
+        ValidateUtils.checkTrue(this.fileHandleSize <= MAX_FILE_HANDLE_SIZE, "File handle size too big: %d", this.fileHandleSize);
+
+        this.maxFileHandleRounds = FactoryManagerUtils.getIntProperty(manager, MAX_FILE_HANDLE_RAND_ROUNDS, DEFAULT_FILE_HANDLE_ROUNDS);
+        ValidateUtils.checkTrue(this.maxFileHandleRounds >= MIN_FILE_HANDLE_ROUNDS, "File handle rounds too small: %d", this.maxFileHandleRounds);
+        ValidateUtils.checkTrue(this.maxFileHandleRounds <= MAX_FILE_HANDLE_ROUNDS, "File handle rounds too big: %d", this.maxFileHandleRounds);
+        
         if (workBuf.length < this.fileHandleSize) {
             workBuf = new byte[this.fileHandleSize];
         }
@@ -1269,14 +1294,14 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                     // Send only a few files at a time to not create packets of a too
                     // large size or have a timeout to occur.
                     sendDirEntries(id, dh);
-                    if ((!dh.isSendDotDot()) && (!dh.hasNext())) {
+                    if ((!dh.isSendDot()) && (!dh.isSendDotDot()) && (!dh.hasNext())) {
                         // if no more files to send
-                        dh.setDone(true);
+                        dh.markDone();
                         dh.clearFileList();
                     }
                 } else {
                     // empty directory
-                    dh.setDone(true);
+                    dh.markDone();
                     dh.clearFileList();
                     sendStatus(id, SSH_FX_EOF, "", "");
                 }
@@ -1455,13 +1480,12 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
 
     protected void doClose(Buffer buffer, int id) throws IOException {
         String handle = buffer.getString();
+        Handle h = handles.remove(handle);
+        log.debug("Received SSH_FXP_CLOSE (handle={}[{}])", handle, h);
         try {
-            Handle h = handles.get(handle);
-            log.debug("Received SSH_FXP_CLOSE (handle={}[{}])", handle, h);
             if (h == null) {
                 sendStatus(id, SSH_FX_INVALID_HANDLE, handle, "");
             } else {
-                handles.remove(handle);
                 h.close();
                 sendStatus(id, SSH_FX_OK, "", "");
             }
@@ -1547,10 +1571,24 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
 
     // we stringify our handles and treat them as such on decoding as well as it is easier to use as a map key
     protected String generateFileHandle(Path file) {
-        randomizer.fill(workBuf, 0, fileHandleSize);
-        String handle = BufferUtils.printHex(workBuf, 0, fileHandleSize, BufferUtils.EMPTY_HEX_SEPARATOR);
-        log.trace("generateFileHandle({}) {}", file, handle);
-        return handle;
+        // use several rounds in case the file handle size is relatively small so we might get conflicts
+        for (int index=0; index < maxFileHandleRounds; index++) {
+            randomizer.fill(workBuf, 0, fileHandleSize);
+            String handle = BufferUtils.printHex(workBuf, 0, fileHandleSize, BufferUtils.EMPTY_HEX_SEPARATOR);
+            if (handles.containsKey(handle)) {
+                if (log.isTraceEnabled()) {
+                    log.trace("generateFileHandle({}) handle={} in use at round {}", file, handle, Integer.valueOf(index));
+                }
+                continue;
+            }
+
+            if (log.isTraceEnabled()) {
+                log.trace("generateFileHandle({}) {}", file, handle);
+            }
+            return handle;
+        }
+        
+        throw new IllegalStateException("Failed to generate a unique file handle for " + file);
     }
 
     protected void doInit(Buffer buffer, int id) throws IOException {
@@ -1793,13 +1831,17 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         buffer.putInt(0);
 
         int nb = 0, maxSize = FactoryManagerUtils.getIntProperty(session, MAX_PACKET_LENGTH_PROP, DEFAULT_MAX_PACKET_LENGTH);
-        while((files.isSendDotDot() || files.hasNext()) && (buffer.wpos() < maxSize)) {
+        while((files.isSendDot() || files.isSendDotDot() || files.hasNext()) && (buffer.wpos() < maxSize)) {
             Path f;
             String  shortName;
-            if (files.isSendDotDot()) {
+            if (files.isSendDot()) {
+                f = files.getFile();
+                shortName = ".";
+                files.markDotSent();    // do not send it again
+            } else if (files.isSendDotDot()) {
                 f = files.getFile().getParent();
                 shortName = "..";
-                files.setSendDotDot(false); // do not send it again
+                files.markDotDotSent(); // do not send it again
             } else {
                 f = files.next();
                 shortName = getShortName(f);

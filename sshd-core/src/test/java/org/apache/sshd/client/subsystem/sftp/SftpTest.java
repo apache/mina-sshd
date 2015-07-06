@@ -820,8 +820,10 @@ public class SftpTest extends BaseTestSupport {
                 }
             }
 
-            assertEquals("Mismatched number of dir entries", 1, dirEntries.size());
-            assertNull("Unexpected entry read", sftp.readDir(h));
+            assertTrue("Dot entry not listed", dotFiltered);
+            assertTrue("Dot-dot entry not listed", dotdotFiltered);
+            assertEquals("Mismatched number of listed entries", 1, dirEntries.size());
+            assertNull("Unexpected extra entry read after listing ended", sftp.readDir(h));
         }
 
         sftp.remove(file);
@@ -859,6 +861,8 @@ public class SftpTest extends BaseTestSupport {
                 nb++;
             }
         }
+        assertTrue("Dot entry not read", dotFiltered);
+        assertTrue("Dot-dot entry not read", dotdotFiltered);
         assertEquals("Mismatched read dir entries", 1, nb);
 
         sftp.remove(file);
