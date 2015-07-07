@@ -22,10 +22,13 @@ package org.apache.sshd.client.subsystem.sftp.extensions.impl;
 import java.io.IOException;
 import java.io.StreamCorruptedException;
 import java.util.Collection;
+import java.util.LinkedList;
 
 import org.apache.sshd.client.subsystem.sftp.RawSftpClient;
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
+import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -33,12 +36,12 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractMD5HashExtension extends AbstractSftpClientExtension {
-    protected AbstractMD5HashExtension(String name, SftpClient client, RawSftpClient raw, Collection<String> extras) {
+public abstract class AbstractCheckFileExtension extends AbstractSftpClientExtension {
+    protected AbstractCheckFileExtension(String name, SftpClient client, RawSftpClient raw, Collection<String> extras) {
         super(name, client, raw, extras);
     }
 
-    protected byte[] doGetHash(Object target, long offset, long length, byte[] quickHash) throws IOException {
+    protected Pair<String,Collection<byte[]>> doGetHash(Object target, Collection<String> algorithms, long offset, long length, int blockSize) throws IOException {
         Buffer buffer = new ByteArrayBuffer();
         String opcode = getName();
         buffer.putString(opcode);
@@ -47,14 +50,15 @@ public abstract class AbstractMD5HashExtension extends AbstractSftpClientExtensi
         } else {
             buffer.putBytes((byte[]) target);
         }
+        buffer.putString(GenericUtils.join(algorithms, ','));
         buffer.putLong(offset);
         buffer.putLong(length);
-        buffer.putBytes((quickHash == null) ? GenericUtils.EMPTY_BYTE_ARRAY : quickHash);
+        buffer.putInt(blockSize);
         
         if (log.isDebugEnabled()) {
-            log.debug("doGetHash({})[{}] - offset={}, length={}, quick-hash={}",
+            log.debug("doGetHash({})[{}] - offset={}, length={}, block-size={}",
                       opcode, (target instanceof CharSequence) ? target : BufferUtils.printHex(BufferUtils.EMPTY_HEX_SEPARATOR, (byte[]) target),
-                      Long.valueOf(offset), Long.valueOf(length), BufferUtils.printHex(':', quickHash));
+                      Long.valueOf(offset), Long.valueOf(length), Integer.valueOf(blockSize));
         }
 
         buffer = checkExtendedReplyBuffer(receive(sendExtendedCommand(buffer)));
@@ -63,17 +67,18 @@ public abstract class AbstractMD5HashExtension extends AbstractSftpClientExtensi
         }
         
         String targetType = buffer.getString();
-        if (String.CASE_INSENSITIVE_ORDER.compare(targetType, opcode) != 0) {
-            throw new StreamCorruptedException("Mismatched reply target type: expected=" + opcode + ", actual=" + targetType);
+        if (String.CASE_INSENSITIVE_ORDER.compare(targetType, SftpConstants.EXT_CHKFILE_RESPONSE) != 0) {
+            throw new StreamCorruptedException("Mismatched reply type: expected=" + SftpConstants.EXT_CHKFILE_RESPONSE + ", actual=" + targetType);
         }
 
-        byte[] hashValue = buffer.getBytes();
-        if (log.isDebugEnabled()) {
-            log.debug("doGetHash({})[{}] - offset={}, length={}, quick-hash={} - result={}",
-                    opcode, target, Long.valueOf(offset), Long.valueOf(length),
-                    BufferUtils.printHex(':', quickHash), BufferUtils.printHex(':', hashValue));
+        String algo = buffer.getString();
+        Collection<byte[]> hashes = new LinkedList<>();
+        while (buffer.available() > 0) {
+            byte[] hashValue = buffer.getBytes();
+            hashes.add(hashValue);
         }
-        
-        return hashValue;
+
+        return new Pair<String, Collection<byte[]>>(algo, hashes);
     }
+
 }

@@ -37,6 +37,7 @@ import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystem;
+import java.nio.file.FileSystemLoopException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
@@ -80,6 +81,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.FactoryManagerUtils;
+import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.config.VersionProperties;
 import org.apache.sshd.common.digest.BuiltinDigests;
 import org.apache.sshd.common.digest.Digest;
@@ -176,7 +178,9 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                                         SftpConstants.EXT_VERSELECT,
                                         SftpConstants.EXT_COPYFILE,
                                         SftpConstants.EXT_MD5HASH,
-                                        SftpConstants.EXT_MD5HASH_HANDLE
+                                        SftpConstants.EXT_MD5HASH_HANDLE,
+                                        SftpConstants.EXT_CHKFILE_HANDLE,
+                                        SftpConstants.EXT_CHKFILE_NAME
                                 )));
 
     static {
@@ -691,6 +695,10 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             case SftpConstants.EXT_MD5HASH_HANDLE:
                 doMD5Hash(buffer, id, extension);
                 break;
+            case SftpConstants.EXT_CHKFILE_HANDLE:
+            case SftpConstants.EXT_CHKFILE_NAME:
+                doCheckFileHash(buffer, id, extension);
+                break;
             default:
                 log.info("Received unsupported SSH_FXP_EXTENDED({})", extension);
                 sendStatus(BufferUtils.clear(buffer), id, SSH_FX_OP_UNSUPPORTED, "Command SSH_FXP_EXTENDED(" + extension + ") is unsupported or not implemented");
@@ -722,6 +730,149 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         throw new UnsupportedOperationException("doTextSeek(" + fileHandle + ")");
     }
 
+    protected void doCheckFileHash(Buffer buffer, int id, String targetType) throws IOException {
+        String target = buffer.getString();
+        String algList = buffer.getString();
+        String[] algos = GenericUtils.split(algList, ',');
+        long startOffset = buffer.getLong();
+        long length = buffer.getLong();
+        int blockSize = buffer.getInt();
+        try {
+            buffer.clear();
+            buffer.putByte((byte) SSH_FXP_EXTENDED_REPLY);
+            buffer.putInt(id);
+            buffer.putString(SftpConstants.EXT_CHKFILE_RESPONSE);
+            doCheckFileHash(id, targetType, target, Arrays.asList(algos), startOffset, length, blockSize, buffer);
+        } catch(Exception e) {
+            sendStatus(BufferUtils.clear(buffer), id, e);
+            return;
+        }
+        
+        send(buffer);
+    }
+
+    protected void doCheckFileHash(int id, String targetType, String target, Collection<String> algos,
+                                   long startOffset, long length, int blockSize, Buffer buffer)
+                    throws Exception {
+        Path path;
+        if (SftpConstants.EXT_CHKFILE_HANDLE.equalsIgnoreCase(targetType)) {
+            Handle h = handles.get(target);
+            FileHandle fileHandle = validateHandle(target, h, FileHandle.class); 
+            path = fileHandle.getFile();
+
+            /*
+             * To quote http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt section 9.1.2:
+             * 
+             *       If ACE4_READ_DATA was not included when the file was opened,
+             *       the server MUST return STATUS_PERMISSION_DENIED.
+             */
+            int access = fileHandle.getAccessMask();
+            if ((access & ACE4_READ_DATA) == 0) {
+                throw new AccessDeniedException("File not opened for read: " + path);
+            }
+        } else {
+            path = resolveFile(target);
+            
+            /*
+             * To quote http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt section 9.1.2:
+             * 
+             *      If 'check-file-name' refers to a SSH_FILEXFER_TYPE_SYMLINK, the
+             *      target should be opened.
+             */
+            for (int index=0; Files.isSymbolicLink(path) && (index < Byte.MAX_VALUE /* TODO make this configurable */); index++) {
+                path = Files.readSymbolicLink(path);
+            }
+            
+            if (Files.isSymbolicLink(path)) {
+                throw new FileSystemLoopException(target + " yields a circular or too long chain of symlinks");
+            }
+
+            if (Files.isDirectory(path, IoUtils.getLinkOptions(false))) {
+                throw new NotDirectoryException(path.toString());
+            }
+        }
+
+        ValidateUtils.checkNotNullAndNotEmpty(algos, "No hash algorithms specified", GenericUtils.EMPTY_OBJECT_ARRAY);
+        
+        NamedFactory<? extends Digest> factory = null;
+        for (String a : algos) {
+            if ((factory = BuiltinDigests.fromFactoryName(a)) != null) {
+                break;
+            }
+        }
+        ValidateUtils.checkNotNull(factory, "No matching digest factory found for %s", algos);
+
+        doCheckFileHash(id, path, factory, startOffset, length, blockSize, buffer);
+    }
+
+    protected void doCheckFileHash(int id, Path file, NamedFactory<? extends Digest> factory,
+                                   long startOffset, long length, int blockSize, Buffer buffer)
+                           throws Exception {
+        ValidateUtils.checkTrue((blockSize == 0) || (blockSize >= SftpConstants.MIN_CHKFILE_BLOCKSIZE), "Invalid block size: %d", blockSize);
+        ValidateUtils.checkNotNull(factory, "No digest factory provided", GenericUtils.EMPTY_OBJECT_ARRAY);
+        buffer.putString(factory.getName());
+        
+        long effectiveLength = length;
+        if (effectiveLength == 0L) {
+            long totalLength = Files.size(file);
+            effectiveLength = totalLength - startOffset;    
+        }
+
+        byte[] workBuf = (blockSize == 0)
+                       ? new byte[Math.min((int) effectiveLength, IoUtils.DEFAULT_COPY_SIZE)]
+                       : new byte[Math.min((int) effectiveLength, blockSize)]
+                       ;
+        ByteBuffer bb = ByteBuffer.wrap(workBuf);
+        try(FileChannel channel = FileChannel.open(file, IoUtils.EMPTY_OPEN_OPTIONS)) {
+            channel.position(startOffset);
+
+            Digest digest = factory.create();
+            digest.init();
+
+            if (blockSize == 0) {
+                while(effectiveLength > 0L) {
+                    bb.clear(); // prepare for next read
+
+                    int readLen = channel.read(bb);
+                    if (readLen < 0) {
+                        break;
+                    }
+
+                    effectiveLength -= readLen;
+                    digest.update(workBuf, 0, readLen);
+                }
+                
+                byte[] hashValue = digest.digest();
+                if (log.isTraceEnabled()) {
+                    log.trace("doCheckFileHash({}) offset={}, length={} - hash={}",
+                              file, Long.valueOf(startOffset), Long.valueOf(length),
+                              BufferUtils.printHex(':', hashValue));
+                }
+                buffer.putBytes(hashValue);
+            } else {
+                for (int count=0; effectiveLength > 0L; count++) {
+                    bb.clear(); // prepare for next read
+
+                    int readLen = channel.read(bb);
+                    if (readLen < 0) {
+                        break;
+                    }
+
+                    effectiveLength -= readLen;
+                    digest.update(workBuf, 0, readLen);
+
+                    byte[] hashValue = digest.digest(); // NOTE: this also resets the hash for the next read
+                    if (log.isTraceEnabled()) {
+                        log.trace("doCheckFileHash({})[{}] offset={}, length={} - hash={}",
+                                  file, Integer.valueOf(count), Long.valueOf(startOffset), Long.valueOf(length),
+                                  BufferUtils.printHex(':', hashValue));
+                    }
+                    buffer.putBytes(hashValue);
+                }
+            }
+        }
+    }
+
     protected void doMD5Hash(Buffer buffer, int id, String targetType) throws IOException {
         String target = buffer.getString();
         long startOffset = buffer.getLong();
@@ -730,6 +881,12 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         
         try {
             hashValue = doMD5Hash(id, targetType, target, startOffset, length, quickCheckHash);
+            if (log.isTraceEnabled()) {
+                log.debug("doMD5Hash({})[{}] offset={}, length={}, quick-hash={} - hash={}",
+                          targetType, target, Long.valueOf(startOffset), Long.valueOf(length), BufferUtils.printHex(':', quickCheckHash),
+                          BufferUtils.printHex(':', hashValue));
+            }
+
         } catch(Exception e) {
             sendStatus(BufferUtils.clear(buffer), id, e);
             return;
@@ -782,10 +939,15 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         if ((startOffset == 0L) && (length == 0L)) {
             effectiveLength = Files.size(path);
         }
-        
+
+        return doMD5Hash(id, path, startOffset, effectiveLength, quickCheckHash);
+    }
+
+    protected byte[] doMD5Hash(int id, Path path, long startOffset, long length, byte[] quickCheckHash) throws Exception {
         Digest digest = BuiltinDigests.md5.create();
         digest.init();
 
+        long effectiveLength = length;
         byte[] digestBuf = new byte[(int) Math.min(effectiveLength, SftpConstants.MD5_QUICK_HASH_SIZE)];
         ByteBuffer bb = ByteBuffer.wrap(digestBuf);
         boolean hashMatches = false;
@@ -807,6 +969,9 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                 hashMatches = true;
             } else {
                 int readLen = channel.read(bb);
+                if (readLen < 0) {
+                    throw new EOFException("EOF while read initial buffer from " + path);
+                }
                 effectiveLength -= readLen;
                 digest.update(digestBuf, 0, readLen);
 
@@ -828,8 +993,8 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                     }
                 } else {
                     if (log.isTraceEnabled()) {
-                        log.trace("doMD5Hash({})[{}] offset={}, length={} - quick-hash mismatched expected={}, actual={}",
-                                  targetType, target, Long.valueOf(startOffset), Long.valueOf(length),
+                        log.trace("doMD5Hash({}) offset={}, length={} - quick-hash mismatched expected={}, actual={}",
+                                  path, Long.valueOf(startOffset), Long.valueOf(length),
                                   BufferUtils.printHex(':', quickCheckHash), BufferUtils.printHex(':', hashValue));
                     }
                 }
@@ -837,8 +1002,12 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
 
             if (hashMatches) {
                 while(effectiveLength > 0L) {
-                    bb.clear();
-                    int readLen = channel.read(bb); 
+                    bb.clear(); // prepare for next read
+
+                    int readLen = channel.read(bb);
+                    if (readLen < 0) {
+                        break;  // user may have specified more than we have available
+                    }
                     effectiveLength -= readLen;
                     digest.update(digestBuf, 0, readLen);
                 }
@@ -851,12 +1020,12 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             }
         }
 
-        if (log.isDebugEnabled()) {
-            log.debug("doMD5Hash({})[{}] offset={}, length={}, quick-hash={} - match={}, hash={}",
-                      targetType, target, Long.valueOf(startOffset), Long.valueOf(length), BufferUtils.printHex(':', quickCheckHash),
-                      Boolean.valueOf(hashMatches), BufferUtils.printHex(':', hashValue));
+        if (log.isTraceEnabled()) {
+            log.trace("doMD5Hash({}) offset={}, length={} - matches={}, quick={} hash={}",
+                      path, Long.valueOf(startOffset), Long.valueOf(length), Boolean.valueOf(hashMatches),
+                      BufferUtils.printHex(':', quickCheckHash), BufferUtils.printHex(':', hashValue));
         }
-        
+
         return hashValue;
     }
 

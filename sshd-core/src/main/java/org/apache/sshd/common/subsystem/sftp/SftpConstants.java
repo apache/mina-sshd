@@ -232,6 +232,10 @@ public final class SftpConstants {
     public static final String EXT_MD5HASH = "md5-hash";
     public static final String EXT_MD5HASH_HANDLE = "md5-hash-handle";
         public static final int MD5_QUICK_HASH_SIZE = 2048;
+    public static final String EXT_CHKFILE_HANDLE = "check-file-handle";
+    public static final String EXT_CHKFILE_NAME = "check-file-name";
+        public static final int MIN_CHKFILE_BLOCKSIZE = 256;
+        public static final String EXT_CHKFILE_RESPONSE = "check-file";
 
     private SftpConstants() {
         throw new UnsupportedOperationException("No instance");

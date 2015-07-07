@@ -26,6 +26,8 @@ import java.util.Set;
 
 import org.apache.sshd.client.subsystem.sftp.RawSftpClient;
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
+import org.apache.sshd.client.subsystem.sftp.extensions.impl.CheckFileHandleExtensionImpl;
+import org.apache.sshd.client.subsystem.sftp.extensions.impl.CheckFileNameExtensionImpl;
 import org.apache.sshd.client.subsystem.sftp.extensions.impl.CopyFileExtensionImpl;
 import org.apache.sshd.client.subsystem.sftp.extensions.impl.MD5FileExtensionImpl;
 import org.apache.sshd.client.subsystem.sftp.extensions.impl.MD5HandleExtensionImpl;
@@ -53,6 +55,18 @@ public enum BuiltinSftpClientExtensions implements SftpClientExtensionFactory {
             @Override   // co-variant return
             public MD5HandleExtension create(SftpClient client, RawSftpClient raw, Map<String,byte[]> extensions, Map<String,?> parsed) {
                 return new MD5HandleExtensionImpl(client, raw, ParserUtils.supportedExtensions(parsed));
+            }
+        },
+    CHECK_FILE_NAME(SftpConstants.EXT_CHKFILE_NAME, CheckFileNameExtension.class) {
+            @Override   // co-variant return
+            public CheckFileNameExtension create(SftpClient client, RawSftpClient raw, Map<String,byte[]> extensions, Map<String,?> parsed) {
+                return new CheckFileNameExtensionImpl(client, raw, ParserUtils.supportedExtensions(parsed));
+            }
+        },
+    CHECK_FILE_HANDLE(SftpConstants.EXT_CHKFILE_HANDLE, CheckFileHandleExtension.class) {
+            @Override   // co-variant return
+            public CheckFileHandleExtension create(SftpClient client, RawSftpClient raw, Map<String,byte[]> extensions, Map<String,?> parsed) {
+                return new CheckFileHandleExtensionImpl(client, raw, ParserUtils.supportedExtensions(parsed));
             }
         };
 

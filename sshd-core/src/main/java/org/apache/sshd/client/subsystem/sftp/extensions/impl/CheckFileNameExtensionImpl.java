@@ -17,27 +17,27 @@
  * under the License.
  */
 
-package org.apache.sshd.client.subsystem.sftp.extensions;
+package org.apache.sshd.client.subsystem.sftp.extensions.impl;
 
 import java.io.IOException;
+import java.util.Collection;
 
+import org.apache.sshd.client.subsystem.sftp.RawSftpClient;
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
+import org.apache.sshd.client.subsystem.sftp.extensions.CheckFileNameExtension;
+import org.apache.sshd.common.subsystem.sftp.SftpConstants;
+import org.apache.sshd.common.util.Pair;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see <A HREF="http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt">DRAFT 09 - section 9.1.1</A>
  */
-public interface MD5HandleExtension extends SftpClientExtension {
-    /**
-     * @param handle The (remote) file {@link SftpClient.Handle}
-     * @param offset The offset to start calculating the hash
-     * @param length The number of data bytes to calculate the hash on - if
-     * greater than available, then up to whatever is available
-     * @param quickHash A quick-hash of the 1st 2048 bytes - ignored if {@code null}/empty
-     * @return The hash value if the quick hash matches (or {@code null}/empty), or
-     * {@code null}/empty if the quick hash is provided and it does not match
-     * @throws IOException If failed to calculate the hash
-     */
-    byte[] getHash(SftpClient.Handle handle, long offset, long length, byte[] quickHash) throws IOException;
+public class CheckFileNameExtensionImpl extends AbstractCheckFileExtension implements CheckFileNameExtension {
+    public CheckFileNameExtensionImpl(SftpClient client, RawSftpClient raw, Collection<String> extras) {
+        super(SftpConstants.EXT_CHKFILE_NAME, client, raw, extras);
+    }
 
+    @Override
+    public Pair<String, Collection<byte[]>> checkFileName(String name, Collection<String> algorithms, long startOffset, long length, int blockSize) throws IOException {
+        return doGetHash(name, algorithms, startOffset, length, blockSize);
+    }
 }

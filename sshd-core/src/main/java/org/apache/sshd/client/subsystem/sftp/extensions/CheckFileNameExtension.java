@@ -20,24 +20,25 @@
 package org.apache.sshd.client.subsystem.sftp.extensions;
 
 import java.io.IOException;
+import java.util.Collection;
 
-import org.apache.sshd.client.subsystem.sftp.SftpClient;
+import org.apache.sshd.common.util.Pair;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see <A HREF="http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt">DRAFT 09 - section 9.1.1</A>
+ * @see <A HREF="http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt">DRAFT 09 - section 9.1.2</A>
  */
-public interface MD5HandleExtension extends SftpClientExtension {
+public interface CheckFileNameExtension extends SftpClientExtension {
     /**
-     * @param handle The (remote) file {@link SftpClient.Handle}
-     * @param offset The offset to start calculating the hash
-     * @param length The number of data bytes to calculate the hash on - if
-     * greater than available, then up to whatever is available
-     * @param quickHash A quick-hash of the 1st 2048 bytes - ignored if {@code null}/empty
-     * @return The hash value if the quick hash matches (or {@code null}/empty), or
-     * {@code null}/empty if the quick hash is provided and it does not match
-     * @throws IOException If failed to calculate the hash
+     * @param name Remote file name/path
+     * @param algorithms Hash algorithms in preferred order
+     * @param startOffset Start offset of the hash
+     * @param length Length of data to hash - if zero then till EOF
+     * @param blockSize Input block size to calculate individual hashes - if
+     * zero the <U>one</U> hash of <U>all</U> the data
+     * @return A {@link Pair} where left=hash algorithm name, right=the calculated
+     * hashes.
+     * @throws IOException If failed to execute the command
      */
-    byte[] getHash(SftpClient.Handle handle, long offset, long length, byte[] quickHash) throws IOException;
-
+    Pair<String,Collection<byte[]>> checkFileName(String name, Collection<String> algorithms, long startOffset, long length, int blockSize) throws IOException;
 }
