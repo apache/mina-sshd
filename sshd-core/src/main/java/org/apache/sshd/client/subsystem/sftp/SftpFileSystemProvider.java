@@ -967,57 +967,57 @@ public class SftpFileSystemProvider extends FileSystemProvider {
 
     public static String getRWXPermissions(int perms) {
         StringBuilder sb=new StringBuilder(10 /* 3 * rwx + (d)irectory */);
-        if ((perms & SftpConstants.S_IFLNK) != 0) {
+        if ((perms & SftpConstants.S_IFLNK) == SftpConstants.S_IFLNK) {
             sb.append('l');
-        } else if ((perms & SftpConstants.S_IFDIR) != 0) {
+        } else if ((perms & SftpConstants.S_IFDIR) == SftpConstants.S_IFDIR) {
             sb.append('d');
         } else {
             sb.append('-');
         }
 
-        if ((perms & SftpConstants.S_IRUSR) != 0) {
+        if ((perms & SftpConstants.S_IRUSR) == SftpConstants.S_IRUSR) {
             sb.append('r');
         } else {
             sb.append('-');
         }
-        if ((perms & SftpConstants.S_IWUSR) != 0) {
+        if ((perms & SftpConstants.S_IWUSR) == SftpConstants.S_IWUSR) {
             sb.append('w');
         } else {
             sb.append('-');
         }
-        if ((perms & SftpConstants.S_IXUSR) != 0) {
+        if ((perms & SftpConstants.S_IXUSR) == SftpConstants.S_IXUSR) {
             sb.append('x');
         } else {
             sb.append('-');
         }
 
-        if ((perms & SftpConstants.S_IRGRP) != 0) {
+        if ((perms & SftpConstants.S_IRGRP) == SftpConstants.S_IRGRP) {
             sb.append('r');
         } else {
             sb.append('-');
         }
-        if ((perms & SftpConstants.S_IWGRP) != 0) {
+        if ((perms & SftpConstants.S_IWGRP) == SftpConstants.S_IWGRP) {
             sb.append('w');
         } else {
             sb.append('-');
         }
-        if ((perms & SftpConstants.S_IXGRP) != 0) {
+        if ((perms & SftpConstants.S_IXGRP) == SftpConstants.S_IXGRP) {
             sb.append('x');
         } else {
             sb.append('-');
         }
 
-        if ((perms & SftpConstants.S_IROTH) != 0) {
+        if ((perms & SftpConstants.S_IROTH) == SftpConstants.S_IROTH) {
             sb.append('r');
         } else {
             sb.append('-');
         }
-        if ((perms & SftpConstants.S_IWOTH) != 0) {
+        if ((perms & SftpConstants.S_IWOTH) == SftpConstants.S_IWOTH) {
             sb.append('w');
         } else {
             sb.append('-');
         }
-        if ((perms & SftpConstants.S_IXOTH) != 0) {
+        if ((perms & SftpConstants.S_IXOTH) == SftpConstants.S_IXOTH) {
             sb.append('x');
         } else {
             sb.append('-');
@@ -1032,31 +1032,31 @@ public class SftpFileSystemProvider extends FileSystemProvider {
 
     public static Set<PosixFilePermission> permissionsToAttributes(int perms) {
         Set<PosixFilePermission> p = new HashSet<>();
-        if ((perms & SftpConstants.S_IRUSR) != 0) {
+        if ((perms & SftpConstants.S_IRUSR) == SftpConstants.S_IRUSR) {
             p.add(PosixFilePermission.OWNER_READ);
         }
-        if ((perms & SftpConstants.S_IWUSR) != 0) {
+        if ((perms & SftpConstants.S_IWUSR) == SftpConstants.S_IWUSR) {
             p.add(PosixFilePermission.OWNER_WRITE);
         }
-        if ((perms & SftpConstants.S_IXUSR) != 0) {
+        if ((perms & SftpConstants.S_IXUSR) == SftpConstants.S_IXUSR) {
             p.add(PosixFilePermission.OWNER_EXECUTE);
         }
-        if ((perms & SftpConstants.S_IRGRP) != 0) {
+        if ((perms & SftpConstants.S_IRGRP) == SftpConstants.S_IRGRP) {
             p.add(PosixFilePermission.GROUP_READ);
         }
-        if ((perms & SftpConstants.S_IWGRP) != 0) {
+        if ((perms & SftpConstants.S_IWGRP) == SftpConstants.S_IWGRP) {
             p.add(PosixFilePermission.GROUP_WRITE);
         }
-        if ((perms & SftpConstants.S_IXGRP) != 0) {
+        if ((perms & SftpConstants.S_IXGRP) == SftpConstants.S_IXGRP) {
             p.add(PosixFilePermission.GROUP_EXECUTE);
         }
-        if ((perms & SftpConstants.S_IROTH) != 0) {
+        if ((perms & SftpConstants.S_IROTH) == SftpConstants.S_IROTH) {
             p.add(PosixFilePermission.OTHERS_READ);
         }
-        if ((perms & SftpConstants.S_IWOTH) != 0) {
+        if ((perms & SftpConstants.S_IWOTH) == SftpConstants.S_IWOTH) {
             p.add(PosixFilePermission.OTHERS_WRITE);
         }
-        if ((perms & SftpConstants.S_IXOTH) != 0) {
+        if ((perms & SftpConstants.S_IXOTH) == SftpConstants.S_IXOTH) {
             p.add(PosixFilePermission.OTHERS_EXECUTE);
         }
         return p;

@@ -145,8 +145,7 @@ public class ClientUserAuthService extends CloseableUtils.AbstractCloseable impl
     private void processUserAuth(Buffer buffer) throws Exception {
         int cmd = buffer.getUByte();
         if (cmd == SshConstants.SSH_MSG_USERAUTH_SUCCESS) {
-            log.info("Received SSH_MSG_USERAUTH_SUCCESS");
-            log.debug("Succeeded with {}", userAuth);
+            log.debug("SSH_MSG_USERAUTH_SUCCESS Succeeded with {}", userAuth);
             if (userAuth != null) {
                 userAuth.destroy();
                 userAuth = null;
