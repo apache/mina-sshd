@@ -19,8 +19,10 @@
 
 package org.apache.sshd.common.util.buffer;
 
+import java.nio.BufferUnderflowException;
 import java.nio.charset.Charset;
 
+import org.apache.sshd.common.util.Int2IntFunction;
 import org.apache.sshd.common.util.Readable;
 
 /**
@@ -162,10 +164,17 @@ public final class ByteArrayBuffer extends Buffer {
     }
 
     @Override
-    protected void ensureCapacity(int capacity) {
-        if (data.length - wpos < capacity) {
-            int cw = wpos + capacity;
-            byte[] tmp = new byte[BufferUtils.getNextPowerOf2(cw)];
+    public void ensureCapacity(int capacity, Int2IntFunction growthFactor) {
+        int maxSize = size();
+        int curPos = wpos();
+        int remaining = maxSize - curPos;
+        if (remaining < capacity) {
+            int minimum = curPos + capacity;
+            int actual = growthFactor.apply(minimum);
+            if (actual < minimum) {
+                throw new IllegalStateException("ensureCapacity(" + capacity + ") actual (" + actual + ") below min. (" + minimum + ")");
+            }
+            byte[] tmp = new byte[actual];
             System.arraycopy(data, 0, tmp, 0, data.length);
             data = tmp;
         }

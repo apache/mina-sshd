@@ -498,8 +498,8 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
                 buffer.putLong(attributes.size);
             }
             if ((flags & SSH_FILEXFER_ATTR_OWNERGROUP) != 0) {
-                buffer.putString(attributes.owner != null ? attributes.owner : "OWNER@", StandardCharsets.UTF_8);
-                buffer.putString(attributes.group != null ? attributes.group : "GROUP@", StandardCharsets.UTF_8);
+                buffer.putString(attributes.owner != null ? attributes.owner : "OWNER@");
+                buffer.putString(attributes.group != null ? attributes.group : "GROUP@");
             }
             if ((flags & SSH_FILEXFER_ATTR_PERMISSIONS) != 0) {
                 buffer.putInt(attributes.perms);
@@ -739,7 +739,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
         }
 
         Buffer buffer = new ByteArrayBuffer(path.length() +  Long.SIZE /* some extra fields */);
-        buffer.putString(path, StandardCharsets.UTF_8);
+        buffer.putString(path);
         buffer.putInt(0);
 
         int version = getVersion();

@@ -42,7 +42,6 @@ import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.Vector;
 import java.util.concurrent.TimeUnit;
@@ -57,11 +56,14 @@ import org.apache.sshd.client.subsystem.sftp.extensions.CopyFileExtension;
 import org.apache.sshd.client.subsystem.sftp.extensions.MD5FileExtension;
 import org.apache.sshd.client.subsystem.sftp.extensions.MD5HandleExtension;
 import org.apache.sshd.client.subsystem.sftp.extensions.SftpClientExtension;
+import org.apache.sshd.common.Factory;
+import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.digest.BuiltinDigests;
 import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.file.root.RootedFileSystemProvider;
+import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.extensions.ParserUtils;
@@ -262,7 +264,7 @@ public class SftpTest extends BaseTestSupport {
                 session.auth().verify(5L, TimeUnit.SECONDS);
 
                 try (SftpClient sftp = session.createSftpClient()) {
-                    testClient(sftp);
+                    testClient(client, sftp);
                 }
             } finally {
                 client.stop();
@@ -777,7 +779,7 @@ public class SftpTest extends BaseTestSupport {
 
                 try(SftpClient sftp = session.createSftpClient(selector)) {
                     assertEquals("Mismatched negotiated version", selected.get(), sftp.getVersion());
-                    testClient(sftp);
+                    testClient(client, sftp);
                 }
             } finally {
                 client.stop();
@@ -785,7 +787,7 @@ public class SftpTest extends BaseTestSupport {
         }
     }
 
-    private void testClient(SftpClient sftp) throws Exception {
+    private void testClient(FactoryManager manager, SftpClient sftp) throws Exception {
         Path targetPath = detectTargetFolder().toPath();
         Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         Utils.deleteRecursive(lclSftp);
@@ -832,13 +834,18 @@ public class SftpTest extends BaseTestSupport {
 
         sftp.remove(file);
 
+        final int SIZE_FACTOR = Short.SIZE;
         byte[] workBuf = new byte[IoUtils.DEFAULT_COPY_SIZE * Short.SIZE];
-        new Random(System.currentTimeMillis()).nextBytes(workBuf);
+        Factory<? extends Random> factory = manager.getRandomFactory();
+        Random random = factory.create();
+        random.fill(workBuf);
+
         try (OutputStream os = sftp.write(file)) {
             os.write(workBuf);
         }
 
-        try (InputStream is = sftp.read(file, IoUtils.DEFAULT_COPY_SIZE)) {
+        // force several internal read cycles to satisfy the full read
+        try (InputStream is = sftp.read(file, workBuf.length / SIZE_FACTOR)) {
             int readLen = is.read(workBuf);
             assertEquals("Mismatched read data length", workBuf.length, readLen);
 

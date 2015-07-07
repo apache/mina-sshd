@@ -31,7 +31,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.CopyOption;
 import java.nio.file.DirectoryNotEmptyException;
@@ -88,6 +87,7 @@ import org.apache.sshd.common.file.FileSystemAware;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.Int2IntFunction;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.SelectorUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -264,6 +264,8 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
 
         public void markDone() {
             this.done = true;
+            // allow the garbage collector to do the job
+            this.fileList = null;
         }
 
         public boolean isSendDot() {
@@ -297,13 +299,9 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             throw new UnsupportedOperationException("Not allowed to remove " + toString());
         }
 
-        public void clearFileList() {
-            // allow the garbage collector to do the job
-            fileList = null;
-        }
-
         @Override
         public void close() throws IOException {
+            markDone(); // just making sure
             ds.close();
         }
     }
@@ -660,7 +658,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                 break;
             default:
                 log.warn("Unknown command type received: {}", Integer.valueOf(type));
-                sendStatus(id, SSH_FX_OP_UNSUPPORTED, "Command " + type + " is unsupported or not implemented");
+                sendStatus(BufferUtils.clear(buffer), id, SSH_FX_OP_UNSUPPORTED, "Command " + type + " is unsupported or not implemented");
         }
 
         if (type != SSH_FXP_INIT) {
@@ -695,7 +693,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                 break;
             default:
                 log.info("Received unsupported SSH_FXP_EXTENDED({})", extension);
-                sendStatus(id, SSH_FX_OP_UNSUPPORTED, "Command SSH_FXP_EXTENDED(" + extension + ") is unsupported or not implemented");
+                sendStatus(BufferUtils.clear(buffer), id, SSH_FX_OP_UNSUPPORTED, "Command SSH_FXP_EXTENDED(" + extension + ") is unsupported or not implemented");
                 break;
         }
     }
@@ -707,11 +705,11 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             // TODO : implement text-seek - see https://tools.ietf.org/html/draft-ietf-secsh-filexfer-03#section-6.3
             doTextSeek(id, handle, line);
         } catch(IOException | RuntimeException e) {
-            sendStatus(id, e);
+            sendStatus(BufferUtils.clear(buffer), id, e);
             return;
         }
 
-        sendStatus(id, SSH_FX_OK, "");
+        sendStatus(BufferUtils.clear(buffer), id, SSH_FX_OK, "");
     }
 
     protected void doTextSeek(int id, String handle, long line) throws IOException {
@@ -728,20 +726,21 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         String target = buffer.getString();
         long startOffset = buffer.getLong();
         long length = buffer.getLong();
-        byte[] quickCheckHash = buffer.getBytes();
+        byte[] quickCheckHash = buffer.getBytes(), hashValue;
         
         try {
-            byte[] hashValue = doMD5Hash(id, targetType, target, startOffset, length, quickCheckHash);
-            buffer.clear();
-
-            buffer.putByte((byte) SSH_FXP_EXTENDED_REPLY);
-            buffer.putInt(id);
-            buffer.putString(targetType);
-            buffer.putBytes(hashValue);
-            send(buffer);
+            hashValue = doMD5Hash(id, targetType, target, startOffset, length, quickCheckHash);
         } catch(Exception e) {
-            sendStatus(id, e);
+            sendStatus(BufferUtils.clear(buffer), id, e);
+            return;
         }
+
+        buffer.clear();
+        buffer.putByte((byte) SSH_FXP_EXTENDED_REPLY);
+        buffer.putInt(id);
+        buffer.putString(targetType);
+        buffer.putBytes(hashValue);
+        send(buffer);
     }
 
     protected byte[] doMD5Hash(int id, String targetType, String target, long startOffset, long length, byte[] quickCheckHash) throws Exception {
@@ -869,12 +868,12 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
          * channel.
          */
         if (requestsCount > 0L) {
-           sendStatus(id, SSH_FX_FAILURE, "Version selection not the 1st request for proposal = " + proposed);
+           sendStatus(BufferUtils.clear(buffer), id, SSH_FX_FAILURE, "Version selection not the 1st request for proposal = " + proposed);
            session.close(true);
            return;
         }
 
-        Boolean result = validateProposedVersion(id, proposed);
+        Boolean result = validateProposedVersion(buffer, id, proposed);
         /*
          * "MUST then close the channel without processing any further requests"
          */
@@ -883,14 +882,15 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             return;
         } if (result.booleanValue()) {
             version = Integer.parseInt(proposed);
-            sendStatus(id, SSH_FX_OK, "");
+            sendStatus(BufferUtils.clear(buffer), id, SSH_FX_OK, "");
         } else {
-            sendStatus(id, SSH_FX_FAILURE, "Unsupported version " + proposed);
+            sendStatus(BufferUtils.clear(buffer), id, SSH_FX_FAILURE, "Unsupported version " + proposed);
             session.close(true);
         }
     }
 
     /**
+     * @param buffer The {@link Buffer} holding the request
      * @param id The request id
      * @param proposed The proposed value
      * @return A {@link Boolean} indicating whether to accept/reject the proposal.
@@ -898,7 +898,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
      * appropriate response is generated
      * @throws IOException If failed send an independent rejection response
      */
-    protected Boolean validateProposedVersion(int id, String proposed) throws IOException {
+    protected Boolean validateProposedVersion(Buffer buffer, int id, String proposed) throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("Received SSH_FXP_EXTENDED(version-select) (version={})", proposed);
         }
@@ -913,7 +913,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         }
 
         int value = digit - '0';
-        String all = checkVersionCompatibility(id, value, SSH_FX_FAILURE);
+        String all = checkVersionCompatibility(buffer, id, value, SSH_FX_FAILURE);
         if (GenericUtils.isEmpty(all)) {    // validation failed
             return null;
         } else {
@@ -925,6 +925,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
      * Checks if a proposed version is within supported range. <B>Note:</B>
      * if the user forced a specific value via the {@link #SFTP_VERSION}
      * property, then it is used to validate the proposed value
+     * @param buffer The {@link Buffer} containing the request
      * @param id The SSH message ID to be used to send the failure message
      * if required
      * @param proposed The proposed version value
@@ -934,7 +935,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
      * appropriate status message was sent
      * @throws IOException If failed to send the failure status message
      */
-    protected String checkVersionCompatibility(int id, int proposed, int failureOpcode) throws IOException {
+    protected String checkVersionCompatibility(Buffer buffer, int id, int proposed, int failureOpcode) throws IOException {
         int low = LOWER_SFTP_IMPL;
         int hig = HIGHER_SFTP_IMPL;
         String available = ALL_SFTP_IMPL;
@@ -955,7 +956,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         }
 
         if ((proposed < low) || (proposed > hig)) {
-            sendStatus(id, failureOpcode, "Proposed version (" + proposed + ") not in supported range: " + available);
+            sendStatus(BufferUtils.clear(buffer), id, failureOpcode, "Proposed version (" + proposed + ") not in supported range: " + available);
             return null;
         }
 
@@ -971,11 +972,11 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         try {
             doBlock(id, handle, offset, length, mask);
         } catch (IOException | RuntimeException e) {
-            sendStatus(id, e);
+            sendStatus(BufferUtils.clear(buffer), id, e);
             return;
         }
 
-        sendStatus(id, SSH_FX_OK, "");
+        sendStatus(BufferUtils.clear(buffer), id, SSH_FX_OK, "");
     }
 
     protected void doBlock(int id, String handle, long offset, long length, int mask) throws IOException {
@@ -997,11 +998,11 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         try {
             found = doUnblock(id, handle, offset, length);
         } catch (IOException | RuntimeException e) {
-            sendStatus(id, e);
+            sendStatus(BufferUtils.clear(buffer), id, e);
             return;
         }
 
-        sendStatus(id, found ? SSH_FX_OK : SSH_FX_NO_MATCHING_BYTE_RANGE_LOCK, "");
+        sendStatus(BufferUtils.clear(buffer), id, found ? SSH_FX_OK : SSH_FX_NO_MATCHING_BYTE_RANGE_LOCK, "");
     }
 
     protected boolean doUnblock(int id, String handle, long offset, long length) throws IOException {
@@ -1023,11 +1024,11 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         try {
             doLink(id, targetPath, linkPath, symLink);
         } catch (IOException | RuntimeException e) {
-            sendStatus(id, e);
+            sendStatus(BufferUtils.clear(buffer), id, e);
             return;
         }
         
-        sendStatus(id, SSH_FX_OK, "");
+        sendStatus(BufferUtils.clear(buffer), id, SSH_FX_OK, "");
     }
 
     protected void doLink(int id, String targetPath, String linkPath, boolean symLink) throws IOException {
@@ -1051,11 +1052,11 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         try {
             doSymLink(id, targetPath, linkPath);
         } catch (IOException | RuntimeException e) {
-            sendStatus(id, e);
+            sendStatus(BufferUtils.clear(buffer), id, e);
             return;
         }
 
-        sendStatus(id, SSH_FX_OK, "");
+        sendStatus(BufferUtils.clear(buffer), id, SSH_FX_OK, "");
     }
 
     protected void doSymLink(int id, String targetPath, String linkPath) throws IOException {
@@ -1070,11 +1071,11 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         try {
              l = doReadLink(id, path);
         } catch (IOException | RuntimeException e) {
-            sendStatus(id, e);
+            sendStatus(BufferUtils.clear(buffer), id, e);
             return;
         }
 
-        sendLink(id, l);
+        sendLink(BufferUtils.clear(buffer), id, l);
     }
 
     protected String doReadLink(int id, String path) throws IOException {
@@ -1095,11 +1096,11 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         try {
             doRename(id, oldPath, newPath, flags);
         } catch (IOException | RuntimeException e) {
-            sendStatus(id, e);
+            sendStatus(BufferUtils.clear(buffer), id, e);
             return;
         }
 
-        sendStatus(id, SSH_FX_OK, "");
+        sendStatus(BufferUtils.clear(buffer), id, SSH_FX_OK, "");
     }
 
     protected void doRename(int id, String oldPath, String newPath, int flags) throws IOException {
@@ -1137,11 +1138,11 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         try {
             doCopyFile(id, srcFile, dstFile, overwriteDestination);
         } catch (IOException | RuntimeException e) {
-            sendStatus(id, e);
+            sendStatus(BufferUtils.clear(buffer), id, e);
             return;
         }
 
-        sendStatus(id, SSH_FX_OK, "");
+        sendStatus(BufferUtils.clear(buffer), id, SSH_FX_OK, "");
     }
 
     protected void doCopyFile(int id, String srcFile, String dstFile, boolean overwriteDestination) throws IOException {
@@ -1173,11 +1174,11 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         try {
              attrs = doStat(id, path, flags);
         } catch(IOException | RuntimeException e) {
-            sendStatus(id, e);
+            sendStatus(BufferUtils.clear(buffer), id, e);
             return;
         }
         
-        sendAttrs(id, attrs);
+        sendAttrs(BufferUtils.clear(buffer), id, attrs);
     }
 
     protected Map<String,Object> doStat(int id, String path, int flags) throws IOException {
@@ -1228,11 +1229,11 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                 }
             }
         } catch (IOException | RuntimeException e) {
-            sendStatus(id, e);
+            sendStatus(BufferUtils.clear(buffer), id, e);
             return;
         }
 
-        sendPath(id, p, attrs);
+        sendPath(BufferUtils.clear(buffer), id, p, attrs);
     }
 
     protected Path doRealPathV345(int id, String path, Collection<String> extraPaths) throws IOException {
@@ -1285,11 +1286,11 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         try {
             doRemoveDirectory(id, path, IoUtils.getLinkOptions(false));
         } catch (IOException | RuntimeException e) {
-            sendStatus(id, e);
+            sendStatus(BufferUtils.clear(buffer), id, e);
             return;
         }
         
-        sendStatus(id, SSH_FX_OK, "");
+        sendStatus(BufferUtils.clear(buffer), id, SSH_FX_OK, "");
     }
 
     protected void doRemoveDirectory(int id, String path, LinkOption ... options) throws IOException {
@@ -1308,11 +1309,11 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         try {
             doMakeDirectory(id, path, attrs, IoUtils.getLinkOptions(false));
         } catch (IOException | RuntimeException e) {
-            sendStatus(id, e);
+            sendStatus(BufferUtils.clear(buffer), id, e);
             return;
         }
 
-        sendStatus(id, SSH_FX_OK, "");
+        sendStatus(BufferUtils.clear(buffer), id, SSH_FX_OK, "");
     }
 
     protected void doMakeDirectory(int id, String path, Map<String,?> attrs, LinkOption ... options) throws IOException {
@@ -1343,11 +1344,11 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         try {
             doRemove(id, path, IoUtils.getLinkOptions(false));
         } catch (IOException | RuntimeException e) {
-            sendStatus(id, e);
+            sendStatus(BufferUtils.clear(buffer), id, e);
             return;
         }
 
-        sendStatus(id, SSH_FX_OK, "");
+        sendStatus(BufferUtils.clear(buffer), id, SSH_FX_OK, "");
     }
 
     protected void doRemove(int id, String path, LinkOption ... options) throws IOException {
@@ -1396,12 +1397,12 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                 throw new AccessDeniedException("Not readable: " + file.toString());
             }
 
-            if (dh.isSendDotDot() || dh.hasNext()) {
+            if (dh.isSendDot() || dh.isSendDotDot() || dh.hasNext()) {
                 // There is at least one file in the directory or we need to send the "..".
                 // Send only a few files at a time to not create packets of a too
                 // large size or have a timeout to occur.
                 
-                reply = new ByteArrayBuffer();
+                reply = BufferUtils.clear(buffer);
                 reply.putByte((byte) SSH_FXP_NAME);
                 reply.putInt(id);
                 int lenPos = reply.wpos();
@@ -1415,18 +1416,16 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                 if ((!dh.isSendDot()) && (!dh.isSendDotDot()) && (!dh.hasNext())) {
                     // if no more files to send
                     dh.markDone();
-                    dh.clearFileList();
                 }
             } else {
                 // empty directory
                 dh.markDone();
-                dh.clearFileList();
                 throw new EOFException("Empty directory");
             }
             
             ValidateUtils.checkNotNull(reply, "No reply buffer created", GenericUtils.EMPTY_OBJECT_ARRAY);
         } catch (IOException | RuntimeException e) {
-            sendStatus(id, e);
+            sendStatus(BufferUtils.clear(buffer), id, e);
             return;
         }
         
@@ -1439,11 +1438,11 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         try {
             handle = doOpenDir(id, path, IoUtils.getLinkOptions(false));
         } catch (IOException | RuntimeException e) {
-            sendStatus(id, e);
+            sendStatus(BufferUtils.clear(buffer), id, e);
             return;
         }
 
-        sendHandle(id, handle);
+        sendHandle(BufferUtils.clear(buffer), id, handle);
     }
 
     protected String doOpenDir(int id, String path, LinkOption ... options) throws IOException {
@@ -1476,11 +1475,11 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         try {
             doFSetStat(id, handle, attrs);
         } catch (IOException | RuntimeException e) {
-            sendStatus(id, e);
+            sendStatus(BufferUtils.clear(buffer), id, e);
             return;
         }
         
-        sendStatus(id, SSH_FX_OK, "");
+        sendStatus(BufferUtils.clear(buffer), id, SSH_FX_OK, "");
     }
 
     protected void doFSetStat(int id, String handle, Map<String,?> attrs) throws IOException {
@@ -1498,11 +1497,11 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         try {
             doSetStat(id, path, attrs);
         } catch (IOException | RuntimeException e) {
-            sendStatus(id, e);
+            sendStatus(BufferUtils.clear(buffer), id, e);
             return;
         }
 
-        sendStatus(id, SSH_FX_OK, "");
+        sendStatus(BufferUtils.clear(buffer), id, SSH_FX_OK, "");
     }
 
     protected void doSetStat(int id, String path, Map<String,?> attrs) throws IOException {
@@ -1522,11 +1521,11 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         try {
             attrs = doFStat(id, handle, flags);
         } catch (IOException | RuntimeException e) {
-            sendStatus(id, e);
+            sendStatus(BufferUtils.clear(buffer), id, e);
             return;
         }
 
-        sendAttrs(id, attrs);
+        sendAttrs(BufferUtils.clear(buffer), id, attrs);
     }
 
     protected Map<String,Object> doFStat(int id, String handle, int flags) throws IOException {
@@ -1549,11 +1548,11 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         try {
             attrs = doLStat(id, path, flags);
         } catch (IOException | RuntimeException e) {
-            sendStatus(id, e);
+            sendStatus(BufferUtils.clear(buffer), id, e);
             return;
         }
 
-        sendAttrs(id, attrs);
+        sendAttrs(BufferUtils.clear(buffer), id, attrs);
     }
 
     protected Map<String,Object> doLStat(int id, String path, int flags) throws IOException {
@@ -1572,11 +1571,11 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         try {
             doWrite(id, handle, offset, length, buffer.array(), buffer.rpos(), buffer.available());
         } catch (IOException | RuntimeException e) {
-            sendStatus(id, e);
+            sendStatus(BufferUtils.clear(buffer), id, e);
             return;
         }
 
-        sendStatus(id, SSH_FX_OK, "");
+        sendStatus(BufferUtils.clear(buffer), id, SSH_FX_OK, "");
     }
 
     protected void doWrite(int id, String handle, long offset, int length, byte[] data, int doff, int remaining) throws IOException {
@@ -1602,26 +1601,28 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         String handle = buffer.getString();
         long offset = buffer.getLong();
         int readLen = buffer.getInt();
-        Buffer buf = new ByteArrayBuffer(readLen + Short.SIZE /* some extra */);
         try {
-            buf.putByte((byte) SSH_FXP_DATA);
-            buf.putInt(id);
-            int lenPos = buf.wpos();
-            buf.putInt(0);
+            buffer.clear();
+            buffer.ensureCapacity(readLen + Long.SIZE, Int2IntFunction.IDENTITY);
 
-            int startPos = buf.wpos();
-            int len = doRead(id, handle, offset, readLen, buf.array(), startPos);
+            buffer.putByte((byte) SSH_FXP_DATA);
+            buffer.putInt(id);
+            int lenPos = buffer.wpos();
+            buffer.putInt(0);
+
+            int startPos = buffer.wpos();
+            int len = doRead(id, handle, offset, readLen, buffer.array(), startPos);
             if (len < 0) {
                 throw new EOFException("Unable to read " + readLen + " bytes from offset=" + offset + " of " + handle);
             }
-            buf.wpos(startPos + len);
-            BufferUtils.updateLengthPlaceholder(buf, lenPos, len);
+            buffer.wpos(startPos + len);
+            BufferUtils.updateLengthPlaceholder(buffer, lenPos, len);
         } catch (IOException | RuntimeException e) {
-            sendStatus(id, e);
+            sendStatus(BufferUtils.clear(buffer), id, e);
             return;
         }
         
-        send(buf);
+        send(buffer);
     }
 
     protected int doRead(int id, String handle, long offset, int length, byte[] data, int doff) throws IOException {
@@ -1641,11 +1642,11 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         try {
             doClose(id, handle);
         } catch (IOException | RuntimeException e) {
-            sendStatus(id, e);
+            sendStatus(BufferUtils.clear(buffer), id, e);
             return;
         }
 
-        sendStatus(id, SSH_FX_OK, "", "");
+        sendStatus(BufferUtils.clear(buffer), id, SSH_FX_OK, "", "");
     }
 
     protected void doClose(int id, String handle) throws IOException {
@@ -1712,11 +1713,11 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         try {
             handle = doOpen(id, path, pflags, access, attrs);
         } catch (IOException | RuntimeException e) {
-            sendStatus(id, e);
+            sendStatus(BufferUtils.clear(buffer), id, e);
             return;
         }
 
-        sendHandle(id, handle);
+        sendHandle(BufferUtils.clear(buffer), id, handle);
     }
 
     /**
@@ -1772,7 +1773,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             log.debug("Received SSH_FXP_INIT (version={})", Integer.valueOf(id));
         }
 
-        String all = checkVersionCompatibility(id, id, SSH_FX_OP_UNSUPPORTED);
+        String all = checkVersionCompatibility(buffer, id, id, SSH_FX_OP_UNSUPPORTED);
         if (GenericUtils.isEmpty(all)) { // i.e. validation failed
             return;
         }
@@ -1943,19 +1944,11 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         BufferUtils.updateLengthPlaceholder(buffer, lenPos);
     }
 
-    protected void sendHandle(int id, String handle) throws IOException {
-        sendHandle(new ByteArrayBuffer(GenericUtils.length(handle) + Long.SIZE), id, handle);
-    }
-
     protected void sendHandle(Buffer buffer, int id, String handle) throws IOException {
         buffer.putByte((byte) SSH_FXP_HANDLE);
         buffer.putInt(id);
         buffer.putString(handle);
         send(buffer);
-    }
-
-    protected void sendAttrs(int id, Map<String,?> attributes) throws IOException {
-        sendAttrs(new ByteArrayBuffer(), id, attributes);
     }
 
     protected void sendAttrs(Buffer buffer, int id, Map<String,?> attributes) throws IOException {
@@ -1965,14 +1958,10 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         send(buffer);
     }
 
-    protected void sendPath(int id, Path f, Map<String,?> attrs) throws IOException {
-        sendPath(new ByteArrayBuffer(), id, f, attrs);
-    }
-
     protected void sendPath(Buffer buffer, int id, Path f, Map<String,?> attrs) throws IOException {
         buffer.putByte((byte) SSH_FXP_NAME);
         buffer.putInt(id);
-        buffer.putInt(1);
+        buffer.putInt(1);   // one reply
 
         String originalPath = f.toString();
         //in case we are running on Windows
@@ -1982,23 +1971,18 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         if (normalizedPath.length() == 0) {
             normalizedPath = "/";
         }
-        buffer.putString(normalizedPath, StandardCharsets.UTF_8);
+        buffer.putString(normalizedPath);
 
         if (version == SFTP_V3) {
             f = resolveFile(normalizedPath);
-            buffer.putString(getLongName(f, attrs), StandardCharsets.UTF_8); // Format specified in the specs
-            buffer.putInt(0);
+            buffer.putString(getLongName(f, attrs));
+            buffer.putInt(0);   // no flags
         } else if (version >= SFTP_V4) {
             writeAttrs(buffer, attrs);
         } else {
             throw new IllegalStateException("sendPath(" + f + ") unsupported version: " + version);
         }
         send(buffer);
-    }
-
-    protected void sendLink(int id, String link) throws IOException {
-        int linkSize = GenericUtils.length(link);
-        sendLink(new ByteArrayBuffer((2 * linkSize) + Long.SIZE), id , link);
     }
 
     protected void sendLink(Buffer buffer, int id, String link) throws IOException {
@@ -2271,8 +2255,8 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                 buffer.putLong(size.longValue());
             }
             if ((flags & SSH_FILEXFER_ATTR_OWNERGROUP) != 0) {
-                buffer.putString(attributes.get("owner").toString(), StandardCharsets.UTF_8);
-                buffer.putString(attributes.get("group").toString(), StandardCharsets.UTF_8);
+                buffer.putString(Objects.toString(attributes.get("owner")));
+                buffer.putString(Objects.toString(attributes.get("group")));
             }
             if ((flags & SSH_FILEXFER_ATTR_PERMISSIONS) != 0) {
                 buffer.putInt(attributesToPermissions(isReg, isDir, isLnk, perms));
@@ -2774,9 +2758,9 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         return type.cast(h);
     }
 
-    protected void sendStatus(int id, Exception e) throws IOException {
+    protected void sendStatus(Buffer buffer, int id, Exception e) throws IOException {
         int substatus = resolveSubstatus(e);
-        sendStatus(id, substatus, e.toString());
+        sendStatus(buffer, id, substatus, e.toString());
     }
 
     protected int resolveSubstatus(Exception e) {
@@ -2803,17 +2787,16 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         }
     }
 
-    protected void sendStatus(int id, int substatus, String msg) throws IOException {
-        sendStatus(id, substatus, (msg != null) ? msg : "", "");
+    protected void sendStatus(Buffer buffer, int id, int substatus, String msg) throws IOException {
+        sendStatus(buffer, id, substatus, (msg != null) ? msg : "", "");
     }
 
-    protected void sendStatus(int id, int substatus, String msg, String lang) throws IOException {
+    protected void sendStatus(Buffer buffer, int id, int substatus, String msg, String lang) throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("Send SSH_FXP_STATUS (substatus={}, lang={}, msg={})",
-                      new Object[] { Integer.valueOf(substatus), lang, msg });
+                      Integer.valueOf(substatus), lang, msg);
         }
 
-        Buffer buffer = new ByteArrayBuffer();
         buffer.putByte((byte) SSH_FXP_STATUS);
         buffer.putInt(id);
         buffer.putInt(substatus);

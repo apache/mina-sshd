@@ -24,6 +24,7 @@ import java.io.OutputStream;
 import java.io.StreamCorruptedException;
 
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.Int2IntFunction;
 import org.apache.sshd.common.util.io.IoUtils;
 
 /**
@@ -277,6 +278,14 @@ public class BufferUtils {
         return true;
     }
 
+    public static final Int2IntFunction DEFAULT_BUFFER_GROWTH_FACTOR = 
+            new Int2IntFunction() {
+                @Override
+                public int apply(int value) {
+                    return getNextPowerOf2(value);
+                }
+            };
+
     public static final int getNextPowerOf2(int i) {
         int j = 1;
         while (j < i) {
@@ -323,5 +332,18 @@ public class BufferUtils {
         buffer.wpos(lenPos);
         buffer.putInt(dataLength);
         buffer.wpos(curPos);
+    }
+    
+    /**
+     * Invokes {@link Buffer#clear()}
+     * @param buffer A {@link Buffer} instance - ignored if {@code null}
+     * @return The same as the input instance
+     */
+    public static <B extends Buffer> B clear(B buffer) {
+        if (buffer != null) {
+            buffer.clear();
+        }
+        
+        return buffer;
     }
 }

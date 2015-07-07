@@ -55,6 +55,7 @@ import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.keys.ECDSAPublicKeyEntryDecoder;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.Int2IntFunction;
 import org.apache.sshd.common.util.Readable;
 import org.apache.sshd.common.util.SecurityUtils;
 
@@ -636,7 +637,19 @@ public abstract class Buffer implements Readable {
         }
     }
 
-    protected abstract void ensureCapacity(int capacity);
+    protected void ensureCapacity(int capacity) {
+        ensureCapacity(capacity, BufferUtils.DEFAULT_BUFFER_GROWTH_FACTOR);
+    }
+
+    /**
+     * @param capacity The requires capacity
+     * @param growthFactor An {@link Int2IntFunction} that is invoked
+     * if the current capacity is insufficient. The argument is the minimum
+     * required new data length, the function result should be the
+     * effective new data length to be allocated - if less than minimum
+     * then an exception is thrown
+     */
+    public abstract void ensureCapacity(int capacity, Int2IntFunction growthFactor);
     protected abstract int size();
 
     @Override
