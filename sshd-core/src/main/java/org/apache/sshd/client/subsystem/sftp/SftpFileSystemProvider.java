@@ -626,7 +626,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         
         SftpFileSystem fs = p.getFileSystem();
         if (x || (w && fs.isReadOnly())) {
-            throw new AccessDeniedException(path.toString());
+            throw new AccessDeniedException("Filesystem is read-only: " + path.toString());
         }
     }
 

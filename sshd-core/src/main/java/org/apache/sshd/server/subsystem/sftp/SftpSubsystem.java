@@ -42,6 +42,7 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.NotDirectoryException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -68,6 +69,7 @@ import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -188,28 +190,28 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         ALL_SFTP_IMPL = sb.toString();
     }
 
-    private ExitCallback callback;
-    private InputStream in;
-    private OutputStream out;
-    private OutputStream err;
-    private Environment env;
-    private Random randomizer;
-    private int fileHandleSize = DEFAULT_FILE_HANDLE_SIZE;
-    private int maxFileHandleRounds = DEFAULT_FILE_HANDLE_ROUNDS;
-    private ServerSession session;
-    private boolean closed;
-	private ExecutorService executors;
-	private boolean shutdownExecutor;
-	private Future<?> pendingFuture;
-	private byte[] workBuf = new byte[Math.max(DEFAULT_FILE_HANDLE_SIZE, Integer.SIZE / Byte.SIZE)]; // TODO in JDK-8 use Integer.BYTES
-    private FileSystem fileSystem = FileSystems.getDefault();
-    private Path defaultDir = fileSystem.getPath(System.getProperty("user.dir"));
-    private long requestsCount;
-    private int version;
-    private final Map<String, byte[]> extensions = new HashMap<>();
-    private final Map<String, Handle> handles = new HashMap<>();
+    protected ExitCallback callback;
+    protected InputStream in;
+    protected OutputStream out;
+    protected OutputStream err;
+    protected Environment env;
+    protected Random randomizer;
+    protected int fileHandleSize = DEFAULT_FILE_HANDLE_SIZE;
+    protected int maxFileHandleRounds = DEFAULT_FILE_HANDLE_ROUNDS;
+    protected ServerSession session;
+    protected boolean closed;
+    protected ExecutorService executors;
+	protected boolean shutdownExecutor;
+	protected Future<?> pendingFuture;
+	protected byte[] workBuf = new byte[Math.max(DEFAULT_FILE_HANDLE_SIZE, Integer.SIZE / Byte.SIZE)]; // TODO in JDK-8 use Integer.BYTES
+	protected FileSystem fileSystem = FileSystems.getDefault();
+    protected Path defaultDir = fileSystem.getPath(System.getProperty("user.dir"));
+    protected long requestsCount;
+    protected int version;
+    protected final Map<String, byte[]> extensions = new HashMap<>();
+    protected final Map<String, Handle> handles = new HashMap<>();
 
-    private final UnsupportedAttributePolicy unsupportedAttributePolicy;
+    protected final UnsupportedAttributePolicy unsupportedAttributePolicy;
 
     protected static abstract class Handle implements java.io.Closeable {
         private Path file;
@@ -230,6 +232,14 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         @Override
         public String toString() {
             return Objects.toString(getFile());
+        }
+    }
+
+    protected static class InvalidHandleException extends IOException {
+        private static final long serialVersionUID = -1686077114375131889L;
+
+        public InvalidHandleException(String handle, Handle h, Class<? extends Handle> expected) {
+            super(handle + "[" + h + "] is not a " + expected.getSimpleName());
         }
     }
 
@@ -693,13 +703,25 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     protected void doTextSeek(Buffer buffer, int id) throws IOException {
         String handle = buffer.getString();
         long line = buffer.getLong();
+        try {
+            // TODO : implement text-seek - see https://tools.ietf.org/html/draft-ietf-secsh-filexfer-03#section-6.3
+            doTextSeek(id, handle, line);
+        } catch(IOException | RuntimeException e) {
+            sendStatus(id, e);
+            return;
+        }
+
+        sendStatus(id, SSH_FX_OK, "");
+    }
+
+    protected void doTextSeek(int id, String handle, long line) throws IOException {
         Handle h = handles.get(handle);
         if (log.isDebugEnabled()) {
             log.debug("Received SSH_FXP_EXTENDED(text-seek) (handle={}[{}], line={})", handle, h, Long.valueOf(line));
         }
 
-        // TODO : implement text-seek - see https://tools.ietf.org/html/draft-ietf-secsh-filexfer-03#section-6.3
-        sendStatus(id, SSH_FX_OP_UNSUPPORTED, "Command SSH_FXP_EXTENDED(text-seek) is unsupported or not implemented");
+        FileHandle fileHandle = validateHandle(handle, h, FileHandle.class);
+        throw new UnsupportedOperationException("doTextSeek(" + fileHandle + ")");
     }
 
     protected void doMD5Hash(Buffer buffer, int id, String targetType) throws IOException {
@@ -707,127 +729,9 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         long startOffset = buffer.getLong();
         long length = buffer.getLong();
         byte[] quickCheckHash = buffer.getBytes();
-        if (log.isDebugEnabled()) {
-            log.debug("doMD5Hash({})[{}] offset={}, length={}, quick-hash={}",
-                      targetType, target, Long.valueOf(startOffset), Long.valueOf(length), BufferUtils.printHex(':', quickCheckHash));
-        }
         
         try {
-            Path path;
-            if (SftpConstants.EXT_MD5HASH_HANDLE.equalsIgnoreCase(targetType)) {
-                Handle p = handles.get(target);
-                if (p == null) {
-                    throw new FileNotFoundException("Unknown handle: " + target);
-                }
-                
-                if (!(p instanceof FileHandle)) {
-                    throw new IOException("Not a file: " + p);
-                }
-                
-                path = p.getFile();
-
-                /*
-                 * To quote http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt section 9.1.1:
-                 * 
-                 *      The handle MUST be a file handle, and ACE4_READ_DATA MUST
-                 *      have been included in the desired-access when the file
-                 *      was opened
-                 */
-                int access = ((FileHandle) p).getAccessMask();
-                if ((access & ACE4_READ_DATA) == 0) {
-                    throw new AccessDeniedException(path.toString(), path.toString(), "File not opened for read");
-                }
-            } else {
-                path = resolveFile(target);
-                if (Files.isDirectory(path, IoUtils.getLinkOptions(false))) {
-                    throw new IOException("Not a file: " + path);
-                }
-            }
-
-            /*
-             * To quote http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt section 9.1.1:
-             *
-             *      If both start-offset and length are zero, the entire file should be included
-             */
-            long effectiveLength = length;
-            if ((startOffset == 0L) && (length == 0L)) {
-                effectiveLength = Files.size(path);
-            }
-            
-            Digest digest = BuiltinDigests.md5.create();
-            digest.init();
-
-            byte[] digestBuf = new byte[(int) Math.min(effectiveLength, SftpConstants.MD5_QUICK_HASH_SIZE)];
-            ByteBuffer bb = ByteBuffer.wrap(digestBuf);
-            boolean hashMatches = false;
-            byte[] hashValue = null;
-
-            try(FileChannel channel = FileChannel.open(path, StandardOpenOption.READ)) {
-                channel.position(startOffset);
-
-                /*
-                 * To quote http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt section 9.1.1:
-                 * 
-                 *      If this is a zero length string, the client does not have the
-                 *      data, and is requesting the hash for reasons other than comparing
-                 *      with a local file.  The server MAY return SSH_FX_OP_UNSUPPORTED in
-                 *      this case.
-                 */
-                if (GenericUtils.length(quickCheckHash) <= 0) {
-                    // TODO consider limiting it - e.g., if the requested effective length is <= than some (configurable) threshold
-                    hashMatches = true;
-                } else {
-                    int readLen = channel.read(bb);
-                    effectiveLength -= readLen;
-                    digest.update(digestBuf, 0, readLen);
-    
-                    hashValue = digest.digest();
-                    hashMatches = Arrays.equals(quickCheckHash, hashValue);
-                    if (hashMatches) {
-                        /*
-                         * Need to re-initialize the digester due to the Javadoc:
-                         * 
-                         *      "The digest method can be called once for a given number
-                         *       of updates. After digest has been called, the MessageDigest
-                         *       object is reset to its initialized state." 
-                         */
-                        if (effectiveLength > 0L) {
-                            digest = BuiltinDigests.md5.create();
-                            digest.init();
-                            digest.update(digestBuf, 0, readLen);
-                            hashValue = null;   // start again
-                        }
-                    } else {
-                        if (log.isTraceEnabled()) {
-                            log.trace("doMD5Hash({})[{}] offset={}, length={} - quick-hash mismatched expected={}, actual={}",
-                                      targetType, target, Long.valueOf(startOffset), Long.valueOf(length),
-                                      BufferUtils.printHex(':', quickCheckHash), BufferUtils.printHex(':', hashValue));
-                        }
-                    }
-                }
-
-                if (hashMatches) {
-                    while(effectiveLength > 0L) {
-                        bb.clear();
-                        int readLen = channel.read(bb); 
-                        effectiveLength -= readLen;
-                        digest.update(digestBuf, 0, readLen);
-                    }
-                    
-                    if (hashValue == null) {    // check if did any more iterations after the quick hash
-                        hashValue = digest.digest();
-                    }
-                } else {
-                    hashValue = GenericUtils.EMPTY_BYTE_ARRAY;
-                }
-            }
-
-            if (log.isDebugEnabled()) {
-                log.debug("doMD5Hash({})[{}] offset={}, length={}, quick-hash={} - match={}, hash={}",
-                          targetType, target, Long.valueOf(startOffset), Long.valueOf(length), BufferUtils.printHex(':', quickCheckHash),
-                          Boolean.valueOf(hashMatches), BufferUtils.printHex(':', hashValue));
-            }
-
+            byte[] hashValue = doMD5Hash(id, targetType, target, startOffset, length, quickCheckHash);
             buffer.clear();
 
             buffer.putByte((byte) SSH_FXP_EXTENDED_REPLY);
@@ -840,19 +744,136 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         }
     }
 
+    protected byte[] doMD5Hash(int id, String targetType, String target, long startOffset, long length, byte[] quickCheckHash) throws Exception {
+        if (log.isDebugEnabled()) {
+            log.debug("doMD5Hash({})[{}] offset={}, length={}, quick-hash={}",
+                      targetType, target, Long.valueOf(startOffset), Long.valueOf(length), BufferUtils.printHex(':', quickCheckHash));
+        }
+
+        Path path;
+        if (SftpConstants.EXT_MD5HASH_HANDLE.equalsIgnoreCase(targetType)) {
+            Handle h = handles.get(target);
+            FileHandle fileHandle = validateHandle(target, h, FileHandle.class); 
+            path = fileHandle.getFile();
+
+            /*
+             * To quote http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt section 9.1.1:
+             * 
+             *      The handle MUST be a file handle, and ACE4_READ_DATA MUST
+             *      have been included in the desired-access when the file
+             *      was opened
+             */
+            int access = fileHandle.getAccessMask();
+            if ((access & ACE4_READ_DATA) == 0) {
+                throw new AccessDeniedException("File not opened for read: " + path);
+            }
+        } else {
+            path = resolveFile(target);
+            if (Files.isDirectory(path, IoUtils.getLinkOptions(false))) {
+                throw new NotDirectoryException(path.toString());
+            }
+        }
+
+        /*
+         * To quote http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt section 9.1.1:
+         *
+         *      If both start-offset and length are zero, the entire file should be included
+         */
+        long effectiveLength = length;
+        if ((startOffset == 0L) && (length == 0L)) {
+            effectiveLength = Files.size(path);
+        }
+        
+        Digest digest = BuiltinDigests.md5.create();
+        digest.init();
+
+        byte[] digestBuf = new byte[(int) Math.min(effectiveLength, SftpConstants.MD5_QUICK_HASH_SIZE)];
+        ByteBuffer bb = ByteBuffer.wrap(digestBuf);
+        boolean hashMatches = false;
+        byte[] hashValue = null;
+
+        try(FileChannel channel = FileChannel.open(path, StandardOpenOption.READ)) {
+            channel.position(startOffset);
+
+            /*
+             * To quote http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt section 9.1.1:
+             * 
+             *      If this is a zero length string, the client does not have the
+             *      data, and is requesting the hash for reasons other than comparing
+             *      with a local file.  The server MAY return SSH_FX_OP_UNSUPPORTED in
+             *      this case.
+             */
+            if (GenericUtils.length(quickCheckHash) <= 0) {
+                // TODO consider limiting it - e.g., if the requested effective length is <= than some (configurable) threshold
+                hashMatches = true;
+            } else {
+                int readLen = channel.read(bb);
+                effectiveLength -= readLen;
+                digest.update(digestBuf, 0, readLen);
+
+                hashValue = digest.digest();
+                hashMatches = Arrays.equals(quickCheckHash, hashValue);
+                if (hashMatches) {
+                    /*
+                     * Need to re-initialize the digester due to the Javadoc:
+                     * 
+                     *      "The digest method can be called once for a given number
+                     *       of updates. After digest has been called, the MessageDigest
+                     *       object is reset to its initialized state." 
+                     */
+                    if (effectiveLength > 0L) {
+                        digest = BuiltinDigests.md5.create();
+                        digest.init();
+                        digest.update(digestBuf, 0, readLen);
+                        hashValue = null;   // start again
+                    }
+                } else {
+                    if (log.isTraceEnabled()) {
+                        log.trace("doMD5Hash({})[{}] offset={}, length={} - quick-hash mismatched expected={}, actual={}",
+                                  targetType, target, Long.valueOf(startOffset), Long.valueOf(length),
+                                  BufferUtils.printHex(':', quickCheckHash), BufferUtils.printHex(':', hashValue));
+                    }
+                }
+            }
+
+            if (hashMatches) {
+                while(effectiveLength > 0L) {
+                    bb.clear();
+                    int readLen = channel.read(bb); 
+                    effectiveLength -= readLen;
+                    digest.update(digestBuf, 0, readLen);
+                }
+                
+                if (hashValue == null) {    // check if did any more iterations after the quick hash
+                    hashValue = digest.digest();
+                }
+            } else {
+                hashValue = GenericUtils.EMPTY_BYTE_ARRAY;
+            }
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug("doMD5Hash({})[{}] offset={}, length={}, quick-hash={} - match={}, hash={}",
+                      targetType, target, Long.valueOf(startOffset), Long.valueOf(length), BufferUtils.printHex(':', quickCheckHash),
+                      Boolean.valueOf(hashMatches), BufferUtils.printHex(':', hashValue));
+        }
+        
+        return hashValue;
+    }
+
     protected void doVersionSelect(Buffer buffer, int id) throws IOException {
+        String proposed = buffer.getString();
         /*
          * The 'version-select' MUST be the first request from the client to the
          * server; if it is not, the server MUST fail the request and close the
          * channel.
          */
         if (requestsCount > 0L) {
-           sendStatus(id, SSH_FX_FAILURE, "Version selection not the 1st request");
+           sendStatus(id, SSH_FX_FAILURE, "Version selection not the 1st request for proposal = " + proposed);
            session.close(true);
            return;
         }
 
-        String proposed = buffer.getString();
         Boolean result = validateProposedVersion(id, proposed);
         /*
          * "MUST then close the channel without processing any further requests"
@@ -948,102 +969,120 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         int mask = buffer.getInt();
         
         try {
-            Handle p = handles.get(handle);
-            if (log.isDebugEnabled()) {
-                log.debug("Received SSH_FXP_BLOCK (handle={}[{}], offset={}, length={}, mask=0x{})",
-                          handle, p, Long.valueOf(offset), Long.valueOf(length), Integer.toHexString(mask));
-            }
-
-            if (!(p instanceof FileHandle)) {
-                sendStatus(id, SSH_FX_INVALID_HANDLE, handle);
-                return;
-            }
-
-            FileHandle fileHandle = (FileHandle) p;
-            fileHandle.lock(offset, length, mask);
-            sendStatus(id, SSH_FX_OK, "");
-        } catch (IOException | OverlappingFileLockException e) {
+            doBlock(id, handle, offset, length, mask);
+        } catch (IOException | RuntimeException e) {
             sendStatus(id, e);
+            return;
         }
+
+        sendStatus(id, SSH_FX_OK, "");
+    }
+
+    protected void doBlock(int id, String handle, long offset, long length, int mask) throws IOException {
+        Handle p = handles.get(handle);
+        if (log.isDebugEnabled()) {
+            log.debug("Received SSH_FXP_BLOCK (handle={}[{}], offset={}, length={}, mask=0x{})",
+                      handle, p, Long.valueOf(offset), Long.valueOf(length), Integer.toHexString(mask));
+        }
+        
+        FileHandle fileHandle = validateHandle(handle, p, FileHandle.class);
+        fileHandle.lock(offset, length, mask);
     }
 
     protected void doUnblock(Buffer buffer, int id) throws IOException {
         String handle = buffer.getString();
         long offset = buffer.getLong();
         long length = buffer.getLong();
+        boolean found;
         try {
-            Handle p = handles.get(handle);
-            if (log.isDebugEnabled()) {
-                log.debug("Received SSH_FXP_UNBLOCK (handle={}[{}], offset={}, length={})",
-                          handle, p, Long.valueOf(offset), Long.valueOf(length));
-            }
-
-            if (!(p instanceof FileHandle)) {
-                sendStatus(id, SSH_FX_INVALID_HANDLE, handle);
-                return;
-            }
-
-            FileHandle fileHandle = (FileHandle) p;
-            boolean found = fileHandle.unlock(offset, length);
-            sendStatus(id, found ? SSH_FX_OK : SSH_FX_NO_MATCHING_BYTE_RANGE_LOCK, "");
-        } catch (IOException e) {
+            found = doUnblock(id, handle, offset, length);
+        } catch (IOException | RuntimeException e) {
             sendStatus(id, e);
+            return;
         }
+
+        sendStatus(id, found ? SSH_FX_OK : SSH_FX_NO_MATCHING_BYTE_RANGE_LOCK, "");
+    }
+
+    protected boolean doUnblock(int id, String handle, long offset, long length) throws IOException {
+        Handle p = handles.get(handle);
+        if (log.isDebugEnabled()) {
+            log.debug("Received SSH_FXP_UNBLOCK (handle={}[{}], offset={}, length={})",
+                      handle, p, Long.valueOf(offset), Long.valueOf(length));
+        }
+
+        FileHandle fileHandle = validateHandle(handle, p, FileHandle.class);
+        return fileHandle.unlock(offset, length);
     }
 
     protected void doLink(Buffer buffer, int id) throws IOException {
-        String targetpath = buffer.getString();
-        String linkpath = buffer.getString();
+        String targetPath = buffer.getString();
+        String linkPath = buffer.getString();
         boolean symLink = buffer.getBoolean();
-        if (log.isDebugEnabled()) {
-            log.debug("Received SSH_FXP_LINK (linkpath={}, targetpath={}, symlink={})",
-                      linkpath, targetpath, Boolean.valueOf(symLink));
-        }
 
         try {
-            Path link = resolveFile(linkpath);
-            Path target = fileSystem.getPath(targetpath);
-            if (symLink) {
-                Files.createSymbolicLink(link, target);
-            } else {
-                Files.createLink(link, target);
-            }
-            sendStatus(id, SSH_FX_OK, "");
-        } catch (UnsupportedOperationException e) {
-            sendStatus(id, SSH_FX_OP_UNSUPPORTED, "Command SSH_FXP_SYMLINK is unsupported or not implemented");
-        } catch (IOException e) {
+            doLink(id, targetPath, linkPath, symLink);
+        } catch (IOException | RuntimeException e) {
             sendStatus(id, e);
+            return;
+        }
+        
+        sendStatus(id, SSH_FX_OK, "");
+    }
+
+    protected void doLink(int id, String targetPath, String linkPath, boolean symLink) throws IOException {
+        if (log.isDebugEnabled()) {
+            log.debug("Received SSH_FXP_LINK (linkpath={}, targetpath={}, symlink={})",
+                      linkPath, targetPath, Boolean.valueOf(symLink));
+        }
+        
+        Path link = resolveFile(linkPath);
+        Path target = fileSystem.getPath(targetPath);
+        if (symLink) {
+            Files.createSymbolicLink(link, target);
+        } else {
+            Files.createLink(link, target);
         }
     }
 
     protected void doSymLink(Buffer buffer, int id) throws IOException {
-        String targetpath = buffer.getString();
-        String linkpath = buffer.getString();
-        log.debug("Received SSH_FXP_SYMLINK (linkpath={}, targetpath={})", linkpath, targetpath);
+        String targetPath = buffer.getString();
+        String linkPath = buffer.getString();
         try {
-            Path link = resolveFile(linkpath);
-            Path target = fileSystem.getPath(targetpath);
-            Files.createSymbolicLink(link, target);
-            sendStatus(id, SSH_FX_OK, "");
-        } catch (UnsupportedOperationException e) {
-            sendStatus(id, SSH_FX_OP_UNSUPPORTED, "Command SSH_FXP_SYMLINK is unsupported or not implemented");
-        } catch (IOException e) {
+            doSymLink(id, targetPath, linkPath);
+        } catch (IOException | RuntimeException e) {
             sendStatus(id, e);
+            return;
         }
+
+        sendStatus(id, SSH_FX_OK, "");
+    }
+
+    protected void doSymLink(int id, String targetPath, String linkPath) throws IOException {
+        log.debug("Received SSH_FXP_SYMLINK (linkpath={}, targetpath={})", targetPath, linkPath);
+        Path link = resolveFile(linkPath);
+        Path target = fileSystem.getPath(targetPath);
+        Files.createSymbolicLink(link, target);
     }
 
     protected void doReadLink(Buffer buffer, int id) throws IOException {
-        String path = buffer.getString();
-        log.debug("Received SSH_FXP_READLINK (path={})", path);
+        String path = buffer.getString(), l;
         try {
-            Path f = resolveFile(path);
-            String l = Files.readSymbolicLink(f).toString();
-            sendLink(id, l);
-        } catch (UnsupportedOperationException e) {
-            sendStatus(id, SSH_FX_OP_UNSUPPORTED, "Command SSH_FXP_READLINK is unsupported or not implemented");
-        } catch (IOException e) {
+             l = doReadLink(id, path);
+        } catch (IOException | RuntimeException e) {
             sendStatus(id, e);
+            return;
         }
+
+        sendLink(id, l);
+    }
+
+    protected String doReadLink(int id, String path) throws IOException {
+        Path f = resolveFile(path);
+        log.debug("Received SSH_FXP_READLINK (path={}[{}])", path, f);
+        
+        Path t = Files.readSymbolicLink(f);
+        return t.toString();
     }
 
     protected void doRename(Buffer buffer, int id) throws IOException {
@@ -1053,26 +1092,40 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         if (version >= SFTP_V5) {
             flags = buffer.getInt();
         }
+        try {
+            doRename(id, oldPath, newPath, flags);
+        } catch (IOException | RuntimeException e) {
+            sendStatus(id, e);
+            return;
+        }
+
+        sendStatus(id, SSH_FX_OK, "");
+    }
+
+    protected void doRename(int id, String oldPath, String newPath, int flags) throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("Received SSH_FXP_RENAME (oldPath={}, newPath={}, flags=0x{})",
                        oldPath, newPath, Integer.toHexString(flags));
         }
 
-        List<CopyOption> opts = new ArrayList<>();
-        if ((flags & SSH_FXP_RENAME_ATOMIC) != 0) {
-            opts.add(StandardCopyOption.ATOMIC_MOVE);
+        Collection<CopyOption> opts = Collections.emptyList();
+        if (flags != 0) {
+            opts = new ArrayList<>();
+            if ((flags & SSH_FXP_RENAME_ATOMIC) == SSH_FXP_RENAME_ATOMIC) {
+                opts.add(StandardCopyOption.ATOMIC_MOVE);
+            }
+            if ((flags & SSH_FXP_RENAME_OVERWRITE) == SSH_FXP_RENAME_OVERWRITE) {
+                opts.add(StandardCopyOption.REPLACE_EXISTING);
+            }
         }
-        if ((flags & SSH_FXP_RENAME_OVERWRITE) != 0) {
-            opts.add(StandardCopyOption.REPLACE_EXISTING);
-        }
-        try {
-            Path o = resolveFile(oldPath);
-            Path n = resolveFile(newPath);
-            Files.move(o, n, opts.toArray(new CopyOption[opts.size()]));
-            sendStatus(id, SSH_FX_OK, "");
-        } catch (IOException e) {
-            sendStatus(id, e);
-        }
+        
+        doRename(id, oldPath, newPath, opts);
+    }
+    
+    protected void doRename(int id, String oldPath, String newPath, Collection<CopyOption> opts) throws IOException {
+        Path o = resolveFile(oldPath);
+        Path n = resolveFile(newPath);
+        Files.move(o, n, GenericUtils.isEmpty(opts) ? IoUtils.EMPTY_COPY_OPTIONS : opts.toArray(new CopyOption[opts.size()]));
     }
 
     // see https://tools.ietf.org/html/draft-ietf-secsh-filexfer-extensions-00#section-6
@@ -1080,24 +1133,33 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         String srcFile = buffer.getString();
         String dstFile = buffer.getString();
         boolean overwriteDestination = buffer.getBoolean();
+
+        try {
+            doCopyFile(id, srcFile, dstFile, overwriteDestination);
+        } catch (IOException | RuntimeException e) {
+            sendStatus(id, e);
+            return;
+        }
+
+        sendStatus(id, SSH_FX_OK, "");
+    }
+
+    protected void doCopyFile(int id, String srcFile, String dstFile, boolean overwriteDestination) throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("SSH_FXP_EXTENDED[{}] (src={}, dst={}, overwrite=0x{})",
                        SftpConstants.EXT_COPYFILE, srcFile, dstFile, Boolean.valueOf(overwriteDestination));
         }
         
-        CopyOption[] opts = overwriteDestination
-                ? new CopyOption[] { StandardCopyOption.REPLACE_EXISTING }
-                : IoUtils.EMPTY_COPY_OPTIONS
-                ;
+        doCopyFile(id, srcFile, dstFile,
+                   overwriteDestination
+                  ? Collections.<CopyOption>singletonList(StandardCopyOption.REPLACE_EXISTING)
+                  : Collections.<CopyOption>emptyList());
+    }
 
-        try {
-            Path src = resolveFile(srcFile);
-            Path dst = resolveFile(dstFile);
-            Files.copy(src, dst, opts);
-            sendStatus(id, SSH_FX_OK, "");
-        } catch (IOException e) {
-            sendStatus(id, e);
-        }
+    protected void doCopyFile(int id, String srcFile, String dstFile, Collection<CopyOption> opts) throws IOException {
+        Path src = resolveFile(srcFile);
+        Path dst = resolveFile(dstFile);
+        Files.copy(src, dst, GenericUtils.isEmpty(opts) ? IoUtils.EMPTY_COPY_OPTIONS : opts.toArray(new CopyOption[opts.size()]));
     }
 
     protected void doStat(Buffer buffer, int id) throws IOException {
@@ -1106,15 +1168,24 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         if (version >= SFTP_V4) {
             flags = buffer.getInt();
         }
+
+        Map<String,Object> attrs;
+        try {
+             attrs = doStat(id, path, flags);
+        } catch(IOException | RuntimeException e) {
+            sendStatus(id, e);
+            return;
+        }
+        
+        sendAttrs(id, attrs);
+    }
+
+    protected Map<String,Object> doStat(int id, String path, int flags) throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("Received SSH_FXP_STAT (path={}, flags=0x{})", path, Integer.toHexString(flags));
         }
-        try {
-            Path p = resolveFile(path);
-            sendAttrs(id, p, flags, true);
-        } catch (IOException e) {
-            sendStatus(id, e);
-        }
+        Path p = resolveFile(path);
+        return resolveFileAttributes(p, flags, true);
     }
 
     protected void doRealPath(Buffer buffer, int id) throws IOException {
@@ -1125,49 +1196,69 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             path = ".";
         }
 
+        Map<String,?> attrs = Collections.<String, Object>emptyMap();
+        Path p;
         try {
             if (version < SFTP_V6) {
-                Path f = resolveFile(path);
-                Path abs = f.toAbsolutePath();
-                Path p = abs.normalize();
-                Boolean status = IoUtils.checkFileExists(p, IoUtils.EMPTY_LINK_OPTIONS);
-                if (status == null) {
-                    p = handleUnknownRealPathStatus(path, abs, p);
-                } else if (!status.booleanValue()) {
-                    throw new FileNotFoundException(p.toString());
-                }
-                sendPath(id, p, Collections.<String, Object>emptyMap());
+                p = doRealPathV6(id, path);
             } else {
                 // Read control byte
                 int control = 0;
                 if (buffer.available() > 0) {
                     control = buffer.getUByte();
                 }
-                List<String> paths = new ArrayList<>();
-                while (buffer.available() > 0) {
-                    paths.add(buffer.getString());
-                }
-                // Resolve path
-                Path p = resolveFile(path);
-                for (String p2 : paths) {
-                    p = p.resolve(p2);
-                }
-                p = p.toAbsolutePath().normalize();
 
-                Map<String, Object> attrs = Collections.emptyMap();
+                Collection<String> extraPaths = new LinkedList<>();
+                while (buffer.available() > 0) {
+                    extraPaths.add(buffer.getString());
+                }
+
+                p = doRealPathV345(id, path, extraPaths);
                 if (control == SSH_FXP_REALPATH_STAT_IF) {
                     try {
                         attrs = getAttributes(p, false);
                     } catch (IOException e) {
-                        // ignore
+                        if (log.isDebugEnabled()) {
+                            log.debug("Failed ({}) to retrieve attributes of {}: {}",
+                                      e.getClass().getSimpleName(), p, e.getMessage());
+                        }
                     }
                 } else if (control == SSH_FXP_REALPATH_STAT_ALWAYS) {
                     attrs = getAttributes(p, false);
                 }
-                sendPath(id, p, attrs);
             }
-        } catch (IOException e) {
+        } catch (IOException | RuntimeException e) {
             sendStatus(id, e);
+            return;
+        }
+
+        sendPath(id, p, attrs);
+    }
+
+    protected Path doRealPathV345(int id, String path, Collection<String> extraPaths) throws IOException {
+        Path p = resolveFile(path);
+        
+        if (GenericUtils.size(extraPaths) > 0) {
+            for (String p2 : extraPaths) {
+                p = p.resolve(p2);
+            }
+        }
+
+        p = p.toAbsolutePath();
+        return p.normalize();
+    }
+
+    protected Path doRealPathV6(int id, String path) throws IOException {
+        Path f = resolveFile(path);
+        Path abs = f.toAbsolutePath();
+        Path p = abs.normalize();
+        Boolean status = IoUtils.checkFileExists(p, IoUtils.EMPTY_LINK_OPTIONS);
+        if (status == null) {
+            return handleUnknownRealPathStatus(path, abs, p);
+        } else if (status.booleanValue()) {
+            return p;
+        } else {
+            throw new FileNotFoundException(path);
         }
     }
 
@@ -1191,88 +1282,103 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
 
     protected void doRemoveDirectory(Buffer buffer, int id) throws IOException {
         String path = buffer.getString();
-        log.debug("Received SSH_FXP_RMDIR (path={})", path);
-        // attrs
         try {
-            Path p = resolveFile(path);
-            if (Files.isDirectory(p, IoUtils.getLinkOptions(false))) {
-                Files.delete(p);
-                sendStatus(id, SSH_FX_OK, "");
-            } else {
-                sendStatus(id, SSH_FX_NO_SUCH_FILE, p.toString());
-            }
-        } catch (IOException e) {
+            doRemoveDirectory(id, path, IoUtils.getLinkOptions(false));
+        } catch (IOException | RuntimeException e) {
             sendStatus(id, e);
+            return;
+        }
+        
+        sendStatus(id, SSH_FX_OK, "");
+    }
+
+    protected void doRemoveDirectory(int id, String path, LinkOption ... options) throws IOException {
+        Path p = resolveFile(path);
+        log.debug("Received SSH_FXP_RMDIR (path={})[{}]", path, p);
+        if (Files.isDirectory(p, options)) {
+            Files.delete(p);
+        } else {
+            throw new NotDirectoryException(p.toString());
         }
     }
 
     protected void doMakeDirectory(Buffer buffer, int id) throws IOException {
         String path = buffer.getString();
         Map<String, Object> attrs = readAttrs(buffer);
-
-        log.debug("Received SSH_FXP_MKDIR (path={}, attrs={})", path, attrs);
-        // attrs
         try {
-            Path            p = resolveFile(path);
-            LinkOption[]    options = IoUtils.getLinkOptions(false);
-            Boolean         status = IoUtils.checkFileExists(p, options);
-            if (status == null) {
-                throw new AccessDeniedException("Cannot make-directory existence for " + p);
-            }
-            if (status.booleanValue()) {
-                if (Files.isDirectory(p, options)) {
-                    sendStatus(id, SSH_FX_FILE_ALREADY_EXISTS, p.toString());
-                } else {
-                    sendStatus(id, SSH_FX_NO_SUCH_FILE, p.toString());
-                }
-            } else {
-                Files.createDirectory(p);
-                setAttributes(p, attrs);
-                sendStatus(id, SSH_FX_OK, "");
-            }
-        } catch (IOException e) {
+            doMakeDirectory(id, path, attrs, IoUtils.getLinkOptions(false));
+        } catch (IOException | RuntimeException e) {
             sendStatus(id, e);
+            return;
+        }
+
+        sendStatus(id, SSH_FX_OK, "");
+    }
+
+    protected void doMakeDirectory(int id, String path, Map<String,?> attrs, LinkOption ... options) throws IOException {
+        Path p = resolveFile(path);
+        if (log.isDebugEnabled()) {
+            log.debug("Received SSH_FXP_MKDIR (path={}[{}], attrs={})", path, p, attrs);
+        }
+        
+        Boolean  status = IoUtils.checkFileExists(p, options);
+        if (status == null) {
+            throw new AccessDeniedException("Cannot validate make-directory existence for " + p);
+        }
+
+        if (status.booleanValue()) {
+            if (Files.isDirectory(p, options)) {
+                throw new FileAlreadyExistsException(p.toString(), p.toString(), "Target directory already exists");
+            } else {
+                throw new FileNotFoundException(p.toString() + " already exists as a file");
+            }
+        } else {
+            Files.createDirectory(p);
+            setAttributes(p, attrs);
         }
     }
 
     protected void doRemove(Buffer buffer, int id) throws IOException {
         String path = buffer.getString();
-        log.debug("Received SSH_FXP_REMOVE (path={})", path);
         try {
-            Path            p = resolveFile(path);
-            LinkOption[]    options = IoUtils.getLinkOptions(false);
-            Boolean         status = IoUtils.checkFileExists(p, options);
-            if (status == null) {
-                throw new AccessDeniedException("Cannot determine existence of remove candidate: " + p);
-            }
-            if (!status.booleanValue()) {
-                sendStatus(id, SSH_FX_NO_SUCH_FILE, p.toString());
-            } else if (Files.isDirectory(p, options)) {
-                sendStatus(id, SSH_FX_NO_SUCH_FILE, p.toString());
-            } else {
-                Files.delete(p);
-                sendStatus(id, SSH_FX_OK, "");
-            }
-        } catch (IOException e) {
+            doRemove(id, path, IoUtils.getLinkOptions(false));
+        } catch (IOException | RuntimeException e) {
             sendStatus(id, e);
+            return;
+        }
+
+        sendStatus(id, SSH_FX_OK, "");
+    }
+
+    protected void doRemove(int id, String path, LinkOption ... options) throws IOException {
+        Path p = resolveFile(path);
+        if (log.isDebugEnabled()) {
+            log.debug("Received SSH_FXP_REMOVE (path={}[{}])", path, p);
+        }
+        
+        Boolean status = IoUtils.checkFileExists(p, options);
+        if (status == null) {
+            throw new AccessDeniedException("Cannot determine existence of remove candidate: " + p);
+        }
+        if (!status.booleanValue()) {
+            throw new FileNotFoundException(p.toString());
+        } else if (Files.isDirectory(p, options)) {
+            throw new FileNotFoundException(p.toString() + " is as a folder");
+        } else {
+            Files.delete(p);
         }
     }
 
     protected void doReadDir(Buffer buffer, int id) throws IOException {
         String handle = buffer.getString();
-        Handle p = handles.get(handle);
-        log.debug("Received SSH_FXP_READDIR (handle={}[{}])", handle, p);
+        Handle h = handles.get(handle);
+        log.debug("Received SSH_FXP_READDIR (handle={}[{}])", handle, h);
 
+        Buffer reply = null;
         try {
-            if (!(p instanceof DirectoryHandle)) {
-                sendStatus(id, SSH_FX_INVALID_HANDLE, handle);
-                return;
-            }
-            
-            DirectoryHandle dh = (DirectoryHandle) p;
+            DirectoryHandle dh = validateHandle(handle, h, DirectoryHandle.class);
             if (dh.isDone()) {
-                sendStatus(id, SSH_FX_EOF, "", "");
-                return;
+                throw new EOFException("Directory reading is done");
             }
 
             Path            file = dh.getFile();
@@ -1283,92 +1389,126 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             }
 
             if (!status.booleanValue()) {
-                sendStatus(id, SSH_FX_NO_SUCH_FILE, file.toString());
+                throw new FileNotFoundException(file.toString());
             } else if (!Files.isDirectory(file, options)) {
-                sendStatus(id, SSH_FX_NOT_A_DIRECTORY, file.toString());
+                throw new NotDirectoryException(file.toString());
             } else if (!Files.isReadable(file)) {
-                sendStatus(id, SSH_FX_PERMISSION_DENIED, file.toString());
-            } else {
-                if (dh.isSendDotDot() || dh.hasNext()) {
-                    // There is at least one file in the directory or we need to send the "..".
-                    // Send only a few files at a time to not create packets of a too
-                    // large size or have a timeout to occur.
-                    sendDirEntries(id, dh);
-                    if ((!dh.isSendDot()) && (!dh.isSendDotDot()) && (!dh.hasNext())) {
-                        // if no more files to send
-                        dh.markDone();
-                        dh.clearFileList();
-                    }
-                } else {
-                    // empty directory
+                throw new AccessDeniedException("Not readable: " + file.toString());
+            }
+
+            if (dh.isSendDotDot() || dh.hasNext()) {
+                // There is at least one file in the directory or we need to send the "..".
+                // Send only a few files at a time to not create packets of a too
+                // large size or have a timeout to occur.
+                
+                reply = new ByteArrayBuffer();
+                reply.putByte((byte) SSH_FXP_NAME);
+                reply.putInt(id);
+                int lenPos = reply.wpos();
+                reply.putInt(0);
+
+                int count = doReadDir(id, dh, reply, FactoryManagerUtils.getIntProperty(session, MAX_PACKET_LENGTH_PROP, DEFAULT_MAX_PACKET_LENGTH));
+                BufferUtils.updateLengthPlaceholder(reply, lenPos, count);
+                if (log.isTraceEnabled()) {
+                    log.trace("doReadDir({})[{}] - sent {} entries", handle, h, Integer.valueOf(count));
+                }
+                if ((!dh.isSendDot()) && (!dh.isSendDotDot()) && (!dh.hasNext())) {
+                    // if no more files to send
                     dh.markDone();
                     dh.clearFileList();
-                    sendStatus(id, SSH_FX_EOF, "", "");
                 }
+            } else {
+                // empty directory
+                dh.markDone();
+                dh.clearFileList();
+                throw new EOFException("Empty directory");
             }
-        } catch (IOException e) {
+            
+            ValidateUtils.checkNotNull(reply, "No reply buffer created", GenericUtils.EMPTY_OBJECT_ARRAY);
+        } catch (IOException | RuntimeException e) {
             sendStatus(id, e);
+            return;
         }
+        
+        send(reply);
     }
 
     protected void doOpenDir(Buffer buffer, int id) throws IOException {
-        String path = buffer.getString();
+        String path = buffer.getString(), handle;
+
+        try {
+            handle = doOpenDir(id, path, IoUtils.getLinkOptions(false));
+        } catch (IOException | RuntimeException e) {
+            sendStatus(id, e);
+            return;
+        }
+
+        sendHandle(id, handle);
+    }
+
+    protected String doOpenDir(int id, String path, LinkOption ... options) throws IOException {
         Path f = resolveFile(path);
         Path abs = f.toAbsolutePath();
         Path p = abs.normalize();
         log.debug("Received SSH_FXP_OPENDIR (path={})[{}]", path, p);
+        
+        Boolean status = IoUtils.checkFileExists(p, options);
+        if (status == null) {
+            throw new AccessDeniedException("Cannot determine open-dir existence for " + p);
+        }
 
-        try {
-            LinkOption[] options = IoUtils.getLinkOptions(false);
-            Boolean status = IoUtils.checkFileExists(p, options);
-            if (status == null) {
-                throw new AccessDeniedException("Cannot determine open-dir existence of " + p);
-            }
-
-            if (!status.booleanValue()) {
-                sendStatus(id, SSH_FX_NO_SUCH_FILE, path);
-            } else if (!Files.isDirectory(p, options)) {
-                sendStatus(id, SSH_FX_NOT_A_DIRECTORY, path);
-            } else if (!Files.isReadable(p)) {
-                sendStatus(id, SSH_FX_PERMISSION_DENIED, path);
-            } else {
-                String handle = generateFileHandle(p);
-                handles.put(handle, new DirectoryHandle(p));
-                sendHandle(id, handle);
-            }
-        } catch (IOException e) {
-            sendStatus(id, e);
+        if (!status.booleanValue()) {
+            throw new FileNotFoundException(path);
+        } else if (!Files.isDirectory(p, options)) {
+            throw new NotDirectoryException(path);
+        } else if (!Files.isReadable(p)) {
+            throw new AccessDeniedException("Not readable: " + p);
+        } else {
+            String handle = generateFileHandle(p);
+            handles.put(handle, new DirectoryHandle(p));
+            return handle;
         }
     }
 
     protected void doFSetStat(Buffer buffer, int id) throws IOException {
         String handle = buffer.getString();
         Map<String, Object> attrs = readAttrs(buffer);
-        log.debug("Received SSH_FXP_FSETSTAT (handle={}, attrs={})", handle, attrs);
         try {
-            Handle p = handles.get(handle);
-            if (p == null) {
-                sendStatus(id, SSH_FX_INVALID_HANDLE, handle);
-            } else {
-                setAttributes(p.getFile(), attrs);
-                sendStatus(id, SSH_FX_OK, "");
-            }
-        } catch (IOException | UnsupportedOperationException e) {
+            doFSetStat(id, handle, attrs);
+        } catch (IOException | RuntimeException e) {
             sendStatus(id, e);
+            return;
         }
+        
+        sendStatus(id, SSH_FX_OK, "");
+    }
+
+    protected void doFSetStat(int id, String handle, Map<String,?> attrs) throws IOException {
+        Handle h = handles.get(handle);
+        if (log.isDebugEnabled()) {
+            log.debug("Received SSH_FXP_FSETSTAT (handle={}[{}], attrs={})", handle, h, attrs);
+        }
+
+        setAttributes(validateHandle(handle, h, Handle.class).getFile(), attrs);
     }
 
     protected void doSetStat(Buffer buffer, int id) throws IOException {
         String path = buffer.getString();
         Map<String, Object> attrs = readAttrs(buffer);
-        log.debug("Received SSH_FXP_SETSTAT (path={}, attrs={})", path, attrs);
         try {
-            Path p = resolveFile(path);
-            setAttributes(p, attrs);
-            sendStatus(id, SSH_FX_OK, "");
-        } catch (IOException | UnsupportedOperationException e) {
+            doSetStat(id, path, attrs);
+        } catch (IOException | RuntimeException e) {
             sendStatus(id, e);
+            return;
         }
+
+        sendStatus(id, SSH_FX_OK, "");
+    }
+
+    protected void doSetStat(int id, String path, Map<String,?> attrs) throws IOException {
+        log.debug("Received SSH_FXP_SETSTAT (path={}, attrs={})", path, attrs);
+        Path p = resolveFile(path);
+        setAttributes(p, attrs);
     }
 
     protected void doFStat(Buffer buffer, int id) throws IOException {
@@ -1377,19 +1517,25 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         if (version >= SFTP_V4) {
             flags = buffer.getInt();
         }
-        if (log.isDebugEnabled()) {
-            log.debug("Received SSH_FXP_FSTAT (handle={}, flags=0x{})", handle, Integer.toHexString(flags));
-        }
+        
+        Map<String,?> attrs;
         try {
-            Handle p = handles.get(handle);
-            if (p == null) {
-                sendStatus(id, SSH_FX_INVALID_HANDLE, handle);
-            } else {
-                sendAttrs(id, p.getFile(), flags, true);
-            }
-        } catch (IOException e) {
+            attrs = doFStat(id, handle, flags);
+        } catch (IOException | RuntimeException e) {
             sendStatus(id, e);
+            return;
         }
+
+        sendAttrs(id, attrs);
+    }
+
+    protected Map<String,Object> doFStat(int id, String handle, int flags) throws IOException {
+        Handle h = handles.get(handle);
+        if (log.isDebugEnabled()) {
+            log.debug("Received SSH_FXP_FSTAT (handle={}[{}], flags=0x{})", handle, h, Integer.toHexString(flags));
+        }
+        
+        return resolveFileAttributes(validateHandle(handle, h, Handle.class).getFile(), flags, true);
     }
 
     protected void doLStat(Buffer buffer, int id) throws IOException {
@@ -1398,112 +1544,118 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         if (version >= SFTP_V4) {
             flags = buffer.getInt();
         }
-        if (log.isDebugEnabled()) {
-            log.debug("Received SSH_FXP_LSTAT (path={}, flags=0x{})", path, Integer.toHexString(flags));
-        }
+        
+        Map<String,?> attrs;
         try {
-            Path p = resolveFile(path);
-            sendAttrs(id, p, flags, false);
-        } catch (IOException e) {
+            attrs = doLStat(id, path, flags);
+        } catch (IOException | RuntimeException e) {
             sendStatus(id, e);
+            return;
         }
+
+        sendAttrs(id, attrs);
+    }
+
+    protected Map<String,Object> doLStat(int id, String path, int flags) throws IOException {
+        Path p = resolveFile(path);
+        if (log.isDebugEnabled()) {
+            log.debug("Received SSH_FXP_LSTAT (path={}[{}], flags=0x{})", path, p, Integer.toHexString(flags));
+        }
+
+        return resolveFileAttributes(p, flags, false);
     }
 
     protected void doWrite(Buffer buffer, int id) throws IOException {
         String handle = buffer.getString();
         long offset = buffer.getLong();
         int length = buffer.getInt();
-        if (length < 0) {
-            throw new IllegalStateException("Bad length (" + length + ") for writing to " + handle);
-        }
-
-        int remaining = buffer.available();
-        if (remaining < length) {
-            throw new IllegalStateException("Not enough buffer data for writing to " + handle + ": required=" + length + ", available=" + remaining);
-        }
-
-        byte[] data = buffer.array();
-        int doff = buffer.rpos();
         try {
-            Handle p = handles.get(handle);
-            if (log.isDebugEnabled()) {
-                log.debug("Received SSH_FXP_WRITE (handle={}[{}], offset={}, data=byte[{}])",
-                          handle, p, Long.valueOf(offset), Integer.valueOf(length));
-            }
-
-            if (!(p instanceof FileHandle)) {
-                sendStatus(id, SSH_FX_INVALID_HANDLE, handle);
-            } else {
-                FileHandle fh = (FileHandle) p;
-                fh.write(data, doff, length, offset);
-                sendStatus(id, SSH_FX_OK, "");
-            }
-        } catch (IOException e) {
+            doWrite(id, handle, offset, length, buffer.array(), buffer.rpos(), buffer.available());
+        } catch (IOException | RuntimeException e) {
             sendStatus(id, e);
+            return;
         }
+
+        sendStatus(id, SSH_FX_OK, "");
+    }
+
+    protected void doWrite(int id, String handle, long offset, int length, byte[] data, int doff, int remaining) throws IOException {
+        Handle h = handles.get(handle);
+        if (log.isDebugEnabled()) {
+            log.debug("Received SSH_FXP_WRITE (handle={}[{}], offset={}, data=byte[{}])",
+                      handle, h, Long.valueOf(offset), Integer.valueOf(length));
+        }
+        
+        FileHandle fh = validateHandle(handle, h, FileHandle.class);
+        if (length < 0) {
+            throw new IllegalStateException("Bad length (" + length + ") for writing to " + fh);
+        }
+
+        if (remaining < length) {
+            throw new IllegalStateException("Not enough buffer data for writing to " + fh + ": required=" + length + ", available=" + remaining);
+        }
+
+        fh.write(data, doff, length, offset);
     }
 
     protected void doRead(Buffer buffer, int id) throws IOException {
         String handle = buffer.getString();
         long offset = buffer.getLong();
-        int len = buffer.getInt();
+        int readLen = buffer.getInt();
+        Buffer buf = new ByteArrayBuffer(readLen + Short.SIZE /* some extra */);
         try {
-            Handle p = handles.get(handle);
-            if (log.isDebugEnabled()) {
-                log.debug("Received SSH_FXP_READ (handle={}[{}], offset={}, length={})",
-                          handle, p, Long.valueOf(offset), Integer.valueOf(len));
-            }
+            buf.putByte((byte) SSH_FXP_DATA);
+            buf.putInt(id);
+            int lenPos = buf.wpos();
+            buf.putInt(0);
 
-            if (!(p instanceof FileHandle)) {
-                sendStatus(id, SSH_FX_INVALID_HANDLE, handle);
-            } else {
-                FileHandle fh = (FileHandle) p;
-                Buffer buf = new ByteArrayBuffer(len + 9);
-                buf.putByte((byte) SSH_FXP_DATA);
-                buf.putInt(id);
-                int pos = buf.wpos();
-                buf.putInt(0);
-                len = fh.read(buf.array(), buf.wpos(), len, offset);
-                if (len >= 0) {
-                    buf.wpos(pos);
-                    buf.putInt(len);
-                    buf.wpos(pos + 4 + len);
-                    send(buf);
-                } else {
-                    sendStatus(id, SSH_FX_EOF, "");
-                }
+            int startPos = buf.wpos();
+            int len = doRead(id, handle, offset, readLen, buf.array(), startPos);
+            if (len < 0) {
+                throw new EOFException("Unable to read " + readLen + " bytes from offset=" + offset + " of " + handle);
             }
-        } catch (IOException e) {
+            buf.wpos(startPos + len);
+            BufferUtils.updateLengthPlaceholder(buf, lenPos, len);
+        } catch (IOException | RuntimeException e) {
             sendStatus(id, e);
+            return;
         }
+        
+        send(buf);
+    }
+
+    protected int doRead(int id, String handle, long offset, int length, byte[] data, int doff) throws IOException {
+        Handle h = handles.get(handle);
+        if (log.isDebugEnabled()) {
+            log.debug("Received SSH_FXP_READ (handle={}[{}], offset={}, length={})",
+                      handle, h, Long.valueOf(offset), Integer.valueOf(length));
+        }
+        ValidateUtils.checkTrue(length > 0, "Invalid read length: %d", length);
+        FileHandle fh = validateHandle(handle, h, FileHandle.class);
+        
+        return fh.read(data, doff, length, offset);
     }
 
     protected void doClose(Buffer buffer, int id) throws IOException {
         String handle = buffer.getString();
-        Handle h = handles.remove(handle);
-        log.debug("Received SSH_FXP_CLOSE (handle={}[{}])", handle, h);
         try {
-            if (h == null) {
-                sendStatus(id, SSH_FX_INVALID_HANDLE, handle, "");
-            } else {
-                h.close();
-                sendStatus(id, SSH_FX_OK, "", "");
-            }
-        } catch (IOException e) {
+            doClose(id, handle);
+        } catch (IOException | RuntimeException e) {
             sendStatus(id, e);
-        }
-    }
-
-    protected void doOpen(Buffer buffer, int id) throws IOException {
-        int curHandleCount = handles.size();
-        int maxHandleCount = FactoryManagerUtils.getIntProperty(session, MAX_OPEN_HANDLES_PER_SESSION, DEFAULT_MAX_OPEN_HANDLES);
-        if (curHandleCount > maxHandleCount) {
-            sendStatus(id, SSH_FX_FAILURE, "Too many open handles: current=" + curHandleCount + ", max.=" + maxHandleCount);
             return;
         }
 
-        String path = buffer.getString();
+        sendStatus(id, SSH_FX_OK, "", "");
+    }
 
+    protected void doClose(int id, String handle) throws IOException {
+        Handle h = handles.remove(handle);
+        log.debug("Received SSH_FXP_CLOSE (handle={}[{}])", handle, h);
+        validateHandle(handle, h, Handle.class).close();
+    }
+
+    protected void doOpen(Buffer buffer, int id) throws IOException {
+        String path = buffer.getString();
         /*
          * Be consistent with FileChannel#open - if no mode specified then READ is assumed
          */
@@ -1554,19 +1706,43 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                 }
             }
         }
+
         Map<String, Object> attrs = readAttrs(buffer);
+        String handle;
+        try {
+            handle = doOpen(id, path, pflags, access, attrs);
+        } catch (IOException | RuntimeException e) {
+            sendStatus(id, e);
+            return;
+        }
+
+        sendHandle(id, handle);
+    }
+
+    /**
+     * @param id Request id
+     * @param path Path
+     * @param pflags Open mode flags - see {@code SSH_FXF_XXX} flags
+     * @param access Access mode flags - see {@code ACE4_XXX} flags
+     * @param attrs Requested attributes
+     * @return The assigned (opaque) handle
+     * @throws IOException if failed to execute
+     */
+    protected String doOpen(int id, String path, int pflags, int access, Map<String, Object> attrs) throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("Received SSH_FXP_OPEN (path={}, access=0x{}, pflags=0x{}, attrs={})",
                       path, Integer.toHexString(access), Integer.toHexString(pflags), attrs);
         }
-        try {
-            Path file = resolveFile(path);
-            String handle = generateFileHandle(file);
-            handles.put(handle, new FileHandle(file, pflags, access, attrs));
-            sendHandle(id, handle);
-        } catch (IOException e) {
-            sendStatus(id, e);
+        int curHandleCount = handles.size();
+        int maxHandleCount = FactoryManagerUtils.getIntProperty(session, MAX_OPEN_HANDLES_PER_SESSION, DEFAULT_MAX_OPEN_HANDLES);
+        if (curHandleCount > maxHandleCount) {
+            throw new IllegalStateException("Too many open handles: current=" + curHandleCount + ", max.=" + maxHandleCount);
         }
+        
+        Path file = resolveFile(path);
+        String handle = generateFileHandle(file);
+        handles.put(handle, new FileHandle(file, pflags, access, attrs));
+        return handle;
     }
 
     // we stringify our handles and treat them as such on decoding as well as it is easier to use as a map key
@@ -1768,23 +1944,32 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     }
 
     protected void sendHandle(int id, String handle) throws IOException {
-        Buffer buffer = new ByteArrayBuffer();
+        sendHandle(new ByteArrayBuffer(GenericUtils.length(handle) + Long.SIZE), id, handle);
+    }
+
+    protected void sendHandle(Buffer buffer, int id, String handle) throws IOException {
         buffer.putByte((byte) SSH_FXP_HANDLE);
         buffer.putInt(id);
         buffer.putString(handle);
         send(buffer);
     }
 
-    protected void sendAttrs(int id, Path file, int flags, boolean followLinks) throws IOException {
-        Buffer buffer = new ByteArrayBuffer();
+    protected void sendAttrs(int id, Map<String,?> attributes) throws IOException {
+        sendAttrs(new ByteArrayBuffer(), id, attributes);
+    }
+
+    protected void sendAttrs(Buffer buffer, int id, Map<String,?> attributes) throws IOException {
         buffer.putByte((byte) SSH_FXP_ATTRS);
         buffer.putInt(id);
-        writeAttrs(buffer, file, flags, followLinks);
+        writeAttrs(buffer, attributes);
         send(buffer);
     }
 
-    protected void sendPath(int id, Path f, Map<String, Object> attrs) throws IOException {
-        Buffer buffer = new ByteArrayBuffer();
+    protected void sendPath(int id, Path f, Map<String,?> attrs) throws IOException {
+        sendPath(new ByteArrayBuffer(), id, f, attrs);
+    }
+
+    protected void sendPath(Buffer buffer, int id, Path f, Map<String,?> attrs) throws IOException {
         buffer.putByte((byte) SSH_FXP_NAME);
         buffer.putInt(id);
         buffer.putInt(1);
@@ -1812,7 +1997,11 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     }
 
     protected void sendLink(int id, String link) throws IOException {
-        Buffer buffer = new ByteArrayBuffer();
+        int linkSize = GenericUtils.length(link);
+        sendLink(new ByteArrayBuffer((2 * linkSize) + Long.SIZE), id , link);
+    }
+
+    protected void sendLink(Buffer buffer, int id, String link) throws IOException {
         buffer.putByte((byte) SSH_FXP_NAME);
         buffer.putInt(id);
         buffer.putInt(1);
@@ -1823,54 +2012,62 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         send(buffer);
     }
 
-    protected void sendDirEntries(int id, DirectoryHandle files) throws IOException {
-        Buffer buffer = new ByteArrayBuffer();
-        buffer.putByte((byte) SSH_FXP_NAME);
-        buffer.putInt(id);
-        int wpos = buffer.wpos();
-        buffer.putInt(0);
-
-        int nb = 0, maxSize = FactoryManagerUtils.getIntProperty(session, MAX_PACKET_LENGTH_PROP, DEFAULT_MAX_PACKET_LENGTH);
-        while((files.isSendDot() || files.isSendDotDot() || files.hasNext()) && (buffer.wpos() < maxSize)) {
-            Path f;
-            String  shortName;
-            if (files.isSendDot()) {
-                f = files.getFile();
-                shortName = ".";
-                files.markDotSent();    // do not send it again
-            } else if (files.isSendDotDot()) {
-                f = files.getFile().getParent();
-                shortName = "..";
-                files.markDotDotSent(); // do not send it again
+    /**
+     * @param id Request id
+     * @param dir The {@link DirectoryHandle}
+     * @param buffer The {@link Buffer} to write the results
+     * @param maxSize Max. buffer size
+     * @return Number of written entries
+     * @throws IOException If failed to generate an entry
+     */
+    protected int doReadDir(int id, DirectoryHandle dir, Buffer buffer, int maxSize) throws IOException {
+        int nb = 0;
+        while ((dir.isSendDot() || dir.isSendDotDot() || dir.hasNext()) && (buffer.wpos() < maxSize)) {
+            if (dir.isSendDot()) {
+                writeDirEntry(id, dir, buffer, nb, dir.getFile(), ".");
+                dir.markDotSent();    // do not send it again
+            } else if (dir.isSendDotDot()) {
+                writeDirEntry(id, dir, buffer, nb, dir.getFile().getParent(), "..");
+                dir.markDotDotSent(); // do not send it again
             } else {
-                f = files.next();
-                shortName = getShortName(f);
+                Path f = dir.next();
+                writeDirEntry(id, dir, buffer, nb, f, getShortName(f));
             }
 
-            buffer.putString(shortName);
-            if (version == SFTP_V3) {
-                String  longName = getLongName(f);
-                buffer.putString(longName);
-                if (log.isTraceEnabled()) {
-                    log.trace("sendName(id=" + id + ")[" + nb + "] - " + shortName + " [" + longName + "]");
-                }
-            } else {
-                if (log.isTraceEnabled()) {
-                    log.trace("sendName(id=" + id + ")[" + nb + "] - " + shortName);
-                }
-            }
-            writeAttrs(buffer, f, SSH_FILEXFER_ATTR_ALL, false);
             nb++;
         }
-
-        int oldpos = buffer.wpos();
-        buffer.wpos(wpos);
-        buffer.putInt(nb);
-        buffer.wpos(oldpos);
-        send(buffer);
+        
+        return nb;
     }
 
-    private String getLongName(Path f) throws IOException {
+    /**
+     * @param id Request id
+     * @param dir The {@link DirectoryHandle}
+     * @param buffer The {@link Buffer} to write the results
+     * @param index Zero-based index of the entry to be written
+     * @param f The entry {@link Path}
+     * @param shortName The entry short name
+     * @throws IOException If failed to generate the entry data
+     */
+    protected void writeDirEntry(int id, DirectoryHandle dir, Buffer buffer, int index, Path f, String shortName) throws IOException {
+        buffer.putString(shortName);
+        if (version == SFTP_V3) {
+            String  longName = getLongName(f);
+            buffer.putString(longName);
+            if (log.isTraceEnabled()) {
+                log.trace("writeDirEntry(id=" + id + ")[" + index + "] - " + shortName + " [" + longName + "]");
+            }
+        } else {
+            if (log.isTraceEnabled()) {
+                log.trace("writeDirEntry(id=" + id + ")[" + index + "] - " + shortName);
+            }
+        }
+        
+        Map<String,?> attrs = resolveFileAttributes(f, SSH_FILEXFER_ATTR_ALL, false);
+        writeAttrs(buffer, attrs);
+    }
+
+    protected String getLongName(Path f) throws IOException {
         return getLongName(f, true);
     }
 
@@ -1884,10 +2081,10 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         return getLongName(f, attributes);
     }
 
-    private String getLongName(Path f, Map<String, Object> attributes) throws IOException {
+    private String getLongName(Path f, Map<String,?> attributes) throws IOException {
         String username;
         if (attributes.containsKey("owner")) {
-            username = attributes.get("owner").toString();
+            username = Objects.toString(attributes.get("owner"));
         } else {
             username = "owner";
         }
@@ -1900,7 +2097,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         }
         String group;
         if (attributes.containsKey("group")) {
-            group = attributes.get("group").toString();
+            group = Objects.toString(attributes.get("group"));
         } else {
             group = "group";
         }
@@ -2014,22 +2211,19 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         return pf;
     }
 
-    protected void writeAttrs(Buffer buffer, Path file, int flags, boolean followLinks) throws IOException {
-        LinkOption[]    options = IoUtils.getLinkOptions(followLinks);
-        Boolean         status = IoUtils.checkFileExists(file, options);
-        Map<String, Object> attributes;
+    protected Map<String, Object> resolveFileAttributes(Path file, int flags, boolean followLinks) throws IOException {
+        LinkOption[] options = IoUtils.getLinkOptions(followLinks);
+        Boolean      status = IoUtils.checkFileExists(file, options);
         if (status == null) {
-            attributes = handleUnknownStatusFileAttributes(file, flags, followLinks);
+            return handleUnknownStatusFileAttributes(file, flags, followLinks);
         } else if (!status.booleanValue()) {
             throw new FileNotFoundException(file.toString());
         } else {
-            attributes = getAttributes(file, flags, followLinks);
+            return getAttributes(file, flags, followLinks);
         }
-
-        writeAttrs(buffer, attributes);
     }
 
-    protected void writeAttrs(Buffer buffer, Map<String, Object> attributes) throws IOException {
+    protected void writeAttrs(Buffer buffer, Map<String,?> attributes) throws IOException {
         boolean isReg = getBool((Boolean) attributes.get("isRegularFile"));
         boolean isDir = getBool((Boolean) attributes.get("isDirectory"));
         boolean isLnk = getBool((Boolean) attributes.get("isSymbolicLink"));
@@ -2193,7 +2387,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         return Collections.emptyMap();
     }
 
-    protected void setAttributes(Path file, Map<String, Object>  attributes) throws IOException {
+    protected void setAttributes(Path file, Map<String,?>  attributes) throws IOException {
         Set<String> unsupported = new HashSet<>();
         for (String attribute : attributes.keySet()) {
             String view = null;
@@ -2559,24 +2753,54 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                 .build();
     }
 
-    protected void sendStatus(int id, Exception e) throws IOException {
-        int substatus;
-        if ((e instanceof NoSuchFileException) || (e instanceof FileNotFoundException)) {
-            substatus = SSH_FX_NO_SUCH_FILE;
-        } else if (e instanceof FileAlreadyExistsException) {
-            substatus = SSH_FX_FILE_ALREADY_EXISTS;
-        } else if (e instanceof DirectoryNotEmptyException) {
-            substatus = SSH_FX_DIR_NOT_EMPTY;
-        } else if (e instanceof AccessDeniedException) {
-            substatus = SSH_FX_PERMISSION_DENIED;
-        } else if (e instanceof OverlappingFileLockException) {
-            substatus = SSH_FX_LOCK_CONFLICT;
-        } else if (e instanceof UnsupportedOperationException) {
-            substatus = SSH_FX_OP_UNSUPPORTED;
-        } else {
-            substatus = SSH_FX_FAILURE;
+    /**
+     * @param handle The original handle id
+     * @param h The resolved {@link Handle} instance
+     * @param type The expected handle type
+     * @return The cast type
+     * @throws FileNotFoundException If the handle instance is {@code null}
+     * @throws InvalidHandleException If the handle instance is not of the expected type
+     */
+    protected <H extends Handle> H validateHandle(String handle, Handle h, Class<H> type) throws IOException {
+        if (h == null) {
+            throw new FileNotFoundException("No such current handle: " + handle);
         }
+        
+        Class<?> t = h.getClass();
+        if (!type.isAssignableFrom(t)) {
+            throw new InvalidHandleException(handle, h, type);
+        }
+        
+        return type.cast(h);
+    }
+
+    protected void sendStatus(int id, Exception e) throws IOException {
+        int substatus = resolveSubstatus(e);
         sendStatus(id, substatus, e.toString());
+    }
+
+    protected int resolveSubstatus(Exception e) {
+        if ((e instanceof NoSuchFileException) || (e instanceof FileNotFoundException)) {
+            return SSH_FX_NO_SUCH_FILE;
+        } else if (e instanceof InvalidHandleException) {
+            return SSH_FX_INVALID_HANDLE;
+        } else if (e instanceof FileAlreadyExistsException) {
+            return SSH_FX_FILE_ALREADY_EXISTS;
+        } else if (e instanceof DirectoryNotEmptyException) {
+            return SSH_FX_DIR_NOT_EMPTY;
+        } else if (e instanceof NotDirectoryException) {
+            return SSH_FX_NOT_A_DIRECTORY;
+        } else if (e instanceof AccessDeniedException) {
+            return SSH_FX_PERMISSION_DENIED;
+        } else if (e instanceof EOFException) {
+            return SSH_FX_EOF;
+        } else if (e instanceof OverlappingFileLockException) {
+            return SSH_FX_LOCK_CONFLICT;
+        } else if (e instanceof UnsupportedOperationException) {
+            return SSH_FX_OP_UNSUPPORTED;
+        } else {
+            return SSH_FX_FAILURE;
+        }
     }
 
     protected void sendStatus(int id, int substatus, String msg) throws IOException {
@@ -2638,7 +2862,9 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             try {
                 fileSystem.close();
             } catch (UnsupportedOperationException e) {
-                // Ignore
+                if (log.isDebugEnabled()) {
+                    log.debug("Closing the file system is not supported");
+                }
             } catch (IOException e) {
                 log.debug("Error closing FileSystem", e);
             }

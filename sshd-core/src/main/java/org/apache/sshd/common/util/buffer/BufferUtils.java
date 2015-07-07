@@ -294,7 +294,7 @@ public class BufferUtils {
      * and then moves the write position it back to its original value.
      * @param buffer The {@link Buffer}
      * @param lenPos The offset in the buffer where the length placeholder is
-     * to be update - <B>Note:</B> assumption is that the encoded data start
+     * to be update - <B>Note:</B> assumption is that the encoded data starts
      * <U>immediately</U> after the placeholder
      * @return The amount of data that has been encoded
      */
@@ -306,5 +306,22 @@ public class BufferUtils {
         buffer.putInt(dataLength);
         buffer.wpos(endPos);
         return dataLength;
+    }
+    
+    /**
+     * Updates a 32-bit &quot;placeholder&quot location for data length - moves
+     * the write position to the specified placeholder position, updates the length
+     * value and then moves the write position it back to its original value.
+     * @param buffer The {@link Buffer}
+     * @param lenPos The offset in the buffer where the length placeholder is
+     * to be update - <B>Note:</B> assumption is that the encoded data starts
+     * <U>immediately</U> after the placeholder
+     * @param dataLength The length to update
+     */
+    public static void updateLengthPlaceholder(Buffer buffer, int lenPos, int dataLength) {
+        int curPos = buffer.wpos();
+        buffer.wpos(lenPos);
+        buffer.putInt(dataLength);
+        buffer.wpos(curPos);
     }
 }

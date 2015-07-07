@@ -211,7 +211,7 @@ public class SftpTest extends BaseTestSupport {
                         assertTrue("Handle not marked as open for file=" + file, h.isOpen());
                     }
             
-                    byte[] d = "0123456789\n".getBytes();
+                    byte[] d = "0123456789\n".getBytes(StandardCharsets.UTF_8);
                     try(SftpClient.CloseableHandle h = sftp.open(file, EnumSet.of(SftpClient.OpenMode.Write))) {
                         sftp.write(h, 0, d, 0, d.length);
                         sftp.write(h, d.length, d, 0, d.length);
@@ -222,7 +222,9 @@ public class SftpTest extends BaseTestSupport {
                     }
 
                     try(SftpClient.CloseableHandle h = sftp.open(file, EnumSet.of(SftpClient.OpenMode.Write))) {
-                        sftp.write(h, 3, "-".getBytes(), 0, 1);
+                        byte[] overwrite = "-".getBytes(StandardCharsets.UTF_8);
+                        sftp.write(h, 3L, overwrite, 0, 1);
+                        d[3] = overwrite[0];
                     }
 
                     try(SftpClient.CloseableHandle h = sftp.open(file /* no mode == read */)) {
@@ -238,8 +240,10 @@ public class SftpTest extends BaseTestSupport {
             
                     byte[] buf = new byte[3];
                     try(SftpClient.CloseableHandle h = sftp.open(file /* no mode == read */)) {
-                        int l = sftp.read(h, 2l, buf, 0, 3);
-                        assertEquals("Mismatched read data", "2-4", new String(buf, 0, l));
+                        int l = sftp.read(h, 2L, buf, 0, buf.length);
+                        String expected = new String(d, 2, l, StandardCharsets.UTF_8);
+                        String actual = new String(buf, 0, l, StandardCharsets.UTF_8);
+                        assertEquals("Mismatched read data", expected, actual);
                     }
                 }
             } finally {
