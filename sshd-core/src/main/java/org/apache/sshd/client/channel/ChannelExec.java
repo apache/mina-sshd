@@ -21,6 +21,8 @@ package org.apache.sshd.client.channel;
 import java.io.IOException;
 
 import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
@@ -34,10 +36,7 @@ public class ChannelExec extends PtyCapableChannelSession {
 
     public ChannelExec(String command) {
         super(false);
-        if (command == null) {
-            throw new IllegalArgumentException("command must not be null");
-        }
-        this.command = command;
+        this.command = ValidateUtils.checkNotNullAndNotEmpty(command, "Command may not be null/empty", GenericUtils.EMPTY_OBJECT_ARRAY);
     }
 
     @Override

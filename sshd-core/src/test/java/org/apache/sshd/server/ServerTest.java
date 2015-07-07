@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
+import java.io.StreamCorruptedException;
 import java.net.SocketAddress;
 import java.util.Arrays;
 import java.util.Map;
@@ -32,11 +33,13 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.client.SessionFactory;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ChannelShell;
+import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.session.ClientConnectionServiceFactory;
 import org.apache.sshd.client.session.ClientSession;
@@ -52,6 +55,8 @@ import org.apache.sshd.common.session.AbstractConnectionService;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionListener;
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.deprecated.ClientUserAuthServiceOld;
 import org.apache.sshd.server.command.ScpCommandFactory;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
@@ -78,6 +83,10 @@ public class ServerTest extends BaseTestSupport {
     private SshServer sshd;
     private SshClient client;
     private int port;
+
+    public ServerTest() {
+        super();
+    }
 
     @Before
     public void setUp() throws Exception {
@@ -264,8 +273,8 @@ public class ServerTest extends BaseTestSupport {
         client = SshClient.setUpDefaultClient();
         client.start();
 
-        try(ClientSession s = client.connect("test", "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
-            s.addPasswordIdentity("test");
+        try(ClientSession s = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+            s.addPasswordIdentity(getCurrentTestName());
             s.auth().verify(5L, TimeUnit.SECONDS);
 
             try(ChannelExec shell = s.createExecChannel("normal");
@@ -444,14 +453,116 @@ public class ServerTest extends BaseTestSupport {
         fail("No success to authenticate");
     }
 
+    @Test
+    public void testEnvironmentVariablesPropagationToServer() throws Exception {
+        final AtomicReference<Environment> envHolder = new AtomicReference<Environment>(null);
+        sshd.setCommandFactory(new CommandFactory() {
+                @Override
+                public Command createCommand(final String command) {
+                        ValidateUtils.checkTrue(String.CASE_INSENSITIVE_ORDER.compare(command, getCurrentTestName()) == 0, "Unexpected command: %s", command);
+
+                        return new Command() {
+                            private ExitCallback cb;
+    
+                            @Override
+                            public void setOutputStream(OutputStream out) {
+                                // ignored
+                            }
+                            
+                            @Override
+                            public void setInputStream(InputStream in) {
+                                // ignored
+                            }
+                            
+                            @Override
+                            public void setExitCallback(ExitCallback callback) {
+                                cb = callback;
+                            }
+                            
+                            @Override
+                            public void setErrorStream(OutputStream err) {
+                                // ignored
+                            }
+                            
+                            @Override
+                            public void destroy() {
+                                // ignored
+                            }
+    
+                            @Override
+                            public void start(Environment env) throws IOException {
+                                if (envHolder.getAndSet(env) != null) {
+                                    throw new StreamCorruptedException("Multiple starts for command=" + command);
+                                }
+                                
+                                cb.onExit(0, command);
+                            }
+                        };
+                    }
+                });
+
+
+        @SuppressWarnings("synthetic-access")
+        Map<String,String> expected = new TreeMap<String,String>(String.CASE_INSENSITIVE_ORDER) {
+            private static final long serialVersionUID = 1L;    // we're not serializing it
+            
+            {
+                put("test", getCurrentTestName());
+                put("port", Integer.toString(port));
+                put("user", System.getProperty("user.name"));
+            }
+        };
+
+        client = SshClient.setUpDefaultClient();
+        client.start();
+        try(ClientSession s = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+            s.addPasswordIdentity(getCurrentTestName());
+            s.auth().verify(5L, TimeUnit.SECONDS);
+
+            try(ChannelExec shell = s.createExecChannel(getCurrentTestName())) {
+                for (Map.Entry<String,String> ee : expected.entrySet()) {
+                    shell.setEnv(ee.getKey(), ee.getValue());
+                }
+                shell.open().verify(5L, TimeUnit.SECONDS);
+                shell.waitFor(ClientChannel.CLOSED, TimeUnit.SECONDS.toMillis(17L));
+                
+                Integer status = shell.getExitStatus();
+                assertNotNull("No exit status", status);
+                assertEquals("Bad exit status", 0, status.intValue());
+            }
+
+            Environment cmdEnv = envHolder.get();
+            assertNotNull("No environment set", cmdEnv);
+            
+            Map<String,String> vars = cmdEnv.getEnv();
+            assertTrue("Mismatched vars count", GenericUtils.size(vars) >= GenericUtils.size(expected));
+            for (Map.Entry<String,String> ee : expected.entrySet()) {
+                String key = ee.getKey(), expValue = ee.getValue(), actValue = vars.get(key);
+                assertEquals("Mismatched value for " + key, expValue, actValue);
+            }
+        } finally {
+            client.stop();
+        }
+
+    }
+
     public static class TestEchoShellFactory extends EchoShellFactory {
+        public TestEchoShellFactory() {
+            super();
+        }
+
         @Override
         public Command create() {
             return new TestEchoShell();
         }
+
         public static class TestEchoShell extends EchoShell {
 
             public static CountDownLatch latch = new CountDownLatch(1);
+
+            public TestEchoShell() {
+                super();
+            }
 
             @Override
             public void destroy() {

@@ -123,13 +123,15 @@ public class ProcessShellFactory extends AbstractLoggingBean implements Factory<
                 }
             }
             ProcessBuilder builder = new ProcessBuilder(cmds);
-            if (env != null) {
+            if (GenericUtils.size(env) > 0) {
                 try {
-                    builder.environment().putAll(env);
+                    Map<String,String> procEnv = builder.environment();
+                    procEnv.putAll(env);
                 } catch (Exception e) {
-                    log.info("Could not set environment for command", e);
+                    log.warn("Could not set environment for command=" + GenericUtils.join(cmds, ' '), e);
                 }
             }
+
             log.info("Starting shell with command: '{}' and env: {}", builder.command(), builder.environment());
             process = builder.start();
             out = new TtyFilterInputStream(process.getInputStream());
@@ -174,7 +176,11 @@ public class ProcessShellFactory extends AbstractLoggingBean implements Factory<
         @Override
         public void destroy() {
             if (process != null) {
-                process.destroy();
+                try {
+                    process.destroy();
+                } finally {
+                    process = null;
+                }
             }
         }
 

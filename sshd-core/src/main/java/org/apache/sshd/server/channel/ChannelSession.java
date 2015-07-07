@@ -586,18 +586,22 @@ public class ChannelSession extends AbstractServerChannel {
             doWriteData(buffer.array(), buffer.rpos(), buffer.available());
         }
         command.setExitCallback(new ExitCallback() {
-            @SuppressWarnings("synthetic-access")
             @Override
             public void onExit(int exitValue) {
+                onExit(exitValue, "");
+            }
+
+            @Override
+            @SuppressWarnings("synthetic-access")
+            public void onExit(int exitValue, String exitMessage) {
                 try {
                     closeShell(exitValue);
+                    if (log.isDebugEnabled()) {
+                        log.debug("onExit(" + exitValue + ")[" + exitMessage + ") shell closed");
+                    }
                 } catch (IOException e) {
-                    log.info("Error closing shell", e);
+                    log.warn("onExit(" + exitValue + ")[" + exitMessage + ") Error closing shell", e);
                 }
-            }
-            @Override
-            public void onExit(int exitValue, String exitMessage) {
-                onExit(exitValue);
             }
         });
     }

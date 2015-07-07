@@ -51,6 +51,10 @@ public class EchoShellFactory implements Factory<Command> {
         private Environment environment;
         private Thread thread;
 
+        public EchoShell() {
+            super();
+        }
+
         public InputStream getIn() {
             return in;
         }
@@ -91,6 +95,7 @@ public class EchoShellFactory implements Factory<Command> {
         public void start(Environment env) throws IOException {
             environment = env;
             thread = new Thread(this, "EchoShell");
+            thread.setDaemon(true);
             thread.start();
         }
 

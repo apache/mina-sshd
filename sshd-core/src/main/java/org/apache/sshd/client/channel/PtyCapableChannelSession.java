@@ -19,52 +19,97 @@
 package org.apache.sshd.client.channel;
 
 import java.io.IOException;
-import java.util.HashMap;
+import java.util.Collections;
+import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
+import org.apache.sshd.client.SshClient;
+import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.PtyMode;
 import org.apache.sshd.common.channel.SttySupport;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
 /**
- * TODO Add javadoc
+ * <P>Serves as the base channel session for executing remote commands - including
+ * a full shell. <B>Note:</B> all the configuration changes via the various
+ * {@code setXXX} methods must be made <U>before</U> the channel is actually
+ * open. If they are invoked afterwards then they have no effect (silently
+ * ignored).</P>
+ * <P>A typical code snippet would be:</P>
+ * <CODE><PRE>
+ *      client = SshClient.setUpDefaultClient();
+ *      client.start();
  *
+ *      try(ClientSession s = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+ *          s.addPasswordIdentity(getCurrentTestName());
+ *          s.auth().verify(5L, TimeUnit.SECONDS);
+ *
+ *          try(ChannelExec shell = s.createExecChannel("my super duper command")) {
+ *              shell.setEnv("var1", "val1");
+ *              shell.setEnv("var2", "val2");
+ *              ...etc...
+ *              shell.setPtyType(...);
+ *              shell.setPtyLines(...);
+ *              ...etc...
+ *
+ *              shell.open().verify(5L, TimeUnit.SECONDS);
+ *              shell.waitFor(ClientChannel.CLOSED, TimeUnit.SECONDS.toMillis(17L));    // can use zero for infinite wait
+ *               
+ *              Integer status = shell.getExitStatus();
+ *              if (status.intValue() != 0) {
+ *                  ...error...
+ *              }
+ *          }
+ *      } finally {
+ *          client.stop();
+ *      }
+ * </PRE></CODE>
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class PtyCapableChannelSession extends ChannelSession {
+    public static final int DEFAULT_COLUMNS_COUNT = 80;
+    public static final int DEFAULT_ROWS_COUNT = 24;
+    public static final int DEFAULT_WIDTH = 640;
+    public static final int DEFAULT_HEIGHT = 480;
+    public static final Map<PtyMode, Integer> DEFAULT_PTY_MODES =
+            Collections.unmodifiableMap(new EnumMap<PtyMode, Integer>(PtyMode.class) {
+                private static final long serialVersionUID = 1L;    // we're not serializing it
+
+                {
+                    put(PtyMode.ISIG, Integer.valueOf(1));
+                    put(PtyMode.ICANON, Integer.valueOf(1));
+                    put(PtyMode.ECHO, Integer.valueOf(1));
+                    put(PtyMode.ECHOE, Integer.valueOf(1));
+                    put(PtyMode.ECHOK, Integer.valueOf(1));
+                    put(PtyMode.ECHONL, Integer.valueOf(0));
+                    put(PtyMode.NOFLSH, Integer.valueOf(0));
+                }
+            });
+
     private boolean agentForwarding;
     private boolean usePty;
     private String ptyType;
-    private int ptyColumns;
-    private int ptyLines;
-    private int ptyWidth;
-    private int ptyHeight;
-    private Map<PtyMode, Integer> ptyModes;
-    private Map<String, String> env = new LinkedHashMap<String, String>();
+    private int ptyColumns = DEFAULT_COLUMNS_COUNT;
+    private int ptyLines = DEFAULT_ROWS_COUNT;
+    private int ptyWidth = DEFAULT_WIDTH;
+    private int ptyHeight = DEFAULT_HEIGHT;
+    private Map<PtyMode, Integer> ptyModes = new EnumMap<PtyMode, Integer>(PtyMode.class);
+    private final Map<String, String> env = new LinkedHashMap<String, String>();
 
     public PtyCapableChannelSession(boolean usePty) {
         this.usePty = usePty;
         ptyType = System.getenv("TERM");
-        if (ptyType == null) {
+        if (GenericUtils.isEmpty(ptyType)) {
             ptyType = "dummy";
         }
-        ptyColumns = 80;
-        ptyLines = 24;
-        ptyWidth = 640;
-        ptyHeight = 480;
-        // Set up default pty modes
-        ptyModes = new HashMap<PtyMode, Integer>();
-        ptyModes.put(PtyMode.ISIG, Integer.valueOf(1));
-        ptyModes.put(PtyMode.ICANON, Integer.valueOf(1));
-        ptyModes.put(PtyMode.ECHO, Integer.valueOf(1));
-        ptyModes.put(PtyMode.ECHOE, Integer.valueOf(1));
-        ptyModes.put(PtyMode.ECHOK, Integer.valueOf(1));
-        ptyModes.put(PtyMode.ECHONL, Integer.valueOf(0));
-        ptyModes.put(PtyMode.NOFLSH, Integer.valueOf(0));
+
+        ptyModes.putAll(DEFAULT_PTY_MODES);
     }
 
     public void setupSensibleDefaultPty() {
@@ -142,7 +187,7 @@ public class PtyCapableChannelSession extends ChannelSession {
     }
 
     public void setPtyModes(Map<PtyMode, Integer> ptyModes) {
-        this.ptyModes = ptyModes;
+        this.ptyModes = (ptyModes == null) ? Collections.<PtyMode, Integer>emptyMap() : ptyModes;
     }
 
     public void setEnv(String key, String value) {
@@ -192,7 +237,7 @@ public class PtyCapableChannelSession extends ChannelSession {
             writePacket(buffer);
         }
 
-        if (!env.isEmpty()) {
+        if (GenericUtils.size(env) > 0) {
             log.debug("Send SSH_MSG_CHANNEL_REQUEST env: {}", env);
             for (Map.Entry<String, String> entry : env.entrySet()) {
                 buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST);
