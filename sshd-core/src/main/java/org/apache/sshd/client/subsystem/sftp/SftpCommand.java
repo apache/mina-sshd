@@ -32,8 +32,10 @@ import java.util.TreeMap;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.common.subsystem.sftp.extensions.ParserUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
 
 /**
@@ -72,6 +74,33 @@ public class SftpCommand implements Channel {
                                         public boolean executeCommand(String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr) throws Exception {
                                             ValidateUtils.checkTrue(GenericUtils.isEmpty(args), "Unexpected arguments: %s", args);
                                             stdout.append('\t').println(getCurrentRemoteDirectory());
+                                            return false;
+                                        }
+                                    },
+                                new CommandExecutor() {
+                                        @Override
+                                        public String getName() {
+                                            return "info";
+                                        }
+    
+                                        @Override
+                                        public boolean executeCommand(String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr) throws Exception {
+                                            ValidateUtils.checkTrue(GenericUtils.isEmpty(args), "Unexpected arguments: %s", args);
+                                            SftpClient sftp = getClient();
+                                            Map<String,byte[]> extensions = sftp.getServerExtensions();
+                                            Map<String,?> parsed = ParserUtils.parse(null);
+                                            for (Map.Entry<String,byte[]> ee : extensions.entrySet()) {
+                                                String name = ee.getKey();
+                                                byte[] value = ee.getValue();
+                                                Object info  = parsed.get(name);
+
+                                                stdout.append('\t').append(name).append(": ");
+                                                if (info == null) {
+                                                    stdout.println(BufferUtils.printHex(value));
+                                                } else {
+                                                    stdout.println(info);
+                                                }
+                                            }
                                             return false;
                                         }
                                     },

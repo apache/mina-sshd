@@ -81,7 +81,7 @@ public class UserAuthPublicKey extends AbstractUserAuth {
             buf.putString(username);
             buf.putString(service);
             buf.putString(UserAuthPublicKeyFactory.NAME);
-            buf.putByte((byte) 1);
+            buf.putBoolean(true);
             buf.putString(alg);
             buffer.rpos(oldPos);
             buffer.wpos(oldPos + 4 + len);

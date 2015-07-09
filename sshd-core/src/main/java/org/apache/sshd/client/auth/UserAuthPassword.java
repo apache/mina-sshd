@@ -68,7 +68,7 @@ public class UserAuthPassword extends AbstractLoggingBean implements UserAuth {
                 buffer.putString(session.getUsername());
                 buffer.putString(service);
                 buffer.putString("password");
-                buffer.putByte((byte) 0);
+                buffer.putBoolean(false);
                 buffer.putString(current);
                 session.writePacket(buffer);
                 return true;

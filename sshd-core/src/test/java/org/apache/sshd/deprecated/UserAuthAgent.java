@@ -52,15 +52,12 @@ public class UserAuthAgent extends AbstractUserAuth {
         try {
             log.debug("Send SSH_MSG_USERAUTH_REQUEST for publickey");
             Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST);
-            int pos1 = buffer.wpos() - 1;
             buffer.putString(session.getUsername());
             buffer.putString(service);
             buffer.putString(UserAuthPublicKeyFactory.NAME);
-            buffer.putByte((byte) 1);
+            buffer.putBoolean(true);
             buffer.putString(KeyUtils.getKeyType(key));
-            int pos2 = buffer.wpos();
             buffer.putPublicKey(key);
-
 
             Buffer bs = new ByteArrayBuffer();
             bs.putBytes(session.getKex().getH());
@@ -68,7 +65,7 @@ public class UserAuthAgent extends AbstractUserAuth {
             bs.putString(session.getUsername());
             bs.putString(service);
             bs.putString(UserAuthPublicKeyFactory.NAME);
-            bs.putByte((byte) 1);
+            bs.putBoolean(true);
             bs.putString(KeyUtils.getKeyType(key));
             bs.putPublicKey(key);
 

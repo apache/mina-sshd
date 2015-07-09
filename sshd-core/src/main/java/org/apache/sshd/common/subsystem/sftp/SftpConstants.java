@@ -236,6 +236,7 @@ public final class SftpConstants {
     public static final String EXT_CHKFILE_NAME = "check-file-name";
         public static final int MIN_CHKFILE_BLOCKSIZE = 256;
         public static final String EXT_CHKFILE_RESPONSE = "check-file";
+    public static final String EXT_COPYDATA = "copy-data";
 
     private SftpConstants() {
         throw new UnsupportedOperationException("No instance");

@@ -37,11 +37,6 @@ import org.apache.sshd.server.channel.AbstractServerChannel;
  * The client side channel that will receive requests forwards by the SSH server.
  */
 public class ChannelAgentForwarding extends AbstractServerChannel {
-
-    private String authSocket;
-    private long pool;
-    private long handle;
-    private Thread thread;
     private OutputStream out;
     private SshAgent agent;
     private AgentClient client;

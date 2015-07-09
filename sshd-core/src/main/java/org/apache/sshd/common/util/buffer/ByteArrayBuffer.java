@@ -19,7 +19,6 @@
 
 package org.apache.sshd.common.util.buffer;
 
-import java.nio.BufferUnderflowException;
 import java.nio.charset.Charset;
 
 import org.apache.sshd.common.util.Int2IntFunction;

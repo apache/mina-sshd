@@ -180,7 +180,8 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                                         SftpConstants.EXT_MD5HASH,
                                         SftpConstants.EXT_MD5HASH_HANDLE,
                                         SftpConstants.EXT_CHKFILE_HANDLE,
-                                        SftpConstants.EXT_CHKFILE_NAME
+                                        SftpConstants.EXT_CHKFILE_NAME,
+                                        SftpConstants.EXT_COPYDATA
                                 )));
 
     static {
@@ -691,6 +692,9 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             case SftpConstants.EXT_COPYFILE:
                 doCopyFile(buffer, id);
                 break;
+            case SftpConstants.EXT_COPYDATA:
+                doCopyData(buffer, id);
+                break;
             case SftpConstants.EXT_MD5HASH:
             case SftpConstants.EXT_MD5HASH_HANDLE:
                 doMD5Hash(buffer, id, extension);
@@ -808,21 +812,29 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     protected void doCheckFileHash(int id, Path file, NamedFactory<? extends Digest> factory,
                                    long startOffset, long length, int blockSize, Buffer buffer)
                            throws Exception {
+        ValidateUtils.checkTrue(startOffset >= 0L, "Invalid start offset: %d", startOffset);
+        ValidateUtils.checkTrue(length >= 0L, "Invalid length: %d", length);
         ValidateUtils.checkTrue((blockSize == 0) || (blockSize >= SftpConstants.MIN_CHKFILE_BLOCKSIZE), "Invalid block size: %d", blockSize);
         ValidateUtils.checkNotNull(factory, "No digest factory provided", GenericUtils.EMPTY_OBJECT_ARRAY);
         buffer.putString(factory.getName());
         
         long effectiveLength = length;
+        long totalLength = Files.size(file);
         if (effectiveLength == 0L) {
-            long totalLength = Files.size(file);
-            effectiveLength = totalLength - startOffset;    
+            effectiveLength = totalLength - startOffset;
+        } else {
+            long maxRead = startOffset + length;
+            if (maxRead > totalLength) {
+                effectiveLength = totalLength - startOffset;
+            }
         }
+        ValidateUtils.checkTrue(effectiveLength > 0L, "Non-positive effective hash data length: %d", effectiveLength);
 
-        byte[] workBuf = (blockSize == 0)
+        byte[] digestBuf = (blockSize == 0)
                        ? new byte[Math.min((int) effectiveLength, IoUtils.DEFAULT_COPY_SIZE)]
                        : new byte[Math.min((int) effectiveLength, blockSize)]
                        ;
-        ByteBuffer bb = ByteBuffer.wrap(workBuf);
+        ByteBuffer wb = ByteBuffer.wrap(digestBuf);
         try(FileChannel channel = FileChannel.open(file, IoUtils.EMPTY_OPEN_OPTIONS)) {
             channel.position(startOffset);
 
@@ -831,6 +843,11 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
 
             if (blockSize == 0) {
                 while(effectiveLength > 0L) {
+                    int remainLen = Math.min(digestBuf.length, (int) effectiveLength);
+                    ByteBuffer bb = wb;
+                    if (remainLen < digestBuf.length) {
+                        bb = ByteBuffer.wrap(digestBuf, 0, remainLen);
+                    }
                     bb.clear(); // prepare for next read
 
                     int readLen = channel.read(bb);
@@ -839,7 +856,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                     }
 
                     effectiveLength -= readLen;
-                    digest.update(workBuf, 0, readLen);
+                    digest.update(digestBuf, 0, readLen);
                 }
                 
                 byte[] hashValue = digest.digest();
@@ -851,6 +868,11 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                 buffer.putBytes(hashValue);
             } else {
                 for (int count=0; effectiveLength > 0L; count++) {
+                    int remainLen = Math.min(digestBuf.length, (int) effectiveLength);
+                    ByteBuffer bb = wb;
+                    if (remainLen < digestBuf.length) {
+                        bb = ByteBuffer.wrap(digestBuf, 0, remainLen);
+                    }
                     bb.clear(); // prepare for next read
 
                     int readLen = channel.read(bb);
@@ -859,7 +881,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                     }
 
                     effectiveLength -= readLen;
-                    digest.update(workBuf, 0, readLen);
+                    digest.update(digestBuf, 0, readLen);
 
                     byte[] hashValue = digest.digest(); // NOTE: this also resets the hash for the next read
                     if (log.isTraceEnabled()) {
@@ -935,21 +957,29 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
          *
          *      If both start-offset and length are zero, the entire file should be included
          */
-        long effectiveLength = length;
+        long effectiveLength = length, totalSize = Files.size(path);
         if ((startOffset == 0L) && (length == 0L)) {
-            effectiveLength = Files.size(path);
+            effectiveLength = totalSize;
+        } else {
+            long maxRead = startOffset + effectiveLength;
+            if (maxRead > totalSize) {
+                effectiveLength = totalSize - startOffset;
+            }
         }
 
         return doMD5Hash(id, path, startOffset, effectiveLength, quickCheckHash);
     }
 
     protected byte[] doMD5Hash(int id, Path path, long startOffset, long length, byte[] quickCheckHash) throws Exception {
+        ValidateUtils.checkTrue(startOffset >= 0L, "Invalid start offset: %d", startOffset);
+        ValidateUtils.checkTrue(length > 0L, "Invalid length: %d", length);
+
         Digest digest = BuiltinDigests.md5.create();
         digest.init();
 
         long effectiveLength = length;
         byte[] digestBuf = new byte[(int) Math.min(effectiveLength, SftpConstants.MD5_QUICK_HASH_SIZE)];
-        ByteBuffer bb = ByteBuffer.wrap(digestBuf);
+        ByteBuffer wb = ByteBuffer.wrap(digestBuf);
         boolean hashMatches = false;
         byte[] hashValue = null;
 
@@ -968,7 +998,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                 // TODO consider limiting it - e.g., if the requested effective length is <= than some (configurable) threshold
                 hashMatches = true;
             } else {
-                int readLen = channel.read(bb);
+                int readLen = channel.read(wb);
                 if (readLen < 0) {
                     throw new EOFException("EOF while read initial buffer from " + path);
                 }
@@ -1002,6 +1032,11 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
 
             if (hashMatches) {
                 while(effectiveLength > 0L) {
+                    int remainLen = Math.min(digestBuf.length, (int) effectiveLength);
+                    ByteBuffer bb = wb;
+                    if (remainLen < digestBuf.length) {
+                        bb = ByteBuffer.wrap(digestBuf, 0, remainLen);
+                    }
                     bb.clear(); // prepare for next read
 
                     int readLen = channel.read(bb);
@@ -1298,6 +1333,96 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         Files.move(o, n, GenericUtils.isEmpty(opts) ? IoUtils.EMPTY_COPY_OPTIONS : opts.toArray(new CopyOption[opts.size()]));
     }
 
+    // see https://tools.ietf.org/html/draft-ietf-secsh-filexfer-extensions-00#section-7
+    protected void doCopyData(Buffer buffer, int id) throws IOException {
+        String readHandle = buffer.getString();
+        long readOffset = buffer.getLong();
+        long readLength = buffer.getLong();
+        String writeHandle = buffer.getString();
+        long writeOffset = buffer.getLong();
+        try {
+            doCopyData(id, readHandle, readOffset, readLength, writeHandle, writeOffset);
+        } catch (IOException | RuntimeException e) {
+            sendStatus(BufferUtils.clear(buffer), id, e);
+            return;
+        }
+
+        sendStatus(BufferUtils.clear(buffer), id, SSH_FX_OK, "");
+    }
+
+    @SuppressWarnings("resource")
+    protected void doCopyData(int id, String readHandle, long readOffset, long readLength, String writeHandle, long writeOffset) throws IOException {
+        boolean inPlaceCopy = readHandle.equals(writeHandle);
+        Handle rh = handles.get(readHandle);
+        Handle wh = inPlaceCopy ? rh : handles.get(writeHandle);
+        if (log.isDebugEnabled()) {
+            log.debug("SSH_FXP_EXTENDED[{}] read={}[{}], read-offset={}, read-length={}, write={}[{}], write-offset={})",
+                      SftpConstants.EXT_COPYDATA,
+                      readHandle, rh, Long.valueOf(readOffset), Long.valueOf(readLength),
+                      writeHandle, wh, Long.valueOf(writeOffset));
+        }
+
+        FileHandle srcHandle = validateHandle(readHandle, rh, FileHandle.class);
+        Path srcPath = srcHandle.getFile();
+        int srcAccess = srcHandle.getAccessMask();
+        if ((srcAccess & ACE4_READ_DATA) != ACE4_READ_DATA) {
+            throw new AccessDeniedException("File not opened for read: " + srcPath);
+        }
+
+        ValidateUtils.checkTrue(readLength >= 0L, "Invalid read length: %d", readLength);
+        ValidateUtils.checkTrue(readOffset >= 0L, "Invalid read offset: %d", readOffset);
+
+        long totalSize = Files.size(srcHandle.getFile());
+        long effectiveLength = readLength;
+        if (effectiveLength == 0L) {
+            effectiveLength = totalSize - readOffset;
+        } else {
+            long maxRead = readOffset + effectiveLength;
+            if (maxRead > totalSize) {
+                effectiveLength = totalSize - readOffset;
+            }
+        }
+        ValidateUtils.checkTrue(effectiveLength > 0L, "Non-positive effective copy data length: %d", effectiveLength);
+
+        FileHandle dstHandle = inPlaceCopy ? srcHandle : validateHandle(writeHandle, wh, FileHandle.class);
+        int dstAccess = dstHandle.getAccessMask();
+        if ((dstAccess & ACE4_WRITE_DATA) != ACE4_WRITE_DATA) {
+            throw new AccessDeniedException("File not opened for write: " + srcHandle);
+        }
+
+        ValidateUtils.checkTrue(writeOffset >= 0L, "Invalid write offset: %d", writeOffset);
+        // check if overlapping ranges as per the draft
+        if (inPlaceCopy) {
+            long maxRead = readOffset + effectiveLength;
+            if (maxRead > totalSize) {
+                maxRead = totalSize;
+            }
+            
+            long maxWrite = writeOffset + effectiveLength;
+            if (maxWrite > readOffset) {
+                throw new IllegalArgumentException("Write range end [" + writeOffset + "-" + maxWrite + "]"
+                                                 + " overlaps with read range [" + readOffset + "-" +  maxRead + "]");
+            } else if (maxRead > writeOffset) {
+                throw new IllegalArgumentException("Read range end [" + readOffset + "-" +  maxRead + "]"
+                                                 + " overlaps with write range [" + writeOffset + "-" + maxWrite + "]");
+            }
+        }
+        
+        byte[] copyBuf = new byte[Math.min(IoUtils.DEFAULT_COPY_SIZE, (int) effectiveLength)];
+        while(effectiveLength > 0L) {
+            int remainLength = Math.min(copyBuf.length, (int) effectiveLength);
+            int readLen = srcHandle.read(copyBuf, 0, remainLength, readOffset);
+            if (readLen < 0) {
+                throw new EOFException("Premature EOF while still remaining " + effectiveLength + " bytes");
+            }
+            dstHandle.write(copyBuf, 0, readLen, writeOffset);
+
+            effectiveLength -= readLen;
+            readOffset += readLen;
+            writeOffset += readLen;
+        }
+    }
+
     // see https://tools.ietf.org/html/draft-ietf-secsh-filexfer-extensions-00#section-6
     protected void doCopyFile(Buffer buffer, int id) throws IOException {
         String srcFile = buffer.getString();
@@ -1317,7 +1442,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     protected void doCopyFile(int id, String srcFile, String dstFile, boolean overwriteDestination) throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("SSH_FXP_EXTENDED[{}] (src={}, dst={}, overwrite=0x{})",
-                       SftpConstants.EXT_COPYFILE, srcFile, dstFile, Boolean.valueOf(overwriteDestination));
+                      SftpConstants.EXT_COPYFILE, srcFile, dstFile, Boolean.valueOf(overwriteDestination));
         }
         
         doCopyFile(id, srcFile, dstFile,
@@ -2951,6 +3076,8 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             return SSH_FX_LOCK_CONFLICT;
         } else if (e instanceof UnsupportedOperationException) {
             return SSH_FX_OP_UNSUPPORTED;
+        } else if (e instanceof IllegalArgumentException) {
+            return SSH_FX_INVALID_PARAMETER;
         } else {
             return SSH_FX_FAILURE;
         }

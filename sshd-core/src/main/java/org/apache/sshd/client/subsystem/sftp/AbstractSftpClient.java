@@ -89,7 +89,6 @@ import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IFREG;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.Collection;

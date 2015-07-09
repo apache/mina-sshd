@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.common.channel;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -60,14 +61,18 @@ public enum PtyMode {
         return v;
     }
 
-    static Map<Integer, PtyMode> commands;
-
-    static {
-        commands = new HashMap<Integer, PtyMode>();
-        for (PtyMode c : PtyMode.values()) {
-            commands.put(Integer.valueOf(c.toInt()), c);
-        }
-    }
+    public static final byte TTY_OP_END = 0x00;
+    
+    private static final Map<Integer, PtyMode> commands = 
+            Collections.unmodifiableMap(new HashMap<Integer, PtyMode>() {
+                    private static final long serialVersionUID = 1L;    // we're not serializing it
+                    
+                    {
+                        for (PtyMode c : PtyMode.values()) {
+                            put(Integer.valueOf(c.toInt()), c);
+                        }
+                    }
+            });
 
     public static PtyMode fromInt(int b) {
         return commands.get(Integer.valueOf(0x00FF & (b + 256)));

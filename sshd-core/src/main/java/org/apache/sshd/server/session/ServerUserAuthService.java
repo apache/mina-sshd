@@ -220,7 +220,7 @@ public class ServerUserAuthService extends CloseableUtils.AbstractCloseable impl
                     }
                 }
                 buffer.putString(sb.toString());
-                buffer.putByte((byte) 1);
+                buffer.putBoolean(true);
                 session.writePacket(buffer);
             }
 

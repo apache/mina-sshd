@@ -103,7 +103,7 @@ public class UserAuthPublicKey extends AbstractLoggingBean implements UserAuth {
                 buffer.putString(session.getUsername());
                 buffer.putString(service);
                 buffer.putString(UserAuthPublicKeyFactory.NAME);
-                buffer.putByte((byte) 0);
+                buffer.putBoolean(false);
                 buffer.putString(algo);
                 buffer.putPublicKey(key);
                 session.writePacket(buffer);
@@ -123,7 +123,7 @@ public class UserAuthPublicKey extends AbstractLoggingBean implements UserAuth {
             buffer.putString(session.getUsername());
             buffer.putString(service);
             buffer.putString(UserAuthPublicKeyFactory.NAME);
-            buffer.putByte((byte) 1);
+            buffer.putBoolean(true);
             buffer.putString(algo);
             buffer.putPublicKey(key);
 
@@ -133,7 +133,7 @@ public class UserAuthPublicKey extends AbstractLoggingBean implements UserAuth {
             bs.putString(session.getUsername());
             bs.putString(service);
             bs.putString(UserAuthPublicKeyFactory.NAME);
-            bs.putByte((byte) 1);
+            bs.putBoolean(true);
             bs.putString(algo);
             bs.putPublicKey(key);
 

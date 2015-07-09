@@ -45,7 +45,7 @@ public class UserAuthPassword extends AbstractUserAuth {
             buffer.putString(session.getUsername());
             buffer.putString(service);
             buffer.putString("password");
-            buffer.putByte((byte) 0);
+            buffer.putBoolean(false);
             buffer.putString(password);
             session.writePacket(buffer);
             return Result.Continued;

@@ -51,14 +51,12 @@ public class UserAuthPublicKey extends AbstractUserAuth {
             try {
                 log.debug("Send SSH_MSG_USERAUTH_REQUEST for publickey");
                 buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST);
-                int pos1 = buffer.wpos() - 1;
                 buffer.putString(session.getUsername());
                 buffer.putString(service);
                 buffer.putString(UserAuthPublicKeyFactory.NAME);
-                buffer.putByte((byte) 1);
+                buffer.putBoolean(true);
                 String alg = KeyUtils.getKeyType(key);
                 buffer.putString(alg);
-                int pos2 = buffer.wpos();
                 buffer.putPublicKey(key.getPublic());
 
                 FactoryManager manager = session.getFactoryManager();
@@ -74,7 +72,7 @@ public class UserAuthPublicKey extends AbstractUserAuth {
                 bs.putString(session.getUsername());
                 bs.putString(service);
                 bs.putString(UserAuthPublicKeyFactory.NAME);
-                bs.putByte((byte) 1);
+                bs.putBoolean(true);
                 bs.putString(alg);
                 bs.putPublicKey(key.getPublic());
                 verif.update(bs.array(), bs.rpos(), bs.available());

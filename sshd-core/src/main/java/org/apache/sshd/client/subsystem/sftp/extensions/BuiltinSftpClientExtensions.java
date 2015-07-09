@@ -28,6 +28,7 @@ import org.apache.sshd.client.subsystem.sftp.RawSftpClient;
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.client.subsystem.sftp.extensions.impl.CheckFileHandleExtensionImpl;
 import org.apache.sshd.client.subsystem.sftp.extensions.impl.CheckFileNameExtensionImpl;
+import org.apache.sshd.client.subsystem.sftp.extensions.impl.CopyDataExtensionImpl;
 import org.apache.sshd.client.subsystem.sftp.extensions.impl.CopyFileExtensionImpl;
 import org.apache.sshd.client.subsystem.sftp.extensions.impl.MD5FileExtensionImpl;
 import org.apache.sshd.client.subsystem.sftp.extensions.impl.MD5HandleExtensionImpl;
@@ -43,6 +44,12 @@ public enum BuiltinSftpClientExtensions implements SftpClientExtensionFactory {
             @Override   // co-variant return
             public CopyFileExtension create(SftpClient client, RawSftpClient raw, Map<String,byte[]> extensions, Map<String,?> parsed) {
                 return new CopyFileExtensionImpl(client, raw, ParserUtils.supportedExtensions(parsed));
+            }
+        },
+    COPY_DATA(SftpConstants.EXT_COPYDATA, CopyDataExtension.class) {
+            @Override   // co-variant return
+            public CopyDataExtension create(SftpClient client, RawSftpClient raw, Map<String,byte[]> extensions, Map<String,?> parsed) {
+                return new CopyDataExtensionImpl(client, raw, ParserUtils.supportedExtensions(parsed));
             }
         },
     MD5_FILE(SftpConstants.EXT_MD5HASH, MD5FileExtension.class) {

@@ -23,10 +23,6 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
-import org.apache.sshd.client.SshClient;
-import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.PtyMode;
 import org.apache.sshd.common.channel.SttySupport;
@@ -225,14 +221,14 @@ public class PtyCapableChannelSession extends ChannelSession {
             buffer.putInt(ptyHeight);
             buffer.putInt(ptyWidth);
 
-            Buffer modes = new ByteArrayBuffer();
+            Buffer modes = new ByteArrayBuffer(GenericUtils.size(ptyModes) * (1 + (Integer.SIZE / Byte.SIZE)) + Byte.SIZE);
             for (Map.Entry<PtyMode,? extends Number> modeEntry : ptyModes.entrySet()) {
                 PtyMode mode = modeEntry.getKey();
                 Number value = modeEntry.getValue();
                 modes.putByte((byte) mode.toInt());
                 modes.putInt(value.longValue());
             }
-            modes.putByte((byte) 0);
+            modes.putByte(PtyMode.TTY_OP_END);    
             buffer.putBytes(modes.getCompactData());
             writePacket(buffer);
         }
