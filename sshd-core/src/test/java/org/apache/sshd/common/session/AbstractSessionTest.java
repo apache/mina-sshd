@@ -19,6 +19,7 @@
 package org.apache.sshd.common.session;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 import org.apache.sshd.common.FactoryManager;
@@ -50,38 +51,38 @@ public class AbstractSessionTest extends BaseTestSupport {
 
     @Test
     public void testReadIdentSimple() {
-        Buffer buf = new ByteArrayBuffer("SSH-2.0-software\r\n".getBytes());
+        Buffer buf = new ByteArrayBuffer("SSH-2.0-software\r\n".getBytes(StandardCharsets.UTF_8));
         String ident = session.doReadIdentification(buf);
         assertEquals("SSH-2.0-software", ident);
     }
 
     @Test
     public void testReadIdentWithoutCR() {
-        Buffer buf = new ByteArrayBuffer("SSH-2.0-software\n".getBytes());
+        Buffer buf = new ByteArrayBuffer("SSH-2.0-software\n".getBytes(StandardCharsets.UTF_8));
         String ident = session.doReadIdentification(buf);
         assertEquals("SSH-2.0-software", ident);
     }
 
     @Test
     public void testReadIdentWithHeaders() {
-        Buffer buf = new ByteArrayBuffer(("a header line\r\nSSH-2.0-software\r\n").getBytes());
+        Buffer buf = new ByteArrayBuffer(("a header line\r\nSSH-2.0-software\r\n").getBytes(StandardCharsets.UTF_8));
         String ident = session.doReadIdentification(buf);
         assertEquals("SSH-2.0-software", ident);
     }
 
     @Test
     public void testReadIdentWithSplitPackets() {
-        Buffer buf = new ByteArrayBuffer("header line\r\nSSH".getBytes());
+        Buffer buf = new ByteArrayBuffer("header line\r\nSSH".getBytes(StandardCharsets.UTF_8));
         String ident = session.doReadIdentification(buf);
         assertNull(ident);
-        buf.putRawBytes("-2.0-software\r\n".getBytes());
+        buf.putRawBytes("-2.0-software\r\n".getBytes(StandardCharsets.UTF_8));
         ident = session.doReadIdentification(buf);
         assertEquals("SSH-2.0-software", ident);
     }
 
     @Test(expected = IllegalStateException.class)
     public void testReadIdentBadLineEnding() {
-        Buffer buf = new ByteArrayBuffer(("SSH-2.0-software\ra").getBytes());
+        Buffer buf = new ByteArrayBuffer(("SSH-2.0-software\ra").getBytes(StandardCharsets.UTF_8));
         String ident = session.doReadIdentification(buf);
         fail("Unexpected success: " + ident);
     }
@@ -94,7 +95,7 @@ public class AbstractSessionTest extends BaseTestSupport {
                 "01234567890123456789012345678901234567890123456789" +
                 "01234567890123456789012345678901234567890123456789" +
                 "01234567890123456789012345678901234567890123456789" +
-                "01234567890123456789012345678901234567890123456789").getBytes());
+                "01234567890123456789012345678901234567890123456789").getBytes(StandardCharsets.UTF_8));
         String ident = session.doReadIdentification(buf);
         fail("Unexpected success: " + ident);
     }
@@ -106,7 +107,7 @@ public class AbstractSessionTest extends BaseTestSupport {
             sb.append("01234567890123456789012345678901234567890123456789\r\n");
         }
         sb.append("SSH-2.0-software\r\n");
-        Buffer buf = new ByteArrayBuffer(sb.toString().getBytes());
+        Buffer buf = new ByteArrayBuffer(sb.toString().getBytes(StandardCharsets.UTF_8));
         String ident = session.doReadIdentification(buf);
         fail("Unexpected success: " + ident);
     }

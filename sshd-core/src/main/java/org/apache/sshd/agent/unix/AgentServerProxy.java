@@ -20,6 +20,7 @@ package org.apache.sshd.agent.unix;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -63,7 +64,7 @@ public class AgentServerProxy extends AbstractLoggingBean implements SshAgentSer
     private final AtomicBoolean innerFinished = new AtomicBoolean(false);
 
     //used to wake the Local.listen() JNI call
-    private static final byte[] END_OF_STREAM_MESSAGE = new byte[] { "END_OF_STREAM".getBytes()[0] };
+    private static final byte[] END_OF_STREAM_MESSAGE = new byte[] { "END_OF_STREAM".getBytes(StandardCharsets.UTF_8)[0] };
 
     public AgentServerProxy(ConnectionService service) throws IOException {
         this(service, null, false);

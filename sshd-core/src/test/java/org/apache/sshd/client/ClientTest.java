@@ -20,19 +20,23 @@ package org.apache.sshd.client;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.net.SocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -57,6 +61,7 @@ import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.channel.AbstractChannel;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.future.CloseFuture;
@@ -208,7 +213,7 @@ public class ClientTest extends BaseTestSupport {
                 channel.setStreaming(ClientChannel.Streaming.Async);
                 channel.open().verify(5L, TimeUnit.SECONDS);
         
-                final byte[] message = "0123456789\n".getBytes();
+                final byte[] message = "0123456789\n".getBytes(StandardCharsets.UTF_8);
                 final int nbMessages = 1000;
         
                 try(final ByteArrayOutputStream baosOut = new ByteArrayOutputStream();
@@ -296,17 +301,18 @@ public class ClientTest extends BaseTestSupport {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
             
-            try(ChannelExec channel = session.createExecChannel("test");
+            try(ChannelExec channel = session.createExecChannel(getCurrentTestName());
                 OutputStream stdout = new NoCloseOutputStream(System.out);
                 OutputStream stderr = new NoCloseOutputStream(System.err)) {
 
                 channel.setOut(stdout);
                 channel.setErr(stderr);
                 channel.open().verify(9L, TimeUnit.SECONDS);
-                Thread.sleep(100L);
+                Thread.sleep(125L);
                 try {
+                    byte[] data = "a".getBytes(StandardCharsets.UTF_8);
                     for (int i = 0; i < 100; i++) {
-                        channel.getInvertedIn().write("a".getBytes());
+                        channel.getInvertedIn().write(data);
                         channel.getInvertedIn().flush();
                     }
                 } catch (SshException e) {
@@ -328,7 +334,7 @@ public class ClientTest extends BaseTestSupport {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
             
-            try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
+            try(ClientChannel channel = session.createShellChannel();
                 ByteArrayOutputStream sent = new ByteArrayOutputStream();
                 PipedOutputStream pipedIn = new PipedOutputStream();
                 PipedInputStream pipedOut = new PipedInputStream(pipedIn)) {
@@ -343,7 +349,7 @@ public class ClientTest extends BaseTestSupport {
                     channel.setErr(err);
                     channel.open();
             
-                    teeOut.write("this is my command\n".getBytes());
+                    teeOut.write("this is my command\n".getBytes(StandardCharsets.UTF_8));
                     teeOut.flush();
             
                     StringBuilder sb = new StringBuilder();
@@ -351,9 +357,9 @@ public class ClientTest extends BaseTestSupport {
                         sb.append("0123456789");
                     }
                     sb.append("\n");
-                    teeOut.write(sb.toString().getBytes());
+                    teeOut.write(sb.toString().getBytes(StandardCharsets.UTF_8));
             
-                    teeOut.write("exit\n".getBytes());
+                    teeOut.write("exit\n".getBytes(StandardCharsets.UTF_8));
                     teeOut.flush();
             
                     channel.waitFor(ClientChannel.CLOSED, 0);
@@ -377,7 +383,7 @@ public class ClientTest extends BaseTestSupport {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
             
-            try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
+            try(ClientChannel channel = session.createShellChannel();
                 ByteArrayOutputStream sent = new ByteArrayOutputStream();
                 ByteArrayOutputStream out = new ByteArrayOutputStream();
                 ByteArrayOutputStream err = new ByteArrayOutputStream()) {
@@ -387,7 +393,7 @@ public class ClientTest extends BaseTestSupport {
                 channel.open().verify(9L, TimeUnit.SECONDS);
         
                 try(OutputStream pipedIn = new TeeOutputStream(sent, channel.getInvertedIn())) {
-                    pipedIn.write("this is my command\n".getBytes());
+                    pipedIn.write("this is my command\n".getBytes(StandardCharsets.UTF_8));
                     pipedIn.flush();
             
                     StringBuilder sb = new StringBuilder();
@@ -395,9 +401,9 @@ public class ClientTest extends BaseTestSupport {
                         sb.append("0123456789");
                     }
                     sb.append("\n");
-                    pipedIn.write(sb.toString().getBytes());
+                    pipedIn.write(sb.toString().getBytes(StandardCharsets.UTF_8));
             
-                    pipedIn.write("exit\n".getBytes());
+                    pipedIn.write("exit\n".getBytes(StandardCharsets.UTF_8));
                     pipedIn.flush();
                 }
         
@@ -445,7 +451,7 @@ public class ClientTest extends BaseTestSupport {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
     
-            try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
+            try(ClientChannel channel = session.createShellChannel();
                 ByteArrayOutputStream sent = new ByteArrayOutputStream();
                 PipedOutputStream pipedIn = new PipedOutputStream();
                 InputStream inPipe = new PipedInputStream(pipedIn);
@@ -458,7 +464,7 @@ public class ClientTest extends BaseTestSupport {
                 channel.open();
 
                 try(OutputStream teeOut = new TeeOutputStream(sent, pipedIn)) {
-                    teeOut.write("this is my command\n".getBytes());
+                    teeOut.write("this is my command\n".getBytes(StandardCharsets.UTF_8));
                     teeOut.flush();
         
                     StringBuilder sb = new StringBuilder();
@@ -466,7 +472,7 @@ public class ClientTest extends BaseTestSupport {
                         sb.append("0123456789");
                     }
                     sb.append("\n");
-                    teeOut.write(sb.toString().getBytes());
+                    teeOut.write(sb.toString().getBytes(StandardCharsets.UTF_8));
                 }    
     
                 channel.waitFor(ClientChannel.CLOSED, 0);
@@ -494,7 +500,7 @@ public class ClientTest extends BaseTestSupport {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
 
-            try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
+            try(ClientChannel channel = session.createShellChannel();
                 ByteArrayOutputStream sent = new ByteArrayOutputStream();
                 PipedOutputStream pipedIn = new PipedOutputStream();
                 InputStream inPipe = new PipedInputStream(pipedIn); 
@@ -508,7 +514,7 @@ public class ClientTest extends BaseTestSupport {
         
         
                 int bytes = 0;
-                byte[] data = "01234567890123456789012345678901234567890123456789\n".getBytes();
+                byte[] data = "01234567890123456789012345678901234567890123456789\n".getBytes(StandardCharsets.UTF_8);
                 long t0 = System.currentTimeMillis();
                 try(OutputStream teeOut = new TeeOutputStream(sent, pipedIn)) {
                     for (int i = 0; i < 10000; i++) {
@@ -519,7 +525,7 @@ public class ClientTest extends BaseTestSupport {
                             System.out.println("Bytes written: " + bytes);
                         }
                     }
-                    teeOut.write("exit\n".getBytes());
+                    teeOut.write("exit\n".getBytes(StandardCharsets.UTF_8));
                     teeOut.flush();
                 }        
                 long t1 = System.currentTimeMillis();
@@ -549,7 +555,7 @@ public class ClientTest extends BaseTestSupport {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
             
-            try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL)) {
+            try(ClientChannel channel = session.createShellChannel()) {
                 session.close(false);
         
                 try(PipedOutputStream pipedIn = new PipedOutputStream();
@@ -594,7 +600,7 @@ public class ClientTest extends BaseTestSupport {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
 
-            try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
+            try(ClientChannel channel = session.createShellChannel();
                 InputStream inp = new ByteArrayInputStream(GenericUtils.EMPTY_BYTE_ARRAY);
                 OutputStream out = new ByteArrayOutputStream();
                 OutputStream err = new ByteArrayOutputStream()) { 
@@ -624,7 +630,7 @@ public class ClientTest extends BaseTestSupport {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
 
-            try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
+            try(ClientChannel channel = session.createShellChannel();
                 InputStream inp = new ByteArrayInputStream(GenericUtils.EMPTY_BYTE_ARRAY);
                 OutputStream out = new ByteArrayOutputStream();
                 OutputStream err = new ByteArrayOutputStream()) { 
@@ -957,7 +963,7 @@ public class ClientTest extends BaseTestSupport {
                 session.addPasswordIdentity(getCurrentTestName());
                 session.auth().verify(5L, TimeUnit.SECONDS);
                 
-                try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
+                try(ClientChannel channel = session.createShellChannel();
                     PipedOutputStream pipedIn = new PipedOutputStream();
                     InputStream inPipe = new PipedInputStream(pipedIn); 
                     ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -1030,6 +1036,36 @@ public class ClientTest extends BaseTestSupport {
                 channel.open().verify(5L, TimeUnit.SECONDS);
             }
         } finally {
+            client.stop();
+        }
+    }
+
+    @Test
+    public void testCreateChannelByType() throws Exception {
+        client.start();
+
+        Collection<ClientChannel> channels = new LinkedList<>();
+        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
+            session.auth().verify(5L, TimeUnit.SECONDS);
+            
+            channels.add(session.createChannel(ClientChannel.CHANNEL_SUBSYSTEM, SftpConstants.SFTP_SUBSYSTEM_NAME));
+            channels.add(session.createChannel(ClientChannel.CHANNEL_EXEC, getCurrentTestName()));
+            channels.add(session.createChannel(ClientChannel.CHANNEL_SHELL, getClass().getSimpleName()));
+            
+            Set<Integer> ids = new HashSet<Integer>(channels.size());
+            for (ClientChannel c : channels) {
+                int id = ((AbstractChannel) c).getId();
+                assertTrue("Channel ID repeated: " + id, ids.add(Integer.valueOf(id)));
+            }
+        } finally {
+            for (Closeable c : channels) {
+                try {
+                    c.close();
+                } catch(IOException e) {
+                    // ignored
+                }
+            }
             client.stop();
         }
     }

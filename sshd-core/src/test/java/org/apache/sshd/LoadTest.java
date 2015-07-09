@@ -20,6 +20,7 @@ package org.apache.sshd;
 
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -141,7 +142,7 @@ public class LoadTest extends BaseTestSupport {
                         channel.open().verify(9L, TimeUnit.SECONDS);
                         try(OutputStream pipedIn = channel.getInvertedIn()) {
                             msg += "\nexit\n";
-                            pipedIn.write(msg.getBytes());
+                            pipedIn.write(msg.getBytes(StandardCharsets.UTF_8));
                             pipedIn.flush();
                         }
             
@@ -150,7 +151,7 @@ public class LoadTest extends BaseTestSupport {
                         channel.close(false);
                     }
     
-                    assertArrayEquals("Mismatched message data", msg.getBytes(), out.toByteArray());
+                    assertArrayEquals("Mismatched message data", msg.getBytes(StandardCharsets.UTF_8), out.toByteArray());
                 }
             } finally {
                 client.stop();

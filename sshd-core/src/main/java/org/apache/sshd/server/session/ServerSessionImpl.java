@@ -19,6 +19,7 @@
 package org.apache.sshd.server.session;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.util.Collection;
 import java.util.Map;
@@ -182,7 +183,7 @@ public class ServerSessionImpl extends AbstractSession implements ServerSession 
         log.debug("Client version string: {}", clientVersion);
         if (!clientVersion.startsWith(DEFAULT_SSH_VERSION_PREFIX)) {
             String msg = "Unsupported protocol version: " + clientVersion;
-            ioSession.write(new ByteArrayBuffer((msg + "\n").getBytes())).addListener(new SshFutureListener<IoWriteFuture>() {
+            ioSession.write(new ByteArrayBuffer((msg + "\n").getBytes(StandardCharsets.UTF_8))).addListener(new SshFutureListener<IoWriteFuture>() {
                 @Override
                 public void operationComplete(IoWriteFuture future) {
                     close(true);

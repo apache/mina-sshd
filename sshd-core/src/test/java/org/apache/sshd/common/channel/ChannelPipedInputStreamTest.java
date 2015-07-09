@@ -19,6 +19,7 @@
 package org.apache.sshd.common.channel;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import org.apache.sshd.util.BaseTestSupport;
@@ -37,7 +38,7 @@ public class ChannelPipedInputStreamTest extends BaseTestSupport {
     public void testAvailable() throws IOException {
         Window window = new Window(new BogusChannel(), null, true, true);
         try(ChannelPipedInputStream stream = new ChannelPipedInputStream(window)) {
-            byte[] b = getCurrentTestName().getBytes();
+            byte[] b = getCurrentTestName().getBytes(StandardCharsets.UTF_8);
             stream.receive(b, 0, b.length);
             assertEquals("Mismatched reported available size after receive", b.length, stream.available());
     
@@ -55,7 +56,7 @@ public class ChannelPipedInputStreamTest extends BaseTestSupport {
     public void testIdempotentClose() throws IOException {
         Window window = new Window(new BogusChannel(), null, true, true);
         try(ChannelPipedInputStream stream = new ChannelPipedInputStream(window)) {
-            byte[] b = getCurrentTestName().getBytes();
+            byte[] b = getCurrentTestName().getBytes(StandardCharsets.UTF_8);
             stream.receive(b, 0, b.length);
             stream.eof();
             

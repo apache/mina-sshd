@@ -631,7 +631,7 @@ public class ScpTest extends BaseTestSupport {
                 Path remoteDir = assertHierarchyTargetFolderExists(scpRoot.resolve("remote"));
                 Path remoteFile = remoteDir.resolve(getCurrentTestName() + ".txt");
                 String remotePath = Utils.resolveRelativeRemotePath(parentPath, remoteFile);
-                byte[] data = (getClass().getName() + "#" + getCurrentTestName()).getBytes();
+                byte[] data = (getClass().getName() + "#" + getCurrentTestName()).getBytes(StandardCharsets.UTF_8);
                 scp.upload(data, remotePath, EnumSet.allOf(PosixFilePermission.class), null);
 
                 byte[] uploaded = Files.readAllBytes(remoteFile);
@@ -663,7 +663,7 @@ public class ScpTest extends BaseTestSupport {
 
     private static byte[] writeFile(Path path, String data) throws IOException {
         try(OutputStream fos = Files.newOutputStream(path)) {
-            byte[]  bytes = data.getBytes();
+            byte[]  bytes = data.getBytes(StandardCharsets.UTF_8);
             fos.write(bytes);
             return bytes;
         }
@@ -863,7 +863,7 @@ public class ScpTest extends BaseTestSupport {
             assertAckReceived(is, command);
             assertAckReceived(os, is, "C7777 " + data.length() + " " + name); 
 
-            os.write(data.getBytes());
+            os.write(data.getBytes(StandardCharsets.UTF_8));
             os.flush();
             assertAckReceived(is, "Sent data (length=" + data.length() + ") for " + path + "[" + name + "]");
 
@@ -877,7 +877,7 @@ public class ScpTest extends BaseTestSupport {
     }
 
     protected void assertAckReceived(OutputStream os, InputStream is, String command) throws IOException {
-        os.write((command + "\n").getBytes());
+        os.write((command + "\n").getBytes(StandardCharsets.UTF_8));
         os.flush();
         assertAckReceived(is, command);
     }
@@ -898,7 +898,7 @@ public class ScpTest extends BaseTestSupport {
             assertAckReceived(is, command);
 
             command = "C7777 " + data.length() + " " + name;
-            os.write((command + "\n").getBytes());
+            os.write((command + "\n").getBytes(StandardCharsets.UTF_8));
             os.flush();
             assertEquals("Mismatched response for command=" + command, 2, is.read());
         } finally {
@@ -919,14 +919,14 @@ public class ScpTest extends BaseTestSupport {
             assertAckReceived(os, is, "D0755 0 " + dirName);
             assertAckReceived(os, is, "C7777 " + data.length() + " " + fileName);
 
-            os.write(data.getBytes());
+            os.write(data.getBytes(StandardCharsets.UTF_8));
             os.flush();
             assertAckReceived(is, "Send data of " + path);
 
             os.write(0);
             os.flush();
             
-            os.write("E\n".getBytes());
+            os.write("E\n".getBytes(StandardCharsets.UTF_8));
             os.flush();
             assertAckReceived(is, "Signal end of " + path);
         } finally {

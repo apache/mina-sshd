@@ -30,13 +30,11 @@ import org.apache.sshd.common.forward.TcpipForwarder;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface ConnectionService extends Service {
-
     /**
      * Register a newly created channel with a new unique identifier
-     *
-     * @param channel the channel to register
-     * @return the id of this channel
-     * @throws IOException
+     * @param channel The {@link Channel} to register
+     * @return The assigned id of this channel
+     * @throws IOException If failed to initialize and register the channel
      */
     int registerChannel(Channel channel) throws IOException;
 

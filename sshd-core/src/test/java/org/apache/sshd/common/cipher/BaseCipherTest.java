@@ -19,6 +19,7 @@
 
 package org.apache.sshd.common.cipher;
 
+import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
 
@@ -75,7 +76,7 @@ public abstract class BaseCipherTest extends BaseTestSupport {
 		byte[]	key=new byte[keySize], iv=new byte[ivSize];
 		enc.init(Mode.Encrypt, key, iv);
 
-		byte[]	expected=facName.getBytes();
+		byte[]	expected=facName.getBytes(StandardCharsets.UTF_8);
 		byte[]	workBuf=expected.clone();	// need to clone since the cipher works in-line
 		enc.update(workBuf, 0, workBuf.length);
 

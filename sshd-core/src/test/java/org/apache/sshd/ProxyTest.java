@@ -24,6 +24,7 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.mina.core.buffer.IoBuffer;
@@ -107,7 +108,7 @@ public class ProxyTest extends BaseTestSupport {
             SshdSocketAddress dynamic = session.startDynamicPortForwarding(new SshdSocketAddress("localhost", 0));
 
             String  expected = getCurrentTestName();
-            byte[]  bytes = expected.getBytes();
+            byte[]  bytes = expected.getBytes(StandardCharsets.UTF_8);
             byte[]  buf = new byte[bytes.length + Long.SIZE];
             for (int i = 0; i < 10; i++) {
                 try(Socket s = new Socket(new Proxy(Proxy.Type.SOCKS, new InetSocketAddress("localhost", dynamic.getPort())))) {

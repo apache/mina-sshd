@@ -26,6 +26,7 @@ import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.io.StreamCorruptedException;
 import java.net.SocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.TreeMap;
@@ -636,7 +637,7 @@ public class ServerTest extends BaseTestSupport {
                 Thread.sleep(5000);
                 while (true) {
                     for (int i = 0; i < 100; i++) {
-                        out.write("0123456789\n".getBytes());
+                        out.write("0123456789\n".getBytes(StandardCharsets.UTF_8));
                     }
                     out.flush();
                 }

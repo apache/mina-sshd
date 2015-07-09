@@ -29,6 +29,7 @@ import static org.apache.sshd.common.SshConstants.SSH_MSG_UNIMPLEMENTED;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
+import java.nio.charset.StandardCharsets;
 import java.util.EnumMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -394,7 +395,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
                     kex = ValidateUtils.checkNotNull(NamedFactory.Utils.create(factoryManager.getKeyExchangeFactories(), kexAlgorithm),
                                                      "Unknown negotiated KEX algorithm: %s",
                                                      kexAlgorithm);
-                    kex.init(this, serverVersion.getBytes(), clientVersion.getBytes(), I_S, I_C);
+                    kex.init(this, serverVersion.getBytes(StandardCharsets.UTF_8), clientVersion.getBytes(StandardCharsets.UTF_8), I_S, I_C);
                 }
 
                 sendEvent(SessionListener.Event.KexCompleted);
@@ -823,7 +824,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
      */
     protected void sendIdentification(String ident) {
         log.debug("Send identification: {}", ident);
-        byte[] data = (ident + "\r\n").getBytes();
+        byte[] data = (ident + "\r\n").getBytes(StandardCharsets.UTF_8);
         ioSession.write(new ByteArrayBuffer(data));
     }
 

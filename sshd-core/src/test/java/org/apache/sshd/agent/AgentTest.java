@@ -23,6 +23,7 @@ import static org.apache.sshd.util.Utils.createTestKeyPairProvider;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.List;
@@ -165,7 +166,7 @@ public class AgentTest extends BaseTestSupport {
                                             channel2.setAgentForwarding(true);
                                             channel2.open().verify(9L, TimeUnit.SECONDS);
                                     
-                                            pipedIn.write("foo\n".getBytes());
+                                            pipedIn.write("foo\n".getBytes(StandardCharsets.UTF_8));
                                             pipedIn.flush();
                                         }
                                 

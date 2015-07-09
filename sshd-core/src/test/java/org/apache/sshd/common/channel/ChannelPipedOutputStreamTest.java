@@ -20,6 +20,7 @@
 package org.apache.sshd.common.channel;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -67,7 +68,7 @@ public class ChannelPipedOutputStreamTest extends BaseTestSupport {
             assertTrue("Stream not marked as initially open", stream.isOpen());
             assertEquals("Unexpected initial receive count", 0, receiveCount.intValue());
 
-            byte[] b = getCurrentTestName().getBytes();
+            byte[] b = getCurrentTestName().getBytes(StandardCharsets.UTF_8);
             stream.write(b);
             assertTrue("Stream not marked as still open after write data", stream.isOpen());
             assertEquals("Mismatched write data count", b.length, receiveCount.intValue());

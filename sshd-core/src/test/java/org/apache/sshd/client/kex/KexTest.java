@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
@@ -129,7 +130,7 @@ public class KexTest extends BaseTestSupport {
                         channel.setErr(err);
                         channel.open().verify(9L, TimeUnit.SECONDS);
             
-                        teeOut.write("this is my command\n".getBytes());
+                        teeOut.write("this is my command\n".getBytes(StandardCharsets.UTF_8));
                         teeOut.flush();
             
                         StringBuilder sb = new StringBuilder();
@@ -137,9 +138,9 @@ public class KexTest extends BaseTestSupport {
                             sb.append("0123456789");
                         }
                         sb.append("\n");
-                        teeOut.write(sb.toString().getBytes());
+                        teeOut.write(sb.toString().getBytes(StandardCharsets.UTF_8));
             
-                        teeOut.write("exit\n".getBytes());
+                        teeOut.write("exit\n".getBytes(StandardCharsets.UTF_8));
                         teeOut.flush();
             
                         channel.waitFor(ClientChannel.CLOSED, 0);

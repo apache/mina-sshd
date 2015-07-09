@@ -21,6 +21,7 @@ package org.apache.sshd.common.util.io;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -43,7 +44,7 @@ public class LimitInputStreamTest extends BaseTestSupport {
         Path targetPath = detectTargetFolder().toPath();
         Path rootFolder = assertHierarchyTargetFolderExists(targetPath.resolve(getClass().getSimpleName()));
         Path inputFile = rootFolder.resolve(getCurrentTestName() + ".bin"); 
-        byte[] data = (getClass().getName() + "#" + getCurrentTestName()).getBytes();
+        byte[] data = (getClass().getName() + "#" + getCurrentTestName()).getBytes(StandardCharsets.UTF_8);
         Files.write(inputFile, data);
 
         try(InputStream in = Files.newInputStream(inputFile)) {

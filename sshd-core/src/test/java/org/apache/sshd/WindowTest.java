@@ -25,6 +25,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -278,10 +279,9 @@ public class WindowTest extends BaseTestSupport {
                     Window serverRemote = serverChannel.getRemoteWindow();
             
                     final String message = "0123456789\n";
-                    final byte[] bytes=message.getBytes();
+                    final byte[] bytes=message.getBytes(StandardCharsets.UTF_8);
                     final int nbMessages = 500;
                     for (int i = 0; i < nbMessages; i++) {
-            
                         Buffer buffer = new ByteArrayBuffer(bytes);
                         channel.getAsyncIn().write(buffer).verify();
             

@@ -21,6 +21,7 @@ package org.apache.sshd.server.command;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.Environment;
@@ -67,7 +68,7 @@ public class UnknownCommand implements Command {
 
     @Override
     public void start(Environment env) throws IOException {
-        err.write(("Unknown command: " + command + "\n").getBytes());
+        err.write(("Unknown command: " + command + "\n").getBytes(StandardCharsets.UTF_8));
         err.flush();
         if (callback != null) {
             callback.onExit(1, "Unknown command: " + command);

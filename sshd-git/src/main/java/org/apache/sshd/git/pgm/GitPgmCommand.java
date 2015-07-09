@@ -21,6 +21,7 @@ package org.apache.sshd.git.pgm;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -101,7 +102,7 @@ public class GitPgmCommand implements Command, Runnable {
             }
         } catch (Throwable t) {
             try {
-                err.write((t.getMessage() + "\n").getBytes());
+                err.write((t.getMessage() + "\n").getBytes(StandardCharsets.UTF_8));
                 err.flush();
             } catch (IOException e) {
                 e.printStackTrace();

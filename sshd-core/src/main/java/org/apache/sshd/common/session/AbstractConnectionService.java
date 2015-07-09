@@ -44,6 +44,7 @@ import org.apache.sshd.client.channel.AbstractClientChannel;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
@@ -65,6 +66,12 @@ import org.apache.sshd.server.x11.X11ForwardSupport;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractConnectionService extends CloseableUtils.AbstractInnerCloseable implements ConnectionService {
+    /**
+     * Property that can be used to configure max. allowed concurrent active channels
+     * @see #registerChannel(Channel)
+     */
+    public static final String MAX_CONCURRENT_CHANNELS_PROP = "max-sshd-channels";
+        public static final int DEFAULT_MAX_CHANNELS = Integer.MAX_VALUE;
 
     /** Map of channels keyed by the identifier */
     protected final Map<Integer, Channel> channels = new ConcurrentHashMap<Integer, Channel>();
@@ -124,22 +131,26 @@ public abstract class AbstractConnectionService extends CloseableUtils.AbstractI
         return nextChannelId.getAndIncrement();
     }
 
-    /**
-     * Register a newly created channel with a new unique identifier
-     *
-     * @param channel the channel to register
-     * @return the id of this channel
-     * @throws IOException
-     */
     @Override
     public int registerChannel(Channel channel) throws IOException {
+        int maxChannels = FactoryManagerUtils.getIntProperty(session, MAX_CONCURRENT_CHANNELS_PROP, DEFAULT_MAX_CHANNELS);
+        int curSize = channels.size();
+        if (curSize > maxChannels) {
+            throw new IllegalStateException("Currently active channels (" + curSize + ") at max.: " + maxChannels);
+        }
+
         int channelId = getNextChannelId();
         channel.init(this, session, channelId);
         synchronized (lock) {
             if (isClosing()) {
                 throw new IllegalStateException("Session is being closed: " + toString());
             }
+
             channels.put(Integer.valueOf(channelId), channel);
+        }
+        
+        if (log.isDebugEnabled()) {
+            log.debug("registerChannel(id={}) {}", Integer.valueOf(channelId), channel);
         }
         return channelId;
     }

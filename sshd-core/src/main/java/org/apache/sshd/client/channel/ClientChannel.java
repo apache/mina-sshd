@@ -97,7 +97,7 @@ public interface ClientChannel extends Channel {
 
     int waitFor(int mask, long timeout);
 
-    CloseFuture close(boolean immediately);
+    CloseFuture close(boolean immediate);
 
     Integer getExitStatus();
 }

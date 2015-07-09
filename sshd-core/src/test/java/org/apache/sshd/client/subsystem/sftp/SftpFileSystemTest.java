@@ -23,6 +23,7 @@ import java.net.URI;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileStore;
@@ -149,7 +150,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
             String remFilePath = Utils.resolveRelativeRemotePath(parentPath, clientFolder.resolve(getCurrentTestName() + ".txt"));
             Path file = fs.getPath(remFilePath);
             Files.createDirectories(file.getParent());
-            Files.write(file, (getCurrentTestName() + "\n").getBytes());
+            Files.write(file, (getCurrentTestName() + "\n").getBytes(StandardCharsets.UTF_8));
     
             Map<String, Object> attrs = Files.readAttributes(file, "posix:*");
             assertNotNull("NO attributes read for " + file, attrs);
@@ -346,8 +347,8 @@ public class SftpFileSystemTest extends BaseTestSupport {
 
         String  expected="Hello world: " + getCurrentTestName();
         {
-            Files.write(file1, expected.getBytes());
-            String buf = new String(Files.readAllBytes(file1));
+            Files.write(file1, expected.getBytes(StandardCharsets.UTF_8));
+            String buf = new String(Files.readAllBytes(file1), StandardCharsets.UTF_8);
             assertEquals("Mismatched read test data", expected, buf);
         }
 
@@ -362,7 +363,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
             // expected
         }
 
-        Files.write(file2, "h".getBytes());
+        Files.write(file2, "h".getBytes(StandardCharsets.UTF_8));
         try {
             Files.move(file1, file2);
             fail("Unexpected success in moving " + file1 + " => " + file2);

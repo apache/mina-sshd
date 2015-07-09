@@ -339,32 +339,48 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
 
     @Override
     public ChannelShell createShellChannel() throws IOException {
-        if (inCipher instanceof CipherNone || outCipher instanceof CipherNone) {
+        if ((inCipher instanceof CipherNone) || (outCipher instanceof CipherNone)) {
             throw new IllegalStateException("Interactive channels are not supported with none cipher");
         }
         ChannelShell channel = new ChannelShell();
-        getConnectionService().registerChannel(channel);
+        ConnectionService service = getConnectionService();
+        int id = service.registerChannel(channel);
+        if (log.isDebugEnabled()) {
+            log.debug("createShellChannel(id={}) created", Integer.valueOf(id));
+        }
         return channel;
     }
 
     @Override
     public ChannelExec createExecChannel(String command) throws IOException {
         ChannelExec channel = new ChannelExec(command);
-        getConnectionService().registerChannel(channel);
+        ConnectionService service = getConnectionService();
+        int id = service.registerChannel(channel);
+        if (log.isDebugEnabled()) {
+            log.debug("createExecChannel(id={})[{}] created", Integer.valueOf(id), command);
+        }
         return channel;
     }
 
     @Override
     public ChannelSubsystem createSubsystemChannel(String subsystem) throws IOException {
         ChannelSubsystem channel = new ChannelSubsystem(subsystem);
-        getConnectionService().registerChannel(channel);
+        ConnectionService service = getConnectionService();
+        int id = service.registerChannel(channel);
+        if (log.isDebugEnabled()) {
+            log.debug("createSubsystemChannel(id={})[{}] created", Integer.valueOf(id), subsystem);
+        }
         return channel;
     }
 
     @Override
     public ChannelDirectTcpip createDirectTcpipChannel(SshdSocketAddress local, SshdSocketAddress remote) throws IOException {
         ChannelDirectTcpip channel = new ChannelDirectTcpip(local, remote);
-        getConnectionService().registerChannel(channel);
+        ConnectionService service = getConnectionService();
+        int id = service.registerChannel(channel);
+        if (log.isDebugEnabled()) {
+            log.debug("createDirectTcpipChannel(id={})[{} => {}] created", Integer.valueOf(id), local, remote);
+        }
         return channel;
     }
 

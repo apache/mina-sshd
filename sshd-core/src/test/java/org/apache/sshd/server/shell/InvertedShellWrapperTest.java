@@ -20,6 +20,7 @@ package org.apache.sshd.server.shell;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
 
 import org.apache.sshd.util.BaseTestSupport;
 import org.apache.sshd.util.BogusEnvironment;
@@ -36,7 +37,7 @@ public class InvertedShellWrapperTest extends BaseTestSupport {
     public void testStreamsAreFlushedBeforeClosing() throws Exception {
         BogusInvertedShell shell = newShell("out", "err");
         shell.setAlive(false);
-        try(ByteArrayInputStream in = new ByteArrayInputStream("in".getBytes());
+        try(ByteArrayInputStream in = new ByteArrayInputStream("in".getBytes(StandardCharsets.UTF_8));
             ByteArrayOutputStream out = new ByteArrayOutputStream(50);
             ByteArrayOutputStream err = new ByteArrayOutputStream()) {
 
@@ -58,8 +59,8 @@ public class InvertedShellWrapperTest extends BaseTestSupport {
 
     private BogusInvertedShell newShell(String contentOut, String contentErr) {
         ByteArrayOutputStream in = new ByteArrayOutputStream(20);
-        ByteArrayInputStream out = new ByteArrayInputStream(contentOut.getBytes());
-        ByteArrayInputStream err = new ByteArrayInputStream(contentErr.getBytes());
+        ByteArrayInputStream out = new ByteArrayInputStream(contentOut.getBytes(StandardCharsets.UTF_8));
+        ByteArrayInputStream err = new ByteArrayInputStream(contentErr.getBytes(StandardCharsets.UTF_8));
         return new BogusInvertedShell(in, out, err);
     }
 }

@@ -285,7 +285,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
     private void testInvalidParams(SftpClient sftp, Path file, String filePath) throws Exception {
         // generate random file and upload it
         String randomData = randomString(5);
-        byte[] randomBytes = randomData.getBytes();
+        byte[] randomBytes = randomData.getBytes(StandardCharsets.UTF_8);
         try(SftpClient.CloseableHandle handle = sftp.open(filePath, EnumSet.of(SftpClient.OpenMode.Write, SftpClient.OpenMode.Create))) {
             try {
                 sftp.write(handle, -1, randomBytes, 0, 0);
@@ -328,7 +328,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         String remotePath = remoteDir + "/" + filename;
         String randomData = randomString(size);
         try(SftpClient.CloseableHandle handle = sftp.open(remotePath, EnumSet.of(SftpClient.OpenMode.Write, SftpClient.OpenMode.Create))) {
-            sftp.write(handle, 0, randomData.getBytes(), 0, randomData.length());
+            sftp.write(handle, 0, randomData.getBytes(StandardCharsets.UTF_8), 0, randomData.length());
         }
 
         // verify results
@@ -386,13 +386,13 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         ChannelSftp c = (ChannelSftp) session.openChannel(SftpConstants.SFTP_SUBSYSTEM_NAME);
         c.connect();
         try {
-            c.put(new ByteArrayInputStream(data.getBytes()), remotePath);
+            c.put(new ByteArrayInputStream(data.getBytes(StandardCharsets.UTF_8)), remotePath);
     
             assertTrue("Remote file not created after initial write: " + localPath, Files.exists(localPath));
             assertEquals("Mismatched data read from " + remotePath, data, readFile(remotePath));
     
             try(OutputStream os = c.put(remotePath, null, ChannelSftp.APPEND, appendOffset)) {
-                os.write(extraData.getBytes());
+                os.write(extraData.getBytes(StandardCharsets.UTF_8));
             }
         } finally {
             c.disconnect();
@@ -468,7 +468,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                     Path file1 = clientFolder.resolve(getCurrentTestName() + "-1.txt");
                     String file1Path = Utils.resolveRelativeRemotePath(parentPath, file1);
                     try (OutputStream os = sftp.write(file1Path, SftpClient.MIN_WRITE_BUFFER_SIZE)) {
-                        os.write((getCurrentTestName() + "\n").getBytes());
+                        os.write((getCurrentTestName() + "\n").getBytes(StandardCharsets.UTF_8));
                     }
 
                     Path file2 = clientFolder.resolve(getCurrentTestName() + "-2.txt");
@@ -483,7 +483,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                     }
             
                     try (OutputStream os = sftp.write(file2Path, SftpClient.MIN_WRITE_BUFFER_SIZE)) {
-                        os.write("H".getBytes());
+                        os.write("H".getBytes(StandardCharsets.UTF_8));
                     }
             
                     try {
@@ -661,7 +661,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         sftp.mkdir(dir);
         
         try(SftpClient.CloseableHandle h = sftp.open(file, EnumSet.of(SftpClient.OpenMode.Write, SftpClient.OpenMode.Create))) {
-            byte[] d = "0123456789\n".getBytes();
+            byte[] d = "0123456789\n".getBytes(StandardCharsets.UTF_8);
             sftp.write(h, 0, d, 0, d.length);
             sftp.write(h, d.length, d, 0, d.length);
     
@@ -761,7 +761,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         ChannelSftp c = (ChannelSftp) session.openChannel(SftpConstants.SFTP_SUBSYSTEM_NAME);
         c.connect();
         try {
-            c.put(new ByteArrayInputStream(data.getBytes()), remSrcPath);
+            c.put(new ByteArrayInputStream(data.getBytes(StandardCharsets.UTF_8)), remSrcPath);
     
             assertTrue("Source file not created: " + sourcePath, Files.exists(sourcePath));
             assertEquals("Mismatched stored data in " + remSrcPath, data, readFile(remSrcPath));
@@ -802,7 +802,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         ChannelSftp c = (ChannelSftp) session.openChannel(SftpConstants.SFTP_SUBSYSTEM_NAME);
         c.connect();
         try {
-            c.put(new ByteArrayInputStream(data.getBytes()), path);
+            c.put(new ByteArrayInputStream(data.getBytes(StandardCharsets.UTF_8)), path);
         } finally {
             c.disconnect();
         }

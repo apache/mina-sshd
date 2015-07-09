@@ -21,6 +21,7 @@ package org.apache.sshd.server.command;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.util.Collection;
 import java.util.Collections;
@@ -30,6 +31,7 @@ import java.util.concurrent.Future;
 import org.apache.sshd.common.file.FileSystemAware;
 import org.apache.sshd.common.scp.ScpHelper;
 import org.apache.sshd.common.scp.ScpTransferEventListener;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.Command;
@@ -228,9 +230,9 @@ public class ScpCommand extends AbstractLoggingBean implements Command, Runnable
         } catch (IOException e) {
             try {
                 exitValue = ScpHelper.ERROR;
-                exitMessage = e.getMessage() == null ? "" : e.getMessage();
+                exitMessage = GenericUtils.trimToEmpty(e.getMessage());
                 out.write(exitValue);
-                out.write(exitMessage.getBytes());
+                out.write(exitMessage.getBytes(StandardCharsets.UTF_8));
                 out.write('\n');
                 out.flush();
             } catch (IOException e2) {
@@ -239,7 +241,7 @@ public class ScpCommand extends AbstractLoggingBean implements Command, Runnable
             log.info("Error in scp command=" + name, e);
         } finally {
             if (callback != null) {
-                callback.onExit(exitValue, exitMessage);
+                callback.onExit(exitValue, GenericUtils.trimToEmpty(exitMessage));
             }
         }
     }

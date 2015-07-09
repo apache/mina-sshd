@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.server.Command;
@@ -107,7 +108,7 @@ public class EchoShellFactory implements Factory<Command> {
                     if (s == null) {
                         return;
                     }
-                    out.write((s + "\n").getBytes());
+                    out.write((s + "\n").getBytes(StandardCharsets.UTF_8));
                     out.flush();
                     if ("exit".equals(s)) {
                         return;

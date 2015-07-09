@@ -30,6 +30,7 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -183,7 +184,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
             Thread.sleep(50);
     
             byte[]  buf = new byte[8192];
-            byte[]  bytes = PAYLOAD.getBytes();
+            byte[]  bytes = PAYLOAD.getBytes(StandardCharsets.UTF_8);
             for (int i = 0; i < NUM_ITERATIONS; i++) {
                 log.info("Iteration {}", Integer.valueOf(i));
                 try(Socket s = new Socket("localhost", sinkPort);
@@ -241,7 +242,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
                     public void run() {
                         started[0] = true;
                         try {
-                            byte[]  bytes=PAYLOAD.getBytes();
+                            byte[]  bytes=PAYLOAD.getBytes(StandardCharsets.UTF_8);
                             for (int i = 0; i < NUM_ITERATIONS; ++i) {
                                 try(Socket s = ss.accept()) {
                                     conCount.incrementAndGet();
@@ -340,7 +341,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
         acceptor.setHandler(new IoHandlerAdapter() {
             @Override
             public void messageReceived(IoSession session, Object message) throws Exception {
-                session.write(IoBuffer.wrap(sb.toString().getBytes()));
+                session.write(IoBuffer.wrap(sb.toString().getBytes(StandardCharsets.UTF_8)));
             }
         });
         acceptor.setReuseAddress(true);

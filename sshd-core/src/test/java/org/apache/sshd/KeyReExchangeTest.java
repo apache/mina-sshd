@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -99,7 +100,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
                 InputStream is = c.getInputStream()) {
 
                 String expected = "this is my command\n";
-                byte[] bytes = expected.getBytes();
+                byte[] bytes = expected.getBytes(StandardCharsets.UTF_8);
                 byte[] data = new byte[bytes.length + Long.SIZE];
                 for (int i = 0; i < 10; i++) {
                     os.write(bytes);
@@ -142,7 +143,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
                     channel.setErr(err);
                     channel.open();
             
-                    teeOut.write("this is my command\n".getBytes());
+                    teeOut.write("this is my command\n".getBytes(StandardCharsets.UTF_8));
                     teeOut.flush();
             
                     StringBuilder sb = new StringBuilder();
@@ -151,13 +152,13 @@ public class KeyReExchangeTest extends BaseTestSupport {
                     }
                     sb.append("\n");
             
-                    byte[]  data=sb.toString().getBytes();
+                    byte[]  data=sb.toString().getBytes(StandardCharsets.UTF_8);
                     for (int i = 0; i < 10; i++) {
                         teeOut.write(data);
                         teeOut.flush();
                         session.reExchangeKeys();
                     }
-                    teeOut.write("exit\n".getBytes());
+                    teeOut.write("exit\n".getBytes(StandardCharsets.UTF_8));
                     teeOut.flush();
             
                     channel.waitFor(ClientChannel.CLOSED, 0);
@@ -196,7 +197,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
                     channel.setErr(err);
                     channel.open();
             
-                    teeOut.write("this is my command\n".getBytes());
+                    teeOut.write("this is my command\n".getBytes(StandardCharsets.UTF_8));
                     teeOut.flush();
             
                     StringBuilder sb = new StringBuilder();
@@ -223,10 +224,10 @@ public class KeyReExchangeTest extends BaseTestSupport {
                         }
                     });
                     for (int i = 0; i < 100; i++) {
-                        teeOut.write(sb.toString().getBytes());
+                        teeOut.write(sb.toString().getBytes(StandardCharsets.UTF_8));
                         teeOut.flush();
                     }
-                    teeOut.write("exit\n".getBytes());
+                    teeOut.write("exit\n".getBytes(StandardCharsets.UTF_8));
                     teeOut.flush();
             
                     channel.waitFor(ClientChannel.CLOSED, 0);

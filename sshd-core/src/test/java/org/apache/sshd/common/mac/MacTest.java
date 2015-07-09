@@ -20,6 +20,7 @@ package org.apache.sshd.common.mac;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import org.apache.sshd.common.NamedFactory;
@@ -152,7 +153,7 @@ public class MacTest extends BaseTestSupport {
                 InputStream is = c.getInputStream()) {
 
                 String  expected = "this is my command\n";
-                byte[] bytes = expected.getBytes();
+                byte[] bytes = expected.getBytes(StandardCharsets.UTF_8);
                 byte[] data = new byte[bytes.length + Long.SIZE];
                 for (int i = 0; i < 10; i++) {
                     os.write(bytes);

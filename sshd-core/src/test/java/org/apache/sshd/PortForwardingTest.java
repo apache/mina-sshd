@@ -276,7 +276,7 @@ public class PortForwardingTest extends BaseTestSupport {
                 s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(10L));
 
                 String  expected = getCurrentTestName();
-                byte[]  bytes = expected.getBytes();
+                byte[]  bytes = expected.getBytes(StandardCharsets.UTF_8);
                 output.write(bytes);
                 output.flush();
 
@@ -305,7 +305,7 @@ public class PortForwardingTest extends BaseTestSupport {
                 s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(10L));
 
                 String  expected = getCurrentTestName();
-                byte[]  bytes = expected.getBytes();
+                byte[]  bytes = expected.getBytes(StandardCharsets.UTF_8);
                 byte[]  buf = new byte[bytes.length + Long.SIZE];
 
                 for (int i = 0; i < 1000; i++) {
@@ -337,7 +337,7 @@ public class PortForwardingTest extends BaseTestSupport {
                 s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(10L));
 
                 String  expected = getCurrentTestName();
-                byte[]  bytes = expected.getBytes();
+                byte[]  bytes = expected.getBytes(StandardCharsets.UTF_8);
 
                 output.write(bytes);
                 output.flush();
@@ -368,7 +368,7 @@ public class PortForwardingTest extends BaseTestSupport {
                 s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(10L));
 
                 String  expected = getCurrentTestName();
-                byte[]  bytes = expected.getBytes();
+                byte[]  bytes = expected.getBytes(StandardCharsets.UTF_8);
 
                 output.write(bytes);
                 output.flush();
@@ -408,7 +408,7 @@ public class PortForwardingTest extends BaseTestSupport {
             SshdSocketAddress bound = session.startLocalPortForwarding(local, remote);
 
             String  expected = getCurrentTestName();
-            byte[]  bytes = expected.getBytes();
+            byte[]  bytes = expected.getBytes(StandardCharsets.UTF_8);
             byte[]  buf = new byte[bytes.length + Long.SIZE];
             try(Socket s = new Socket(bound.getHostName(), bound.getPort());
                 OutputStream output = s.getOutputStream();
@@ -441,7 +441,7 @@ public class PortForwardingTest extends BaseTestSupport {
                 channel.open().verify(9L, TimeUnit.SECONDS);
 
                 String  expected = getCurrentTestName();
-                byte[]  bytes = expected.getBytes();
+                byte[]  bytes = expected.getBytes(StandardCharsets.UTF_8);
 
                 try(OutputStream output = channel.getInvertedIn();
                     InputStream input = channel.getInvertedOut()) {

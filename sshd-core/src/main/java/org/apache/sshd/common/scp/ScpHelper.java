@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StreamCorruptedException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystem;
@@ -419,13 +420,13 @@ public class ScpHelper extends AbstractLoggingBean {
                     } else if (Files.isDirectory(file, options)) {
                         if (!recursive) {
                             out.write(ScpHelper.WARNING);
-                            out.write((path.toString().replace(File.separatorChar, '/') + " not a regular file\n").getBytes());
+                            out.write((path.toString().replace(File.separatorChar, '/') + " not a regular file\n").getBytes(StandardCharsets.UTF_8));
                         } else {
                             sendDir(file, preserve, bufferSize);
                         }
                     } else {
                         out.write(ScpHelper.WARNING);
-                        out.write((path.toString().replace(File.separatorChar, '/') + " unknown file type\n").getBytes());
+                        out.write((path.toString().replace(File.separatorChar, '/') + " unknown file type\n").getBytes(StandardCharsets.UTF_8));
                     }
                 }
             } else {
@@ -522,7 +523,7 @@ public class ScpHelper extends AbstractLoggingBean {
                     .append(' ').append(TimeUnit.MILLISECONDS.toSeconds(time.lastAccessTime)).append(' ').append('0')
                     .append('\n')
                     .toString();
-            out.write(cmd.getBytes());
+            out.write(cmd.getBytes(StandardCharsets.UTF_8));
             out.flush();
             readAck(false);
         }
@@ -536,7 +537,7 @@ public class ScpHelper extends AbstractLoggingBean {
             .append(' ').append(fileName)
             .append('\n')
             .toString();
-        out.write(cmd.getBytes());
+        out.write(cmd.getBytes(StandardCharsets.UTF_8));
         out.flush();
         readAck(false);
 
@@ -572,7 +573,7 @@ public class ScpHelper extends AbstractLoggingBean {
             buf.append(" ");
             buf.append("0");
             buf.append("\n");
-            out.write(buf.toString().getBytes());
+            out.write(buf.toString().getBytes(StandardCharsets.UTF_8));
             out.flush();
             readAck(false);
         }
@@ -587,7 +588,7 @@ public class ScpHelper extends AbstractLoggingBean {
         buf.append(" ");
         buf.append(path.getFileName().toString());
         buf.append("\n");
-        out.write(buf.toString().getBytes());
+        out.write(buf.toString().getBytes(StandardCharsets.UTF_8));
         out.flush();
         readAck(false);
 
@@ -610,7 +611,7 @@ public class ScpHelper extends AbstractLoggingBean {
             }
         }
 
-        out.write("E\n".getBytes());
+        out.write("E\n".getBytes(StandardCharsets.UTF_8));
         out.flush();
         readAck(false);
     }

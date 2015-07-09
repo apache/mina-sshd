@@ -21,6 +21,7 @@ package org.apache.sshd.util;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.channel.BufferedIoOutputStream;
@@ -139,7 +140,7 @@ public class AsyncEchoShellFactory implements Factory<Command> {
             for (int i = 0; i < buffer.length(); i++) {
                 if (buffer.charAt(i) == '\n') {
                     final String s = buffer.substring(0, i + 1);
-                    final byte[] bytes = s.getBytes();
+                    final byte[] bytes = s.getBytes(StandardCharsets.UTF_8);
                     out.write(new ByteArrayBuffer(bytes)).addListener(new SshFutureListener<IoWriteFuture>() {
                         @Override
                         public void operationComplete(IoWriteFuture future) {
