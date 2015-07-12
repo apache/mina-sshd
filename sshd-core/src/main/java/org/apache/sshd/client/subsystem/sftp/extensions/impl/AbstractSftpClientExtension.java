@@ -32,6 +32,7 @@ import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
@@ -95,6 +96,17 @@ public abstract class AbstractSftpClientExtension extends AbstractLoggingBean im
         if (checkExtendedReplyBuffer(buffer) != null) {
             throw new StreamCorruptedException("Unexpected extended reply received");
         }
+    }
+
+    /**
+     * @param extraSize Extra size - besides the extension name
+     * @return A {@link Buffer} with the extension name set
+     */
+    protected Buffer getCommandBuffer(int extraSize) {
+        String opcode = getName();
+        Buffer buffer = new ByteArrayBuffer((Integer.SIZE / Byte.SIZE) + GenericUtils.length(opcode) + extraSize + Byte.SIZE);
+        buffer.putString(opcode);
+        return buffer;
     }
 
     /**

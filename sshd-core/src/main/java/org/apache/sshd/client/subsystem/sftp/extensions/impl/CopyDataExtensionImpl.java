@@ -29,7 +29,6 @@ import org.apache.sshd.client.subsystem.sftp.extensions.CopyDataExtension;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
-import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -42,13 +41,9 @@ public class CopyDataExtensionImpl extends AbstractSftpClientExtension implement
     @Override
     public void copyData(Handle readHandle, long readOffset, long readLength, Handle writeHandle, long writeOffset) throws IOException {
         byte[] srcId = readHandle.getIdentifier(), dstId = writeHandle.getIdentifier();
-        String opcode = getName();
-        Buffer buffer = new ByteArrayBuffer((Integer.SIZE / Byte.SIZE) + GenericUtils.length(opcode)
-                                          + (Integer.SIZE / Byte.SIZE) + GenericUtils.length(srcId)
-                                          + (Integer.SIZE / Byte.SIZE) + GenericUtils.length(dstId)
-                                          + (3 * (Long.SIZE + (Integer.SIZE / Byte.SIZE)))
-                                          + Byte.SIZE);
-        buffer.putString(opcode);
+        Buffer buffer = getCommandBuffer((Integer.SIZE / Byte.SIZE) + GenericUtils.length(srcId)
+                                       + (Integer.SIZE / Byte.SIZE) + GenericUtils.length(dstId)
+                                       + (3 * (Long.SIZE + (Integer.SIZE / Byte.SIZE))));
         buffer.putBytes(srcId);
         buffer.putLong(readOffset);
         buffer.putLong(readLength);

@@ -28,7 +28,6 @@ import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
-import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -39,9 +38,8 @@ public abstract class AbstractMD5HashExtension extends AbstractSftpClientExtensi
     }
 
     protected byte[] doGetHash(Object target, long offset, long length, byte[] quickHash) throws IOException {
-        Buffer buffer = new ByteArrayBuffer();
+        Buffer buffer = getCommandBuffer(Long.SIZE + 2 * (Long.SIZE / Byte.SIZE) + (Integer.SIZE / Byte.SIZE) + GenericUtils.length(quickHash));
         String opcode = getName();
-        buffer.putString(opcode);
         if (target instanceof CharSequence) {
             buffer.putString(target.toString());
         } else {

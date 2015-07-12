@@ -57,6 +57,7 @@ import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.extensions.ParserUtils;
 import org.apache.sshd.common.subsystem.sftp.extensions.Supported2Parser.Supported2;
 import org.apache.sshd.common.subsystem.sftp.extensions.SupportedParser.Supported;
+import org.apache.sshd.common.subsystem.sftp.extensions.openssh.AbstractOpenSSHExtensionParser.OpenSSHExtension;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -579,7 +580,16 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                             assertSupportedExtensions(extName, ((Supported2) extValue).extensionNames);
                         }
                     }
-                    
+
+                    for (OpenSSHExtension expected : SftpSubsystem.DEFAULT_OPEN_SSH_EXTENSIONS) {
+                        String name = expected.getName();
+                        Object value = data.get(name);
+                        assertNotNull("OpenSSH extension not declared: " + name, value);
+
+                        OpenSSHExtension actual = (OpenSSHExtension) value;
+                        assertEquals("Mismatched version for OpenSSH extension=" + name, expected.getVersion(), actual.getVersion());
+                    }
+
                     for (BuiltinSftpClientExtensions type : BuiltinSftpClientExtensions.VALUES) {
                         String extensionName = type.getName();
                         SftpClientExtension instance = sftp.getExtension(extensionName);

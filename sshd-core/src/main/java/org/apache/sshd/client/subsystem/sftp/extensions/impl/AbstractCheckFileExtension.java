@@ -31,7 +31,6 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
-import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -42,9 +41,8 @@ public abstract class AbstractCheckFileExtension extends AbstractSftpClientExten
     }
 
     protected Pair<String,Collection<byte[]>> doGetHash(Object target, Collection<String> algorithms, long offset, long length, int blockSize) throws IOException {
-        Buffer buffer = new ByteArrayBuffer();
+        Buffer buffer = getCommandBuffer(Byte.MAX_VALUE);
         String opcode = getName();
-        buffer.putString(opcode);
         if (target instanceof CharSequence) {
             buffer.putString(target.toString());
         } else {

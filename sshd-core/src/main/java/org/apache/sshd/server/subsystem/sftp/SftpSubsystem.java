@@ -88,6 +88,8 @@ import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.file.FileSystemAware;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
+import org.apache.sshd.common.subsystem.sftp.extensions.openssh.FsyncExtensionParser;
+import org.apache.sshd.common.subsystem.sftp.extensions.openssh.AbstractOpenSSHExtensionParser.OpenSSHExtension;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Int2IntFunction;
 import org.apache.sshd.common.util.OsUtils;
@@ -183,6 +185,19 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                                         SftpConstants.EXT_CHKFILE_NAME,
                                         SftpConstants.EXT_COPYDATA
                                 )));
+
+    /**
+     * Comma-separated list of which {@code OpenSSH} extensions are reported and
+     * what version is reported for each - format: {@code name=version}. If empty
+     * value set, then no such extensions are reported. Otherwise, the 
+     * {@link DEFAULT_OPEN_SSH_EXTENSIONS} are used
+     */
+    public static final String OPENSSH_EXTENSIONS_PROP = "sftp-openssh-extensions";
+        public static final List<OpenSSHExtension> DEFAULT_OPEN_SSH_EXTENSIONS =
+                Collections.unmodifiableList(
+                        Arrays.asList(
+                                    new OpenSSHExtension(FsyncExtensionParser.NAME, "1")
+                                ));
 
     static {
         StringBuilder sb = new StringBuilder(2 * (1 + (HIGHER_SFTP_IMPL - LOWER_SFTP_IMPL)));
@@ -313,7 +328,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
 
     protected class FileHandle extends Handle {
         private final int access;
-        private final FileChannel channel;
+        private final FileChannel fileChannel;
         private long pos;
         private final List<FileLock> locks = new ArrayList<>();
 
@@ -373,8 +388,12 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                 channel = FileChannel.open(file, options);
                 setAttributes(file, attrs);
             }
-            this.channel = channel;
+            this.fileChannel = channel;
             this.pos = 0;
+        }
+
+        public final FileChannel getFileChannel() {
+            return fileChannel;
         }
 
         public int getAccessMask() {
@@ -386,6 +405,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         }
 
         public int read(byte[] data, int doff, int length, long offset) throws IOException {
+            FileChannel channel = getFileChannel();
             if (pos != offset) {
                 channel.position(offset);
                 pos = offset;
@@ -400,6 +420,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         }
 
         public void write(byte[] data, int doff, int length, long offset) throws IOException {
+            FileChannel channel = getFileChannel();
             if (pos != offset) {
                 channel.position(offset);
                 pos = offset;
@@ -410,11 +431,13 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
 
         @Override
         public void close() throws IOException {
+            FileChannel channel = getFileChannel();
             channel.close();
         }
 
         public void lock(long offset, long length, int mask) throws IOException {
-            long size = length == 0 ? channel.size() - offset : length;
+            FileChannel channel = getFileChannel();
+            long size = (length == 0L) ? channel.size() - offset : length;
             FileLock lock = channel.tryLock(offset, size, false);
             synchronized (locks) {
                 locks.add(lock);
@@ -422,7 +445,8 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         }
 
         public boolean unlock(long offset, long length) throws IOException {
-            long size = length == 0 ? channel.size() - offset : length;
+            FileChannel channel = getFileChannel();
+            long size = (length == 0) ? channel.size() - offset : length;
             FileLock lock = null;
             for (Iterator<FileLock> iterator = locks.iterator(); iterator.hasNext();) {
                 FileLock l = iterator.next();
@@ -703,6 +727,9 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             case SftpConstants.EXT_CHKFILE_NAME:
                 doCheckFileHash(buffer, id, extension);
                 break;
+            case FsyncExtensionParser.NAME:
+                doOpenSSHFsync(buffer, id);
+                break;
             default:
                 log.info("Received unsupported SSH_FXP_EXTENDED({})", extension);
                 sendStatus(BufferUtils.clear(buffer), id, SSH_FX_OP_UNSUPPORTED, "Command SSH_FXP_EXTENDED(" + extension + ") is unsupported or not implemented");
@@ -732,6 +759,30 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
 
         FileHandle fileHandle = validateHandle(handle, h, FileHandle.class);
         throw new UnsupportedOperationException("doTextSeek(" + fileHandle + ")");
+    }
+
+    // see https://github.com/openssh/openssh-portable/blob/master/PROTOCOL section 10
+    protected void doOpenSSHFsync(Buffer buffer, int id) throws IOException {
+        String handle = buffer.getString();
+        try {
+            doOpenSSHFsync(id, handle);
+        } catch(IOException | RuntimeException e) {
+            sendStatus(BufferUtils.clear(buffer), id, e);
+            return;
+        }
+
+        sendStatus(BufferUtils.clear(buffer), id, SSH_FX_OK, "");
+    }
+
+    protected void doOpenSSHFsync(int id, String handle) throws IOException {
+        Handle h = handles.get(handle);
+        if (log.isDebugEnabled()) {
+            log.debug("doOpenSSHFsync({})[{}]", handle, h);
+        }
+        
+        FileHandle fileHandle = validateHandle(handle, h, FileHandle.class);
+        FileChannel channel = fileHandle.getFileChannel();
+        channel.force(false);
     }
 
     protected void doCheckFileHash(Buffer buffer, int id, String targetType) throws IOException {
@@ -2091,6 +2142,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         appendVersionsExtension(buffer, supportedVersions);
         appendNewlineExtension(buffer, System.getProperty("line.separator"));
         appendVendorIdExtension(buffer, VersionProperties.getVersionProperties());
+        appendOpenSSHExtensions(buffer);
 
         /* TODO updateAvailableExtensions(extensions, appendAclSupportedExtension(...)
             buffer.putString("acl-supported");
@@ -2102,6 +2154,43 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         Collection<String> extras = getSupportedClientExtensions();
         appendSupportedExtension(buffer, extras);
         appendSupported2Extension(buffer, extras);
+    }
+
+    protected List<OpenSSHExtension> appendOpenSSHExtensions(Buffer buffer) {
+        String value = FactoryManagerUtils.getString(session, OPENSSH_EXTENSIONS_PROP);
+        List<OpenSSHExtension> extList=Collections.emptyList();
+        if (value != null) {
+            String[] pairs = GenericUtils.split(value, ',');
+            int numExts = GenericUtils.length(pairs);
+            if (numExts > 0) {
+                extList = new ArrayList<OpenSSHExtension>(numExts);
+                for (String nvp : pairs) {
+                    nvp = GenericUtils.trimToEmpty(nvp);
+                    if (GenericUtils.isEmpty(nvp)) {
+                        continue;
+                    }
+                    
+                    int pos = nvp.indexOf('=');
+                    ValidateUtils.checkTrue((pos > 0) && (pos < (nvp.length() - 1)), "Malformed OpenSSH extension spec: %s", nvp);
+                    String name = GenericUtils.trimToEmpty(nvp.substring(0, pos));
+                    String version = GenericUtils.trimToEmpty(nvp.substring(pos + 1));
+                    extList.add(new OpenSSHExtension(name, ValidateUtils.checkNotNullAndNotEmpty(version, "No version specified for OpenSSH extension %s", name)));
+                }
+            }
+        } else {
+            extList = DEFAULT_OPEN_SSH_EXTENSIONS;
+        }
+        
+        if (GenericUtils.isEmpty(extList)) {
+            return extList;
+        }
+        
+        for (OpenSSHExtension ext : extList) {
+            buffer.putString(ext.getName());
+            buffer.putString(ext.getVersion());
+        }
+        
+        return extList;
     }
 
     protected Collection<String> getSupportedClientExtensions() {

@@ -32,9 +32,12 @@ import org.apache.sshd.client.subsystem.sftp.extensions.impl.CopyDataExtensionIm
 import org.apache.sshd.client.subsystem.sftp.extensions.impl.CopyFileExtensionImpl;
 import org.apache.sshd.client.subsystem.sftp.extensions.impl.MD5FileExtensionImpl;
 import org.apache.sshd.client.subsystem.sftp.extensions.impl.MD5HandleExtensionImpl;
+import org.apache.sshd.client.subsystem.sftp.extensions.openssh.OpenSSHFsyncExtension;
+import org.apache.sshd.client.subsystem.sftp.extensions.openssh.impl.OpenSSHFsyncExtensionImpl;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.extensions.ParserUtils;
+import org.apache.sshd.common.subsystem.sftp.extensions.openssh.FsyncExtensionParser;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -74,6 +77,12 @@ public enum BuiltinSftpClientExtensions implements SftpClientExtensionFactory {
             @Override   // co-variant return
             public CheckFileHandleExtension create(SftpClient client, RawSftpClient raw, Map<String,byte[]> extensions, Map<String,?> parsed) {
                 return new CheckFileHandleExtensionImpl(client, raw, ParserUtils.supportedExtensions(parsed));
+            }
+        },
+    OPENSSH_FSYNC(FsyncExtensionParser.NAME, OpenSSHFsyncExtension.class) {
+            @Override   // co-variant return
+            public OpenSSHFsyncExtension create(SftpClient client, RawSftpClient raw, Map<String,byte[]> extensions, Map<String,?> parsed) {
+                return new OpenSSHFsyncExtensionImpl(client, raw, extensions);
             }
         };
 

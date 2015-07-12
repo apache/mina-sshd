@@ -88,7 +88,7 @@ public class SftpCommand implements Channel {
                                             ValidateUtils.checkTrue(GenericUtils.isEmpty(args), "Unexpected arguments: %s", args);
                                             SftpClient sftp = getClient();
                                             Map<String,byte[]> extensions = sftp.getServerExtensions();
-                                            Map<String,?> parsed = ParserUtils.parse(null);
+                                            Map<String,?> parsed = ParserUtils.parse(extensions);
                                             for (Map.Entry<String,byte[]> ee : extensions.entrySet()) {
                                                 String name = ee.getKey();
                                                 byte[] value = ee.getValue();

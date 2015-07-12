@@ -17,34 +17,33 @@
  * under the License.
  */
 
-package org.apache.sshd.client.subsystem.sftp.extensions.impl;
+package org.apache.sshd.client.subsystem.sftp.extensions.openssh.impl;
 
 import java.io.IOException;
-import java.util.Collection;
+import java.util.Map;
 
 import org.apache.sshd.client.subsystem.sftp.RawSftpClient;
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
-import org.apache.sshd.client.subsystem.sftp.extensions.CopyFileExtension;
-import org.apache.sshd.common.subsystem.sftp.SftpConstants;
+import org.apache.sshd.client.subsystem.sftp.SftpClient.Handle;
+import org.apache.sshd.client.subsystem.sftp.extensions.impl.AbstractSftpClientExtension;
+import org.apache.sshd.client.subsystem.sftp.extensions.openssh.OpenSSHFsyncExtension;
+import org.apache.sshd.common.subsystem.sftp.extensions.openssh.FsyncExtensionParser;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class CopyFileExtensionImpl extends AbstractSftpClientExtension implements CopyFileExtension {
-    public CopyFileExtensionImpl(SftpClient client, RawSftpClient raw, Collection<String> extra) {
-        super(SftpConstants.EXT_COPYFILE, client, raw, extra);
+public class OpenSSHFsyncExtensionImpl extends AbstractSftpClientExtension implements OpenSSHFsyncExtension {
+    public OpenSSHFsyncExtensionImpl(SftpClient client, RawSftpClient raw, Map<String,byte[]> extensions) {
+        super(FsyncExtensionParser.NAME, client, raw, (GenericUtils.size(extensions) > 0) && extensions.containsKey(FsyncExtensionParser.NAME));
     }
 
     @Override
-    public void copyFile(String src, String dst, boolean overwriteDestination) throws IOException {
-        Buffer buffer = getCommandBuffer((Integer.SIZE / Byte.SIZE) + GenericUtils.length(src)
-                                       + (Integer.SIZE / Byte.SIZE) + GenericUtils.length(dst)
-                                       + 1 /* override destination */);
-        buffer.putString(src);
-        buffer.putString(dst);
-        buffer.putBoolean(overwriteDestination);
+    public void fsync(Handle fileHandle) throws IOException {
+        byte[] handle = fileHandle.getIdentifier();
+        Buffer buffer = getCommandBuffer((Integer.SIZE / Byte.SIZE) + GenericUtils.length(handle));
+        buffer.putBytes(handle);
         sendAndCheckExtendedCommandStatus(buffer);
     }
 }

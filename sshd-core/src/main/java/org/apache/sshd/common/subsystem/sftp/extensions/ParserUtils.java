@@ -31,11 +31,17 @@ import java.util.TreeSet;
 
 import org.apache.sshd.common.subsystem.sftp.extensions.Supported2Parser.Supported2;
 import org.apache.sshd.common.subsystem.sftp.extensions.SupportedParser.Supported;
+import org.apache.sshd.common.subsystem.sftp.extensions.openssh.FstatVfsExtensionParser;
+import org.apache.sshd.common.subsystem.sftp.extensions.openssh.FsyncExtensionParser;
+import org.apache.sshd.common.subsystem.sftp.extensions.openssh.HardLinkExtensionParser;
+import org.apache.sshd.common.subsystem.sftp.extensions.openssh.PosixRenameExtensionParser;
+import org.apache.sshd.common.subsystem.sftp.extensions.openssh.StatVfsExtensionParser;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @see <A HREF="https://github.com/openssh/openssh-portable/blob/master/PROTOCOL">OpenSSH</A> section 3.4
  */
 public final class ParserUtils {
     public static final Collection<ExtensionParser<?>> BUILT_IN_PARSERS =
@@ -45,7 +51,13 @@ public final class ParserUtils {
                             NewlineParser.INSTANCE,
                             VersionsParser.INSTANCE,
                             SupportedParser.INSTANCE,
-                            Supported2Parser.INSTANCE
+                            Supported2Parser.INSTANCE,
+                            // OpenSSH extensions
+                            PosixRenameExtensionParser.INSTANCE,
+                            StatVfsExtensionParser.INSTANCE,
+                            FstatVfsExtensionParser.INSTANCE,
+                            HardLinkExtensionParser.INSTANCE,
+                            FsyncExtensionParser.INSTANCE
                     ));
 
     private static final Map<String,ExtensionParser<?>> parsersMap = new TreeMap<String,ExtensionParser<?>>(String.CASE_INSENSITIVE_ORDER) {
