@@ -38,20 +38,26 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.client.SftpException;
+import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.io.IoUtils;
 
 public class SftpFileChannel extends FileChannel {
+    public static final String COPY_BUFSIZE_PROP = "sftp-channel-copy-buf-size";
+        public static final int DEFAULT_TRANSFER_BUFFER_SIZE = IoUtils.DEFAULT_COPY_SIZE;
 
     private final SftpPath p;
     private final Collection<SftpClient.OpenMode> modes;
     private final SftpClient sftp;
     private final SftpClient.CloseableHandle handle;
     private final Object lock = new Object();
-    private volatile long pos;
-    private volatile Thread blockingThread;
+    private final AtomicLong posTracker = new AtomicLong(0L);
+    private final AtomicReference<Thread> blockingThreadHolder = new AtomicReference<Thread>(null);
 
     public SftpFileChannel(SftpPath p, Collection<SftpClient.OpenMode> modes) throws IOException {
         this.p = ValidateUtils.checkNotNull(p, "No target path", GenericUtils.EMPTY_OBJECT_ARRAY);
@@ -89,7 +95,7 @@ public class SftpFileChannel extends FileChannel {
         synchronized (lock) {
             boolean completed = false;
             boolean eof = false;
-            long curPos = position >= 0 ? position : pos;
+            long curPos = (position >= 0L) ? position : posTracker.get();
             try {
                 long totalRead = 0;
                 beginBlocking();
@@ -116,10 +122,18 @@ public class SftpFileChannel extends FileChannel {
                     }
                 }
                 completed = true;
-                return totalRead > 0 ? totalRead : eof ? -1 : 0;
+                if (totalRead > 0) {
+                    return totalRead;
+                }
+                
+                if (eof) {
+                    return (-1);
+                } else {
+                    return 0;
+                }
             } finally {
-                if (position < 0) {
-                    pos = curPos;
+                if (position < 0L) {
+                    posTracker.set(curPos);
                 }
                 endBlocking(completed);
             }
@@ -153,9 +167,9 @@ public class SftpFileChannel extends FileChannel {
         ensureOpen(WRITE_MODES);
         synchronized (lock) {
             boolean completed = false;
-            long curPos = position >= 0 ? position : pos;
+            long curPos = (position >= 0L) ? position : posTracker.get();
             try {
-                long totalWritten = 0;
+                long totalWritten = 0L;
                 beginBlocking();
                 for (ByteBuffer buffer : buffers) {
                     while (buffer.remaining() > 0) {
@@ -176,8 +190,8 @@ public class SftpFileChannel extends FileChannel {
                 completed = true;
                 return totalWritten;
             } finally {
-                if (position < 0) {
-                    pos = curPos;
+                if (position < 0L) {
+                    posTracker.set(curPos);
                 }
                 endBlocking(completed);
             }
@@ -187,20 +201,18 @@ public class SftpFileChannel extends FileChannel {
     @Override
     public long position() throws IOException {
         ensureOpen(Collections.<SftpClient.OpenMode>emptySet());
-        return pos;
+        return posTracker.get();
     }
 
     @Override
     public FileChannel position(long newPosition) throws IOException {
-        if (newPosition < 0) {
+        if (newPosition < 0L) {
             throw new IllegalArgumentException("position(" + p + ") illegal file channel position: " + newPosition);
         }
 
         ensureOpen(Collections.<SftpClient.OpenMode>emptySet());
-        synchronized (lock) {
-            pos = newPosition;
-            return this;
-        }
+        posTracker.set(newPosition);
+        return this;
     }
 
     @Override
@@ -265,14 +277,16 @@ public class SftpFileChannel extends FileChannel {
         }
         ensureOpen(WRITE_MODES);
 
+        int copySize = FactoryManagerUtils.getIntProperty(sftp.getClientSession(), COPY_BUFSIZE_PROP, DEFAULT_TRANSFER_BUFFER_SIZE);
+        boolean completed = false;
+        long curPos = (position >= 0L) ? position : posTracker.get();
+        long totalRead = 0L;
+        byte[] buffer = new byte[(int) Math.min(copySize,count)];
+
         synchronized(lock) {
-            boolean completed = false;
-            long curPos = position >= 0 ? position : pos;
             try {
-                long totalRead = 0;
                 beginBlocking();
 
-                byte[] buffer = new byte[32768];
                 while (totalRead < count) {
                     ByteBuffer wrap = ByteBuffer.wrap(buffer, 0, (int) Math.min(buffer.length, count - totalRead));
                     int read = src.read(wrap);
@@ -336,7 +350,7 @@ public class SftpFileChannel extends FileChannel {
     @Override
     protected void implCloseChannel() throws IOException {
         try {
-            final Thread thread = blockingThread;
+            final Thread thread = blockingThreadHolder.get();
             if (thread != null) {
                 thread.interrupt();
             }
@@ -351,11 +365,11 @@ public class SftpFileChannel extends FileChannel {
 
     private void beginBlocking() {
         begin();
-        blockingThread = Thread.currentThread();
+        blockingThreadHolder.set(Thread.currentThread());
     }
 
     private void endBlocking(boolean completed) throws AsynchronousCloseException {
-        blockingThread = null;
+        blockingThreadHolder.set(null);
         end(completed);
     }
 

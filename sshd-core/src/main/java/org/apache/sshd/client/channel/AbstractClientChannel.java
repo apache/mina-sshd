@@ -181,7 +181,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
                 if (closeFuture.isClosed()) {
                     cond |= ClientChannel.CLOSED | ClientChannel.EOF;
                 }
-                if (eof) {
+                if (isEofSignalled()) {
                     cond |= ClientChannel.EOF;
                 }
                 if (exitStatus != null) {

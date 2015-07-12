@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.Closeable;
@@ -69,7 +70,7 @@ public abstract class AbstractChannel
     protected Session session;
     protected int id;
     protected int recipient;
-    protected volatile boolean eof;
+    private final AtomicBoolean eof = new AtomicBoolean(false);
     protected AtomicReference<GracefulState> gracefulState = new AtomicReference<GracefulState>(GracefulState.Opened);
     protected final DefaultCloseFuture gracefulFuture = new DefaultCloseFuture(lock);
     protected final List<RequestHandler<Channel>> handlers = new ArrayList<RequestHandler<Channel>>();
@@ -209,11 +210,19 @@ public abstract class AbstractChannel
 
     public class GracefulChannelCloseable extends CloseableUtils.IoBaseCloseable {
 
-        protected volatile boolean closing;
+        private final AtomicBoolean closing = new AtomicBoolean(false);
+
+        public GracefulChannelCloseable() {
+            super();
+        }
 
         @Override
         public boolean isClosing() {
-            return closing;
+            return closing.get();
+        }
+
+        public void setClosing(boolean on) {
+            closing.set(on);
         }
 
         @Override
@@ -223,7 +232,7 @@ public abstract class AbstractChannel
 
         @Override
         public CloseFuture close(boolean immediately) {
-            closing = true;
+            setClosing(true);
             if (immediately) {
                 gracefulFuture.setClosed();
             } else if (!gracefulFuture.isClosed()) {
@@ -318,10 +327,18 @@ public abstract class AbstractChannel
         doWriteExtendedData(buffer.array(), buffer.rpos(), len);
     }
 
+    public boolean isEofSignalled() {
+        return eof.get();
+    }
+    
+    public void setEofSignalled(boolean on) {
+        eof.set(on);
+    }
+
     @Override
     public void handleEof() throws IOException {
         log.debug("Received SSH_MSG_CHANNEL_EOF on channel {}", this);
-        eof = true;
+        setEofSignalled(true);
         notifyStateChanged();
     }
 

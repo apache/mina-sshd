@@ -19,6 +19,7 @@
 package org.apache.sshd.common.io.mina;
 
 import java.net.SocketAddress;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.future.IoFutureListener;
@@ -35,7 +36,7 @@ import org.apache.sshd.common.io.IoConnectFuture;
  */
 public class MinaConnector extends MinaService implements org.apache.sshd.common.io.IoConnector, IoHandler {
 
-    protected volatile IoConnector connector;
+    protected final AtomicReference<IoConnector> connectorHolder = new AtomicReference<IoConnector>(null);
 
     public MinaConnector(FactoryManager manager, org.apache.sshd.common.io.IoHandler handler, IoProcessor<NioSession> ioProcessor) {
         super(manager, handler, ioProcessor);
@@ -48,14 +49,18 @@ public class MinaConnector extends MinaService implements org.apache.sshd.common
     }
 
     protected IoConnector getConnector() {
-        if (connector == null) {
-            synchronized (this) {
-                if (connector == null) {
-                    connector = createConnector();
-                    connector.setHandler(this);
-                }
+        IoConnector connector;
+        synchronized(connectorHolder) {
+            if ((connector = connectorHolder.get()) != null) {
+                return connector;
             }
+
+            connector = createConnector();
+            connector.setHandler(this);
+            connectorHolder.set(connector);
         }
+
+        log.debug("Created IoConnector");
         return connector;
     }
 

@@ -89,9 +89,12 @@ public class ServerSessionImpl extends AbstractSession implements ServerSession 
     @Override
     protected void checkRekey() throws IOException {
         if (KexState.DONE.equals(kexState.get())) {
-            if (   inPackets > MAX_PACKETS || outPackets > MAX_PACKETS
-                || inBytes > maxBytes || outBytes > maxBytes
-                || maxKeyInterval > 0 && System.currentTimeMillis() - lastKeyTime > maxKeyInterval)
+            long now = System.currentTimeMillis();
+            if ((inPacketsCount.get() > MAX_PACKETS)
+             || (outPacketsCount.get() > MAX_PACKETS)
+             || (inBytesCount.get() > maxBytes)
+             || (outBytesCount.get() > maxBytes)
+             || ((maxKeyInterval > 0L) && ((now - lastKeyTimeValue.get()) > maxKeyInterval)))
             {
                 reExchangeKeys();
             }

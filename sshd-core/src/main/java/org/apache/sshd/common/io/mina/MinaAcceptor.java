@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.util.Collection;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.mina.core.service.IoAcceptor;
 import org.apache.mina.core.service.IoHandler;
@@ -38,7 +39,8 @@ public class MinaAcceptor extends MinaService implements org.apache.sshd.common.
     public static final int DEFAULT_BACKLOG=0;
     public static final boolean DEFAULT_REUSE_ADDRESS=true;
 
-    protected volatile IoAcceptor acceptor;
+    protected final AtomicReference<IoAcceptor> acceptorHolder = new AtomicReference<IoAcceptor>(null);
+
     // Acceptor
     protected int backlog = DEFAULT_BACKLOG;
     protected boolean reuseAddress = DEFAULT_REUSE_ADDRESS;
@@ -60,14 +62,18 @@ public class MinaAcceptor extends MinaService implements org.apache.sshd.common.
     }
 
     protected IoAcceptor getAcceptor() {
-        if (acceptor == null) {
-            synchronized (this) {
-                if (acceptor == null) {
-                    acceptor = createAcceptor();
-                    acceptor.setHandler(this);
-                }
+        IoAcceptor acceptor;
+        synchronized(acceptorHolder) {
+            if ((acceptor = acceptorHolder.get()) != null) {
+                return acceptor;
             }
+
+            acceptor = createAcceptor();
+            acceptor.setHandler(this);
+            acceptorHolder.set(acceptor);
         }
+        
+        log.debug("Created IoAcceptor");
         return acceptor;
     }
 

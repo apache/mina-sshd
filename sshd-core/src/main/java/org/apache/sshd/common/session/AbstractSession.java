@@ -40,6 +40,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.Closeable;
@@ -163,11 +164,11 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     //
     // Rekeying
     //
-    protected volatile long inPackets;
-    protected volatile long outPackets;
-    protected volatile long inBytes;
-    protected volatile long outBytes;
-    protected volatile long lastKeyTime;
+    protected final AtomicLong inPacketsCount = new AtomicLong(0L);
+    protected final AtomicLong outPacketsCount = new AtomicLong(0L);
+    protected final AtomicLong inBytesCount = new AtomicLong(0L);
+    protected final AtomicLong outBytesCount = new AtomicLong(0L);
+    protected final AtomicLong lastKeyTimeValue = new AtomicLong(0L);
     protected final Queue<PendingWriteFuture> pendingPackets = new LinkedList<PendingWriteFuture>();
 
     protected Service currentService;
@@ -708,8 +709,8 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
             // Increment packet id
             seqo = (seqo + 1) & 0xffffffffL;
             // Update stats
-            outPackets ++;
-            outBytes += len;
+            outPacketsCount.incrementAndGet();
+            outBytesCount.addAndGet(len);
             // Make buffer ready to be read
             buffer.rpos(off);
         } catch (SshException e) {
@@ -800,8 +801,8 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
                         log.trace("Received packet #{}: {}", Long.valueOf(seqi), buf.printHex());
                     }
                     // Update stats
-                    inPackets ++;
-                    inBytes += buf.available();
+                    inPacketsCount.incrementAndGet();
+                    inBytesCount.addAndGet(buf.available());
                     // Process decoded packet
                     handleMessage(buf);
                     // Set ready to handle next packet
@@ -1142,11 +1143,11 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
         if (inCompression != null) {
             inCompression.init(Compression.Type.Inflater, -1);
         }
-        inBytes = 0;
-        outBytes = 0;
-        inPackets = 0;
-        outPackets = 0;
-        lastKeyTime = System.currentTimeMillis();
+        inBytesCount.set(0L);
+        outBytesCount.set(0L);
+        inPacketsCount.set(0L);
+        outPacketsCount.set(0L);
+        lastKeyTimeValue.set(System.currentTimeMillis());
     }
 
     /**
