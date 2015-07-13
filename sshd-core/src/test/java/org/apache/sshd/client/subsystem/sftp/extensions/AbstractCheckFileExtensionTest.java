@@ -155,11 +155,8 @@ public class AbstractCheckFileExtensionTest extends AbstractSftpClientTestSuppor
 
     private void testCheckFileExtension(NamedFactory<? extends Digest> factory, byte[] data, int hashBlockSize, byte[] expectedHash) throws Exception {
         Path targetPath = detectTargetFolder().toPath();
-        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
-        Utils.deleteRecursive(lclSftp);
-        Files.createDirectories(lclSftp);
-
-        Path srcFile = lclSftp.resolve(factory.getName() + "-data-" + data.length + "-" + hashBlockSize + ".txt");
+        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
+        Path srcFile = assertHierarchyTargetFolderExists(lclSftp).resolve(factory.getName() + "-data-" + data.length + "-" + hashBlockSize + ".txt");
         Files.write(srcFile, data, IoUtils.EMPTY_OPEN_OPTIONS);
 
         List<String> algorithms = new ArrayList<String>(BuiltinDigests.VALUES.size());

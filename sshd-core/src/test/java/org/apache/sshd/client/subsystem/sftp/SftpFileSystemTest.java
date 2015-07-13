@@ -147,9 +147,9 @@ public class SftpFileSystemTest extends BaseTestSupport {
 
             Path parentPath = targetPath.getParent();
             Path clientFolder = lclSftp.resolve("client");
-            String remFilePath = Utils.resolveRelativeRemotePath(parentPath, clientFolder.resolve(getCurrentTestName() + ".txt"));
+            String remFilePath = Utils.resolveRelativeRemotePath(parentPath, clientFolder.resolve("file.txt"));
             Path file = fs.getPath(remFilePath);
-            Files.createDirectories(file.getParent());
+            assertHierarchyTargetFolderExists(file.getParent());
             Files.write(file, (getCurrentTestName() + "\n").getBytes(StandardCharsets.UTF_8));
     
             Map<String, Object> attrs = Files.readAttributes(file, "posix:*");
@@ -183,10 +183,10 @@ public class SftpFileSystemTest extends BaseTestSupport {
         Path targetPath = detectTargetFolder().toPath();
         Path rootNative = targetPath.resolve("root").toAbsolutePath();
         Utils.deleteRecursive(rootNative);
-        Files.createDirectories(rootNative);
+        assertHierarchyTargetFolderExists(rootNative);
 
         try(FileSystem fs = FileSystems.newFileSystem(URI.create("root:" + rootNative.toUri().toString() + "!/"), null)) {
-            Path dir = Files.createDirectories(fs.getPath("test/foo"));
+            Path dir = assertHierarchyTargetFolderExists(fs.getPath("test/foo"));
             System.out.println("Created " + dir);
         }
     }
@@ -341,9 +341,9 @@ public class SftpFileSystemTest extends BaseTestSupport {
 
         Path parentPath = targetPath.getParent();
         Path clientFolder = lclSftp.resolve("client");
-        String remFile1Path = Utils.resolveRelativeRemotePath(parentPath, clientFolder.resolve(getCurrentTestName() + "-1.txt"));
+        String remFile1Path = Utils.resolveRelativeRemotePath(parentPath, clientFolder.resolve("file-1.txt"));
         Path file1 = fs.getPath(remFile1Path);
-        Files.createDirectories(file1.getParent());
+        assertHierarchyTargetFolderExists(file1.getParent());
 
         String  expected="Hello world: " + getCurrentTestName();
         {
@@ -352,9 +352,9 @@ public class SftpFileSystemTest extends BaseTestSupport {
             assertEquals("Mismatched read test data", expected, buf);
         }
 
-        String remFile2Path = Utils.resolveRelativeRemotePath(parentPath, clientFolder.resolve(getCurrentTestName() + "-2.txt"));
+        String remFile2Path = Utils.resolveRelativeRemotePath(parentPath, clientFolder.resolve("file-2.txt"));
         Path file2 = fs.getPath(remFile2Path);
-        String remFile3Path = Utils.resolveRelativeRemotePath(parentPath, clientFolder.resolve(getCurrentTestName() + "-3.txt"));
+        String remFile3Path = Utils.resolveRelativeRemotePath(parentPath, clientFolder.resolve("file-3.txt"));
         Path file3 = fs.getPath(remFile3Path);
         try {
             Files.move(file2, file3);

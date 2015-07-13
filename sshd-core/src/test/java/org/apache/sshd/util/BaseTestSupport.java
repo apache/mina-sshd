@@ -43,6 +43,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -390,24 +391,28 @@ public abstract class BaseTestSupport extends Assert {
      * @throws Exception If failed to access the file
      */
     public static void assertFileLength(Path file, long length, long timeout) throws Exception {
-        boolean ok = false;
-        long sleepTime = 100L;
-        while (timeout > 0L) {
-            if (Files.exists(file) && (Files.size(file) == length)) {
-                if (!ok) {
-                    ok = true;
-                } else {
-                    return;
-                }
-            } else {
-                ok = false;
-            }
-
-            Thread.sleep(sleepTime);
-            timeout -= sleepTime;
+        if (waitForFile(file, length, timeout)) {
+            return;
         }
-
         assertTrue("File not found: " + file, Files.exists(file));
         assertEquals("Mismatched file size for " + file, length, Files.size(file));
+    }
+    
+    public static boolean waitForFile(Path file, long length, long timeout) throws Exception {
+        while (timeout > 0L) {
+            long sleepTime = Math.min(timeout, 100L);
+            if (Files.exists(file) && (Files.size(file) == length)) {
+                return true;
+            }
+
+            long sleepStart = System.nanoTime();
+            Thread.sleep(sleepTime);
+            long sleepEnd = System.nanoTime(), nanoSleep = sleepEnd - sleepStart;
+            
+            sleepTime = TimeUnit.NANOSECONDS.toMillis(nanoSleep);
+            timeout -= sleepTime;
+        }
+        
+        return false;
     }
 }

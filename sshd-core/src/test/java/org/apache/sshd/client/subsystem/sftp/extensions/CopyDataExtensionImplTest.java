@@ -137,13 +137,10 @@ public class CopyDataExtensionImplTest extends AbstractSftpClientTestSupport {
     private void testCopyDataExtension(byte[] data, int readOffset, int readLength, long writeOffset) throws Exception {
         Path targetPath = detectTargetFolder().toPath();
         Path parentPath = targetPath.getParent();
-        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
-        Utils.deleteRecursive(lclSftp);
+        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
         LinkOption[] options = IoUtils.getLinkOptions(false);
-        assertHierarchyTargetFolderExists(lclSftp, options);
-
-        String baseName = getCurrentTestName() + "-" + readOffset + "-" + readLength + "-" + writeOffset;
-        Path srcFile = lclSftp.resolve(baseName + "-src.txt");
+        String baseName = readOffset + "-" + readLength + "-" + writeOffset;
+        Path srcFile = assertHierarchyTargetFolderExists(lclSftp, options).resolve(baseName + "-src.txt");
         Files.write(srcFile, data, IoUtils.EMPTY_OPEN_OPTIONS);
         String srcPath = Utils.resolveRelativeRemotePath(parentPath, srcFile);
 

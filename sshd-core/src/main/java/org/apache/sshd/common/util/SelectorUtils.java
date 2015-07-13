@@ -532,33 +532,51 @@ public final class SelectorUtils {
     
     /**
      * Normalizes the path by removing '.', '..' and double separators (e.g. '//')
-     * @param path
-     * @param separator
+     * @param path Original path - ignored if {@code null}/empty
+     * @param separator The separator used for the path components 
      * @return normalized path
      * @throws IOException when the path is invalid (e.g. '/first/../..')
      */
     public static String normalizePath(String path, String separator) throws IOException {
-        boolean startsWithSeparator = path.startsWith(separator);
-        // tokenize
-        List<String> tokens = tokenizePath(path, separator);
+        if (GenericUtils.isEmpty(path)) {
+            return path;
+        }
 
+        boolean startsWithSeparator = path.startsWith(separator);
+        List<String> tokens = tokenizePath(path, separator);
+        int removedDots = 0;
         // clean up
         for (int i = tokens.size() - 1; i >= 0; i--) {
             String t = tokens.get(i);
-            if (t.length() == 0 || t.equals(".")) {
+            if (GenericUtils.isEmpty(t)) {
                 tokens.remove(i);
+            } else if (t.equals(".")) {
+                tokens.remove(i);
+                removedDots++;
             } else if (t.equals("..")) {
                 tokens.remove(i);
+                removedDots++;
                 if (i >= 1) {
                     tokens.remove(--i);
+                    removedDots++;
                 }
+            }
+        }
+
+        if (GenericUtils.isEmpty(tokens)) {
+            if (removedDots > 0) {
+                return "";  // had some "." and ".." after which we remained with no path 
+            } else {
+                return separator;   // it was all separators
             }
         }
 
         // serialize
         StringBuilder buffer = new StringBuilder(path.length());
         for (int i = 0; i < tokens.size(); i++) {
-            if (i > 0 || (i == 0 && startsWithSeparator)) buffer.append(separator);
+            if ((i > 0) || ((i == 0) && startsWithSeparator)) {
+                buffer.append(separator);
+            }
             buffer.append(tokens.get(i));
         }
 
@@ -574,7 +592,7 @@ public final class SelectorUtils {
      * Converts a possibly '/' separated path to a local path. <B>Note:</B>
      * takes special care of Windows drive paths - e.g., {@code C:}
      * by converting them to &quot;C:\&quot;
-     * @param path The original path
+     * @param path The original path - ignored if {@code null}/empty
      * @return The local path
      */
     public static String translateToLocalPath(String path) {
@@ -582,7 +600,7 @@ public final class SelectorUtils {
             return path;
         }
         
-        // this means we are running on Windows
+        // This code is reached if we are running on Windows
         String  localPath=path.replace('/', File.separatorChar);
         if ((localPath.length() < 2) || (localPath.charAt(1) != ':')) {
             return localPath;   // assume a relative path

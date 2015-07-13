@@ -105,11 +105,6 @@ public class AbstractMD5HashExtensionTest extends AbstractSftpClientTestSupport 
     }
 
     private void testMD5HashExtension(byte[] data) throws Exception {
-        Path targetPath = detectTargetFolder().toPath();
-        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
-        Utils.deleteRecursive(lclSftp);
-        Files.createDirectories(lclSftp);
-
         Digest digest = BuiltinDigests.md5.create();
         digest.init();
         digest.update(data);
@@ -125,7 +120,9 @@ public class AbstractMD5HashExtensionTest extends AbstractSftpClientTestSupport 
             quickHash = digest.digest();
         }
 
-        Path srcFile = lclSftp.resolve("src.txt");
+        Path targetPath = detectTargetFolder().toPath();
+        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
+        Path srcFile = assertHierarchyTargetFolderExists(lclSftp).resolve("data-" + data.length + ".txt");
         Files.write(srcFile, data, IoUtils.EMPTY_OPEN_OPTIONS);
 
         Path parentPath = targetPath.getParent();

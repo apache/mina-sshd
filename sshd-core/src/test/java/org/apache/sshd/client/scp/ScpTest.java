@@ -39,11 +39,14 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.file.root.RootedFileSystemProvider;
+import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.scp.ScpHelper;
 import org.apache.sshd.common.scp.ScpTransferEventListener;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.command.ScpCommandFactory;
@@ -135,42 +138,104 @@ public class ScpTest extends BaseTestSupport {
     }
 
     @Test
-    public void testUploadAbsoluteDriveLetter() throws Exception {
+    public void testNormalizedScpRemotePaths() throws Exception {
+        Path targetPath = detectTargetFolder().toPath();
+        Path parentPath = targetPath.getParent();
+        Path scpRoot = Utils.resolve(targetPath, ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
+        Utils.deleteRecursive(scpRoot);
+
+        Path localDir = assertHierarchyTargetFolderExists(scpRoot.resolve("local"));
+        Path localFile = localDir.resolve("file.txt");
+        byte[] data = writeFile(localFile, getClass().getName() + "#" + getCurrentTestName() + System.getProperty("line.separator"));
+
+        Path remoteDir = assertHierarchyTargetFolderExists(scpRoot.resolve("remote"));
+        Path remoteFile = remoteDir.resolve(localFile.getFileName().toString());
+        String localPath = localFile.toString();
+        String remotePath = Utils.resolveRelativeRemotePath(parentPath, remoteFile);
+        String[] remoteComps = GenericUtils.split(remotePath, '/');
+
         try (SshClient client = SshClient.setUpDefaultClient()) {
             client.start();
 
-            try {
-                try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
-                    session.addPasswordIdentity(getCurrentTestName());
-                    session.auth().verify(5L, TimeUnit.SECONDS);
+            Factory<? extends Random> factory = client.getRandomFactory();
+            Random rnd = factory.create();
+            try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+                session.addPasswordIdentity(getCurrentTestName());
+                session.auth().verify(5L, TimeUnit.SECONDS);
 
-                    ScpClient scp = createScpClient(session);
-                    Path targetPath = detectTargetFolder().toPath();
-                    Path parentPath = targetPath.getParent();
-                    Path scpRoot = Utils.resolve(targetPath, ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
-                    Utils.deleteRecursive(scpRoot);
-
-                    Path localDir = assertHierarchyTargetFolderExists(scpRoot.resolve("local"));
-                    Path localFile = localDir.resolve(getCurrentTestName() + "-1.txt");
-                    byte[] data = writeFile(localFile, (getCurrentTestName() + "\n"));
-
-                    Path remoteDir = assertHierarchyTargetFolderExists(scpRoot.resolve("remote"));
-                    Path remoteFile = remoteDir.resolve(localFile.getFileName().toString());
-                    String localPath = localFile.toString();
-                    String remotePath = Utils.resolveRelativeRemotePath(parentPath, remoteFile);
-                    scp.upload(localPath, remotePath);
-                    assertFileLength(remoteFile, data.length, 5000);
-
-                    Path secondRemote = remoteDir.resolve(getCurrentTestName() + "-2.txt");
-                    String secondPath = Utils.resolveRelativeRemotePath(parentPath, secondRemote);
-                    scp.upload(localPath, secondPath);
-                    assertFileLength(secondRemote, data.length, 5000);
+                ScpClient scp = createScpClient(session);
+                StringBuilder sb = new StringBuilder(remotePath.length() + Long.SIZE);
+                for (int i = 0; i < Math.max(Long.SIZE, remoteComps.length); i++) {
+                    if (sb.length() > 0) {
+                        sb.setLength(0);    // start again
+                    }
                     
-                    Path pathRemote = remoteDir.resolve(getCurrentTestName() + "-path.txt");
-                    String pathPath = Utils.resolveRelativeRemotePath(parentPath, pathRemote);
-                    scp.upload(localFile, pathPath);
-                    assertFileLength(pathRemote, data.length, 5000);
+                    sb.append(remoteComps[0]);
+                    for (int j = 1; j < remoteComps.length; j++) {
+                        String name = remoteComps[j];
+                        slashify(sb, rnd);
+                        sb.append(name);
+                    }
+                    slashify(sb, rnd);
+                    
+                    String path = sb.toString();
+                    scp.upload(localPath, path);
+                    assertTrue("Remote file not ready for " + path, waitForFile(remoteFile, data.length, TimeUnit.SECONDS.toMillis(5L)));
+                    
+                    byte[] actual = Files.readAllBytes(remoteFile);
+                    assertArrayEquals("Mismatched uploaded data for " + path, data, actual);
+                    Files.delete(remoteFile);
+                    assertFalse("Remote file (" + remoteFile + ") not deleted for " + path, Files.exists(remoteFile));
                 }
+            }
+        }
+    }
+
+    private static int slashify(StringBuilder sb, Random rnd) {
+        int slashes = 1 /* at least one slash */ + rnd.random(Byte.SIZE);
+        for (int k=0; k < slashes; k++) {
+            sb.append('/');
+        }
+        
+        return slashes;
+    }
+
+    @Test
+    public void testUploadAbsoluteDriveLetter() throws Exception {
+        Path targetPath = detectTargetFolder().toPath();
+        Path parentPath = targetPath.getParent();
+        Path scpRoot = Utils.resolve(targetPath, ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
+        Utils.deleteRecursive(scpRoot);
+
+        Path localDir = assertHierarchyTargetFolderExists(scpRoot.resolve("local"));
+        Path localFile = localDir.resolve("file-1.txt");
+        byte[] data = writeFile(localFile, getClass().getName() + "#" + getCurrentTestName() + System.getProperty("line.separator"));
+
+        Path remoteDir = assertHierarchyTargetFolderExists(scpRoot.resolve("remote"));
+        Path remoteFile = remoteDir.resolve(localFile.getFileName().toString());
+        String localPath = localFile.toString();
+        String remotePath = Utils.resolveRelativeRemotePath(parentPath, remoteFile);
+
+        try (SshClient client = SshClient.setUpDefaultClient()) {
+            client.start();
+
+            try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+                session.addPasswordIdentity(getCurrentTestName());
+                session.auth().verify(5L, TimeUnit.SECONDS);
+
+                ScpClient scp = createScpClient(session);
+                scp.upload(localPath, remotePath);
+                assertFileLength(remoteFile, data.length, TimeUnit.SECONDS.toMillis(5L));
+
+                Path secondRemote = remoteDir.resolve("file-2.txt");
+                String secondPath = Utils.resolveRelativeRemotePath(parentPath, secondRemote);
+                scp.upload(localPath, secondPath);
+                assertFileLength(secondRemote, data.length, TimeUnit.SECONDS.toMillis(5L));
+                
+                Path pathRemote = remoteDir.resolve("file-path.txt");
+                String pathPath = Utils.resolveRelativeRemotePath(parentPath, pathRemote);
+                scp.upload(localFile, pathPath);
+                assertFileLength(pathRemote, data.length, TimeUnit.SECONDS.toMillis(5L));
             } finally {
                 client.stop();
             }
@@ -182,31 +247,29 @@ public class ScpTest extends BaseTestSupport {
         try (SshClient client = SshClient.setUpDefaultClient()) {
             client.start();
 
-            try {
-                try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
-                    session.addPasswordIdentity(getCurrentTestName());
-                    session.auth().verify(5L, TimeUnit.SECONDS);
+            try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+                session.addPasswordIdentity(getCurrentTestName());
+                session.auth().verify(5L, TimeUnit.SECONDS);
 
-                    ScpClient scp = createScpClient(session);
-                    String data = getCurrentTestName() + "\n";
+                ScpClient scp = createScpClient(session);
+                String data = getClass().getName() + "#" + getCurrentTestName() + System.getProperty("line.separator");
 
-                    Path targetPath = detectTargetFolder().toPath();
-                    Path parentPath = targetPath.getParent();
-                    Path scpRoot = Utils.resolve(targetPath, ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
-                    Utils.deleteRecursive(scpRoot);
+                Path targetPath = detectTargetFolder().toPath();
+                Path parentPath = targetPath.getParent();
+                Path scpRoot = Utils.resolve(targetPath, ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
+                Utils.deleteRecursive(scpRoot);
 
-                    Path localDir = assertHierarchyTargetFolderExists(scpRoot.resolve("local"));
-                    Path localFile = localDir.resolve(getCurrentTestName() + ".txt");
-                    writeFile(localFile, data);
+                Path localDir = assertHierarchyTargetFolderExists(scpRoot.resolve("local"));
+                Path localFile = localDir.resolve("file.txt");
+                writeFile(localFile, data);
 
-                    Path remoteDir = assertHierarchyTargetFolderExists(scpRoot.resolve("remote"));
-                    Path remoteFile = remoteDir.resolve(localFile.getFileName());
-                    writeFile(remoteFile, data + data);
+                Path remoteDir = assertHierarchyTargetFolderExists(scpRoot.resolve("remote"));
+                Path remoteFile = remoteDir.resolve(localFile.getFileName());
+                writeFile(remoteFile, data + data);
 
-                    String remotePath = Utils.resolveRelativeRemotePath(parentPath, remoteFile);
-                    scp.upload(localFile.toString(), remotePath);
-                    assertFileLength(remoteFile, data.length(), 5000);
-                }
+                String remotePath = Utils.resolveRelativeRemotePath(parentPath, remoteFile);
+                scp.upload(localFile.toString(), remotePath);
+                assertFileLength(remoteFile, data.length(), TimeUnit.SECONDS.toMillis(5L));
             } finally {
                 client.stop();
             }
@@ -219,7 +282,7 @@ public class ScpTest extends BaseTestSupport {
         Path scpRoot = Utils.resolve(targetPath, ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
         Path localDir = assertHierarchyTargetFolderExists(scpRoot.resolve("local"));
         Path remoteDir = assertHierarchyTargetFolderExists(scpRoot.resolve("remote"));
-        Path zeroLocal = localDir.resolve(getCurrentTestName());
+        Path zeroLocal = localDir.resolve("zero.txt");
 
         try (FileChannel fch = FileChannel.open(zeroLocal, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)) {
             if (fch.size() > 0L) {
@@ -234,18 +297,16 @@ public class ScpTest extends BaseTestSupport {
         }
 
         try (SshClient client = SshClient.setUpDefaultClient()) {
-            try {
-                client.start();
+            client.start();
 
-                try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
-                    session.addPasswordIdentity(getCurrentTestName());
-                    session.auth().verify(5L, TimeUnit.SECONDS);
+            try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+                session.addPasswordIdentity(getCurrentTestName());
+                session.auth().verify(5L, TimeUnit.SECONDS);
 
-                    ScpClient scp = createScpClient(session);
-                    String remotePath = Utils.resolveRelativeRemotePath(targetPath.getParent(), zeroRemote);
-                    scp.upload(zeroLocal.toString(), remotePath);
-                    assertFileLength(zeroRemote, 0L, TimeUnit.SECONDS.toMillis(5L));
-                }
+                ScpClient scp = createScpClient(session);
+                String remotePath = Utils.resolveRelativeRemotePath(targetPath.getParent(), zeroRemote);
+                scp.upload(zeroLocal.toString(), remotePath);
+                assertFileLength(zeroRemote, 0L, TimeUnit.SECONDS.toMillis(5L));
             } finally {
                 client.stop();
             }
@@ -272,18 +333,16 @@ public class ScpTest extends BaseTestSupport {
         assertEquals("Non-zero size for remote file=" + zeroRemote, 0L, Files.size(zeroRemote));
 
         try (SshClient client = SshClient.setUpDefaultClient()) {
-            try {
-                client.start();
+            client.start();
 
-                try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
-                    session.addPasswordIdentity(getCurrentTestName());
-                    session.auth().verify(5L, TimeUnit.SECONDS);
+            try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+                session.addPasswordIdentity(getCurrentTestName());
+                session.auth().verify(5L, TimeUnit.SECONDS);
 
-                    ScpClient scp = createScpClient(session);
-                    String remotePath = Utils.resolveRelativeRemotePath(targetPath.getParent(), zeroRemote);
-                    scp.download(remotePath, zeroLocal.toString());
-                    assertFileLength(zeroLocal, 0L, TimeUnit.SECONDS.toMillis(5L));
-                }
+                ScpClient scp = createScpClient(session);
+                String remotePath = Utils.resolveRelativeRemotePath(targetPath.getParent(), zeroRemote);
+                scp.download(remotePath, zeroLocal.toString());
+                assertFileLength(zeroLocal, 0L, TimeUnit.SECONDS.toMillis(5L));
             } finally {
                 client.stop();
             }
@@ -292,51 +351,50 @@ public class ScpTest extends BaseTestSupport {
 
     @Test
     public void testScpNativeOnSingleFile() throws Exception {
+        String data = getClass().getName() + "#" + getCurrentTestName() + System.getProperty("line.separator");
+
+        Path targetPath = detectTargetFolder().toPath();
+        Path parentPath = targetPath.getParent();
+        Path scpRoot = Utils.resolve(targetPath, ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
+        Utils.deleteRecursive(scpRoot);
+
+        Path localDir = assertHierarchyTargetFolderExists(scpRoot.resolve("local"));
+        Path localOutFile = localDir.resolve("file-1.txt");
+        Path remoteDir = scpRoot.resolve("remote");
+        Path remoteOutFile = remoteDir.resolve(localOutFile.getFileName());
+
         try (SshClient client = SshClient.setUpDefaultClient()) {
             client.start();
 
-            try {
-                try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
-                    session.addPasswordIdentity(getCurrentTestName());
-                    session.auth().verify(5L, TimeUnit.SECONDS);
+            try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+                session.addPasswordIdentity(getCurrentTestName());
+                session.auth().verify(5L, TimeUnit.SECONDS);
 
-                    ScpClient scp = createScpClient(session);
-                    String data = getCurrentTestName() + "\n";
+                ScpClient scp = createScpClient(session);
+                writeFile(localOutFile, data);
 
-                    Path targetPath = detectTargetFolder().toPath();
-                    Path parentPath = targetPath.getParent();
-                    Path scpRoot = Utils.resolve(targetPath, ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
-                    Utils.deleteRecursive(scpRoot);
-
-                    Path localDir = assertHierarchyTargetFolderExists(scpRoot.resolve("local"));
-                    Path localOutFile = localDir.resolve(getCurrentTestName() + "-1.txt");
-                    writeFile(localOutFile, data);
-
-                    Path remoteDir = scpRoot.resolve("remote");
-                    Path remoteOutFile = remoteDir.resolve(localOutFile.getFileName());
-                    assertFalse("Remote folder already exists: " + remoteDir, Files.exists(remoteDir));
-                    
-                    String localOutPath = localOutFile.toString();
-                    String remoteOutPath = Utils.resolveRelativeRemotePath(parentPath, remoteOutFile);
-                    try {
-                        scp.upload(localOutPath, remoteOutPath);
-                        fail("Expected IOException for 1st time " + remoteOutPath);
-                    } catch(IOException e) {
-                        // ok
-                    }
-                    
-                    Files.createDirectories(remoteDir);
+                assertFalse("Remote folder already exists: " + remoteDir, Files.exists(remoteDir));
+                
+                String localOutPath = localOutFile.toString();
+                String remoteOutPath = Utils.resolveRelativeRemotePath(parentPath, remoteOutFile);
+                try {
                     scp.upload(localOutPath, remoteOutPath);
-                    assertFileLength(remoteOutFile, data.length(), 5000);
-
-                    Path secondLocal = localDir.resolve(localOutFile.getFileName());
-                    scp.download(remoteOutPath, Utils.resolveRelativeRemotePath(parentPath, secondLocal));
-                    assertFileLength(secondLocal, data.length(), 5000);
-                    
-                    Path localPath = localDir.resolve(getCurrentTestName() + "-path.txt");
-                    scp.download(remoteOutPath, Utils.resolveRelativeRemotePath(parentPath, localPath));
-                    assertFileLength(localPath, data.length(), 5000);
+                    fail("Expected IOException for 1st time " + remoteOutPath);
+                } catch(IOException e) {
+                    // ok
                 }
+                
+                assertHierarchyTargetFolderExists(remoteDir);
+                scp.upload(localOutPath, remoteOutPath);
+                assertFileLength(remoteOutFile, data.length(), TimeUnit.SECONDS.toMillis(5L));
+
+                Path secondLocal = localDir.resolve(localOutFile.getFileName());
+                scp.download(remoteOutPath, Utils.resolveRelativeRemotePath(parentPath, secondLocal));
+                assertFileLength(secondLocal, data.length(), TimeUnit.SECONDS.toMillis(5L));
+                
+                Path localPath = localDir.resolve("file-path.txt");
+                scp.download(remoteOutPath, Utils.resolveRelativeRemotePath(parentPath, localPath));
+                assertFileLength(localPath, data.length(), TimeUnit.SECONDS.toMillis(5L));
             } finally {
                 client.stop();
             }
@@ -348,78 +406,76 @@ public class ScpTest extends BaseTestSupport {
         try (SshClient client = SshClient.setUpDefaultClient()) {
             client.start();
 
-            try {
-                try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
-                    session.addPasswordIdentity(getCurrentTestName());
-                    session.auth().verify(5L, TimeUnit.SECONDS);
+            try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+                session.addPasswordIdentity(getCurrentTestName());
+                session.auth().verify(5L, TimeUnit.SECONDS);
 
-                    ScpClient scp = createScpClient(session);
-                    Path targetPath = detectTargetFolder().toPath();
-                    Path parentPath = targetPath.getParent();
-                    Path scpRoot = Utils.resolve(targetPath, ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
-                    Utils.deleteRecursive(scpRoot);
+                ScpClient scp = createScpClient(session);
+                Path targetPath = detectTargetFolder().toPath();
+                Path parentPath = targetPath.getParent();
+                Path scpRoot = Utils.resolve(targetPath, ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
+                Utils.deleteRecursive(scpRoot);
 
-                    Path localDir = assertHierarchyTargetFolderExists(scpRoot.resolve("local"));
-                    Path local1 = localDir.resolve(getCurrentTestName() + "-1.txt");
-                    byte[] data = writeFile(local1, getCurrentTestName() + "\n");
+                Path localDir = assertHierarchyTargetFolderExists(scpRoot.resolve("local"));
+                Path local1 = localDir.resolve("file-1.txt");
+                byte[] data = writeFile(local1, getClass().getName() + "#" + getCurrentTestName() + System.getProperty("line.separator"));
 
-                    Path local2 = localDir.resolve(getCurrentTestName() + "-2.txt");
-                    Files.write(local2, data);
+                Path local2 = localDir.resolve("file-2.txt");
+                Files.write(local2, data);
 
-                    Path remoteDir = assertHierarchyTargetFolderExists(scpRoot.resolve("remote"));
-                    Path remote1 = remoteDir.resolve(local1.getFileName());
-                    String remote1Path = Utils.resolveRelativeRemotePath(parentPath, remote1);
-                    String[] locals = { local1.toString(), local2.toString() };
-                    try {
-                        scp.upload(locals, remote1Path);
-                        fail("Unexpected upload success to missing remote file: " + remote1Path);
-                    } catch (IOException e) {
-                        // Ok
-                    }
-                    
-                    Files.write(remote1, data);
-                    try {
-                        scp.upload(locals, remote1Path);
-                        fail("Unexpected upload success to existing remote file: " + remote1Path);
-                    } catch (IOException e) {
-                        // Ok
-                    }
-
-                    Path remoteSubDir = assertHierarchyTargetFolderExists(remoteDir.resolve("dir"));
-                    scp.upload(locals, Utils.resolveRelativeRemotePath(parentPath, remoteSubDir));
-                    
-                    Path remoteSub1 = remoteSubDir.resolve(local1.getFileName());
-                    assertFileLength(remoteSub1, data.length, 5000);
-
-                    Path remoteSub2 = remoteSubDir.resolve(local2.getFileName());
-                    assertFileLength(remoteSub2, data.length, 5000);
-
-                    String[] remotes = {
-                            Utils.resolveRelativeRemotePath(parentPath, remoteSub1),
-                            Utils.resolveRelativeRemotePath(parentPath, remoteSub2),
-                        };
-
-                    try {
-                        scp.download(remotes, Utils.resolveRelativeRemotePath(parentPath, local1));
-                        fail("Unexpected download success to existing local file: " + local1);
-                    } catch (IOException e) {
-                        // Ok
-                    }
-                    
-                    Path localSubDir = localDir.resolve("dir");
-                    try {
-                        scp.download(remotes, localSubDir);
-                        fail("Unexpected download success to non-existing folder: " + localSubDir);
-                    } catch (IOException e) {
-                        // Ok
-                    }
-
-                    Files.createDirectories(localSubDir);
-                    scp.download(remotes, localSubDir);
-
-                    assertFileLength(localSubDir.resolve(remoteSub1.getFileName()), data.length, 5000);
-                    assertFileLength(localSubDir.resolve(remoteSub2.getFileName()), data.length, 5000);
+                Path remoteDir = assertHierarchyTargetFolderExists(scpRoot.resolve("remote"));
+                Path remote1 = remoteDir.resolve(local1.getFileName());
+                String remote1Path = Utils.resolveRelativeRemotePath(parentPath, remote1);
+                String[] locals = { local1.toString(), local2.toString() };
+                try {
+                    scp.upload(locals, remote1Path);
+                    fail("Unexpected upload success to missing remote file: " + remote1Path);
+                } catch (IOException e) {
+                    // Ok
                 }
+                
+                Files.write(remote1, data);
+                try {
+                    scp.upload(locals, remote1Path);
+                    fail("Unexpected upload success to existing remote file: " + remote1Path);
+                } catch (IOException e) {
+                    // Ok
+                }
+
+                Path remoteSubDir = assertHierarchyTargetFolderExists(remoteDir.resolve("dir"));
+                scp.upload(locals, Utils.resolveRelativeRemotePath(parentPath, remoteSubDir));
+                
+                Path remoteSub1 = remoteSubDir.resolve(local1.getFileName());
+                assertFileLength(remoteSub1, data.length, TimeUnit.SECONDS.toMillis(5L));
+
+                Path remoteSub2 = remoteSubDir.resolve(local2.getFileName());
+                assertFileLength(remoteSub2, data.length, TimeUnit.SECONDS.toMillis(5L));
+
+                String[] remotes = {
+                        Utils.resolveRelativeRemotePath(parentPath, remoteSub1),
+                        Utils.resolveRelativeRemotePath(parentPath, remoteSub2),
+                    };
+
+                try {
+                    scp.download(remotes, Utils.resolveRelativeRemotePath(parentPath, local1));
+                    fail("Unexpected download success to existing local file: " + local1);
+                } catch (IOException e) {
+                    // Ok
+                }
+                
+                Path localSubDir = localDir.resolve("dir");
+                try {
+                    scp.download(remotes, localSubDir);
+                    fail("Unexpected download success to non-existing folder: " + localSubDir);
+                } catch (IOException e) {
+                    // Ok
+                }
+
+                assertHierarchyTargetFolderExists(localSubDir);
+                scp.download(remotes, localSubDir);
+
+                assertFileLength(localSubDir.resolve(remoteSub1.getFileName()), data.length, TimeUnit.SECONDS.toMillis(5L));
+                assertFileLength(localSubDir.resolve(remoteSub2.getFileName()), data.length, TimeUnit.SECONDS.toMillis(5L));
             } finally {
                 client.stop();
             }
@@ -443,23 +499,23 @@ public class ScpTest extends BaseTestSupport {
 
                 Path localDir = scpRoot.resolve("local");
                 Path localSubDir = assertHierarchyTargetFolderExists(localDir.resolve("dir"));
-                Path localSub1 = localSubDir.resolve(getCurrentTestName() + "-1.txt");
-                byte[] data = writeFile(localSub1, getCurrentTestName() + "\n");
-                Path localSub2 = localSubDir.resolve(getCurrentTestName() + "-2.txt");
+                Path localSub1 = localSubDir.resolve("file-1.txt");
+                byte[] data = writeFile(localSub1, getClass().getName() + "#" + getCurrentTestName() + System.getProperty("line.separator"));
+                Path localSub2 = localSubDir.resolve("file-2.txt");
                 Files.write(localSub2, data);
 
                 Path remoteDir = assertHierarchyTargetFolderExists(scpRoot.resolve("remote"));
                 scp.upload(localSubDir, Utils.resolveRelativeRemotePath(parentPath, remoteDir), ScpClient.Option.Recursive);
                 
                 Path remoteSubDir = remoteDir.resolve(localSubDir.getFileName());
-                assertFileLength(remoteSubDir.resolve(localSub1.getFileName()), data.length, 5000);
-                assertFileLength(remoteSubDir.resolve(localSub2.getFileName()), data.length, 5000);
+                assertFileLength(remoteSubDir.resolve(localSub1.getFileName()), data.length, TimeUnit.SECONDS.toMillis(5L));
+                assertFileLength(remoteSubDir.resolve(localSub2.getFileName()), data.length, TimeUnit.SECONDS.toMillis(5L));
 
                 Utils.deleteRecursive(localSubDir);
 
                 scp.download(Utils.resolveRelativeRemotePath(parentPath, remoteSubDir), localDir, ScpClient.Option.Recursive);
-                assertFileLength(localSub1, data.length, 5000);
-                assertFileLength(localSub2, data.length, 5000);
+                assertFileLength(localSub1, data.length, TimeUnit.SECONDS.toMillis(5L));
+                assertFileLength(localSub2, data.length, TimeUnit.SECONDS.toMillis(5L));
             } finally {
                 client.stop();
             }
@@ -482,22 +538,22 @@ public class ScpTest extends BaseTestSupport {
                 Utils.deleteRecursive(scpRoot);
 
                 Path localDir = assertHierarchyTargetFolderExists(scpRoot.resolve("local"));
-                Path local1 = localDir.resolve(getCurrentTestName() + "-1.txt");
-                byte[] data = writeFile(local1, getCurrentTestName() + "\n");
-                Path local2 = localDir.resolve(getCurrentTestName() + "-2.txt");
+                Path local1 = localDir.resolve("file-1.txt");
+                byte[] data = writeFile(local1, getClass().getName() + "#" + getCurrentTestName() + System.getProperty("line.separator"));
+                Path local2 = localDir.resolve("file-2.txt");
                 Files.write(local2, data);
 
                 Path remoteDir = assertHierarchyTargetFolderExists(scpRoot.resolve("remote"));
                 String remotePath = Utils.resolveRelativeRemotePath(parentPath, remoteDir);
                 scp.upload(localDir.toString() + File.separator + "*", remotePath);
-                assertFileLength(remoteDir.resolve(local1.getFileName()), data.length, 5000);
-                assertFileLength(remoteDir.resolve(local2.getFileName()), data.length, 5000);
+                assertFileLength(remoteDir.resolve(local1.getFileName()), data.length, TimeUnit.SECONDS.toMillis(5L));
+                assertFileLength(remoteDir.resolve(local2.getFileName()), data.length, TimeUnit.SECONDS.toMillis(5L));
 
                 Files.delete(local1);
                 Files.delete(local2);
                 scp.download(remotePath + "/*", localDir);
-                assertFileLength(local1, data.length, 5000);
-                assertFileLength(local2, data.length, 5000);
+                assertFileLength(local1, data.length, TimeUnit.SECONDS.toMillis(5L));
+                assertFileLength(local2, data.length, TimeUnit.SECONDS.toMillis(5L));
             } finally {
                 client.stop();
             }
@@ -521,30 +577,30 @@ public class ScpTest extends BaseTestSupport {
 
                 Path localDir = scpRoot.resolve("local");
                 Path localSubDir = assertHierarchyTargetFolderExists(localDir.resolve("dir"));
-                Path local1 = localDir.resolve(getCurrentTestName() + "-1.txt");
-                byte[] data = writeFile(local1, getCurrentTestName() + "\n");
-                Path localSub2 = localSubDir.resolve(getCurrentTestName() + "-2.txt");
+                Path local1 = localDir.resolve("file-1.txt");
+                byte[] data = writeFile(local1, getClass().getName() + "#" + getCurrentTestName() + System.getProperty("line.separator"));
+                Path localSub2 = localSubDir.resolve("file-2.txt");
                 Files.write(localSub2, data);
 
                 Path remoteDir = assertHierarchyTargetFolderExists(scpRoot.resolve("remote"));
                 String remotePath = Utils.resolveRelativeRemotePath(parentPath, remoteDir);
                 scp.upload(localDir.toString() + File.separator + "*", remotePath, ScpClient.Option.Recursive);
-                assertFileLength(remoteDir.resolve(local1.getFileName()), data.length, 5000);
+                assertFileLength(remoteDir.resolve(local1.getFileName()), data.length, TimeUnit.SECONDS.toMillis(5L));
 
                 Path remoteSubDir = remoteDir.resolve(localSubDir.getFileName());
-                assertFileLength(remoteSubDir.resolve(localSub2.getFileName()), data.length, 5000);
+                assertFileLength(remoteSubDir.resolve(localSub2.getFileName()), data.length, TimeUnit.SECONDS.toMillis(5L));
 
                 Files.delete(local1);
                 Utils.deleteRecursive(localSubDir);
 
                 scp.download(remotePath + "/*", localDir);
-                assertFileLength(local1, data.length, 5000);
+                assertFileLength(local1, data.length, TimeUnit.SECONDS.toMillis(5L));
                 assertFalse("Unexpected recursive local file: " + localSub2, Files.exists(localSub2));
 
                 Files.delete(local1);
                 scp.download(remotePath + "/*", localDir, ScpClient.Option.Recursive);
-                assertFileLength(local1, data.length, 5000);
-                assertFileLength(localSub2, data.length, 5000);
+                assertFileLength(local1, data.length, TimeUnit.SECONDS.toMillis(5L));
+                assertFileLength(localSub2, data.length, TimeUnit.SECONDS.toMillis(5L));
             } finally {
                 client.stop();
             }
@@ -570,14 +626,14 @@ public class ScpTest extends BaseTestSupport {
                 Path localSubDir = assertHierarchyTargetFolderExists(localDir.resolve("dir"));
                 // convert everything to seconds since this is the SCP timestamps granularity
                 long lastMod = TimeUnit.MILLISECONDS.toSeconds(Files.getLastModifiedTime(localSubDir).toMillis() - TimeUnit.DAYS.toMillis(1));
-                Path local1 = localDir.resolve(getCurrentTestName() + "-1.txt");
-                byte[] data = writeFile(local1, getCurrentTestName() + "\n");
+                Path local1 = localDir.resolve("file-1.txt");
+                byte[] data = writeFile(local1, getClass().getName() + "#" + getCurrentTestName() + System.getProperty("line.separator"));
                 File lclFile1 = local1.toFile();
                 lclFile1.setLastModified(lastMod);
                 lclFile1.setExecutable(true, true);
                 lclFile1.setWritable(false, false);
 
-                Path localSub2 = localSubDir.resolve(getCurrentTestName() + "-2.txt");
+                Path localSub2 = localSubDir.resolve("file-2.txt");
                 Files.write(localSub2, data);
                 File lclSubFile2 = localSub2.toFile();
                 lclSubFile2.setLastModified(lastMod);
@@ -587,25 +643,25 @@ public class ScpTest extends BaseTestSupport {
                 scp.upload(localDir.toString() + File.separator + "*", remotePath, ScpClient.Option.Recursive, ScpClient.Option.PreserveAttributes);
 
                 Path remote1 = remoteDir.resolve(local1.getFileName());
-                assertFileLength(remote1, data.length, 5000);
+                assertFileLength(remote1, data.length, TimeUnit.SECONDS.toMillis(5L));
                 
                 File remFile1 = remote1.toFile();
                 assertLastModifiedTimeEquals(remFile1, lastMod);
 
                 Path remoteSubDir = remoteDir.resolve(localSubDir.getFileName());
                 Path remoteSub2 = remoteSubDir.resolve(localSub2.getFileName());
-                assertFileLength(remoteSub2, data.length, 5000);
+                assertFileLength(remoteSub2, data.length, TimeUnit.SECONDS.toMillis(5L));
 
                 File remSubFile2 = remoteSub2.toFile();
                 assertLastModifiedTimeEquals(remSubFile2, lastMod);
 
                 Utils.deleteRecursive(localDir);
-                Files.createDirectories(localDir);
+                assertHierarchyTargetFolderExists(localDir);
 
                 scp.download(remotePath + "/*", localDir, ScpClient.Option.Recursive, ScpClient.Option.PreserveAttributes);
-                assertFileLength(local1, data.length, 5000);
+                assertFileLength(local1, data.length, TimeUnit.SECONDS.toMillis(5L));
                 assertLastModifiedTimeEquals(lclFile1, lastMod);
-                assertFileLength(localSub2, data.length, 5000);
+                assertFileLength(localSub2, data.length, TimeUnit.SECONDS.toMillis(5L));
                 assertLastModifiedTimeEquals(lclSubFile2, lastMod);
             } finally {
                 client.stop();
@@ -629,7 +685,7 @@ public class ScpTest extends BaseTestSupport {
                 Utils.deleteRecursive(scpRoot);
 
                 Path remoteDir = assertHierarchyTargetFolderExists(scpRoot.resolve("remote"));
-                Path remoteFile = remoteDir.resolve(getCurrentTestName() + ".txt");
+                Path remoteFile = remoteDir.resolve("file.txt");
                 String remotePath = Utils.resolveRelativeRemotePath(parentPath, remoteFile);
                 byte[] data = (getClass().getName() + "#" + getCurrentTestName()).getBytes(StandardCharsets.UTF_8);
                 scp.upload(data, remotePath, EnumSet.allOf(PosixFilePermission.class), null);
@@ -687,12 +743,12 @@ public class ScpTest extends BaseTestSupport {
             target.delete();
             assertFalse(target.exists());
             sendFile(unixPath, fileName, data);
-            assertFileLength(target, data.length(), 5000);
+            assertFileLength(target, data.length(), TimeUnit.SECONDS.toMillis(5L));
     
             target.delete();
             assertFalse(target.exists());
             sendFile(unixDir, fileName, data);
-            assertFileLength(target, data.length(), 5000);
+            assertFileLength(target, data.length(), TimeUnit.SECONDS.toMillis(5L));
     
             sendFileError("target", ScpHelper.SCP_COMMAND_PREFIX, data);
     
@@ -705,7 +761,7 @@ public class ScpTest extends BaseTestSupport {
             root.delete();
     
             sendDir("target", ScpHelper.SCP_COMMAND_PREFIX, fileName, data);
-            assertFileLength(target, data.length(), 5000);
+            assertFileLength(target, data.length(), TimeUnit.SECONDS.toMillis(5L));
         } finally {
             session.disconnect();
         }
@@ -721,7 +777,7 @@ public class ScpTest extends BaseTestSupport {
         byte[] expected = (getClass().getName() + "#" + getCurrentTestName()).getBytes(StandardCharsets.UTF_8);
         Path remoteDir = assertHierarchyTargetFolderExists(scpRoot.resolve("remote"));
         String remotePath = Utils.resolveRelativeRemotePath(parentPath, remoteDir);
-        String fileName = getCurrentTestName() + ".txt";
+        String fileName = "file.txt";
         Path remoteFile = remoteDir.resolve(fileName);
         String mode = ScpHelper.getOctalPermissions(EnumSet.of(
                     PosixFilePermission.OTHERS_READ, PosixFilePermission.OTHERS_WRITE,

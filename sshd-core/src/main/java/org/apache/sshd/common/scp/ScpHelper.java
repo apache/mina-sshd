@@ -46,6 +46,7 @@ import org.apache.sshd.common.file.util.MockPath;
 import org.apache.sshd.common.scp.ScpTransferEventListener.FileOperation;
 import org.apache.sshd.common.util.DirectoryScanner;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.SelectorUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.LimitInputStream;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
@@ -473,7 +474,7 @@ public class ScpHelper extends AbstractLoggingBean {
         }
     }
 
-    public Path resolveLocalPath(String basedir, String subpath) {
+    public Path resolveLocalPath(String basedir, String subpath) throws IOException {
         if (GenericUtils.isEmpty(basedir)) {
             return resolveLocalPath(subpath);
         } else {
@@ -481,8 +482,11 @@ public class ScpHelper extends AbstractLoggingBean {
         }
     }
 
-    public Path resolveLocalPath(String path) {
-        String localPath = (path == null) ? null : path.replace('/', File.separatorChar);
+    public Path resolveLocalPath(String remotePath) throws IOException {
+        // In case double slashes and other patterns are used 
+        String path = SelectorUtils.normalizePath(remotePath, "/");
+        String localPath = SelectorUtils.translateToLocalPath(path);
+
         return fileSystem.getPath(localPath);
     }
 

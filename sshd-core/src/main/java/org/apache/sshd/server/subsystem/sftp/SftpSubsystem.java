@@ -40,6 +40,7 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystemLoopException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.NotDirectoryException;
@@ -88,11 +89,12 @@ import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.file.FileSystemAware;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
-import org.apache.sshd.common.subsystem.sftp.extensions.openssh.FsyncExtensionParser;
 import org.apache.sshd.common.subsystem.sftp.extensions.openssh.AbstractOpenSSHExtensionParser.OpenSSHExtension;
+import org.apache.sshd.common.subsystem.sftp.extensions.openssh.FsyncExtensionParser;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Int2IntFunction;
 import org.apache.sshd.common.util.OsUtils;
+import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.SelectorUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -1531,7 +1533,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             log.debug("Received SSH_FXP_STAT (path={}, flags=0x{})", path, Integer.toHexString(flags));
         }
         Path p = resolveFile(path);
-        return resolveFileAttributes(p, flags, true);
+        return resolveFileAttributes(p, flags, IoUtils.getLinkOptions(false));
     }
 
     protected void doRealPath(Buffer buffer, int id) throws IOException {
@@ -1543,12 +1545,21 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         }
 
         Map<String,?> attrs = Collections.<String, Object>emptyMap();
-        Path p;
+        Pair<Path,Boolean> result;
         try {
+            LinkOption[] options = IoUtils.getLinkOptions(false);
             if (version < SFTP_V6) {
-                p = doRealPathV6(id, path);
+                /*
+                 * See http://www.openssh.com/txt/draft-ietf-secsh-filexfer-02.txt:
+                 * 
+                 *      The SSH_FXP_REALPATH request can be used to have the server
+                 *      canonicalize any given path name to an absolute path.
+                 * 
+                 * See also SSHD-294
+                 */
+                result = doRealPathV345(id, path, options);
             } else {
-                // Read control byte
+                // see https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13 section 8.9
                 int control = 0;
                 if (buffer.available() > 0) {
                     control = buffer.getUByte();
@@ -1559,18 +1570,35 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                     extraPaths.add(buffer.getString());
                 }
 
-                p = doRealPathV345(id, path, extraPaths);
+                result = doRealPathV6(id, path, extraPaths, options);
+
+                Path p = result.getFirst();
+                Boolean status = result.getSecond();
                 if (control == SSH_FXP_REALPATH_STAT_IF) {
-                    try {
-                        attrs = getAttributes(p, false);
-                    } catch (IOException e) {
+                    if (status == null) {
+                        attrs = handleUnknownStatusFileAttributes(p, SSH_FILEXFER_ATTR_ALL, options);
+                    } else if (status.booleanValue()) {
+                        try {
+                            attrs = getAttributes(p, IoUtils.getLinkOptions(false));
+                        } catch (IOException e) {
+                            if (log.isDebugEnabled()) {
+                                log.debug("Failed ({}) to retrieve attributes of {}: {}",
+                                          e.getClass().getSimpleName(), p, e.getMessage());
+                            }
+                        }
+                    } else {
                         if (log.isDebugEnabled()) {
-                            log.debug("Failed ({}) to retrieve attributes of {}: {}",
-                                      e.getClass().getSimpleName(), p, e.getMessage());
+                            log.debug("Dummy attributes for non-existing file: " + p);
                         }
                     }
                 } else if (control == SSH_FXP_REALPATH_STAT_ALWAYS) {
-                    attrs = getAttributes(p, false);
+                    if (status == null) {
+                        attrs = handleUnknownStatusFileAttributes(p, SSH_FILEXFER_ATTR_ALL, options);
+                    } else if (status.booleanValue()) {
+                        attrs = getAttributes(p, options);
+                    } else {
+                        throw new FileNotFoundException(p.toString());
+                    }
                 }
             }
         } catch (IOException | RuntimeException e) {
@@ -1578,52 +1606,46 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             return;
         }
 
-        sendPath(BufferUtils.clear(buffer), id, p, attrs);
+        sendPath(BufferUtils.clear(buffer), id, result.getFirst(), attrs);
     }
 
-    protected Path doRealPathV345(int id, String path, Collection<String> extraPaths) throws IOException {
+    protected Pair<Path,Boolean> doRealPathV6(int id, String path, Collection<String> extraPaths, LinkOption ... options) throws IOException {
         Path p = resolveFile(path);
-        
-        if (GenericUtils.size(extraPaths) > 0) {
+        int numExtra = GenericUtils.size(extraPaths); 
+        if (numExtra > 0) {
+            StringBuilder sb = new StringBuilder(GenericUtils.length(path) + numExtra * 8);
+            sb.append(path);
+
             for (String p2 : extraPaths) {
                 p = p.resolve(p2);
+                sb.append('/').append(p2);
             }
+            
+            path = sb.toString();
         }
 
-        p = p.toAbsolutePath();
-        return p.normalize();
+        return validateRealPath(id, path, p, options);
     }
 
-    protected Path doRealPathV6(int id, String path) throws IOException {
-        Path f = resolveFile(path);
+    protected Pair<Path,Boolean> doRealPathV345(int id, String path, LinkOption ... options) throws IOException {
+        return validateRealPath(id, path, resolveFile(path), options);
+    }
+
+    /**
+     * @param id The request identifier
+     * @param path The original path
+     * @param f The resolve {@link Path}
+     * @param options The {@link LinkOption}s to use to verify file existence and access
+     * @return A {@link Pair} whose left-hand is the <U>absolute <B>normalized</B></U>
+     * {@link Path} and right-hand is a {@link Boolean} indicating its status
+     * @throws IOException If failed to validate the file
+     * @see IoUtils#checkFileExists(Path, LinkOption...)
+     */
+    protected Pair<Path,Boolean> validateRealPath(int id, String path, Path f, LinkOption ... options) throws IOException {
         Path abs = f.toAbsolutePath();
         Path p = abs.normalize();
-        Boolean status = IoUtils.checkFileExists(p, IoUtils.EMPTY_LINK_OPTIONS);
-        if (status == null) {
-            return handleUnknownRealPathStatus(path, abs, p);
-        } else if (status.booleanValue()) {
-            return p;
-        } else {
-            throw new FileNotFoundException(path);
-        }
-    }
-
-    protected Path handleUnknownRealPathStatus(String path, Path absolute, Path normalized) throws IOException {
-        switch(unsupportedAttributePolicy) {
-            case Ignore:
-                break;
-            case Warn:
-                log.warn("handleUnknownRealPathStatus(" + path + ") abs=" + absolute + ", normal=" + normalized);
-                break;
-            case ThrowException:
-                throw new AccessDeniedException("Cannot determine existence status of real path: " + normalized);
-            
-            default:
-                log.warn("handleUnknownRealPathStatus(" + path + ") abs=" + absolute + ", normal=" + normalized
-                       + " - unknown policy: " + unsupportedAttributePolicy);
-        }
-        
-        return absolute;
+        Boolean status = IoUtils.checkFileExists(p, options);
+        return new Pair<Path, Boolean>(p, status);
     }
 
     protected void doRemoveDirectory(Buffer buffer, int id) throws IOException {
@@ -1727,9 +1749,9 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                 throw new EOFException("Directory reading is done");
             }
 
-            Path            file = dh.getFile();
-            LinkOption[]    options = IoUtils.getLinkOptions(false);
-            Boolean         status = IoUtils.checkFileExists(file, options);
+            Path file = dh.getFile();
+            LinkOption[] options = IoUtils.getLinkOptions(false);
+            Boolean status = IoUtils.checkFileExists(file, options);
             if (status == null) {
                 throw new AccessDeniedException("Cannot determine existence of read-dir for " + file);
             }
@@ -1755,8 +1777,8 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
 
                 int count = doReadDir(id, dh, reply, FactoryManagerUtils.getIntProperty(session, MAX_PACKET_LENGTH_PROP, DEFAULT_MAX_PACKET_LENGTH));
                 BufferUtils.updateLengthPlaceholder(reply, lenPos, count);
-                if (log.isTraceEnabled()) {
-                    log.trace("doReadDir({})[{}] - sent {} entries", handle, h, Integer.valueOf(count));
+                if (log.isDebugEnabled()) {
+                    log.debug("doReadDir({})[{}] - sent {} entries", handle, h, Integer.valueOf(count));
                 }
                 if ((!dh.isSendDot()) && (!dh.isSendDotDot()) && (!dh.hasNext())) {
                     // if no more files to send
@@ -1879,7 +1901,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             log.debug("Received SSH_FXP_FSTAT (handle={}[{}], flags=0x{})", handle, h, Integer.toHexString(flags));
         }
         
-        return resolveFileAttributes(validateHandle(handle, h, Handle.class).getFile(), flags, true);
+        return resolveFileAttributes(validateHandle(handle, h, Handle.class).getFile(), flags, IoUtils.getLinkOptions(true));
     }
 
     protected void doLStat(Buffer buffer, int id) throws IOException {
@@ -1906,7 +1928,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             log.debug("Received SSH_FXP_LSTAT (path={}[{}], flags=0x{})", path, p, Integer.toHexString(flags));
         }
 
-        return resolveFileAttributes(p, flags, false);
+        return resolveFileAttributes(p, flags, IoUtils.getLinkOptions(false));
     }
 
     protected void doWrite(Buffer buffer, int id) throws IOException {
@@ -2389,16 +2411,17 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
      */
     protected int doReadDir(int id, DirectoryHandle dir, Buffer buffer, int maxSize) throws IOException {
         int nb = 0;
+        LinkOption[] options = IoUtils.getLinkOptions(false);
         while ((dir.isSendDot() || dir.isSendDotDot() || dir.hasNext()) && (buffer.wpos() < maxSize)) {
             if (dir.isSendDot()) {
-                writeDirEntry(id, dir, buffer, nb, dir.getFile(), ".");
+                writeDirEntry(id, dir, buffer, nb, dir.getFile(), ".", options);
                 dir.markDotSent();    // do not send it again
             } else if (dir.isSendDotDot()) {
-                writeDirEntry(id, dir, buffer, nb, dir.getFile().getParent(), "..");
+                writeDirEntry(id, dir, buffer, nb, dir.getFile().getParent(), "..", options);
                 dir.markDotDotSent(); // do not send it again
             } else {
                 Path f = dir.next();
-                writeDirEntry(id, dir, buffer, nb, f, getShortName(f));
+                writeDirEntry(id, dir, buffer, nb, f, getShortName(f), options);
             }
 
             nb++;
@@ -2414,34 +2437,36 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
      * @param index Zero-based index of the entry to be written
      * @param f The entry {@link Path}
      * @param shortName The entry short name
+     * @param options The {@link LinkOption}s to use for querying the entry-s attributes
      * @throws IOException If failed to generate the entry data
      */
-    protected void writeDirEntry(int id, DirectoryHandle dir, Buffer buffer, int index, Path f, String shortName) throws IOException {
+    protected void writeDirEntry(int id, DirectoryHandle dir, Buffer buffer, int index, Path f, String shortName, LinkOption ... options) throws IOException {
+        Map<String,?> attrs = resolveFileAttributes(f, SSH_FILEXFER_ATTR_ALL, options);
+
         buffer.putString(shortName);
         if (version == SFTP_V3) {
-            String  longName = getLongName(f);
+            String  longName = getLongName(f, options);
             buffer.putString(longName);
             if (log.isTraceEnabled()) {
-                log.trace("writeDirEntry(id=" + id + ")[" + index + "] - " + shortName + " [" + longName + "]");
+                log.trace("writeDirEntry(id=" + id + ")[" + index + "] - " + shortName + " [" + longName + "]: " + attrs);
             }
         } else {
             if (log.isTraceEnabled()) {
-                log.trace("writeDirEntry(id=" + id + ")[" + index + "] - " + shortName);
+                log.trace("writeDirEntry(id=" + id + ")[" + index + "] - " + shortName + ": " + attrs);
             }
         }
         
-        Map<String,?> attrs = resolveFileAttributes(f, SSH_FILEXFER_ATTR_ALL, false);
         writeAttrs(buffer, attrs);
     }
 
-    protected String getLongName(Path f) throws IOException {
-        return getLongName(f, true);
+    protected String getLongName(Path f, LinkOption ... options) throws IOException {
+        return getLongName(f, true, options);
     }
 
-    private String getLongName(Path f, boolean sendAttrs) throws IOException {
+    private String getLongName(Path f, boolean sendAttrs, LinkOption ... options) throws IOException {
         Map<String, Object> attributes;
         if (sendAttrs) {
-            attributes = getAttributes(f, false);
+            attributes = getAttributes(f, options);
         } else {
             attributes = Collections.emptyMap();
         }
@@ -2509,7 +2534,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         return sb.toString();
     }
 
-    protected String getShortName(Path f) {
+    protected String getShortName(Path f) throws IOException {
         if (OsUtils.isUNIX()) {
             Path    name=f.getFileName();
             if (name == null) {
@@ -2578,15 +2603,14 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         return pf;
     }
 
-    protected Map<String, Object> resolveFileAttributes(Path file, int flags, boolean followLinks) throws IOException {
-        LinkOption[] options = IoUtils.getLinkOptions(followLinks);
-        Boolean      status = IoUtils.checkFileExists(file, options);
+    protected Map<String, Object> resolveFileAttributes(Path file, int flags, LinkOption ... options) throws IOException {
+        Boolean status = IoUtils.checkFileExists(file, options);
         if (status == null) {
-            return handleUnknownStatusFileAttributes(file, flags, followLinks);
+            return handleUnknownStatusFileAttributes(file, flags, options);
         } else if (!status.booleanValue()) {
             throw new FileNotFoundException(file.toString());
         } else {
-            return getAttributes(file, flags, followLinks);
+            return getAttributes(file, flags, options);
         }
     }
 
@@ -2674,13 +2698,13 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         return (bool != null) && bool.booleanValue();
     }
 
-    protected Map<String, Object> getAttributes(Path file, boolean followLinks) throws IOException {
-        return getAttributes(file, SSH_FILEXFER_ATTR_ALL, followLinks);
+    protected Map<String, Object> getAttributes(Path file, LinkOption ... options) throws IOException {
+        return getAttributes(file, SSH_FILEXFER_ATTR_ALL, options);
     }
 
     public static final List<String>    DEFAULT_UNIX_VIEW=Collections.singletonList("unix:*");
 
-    protected Map<String, Object> handleUnknownStatusFileAttributes(Path file, int flags, boolean followLinks) throws IOException {
+    protected Map<String, Object> handleUnknownStatusFileAttributes(Path file, int flags, LinkOption ... options) throws IOException {
         switch(unsupportedAttributePolicy) {
             case Ignore:
                 break;
@@ -2693,13 +2717,12 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                 log.warn("handleUnknownStatusFileAttributes(" + file + ") unknown policy: " + unsupportedAttributePolicy);
         }
         
-        return getAttributes(file, flags, followLinks);
+        return getAttributes(file, flags, options);
     }
 
-    protected Map<String, Object> getAttributes(Path file, int flags, boolean followLinks) throws IOException {
+    protected Map<String, Object> getAttributes(Path file, int flags, LinkOption ... options) throws IOException {
         FileSystem          fs=file.getFileSystem();
         Collection<String>  supportedViews=fs.supportedFileAttributeViews();
-        LinkOption[]        opts=IoUtils.getLinkOptions(followLinks);
         Map<String,Object>  attrs=new HashMap<>();
         Collection<String>  views;
 
@@ -2715,7 +2738,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         }
 
         for (String v : views) {
-            Map<String, Object> ta=readFileAttributes(file, v, opts);
+            Map<String, Object> ta=readFileAttributes(file, v, options);
             attrs.putAll(ta);
         }
 
@@ -2728,15 +2751,15 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         return attrs;
     }
 
-    protected Map<String, Object> readFileAttributes(Path file, String view, LinkOption ... opts) throws IOException {
+    protected Map<String, Object> readFileAttributes(Path file, String view, LinkOption ... options) throws IOException {
         try {
-            return Files.readAttributes(file, view, opts);
+            return Files.readAttributes(file, view, options);
         } catch(IOException e) {
-            return handleReadFileAttributesException(file, view, opts, e);
+            return handleReadFileAttributesException(file, view, options, e);
         }
     }
 
-    protected Map<String, Object> handleReadFileAttributesException(Path file, String view, LinkOption[] opts, IOException e) throws IOException {
+    protected Map<String, Object> handleReadFileAttributesException(Path file, String view, LinkOption[] options, IOException e) throws IOException {
         switch(unsupportedAttributePolicy) {
             case Ignore:
                 break;
@@ -3167,6 +3190,8 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             return SSH_FX_OP_UNSUPPORTED;
         } else if (e instanceof IllegalArgumentException) {
             return SSH_FX_INVALID_PARAMETER;
+        } else if (e instanceof InvalidPathException) {
+            return SSH_FX_INVALID_FILENAME;
         } else {
             return SSH_FX_FAILURE;
         }
@@ -3239,23 +3264,29 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         }
     }
 
-    private Path resolveFile(String path) {
-        //in case we are running on Windows
+    protected Path resolveFile(String remotePath) throws IOException, InvalidPathException {
+        // In case double slashes and other patterns are used 
+        String path = SelectorUtils.normalizePath(remotePath, "/");
         String localPath = SelectorUtils.translateToLocalPath(path);
+
+        // In case we are running on Windows
         return defaultDir.resolve(localPath);
     }
 
-    private final static String[] MONTHS = { "Jan", "Feb", "Mar", "Apr", "May",
-            "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
+    public static final List<String> MONTHS =
+        Collections.unmodifiableList(
+                Arrays.asList(
+                        "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+                    ));
 
     /**
      * Get unix style date string.
      */
-    private static String getUnixDate(FileTime time) {
+    public static String getUnixDate(FileTime time) {
         return getUnixDate(time != null ? time.toMillis() : -1);
     }
 
-    private static String getUnixDate(long millis) {
+    public static String getUnixDate(long millis) {
         if (millis < 0) {
             return "------------";
         }
@@ -3265,7 +3296,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         cal.setTimeInMillis(millis);
 
         // month
-        sb.append(MONTHS[cal.get(Calendar.MONTH)]);
+        sb.append(MONTHS.get(cal.get(Calendar.MONTH)));
         sb.append(' ');
 
         // day

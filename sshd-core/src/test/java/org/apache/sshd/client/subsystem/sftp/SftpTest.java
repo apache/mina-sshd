@@ -113,7 +113,108 @@ public class SftpTest extends AbstractSftpClientTestSupport {
     }
 
     @Test
+    public void testNormalizeRemoteRootValues() throws Exception {
+        try(SshClient client = SshClient.setUpDefaultClient()) {
+            client.start();
+
+            try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+                session.addPasswordIdentity(getCurrentTestName());
+                session.auth().verify(5L, TimeUnit.SECONDS);
+
+                try(SftpClient sftp = session.createSftpClient()) {
+                    StringBuilder sb = new StringBuilder(Long.SIZE + 1);
+                    String expected = sftp.canonicalPath("/");
+                    for (int i = 0; i < Long.SIZE; i++) {
+                        if (sb.length() > 0) {
+                            sb.setLength(0);
+                        }
+                        
+                        for (int j = 1; j <= i; j++) {
+                            sb.append('/');
+                        }
+ 
+                        String remotePath = sb.toString();
+                        String actual = sftp.canonicalPath(remotePath);
+                        assertEquals("Mismatched roots for " + remotePath.length() + " slashes", expected, actual);
+                    }
+                }
+            } finally {
+                client.stop();
+            }
+        }
+    }
+
+    @Test
+    public void testNormalizeRemotePathsValues() throws Exception {
+        Path targetPath = detectTargetFolder().toPath();
+        Path parentPath = targetPath.getParent();
+        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+
+        Path testFile = assertHierarchyTargetFolderExists(lclSftp).resolve("file.txt");
+
+        String file = Utils.resolveRelativeRemotePath(parentPath, testFile);
+        String[] comps = GenericUtils.split(file, '/');
+        try(SshClient client = SshClient.setUpDefaultClient()) {
+            client.start();
+            
+            Factory<? extends Random> factory = client.getRandomFactory();
+            Random rnd = factory.create();
+            try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+                session.addPasswordIdentity(getCurrentTestName());
+                session.auth().verify(5L, TimeUnit.SECONDS);
+
+                try(SftpClient sftp = session.createSftpClient()) {
+                    StringBuilder sb = new StringBuilder(file.length() + comps.length);
+                    String expected = sftp.canonicalPath(file);
+                    for (int i = 0; i < file.length(); i++) {
+                        if (sb.length() > 0) {
+                            sb.setLength(0);
+                        }
+                        
+                        sb.append(comps[0]);
+                        for (int j = 1; j < comps.length; j++) {
+                            String name = comps[j];
+                            slashify(sb, rnd);
+                            sb.append(name);
+                        }
+                        slashify(sb, rnd);
+                        
+                        if (rnd.random(Byte.SIZE) < (Byte.SIZE / 2)) {
+                            sb.append('.');
+                        }
+
+                        String remotePath = sb.toString();
+                        String actual = sftp.canonicalPath(remotePath);
+                        assertEquals("Mismatched canonical value for " + remotePath, expected, actual);
+                    }
+                }
+            } finally {
+                client.stop();
+            }
+        }
+    }
+
+    private static int slashify(StringBuilder sb, Random rnd) {
+        int slashes = 1 /* at least one slash */ + rnd.random(Byte.SIZE);
+        for (int k=0; k < slashes; k++) {
+            sb.append('/');
+        }
+        
+        return slashes;
+    }
+
+    @Test
     public void testOpen() throws Exception {
+        Path targetPath = detectTargetFolder().toPath();
+        Path parentPath = targetPath.getParent();
+        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+        Path clientFolder = lclSftp.resolve("client");
+        Path testFile = clientFolder.resolve("file.txt");
+        String file = Utils.resolveRelativeRemotePath(parentPath, testFile);
+
+        File javaFile = testFile.toFile();
+        assertHierarchyTargetFolderExists(javaFile.getParentFile());
+
         try(SshClient client = SshClient.setUpDefaultClient()) {
             client.start();
             
@@ -121,15 +222,6 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                 session.addPasswordIdentity(getCurrentTestName());
                 session.auth().verify(5L, TimeUnit.SECONDS);
 
-                Path targetPath = detectTargetFolder().toPath();
-                Path parentPath = targetPath.getParent();
-                Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
-                Path clientFolder = lclSftp.resolve("client");
-                Path testFile = clientFolder.resolve(getCurrentTestName() + ".txt");
-                String file = Utils.resolveRelativeRemotePath(parentPath, testFile);
-
-                File javaFile = testFile.toFile();
-                assertHierarchyTargetFolderExists(javaFile.getParentFile());
                 javaFile.createNewFile();
                 javaFile.setWritable(false, false);
                 javaFile.setReadable(false, false);
@@ -249,10 +341,9 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                 Path targetPath = detectTargetFolder().toPath();
                 Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
                 Utils.deleteRecursive(lclSftp);
-                Files.createDirectories(lclSftp);
 
                 Path parentPath = targetPath.getParent();
-                Path clientFolder = lclSftp.resolve("client");
+                Path clientFolder = assertHierarchyTargetFolderExists(lclSftp).resolve("client");
                 String dir = Utils.resolveRelativeRemotePath(parentPath, clientFolder);
         
                 try(SftpClient sftp = session.createSftpClient()) {
@@ -349,9 +440,8 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         Path targetPath = detectTargetFolder().toPath();
         Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         Utils.deleteRecursive(lclSftp);
-        Files.createDirectories(lclSftp);
 
-        Path target = lclSftp.resolve(getCurrentTestName() + ".txt");
+        Path target = assertHierarchyTargetFolderExists(lclSftp).resolve("file.txt");
         String remotePath = Utils.resolveRelativeRemotePath(targetPath.getParent(), target);
 
         final int NUM_ITERATIONS=10;
@@ -376,9 +466,8 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         Path targetPath = detectTargetFolder().toPath();
         Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         Utils.deleteRecursive(lclSftp);
-        Files.createDirectories(lclSftp);
 
-        Path localPath = lclSftp.resolve(getCurrentTestName() + ".txt");
+        Path localPath = assertHierarchyTargetFolderExists(lclSftp).resolve("file.txt");
         String remotePath = Utils.resolveRelativeRemotePath(targetPath.getParent(), localPath);
         String data = getCurrentTestName();
         String extraData = "@" + getClass().getSimpleName();
@@ -425,35 +514,10 @@ public class SftpTest extends AbstractSftpClientTestSupport {
     }
 
     @Test
-    public void testRealPath() throws Exception {
-        ChannelSftp c = (ChannelSftp) session.openChannel(SftpConstants.SFTP_SUBSYSTEM_NAME);
-        c.connect();
-
-        try {
-            URI url = getClass().getClassLoader().getResource(SshClient.class.getName().replace('.', '/') + ".class").toURI();
-            URI base = new File(System.getProperty("user.dir")).getAbsoluteFile().toURI();
-            String path = new File(base.relativize(url).getPath()).getParent() + "/";
-            path = path.replace('\\', '/');
-            String real = c.realpath(path);
-            System.out.println(real);
-            try {
-                real = c.realpath(path + "/foobar");
-                System.out.println(real);
-                fail("Expected SftpException");
-            } catch (com.jcraft.jsch.SftpException e) {
-                // ok
-            }
-        } finally {
-            c.disconnect();
-        }
-    }
-
-    @Test
     public void testRename() throws Exception {
         Path targetPath = detectTargetFolder().toPath();
         Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         Utils.deleteRecursive(lclSftp);
-        Files.createDirectories(lclSftp);
 
         Path parentPath = targetPath.getParent();
         Path clientFolder = assertHierarchyTargetFolderExists(lclSftp.resolve("client"));
@@ -466,15 +530,15 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                 session.auth().verify(5L, TimeUnit.SECONDS);
         
                 try(SftpClient sftp = session.createSftpClient()) {
-                    Path file1 = clientFolder.resolve(getCurrentTestName() + "-1.txt");
+                    Path file1 = clientFolder.resolve("file-1.txt");
                     String file1Path = Utils.resolveRelativeRemotePath(parentPath, file1);
                     try (OutputStream os = sftp.write(file1Path, SftpClient.MIN_WRITE_BUFFER_SIZE)) {
                         os.write((getCurrentTestName() + "\n").getBytes(StandardCharsets.UTF_8));
                     }
 
-                    Path file2 = clientFolder.resolve(getCurrentTestName() + "-2.txt");
+                    Path file2 = clientFolder.resolve("file-2.txt");
                     String file2Path = Utils.resolveRelativeRemotePath(parentPath, file2);
-                    Path file3 = clientFolder.resolve(getCurrentTestName() + "-3.txt");
+                    Path file3 = clientFolder.resolve("file-3.txt");
                     String file3Path = Utils.resolveRelativeRemotePath(parentPath, file3);
                     try {
                         sftp.rename(file2Path, file3Path);
@@ -507,10 +571,9 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         Path targetPath = detectTargetFolder().toPath();
         Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         Utils.deleteRecursive(lclSftp);
-        Files.createDirectories(lclSftp);
 
         byte[] data = (getClass().getName() + "#" + getCurrentTestName()).getBytes(StandardCharsets.UTF_8);
-        Path srcFile = lclSftp.resolve("src.txt");
+        Path srcFile = assertHierarchyTargetFolderExists(lclSftp).resolve("src.txt");
         Files.write(srcFile, data, IoUtils.EMPTY_OPEN_OPTIONS);
 
         Path parentPath = targetPath.getParent();
@@ -661,12 +724,11 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         Path targetPath = detectTargetFolder().toPath();
         Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         Utils.deleteRecursive(lclSftp);
-        Files.createDirectories(lclSftp);
 
         Path parentPath = targetPath.getParent();
-        Path clientFolder = lclSftp.resolve("client");
+        Path clientFolder = assertHierarchyTargetFolderExists(lclSftp).resolve("client");
         String dir = Utils.resolveRelativeRemotePath(parentPath, clientFolder);
-        String file = dir + "/" + getCurrentTestName() + ".txt";
+        String file = dir + "/" + "file.txt";
 
         sftp.mkdir(dir);
         
@@ -759,10 +821,9 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         Path targetPath = detectTargetFolder().toPath();
         Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         Utils.deleteRecursive(lclSftp);
-        Files.createDirectories(lclSftp);
 
         Path parentPath = targetPath.getParent();
-        Path sourcePath = lclSftp.resolve(getCurrentTestName() + ".txt");
+        Path sourcePath = assertHierarchyTargetFolderExists(lclSftp).resolve("src.txt");
         String remSrcPath = Utils.resolveRelativeRemotePath(parentPath, sourcePath);
         Path linkPath = lclSftp.resolve("link-" + sourcePath.getFileName());
         String remLinkPath = Utils.resolveRelativeRemotePath(parentPath, linkPath);
