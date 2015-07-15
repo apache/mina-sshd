@@ -81,6 +81,10 @@ public interface SftpClient extends SubsystemClient {
             this.id = ValidateUtils.checkNotNullAndNotEmpty(id, "No handle ID", GenericUtils.EMPTY_OBJECT_ARRAY).clone();
         }
 
+        public int length() {
+            return id.length;
+        }
+
         /**
          * @return A <U>cloned</U> instance of the identifier in order to
          * avoid inadvertent modifications to the handle contents

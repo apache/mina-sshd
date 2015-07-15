@@ -23,6 +23,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.nio.channels.Channel;
 import java.util.Arrays;
 import java.util.Collections;
@@ -31,8 +33,11 @@ import java.util.TreeMap;
 
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.client.subsystem.sftp.extensions.openssh.OpenSSHStatExtensionInfo;
+import org.apache.sshd.client.subsystem.sftp.extensions.openssh.OpenSSHStatPathExtension;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.subsystem.sftp.extensions.ParserUtils;
+import org.apache.sshd.common.subsystem.sftp.extensions.openssh.StatVfsExtensionParser;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
@@ -160,7 +165,7 @@ public class SftpCommand implements Channel {
                                         public boolean executeCommand(String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr) throws Exception {
                                             String[] comps = GenericUtils.split(args, ' ');
                                             // ignore all flag
-                                            String pathArg = GenericUtils.isEmpty(comps) ? null : comps[comps.length - 1];
+                                            String pathArg = GenericUtils.isEmpty(comps) ? null : GenericUtils.trimToEmpty(comps[comps.length - 1]);
                                             String cwd = getCurrentRemoteDirectory();
                                             if (GenericUtils.isEmpty(pathArg) || (pathArg.charAt(0) == '-')) {
                                                 pathArg = cwd;
@@ -220,10 +225,41 @@ public class SftpCommand implements Channel {
                                             String[] comps = GenericUtils.split(args, ' ');
                                             ValidateUtils.checkTrue(GenericUtils.length(comps) == 2, "Invalid number of arguments: %s", args);
 
-                                            String oldPath = resolveRemotePath(comps[0]);
-                                            String newPath = resolveRemotePath(comps[1]);
+                                            String oldPath = resolveRemotePath(GenericUtils.trimToEmpty(comps[0]));
+                                            String newPath = resolveRemotePath(GenericUtils.trimToEmpty(comps[1]));
                                             SftpClient sftp = getClient();
                                             sftp.rename(oldPath, newPath);
+                                            return false;
+                                        }
+                                    },
+                                new CommandExecutor() {
+                                        @Override
+                                        public String getName() {
+                                            return StatVfsExtensionParser.NAME;
+                                        }
+    
+                                        @Override
+                                        public boolean executeCommand(String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr) throws Exception {
+                                            String[] comps = GenericUtils.split(args, ' ');
+                                            ValidateUtils.checkTrue(GenericUtils.length(comps) == 1, "Invalid number of arguments: %s", args);
+
+                                            SftpClient sftp = getClient();
+                                            OpenSSHStatPathExtension ext = sftp.getExtension(OpenSSHStatPathExtension.class);
+                                            ValidateUtils.checkTrue(ext.isSupported(), "Extension not supported by server: %s", ext.getName());
+
+                                            OpenSSHStatExtensionInfo info = ext.stat(GenericUtils.trimToEmpty(comps[0]));
+                                            Field[] fields = info.getClass().getFields();
+                                            for (Field f : fields) {
+                                                String name = f.getName();
+                                                int mod = f.getModifiers();
+                                                if (Modifier.isStatic(mod)) {
+                                                    continue;
+                                                }
+
+                                                Object value = f.get(info);
+                                                stdout.append('\t').append(name).append(": ").println(value);
+                                            }
+
                                             return false;
                                         }
                                     },

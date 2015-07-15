@@ -24,26 +24,20 @@ import java.util.Map;
 
 import org.apache.sshd.client.subsystem.sftp.RawSftpClient;
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
-import org.apache.sshd.client.subsystem.sftp.SftpClient.Handle;
-import org.apache.sshd.client.subsystem.sftp.extensions.impl.AbstractSftpClientExtension;
-import org.apache.sshd.client.subsystem.sftp.extensions.openssh.OpenSSHFsyncExtension;
-import org.apache.sshd.common.subsystem.sftp.extensions.openssh.FsyncExtensionParser;
-import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.client.subsystem.sftp.extensions.openssh.OpenSSHStatExtensionInfo;
+import org.apache.sshd.client.subsystem.sftp.extensions.openssh.OpenSSHStatPathExtension;
+import org.apache.sshd.common.subsystem.sftp.extensions.openssh.StatVfsExtensionParser;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class OpenSSHFsyncExtensionImpl extends AbstractSftpClientExtension implements OpenSSHFsyncExtension {
-    public OpenSSHFsyncExtensionImpl(SftpClient client, RawSftpClient raw, Map<String,byte[]> extensions) {
-        super(FsyncExtensionParser.NAME, client, raw, extensions);
+public class OpenSSHStatPathExtensionImpl extends AbstractOpenSSHStatCommandExtension implements OpenSSHStatPathExtension {
+    public OpenSSHStatPathExtensionImpl(SftpClient client, RawSftpClient raw, Map<String,byte[]> extensions) {
+        super(StatVfsExtensionParser.NAME, client, raw, extensions);
     }
 
     @Override
-    public void fsync(Handle fileHandle) throws IOException {
-        byte[] handle = fileHandle.getIdentifier();
-        Buffer buffer = getCommandBuffer((Integer.SIZE / Byte.SIZE) + GenericUtils.length(handle));
-        buffer.putBytes(handle);
-        sendAndCheckExtendedCommandStatus(buffer);
+    public OpenSSHStatExtensionInfo stat(String path) throws IOException {
+        return doGetStat(path);
     }
 }

@@ -41,13 +41,8 @@ public abstract class AbstractCheckFileExtension extends AbstractSftpClientExten
     }
 
     protected Pair<String,Collection<byte[]>> doGetHash(Object target, Collection<String> algorithms, long offset, long length, int blockSize) throws IOException {
-        Buffer buffer = getCommandBuffer(Byte.MAX_VALUE);
-        String opcode = getName();
-        if (target instanceof CharSequence) {
-            buffer.putString(target.toString());
-        } else {
-            buffer.putBytes((byte[]) target);
-        }
+        Buffer buffer = getCommandBuffer(target, Byte.MAX_VALUE);
+        putTarget(buffer, target);
         buffer.putString(GenericUtils.join(algorithms, ','));
         buffer.putLong(offset);
         buffer.putLong(length);
@@ -55,7 +50,7 @@ public abstract class AbstractCheckFileExtension extends AbstractSftpClientExten
         
         if (log.isDebugEnabled()) {
             log.debug("doGetHash({})[{}] - offset={}, length={}, block-size={}",
-                      opcode, (target instanceof CharSequence) ? target : BufferUtils.printHex(BufferUtils.EMPTY_HEX_SEPARATOR, (byte[]) target),
+                      getName(), (target instanceof CharSequence) ? target : BufferUtils.printHex(BufferUtils.EMPTY_HEX_SEPARATOR, (byte[]) target),
                       Long.valueOf(offset), Long.valueOf(length), Integer.valueOf(blockSize));
         }
 

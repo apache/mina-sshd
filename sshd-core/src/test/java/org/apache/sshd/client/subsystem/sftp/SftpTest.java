@@ -655,10 +655,20 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
                     for (BuiltinSftpClientExtensions type : BuiltinSftpClientExtensions.VALUES) {
                         String extensionName = type.getName();
+                        boolean isOpenSSHExtension = extensionName.endsWith("@openssh.com");
                         SftpClientExtension instance = sftp.getExtension(extensionName);
+
                         assertNotNull("Extension not implemented:" + extensionName, instance);
                         assertEquals("Mismatched instance name", extensionName, instance.getName());
-                        assertTrue("Extension not supported: " + extensionName, instance.isSupported());
+
+                        if (instance.isSupported()) {
+                            if (isOpenSSHExtension) {
+                                assertTrue("Unlisted default OpenSSH extension: " + extensionName, SftpSubsystem.DEFAULT_OPEN_SSH_EXTENSIONS_NAMES.contains(extensionName));
+                            }
+                        } else {
+                            assertTrue("Unsupported non-OpenSSH extension: " + extensionName, isOpenSSHExtension);
+                            assertFalse("Unsupported default OpenSSH extension: " + extensionName, SftpSubsystem.DEFAULT_OPEN_SSH_EXTENSIONS_NAMES.contains(extensionName));
+                        }
                     }
                 }
             } finally {

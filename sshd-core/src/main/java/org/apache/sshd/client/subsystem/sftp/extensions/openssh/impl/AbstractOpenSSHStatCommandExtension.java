@@ -20,30 +20,38 @@
 package org.apache.sshd.client.subsystem.sftp.extensions.openssh.impl;
 
 import java.io.IOException;
+import java.io.StreamCorruptedException;
 import java.util.Map;
 
 import org.apache.sshd.client.subsystem.sftp.RawSftpClient;
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
-import org.apache.sshd.client.subsystem.sftp.SftpClient.Handle;
 import org.apache.sshd.client.subsystem.sftp.extensions.impl.AbstractSftpClientExtension;
-import org.apache.sshd.client.subsystem.sftp.extensions.openssh.OpenSSHFsyncExtension;
-import org.apache.sshd.common.subsystem.sftp.extensions.openssh.FsyncExtensionParser;
-import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.client.subsystem.sftp.extensions.openssh.OpenSSHStatExtensionInfo;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.BufferUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class OpenSSHFsyncExtensionImpl extends AbstractSftpClientExtension implements OpenSSHFsyncExtension {
-    public OpenSSHFsyncExtensionImpl(SftpClient client, RawSftpClient raw, Map<String,byte[]> extensions) {
-        super(FsyncExtensionParser.NAME, client, raw, extensions);
+public abstract class AbstractOpenSSHStatCommandExtension extends AbstractSftpClientExtension {
+    protected AbstractOpenSSHStatCommandExtension(String name, SftpClient client, RawSftpClient raw, Map<String,byte[]> extensions) {
+        super(name, client, raw, extensions);
     }
+    
+    protected OpenSSHStatExtensionInfo doGetStat(Object target) throws IOException {
+        Buffer buffer = getCommandBuffer(target);
+        putTarget(buffer, target);
+        
+        if (log.isDebugEnabled()) {
+            log.debug("doGetStat({})[{}]", getName(),
+                      (target instanceof CharSequence) ? target : BufferUtils.printHex(BufferUtils.EMPTY_HEX_SEPARATOR, (byte[]) target));
+        }
 
-    @Override
-    public void fsync(Handle fileHandle) throws IOException {
-        byte[] handle = fileHandle.getIdentifier();
-        Buffer buffer = getCommandBuffer((Integer.SIZE / Byte.SIZE) + GenericUtils.length(handle));
-        buffer.putBytes(handle);
-        sendAndCheckExtendedCommandStatus(buffer);
+        buffer = checkExtendedReplyBuffer(receive(sendExtendedCommand(buffer)));
+        if (buffer == null) {
+            throw new StreamCorruptedException("Missing extended reply data");
+        }
+
+        return new OpenSSHStatExtensionInfo(buffer);
     }
 }

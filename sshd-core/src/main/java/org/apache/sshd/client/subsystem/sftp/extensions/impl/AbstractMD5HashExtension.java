@@ -38,13 +38,9 @@ public abstract class AbstractMD5HashExtension extends AbstractSftpClientExtensi
     }
 
     protected byte[] doGetHash(Object target, long offset, long length, byte[] quickHash) throws IOException {
-        Buffer buffer = getCommandBuffer(Long.SIZE + 2 * (Long.SIZE / Byte.SIZE) + (Integer.SIZE / Byte.SIZE) + GenericUtils.length(quickHash));
+        Buffer buffer = getCommandBuffer(target, Long.SIZE + 2 * (Long.SIZE / Byte.SIZE) + (Integer.SIZE / Byte.SIZE) + GenericUtils.length(quickHash));
         String opcode = getName();
-        if (target instanceof CharSequence) {
-            buffer.putString(target.toString());
-        } else {
-            buffer.putBytes((byte[]) target);
-        }
+        putTarget(buffer, target);
         buffer.putLong(offset);
         buffer.putLong(length);
         buffer.putBytes((quickHash == null) ? GenericUtils.EMPTY_BYTE_ARRAY : quickHash);

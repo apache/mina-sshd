@@ -201,6 +201,18 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                                     new OpenSSHExtension(FsyncExtensionParser.NAME, "1")
                                 ));
 
+        public static final List<String> DEFAULT_OPEN_SSH_EXTENSIONS_NAMES =
+                Collections.unmodifiableList(new ArrayList<String>(DEFAULT_OPEN_SSH_EXTENSIONS.size()) {
+                        private static final long serialVersionUID = 1L;    // we're not serializing it
+                        
+                        {
+                            for (OpenSSHExtension ext : DEFAULT_OPEN_SSH_EXTENSIONS) {
+                                add(ext.getName());
+                            }
+                        }
+                    
+                });
+
     static {
         StringBuilder sb = new StringBuilder(2 * (1 + (HIGHER_SFTP_IMPL - LOWER_SFTP_IMPL)));
         for (int v = LOWER_SFTP_IMPL; v <= HIGHER_SFTP_IMPL; v++) {
@@ -2179,30 +2191,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     }
 
     protected List<OpenSSHExtension> appendOpenSSHExtensions(Buffer buffer) {
-        String value = FactoryManagerUtils.getString(session, OPENSSH_EXTENSIONS_PROP);
-        List<OpenSSHExtension> extList=Collections.emptyList();
-        if (value != null) {
-            String[] pairs = GenericUtils.split(value, ',');
-            int numExts = GenericUtils.length(pairs);
-            if (numExts > 0) {
-                extList = new ArrayList<OpenSSHExtension>(numExts);
-                for (String nvp : pairs) {
-                    nvp = GenericUtils.trimToEmpty(nvp);
-                    if (GenericUtils.isEmpty(nvp)) {
-                        continue;
-                    }
-                    
-                    int pos = nvp.indexOf('=');
-                    ValidateUtils.checkTrue((pos > 0) && (pos < (nvp.length() - 1)), "Malformed OpenSSH extension spec: %s", nvp);
-                    String name = GenericUtils.trimToEmpty(nvp.substring(0, pos));
-                    String version = GenericUtils.trimToEmpty(nvp.substring(pos + 1));
-                    extList.add(new OpenSSHExtension(name, ValidateUtils.checkNotNullAndNotEmpty(version, "No version specified for OpenSSH extension %s", name)));
-                }
-            }
-        } else {
-            extList = DEFAULT_OPEN_SSH_EXTENSIONS;
-        }
-        
+        List<OpenSSHExtension> extList = resolveOpenSSHExtensions(); 
         if (GenericUtils.isEmpty(extList)) {
             return extList;
         }
@@ -2210,6 +2199,35 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         for (OpenSSHExtension ext : extList) {
             buffer.putString(ext.getName());
             buffer.putString(ext.getVersion());
+        }
+        
+        return extList;
+    }
+
+    protected List<OpenSSHExtension> resolveOpenSSHExtensions() {
+        String value = FactoryManagerUtils.getString(session, OPENSSH_EXTENSIONS_PROP);
+        if (value == null) {    // No override
+            return DEFAULT_OPEN_SSH_EXTENSIONS;
+        }
+
+        String[] pairs = GenericUtils.split(value, ',');
+        int numExts = GenericUtils.length(pairs);
+        if (numExts <= 0) {     // User does not want to report ANY extensions
+            return Collections.emptyList();
+        }
+                
+        List<OpenSSHExtension> extList = new ArrayList<OpenSSHExtension>(numExts);
+        for (String nvp : pairs) {
+            nvp = GenericUtils.trimToEmpty(nvp);
+            if (GenericUtils.isEmpty(nvp)) {
+                continue;
+            }
+            
+            int pos = nvp.indexOf('=');
+            ValidateUtils.checkTrue((pos > 0) && (pos < (nvp.length() - 1)), "Malformed OpenSSH extension spec: %s", nvp);
+            String name = GenericUtils.trimToEmpty(nvp.substring(0, pos));
+            String version = GenericUtils.trimToEmpty(nvp.substring(pos + 1));
+            extList.add(new OpenSSHExtension(name, ValidateUtils.checkNotNullAndNotEmpty(version, "No version specified for OpenSSH extension %s", name)));
         }
         
         return extList;

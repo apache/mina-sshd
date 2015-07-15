@@ -415,4 +415,10 @@ public final class GenericUtils {
         current.addSuppressed(extra);
         return current;
     }
+
+    // TODO in JDK-8 use Long.hashCode(long)
+    public static int hashCode(long value) {
+        return (int)(value ^ (value >>> 32));
+    }
+
 }

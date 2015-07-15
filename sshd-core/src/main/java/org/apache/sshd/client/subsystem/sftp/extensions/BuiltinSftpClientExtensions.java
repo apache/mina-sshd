@@ -33,11 +33,17 @@ import org.apache.sshd.client.subsystem.sftp.extensions.impl.CopyFileExtensionIm
 import org.apache.sshd.client.subsystem.sftp.extensions.impl.MD5FileExtensionImpl;
 import org.apache.sshd.client.subsystem.sftp.extensions.impl.MD5HandleExtensionImpl;
 import org.apache.sshd.client.subsystem.sftp.extensions.openssh.OpenSSHFsyncExtension;
+import org.apache.sshd.client.subsystem.sftp.extensions.openssh.OpenSSHStatHandleExtension;
+import org.apache.sshd.client.subsystem.sftp.extensions.openssh.OpenSSHStatPathExtension;
 import org.apache.sshd.client.subsystem.sftp.extensions.openssh.impl.OpenSSHFsyncExtensionImpl;
+import org.apache.sshd.client.subsystem.sftp.extensions.openssh.impl.OpenSSHStatHandleExtensionImpl;
+import org.apache.sshd.client.subsystem.sftp.extensions.openssh.impl.OpenSSHStatPathExtensionImpl;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.extensions.ParserUtils;
+import org.apache.sshd.common.subsystem.sftp.extensions.openssh.FstatVfsExtensionParser;
 import org.apache.sshd.common.subsystem.sftp.extensions.openssh.FsyncExtensionParser;
+import org.apache.sshd.common.subsystem.sftp.extensions.openssh.StatVfsExtensionParser;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -83,6 +89,18 @@ public enum BuiltinSftpClientExtensions implements SftpClientExtensionFactory {
             @Override   // co-variant return
             public OpenSSHFsyncExtension create(SftpClient client, RawSftpClient raw, Map<String,byte[]> extensions, Map<String,?> parsed) {
                 return new OpenSSHFsyncExtensionImpl(client, raw, extensions);
+            }
+        },
+    OPENSSH_STAT_HANDLE(FstatVfsExtensionParser.NAME, OpenSSHStatHandleExtension.class) {
+            @Override   // co-variant return
+            public OpenSSHStatHandleExtension create(SftpClient client, RawSftpClient raw, Map<String,byte[]> extensions, Map<String,?> parsed) {
+                return new OpenSSHStatHandleExtensionImpl(client, raw, extensions);
+            }
+        },
+    OPENSSH_STAT_PATH(StatVfsExtensionParser.NAME, OpenSSHStatPathExtension.class) {
+            @Override   // co-variant return
+            public OpenSSHStatPathExtension create(SftpClient client, RawSftpClient raw, Map<String,byte[]> extensions, Map<String,?> parsed) {
+                return new OpenSSHStatPathExtensionImpl(client, raw, extensions);
             }
         };
 

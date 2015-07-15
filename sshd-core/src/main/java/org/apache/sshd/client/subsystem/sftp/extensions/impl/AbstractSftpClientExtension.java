@@ -22,10 +22,12 @@ package org.apache.sshd.client.subsystem.sftp.extensions.impl;
 import java.io.IOException;
 import java.io.StreamCorruptedException;
 import java.util.Collection;
+import java.util.Map;
 
 import org.apache.sshd.client.SftpException;
 import org.apache.sshd.client.subsystem.sftp.RawSftpClient;
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
+import org.apache.sshd.client.subsystem.sftp.SftpClient.Handle;
 import org.apache.sshd.client.subsystem.sftp.extensions.SftpClientExtension;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
@@ -46,6 +48,10 @@ public abstract class AbstractSftpClientExtension extends AbstractLoggingBean im
     
     protected AbstractSftpClientExtension(String name, SftpClient client, RawSftpClient raw, Collection<String> extras) {
         this(name, client, raw, GenericUtils.isEmpty(extras) ? false : extras.contains(name));
+    }
+
+    protected AbstractSftpClientExtension(String name, SftpClient client, RawSftpClient raw, Map<String,byte[]> extensions) {
+        this(name, client, raw, GenericUtils.isEmpty(extensions) ? false : extensions.containsKey(name));
     }
 
     protected AbstractSftpClientExtension(String name, SftpClient client, RawSftpClient raw, boolean supported) {
@@ -95,6 +101,57 @@ public abstract class AbstractSftpClientExtension extends AbstractLoggingBean im
     protected void checkStatus(Buffer buffer) throws IOException {
         if (checkExtendedReplyBuffer(buffer) != null) {
             throw new StreamCorruptedException("Unexpected extended reply received");
+        }
+    }
+
+    /**
+     * @param buffer The {@link Buffer}
+     * @param target A target path {@link String} or {@link Handle} or {@code byte[])
+     * to be encoded in the buffer
+     * @return The updated buffer
+     * @throws UnsupportedOperationException If target is not one of the above
+     * supported types
+     */
+    public Buffer putTarget(Buffer buffer, Object target) {
+        if (target instanceof CharSequence) {
+            buffer.putString(target.toString());
+        } else if (target instanceof byte[]) {
+            buffer.putBytes((byte[]) target);
+        } else if (target instanceof Handle) {
+            buffer.putBytes(((Handle) target).getIdentifier());
+        } else {
+            throw new UnsupportedOperationException("Unknown target type: " + target);
+        }
+
+        return buffer;
+    }
+
+    /**
+     * @param target A target path {@link String} or {@link Handle} or {@code byte[])
+     * to be encoded in the buffer
+     * @return A {@link Buffer} with the extension name set
+     * @see #getCommandBuffer(Object, int)
+     */
+    protected Buffer getCommandBuffer(Object target) {
+        return getCommandBuffer(target, 0);
+    }
+
+    /**
+     * @param target A target path {@link String} or {@link Handle} or {@code byte[])
+     * to be encoded in the buffer
+     * @param extraSize Extra size - beyond the path/handle to be allocated
+     * @return A {@link Buffer} with the extension name set
+     * @see #getCommandBuffer(int)
+     */
+    protected Buffer getCommandBuffer(Object target, int extraSize) {
+        if (target instanceof CharSequence) {
+            return getCommandBuffer((Integer.SIZE / Byte.SIZE) + ((CharSequence) target).length() + extraSize);
+        } else if (target instanceof byte[]) {
+            return getCommandBuffer((Integer.SIZE / Byte.SIZE) + ((byte[]) target).length + extraSize);
+        } else if (target instanceof Handle) {
+            return getCommandBuffer((Integer.SIZE / Byte.SIZE) + ((Handle) target).length() + extraSize);
+        } else {
+            return getCommandBuffer(extraSize);
         }
     }
 
