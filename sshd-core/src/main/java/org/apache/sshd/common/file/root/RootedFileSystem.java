@@ -43,6 +43,10 @@ public class RootedFileSystem extends BaseFileSystem<RootedPath> {
         this.rootFs = root.getFileSystem();
     }
 
+    public FileSystem getRootFileSystem() {
+        return rootFs;
+    }
+
     public Path getRoot() {
         return rootPath;
     }

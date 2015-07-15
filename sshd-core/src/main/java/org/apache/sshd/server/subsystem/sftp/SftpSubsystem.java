@@ -36,6 +36,7 @@ import java.nio.file.CopyOption;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.FileStore;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystemLoopException;
 import java.nio.file.FileSystems;
@@ -89,6 +90,7 @@ import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.file.FileSystemAware;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
+import org.apache.sshd.common.subsystem.sftp.extensions.SpaceAvailableExtensionInfo;
 import org.apache.sshd.common.subsystem.sftp.extensions.openssh.AbstractOpenSSHExtensionParser.OpenSSHExtension;
 import org.apache.sshd.common.subsystem.sftp.extensions.openssh.FsyncExtensionParser;
 import org.apache.sshd.common.util.GenericUtils;
@@ -173,9 +175,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
          */
         public static final Set<String> DEFAULT_SUPPORTED_CLIENT_EXTENSIONS =
                 // TODO text-seek - see http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-13.txt
-                // TODO space-available - see http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt
                 // TODO home-directory - see http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt
-                // TODO check-file-handle/check-file-name - see http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt section 9.1.2
                 Collections.unmodifiableSet(
                         GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER,
                                 Arrays.asList(
@@ -185,7 +185,8 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                                         SftpConstants.EXT_MD5HASH_HANDLE,
                                         SftpConstants.EXT_CHKFILE_HANDLE,
                                         SftpConstants.EXT_CHKFILE_NAME,
-                                        SftpConstants.EXT_COPYDATA
+                                        SftpConstants.EXT_COPYDATA,
+                                        SftpConstants.EXT_SPACE_AVAILABLE
                                 )));
 
     /**
@@ -744,11 +745,48 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             case FsyncExtensionParser.NAME:
                 doOpenSSHFsync(buffer, id);
                 break;
+            case SftpConstants.EXT_SPACE_AVAILABLE:
+                doSpaceAvailable(buffer, id);
+                break;
             default:
                 log.info("Received unsupported SSH_FXP_EXTENDED({})", extension);
                 sendStatus(BufferUtils.clear(buffer), id, SSH_FX_OP_UNSUPPORTED, "Command SSH_FXP_EXTENDED(" + extension + ") is unsupported or not implemented");
                 break;
         }
+    }
+
+    protected void doSpaceAvailable(Buffer buffer, int id) throws IOException {
+        String path = buffer.getString();
+        SpaceAvailableExtensionInfo info;
+        try {
+             info = doSpaceAvailable(id, path);
+        } catch(IOException | RuntimeException e) {
+            sendStatus(BufferUtils.clear(buffer), id, e);
+            return;
+        }
+
+        buffer.clear();
+        buffer.putByte((byte) SSH_FXP_EXTENDED_REPLY);
+        buffer.putInt(id);
+        SpaceAvailableExtensionInfo.encode(buffer, info);
+        send(buffer);
+    }
+
+    protected SpaceAvailableExtensionInfo doSpaceAvailable(int id, String path) throws IOException {
+        Path file = resolveFile(path);
+        Path abs = file.toAbsolutePath();
+        Path nrm = abs.normalize();
+        if (log.isDebugEnabled()) {
+            log.debug("doSpaceAvailable(id={}) path={}[{}]", Integer.valueOf(id), path, nrm);
+        }
+
+        FileStore store = Files.getFileStore(nrm);
+        if (log.isTraceEnabled()) {
+            log.trace("doSpaceAvailable(id={}) path={}[{}] - {}[{}]",
+                      Integer.valueOf(id), path, nrm, store.name(), store.type());
+        }
+        
+        return new SpaceAvailableExtensionInfo(store);
     }
 
     protected void doTextSeek(Buffer buffer, int id) throws IOException {

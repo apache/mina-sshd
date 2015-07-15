@@ -45,16 +45,17 @@ import org.apache.sshd.util.Utils;
 public abstract class AbstractSftpClientTestSupport extends BaseTestSupport {
     protected SshServer sshd;
     protected int port;
+    protected final FileSystem rootFileSystem;
     protected final FileSystemFactory fileSystemFactory;
 
     protected AbstractSftpClientTestSupport() throws IOException {
         Path targetPath = detectTargetFolder().toPath();
         Path parentPath = targetPath.getParent();
-        final FileSystem fileSystem = new RootedFileSystemProvider().newFileSystem(parentPath, Collections.<String,Object>emptyMap());
+        rootFileSystem = new RootedFileSystemProvider().newFileSystem(parentPath, Collections.<String,Object>emptyMap());
         fileSystemFactory = new FileSystemFactory() {
             @Override
             public FileSystem createFileSystem(Session session) throws IOException {
-                return fileSystem;
+                return rootFileSystem;
             }
         };
     }

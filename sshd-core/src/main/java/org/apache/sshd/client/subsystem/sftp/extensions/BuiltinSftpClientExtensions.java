@@ -32,6 +32,7 @@ import org.apache.sshd.client.subsystem.sftp.extensions.impl.CopyDataExtensionIm
 import org.apache.sshd.client.subsystem.sftp.extensions.impl.CopyFileExtensionImpl;
 import org.apache.sshd.client.subsystem.sftp.extensions.impl.MD5FileExtensionImpl;
 import org.apache.sshd.client.subsystem.sftp.extensions.impl.MD5HandleExtensionImpl;
+import org.apache.sshd.client.subsystem.sftp.extensions.impl.SpaceAvailableExtensionImpl;
 import org.apache.sshd.client.subsystem.sftp.extensions.openssh.OpenSSHFsyncExtension;
 import org.apache.sshd.client.subsystem.sftp.extensions.openssh.OpenSSHStatHandleExtension;
 import org.apache.sshd.client.subsystem.sftp.extensions.openssh.OpenSSHStatPathExtension;
@@ -83,6 +84,12 @@ public enum BuiltinSftpClientExtensions implements SftpClientExtensionFactory {
             @Override   // co-variant return
             public CheckFileHandleExtension create(SftpClient client, RawSftpClient raw, Map<String,byte[]> extensions, Map<String,?> parsed) {
                 return new CheckFileHandleExtensionImpl(client, raw, ParserUtils.supportedExtensions(parsed));
+            }
+        },
+    SPACE_AVAILABLE(SftpConstants.EXT_SPACE_AVAILABLE, SpaceAvailableExtension.class) {
+            @Override   // co-variant return
+            public SpaceAvailableExtension create(SftpClient client, RawSftpClient raw, Map<String,byte[]> extensions, Map<String,?> parsed) {
+                return new SpaceAvailableExtensionImpl(client, raw, ParserUtils.supportedExtensions(parsed));
             }
         },
     OPENSSH_FSYNC(FsyncExtensionParser.NAME, OpenSSHFsyncExtension.class) {

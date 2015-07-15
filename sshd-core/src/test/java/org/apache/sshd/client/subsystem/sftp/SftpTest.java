@@ -32,7 +32,6 @@ import java.io.OutputStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.EnumSet;
@@ -44,11 +43,9 @@ import java.util.Vector;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.sshd.client.SftpException;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.sftp.extensions.BuiltinSftpClientExtensions;
-import org.apache.sshd.client.subsystem.sftp.extensions.CopyFileExtension;
 import org.apache.sshd.client.subsystem.sftp.extensions.SftpClientExtension;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
@@ -559,53 +556,6 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                     }
 
                     sftp.rename(file1Path, file2Path, SftpClient.CopyMode.Overwrite);
-                }
-            } finally {
-                client.stop();
-            }
-        }
-    }
-
-    @Test
-    public void testCopyFileExtension() throws Exception {
-        Path targetPath = detectTargetFolder().toPath();
-        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
-        Utils.deleteRecursive(lclSftp);
-
-        byte[] data = (getClass().getName() + "#" + getCurrentTestName()).getBytes(StandardCharsets.UTF_8);
-        Path srcFile = assertHierarchyTargetFolderExists(lclSftp).resolve("src.txt");
-        Files.write(srcFile, data, IoUtils.EMPTY_OPEN_OPTIONS);
-
-        Path parentPath = targetPath.getParent();
-        String srcPath = Utils.resolveRelativeRemotePath(parentPath, srcFile);
-        Path dstFile = lclSftp.resolve("dst.txt");
-        String dstPath = Utils.resolveRelativeRemotePath(parentPath, dstFile);
-        
-        LinkOption[] options = IoUtils.getLinkOptions(false);
-        assertFalse("Destination file unexpectedly exists", Files.exists(dstFile, options));
-
-        try(SshClient client = SshClient.setUpDefaultClient()) {
-            client.start();
-            
-            try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
-                session.addPasswordIdentity(getCurrentTestName());
-                session.auth().verify(5L, TimeUnit.SECONDS);
-                
-                try(SftpClient sftp = session.createSftpClient()) {
-                    CopyFileExtension ext = assertExtensionCreated(sftp, CopyFileExtension.class);
-                    ext.copyFile(srcPath, dstPath, false);
-                    assertTrue("Source file not preserved", Files.exists(srcFile, options));
-                    assertTrue("Destination file not created", Files.exists(dstFile, options));
-                    
-                    byte[] actual = Files.readAllBytes(dstFile);
-                    assertArrayEquals("Mismatched copied data", data, actual);
-                    
-                    try {
-                        ext.copyFile(srcPath, dstPath, false);
-                        fail("Unexpected success to overwrite existing destination: " + dstFile);
-                    } catch(IOException e) {
-                        assertTrue("Not an SftpException", e instanceof SftpException);
-                    }
                 }
             } finally {
                 client.stop();

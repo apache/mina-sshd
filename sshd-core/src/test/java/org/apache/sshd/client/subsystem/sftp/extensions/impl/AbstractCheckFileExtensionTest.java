@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.sshd.client.subsystem.sftp.extensions;
+package org.apache.sshd.client.subsystem.sftp.extensions.impl;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -38,6 +38,8 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.sftp.AbstractSftpClientTestSupport;
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.CloseableHandle;
+import org.apache.sshd.client.subsystem.sftp.extensions.CheckFileHandleExtension;
+import org.apache.sshd.client.subsystem.sftp.extensions.CheckFileNameExtension;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.digest.BuiltinDigests;

@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.sshd.client.subsystem.sftp.extensions.openssh;
+package org.apache.sshd.client.subsystem.sftp.extensions.openssh.impl;
 
 import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_EXTENDED_REPLY;
 
@@ -39,6 +39,10 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.sftp.AbstractSftpClientTestSupport;
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.CloseableHandle;
+import org.apache.sshd.client.subsystem.sftp.extensions.openssh.OpenSSHFsyncExtension;
+import org.apache.sshd.client.subsystem.sftp.extensions.openssh.OpenSSHStatExtensionInfo;
+import org.apache.sshd.client.subsystem.sftp.extensions.openssh.OpenSSHStatHandleExtension;
+import org.apache.sshd.client.subsystem.sftp.extensions.openssh.OpenSSHStatPathExtension;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.extensions.openssh.AbstractOpenSSHExtensionParser.OpenSSHExtension;
