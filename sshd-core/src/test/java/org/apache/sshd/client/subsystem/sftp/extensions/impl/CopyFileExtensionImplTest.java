@@ -26,11 +26,11 @@ import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.sshd.client.SftpException;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.sftp.AbstractSftpClientTestSupport;
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
+import org.apache.sshd.client.subsystem.sftp.SftpException;
 import org.apache.sshd.client.subsystem.sftp.extensions.CopyFileExtension;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.io.IoUtils;

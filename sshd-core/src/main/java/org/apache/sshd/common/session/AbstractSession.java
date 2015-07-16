@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -181,7 +182,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
      */
     public AbstractSession(boolean isServer, FactoryManager factoryManager, IoSession ioSession) {
         this.isServer = isServer;
-        this.factoryManager = factoryManager;
+        this.factoryManager = ValidateUtils.checkNotNull(factoryManager, "No factory manager provided", GenericUtils.EMPTY_OBJECT_ARRAY);
         this.ioSession = ioSession;
         sessionListenerProxy = EventListenerUtils.proxyWrapper(SessionListener.class, getClass().getClassLoader(), listeners);
         random = factoryManager.getRandomFactory().create();
@@ -552,23 +553,25 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
 
     @SuppressWarnings("unchecked")
     @Override
-    public IoWriteFuture writePacket(Buffer buffer, long timeout, TimeUnit unit) throws IOException {
+    public IoWriteFuture writePacket(Buffer buffer, final long timeout, final TimeUnit unit) throws IOException {
         final IoWriteFuture writeFuture = writePacket(buffer);
         final DefaultSshFuture<IoWriteFuture> future = (DefaultSshFuture<IoWriteFuture>) writeFuture;
-        final ScheduledFuture<?> sched = factoryManager.getScheduledExecutorService().schedule(new Runnable() {
-            @SuppressWarnings("synthetic-access")
-            @Override
-            public void run() {
-                log.info("Timeout writing packet.");
-                future.setValue(new TimeoutException());
-            }
-        }, timeout, unit);
+        ScheduledExecutorService executor = factoryManager.getScheduledExecutorService(); 
+        final ScheduledFuture<?> sched = executor.schedule(new Runnable() {
+                @SuppressWarnings("synthetic-access")
+                @Override
+                public void run() {
+                    Throwable t = new TimeoutException("Timeout writing packet: " + timeout + " " + unit);
+                    log.info(t.getMessage());
+                    future.setValue(t);
+                }
+            }, timeout, unit);
         future.addListener(new SshFutureListener<IoWriteFuture>() {
-            @Override
-            public void operationComplete(IoWriteFuture future) {
-                sched.cancel(false);
-            }
-        });
+                @Override
+                public void operationComplete(IoWriteFuture future) {
+                    sched.cancel(false);
+                }
+            });
         return writeFuture;
     }
 

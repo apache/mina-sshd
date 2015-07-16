@@ -30,11 +30,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.sshd.client.SftpException;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.sftp.AbstractSftpClientTestSupport;
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
+import org.apache.sshd.client.subsystem.sftp.SftpException;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.CloseableHandle;
 import org.apache.sshd.client.subsystem.sftp.extensions.MD5FileExtension;
 import org.apache.sshd.client.subsystem.sftp.extensions.MD5HandleExtension;

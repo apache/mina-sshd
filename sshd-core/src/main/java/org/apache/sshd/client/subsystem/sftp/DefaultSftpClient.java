@@ -39,7 +39,6 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.sshd.client.SftpException;
 import org.apache.sshd.client.channel.ChannelSubsystem;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.FactoryManagerUtils;
@@ -48,6 +47,7 @@ import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.extensions.ParserUtils;
 import org.apache.sshd.common.subsystem.sftp.extensions.VersionsParser.Versions;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -58,19 +58,18 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 public class DefaultSftpClient extends AbstractSftpClient {
     private final ClientSession clientSession;
     private final ChannelSubsystem channel;
-    private final Map<Integer, Buffer> messages;
+    private final Map<Integer, Buffer> messages = new HashMap<>();
     private final AtomicInteger cmdId = new AtomicInteger(100);
     private final Buffer receiveBuffer = new ByteArrayBuffer();
     private final byte[] workBuf = new byte[Integer.SIZE / Byte.SIZE];  // TODO in JDK-8 use Integer.BYTES
     private boolean closing;
     private int version;
-    private final Map<String,byte[]> extensions = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    private final Map<String,byte[]> extensions = new TreeMap<String,byte[]>(String.CASE_INSENSITIVE_ORDER);
     private final Map<String,byte[]> exposedExtensions = Collections.unmodifiableMap(extensions);
 
     public DefaultSftpClient(ClientSession clientSession) throws IOException {
-        this.clientSession = clientSession;
+        this.clientSession = ValidateUtils.checkNotNull(clientSession, "No client session", GenericUtils.EMPTY_OBJECT_ARRAY);
         this.channel = clientSession.createSubsystemChannel(SftpConstants.SFTP_SUBSYSTEM_NAME);
-        this.messages = new HashMap<>();
         this.channel.setOut(new OutputStream() {
             @Override
             public void write(int b) throws IOException {
@@ -190,38 +189,44 @@ public class DefaultSftpClient extends AbstractSftpClient {
         int id = buffer.getInt();
         buffer.rpos(0);
         synchronized (messages) {
-            messages.put(id, buffer);
+            messages.put(Integer.valueOf(id), buffer);
             messages.notifyAll();
         }
     }
 
     @Override
     public int send(int cmd, Buffer buffer) throws IOException {
-        int id = cmdId.incrementAndGet();
+        int id = cmdId.incrementAndGet(), len = buffer.available();
+        if (log.isTraceEnabled()) {
+            log.trace("send(cmd={}, len={}) id = {}",
+                      Integer.valueOf(cmd), Integer.valueOf(len), Integer.valueOf(id));
+        }
+
         OutputStream dos = channel.getInvertedIn();
         BufferUtils.writeInt(dos, 1 /* cmd */ + (Integer.SIZE / Byte.SIZE) /* id */ + buffer.available(), workBuf);
         dos.write(cmd & 0xFF);
         BufferUtils.writeInt(dos, id, workBuf);
-        dos.write(buffer.array(), buffer.rpos(), buffer.available());
+        dos.write(buffer.array(), buffer.rpos(), len);
         dos.flush();
         return id;
     }
 
     @Override
     public Buffer receive(int id) throws IOException {
+        Integer reqId = Integer.valueOf(id);
         synchronized (messages) {
-            while (true) {
+            for (int count=1; ; count++) {
                 if (closing) {
                     throw new SshException("Channel has been closed");
                 }
-                Buffer buffer = messages.remove(id);
+                Buffer buffer = messages.remove(reqId);
                 if (buffer != null) {
                     return buffer;
                 }
                 try {
                     messages.wait();
                 } catch (InterruptedException e) {
-                    throw (IOException) new InterruptedIOException("Interrupted while waiting for messages").initCause(e);
+                    throw (IOException) new InterruptedIOException("Interrupted while waiting for messages at iteration #" + count).initCause(e);
                 }
             }
         }
@@ -292,10 +297,10 @@ public class DefaultSftpClient extends AbstractSftpClient {
             String msg = buffer.getString();
             String lang = buffer.getString();
             if (log.isTraceEnabled()) {
-                log.trace("init(id={}) - status: {} [{}] {}", id, substatus, lang, msg);
+                log.trace("init(id={}) - status: {} [{}] {}", Integer.valueOf(id), Integer.valueOf(substatus), lang, msg);
             }
 
-            throw new SftpException(substatus, msg);
+            throwStatusException(id, substatus, msg, lang);
         } else {
             throw new SshException("Unexpected SFTP packet received: type=" + type + ", id=" + id + ", length=" + length);
         }
@@ -308,22 +313,24 @@ public class DefaultSftpClient extends AbstractSftpClient {
      */
     public int negotiateVersion(SftpVersionSelector selector) throws IOException {
         int current = getVersion();
-        Set<Integer> available = GenericUtils.asSortedSet(Collections.singleton(current));
+        Set<Integer> available = GenericUtils.asSortedSet(Collections.singleton(Integer.valueOf(current)));
         Map<String,?> parsed = getParsedServerExtensions();
         Collection<String> extensions = ParserUtils.supportedExtensions(parsed);
-        if (!GenericUtils.isEmpty(extensions) && extensions.contains(SftpConstants.EXT_VERSELECT)) {
+        if ((GenericUtils.size(extensions) > 0) && extensions.contains(SftpConstants.EXT_VERSELECT)) {
             Versions vers = GenericUtils.isEmpty(parsed) ? null : (Versions) parsed.get(SftpConstants.EXT_VERSIONS);
             Collection<String> reported = (vers == null) ? null : vers.versions;
             if (GenericUtils.size(reported) > 0) {
                 for (String v : reported) {
-                    available.add(Integer.valueOf(v));
+                    if (!available.add(Integer.valueOf(v))) {
+                        continue;
+                    }
                 }
             }
         }
 
-        int selected = selector.selectVersion(current, new ArrayList<>(available));
+        int selected = selector.selectVersion(current, new ArrayList<Integer>(available));
         if (log.isDebugEnabled()) {
-            log.debug("negotiateVersion({}) {} -> {}", current, available, selected);
+            log.debug("negotiateVersion({}) {} -> {}", Integer.valueOf(current), available, Integer.valueOf(selected));
         }
 
         if (selected == current) {
@@ -339,7 +346,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
                                          + (Integer.SIZE / Byte.SIZE) + verVal.length());
         buffer.putString(SftpConstants.EXT_VERSELECT);
         buffer.putString(verVal);
-        checkStatus(receive(send(SftpConstants.SSH_FXP_EXTENDED, buffer)));
+        checkStatus(SftpConstants.SSH_FXP_EXTENDED, buffer);
         version = selected;
         return selected;
     }

@@ -66,7 +66,6 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.sshd.client.SftpException;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.Attributes;
@@ -319,7 +318,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             public Iterator<Path> iterator() {
                 return new Iterator<Path>() {
                     @SuppressWarnings("synthetic-access")
-                    private final Iterator<SftpClient.DirEntry> it = iter.iterator();
+                    private final Iterator<SftpClient.DirEntry> it = (iter == null) ? null : iter.iterator();
                     private boolean dotIgnored, dotdotIgnored;
                     private SftpClient.DirEntry curEntry = nextEntry();
 
@@ -340,7 +339,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
                     }
 
                     private SftpClient.DirEntry nextEntry() {
-                        while(it.hasNext()) {
+                        while((it != null) && it.hasNext()) {
                             SftpClient.DirEntry entry = it.next();
                             String name = entry.filename;
                             if (".".equals(name) && (!dotIgnored)) {

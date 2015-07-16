@@ -39,6 +39,7 @@ import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.Int2IntFunction;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -58,7 +59,7 @@ public abstract class AbstractChannel
 
     public static final long DEFAULT_CHANNEL_CLOSE_TIMEOUT = 5000;
 
-    protected enum GracefulState {
+    protected static enum GracefulState {
         Opened, CloseSent, CloseReceived, Closed
     }
 
@@ -71,9 +72,9 @@ public abstract class AbstractChannel
     protected int id;
     protected int recipient;
     private final AtomicBoolean eof = new AtomicBoolean(false);
-    protected AtomicReference<GracefulState> gracefulState = new AtomicReference<>(GracefulState.Opened);
+    protected AtomicReference<GracefulState> gracefulState = new AtomicReference<GracefulState>(GracefulState.Opened);
     protected final DefaultCloseFuture gracefulFuture = new DefaultCloseFuture(lock);
-    protected final List<RequestHandler<Channel>> handlers = new ArrayList<>();
+    protected final List<RequestHandler<Channel>> handlers = new ArrayList<RequestHandler<Channel>>();
 
     protected AbstractChannel() {
         super();
@@ -137,8 +138,10 @@ public abstract class AbstractChannel
         String req = buffer.getString();
         boolean wantReply = buffer.getBoolean();
         if (log.isDebugEnabled()) {
-            log.debug("Received SSH_MSG_CHANNEL_REQUEST {} on channel {} (wantReply {})", req, this, wantReply);
+            log.debug("Received SSH_MSG_CHANNEL_REQUEST {} on channel {} (wantReply {})",
+                      req, this, Boolean.valueOf(wantReply));
         }
+
         for (RequestHandler<Channel> handler : handlers) {
             RequestHandler.Result result;
             try {
@@ -147,36 +150,44 @@ public abstract class AbstractChannel
                 log.warn("Error processing channel request " + req, e);
                 result = RequestHandler.Result.ReplyFailure;
             }
-            switch (result) {
-                case Replied:
-                    return;
-                case ReplySuccess:
-                    if (wantReply) {
-                        buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_SUCCESS);
-                        buffer.putInt(recipient);
-                        session.writePacket(buffer);
-                    }
-                    return;
-                case ReplyFailure:
-                    if (wantReply) {
-                        buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_FAILURE);
-                        buffer.putInt(recipient);
-                        session.writePacket(buffer);
-                    }
-                    return;
-                default:
-                    if (log.isTraceEnabled()) {
-                        log.trace("{}#process({}): {}", handler.getClass().getSimpleName(), req, result);
-                    }
+            
+            // if Unsupported then check the next handler in line
+            if (RequestHandler.Result.Unsupported.equals(result)) {
+                if (log.isTraceEnabled()) {
+                    log.trace("{}#process({}): {}", handler.getClass().getSimpleName(), req, result);
+                }
+            } else {
+                sendResponse(buffer, req, result, wantReply);
+                return;
             }
         }
 
+        // none of the handlers processed the request
         log.warn("Unknown channel request: {}", req);
-        if (wantReply) {
-            buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_FAILURE);
-            buffer.putInt(recipient);
-            session.writePacket(buffer);
+        sendResponse(buffer, req, RequestHandler.Result.Unsupported, wantReply);
+    }
+
+    protected void sendResponse(Buffer buffer, String req, RequestHandler.Result result, boolean wantReply) throws IOException {
+        if (log.isDebugEnabled()) {
+            log.debug("sendResponse({}) result={}, want-reply={}", req, result, Boolean.valueOf(wantReply));
         }
+
+        if (RequestHandler.Result.Replied.equals(result) || (!wantReply)) {
+            return;
+        }
+
+        byte cmd = RequestHandler.Result.ReplySuccess.equals(result)
+                 ? SshConstants.SSH_MSG_CHANNEL_SUCCESS
+                 : SshConstants.SSH_MSG_CHANNEL_FAILURE
+                 ;
+        buffer.clear();
+        // leave room for the SSH header
+        buffer.ensureCapacity(5 + 1 + (Integer.SIZE / Byte.SIZE), Int2IntFunction.Utils.add(Byte.SIZE));
+        buffer.rpos(5);
+        buffer.wpos(5);
+        buffer.putByte(cmd);
+        buffer.putInt(recipient);
+        session.writePacket(buffer);
     }
 
     @Override

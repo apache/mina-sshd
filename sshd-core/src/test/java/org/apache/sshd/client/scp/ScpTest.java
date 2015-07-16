@@ -33,6 +33,7 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.EnumSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -625,18 +626,20 @@ public class ScpTest extends BaseTestSupport {
                 Path localDir = scpRoot.resolve("local");
                 Path localSubDir = assertHierarchyTargetFolderExists(localDir.resolve("dir"));
                 // convert everything to seconds since this is the SCP timestamps granularity
-                long lastMod = TimeUnit.MILLISECONDS.toSeconds(Files.getLastModifiedTime(localSubDir).toMillis() - TimeUnit.DAYS.toMillis(1));
+                final long lastModMillis = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(1);
+                final long lastModSecs = TimeUnit.MILLISECONDS.toSeconds(lastModMillis);
                 Path local1 = localDir.resolve("file-1.txt");
                 byte[] data = writeFile(local1, getClass().getName() + "#" + getCurrentTestName() + System.getProperty("line.separator"));
+
                 File lclFile1 = local1.toFile();
-                lclFile1.setLastModified(lastMod);
+                boolean lcl1ModSet = lclFile1.setLastModified(lastModMillis);
                 lclFile1.setExecutable(true, true);
                 lclFile1.setWritable(false, false);
 
                 Path localSub2 = localSubDir.resolve("file-2.txt");
                 Files.write(localSub2, data);
                 File lclSubFile2 = localSub2.toFile();
-                lclSubFile2.setLastModified(lastMod);
+                boolean lclSub2ModSet = lclSubFile2.setLastModified(lastModMillis);
 
                 Path remoteDir = assertHierarchyTargetFolderExists(scpRoot.resolve("remote"));
                 String remotePath = Utils.resolveRelativeRemotePath(parentPath, remoteDir);
@@ -646,23 +649,23 @@ public class ScpTest extends BaseTestSupport {
                 assertFileLength(remote1, data.length, TimeUnit.SECONDS.toMillis(5L));
                 
                 File remFile1 = remote1.toFile();
-                assertLastModifiedTimeEquals(remFile1, lastMod);
+                assertLastModifiedTimeEquals(remFile1, lcl1ModSet, lastModSecs);
 
                 Path remoteSubDir = remoteDir.resolve(localSubDir.getFileName());
                 Path remoteSub2 = remoteSubDir.resolve(localSub2.getFileName());
                 assertFileLength(remoteSub2, data.length, TimeUnit.SECONDS.toMillis(5L));
 
                 File remSubFile2 = remoteSub2.toFile();
-                assertLastModifiedTimeEquals(remSubFile2, lastMod);
+                assertLastModifiedTimeEquals(remSubFile2, lclSub2ModSet, lastModSecs);
 
                 Utils.deleteRecursive(localDir);
                 assertHierarchyTargetFolderExists(localDir);
 
                 scp.download(remotePath + "/*", localDir, ScpClient.Option.Recursive, ScpClient.Option.PreserveAttributes);
                 assertFileLength(local1, data.length, TimeUnit.SECONDS.toMillis(5L));
-                assertLastModifiedTimeEquals(lclFile1, lastMod);
+                assertLastModifiedTimeEquals(lclFile1, lcl1ModSet, lastModSecs);
                 assertFileLength(localSub2, data.length, TimeUnit.SECONDS.toMillis(5L));
-                assertLastModifiedTimeEquals(lclSubFile2, lastMod);
+                assertLastModifiedTimeEquals(lclSubFile2, lclSub2ModSet, lastModSecs);
             } finally {
                 client.stop();
             }
@@ -689,6 +692,7 @@ public class ScpTest extends BaseTestSupport {
                 String remotePath = Utils.resolveRelativeRemotePath(parentPath, remoteFile);
                 byte[] data = (getClass().getName() + "#" + getCurrentTestName()).getBytes(StandardCharsets.UTF_8);
                 scp.upload(data, remotePath, EnumSet.allOf(PosixFilePermission.class), null);
+                assertFileLength(remoteFile, data.length, TimeUnit.SECONDS.toMillis(5L));
 
                 byte[] uploaded = Files.readAllBytes(remoteFile);
                 assertArrayEquals("Mismatched uploaded data", data, uploaded);
@@ -703,14 +707,32 @@ public class ScpTest extends BaseTestSupport {
 
     // see http://stackoverflow.com/questions/2717936/file-createnewfile-creates-files-with-last-modified-time-before-actual-creatio
     // See https://msdn.microsoft.com/en-us/library/ms724290(VS.85).aspx
-    // The NTFS file system delays updates to the last access time for a file by up to 1 hour after the last access
-    private static void assertLastModifiedTimeEquals(File file, long expectedSeconds) {
-        long actualSeconds = TimeUnit.MILLISECONDS.toSeconds(file.lastModified());
+    private static void assertLastModifiedTimeEquals(File file, boolean modSuccess, long expectedSeconds) {
+        long expectedMillis = TimeUnit.SECONDS.toMillis(expectedSeconds);
+        long actualMillis = file.lastModified();
+        long actualSeconds = TimeUnit.MILLISECONDS.toSeconds(actualMillis);
+        // if failed to set the local file time, don't expect it to be the same
+        if (!modSuccess) {
+            System.err.append("Failed to set last modified time of ").append(file.getAbsolutePath())
+                      .append(" to ").append(String.valueOf(expectedMillis))
+                      .append(" - ").println(new Date(expectedMillis))
+                      ;
+            System.err.append("\t\t").append("Current value: ").append(String.valueOf(actualMillis))
+                      .append(" - ").println(new Date(actualMillis))
+                      ;
+            return;
+        }
+
         if (OsUtils.isWin32()) {
+            // The NTFS file system delays updates to the last access time for a file by up to 1 hour after the last access
             if (expectedSeconds != actualSeconds) {
                 System.err.append("Mismatched last modified time for ").append(file.getAbsolutePath())
                           .append(" - expected=").append(String.valueOf(expectedSeconds))
-                          .append(", actual=").println(actualSeconds);
+                          .append('[').append(new Date(expectedMillis).toString()).append(']')
+                          .append(", actual=").append(String.valueOf(actualSeconds))
+                          .append('[').append(new Date(actualMillis).toString()).append(']')
+                          .println()
+                          ;
             }
         } else {
             assertEquals("Mismatched last modified time for " + file.getAbsolutePath(), expectedSeconds, actualSeconds);

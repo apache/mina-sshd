@@ -19,6 +19,7 @@
 package org.apache.sshd.server.x11;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.BindException;
 import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
@@ -166,8 +167,10 @@ public class X11ForwardSupport extends CloseableUtils.AbstractInnerCloseable imp
         ChannelForwardedX11 channel = (ChannelForwardedX11) session.getAttribute(ChannelForwardedX11.class);
         Buffer buffer = new ByteArrayBuffer();
         buffer.putBuffer(message);
-        channel.getInvertedIn().write(buffer.array(), buffer.rpos(), buffer.available());
-        channel.getInvertedIn().flush();
+        
+        OutputStream outputStream = channel.getInvertedIn();
+        outputStream.write(buffer.array(), buffer.rpos(), buffer.available());
+        outputStream.flush();
     }
 
     @Override

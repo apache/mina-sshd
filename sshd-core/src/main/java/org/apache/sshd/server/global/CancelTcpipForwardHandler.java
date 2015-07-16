@@ -24,6 +24,7 @@ import org.apache.sshd.common.forward.TcpipForwarder;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.ConnectionServiceRequestHandler;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.util.Int2IntFunction;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
@@ -54,9 +55,15 @@ public class CancelTcpipForwardHandler extends AbstractLoggingBean implements Co
             forwarder.localPortForwardingCancelled(socketAddress);
 
             if (wantReply) {
-                Session session = connectionService.getSession();
-                buffer = session.createBuffer(SshConstants.SSH_MSG_REQUEST_SUCCESS);
+                buffer.clear();
+                // leave room for the SSH header
+                buffer.ensureCapacity(5 + 1 + (Integer.SIZE / Byte.SIZE), Int2IntFunction.Utils.add(Byte.SIZE));
+                buffer.rpos(5);
+                buffer.wpos(5);
+                buffer.putByte(SshConstants.SSH_MSG_REQUEST_SUCCESS);
                 buffer.putInt(port);
+
+                Session session = connectionService.getSession();
                 session.writePacket(buffer);
             }
 

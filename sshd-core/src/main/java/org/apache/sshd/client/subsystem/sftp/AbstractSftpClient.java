@@ -100,7 +100,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.sshd.client.SftpException;
 import org.apache.sshd.client.subsystem.sftp.extensions.BuiltinSftpClientExtensions;
 import org.apache.sshd.client.subsystem.sftp.extensions.SftpClientExtension;
 import org.apache.sshd.client.subsystem.sftp.extensions.SftpClientExtensionFactory;
@@ -119,7 +118,7 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractSftpClient extends AbstractLoggingBean implements SftpClient, RawSftpClient {
-    private final AtomicReference<Map<String,Object>> parsedExtensionsHolder = new AtomicReference<>(null);
+    private final AtomicReference<Map<String,Object>> parsedExtensionsHolder = new AtomicReference<Map<String,Object>>(null);
 
     protected AbstractSftpClient() {
         super();
@@ -248,7 +247,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
         Map<String,Object> parsed = parsedExtensionsHolder.get();
         if (parsed == null) {
             if ((parsed=ParserUtils.parse(extensions)) == null) {
-                parsed = Collections.emptyMap();
+                parsed = Collections.<String,Object>emptyMap();
             }
             parsedExtensionsHolder.set(parsed);
         }
@@ -256,6 +255,29 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
         return parsed;
     }
 
+    /**
+     * Sends the specified command, waits for the response and then invokes {@link #checkStatus(Buffer)}
+     * @param cmd The command to send
+     * @param request The request {@link Buffer}
+     * @throws IOException If failed to send, receive or check the returned status
+     * @see #send(int, Buffer)
+     * @see #receive(int)
+     * @see #checkStatus(Buffer)
+     */
+    protected void checkStatus(int cmd, Buffer request) throws IOException {
+        int reqId = send(cmd, request);
+        Buffer response = receive(reqId);
+        checkStatus(response);
+    }
+
+    /**
+     * Checks if the incoming response is an {@code SSH_FXP_STATUS} one,
+     * and if so whether the substatus is {@code SSH_FX_OK}.
+     * @param buffer The received response {@link Buffer}
+     * @throws IOException If response does not carry a status or carries
+     * a bad status code
+     * @see #checkStatus(int, int, String, String)
+     */
     protected void checkStatus(Buffer buffer) throws IOException {
         int length = buffer.getInt();
         int type = buffer.getUByte();
@@ -264,69 +286,126 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             int substatus = buffer.getInt();
             String msg = buffer.getString();
             String lang = buffer.getString();
-            if (log.isTraceEnabled()) {
-                log.trace("checkStatus(id={}) - status: {} [{}] {}", id, substatus, lang, msg);
-            }
-
-            if (substatus != SSH_FX_OK) {
-                throw new SftpException(substatus, msg);
-            }
+            checkStatus(id, substatus, msg, lang);
         } else {
             throw new SshException("Unexpected SFTP packet received: type=" + type + ", id=" + id + ", length=" + length);
         }
+    }
+
+    /**
+     * @param id The request id
+     * @param substatus The sub-status value
+     * @param msg The message
+     * @param lang The language
+     * @throws IOException if the sub-status is not {@code SSH_FX_OK}
+     * @see #throwStatusException(int, int, String, String)
+     */
+    protected void checkStatus(int id, int substatus, String msg, String lang) throws IOException {
+        if (log.isTraceEnabled()) {
+            log.trace("checkStatus(id=" + id + ") status: " + substatus + " [" + lang + "]" + msg );
+        }
+
+        if (substatus != SSH_FX_OK) {
+            throwStatusException(id, substatus, msg, lang);
+        }
+    }
+
+    protected void throwStatusException(int id, int substatus, String msg, String lang) throws IOException {
+        throw new SftpException(substatus, msg);
+    }
+
+    /**
+     * @param cmd Command to be sent
+     * @param request The {@link Buffer} containing the request
+     * @return The received handle identifier
+     * @throws IOException If failed to send/receive or process the response
+     * @see #send(int, Buffer)
+     * @see #receive(int)
+     * @see #checkHandle(Buffer)
+     */
+    protected byte[] checkHandle(int cmd, Buffer request) throws IOException {
+        int reqId = send(cmd, request);
+        Buffer response = receive(reqId);
+        return checkHandle(response);
     }
 
     protected byte[] checkHandle(Buffer buffer) throws IOException {
         int length = buffer.getInt();
         int type = buffer.getUByte();
         int id = buffer.getInt();
+        if (type == SSH_FXP_HANDLE) {
+            return ValidateUtils.checkNotNullAndNotEmpty(buffer.getBytes(), "Null/empty handle in buffer", GenericUtils.EMPTY_OBJECT_ARRAY);
+        }
+
         if (type == SSH_FXP_STATUS) {
             int substatus = buffer.getInt();
             String msg = buffer.getString();
             String lang = buffer.getString();
             if (log.isTraceEnabled()) {
-                log.trace("checkHandle(id={}) - status: {} [{}] {}", id, substatus, lang, msg);
+                log.trace("checkHandle(id={}) - status: {} [{}] {}", Integer.valueOf(id), Integer.valueOf(substatus), lang, msg);
             }
-            throw new SftpException(substatus, msg);
-        } else if (type == SSH_FXP_HANDLE) {
-            return ValidateUtils.checkNotNullAndNotEmpty(buffer.getBytes(), "Null/empty handle in buffer");
-        } else {
-            throw new SshException("Unexpected SFTP packet received: type=" + type + ", id=" + id + ", length=" + length);
+            throwStatusException(id, substatus, msg, lang);
         }
+
+        throw new SshException("Unexpected SFTP packet received: type=" + type + ", id=" + id + ", length=" + length);
+    }
+
+    /**
+     * @param cmd Command to be sent
+     * @param request Request {@link Buffer}
+     * @return The decoded response {@link Attributes}
+     * @throws IOException If failed to send/receive or process the response
+     * @see #send(int, Buffer)
+     * @see #receive(int)
+     * @see #checkAttributes(Buffer)
+     */
+    protected Attributes checkAttributes(int cmd, Buffer request) throws IOException {
+        int reqId = send(cmd, request);
+        Buffer response = receive(reqId);
+        return checkAttributes(response);
     }
 
     protected Attributes checkAttributes(Buffer buffer) throws IOException {
         int length = buffer.getInt();
         int type = buffer.getUByte();
         int id = buffer.getInt();
+        if (type == SSH_FXP_ATTRS) {
+            return readAttributes(buffer);
+        }            
+
         if (type == SSH_FXP_STATUS) {
             int substatus = buffer.getInt();
             String msg = buffer.getString();
             String lang = buffer.getString();
             if (log.isTraceEnabled()) {
-                log.trace("checkAttributes(id={}) - status: {} [{}] {}", id, substatus, lang, msg);
+                log.trace("checkAttributes(id={}) - status: {} [{}] {}", Integer.valueOf(id), Integer.valueOf(substatus), lang, msg);
             }
-            throw new SftpException(substatus, msg);
-        } else if (type == SSH_FXP_ATTRS) {
-            return readAttributes(buffer);
-        } else {
-            throw new SshException("Unexpected SFTP packet received: type=" + type + ", id=" + id + ", length=" + length);
+            throwStatusException(id, substatus, msg, lang);
         }
+
+        throw new SshException("Unexpected SFTP packet received: type=" + type + ", id=" + id + ", length=" + length);
+    }
+
+    /**
+     * @param cmd Command to be sent
+     * @param request The request {@link Buffer}
+     * @return The retrieve name
+     * @throws IOException If failed to send/receive or process the response
+     * @see #send(int, Buffer)
+     * @see #receive(int)
+     * @see #checkOneName(Buffer)
+     */
+    protected String checkOneName(int cmd, Buffer request) throws IOException {
+        int reqId = send(cmd, request);
+        Buffer response = receive(reqId);
+        return checkOneName(response);
     }
 
     protected String checkOneName(Buffer buffer) throws IOException {
         int length = buffer.getInt();
         int type = buffer.getUByte();
         int id = buffer.getInt();
-        if (type == SSH_FXP_STATUS) {
-            int substatus = buffer.getInt();
-            String msg = buffer.getString();
-            String lang = buffer.getString();
-            if (log.isTraceEnabled()) {
-                log.trace("checkOneName(id={}) - status: {} [{}] {}", id, substatus, lang, msg);
-            }
-            throw new SftpException(substatus, msg);
-        } else if (type == SSH_FXP_NAME) {
+        if (type == SSH_FXP_NAME) {
             int len = buffer.getInt();
             if (len != 1) {
                 throw new SshException("SFTP error: received " + len + " names instead of 1");
@@ -338,12 +417,23 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             }
             Attributes attrs = readAttributes(buffer);
             if (log.isTraceEnabled()) {
-                log.trace("checkOneName(id={}) ({})[{}]: {}", id, name, longName, attrs);
+                log.trace("checkOneName(id={}) ({})[{}]: {}", Integer.valueOf(id), name, longName, attrs);
             }
             return name;
-        } else {
-            throw new SshException("Unexpected SFTP packet received: type=" + type + ", id=" + id + ", length=" + length);
         }
+        
+        if (type == SSH_FXP_STATUS) {
+            int substatus = buffer.getInt();
+            String msg = buffer.getString();
+            String lang = buffer.getString();
+            if (log.isTraceEnabled()) {
+                log.trace("checkOneName(id={}) - status: {} [{}] {}", Integer.valueOf(id), Integer.valueOf(substatus), lang, msg);
+            }
+
+            throwStatusException(id, substatus, msg, lang);
+        }
+
+        throw new SshException("Unexpected SFTP packet received: type=" + type + ", id=" + id + ", length=" + length);
     }
 
     protected Attributes readAttributes(Buffer buffer) throws IOException {
@@ -605,7 +695,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
         }
         buffer.putInt(mode);
         writeAttributes(buffer, new Attributes());
-        return new DefaultCloseableHandle(this, checkHandle(receive(send(SSH_FXP_OPEN, buffer))));
+        return new DefaultCloseableHandle(this, checkHandle(SSH_FXP_OPEN, buffer));
     }
 
     @Override
@@ -617,7 +707,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
         byte[] id = handle.getIdentifier();
         Buffer buffer = new ByteArrayBuffer(id.length + Long.SIZE /* some extra fields */);
         buffer.putBytes(id);
-        checkStatus(receive(send(SSH_FXP_CLOSE, buffer)));
+        checkStatus(SSH_FXP_CLOSE, buffer);
     }
 
     @Override
@@ -628,7 +718,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
 
         Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE /* some extra fields */);
         buffer.putString(path);
-        checkStatus(receive(send(SSH_FXP_REMOVE, buffer)));
+        checkStatus(SSH_FXP_REMOVE, buffer);
     }
 
     @Override
@@ -663,7 +753,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             throw new UnsupportedOperationException("rename(" + oldPath + " => " + newPath + ")"
                                                   + " - copy options can not be used with this SFTP version: " + options);
         }
-        checkStatus(receive(send(SSH_FXP_RENAME, buffer)));
+        checkStatus(SSH_FXP_RENAME, buffer);
     }
 
     @Override
@@ -677,33 +767,41 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
         buffer.putBytes(id);
         buffer.putLong(fileOffset);
         buffer.putInt(len);
-        return checkData(receive(send(SSH_FXP_READ, buffer)), dstOffset, dst);
+        return checkData(SSH_FXP_READ, buffer, dstOffset, dst);
+    }
+
+    protected int checkData(int cmd, Buffer request, int dstOffset, byte[] dst) throws IOException {
+        int reqId = send(cmd, request);
+        Buffer response = receive(reqId);
+        return checkData(response, dstOffset, dst);
     }
 
     protected int checkData(Buffer buffer, int dstoff, byte[] dst) throws IOException {
         int length = buffer.getInt();
         int type = buffer.getUByte();
         int id = buffer.getInt();
+        if (type == SSH_FXP_DATA) {
+            int len = buffer.getInt();
+            buffer.getRawBytes(dst, dstoff, len);
+            return len;
+        }
+
         if (type == SSH_FXP_STATUS) {
             int substatus = buffer.getInt();
             String msg = buffer.getString();
             String lang = buffer.getString();
             if (log.isTraceEnabled()) {
-                log.trace("checkData(id={}) - status: {} [{}] {}", id, substatus, lang, msg);
+                log.trace("checkData(id={}) - status: {} [{}] {}", Integer.valueOf(id), Integer.valueOf(substatus), lang, msg);
             }
 
             if (substatus == SSH_FX_EOF) {
                 return -1;
             }
 
-            throw new SftpException(substatus, msg);
-        } else if (type == SSH_FXP_DATA) {
-            int len = buffer.getInt();
-            buffer.getRawBytes(dst, dstoff, len);
-            return len;
-        } else {
-            throw new SshException("Unexpected SFTP packet received: type=" + type + ", id=" + id + ", length=" + length);
+            throwStatusException(id, substatus, msg, lang);
         }
+
+        throw new SshException("Unexpected SFTP packet received: type=" + type + ", id=" + id + ", length=" + length);
     }
 
     @Override
@@ -728,7 +826,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
         buffer.putBytes(id);
         buffer.putLong(fileOffset);
         buffer.putBytes(src, srcOffset, len);
-        checkStatus(receive(send(SSH_FXP_WRITE, buffer)));
+        checkStatus(SSH_FXP_WRITE, buffer);
     }
 
     @Override
@@ -746,7 +844,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             buffer.putByte((byte) 0);
         }
 
-        checkStatus(receive(send(SSH_FXP_MKDIR, buffer)));
+        checkStatus(SSH_FXP_MKDIR, buffer);
     }
 
     @Override
@@ -757,7 +855,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
 
         Buffer buffer = new ByteArrayBuffer(path.length() +  Long.SIZE /* some extra fields */);
         buffer.putString(path);
-        checkStatus(receive(send(SSH_FXP_RMDIR, buffer)));
+        checkStatus(SSH_FXP_RMDIR, buffer);
     }
 
     @Override
@@ -768,7 +866,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
 
         Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE /* some extra fields */);
         buffer.putString(path);
-        return new DefaultCloseableHandle(this, checkHandle(receive(send(SSH_FXP_OPENDIR, buffer))));
+        return new DefaultCloseableHandle(this, checkHandle(SSH_FXP_OPENDIR, buffer));
     }
 
     @Override
@@ -787,18 +885,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
         int length = buffer.getInt();
         int type = buffer.getUByte();
         int id = buffer.getInt();
-        if (type == SSH_FXP_STATUS) {
-            int substatus = buffer.getInt();
-            String msg = buffer.getString();
-            String lang = buffer.getString();
-            if (log.isTraceEnabled()) {
-                log.trace("checkDir(id={}) - status: {} [{}] {}", id, substatus, lang, msg);
-            }
-            if (substatus == SSH_FX_EOF) {
-                return null;
-            }
-            throw new SftpException(substatus, msg);
-        } else if (type == SSH_FXP_NAME) {
+        if (type == SSH_FXP_NAME) {
             int len = buffer.getInt();
             List<DirEntry> entries = new ArrayList<DirEntry>(len);
             for (int i = 0; i < len; i++) {
@@ -807,15 +894,30 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
                 String longName = (version == SFTP_V3) ? buffer.getString() : null;
                 Attributes attrs = readAttributes(buffer);
                 if (log.isTraceEnabled()) {
-                    log.trace("checkDir(id={})[{}] ({})[{}]: {}", id, i, name, longName, attrs);
+                    log.trace("checkDir(id={})[{}] ({})[{}]: {}", Integer.valueOf(id), Integer.valueOf(i), name, longName, attrs);
                 }
-
+    
                 entries.add(new DirEntry(name, longName, attrs));
             }
             return entries;
-        } else {
-            throw new SshException("Unexpected SFTP packet received: type=" + type + ", id=" + id + ", length=" + length);
         }
+
+        if (type == SSH_FXP_STATUS) {
+            int substatus = buffer.getInt();
+            String msg = buffer.getString();
+            String lang = buffer.getString();
+            if (log.isTraceEnabled()) {
+                log.trace("checkDir(id={}) - status: {} [{}] {}", Integer.valueOf(id), Integer.valueOf(substatus), lang, msg);
+            }
+
+            if (substatus == SSH_FX_EOF) {
+                return null;
+            }
+
+            throwStatusException(id, substatus, msg, lang);
+        }
+
+        throw new SshException("Unexpected SFTP packet received: type=" + type + ", id=" + id + ", length=" + length);
     }
 
     @Override
@@ -826,7 +928,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
 
         Buffer buffer = new ByteArrayBuffer();
         buffer.putString(path);
-        return checkOneName(receive(send(SSH_FXP_REALPATH, buffer)));
+        return checkOneName(SSH_FXP_REALPATH, buffer);
     }
 
     @Override
@@ -843,7 +945,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             buffer.putInt(SSH_FILEXFER_ATTR_ALL);
         }
 
-        return checkAttributes(receive(send(SSH_FXP_STAT, buffer)));
+        return checkAttributes(SSH_FXP_STAT, buffer);
     }
 
     @Override
@@ -860,7 +962,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             buffer.putInt(SSH_FILEXFER_ATTR_ALL);
         }
 
-        return checkAttributes(receive(send(SSH_FXP_LSTAT, buffer)));
+        return checkAttributes(SSH_FXP_LSTAT, buffer);
     }
 
     @Override
@@ -878,7 +980,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             buffer.putInt(SSH_FILEXFER_ATTR_ALL);
         }
 
-        return checkAttributes(receive(send(SSH_FXP_FSTAT, buffer)));
+        return checkAttributes(SSH_FXP_FSTAT, buffer);
     }
 
     @Override
@@ -890,7 +992,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
         Buffer buffer = new ByteArrayBuffer();
         buffer.putString(path);
         writeAttributes(buffer, attributes);
-        checkStatus(receive(send(SSH_FXP_SETSTAT, buffer)));
+        checkStatus(SSH_FXP_SETSTAT, buffer);
     }
 
     @Override
@@ -903,7 +1005,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
         Buffer buffer = new ByteArrayBuffer(id.length + (2 * Long.SIZE) /* some extras */);
         buffer.putBytes(id);
         writeAttributes(buffer, attributes);
-        checkStatus(receive(send(SSH_FXP_FSETSTAT, buffer)));
+        checkStatus(SSH_FXP_FSETSTAT, buffer);
     }
 
     @Override
@@ -914,7 +1016,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
 
         Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE /* some extra fields */);
         buffer.putString(path);
-        return checkOneName(receive(send(SSH_FXP_READLINK, buffer)));
+        return checkOneName(SSH_FXP_READLINK, buffer);
     }
 
     @Override
@@ -931,12 +1033,12 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             }
             buffer.putString(targetPath);
             buffer.putString(linkPath);
-            checkStatus(receive(send(SSH_FXP_SYMLINK, buffer)));
+            checkStatus(SSH_FXP_SYMLINK, buffer);
         } else {
             buffer.putString(targetPath);
             buffer.putString(linkPath);
             buffer.putBoolean(symbolic);
-            checkStatus(receive(send(SSH_FXP_LINK, buffer)));
+            checkStatus(SSH_FXP_LINK, buffer);
         }
     }
 
@@ -952,7 +1054,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
         buffer.putLong(offset);
         buffer.putLong(length);
         buffer.putInt(mask);
-        checkStatus(receive(send(SSH_FXP_BLOCK, buffer)));
+        checkStatus(SSH_FXP_BLOCK, buffer);
     }
 
     @Override
@@ -966,7 +1068,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
         buffer.putBytes(id);
         buffer.putLong(offset);
         buffer.putLong(length);
-        checkStatus(receive(send(SSH_FXP_UNBLOCK, buffer)));
+        checkStatus(SSH_FXP_UNBLOCK, buffer);
     }
 
     @Override

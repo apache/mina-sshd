@@ -20,6 +20,7 @@ package org.apache.sshd.agent.local;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
+import java.io.OutputStream;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -68,8 +69,9 @@ public class AgentForwardedChannel extends AbstractClientChannel {
     protected Buffer request(Buffer buffer) throws IOException {
         synchronized (messages) {
             try {
-                getInvertedIn().write(buffer.array(), buffer.rpos(), buffer.available());
-                getInvertedIn().flush();
+                OutputStream outputStream = getInvertedIn();
+                outputStream.write(buffer.array(), buffer.rpos(), buffer.available());
+                outputStream.flush();
                 localWindow.consumeAndCheck(buffer.available());
                 if (messages.isEmpty()) {
                     messages.wait();

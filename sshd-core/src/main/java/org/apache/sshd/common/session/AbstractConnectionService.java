@@ -55,6 +55,7 @@ import org.apache.sshd.common.forward.TcpipForwarderFactory;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.Int2IntFunction;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.server.channel.OpenChannelException;
@@ -419,9 +420,12 @@ public abstract class AbstractConnectionService extends CloseableUtils.AbstractI
     protected void globalRequest(Buffer buffer) throws Exception {
         String req = buffer.getString();
         boolean wantReply = buffer.getBoolean();
-        log.debug("Received SSH_MSG_GLOBAL_REQUEST {}", req);
+        if (log.isDebugEnabled()) {
+            log.debug("Received SSH_MSG_GLOBAL_REQUEST {} want-reply={}", req, Boolean.valueOf(wantReply));
+        }
+
         List<RequestHandler<ConnectionService>> handlers = session.getFactoryManager().getGlobalRequestHandlers();
-        if (handlers != null) {
+        if (GenericUtils.size(handlers) > 0) {
             for (RequestHandler<ConnectionService> handler : handlers) {
                 RequestHandler.Result result;
                 try {
@@ -430,33 +434,43 @@ public abstract class AbstractConnectionService extends CloseableUtils.AbstractI
                     log.warn("Error processing global request " + req, e);
                     result = RequestHandler.Result.ReplyFailure;
                 }
-                switch (result) {
-                    case Replied:
-                        return;
-                    case ReplySuccess:
-                        if (wantReply) {
-                            buffer = session.createBuffer(SshConstants.SSH_MSG_REQUEST_SUCCESS);
-                            session.writePacket(buffer);
-                        }
-                        return;
-                    case ReplyFailure:
-                        if (wantReply) {
-                            buffer = session.createBuffer(SshConstants.SSH_MSG_REQUEST_FAILURE);
-                            session.writePacket(buffer);
-                        }
-                        return;
-                    default:
-                        if (log.isTraceEnabled()) {
-                            log.trace("globalRequest({}) {}#process: {}", req, handler.getClass().getSimpleName(), result);
-                        }
+
+                // if Unsupported then check the next handler in line
+                if (RequestHandler.Result.Unsupported.equals(result)) {
+                    if (log.isTraceEnabled()) {
+                        log.trace("{}#process({}): {}", handler.getClass().getSimpleName(), req, result);
+                    }
+                } else {
+                    sendResponse(buffer, req, result, wantReply);
+                    return;
                 }
             }
         }
+
         log.warn("Unknown global request: {}", req);
-        if (wantReply) {
-            buffer = session.createBuffer(SshConstants.SSH_MSG_REQUEST_FAILURE);
-            session.writePacket(buffer);
+        sendResponse(buffer, req, RequestHandler.Result.Unsupported, wantReply);
+    }
+
+    protected void sendResponse(Buffer buffer, String req, RequestHandler.Result result, boolean wantReply) throws IOException {
+        if (log.isDebugEnabled()) {
+            log.debug("sendResponse({}) result={}, want-reply={}", req, result, Boolean.valueOf(wantReply));
         }
+
+        if (RequestHandler.Result.Replied.equals(result) || (!wantReply)) {
+            return;
+        }
+
+        byte cmd = RequestHandler.Result.ReplySuccess.equals(result)
+                 ? SshConstants.SSH_MSG_CHANNEL_SUCCESS
+                 : SshConstants.SSH_MSG_CHANNEL_FAILURE
+                 ;
+        buffer.clear();
+        // leave room for the SSH header
+        buffer.ensureCapacity(5 + 1 + (Integer.SIZE / Byte.SIZE), Int2IntFunction.Utils.add(Byte.SIZE));
+        buffer.rpos(5);
+        buffer.wpos(5);
+        buffer.putByte(cmd);
+        session.writePacket(buffer);
     }
 
     protected void requestSuccess(Buffer buffer) throws Exception {

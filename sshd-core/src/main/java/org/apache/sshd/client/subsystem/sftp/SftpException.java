@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.client;
+package org.apache.sshd.client.subsystem.sftp;
 
 import java.io.IOException;
 
@@ -38,7 +38,7 @@ public class SftpException extends IOException {
 
     @Override
     public String toString() {
-        String message = getLocalizedMessage();
-        return "SFTP error (" + status + "): " + message;
+        String message = getMessage();
+        return "SFTP error (" + getStatus() + "): " + message;
     }
 }

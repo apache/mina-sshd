@@ -453,7 +453,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             }
 
             sendFile(remotePath, sb.toString());
-            assertFileLength(target, sb.length(), 5000);
+            assertFileLength(target, sb.length(), TimeUnit.SECONDS.toMillis(5L));
             Files.delete(target);
         }
     }
@@ -540,7 +540,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                     try {
                         sftp.rename(file2Path, file3Path);
                         fail("Unxpected rename success of " + file2Path + " => " + file3Path);
-                    } catch (org.apache.sshd.client.SftpException e) {
+                    } catch (org.apache.sshd.client.subsystem.sftp.SftpException e) {
                         assertEquals("Mismatched status for failed rename of " + file2Path + " => " + file3Path, SSH_FX_NO_SUCH_FILE, e.getStatus());
                     }
             
@@ -551,7 +551,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                     try {
                         sftp.rename(file1Path, file2Path);
                         fail("Unxpected rename success of " + file1Path + " => " + file2Path);
-                    } catch (org.apache.sshd.client.SftpException e) {
+                    } catch (org.apache.sshd.client.subsystem.sftp.SftpException e) {
                         assertEquals("Mismatched status for failed rename of " + file1Path + " => " + file2Path, SSH_FX_FILE_ALREADY_EXISTS, e.getStatus());
                     }
 
@@ -774,6 +774,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
     }
 
     @Test
+    @Ignore("Symlinks via Java + SFTP pose some issues")
     public void testCreateSymbolicLink() throws Exception {
         // Do not execute on windows as the file system does not support symlinks
         Assume.assumeTrue("Skip non-Unix O/S", OsUtils.isUNIX());
@@ -800,7 +801,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             c.symlink(remSrcPath, remLinkPath);
     
             assertTrue("Symlink not created: " + linkPath, Files.exists(linkPath));
-            assertEquals("Mismatche link data in " + remLinkPath, data, readFile(remLinkPath));
+            assertEquals("Mismatched link data in " + remLinkPath, data, readFile(remLinkPath));
     
             String str1 = c.readlink(remLinkPath);
             String str2 = c.realpath(remSrcPath);

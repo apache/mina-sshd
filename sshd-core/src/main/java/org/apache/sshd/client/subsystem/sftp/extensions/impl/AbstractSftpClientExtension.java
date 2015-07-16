@@ -24,9 +24,9 @@ import java.io.StreamCorruptedException;
 import java.util.Collection;
 import java.util.Map;
 
-import org.apache.sshd.client.SftpException;
 import org.apache.sshd.client.subsystem.sftp.RawSftpClient;
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
+import org.apache.sshd.client.subsystem.sftp.SftpException;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.Handle;
 import org.apache.sshd.client.subsystem.sftp.extensions.SftpClientExtension;
 import org.apache.sshd.common.SshException;
@@ -188,7 +188,7 @@ public abstract class AbstractSftpClientExtension extends AbstractLoggingBean im
             }
 
             if (substatus != SftpConstants.SSH_FX_OK) {
-                throw new SftpException(substatus, msg);
+                throwStatusException(id, substatus, msg, lang);
             }
             
             return null;
@@ -197,5 +197,9 @@ public abstract class AbstractSftpClientExtension extends AbstractLoggingBean im
         } else {
             throw new SshException("Unexpected SFTP packet received: type=" + type + ", id=" + id + ", length=" + length);
         }
+    }
+    
+    protected void throwStatusException(int id, int substatus, String msg, String lang) throws IOException {
+        throw new SftpException(substatus, msg);
     }
 }

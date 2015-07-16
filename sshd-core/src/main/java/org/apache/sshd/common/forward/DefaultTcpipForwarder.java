@@ -19,6 +19,7 @@
 package org.apache.sshd.common.forward;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.HashMap;
@@ -412,8 +413,10 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
             Buffer buffer = new ByteArrayBuffer();
             buffer.putBuffer(message);
             channel.waitFor(ClientChannel.OPENED | ClientChannel.CLOSED, Long.MAX_VALUE);
-            channel.getInvertedIn().write(buffer.array(), buffer.rpos(), buffer.available());
-            channel.getInvertedIn().flush();
+            
+            OutputStream outputStream = channel.getInvertedIn();
+            outputStream.write(buffer.array(), buffer.rpos(), buffer.available());
+            outputStream.flush();
         }
 
         @Override

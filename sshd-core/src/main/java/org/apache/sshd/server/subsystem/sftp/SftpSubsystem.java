@@ -20,7 +20,6 @@ package org.apache.sshd.server.subsystem.sftp;
 
 import static org.apache.sshd.common.subsystem.sftp.SftpConstants.*;
 
-import java.io.DataInputStream;
 import java.io.EOFException;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -76,6 +75,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -102,6 +102,7 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.common.util.io.FileInfoExtractor;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.common.util.threads.ThreadUtils;
@@ -573,50 +574,43 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
 
     @Override
     public void run() {
-        DataInputStream dis = null;
         try {
-            dis = new DataInputStream(in);
-            while (true) {
-                int length = dis.readInt();
-                if (length < 5) {
-                    throw new IllegalArgumentException("Bad length to read: " + length);
-                }
-                Buffer buffer = new ByteArrayBuffer(length + 4);
+            for (long count = 1L; ; count++) {
+                int length = BufferUtils.readInt(in, workBuf, 0, workBuf.length);
+                ValidateUtils.checkTrue(length >= ((Integer.SIZE / Byte.SIZE) + 1 /* command */), "Bad length to read: %d", length);
+
+                Buffer buffer = new ByteArrayBuffer(length + (Integer.SIZE / Byte.SIZE) /* the length */);
                 buffer.putInt(length);
-                int nb = length;
-                while (nb > 0) {
-                    int l = dis.read(buffer.array(), buffer.wpos(), nb);
+                for (int remainLen = length; remainLen > 0; ) {
+                    int l = in.read(buffer.array(), buffer.wpos(), remainLen);
                     if (l < 0) {
-                        throw new IllegalArgumentException("Premature EOF while read length=" + length + " while remain=" + nb);
+                        throw new IllegalArgumentException("Premature EOF at buffer #" + count + " while read length=" + length + " and remain=" + remainLen);
                     }
                     buffer.wpos(buffer.wpos() + l);
-                    nb -= l;
+                    remainLen -= l;
                 }
+
                 process(buffer);
             }
         } catch (Throwable t) {
-            if (!closed && !(t instanceof EOFException)) { // Ignore
+            if ((!closed) && (!(t instanceof EOFException))) { // Ignore
                 log.error("Exception caught in SFTP subsystem", t);
             }
         } finally {
-            if (dis != null) {
+            for (Map.Entry<String, Handle> entry : handles.entrySet()) {
+                String id = entry.getKey();
+                Handle handle = entry.getValue();
                 try {
-                    dis.close();
+                    handle.close();
+                    if (log.isDebugEnabled()) {
+                        log.debug("Closed pending handle {} [{}]", id, handle);
+                    }
                 } catch (IOException ioe) {
-                    log.error("Could not close DataInputStream", ioe);
+                    log.error("Failed ({}) to close handle={}[{}]: {}",
+                              ioe.getClass().getSimpleName(), id, handle, ioe.getMessage());
                 }
             }
 
-            if (handles != null) {
-                for (Map.Entry<String, Handle> entry : handles.entrySet()) {
-                    Handle handle = entry.getValue();
-                    try {
-                        handle.close();
-                    } catch (IOException ioe) {
-                        log.error("Could not close open handle: " + entry.getKey(), ioe);
-                    }
-                }
-            }
             callback.onExit(0);
         }
     }
@@ -2581,28 +2575,39 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     }
 
     protected String getShortName(Path f) throws IOException {
+        Path abs = f.toAbsolutePath();
+        Path nrm = abs.normalize();
+        int  count = nrm.getNameCount();
+        /*
+         * According to the javadoc:
+         * 
+         *      The number of elements in the path, or 0 if this path only
+         *      represents a root component
+         */
         if (OsUtils.isUNIX()) {
-            Path    name=f.getFileName();
+            Path name = f.getFileName();
             if (name == null) {
-                Path    p=resolveFile(".");
+                Path p = resolveFile(".");
                 name = p.getFileName();
             }
-            
-            return name.toString();
-        } else {    // need special handling for Windows root drives
-            Path    abs=f.toAbsolutePath().normalize();
-            int     count=abs.getNameCount();
-            /*
-             * According to the javadoc:
-             * 
-             *      The number of elements in the path, or 0 if this path only
-             *      represents a root component
-             */
-            if (count > 0) {
-                Path    name=abs.getFileName();
+
+            if (name == null) {
+                if (count > 0) {
+                    name = nrm.getFileName();
+                }
+            }
+
+            if (name != null) {
                 return name.toString();
             } else {
-                return abs.toString().replace(File.separatorChar, '/');
+                return nrm.toString();
+            }
+        } else {    // need special handling for Windows root drives
+            if (count > 0) {
+                Path name = nrm.getFileName();
+                return name.toString();
+            } else {
+                return nrm.toString().replace(File.separatorChar, '/');
             }
         }
     }
@@ -2766,10 +2771,20 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         return getAttributes(file, flags, options);
     }
 
+    /**
+     * @param file The {@link Path} location for the required attributes
+     * @param flags A mask of the original required attributes - ignored by the
+     * default implementation
+     * @param options The {@link LinkOption}s to use in order to access the file
+     * if necessary
+     * @return A {@link Map} of the retrieved attributes
+     * @throws IOException If failed to access the file
+     * @see #resolveMissingFileAttributes(Path, int, Map, LinkOption...)
+     */
     protected Map<String, Object> getAttributes(Path file, int flags, LinkOption ... options) throws IOException {
         FileSystem          fs=file.getFileSystem();
         Collection<String>  supportedViews=fs.supportedFileAttributeViews();
-        Map<String,Object>  attrs=new HashMap<>();
+        Map<String,Object>  attrs=new TreeMap<String,Object>(String.CASE_INSENSITIVE_ORDER);
         Collection<String>  views;
 
         if (GenericUtils.isEmpty(supportedViews)) {
@@ -2785,16 +2800,121 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
 
         for (String v : views) {
             Map<String, Object> ta=readFileAttributes(file, v, options);
-            attrs.putAll(ta);
+            if (GenericUtils.size(ta) > 0) {
+                attrs.putAll(ta);
+            }
         }
 
-        // if did not get permissions from the supported views return a best approximation
-        if (!attrs.containsKey("permissions")) {
-            Set<PosixFilePermission> perms=IoUtils.getPermissionsFromFile(file.toFile());
-            attrs.put("permissions", perms);
+        Map<String,Object> completions = resolveMissingFileAttributes(file, flags, attrs, options);
+        if (GenericUtils.size(completions) > 0) {
+            attrs.putAll(completions);
         }
 
         return attrs;
+    }
+
+    /**
+     * A {@link Map} of {@link FileInfoExtractor}s to be used to complete
+     * attributes that are deemed important enough to warrant an extra
+     * effort if not accessible via the file system attributes views
+     */
+    public static final Map<String,FileInfoExtractor<?>> FILEATTRS_RESOLVERS =
+            Collections.unmodifiableMap(new TreeMap<String,FileInfoExtractor<?>>(String.CASE_INSENSITIVE_ORDER) {
+                    private static final long serialVersionUID = 1L;    // we're not serializing it
+                
+                    {
+                        put("isRegularFile", FileInfoExtractor.ISREG);
+                        put("isDirectory", FileInfoExtractor.ISDIR);
+                        put("isSymbolicLink", FileInfoExtractor.ISSYMLINK);
+                        put("permissions", FileInfoExtractor.PERMISSIONS);
+                        put("size", FileInfoExtractor.SIZE);
+                        put("lastModifiedTime", FileInfoExtractor.LASTMODIFIED);
+                    }
+            });
+
+    /**
+     * Called by {@link #getAttributes(Path, int, LinkOption...)} in order
+     * to complete any attributes that could not be retrieved via the supported
+     * file system views. These attributes are deemed important so an extra
+     * effort is made to provide a value for them
+     * @param file The {@link Path} location for the required attributes
+     * @param flags A mask of the original required attributes - ignored by the
+     * default implementation
+     * @param current The {@link Map} of attributes already retrieved - may be
+     * {@code null}/empty and/or unmodifiable
+     * @param options The {@link LinkOption}s to use in order to access the file
+     * if necessary
+     * @return A {@link Map} of the extra attributes whose values need to be
+     * updated in the original map. <B>Note:</B> it is allowed to specify values
+     * which <U>override</U> existing ones - the default implementation does not
+     * override values that have a non-{@code null} value
+     * @throws IOException If failed to access the attributes - in which case
+     * an <U>error</U> is returned to the SFTP client
+     * @see #FILEATTRS_RESOLVERS
+     */
+    protected Map<String,Object> resolveMissingFileAttributes(Path file, int flags, Map<String,Object> current, LinkOption ... options) throws IOException {
+        Map<String,Object> attrs = null;
+        for (Map.Entry<String,FileInfoExtractor<?>> re : FILEATTRS_RESOLVERS.entrySet()) {
+            String name = re.getKey();
+            Object value = GenericUtils.isEmpty(current) ? null : current.get(name);
+            FileInfoExtractor<?> x = re.getValue();
+            try {
+                Object resolved = resolveMissingFileAttributeValue(file, name, value, x, options);
+                if (Objects.equals(resolved, value)) {
+                    continue;
+                }
+                
+                if (attrs == null) {
+                    attrs = new TreeMap<String,Object>(String.CASE_INSENSITIVE_ORDER);
+                }
+                
+                attrs.put(name, resolved);
+
+                if (log.isDebugEnabled()) {
+                    log.debug("resolveMissingFileAttributes(" + file + ")[" + name + "]"
+                            + " replace " + value + " with " + resolved);
+                }
+            } catch(IOException e) {
+                if (log.isDebugEnabled()) {
+                    log.debug("resolveMissingFileAttributes(" + file + ")[" + name + "]"
+                            + " failed (" + e.getClass().getSimpleName() + ")"
+                            + " to resolve missing value: " + e.getMessage()); 
+                }
+            }
+        }
+        
+        if (attrs == null) {
+            return Collections.emptyMap();
+        } else {
+            return attrs;
+        }
+    }
+    
+    protected Object resolveMissingFileAttributeValue(Path file, String name, Object value, FileInfoExtractor<?> x, LinkOption ... options) throws IOException {
+        if (value != null) {
+            return value;
+        } else {
+            return x.infoOf(file, options);
+        }
+    }
+
+    protected Map<String,Object> addMissingAttribute(Path file, Map<String,Object> current, String name, FileInfoExtractor<?> x, LinkOption ... options) throws IOException {
+        Object value = GenericUtils.isEmpty(current) ? null : current.get(name);
+        if (value != null) {    // already have the value
+            return current;
+        }
+        
+        // skip if still no value
+        if ((value = x.infoOf(file, options)) == null) {
+            return current;
+        }
+
+        if (current == null) {
+            current = new TreeMap<String,Object>(String.CASE_INSENSITIVE_ORDER);
+        }
+        
+        current.put(name, value);
+        return current;
     }
 
     protected Map<String, Object> readFileAttributes(Path file, String view, LinkOption ... options) throws IOException {
@@ -2819,7 +2939,8 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                        + " Unknown policy (" + unsupportedAttributePolicy + ")"
                        + " for " + e.getClass().getSimpleName() + ": " + e.getMessage());
         }
-        
+
+
         return Collections.emptyMap();
     }
 
@@ -3263,8 +3384,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
 
     protected void send(Buffer buffer) throws IOException {
         int len = buffer.available();
-        int used = BufferUtils.putUInt(len & 0xFFFFL, workBuf);
-        out.write(workBuf, 0, used);
+        BufferUtils.writeInt(out, len, workBuf, 0, workBuf.length);
         out.write(buffer.array(), buffer.rpos(), len);
         out.flush();
     }
