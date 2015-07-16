@@ -52,7 +52,7 @@ public abstract class AbstractKeyPairProvider extends AbstractLoggingBean implem
 
     @Override
     public List<String> getKeyTypes() {
-        List<String> types = new ArrayList<String>();
+        List<String> types = new ArrayList<>();
         Iterable<KeyPair> keys = loadKeys();
         for (KeyPair key : keys) {
             String type = KeyUtils.getKeyType(key);

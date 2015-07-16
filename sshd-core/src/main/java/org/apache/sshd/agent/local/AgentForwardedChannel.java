@@ -34,7 +34,7 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
 public class AgentForwardedChannel extends AbstractClientChannel {
 
-    private final Queue<Buffer> messages = new ArrayBlockingQueue<Buffer>(10);
+    private final Queue<Buffer> messages = new ArrayBlockingQueue<>(10);
     private final Buffer receiveBuffer = new ByteArrayBuffer();
 
     public AgentForwardedChannel() {

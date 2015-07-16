@@ -44,7 +44,7 @@ public class CachingPublicKeyAuthenticator implements PublickeyAuthenticator, Se
     public boolean authenticate(String username, PublicKey key, ServerSession session) {
         Map<PublicKey, Boolean> map = cache.get(session);
         if (map == null) {
-            map = new ConcurrentHashMap<PublicKey, Boolean>();
+            map = new ConcurrentHashMap<>();
             cache.put(session, map);
             session.addListener(this);
         }

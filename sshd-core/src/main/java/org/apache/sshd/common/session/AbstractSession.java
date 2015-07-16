@@ -119,9 +119,9 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     protected String serverVersion;
     protected String clientVersion;
     // if empty then means not-initialized
-    protected final Map<KexProposalOption,String> serverProposal = new EnumMap<KexProposalOption, String>(KexProposalOption.class);
-    protected final Map<KexProposalOption,String> clientProposal = new EnumMap<KexProposalOption, String>(KexProposalOption.class);
-    private final Map<KexProposalOption,String> negotiationResult  = new EnumMap<KexProposalOption, String>(KexProposalOption.class);
+    protected final Map<KexProposalOption,String> serverProposal = new EnumMap<>(KexProposalOption.class);
+    protected final Map<KexProposalOption,String> clientProposal = new EnumMap<>(KexProposalOption.class);
+    private final Map<KexProposalOption,String> negotiationResult  = new EnumMap<>(KexProposalOption.class);
     protected byte[] I_C; // the payload of the client's SSH_MSG_KEXINIT
     protected byte[] I_S; // the payload of the factoryManager's SSH_MSG_KEXINIT
     protected KeyExchange kex;
@@ -150,8 +150,8 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     protected final Object encodeLock = new Object();
     protected final Object decodeLock = new Object();
     protected final Object requestLock = new Object();
-    protected final AtomicReference<Buffer> requestResult = new AtomicReference<Buffer>();
-    protected final Map<AttributeKey<?>, Object> attributes = new ConcurrentHashMap<AttributeKey<?>, Object>();
+    protected final AtomicReference<Buffer> requestResult = new AtomicReference<>();
+    protected final Map<AttributeKey<?>, Object> attributes = new ConcurrentHashMap<>();
 
     // Session timeout
     protected long authTimeoutTimestamp = 0L;
@@ -159,7 +159,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     protected long authTimeoutMs = TimeUnit.MINUTES.toMillis(2);          // 2 minutes in milliseconds
     protected long idleTimeoutMs = TimeUnit.MINUTES.toMillis(10);         // 10 minutes in milliseconds
     protected long disconnectTimeoutMs = TimeUnit.SECONDS.toMillis(10);   // 10 seconds in milliseconds
-    protected final AtomicReference<TimeoutStatus> timeoutStatus = new AtomicReference<TimeoutStatus>(TimeoutStatus.NoTimeout);
+    protected final AtomicReference<TimeoutStatus> timeoutStatus = new AtomicReference<>(TimeoutStatus.NoTimeout);
 
     //
     // Rekeying
@@ -169,7 +169,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     protected final AtomicLong inBytesCount = new AtomicLong(0L);
     protected final AtomicLong outBytesCount = new AtomicLong(0L);
     protected final AtomicLong lastKeyTimeValue = new AtomicLong(0L);
-    protected final Queue<PendingWriteFuture> pendingPackets = new LinkedList<PendingWriteFuture>();
+    protected final Queue<PendingWriteFuture> pendingPackets = new LinkedList<>();
 
     protected Service currentService;
 
@@ -896,7 +896,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
      * @return The proposal {@link Map>
      */
     protected Map<KexProposalOption,String> createProposal(String hostKeyTypes) {
-        Map<KexProposalOption,String> proposal = new EnumMap<KexProposalOption, String>(KexProposalOption.class);
+        Map<KexProposalOption,String> proposal = new EnumMap<>(KexProposalOption.class);
         proposal.put(KexProposalOption.ALGORITHMS, NamedResource.Utils.getNames(factoryManager.getKeyExchangeFactories()));
         proposal.put(KexProposalOption.SERVERKEYS, hostKeyTypes);
         
@@ -1215,7 +1215,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
      * @return The negotiated options {@link Map}
      */
     protected Map<KexProposalOption,String> negotiate() {
-        Map<KexProposalOption,String> guess = new EnumMap<KexProposalOption, String>(KexProposalOption.class);
+        Map<KexProposalOption,String> guess = new EnumMap<>(KexProposalOption.class);
         for (KexProposalOption paramType : KexProposalOption.VALUES) {
         	String clientParamValue = clientProposal.get(paramType);
         	String serverParamValue = serverProposal.get(paramType);

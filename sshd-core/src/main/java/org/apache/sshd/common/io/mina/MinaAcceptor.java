@@ -39,7 +39,7 @@ public class MinaAcceptor extends MinaService implements org.apache.sshd.common.
     public static final int DEFAULT_BACKLOG=0;
     public static final boolean DEFAULT_REUSE_ADDRESS=true;
 
-    protected final AtomicReference<IoAcceptor> acceptorHolder = new AtomicReference<IoAcceptor>(null);
+    protected final AtomicReference<IoAcceptor> acceptorHolder = new AtomicReference<>(null);
 
     // Acceptor
     protected int backlog = DEFAULT_BACKLOG;

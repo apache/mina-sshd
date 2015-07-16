@@ -146,7 +146,7 @@ public final class ServerIdentity {
             return Collections.emptyMap();
         }
         
-        Map<String,Path> ids = new TreeMap<String, Path>(String.CASE_INSENSITIVE_ORDER);
+        Map<String,Path> ids = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         for (String p : paths) {
             File file = new File(p);
             Path path = file.toPath();

@@ -44,7 +44,7 @@ public final class VersionProperties {
         }
 
         private static Map<String,String> loadVersionProperties(Class<?> anchor, ClassLoader loader) {
-            Map<String,String> result = new TreeMap<String,String>(String.CASE_INSENSITIVE_ORDER);
+            Map<String,String> result = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
             try {
                 InputStream input = loader.getResourceAsStream("org/apache/sshd/sshd-version.properties");
                 if (input == null) {

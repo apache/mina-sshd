@@ -67,7 +67,7 @@ public class CredentialHelper {
          */
 
         private FixedLoginConfiguration(String spn, String keytab) {
-            Map<String, String> parms = new HashMap<String, String>();
+            Map<String, String> parms = new HashMap<>();
 
             parms.put("isInitiator", "false");
             parms.put("principal", spn);

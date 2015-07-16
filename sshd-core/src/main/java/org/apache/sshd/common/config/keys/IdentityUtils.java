@@ -76,7 +76,7 @@ public final class IdentityUtils {
             return null;
         }
         
-        Map<String,KeyPair> pairsMap = new TreeMap<String, KeyPair>(String.CASE_INSENSITIVE_ORDER);
+        Map<String,KeyPair> pairsMap = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         for (Map.Entry<String, KeyPair> ide : ids.entrySet()) {
             String type = ide.getKey();
             KeyPair kp = ide.getValue();
@@ -127,7 +127,7 @@ public final class IdentityUtils {
             return Collections.emptyMap();
         }
         
-        Map<String,KeyPair> ids = new TreeMap<String, KeyPair>(String.CASE_INSENSITIVE_ORDER);
+        Map<String,KeyPair> ids = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         for (Map.Entry<String,? extends Path> pe : paths.entrySet()) {
             String type = pe.getKey();
             Path path = pe.getValue();

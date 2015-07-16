@@ -254,8 +254,8 @@ public enum BuiltinDHFactories implements DHFactory {
             return ParseResult.EMPTY;
         }
         
-        List<DHFactory> factories=new ArrayList<DHFactory>(dhList.size());
-        List<String>    unknown=Collections.<String>emptyList();
+        List<DHFactory> factories=new ArrayList<>(dhList.size());
+        List<String>    unknown=Collections.emptyList();
         for (String name : dhList) {
             DHFactory  f=resolveFactory(name);
             if (f != null) {
@@ -263,7 +263,7 @@ public enum BuiltinDHFactories implements DHFactory {
             } else {
                 // replace the (unmodifiable) empty list with a real one
                 if (unknown.isEmpty()) {
-                    unknown = new ArrayList<String>();
+                    unknown = new ArrayList<>();
                 }
                 unknown.add(name);
             }

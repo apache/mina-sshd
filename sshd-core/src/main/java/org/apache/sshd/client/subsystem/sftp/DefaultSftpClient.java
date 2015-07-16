@@ -64,7 +64,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
     private final byte[] workBuf = new byte[Integer.SIZE / Byte.SIZE];  // TODO in JDK-8 use Integer.BYTES
     private boolean closing;
     private int version;
-    private final Map<String,byte[]> extensions = new TreeMap<String,byte[]>(String.CASE_INSENSITIVE_ORDER);
+    private final Map<String,byte[]> extensions = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
     private final Map<String,byte[]> exposedExtensions = Collections.unmodifiableMap(extensions);
 
     public DefaultSftpClient(ClientSession clientSession) throws IOException {
@@ -323,7 +323,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
             }
         }
 
-        int selected = selector.selectVersion(current, new ArrayList<Integer>(available));
+        int selected = selector.selectVersion(current, new ArrayList<>(available));
         if (log.isDebugEnabled()) {
             log.debug("negotiateVersion({}) {} -> {}", Integer.valueOf(current), available, Integer.valueOf(selected));
         }

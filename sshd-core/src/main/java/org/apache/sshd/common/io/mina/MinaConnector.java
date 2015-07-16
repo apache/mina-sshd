@@ -36,7 +36,7 @@ import org.apache.sshd.common.io.IoConnectFuture;
  */
 public class MinaConnector extends MinaService implements org.apache.sshd.common.io.IoConnector, IoHandler {
 
-    protected final AtomicReference<IoConnector> connectorHolder = new AtomicReference<IoConnector>(null);
+    protected final AtomicReference<IoConnector> connectorHolder = new AtomicReference<>(null);
 
     public MinaConnector(FactoryManager manager, org.apache.sshd.common.io.IoHandler handler, IoProcessor<NioSession> ioProcessor) {
         super(manager, handler, ioProcessor);

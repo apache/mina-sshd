@@ -104,7 +104,7 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
 
     @Override
     public Set<SocketAddress> getBoundAddresses() {
-        return new HashSet<SocketAddress>(channels.keySet());
+        return new HashSet<>(channels.keySet());
     }
 
     @Override

@@ -104,7 +104,7 @@ public enum BuiltinMacs implements MacFactory {
     public static final Set<BuiltinMacs> VALUES =
             Collections.unmodifiableSet(EnumSet.allOf(BuiltinMacs.class));
     private static final Map<String,MacFactory>   extensions =
-            new TreeMap<String,MacFactory>(String.CASE_INSENSITIVE_ORDER);
+            new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
     /**
      * Registered a {@link NamedFactory} to be available besides the built-in
@@ -212,8 +212,8 @@ public enum BuiltinMacs implements MacFactory {
             return ParseResult.EMPTY;
         }
         
-        List<MacFactory> factories=new ArrayList<MacFactory>(macs.size());
-        List<String>            unknown=Collections.<String>emptyList();
+        List<MacFactory> factories=new ArrayList<>(macs.size());
+        List<String>            unknown=Collections.emptyList();
         for (String name : macs) {
             MacFactory   m=resolveFactory(name);
             if (m != null) {
@@ -221,7 +221,7 @@ public enum BuiltinMacs implements MacFactory {
             } else {
                 // replace the (unmodifiable) empty list with a real one
                 if (unknown.isEmpty()) {
-                    unknown = new ArrayList<String>();
+                    unknown = new ArrayList<>();
                 }
                 unknown.add(name);
             }

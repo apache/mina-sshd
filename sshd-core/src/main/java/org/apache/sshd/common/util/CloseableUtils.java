@@ -316,7 +316,7 @@ public final class CloseableUtils {
         /** Lock object for this session state */
         protected final Object lock = new Object();
         /** State of this object */
-        protected final AtomicReference<State> state = new AtomicReference<State>(State.Opened);
+        protected final AtomicReference<State> state = new AtomicReference<>(State.Opened);
         /** A future that will be set 'closed' when the object is actually closed */
         protected final CloseFuture closeFuture = new DefaultCloseFuture(lock);
 

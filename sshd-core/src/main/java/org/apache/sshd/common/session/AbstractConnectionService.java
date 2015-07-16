@@ -74,7 +74,7 @@ public abstract class AbstractConnectionService extends CloseableUtils.AbstractI
         public static final int DEFAULT_MAX_CHANNELS = Integer.MAX_VALUE;
 
     /** Map of channels keyed by the identifier */
-    protected final Map<Integer, Channel> channels = new ConcurrentHashMap<Integer, Channel>();
+    protected final Map<Integer, Channel> channels = new ConcurrentHashMap<>();
     /** Next channel identifier */
     protected final AtomicInteger nextChannelId = new AtomicInteger(0);
 

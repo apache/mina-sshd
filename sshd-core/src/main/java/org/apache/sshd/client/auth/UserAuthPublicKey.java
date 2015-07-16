@@ -62,7 +62,7 @@ public class UserAuthPublicKey extends AbstractLoggingBean implements UserAuth {
     public void init(ClientSession session, String service, Collection<?> identities) throws Exception {
         this.session = session;
         this.service = service;
-        List<PublicKeyIdentity> ids = new ArrayList<PublicKeyIdentity>();
+        List<PublicKeyIdentity> ids = new ArrayList<>();
         for (Object o : identities) {
             if (o instanceof KeyPair) {
                 ids.add(new KeyPairIdentity(session.getFactoryManager(), (KeyPair) o));

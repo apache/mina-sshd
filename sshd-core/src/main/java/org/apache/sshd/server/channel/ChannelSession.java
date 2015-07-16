@@ -86,9 +86,9 @@ public class ChannelSession extends AbstractServerChannel {
         private final Map<PtyMode, Integer> ptyModes;
 
         public StandardEnvironment() {
-            listeners = new ConcurrentHashMap<Signal, Set<SignalListener>>(3);
-            env = new ConcurrentHashMap<String, String>();
-            ptyModes = new ConcurrentHashMap<PtyMode, Integer>();
+            listeners = new ConcurrentHashMap<>(3);
+            env = new ConcurrentHashMap<>();
+            ptyModes = new ConcurrentHashMap<>();
         }
 
         @Override

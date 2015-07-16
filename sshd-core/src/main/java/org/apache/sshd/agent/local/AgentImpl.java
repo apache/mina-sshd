@@ -42,7 +42,7 @@ import org.apache.sshd.common.util.ValidateUtils;
  */
 public class AgentImpl implements SshAgent {
 
-    private final List<Pair<KeyPair, String>> keys = new ArrayList<Pair<KeyPair, String>>();
+    private final List<Pair<KeyPair, String>> keys = new ArrayList<>();
     private final AtomicBoolean open = new AtomicBoolean(true);
 
     public AgentImpl() {
@@ -60,9 +60,9 @@ public class AgentImpl implements SshAgent {
             throw new SshException("Agent closed");
         }
 
-        List<Pair<PublicKey, String>> pks = new ArrayList<Pair<PublicKey, String>>();
+        List<Pair<PublicKey, String>> pks = new ArrayList<>();
         for (Pair<KeyPair, String> kp : keys) {
-            pks.add(new Pair<PublicKey, String>(kp.getFirst().getPublic(), kp.getSecond()));
+            pks.add(new Pair<>(kp.getFirst().getPublic(), kp.getSecond()));
         }
         return pks;
     }
@@ -104,7 +104,7 @@ public class AgentImpl implements SshAgent {
         if (!isOpen()) {
             throw new SshException("Agent closed");
         }
-        keys.add(new Pair<KeyPair, String>(key, comment));
+        keys.add(new Pair<>(key, comment));
     }
 
     @Override

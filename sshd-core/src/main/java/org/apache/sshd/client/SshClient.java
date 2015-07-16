@@ -190,9 +190,9 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         if (agentFactory != null) {
             List<NamedFactory<Channel>> factories = getChannelFactories();
             if (GenericUtils.isEmpty(factories)) {
-                factories = new ArrayList<NamedFactory<Channel>>();
+                factories = new ArrayList<>();
             } else {
-                factories = new ArrayList<NamedFactory<Channel>>(factories);
+                factories = new ArrayList<>(factories);
             }
             factories.add(ValidateUtils.checkNotNull(agentFactory.getChannelForwardingFactory(), "No agent channel forwarding factory for %s", agentFactory));
 
@@ -329,8 +329,8 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         String host = null;
         String login = null;
         boolean error = false;
-        List<File> identities = new ArrayList<File>();
-        Map<String, String> options = new LinkedHashMap<String, String>();
+        List<File> identities = new ArrayList<>();
+        Map<String, String> options = new LinkedHashMap<>();
         int numArgs = GenericUtils.length(args);
         for (int i = 0; i < numArgs; i++) {
             String argName = args[i];
@@ -556,7 +556,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                     target = argName;
                 } else {
                     if (command == null) {
-                        command = new ArrayList<String>();
+                        command = new ArrayList<>();
                     }
                     command.add(argName);
                 }

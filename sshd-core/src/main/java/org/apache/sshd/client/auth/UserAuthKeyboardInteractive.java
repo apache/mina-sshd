@@ -56,7 +56,7 @@ public class UserAuthKeyboardInteractive extends AbstractLoggingBean implements 
     public void init(ClientSession session, String service, Collection<?> identities) throws Exception {
         this.session = session;
         this.service = service;
-        List<String> pwds = new ArrayList<String>();
+        List<String> pwds = new ArrayList<>();
         for (Object o : identities) {
             if (o instanceof String) {
                 pwds.add((String) o);

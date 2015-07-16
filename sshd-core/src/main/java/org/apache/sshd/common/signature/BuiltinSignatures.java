@@ -127,7 +127,7 @@ public enum BuiltinSignatures implements SignatureFactory {
     public static final Set<BuiltinSignatures> VALUES = 
             Collections.unmodifiableSet(EnumSet.allOf(BuiltinSignatures.class));
     private static final Map<String,SignatureFactory>   extensions = 
-            new TreeMap<String,SignatureFactory>(String.CASE_INSENSITIVE_ORDER);
+            new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
     /**
      * Registered a {@link NamedFactory} to be available besides the built-in
@@ -238,8 +238,8 @@ public enum BuiltinSignatures implements SignatureFactory {
             return ParseResult.EMPTY;
         }
         
-        List<SignatureFactory>  factories=new ArrayList<SignatureFactory>(sigs.size());
-        List<String>            unknown=Collections.<String>emptyList();
+        List<SignatureFactory>  factories=new ArrayList<>(sigs.size());
+        List<String>            unknown=Collections.emptyList();
         for (String name : sigs) {
             SignatureFactory s=resolveFactory(name);
             if (s != null) {
@@ -247,7 +247,7 @@ public enum BuiltinSignatures implements SignatureFactory {
             } else {
                 // replace the (unmodifiable) empty list with a real one
                 if (unknown.isEmpty()) {
-                    unknown = new ArrayList<String>();
+                    unknown = new ArrayList<>();
                 }
                 unknown.add(name);
             }

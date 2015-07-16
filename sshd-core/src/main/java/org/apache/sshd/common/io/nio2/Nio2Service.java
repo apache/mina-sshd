@@ -51,7 +51,7 @@ public abstract class Nio2Service extends CloseableUtils.AbstractInnerCloseable 
         this.manager = ValidateUtils.checkNotNull(manager, "No factory manager provided", GenericUtils.EMPTY_OBJECT_ARRAY);
         this.handler = ValidateUtils.checkNotNull(handler, "No I/O handler provided", GenericUtils.EMPTY_OBJECT_ARRAY);
         this.group = ValidateUtils.checkNotNull(group, "No async. channel group provided", GenericUtils.EMPTY_OBJECT_ARRAY);
-        this.sessions = new ConcurrentHashMap<Long, IoSession>();
+        this.sessions = new ConcurrentHashMap<>();
     }
 
     public void dispose() {

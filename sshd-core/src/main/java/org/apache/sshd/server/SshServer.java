@@ -231,7 +231,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         ValidateUtils.checkTrue(getPort() >= 0 /* zero means not set yet */, "Bad port number: %d", Integer.valueOf(getPort()));
 
         if (GenericUtils.isEmpty(getUserAuthFactories())) {
-            List<NamedFactory<UserAuth>> factories = new ArrayList<NamedFactory<UserAuth>>();
+            List<NamedFactory<UserAuth>> factories = new ArrayList<>();
             if (getPasswordAuthenticator() != null) {
                 factories.add(DEFAULT_USER_AUTH_PASSWORD_FACTORY);
                 factories.add(DEFAULT_USER_AUTH_KB_INTERACTIVE_FACTORY);
@@ -351,7 +351,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
      * Obtain the list of active sessions.
      */
     public List<AbstractSession> getActiveSessions() {
-        List<AbstractSession> sessions = new ArrayList<AbstractSession>();
+        List<AbstractSession> sessions = new ArrayList<>();
         for (IoSession ioSession : acceptor.getManagedSessions().values()) {
             AbstractSession session = AbstractSession.getSession(ioSession, true);
             if (session != null) {
@@ -386,7 +386,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         int port = 8000;
         String provider;
         boolean error = false;
-        Map<String, String> options = new LinkedHashMap<String, String>();
+        Map<String, String> options = new LinkedHashMap<>();
 
         int numArgs = GenericUtils.length(args);
         for (int i = 0; i < numArgs; i++) {

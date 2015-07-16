@@ -31,7 +31,7 @@ import org.apache.sshd.common.util.ValidateUtils;
  */
 public abstract class AbstractSessionFactory extends AbstractSessionIoHandler {
 
-    protected final List<SessionListener> listeners = new CopyOnWriteArrayList<SessionListener>();
+    protected final List<SessionListener> listeners = new CopyOnWriteArrayList<>();
 
     protected AbstractSessionFactory() {
     	super();

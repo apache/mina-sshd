@@ -57,7 +57,7 @@ public class SftpFileChannel extends FileChannel {
     private final SftpClient.CloseableHandle handle;
     private final Object lock = new Object();
     private final AtomicLong posTracker = new AtomicLong(0L);
-    private final AtomicReference<Thread> blockingThreadHolder = new AtomicReference<Thread>(null);
+    private final AtomicReference<Thread> blockingThreadHolder = new AtomicReference<>(null);
 
     public SftpFileChannel(SftpPath p, Collection<SftpClient.OpenMode> modes) throws IOException {
         this.p = ValidateUtils.checkNotNull(p, "No target path", GenericUtils.EMPTY_OBJECT_ARRAY);

@@ -57,8 +57,8 @@ public class Nio2Session extends CloseableUtils.AbstractCloseable implements IoS
     private final SocketAddress localAddress;
     private final SocketAddress remoteAddress;
     private final FactoryManager manager;
-    private final Queue<Nio2DefaultIoWriteFuture> writes = new LinkedTransferQueue<Nio2DefaultIoWriteFuture>();
-    private final AtomicReference<Nio2DefaultIoWriteFuture> currentWrite = new AtomicReference<Nio2DefaultIoWriteFuture>();
+    private final Queue<Nio2DefaultIoWriteFuture> writes = new LinkedTransferQueue<>();
+    private final AtomicReference<Nio2DefaultIoWriteFuture> currentWrite = new AtomicReference<>();
 
     public Nio2Session(Nio2Service service, FactoryManager manager, IoHandler handler, AsynchronousSocketChannel socket) throws IOException {
         this.service = service;

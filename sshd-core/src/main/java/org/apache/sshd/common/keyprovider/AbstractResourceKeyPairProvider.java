@@ -45,7 +45,7 @@ public abstract class AbstractResourceKeyPairProvider<R> extends AbstractKeyPair
      * practice to have 2 key files that differ from one another only in their
      * case... 
      */
-    private final Map<String,KeyPair>   cacheMap=new TreeMap<String, KeyPair>(String.CASE_INSENSITIVE_ORDER);
+    private final Map<String,KeyPair>   cacheMap=new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
     protected AbstractResourceKeyPairProvider() {
         super();
@@ -61,7 +61,7 @@ public abstract class AbstractResourceKeyPairProvider<R> extends AbstractKeyPair
 
     protected void resetCacheMap(Collection<?> resources) {
         // if have any cached pairs then see what we can keep from previous load
-        Collection<String>  toDelete=Collections.<String>emptySet();
+        Collection<String>  toDelete=Collections.emptySet();
         synchronized(cacheMap) {
             if (cacheMap.size() <= 0) {
                 return; // already empty - nothing to keep

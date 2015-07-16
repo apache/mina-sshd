@@ -55,7 +55,7 @@ public abstract class AbstractFileKeyPairProvider extends AbstractResourceKeyPai
         if (GenericUtils.isEmpty(files)) {
             setPaths(Collections.<Path>emptyList());
         } else {
-            List<Path> paths = new ArrayList<Path>(files.size());
+            List<Path> paths = new ArrayList<>(files.size());
             for (File f : files) {
                 paths.add(f.toPath());
             }

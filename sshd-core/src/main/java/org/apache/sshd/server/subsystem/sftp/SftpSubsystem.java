@@ -2254,7 +2254,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             return Collections.emptyList();
         }
                 
-        List<OpenSSHExtension> extList = new ArrayList<OpenSSHExtension>(numExts);
+        List<OpenSSHExtension> extList = new ArrayList<>(numExts);
         for (String nvp : pairs) {
             nvp = GenericUtils.trimToEmpty(nvp);
             if (GenericUtils.isEmpty(nvp)) {
@@ -2278,7 +2278,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         }
         
         if (value.length() <= 0) {  // means don't report any extensions
-            return Collections.<String>emptyList();
+            return Collections.emptyList();
         }
 
         String[] comps = GenericUtils.split(value, ',');

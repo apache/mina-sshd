@@ -64,7 +64,7 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
 
     private String  comment;
     // for options that have no value, "true" is used
-    private Map<String,String> loginOptions=Collections.<String,String>emptyMap();
+    private Map<String,String> loginOptions=Collections.emptyMap();
 
     public AuthorizedKeyEntry() {
         super();
@@ -84,7 +84,7 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
 
     public void setLoginOptions(Map<String,String> value) {
         if ((this.loginOptions=value) == null) {
-            this.loginOptions = Collections.<String,String>emptyMap();
+            this.loginOptions = Collections.emptyMap();
         }
     }
 
@@ -283,7 +283,7 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
             }
 
             if (entries == null) {
-                entries = new LinkedList<AuthorizedKeyEntry>();
+                entries = new LinkedList<>();
             }
 
             entries.add(entry);
@@ -344,7 +344,7 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
             return Collections.emptyMap();
         }
         
-        Map<String,String>  optsMap=new TreeMap<String, String>(String.CASE_INSENSITIVE_ORDER);
+        Map<String,String>  optsMap=new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         for (String p : pairs) {
             p = GenericUtils.trimToEmpty(p);
             if (GenericUtils.isEmpty(p)) {

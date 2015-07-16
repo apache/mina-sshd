@@ -148,7 +148,7 @@ public final class ParserUtils {
             return GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER, extra);
         }
         
-        Set<String> result = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
+        Set<String> result = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
         result.addAll(extra);
         result.addAll(extra2);
         return result;
@@ -168,7 +168,7 @@ public final class ParserUtils {
             return Collections.emptyMap();
         }
         
-        Map<String,Object> data = new TreeMap<String,Object>(String.CASE_INSENSITIVE_ORDER);
+        Map<String,Object> data = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         for (Map.Entry<String,byte[]> ee : extensions.entrySet()) {
             String name = ee.getKey();
             Object result = parse(name, ee.getValue());

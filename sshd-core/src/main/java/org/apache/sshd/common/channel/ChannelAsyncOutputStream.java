@@ -34,7 +34,7 @@ public class ChannelAsyncOutputStream extends CloseableUtils.AbstractCloseable i
 
     private final Channel channel;
     private final byte cmd;
-    private final AtomicReference<IoWriteFutureImpl> pendingWrite = new AtomicReference<IoWriteFutureImpl>();
+    private final AtomicReference<IoWriteFutureImpl> pendingWrite = new AtomicReference<>();
 
     public ChannelAsyncOutputStream(Channel channel, byte cmd) {
         this.channel = channel;

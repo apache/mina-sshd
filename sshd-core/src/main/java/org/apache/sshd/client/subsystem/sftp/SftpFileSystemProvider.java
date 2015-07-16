@@ -94,7 +94,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
 
     public static final Set<Class<? extends FileAttributeView>> SUPPORTED_VIEWS =
             Collections.unmodifiableSet(
-                    new HashSet<Class<? extends FileAttributeView>>(
+                    new HashSet<>(
                             Arrays.<Class<? extends FileAttributeView>>asList(
                                     BasicFileAttributeView.class, PosixFileAttributeView.class
                             )));
@@ -760,7 +760,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         }
     }
 
-    public boolean isSupportedFileAttributeView(Class<?> type) {
+    public boolean isSupportedFileAttributeView(Class<? extends FileAttributeView> type) {
         if ((type != null) && SUPPORTED_VIEWS.contains(type)) {
             return true;
         } else {

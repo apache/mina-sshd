@@ -319,7 +319,7 @@ public final class ClientIdentity {
         
         ValidateUtils.checkTrue(Files.isDirectory(dir, options), "Not a directory: %s", dir);
         
-        Map<String,Path> paths = new TreeMap<String, Path>(String.CASE_INSENSITIVE_ORDER);
+        Map<String,Path> paths = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         for (String t : types) {
             String fileName = idGenerator.transform(t);
             Path p = dir.resolve(fileName);

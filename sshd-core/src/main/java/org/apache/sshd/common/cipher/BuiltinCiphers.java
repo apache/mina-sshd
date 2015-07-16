@@ -170,7 +170,7 @@ public enum BuiltinCiphers implements CipherFactory {
     public static final Set<BuiltinCiphers> VALUES =
             Collections.unmodifiableSet(EnumSet.allOf(BuiltinCiphers.class));
     private static final Map<String,CipherFactory>   extensions =
-            new TreeMap<String,CipherFactory>(String.CASE_INSENSITIVE_ORDER);
+            new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
     /**
      * Registered a {@link NamedFactory} to be available besides the built-in
@@ -278,8 +278,8 @@ public enum BuiltinCiphers implements CipherFactory {
             return ParseResult.EMPTY;
         }
         
-        List<CipherFactory> factories=new ArrayList<CipherFactory>(ciphers.size());
-        List<String>        unknown=Collections.<String>emptyList();
+        List<CipherFactory> factories=new ArrayList<>(ciphers.size());
+        List<String>        unknown=Collections.emptyList();
         for (String name : ciphers) {
             CipherFactory  c=resolveFactory(name);
             if (c != null) {
@@ -287,7 +287,7 @@ public enum BuiltinCiphers implements CipherFactory {
             } else {
                 // replace the (unmodifiable) empty list with a real one
                 if (unknown.isEmpty()) {
-                    unknown = new ArrayList<String>();
+                    unknown = new ArrayList<>();
                 }
                 unknown.add(name);
             }

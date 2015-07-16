@@ -98,7 +98,7 @@ public class SshKeyScan extends AbstractSimplifiedLog
     private List<String> keyTypes;
     private InputStream input;
     private Level level;
-    private final Map<String,String> currentHostFingerprints = new TreeMap<String, String>(String.CASE_INSENSITIVE_ORDER);
+    private final Map<String,String> currentHostFingerprints = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
     public SshKeyScan() {
         super();
@@ -176,8 +176,8 @@ public class SshKeyScan extends AbstractSimplifiedLog
          * key, so pre-create the factories map according to the selected
          * key types
          */
-        Map<String,List<NamedFactory<Signature>>> sigFactories = new TreeMap<String,List<NamedFactory<Signature>>>(String.CASE_INSENSITIVE_ORDER);
-        for (String kt : new TreeSet<String>(pairsMap.keySet())) {
+        Map<String,List<NamedFactory<Signature>>> sigFactories = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        for (String kt : new TreeSet<>(pairsMap.keySet())) {
             List<NamedFactory<Signature>> factories = resolveSignatureFactories(kt);
             if (GenericUtils.isEmpty(factories)) {
                 if (isEnabled(Level.FINEST)) {
@@ -418,7 +418,7 @@ public class SshKeyScan extends AbstractSimplifiedLog
         } else if (BuiltinIdentities.Constants.DSA.equalsIgnoreCase(keyType)) {
             return Collections.singletonList((NamedFactory<Signature>) BuiltinSignatures.dsa);
         } else if (BuiltinIdentities.Constants.ECDSA.equalsIgnoreCase(keyType)) {
-            List<NamedFactory<Signature>> factories = new ArrayList<NamedFactory<Signature>>(ECCurves.NAMES.size());
+            List<NamedFactory<Signature>> factories = new ArrayList<>(ECCurves.NAMES.size());
             for (String n : ECCurves.NAMES) {
                 if (isEnabled(Level.FINER)) {
                     log(Level.FINER, "Resolve signature factory for curve=" + n);
@@ -440,7 +440,7 @@ public class SshKeyScan extends AbstractSimplifiedLog
             return Collections.emptyMap();
         }
 
-        Map<String,List<KeyPair>> pairsMap = new TreeMap<String,List<KeyPair>>(String.CASE_INSENSITIVE_ORDER);
+        Map<String,List<KeyPair>> pairsMap = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         for (String kt : typeNames) {
             if (pairsMap.containsKey(kt)) {
                 log(Level.WARNING, "Key type " + kt + " re-specified");
@@ -473,7 +473,7 @@ public class SshKeyScan extends AbstractSimplifiedLog
                 throw new InvalidKeySpecException("ECC not supported");
             }
 
-            List<KeyPair> kps = new ArrayList<KeyPair>(ECCurves.NAMES.size());
+            List<KeyPair> kps = new ArrayList<>(ECCurves.NAMES.size());
             for (ECCurves curve : ECCurves.VALUES) {
                 String curveName = curve.getName();
                 if (isEnabled(Level.FINER)) {
@@ -585,7 +585,7 @@ public class SshKeyScan extends AbstractSimplifiedLog
                     return Collections.singletonList(optName);
                 }
                 
-                List<String> hosts = new ArrayList<String>(remaining);
+                List<String> hosts = new ArrayList<>(remaining);
                 for ( ; index < numArgs; index++) {
                     hosts.add(args[index]);
                 }

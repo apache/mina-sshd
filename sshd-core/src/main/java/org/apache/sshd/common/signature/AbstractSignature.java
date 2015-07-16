@@ -106,7 +106,7 @@ public abstract class AbstractSignature implements Signature {
         String keyType = new String(sig, keyTypeStartPos, (int) keyTypeLen, StandardCharsets.UTF_8);
         byte[] data = new byte[(int) dataBytesLen];
         System.arraycopy(sig, keyTypeEndPos + (Integer.SIZE / Byte.SIZE), data, 0, (int) dataBytesLen);
-        return new Pair<String,byte[]>(keyType, data);
+        return new Pair<>(keyType, data);
     }
 
     @Override

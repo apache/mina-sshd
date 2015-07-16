@@ -37,7 +37,7 @@ import org.apache.sshd.server.session.ServerSession;
 
 public class ProxyAgentFactory implements SshAgentFactory {
 
-    private final Map<String, AgentServerProxy> proxies = new ConcurrentHashMap<String, AgentServerProxy>();
+    private final Map<String, AgentServerProxy> proxies = new ConcurrentHashMap<>();
 
     public ProxyAgentFactory() {
         super();

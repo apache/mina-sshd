@@ -71,9 +71,9 @@ public abstract class AbstractChannel
     protected int id;
     protected int recipient;
     private final AtomicBoolean eof = new AtomicBoolean(false);
-    protected AtomicReference<GracefulState> gracefulState = new AtomicReference<GracefulState>(GracefulState.Opened);
+    protected AtomicReference<GracefulState> gracefulState = new AtomicReference<>(GracefulState.Opened);
     protected final DefaultCloseFuture gracefulFuture = new DefaultCloseFuture(lock);
-    protected final List<RequestHandler<Channel>> handlers = new ArrayList<RequestHandler<Channel>>();
+    protected final List<RequestHandler<Channel>> handlers = new ArrayList<>();
 
     protected AbstractChannel() {
         super();

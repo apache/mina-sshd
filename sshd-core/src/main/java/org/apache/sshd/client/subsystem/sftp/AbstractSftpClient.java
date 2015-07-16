@@ -119,7 +119,7 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractSftpClient extends AbstractLoggingBean implements SftpClient, RawSftpClient {
-    private final AtomicReference<Map<String,Object>> parsedExtensionsHolder = new AtomicReference<Map<String,Object>>(null);
+    private final AtomicReference<Map<String,Object>> parsedExtensionsHolder = new AtomicReference<>(null);
 
     protected AbstractSftpClient() {
         super();
@@ -248,7 +248,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
         Map<String,Object> parsed = parsedExtensionsHolder.get();
         if (parsed == null) {
             if ((parsed=ParserUtils.parse(extensions)) == null) {
-                parsed = Collections.<String,Object>emptyMap();
+                parsed = Collections.emptyMap();
             }
             parsedExtensionsHolder.set(parsed);
         }

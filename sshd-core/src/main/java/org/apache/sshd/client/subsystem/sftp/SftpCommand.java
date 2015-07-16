@@ -55,7 +55,7 @@ public class SftpCommand implements Channel {
                 private static final long serialVersionUID = 1L;    // we're not serializing it
                 
                 {
-                    for (CommandExecutor e : Arrays.<CommandExecutor>asList(
+                    for (CommandExecutor e : Arrays.asList(
                                 new CommandExecutor() {
                                         @Override
                                         public String getName() {

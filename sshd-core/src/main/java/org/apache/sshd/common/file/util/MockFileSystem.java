@@ -73,17 +73,17 @@ public class MockFileSystem extends FileSystem {
 
     @Override
     public Iterable<Path> getRootDirectories() {
-        return Collections.<Path>emptyList();
+        return Collections.emptyList();
     }
 
     @Override
     public Iterable<FileStore> getFileStores() {
-        return Collections.<FileStore>emptyList();
+        return Collections.emptyList();
     }
 
     @Override
     public Set<String> supportedFileAttributeViews() {
-        return Collections.<String>emptySet();
+        return Collections.emptySet();
     }
 
     @Override

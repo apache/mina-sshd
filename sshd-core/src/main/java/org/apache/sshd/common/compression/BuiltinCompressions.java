@@ -83,7 +83,7 @@ public enum BuiltinCompressions implements CompressionFactory {
     public static final Set<BuiltinCompressions> VALUES =
             Collections.unmodifiableSet(EnumSet.allOf(BuiltinCompressions.class));
     private static final Map<String,CompressionFactory>   extensions =
-            new TreeMap<String,CompressionFactory>(String.CASE_INSENSITIVE_ORDER);
+            new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
     /**
      * Registered a {@link NamedFactory} to be available besides the built-in
@@ -153,8 +153,8 @@ public enum BuiltinCompressions implements CompressionFactory {
             return ParseResult.EMPTY;
         }
         
-        List<CompressionFactory>    factories=new ArrayList<CompressionFactory>(Compressions.size());
-        List<String>                unknown=Collections.<String>emptyList();
+        List<CompressionFactory>    factories=new ArrayList<>(Compressions.size());
+        List<String>                unknown=Collections.emptyList();
         for (String name : Compressions) {
             CompressionFactory  c=resolveFactory(name);
             if (c != null) {
@@ -162,7 +162,7 @@ public enum BuiltinCompressions implements CompressionFactory {
             } else {
                 // replace the (unmodifiable) empty list with a real one
                 if (unknown.isEmpty()) {
-                    unknown = new ArrayList<String>();
+                    unknown = new ArrayList<>();
                 }
                 unknown.add(name);
             }

@@ -87,10 +87,10 @@ public abstract class AbstractAgentProxy extends AbstractLoggingBean implements 
             throw new SshException("Bad identities count: " + nbIdentities);
         }
 
-        List<Pair<PublicKey, String>> keys = new ArrayList<Pair<PublicKey, String>>(nbIdentities);
+        List<Pair<PublicKey, String>> keys = new ArrayList<>(nbIdentities);
         for (int i = 0; i < nbIdentities; i++) {
             PublicKey key = buffer.getPublicKey();
-            keys.add(new Pair<PublicKey, String>(key, buffer.getString()));
+            keys.add(new Pair<>(key, buffer.getString()));
         }
         return keys;
     }
