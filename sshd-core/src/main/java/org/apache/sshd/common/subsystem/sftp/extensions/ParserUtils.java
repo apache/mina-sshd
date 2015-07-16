@@ -76,7 +76,7 @@ public final class ParserUtils {
      * for this extension name
      */
     public static ExtensionParser<?> registerParser(ExtensionParser<?> parser) {
-        ValidateUtils.checkNotNull(parser, "No parser instance", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkNotNull(parser, "No parser instance");
         
         synchronized(parsersMap) {
             return parsersMap.put(parser.getName(), parser);

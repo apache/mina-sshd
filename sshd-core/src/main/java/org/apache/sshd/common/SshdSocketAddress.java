@@ -53,7 +53,7 @@ public class SshdSocketAddress extends SocketAddress {
     private final int port;
 
     public SshdSocketAddress(String hostName, int port) {
-        ValidateUtils.checkNotNull(hostName, "Host name may not be null", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkNotNull(hostName, "Host name may not be null");
         this.hostName = GenericUtils.isEmpty(hostName) ? "0.0.0.0" : hostName;
 
         ValidateUtils.checkTrue(port >= 0, "Port must be >= 0", Integer.valueOf(port));

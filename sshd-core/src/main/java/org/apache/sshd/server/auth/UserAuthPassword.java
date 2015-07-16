@@ -53,8 +53,7 @@ public class UserAuthPassword extends AbstractUserAuth {
         ServerFactoryManager manager = session.getFactoryManager();
         PasswordAuthenticator auth = ValidateUtils.checkNotNull(
                 manager.getPasswordAuthenticator(),
-                "No PasswordAuthenticator configured",
-                GenericUtils.EMPTY_OBJECT_ARRAY);
+                "No PasswordAuthenticator configured");
         return auth.authenticate(username, password, session);
     }
 }

@@ -42,7 +42,7 @@ public abstract class AbstractOpenSSHExtensionParser extends AbstractParser<Open
         }
 
         public OpenSSHExtension(String name, String version) {
-            this.name = ValidateUtils.checkNotNullAndNotEmpty(name, "No extension name", GenericUtils.EMPTY_OBJECT_ARRAY);
+            this.name = ValidateUtils.checkNotNullAndNotEmpty(name, "No extension name");
             this.version = version;
         }
 

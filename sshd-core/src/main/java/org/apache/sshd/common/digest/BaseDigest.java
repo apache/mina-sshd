@@ -46,7 +46,7 @@ public class BaseDigest implements Digest {
      * @param bsize the block size of this digest
      */
     public BaseDigest(String algorithm, int bsize) {
-        this.algorithm = ValidateUtils.checkNotNullAndNotEmpty(algorithm, "No algorithm", GenericUtils.EMPTY_OBJECT_ARRAY);
+        this.algorithm = ValidateUtils.checkNotNullAndNotEmpty(algorithm, "No algorithm");
         ValidateUtils.checkTrue(bsize > 0, "Invalid block size: %d", bsize);
         this.bsize = bsize;
         this.s = getClass().getSimpleName() + "[" + algorithm + ":" + bsize + "]";

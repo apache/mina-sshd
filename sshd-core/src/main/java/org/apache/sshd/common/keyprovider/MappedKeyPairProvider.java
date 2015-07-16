@@ -48,7 +48,7 @@ public class MappedKeyPairProvider implements KeyPairProvider {
     private final Map<String,KeyPair>   pairsMap;
 
     public MappedKeyPairProvider(Map<String,KeyPair> pairsMap) {
-        this.pairsMap = ValidateUtils.checkNotNull(pairsMap, "No pairs map provided", GenericUtils.EMPTY_OBJECT_ARRAY);
+        this.pairsMap = ValidateUtils.checkNotNull(pairsMap, "No pairs map provided");
     }
 
     @Override

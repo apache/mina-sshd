@@ -47,7 +47,7 @@ public class Nio2ServiceFactoryFactory extends AbstractIoServiceFactoryFactory {
     public Nio2ServiceFactoryFactory(ExecutorService executors, boolean shutdownOnExit) {
         super(executors, shutdownOnExit);
         // Make sure NIO2 is available
-        ValidateUtils.checkNotNull(AsynchronousChannel.class, "Missing NIO2 class", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkNotNull(AsynchronousChannel.class, "Missing NIO2 class");
     }
 
     @Override

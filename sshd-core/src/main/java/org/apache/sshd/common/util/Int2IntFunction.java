@@ -78,7 +78,7 @@ public interface Int2IntFunction {
             if (factor == 1) {
                 return IDENTITY;
             } else {
-                ValidateUtils.checkTrue(factor != 0, "Zero division factor", GenericUtils.EMPTY_OBJECT_ARRAY);
+                ValidateUtils.checkTrue(factor != 0, "Zero division factor");
                 return new Int2IntFunction() {
                     @Override
                     public int apply(int value) {

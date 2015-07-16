@@ -289,7 +289,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             }
             throw new SftpException(substatus, msg);
         } else if (type == SSH_FXP_HANDLE) {
-            return ValidateUtils.checkNotNullAndNotEmpty(buffer.getBytes(), "Null/empty handle in buffer", GenericUtils.EMPTY_OBJECT_ARRAY);
+            return ValidateUtils.checkNotNullAndNotEmpty(buffer.getBytes(), "Null/empty handle in buffer");
         } else {
             throw new SshException("Unexpected SFTP packet received: type=" + type + ", id=" + id + ", length=" + length);
         }

@@ -214,7 +214,7 @@ public class SecurityUtils {
     // use a separate class in order to avoid direct dependency
     private static class BouncyCastleFileKeyPairProvider extends AbstractFileKeyPairProvider {
         private BouncyCastleFileKeyPairProvider() {
-            ValidateUtils.checkTrue(isBouncyCastleRegistered(), "BouncyCastle not registered", GenericUtils.EMPTY_OBJECT_ARRAY);
+            ValidateUtils.checkTrue(isBouncyCastleRegistered(), "BouncyCastle not registered");
         }
         
         @Override
@@ -233,7 +233,7 @@ public class SecurityUtils {
 
     private static class BouncyCastleClassLoadableResourceKeyPairProvider extends AbstractClassLoadableResourceKeyPairProvider {
         private BouncyCastleClassLoadableResourceKeyPairProvider() {
-            ValidateUtils.checkTrue(isBouncyCastleRegistered(), "BouncyCastle not registered", GenericUtils.EMPTY_OBJECT_ARRAY);
+            ValidateUtils.checkTrue(isBouncyCastleRegistered(), "BouncyCastle not registered");
         }
 
         @Override
@@ -252,7 +252,7 @@ public class SecurityUtils {
 
     private static class BouncyCastleGeneratorHostKeyProvider extends AbstractGeneratorHostKeyProvider {
         private BouncyCastleGeneratorHostKeyProvider(Path path) {
-            ValidateUtils.checkTrue(isBouncyCastleRegistered(), "BouncyCastle not registered", GenericUtils.EMPTY_OBJECT_ARRAY);
+            ValidateUtils.checkTrue(isBouncyCastleRegistered(), "BouncyCastle not registered");
             setPath(path);
         }
 
@@ -318,7 +318,7 @@ public class SecurityUtils {
         private final RandomGenerator random;
 
         public BouncyCastleRandom() {
-            ValidateUtils.checkTrue(isBouncyCastleRegistered(), "BouncyCastle not registered", GenericUtils.EMPTY_OBJECT_ARRAY);
+            ValidateUtils.checkTrue(isBouncyCastleRegistered(), "BouncyCastle not registered");
             this.random = new VMPCRandomGenerator();
             byte[] seed = new SecureRandom().generateSeed(8);
             this.random.addSeedMaterial(seed);

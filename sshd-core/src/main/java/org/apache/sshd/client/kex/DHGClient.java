@@ -69,7 +69,7 @@ public class DHGClient extends AbstractDHClientKeyExchange {
     }
 
     protected DHGClient(DHFactory factory) {
-        this.factory = ValidateUtils.checkNotNull(factory, "No factory", GenericUtils.EMPTY_OBJECT_ARRAY);
+        this.factory = ValidateUtils.checkNotNull(factory, "No factory");
     }
 
     @Override

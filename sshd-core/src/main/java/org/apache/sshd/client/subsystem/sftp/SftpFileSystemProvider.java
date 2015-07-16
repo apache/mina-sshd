@@ -124,7 +124,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
 
     public SftpFileSystemProvider(SshClient client, SftpVersionSelector selector) {
         this.log = LoggerFactory.getLogger(getClass());
-        this.selector = ValidateUtils.checkNotNull(selector, "No SFTP version selector provided", GenericUtils.EMPTY_OBJECT_ARRAY);
+        this.selector = ValidateUtils.checkNotNull(selector, "No SFTP version selector provided");
         if (client == null) {
             // TODO: make this configurable using system properties
             client = SshClient.setUpDefaultClient();
@@ -144,13 +144,13 @@ public class SftpFileSystemProvider extends FileSystemProvider {
 
     @Override // NOTE: co-variant return
     public SftpFileSystem newFileSystem(URI uri, Map<String, ?> env) throws IOException {
-        String host = ValidateUtils.checkNotNullAndNotEmpty(uri.getHost(), "Host not provided", GenericUtils.EMPTY_OBJECT_ARRAY);
+        String host = ValidateUtils.checkNotNullAndNotEmpty(uri.getHost(), "Host not provided");
         int port = uri.getPort();
         if (port <= 0) {
             port = SshConfigFileReader.DEFAULT_PORT;
         }
 
-        String userInfo = ValidateUtils.checkNotNullAndNotEmpty(uri.getUserInfo(), "UserInfo not provided", GenericUtils.EMPTY_OBJECT_ARRAY);
+        String userInfo = ValidateUtils.checkNotNullAndNotEmpty(uri.getUserInfo(), "UserInfo not provided");
         String[] ui = GenericUtils.split(userInfo, ':');
         ValidateUtils.checkTrue(GenericUtils.length(ui) == 2, "Invalid user info: %s", userInfo);
         String username = ui[0], password = ui[1];
@@ -912,7 +912,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
     }
 
     private SftpPath toSftpPath(Path path) {
-        ValidateUtils.checkNotNull(path, "No path provided", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkNotNull(path, "No path provided");
         if (!(path instanceof SftpPath)) {
             throw new ProviderMismatchException("Path is not SFTP: " + path);
         }
@@ -1108,7 +1108,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
      * @see #getFileSystemIdentifier(String, int, String)
      */
     public static final String getFileSystemIdentifier(URI uri) {
-        String userInfo = ValidateUtils.checkNotNullAndNotEmpty(uri.getUserInfo(), "UserInfo not provided", GenericUtils.EMPTY_OBJECT_ARRAY);
+        String userInfo = ValidateUtils.checkNotNullAndNotEmpty(uri.getUserInfo(), "UserInfo not provided");
         String[] ui = GenericUtils.split(userInfo, ':');
         ValidateUtils.checkTrue(GenericUtils.length(ui) == 2, "Invalid user info: %s", userInfo);
         return getFileSystemIdentifier(uri.getHost(), uri.getPort(), ui[0]);

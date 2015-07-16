@@ -194,16 +194,16 @@ public final class KeyUtils {
      * @see PublicKeyEntryDecoder#getSupportedTypeNames()
      */
     public static void registerPublicKeyEntryDecoder(PublicKeyEntryDecoder<?,?> decoder) {
-        ValidateUtils.checkNotNull(decoder, "No decoder specified", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkNotNull(decoder, "No decoder specified");
 
-        Class<?> pubType = ValidateUtils.checkNotNull(decoder.getPublicKeyType(), "No public key type declared", GenericUtils.EMPTY_OBJECT_ARRAY);
-        Class<?> prvType = ValidateUtils.checkNotNull(decoder.getPrivateKeyType(), "No private key type declared", GenericUtils.EMPTY_OBJECT_ARRAY);
+        Class<?> pubType = ValidateUtils.checkNotNull(decoder.getPublicKeyType(), "No public key type declared");
+        Class<?> prvType = ValidateUtils.checkNotNull(decoder.getPrivateKeyType(), "No private key type declared");
         synchronized(byKeyClassDecodersMap) {
             byKeyClassDecodersMap.put(pubType, decoder);
             byKeyClassDecodersMap.put(prvType, decoder);
         }
 
-        Collection<String> names = ValidateUtils.checkNotNullAndNotEmpty(decoder.getSupportedTypeNames(), "No supported key type", GenericUtils.EMPTY_OBJECT_ARRAY);
+        Collection<String> names = ValidateUtils.checkNotNullAndNotEmpty(decoder.getSupportedTypeNames(), "No supported key type");
         synchronized(byKeyTypeDecodersMap) {
             for (String n : names) {
                 PublicKeyEntryDecoder<?,?>  prev = byKeyTypeDecodersMap.put(n, decoder);
@@ -316,7 +316,7 @@ public final class KeyUtils {
      * not be {@code null}
      */
     public static void setDefaultFingerPrintFactory (Factory<? extends Digest> f) {
-        defaultDigestHolder.set(ValidateUtils.checkNotNull(f, "No digest factory", GenericUtils.EMPTY_OBJECT_ARRAY));
+        defaultDigestHolder.set(ValidateUtils.checkNotNull(f, "No digest factory"));
     }
 
     /**

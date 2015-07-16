@@ -39,7 +39,7 @@ public class AgentServerProxy extends AbstractLoggingBean implements SshAgentSer
     private final AtomicBoolean open = new AtomicBoolean(true);
 
     public AgentServerProxy(ConnectionService service) throws IOException {
-        this.service = ValidateUtils.checkNotNull(service, "No connection service provided", GenericUtils.EMPTY_OBJECT_ARRAY);
+        this.service = ValidateUtils.checkNotNull(service, "No connection service provided");
         this.id = UUID.randomUUID().toString();
     }
 

@@ -96,9 +96,9 @@ public class X11ForwardSupport extends CloseableUtils.AbstractInnerCloseable imp
         }
 
         if (acceptor == null) {
-            Session session = ValidateUtils.checkNotNull(service.getSession(), "No session", GenericUtils.EMPTY_OBJECT_ARRAY);
-            FactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No factory manager", GenericUtils.EMPTY_OBJECT_ARRAY);
-            IoServiceFactory factory = ValidateUtils.checkNotNull(manager.getIoServiceFactory(), "No I/O service factory", GenericUtils.EMPTY_OBJECT_ARRAY);
+            Session session = ValidateUtils.checkNotNull(service.getSession(), "No session");
+            FactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No factory manager");
+            IoServiceFactory factory = ValidateUtils.checkNotNull(manager.getIoServiceFactory(), "No I/O service factory");
             acceptor = factory.createAcceptor(this);
         }
 

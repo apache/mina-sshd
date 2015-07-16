@@ -34,7 +34,7 @@ public class PendingWriteFuture extends AbstractIoWriteFuture implements SshFutu
 
     public PendingWriteFuture(Buffer buffer) {
         super(null);
-        this.buffer = ValidateUtils.checkNotNull(buffer, "No buffer provided", GenericUtils.EMPTY_OBJECT_ARRAY);
+        this.buffer = ValidateUtils.checkNotNull(buffer, "No buffer provided");
     }
 
     public Buffer getBuffer() {
@@ -46,7 +46,7 @@ public class PendingWriteFuture extends AbstractIoWriteFuture implements SshFutu
     }
 
     public void setException(Throwable cause) {
-        ValidateUtils.checkNotNull(cause, "No cause specified", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkNotNull(cause, "No cause specified");
         setValue(cause);
     }
 

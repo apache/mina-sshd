@@ -106,7 +106,7 @@ public class PortForwardingTest extends BaseTestSupport {
             requestsQ.clear();
         }
 
-        final TcpipForwarderFactory factory = ValidateUtils.checkNotNull(sshd.getTcpipForwarderFactory(), "No TcpipForwarderFactory", GenericUtils.EMPTY_OBJECT_ARRAY);
+        final TcpipForwarderFactory factory = ValidateUtils.checkNotNull(sshd.getTcpipForwarderFactory(), "No TcpipForwarderFactory");
         sshd.setTcpipForwarderFactory(new TcpipForwarderFactory() {
                 private final Class<?>[] interfaces = { TcpipForwarder.class };
                 private final Map<String,String> method2req = new TreeMap<String,String>(String.CASE_INSENSITIVE_ORDER) {

@@ -29,7 +29,7 @@ public abstract class AbstractParser<T> implements ExtensionParser<T> {
     private final String name;
 
     protected AbstractParser(String name) {
-        this.name = ValidateUtils.checkNotNullAndNotEmpty(name, "No extension name", GenericUtils.EMPTY_OBJECT_ARRAY);
+        this.name = ValidateUtils.checkNotNullAndNotEmpty(name, "No extension name");
     }
 
     @Override

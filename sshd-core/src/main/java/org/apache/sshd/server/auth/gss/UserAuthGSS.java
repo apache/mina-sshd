@@ -125,7 +125,7 @@ public class UserAuthGSS extends AbstractUserAuth {
 
                 Buffer msgbuf = new ByteArrayBuffer();
 
-                msgbuf.putBytes(ValidateUtils.checkNotNullAndNotEmpty(session.getSessionId(), "No current session ID", GenericUtils.EMPTY_OBJECT_ARRAY));
+                msgbuf.putBytes(ValidateUtils.checkNotNullAndNotEmpty(session.getSessionId(), "No current session ID"));
                 msgbuf.putByte(SshConstants.SSH_MSG_USERAUTH_REQUEST);
                 msgbuf.putString(username);
                 msgbuf.putString(service);
@@ -213,7 +213,7 @@ public class UserAuthGSS extends AbstractUserAuth {
      */
     protected GSSAuthenticator getAuthenticator(ServerSession session) throws Exception {
         ServerFactoryManager manager = session.getFactoryManager();
-        return ValidateUtils.checkNotNull(manager.getGSSAuthenticator(), "No GSSAuthenticator configured", GenericUtils.EMPTY_OBJECT_ARRAY);
+        return ValidateUtils.checkNotNull(manager.getGSSAuthenticator(), "No GSSAuthenticator configured");
     }
 
     /**

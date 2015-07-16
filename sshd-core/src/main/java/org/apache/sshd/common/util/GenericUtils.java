@@ -322,7 +322,7 @@ public final class GenericUtils {
      */
     public static final <V> SortedSet<V> asSortedSet(Comparator<? super V> comp, Collection<? extends V> values) {
         // TODO for JDK-8 return Collections.emptySortedSet()
-        SortedSet<V>    set=new TreeSet<V>(ValidateUtils.checkNotNull(comp, "No comparator", EMPTY_OBJECT_ARRAY));
+        SortedSet<V>    set=new TreeSet<V>(ValidateUtils.checkNotNull(comp, "No comparator"));
         if (size(values) > 0) {
             set.addAll(values);
         }

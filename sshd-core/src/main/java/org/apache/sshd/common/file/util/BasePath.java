@@ -239,7 +239,7 @@ public abstract class BasePath<T extends BasePath<T, FS>, FS extends BaseFileSys
 
     @Override
     public Path resolveSibling(Path other) {
-        ValidateUtils.checkNotNull(other, "Missing sibling path argument", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkNotNull(other, "Missing sibling path argument");
         T parent = getParent();
         return parent == null ? other : parent.resolve(other);
     }
@@ -356,7 +356,7 @@ public abstract class BasePath<T extends BasePath<T, FS>, FS extends BaseFileSys
 
     @SuppressWarnings("unchecked")
     private T checkPath(Path paramPath) {
-        ValidateUtils.checkNotNull(paramPath, "Missing path argument", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkNotNull(paramPath, "Missing path argument");
         if (paramPath.getClass() != getClass()) {
             throw new ProviderMismatchException("Path is not of this class: " + paramPath + "[" + paramPath.getClass().getSimpleName() + "]");
         }

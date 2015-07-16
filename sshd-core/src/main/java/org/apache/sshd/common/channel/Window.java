@@ -51,7 +51,7 @@ public class Window extends AbstractLoggingBean {
     private Map<String,?> props = Collections.<String,Object>emptyMap();
 
     public Window(AbstractChannel channel, Object lock, boolean client, boolean local) {
-        this.channel = ValidateUtils.checkNotNull(channel, "No channel provided", GenericUtils.EMPTY_OBJECT_ARRAY);
+        this.channel = ValidateUtils.checkNotNull(channel, "No channel provided");
         this.lock = (lock != null) ? lock : this;
         this.name = String.valueOf(channel) + ": " + (client ? "client" : "server") + " " + (local ? "local " : "remote") + " window";
     }

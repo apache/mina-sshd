@@ -55,9 +55,9 @@ public abstract class AbstractSftpClientExtension extends AbstractLoggingBean im
     }
 
     protected AbstractSftpClientExtension(String name, SftpClient client, RawSftpClient raw, boolean supported) {
-        this.name = ValidateUtils.checkNotNullAndNotEmpty(name, "No extension name", GenericUtils.EMPTY_OBJECT_ARRAY);
-        this.client = ValidateUtils.checkNotNull(client, "No client instance", GenericUtils.EMPTY_OBJECT_ARRAY);
-        this.raw = ValidateUtils.checkNotNull(raw, "No raw access", GenericUtils.EMPTY_OBJECT_ARRAY);
+        this.name = ValidateUtils.checkNotNullAndNotEmpty(name, "No extension name");
+        this.client = ValidateUtils.checkNotNull(client, "No client instance");
+        this.raw = ValidateUtils.checkNotNull(raw, "No raw access");
         this.supported = supported;
     }
 

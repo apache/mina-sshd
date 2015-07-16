@@ -263,7 +263,7 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
     }
 
     public static String createReceiveCommand(String remote, Collection<Option> options) {
-        ValidateUtils.checkNotNullAndNotEmpty(remote, "No remote location specified", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkNotNullAndNotEmpty(remote, "No remote location specified");
         StringBuilder sb = new StringBuilder(remote.length() + Long.SIZE).append(ScpHelper.SCP_COMMAND_PREFIX);
         if (options.contains(Option.Recursive)) {
             sb.append(" -r");

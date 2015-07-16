@@ -47,11 +47,11 @@ public abstract class AbstractDHKeyExchange extends AbstractLoggingBean implemen
 
     @Override
     public void init(AbstractSession s, byte[] V_S, byte[] V_C, byte[] I_S, byte[] I_C) throws Exception {
-        this.session = ValidateUtils.checkNotNull(s, "No session", GenericUtils.EMPTY_OBJECT_ARRAY);
-        this.V_S = ValidateUtils.checkNotNullAndNotEmpty(V_S, "No V_S value", GenericUtils.EMPTY_OBJECT_ARRAY);
-        this.V_C = ValidateUtils.checkNotNullAndNotEmpty(V_C, "No V_C value", GenericUtils.EMPTY_OBJECT_ARRAY);
-        this.I_S = ValidateUtils.checkNotNullAndNotEmpty(I_S, "No I_S value", GenericUtils.EMPTY_OBJECT_ARRAY);
-        this.I_C = ValidateUtils.checkNotNullAndNotEmpty(I_C, "No I_C value", GenericUtils.EMPTY_OBJECT_ARRAY);
+        this.session = ValidateUtils.checkNotNull(s, "No session");
+        this.V_S = ValidateUtils.checkNotNullAndNotEmpty(V_S, "No V_S value");
+        this.V_C = ValidateUtils.checkNotNullAndNotEmpty(V_C, "No V_C value");
+        this.I_S = ValidateUtils.checkNotNullAndNotEmpty(I_S, "No I_S value");
+        this.I_C = ValidateUtils.checkNotNullAndNotEmpty(I_C, "No I_C value");
     }
 
     public AbstractSession getSession() {

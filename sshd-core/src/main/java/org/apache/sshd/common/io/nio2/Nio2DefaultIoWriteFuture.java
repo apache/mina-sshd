@@ -44,6 +44,6 @@ public class Nio2DefaultIoWriteFuture extends AbstractIoWriteFuture {
     }
 
     public void setException(Throwable exception) {
-        setValue(ValidateUtils.checkNotNull(exception, "No exception specified", GenericUtils.EMPTY_OBJECT_ARRAY));
+        setValue(ValidateUtils.checkNotNull(exception, "No exception specified"));
     }
 }

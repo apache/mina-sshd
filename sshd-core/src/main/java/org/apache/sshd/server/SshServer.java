@@ -245,13 +245,13 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
                 factories.add(DEFAULT_USER_AUTH_GSS_FACTORY);
             }
             
-            ValidateUtils.checkTrue(factories.size() > 0, "UserAuthFactories not set", GenericUtils.EMPTY_OBJECT_ARRAY); 
+            ValidateUtils.checkTrue(factories.size() > 0, "UserAuthFactories not set");
             setUserAuthFactories(factories);
         }
 
-        ValidateUtils.checkNotNullAndNotEmpty(getChannelFactories(), "ChannelFactories not set", GenericUtils.EMPTY_OBJECT_ARRAY);
-        ValidateUtils.checkNotNull(getKeyPairProvider(), "HostKeyProvider not set", GenericUtils.EMPTY_OBJECT_ARRAY);
-        ValidateUtils.checkNotNull(getFileSystemFactory(), "FileSystemFactory not set", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkNotNullAndNotEmpty(getChannelFactories(), "ChannelFactories not set");
+        ValidateUtils.checkNotNull(getKeyPairProvider(), "HostKeyProvider not set");
+        ValidateUtils.checkNotNull(getFileSystemFactory(), "FileSystemFactory not set");
 
         if (GenericUtils.isEmpty(getServiceFactories())) {
             setServiceFactories(DEFAULT_SERVICE_FACTORIES);

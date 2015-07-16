@@ -36,7 +36,7 @@ public class ChannelExec extends PtyCapableChannelSession {
 
     public ChannelExec(String command) {
         super(false);
-        this.command = ValidateUtils.checkNotNullAndNotEmpty(command, "Command may not be null/empty", GenericUtils.EMPTY_OBJECT_ARRAY);
+        this.command = ValidateUtils.checkNotNullAndNotEmpty(command, "Command may not be null/empty");
     }
 
     @Override

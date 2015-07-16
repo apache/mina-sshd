@@ -78,7 +78,7 @@ public interface SftpClient extends SubsystemClient {
 
         public Handle(byte[] id) {
             // clone the original so the handle is imutable
-            this.id = ValidateUtils.checkNotNullAndNotEmpty(id, "No handle ID", GenericUtils.EMPTY_OBJECT_ARRAY).clone();
+            this.id = ValidateUtils.checkNotNullAndNotEmpty(id, "No handle ID").clone();
         }
 
         public int length() {

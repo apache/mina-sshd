@@ -286,7 +286,7 @@ public class SftpCommand implements Channel {
             });
 
     public SftpCommand(SftpClient client) {
-        this.client = ValidateUtils.checkNotNull(client, "No client", GenericUtils.EMPTY_OBJECT_ARRAY);
+        this.client = ValidateUtils.checkNotNull(client, "No client");
     }
 
     public final SftpClient getClient() {

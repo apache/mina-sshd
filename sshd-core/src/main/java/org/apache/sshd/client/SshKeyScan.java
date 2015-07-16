@@ -166,7 +166,7 @@ public class SshKeyScan extends AbstractSimplifiedLog
 
     @Override
     public Void call() throws Exception {
-        ValidateUtils.checkTrue(isOpen(), "Scanner is closed", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkTrue(isOpen(), "Scanner is closed");
 
         Collection<String> typeNames = getKeyTypes();
         Map<String,List<KeyPair>> pairsMap = createKeyPairs(typeNames);
@@ -189,12 +189,12 @@ public class SshKeyScan extends AbstractSimplifiedLog
             }
         }
 
-        ValidateUtils.checkTrue(!GenericUtils.isEmpty(pairsMap), "No client key pairs", GenericUtils.EMPTY_OBJECT_ARRAY);
-        ValidateUtils.checkTrue(!GenericUtils.isEmpty(sigFactories), "No signature factories", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkTrue(!GenericUtils.isEmpty(pairsMap), "No client key pairs");
+        ValidateUtils.checkTrue(!GenericUtils.isEmpty(sigFactories), "No signature factories");
 
         Exception err = null;
         try {
-            ValidateUtils.checkTrue(client == null, "Client still active", GenericUtils.EMPTY_OBJECT_ARRAY);
+            ValidateUtils.checkTrue(client == null, "Client still active");
             client = SshClient.setUpDefaultClient();
             client.setServerKeyVerifier(this);
 
@@ -601,9 +601,9 @@ public class SshKeyScan extends AbstractSimplifiedLog
 
     public static final <S extends SshKeyScan> S setInputStream(S scanner, Collection<String> hosts) throws IOException {
         if (GenericUtils.isEmpty(hosts)) {
-            ValidateUtils.checkNotNull(scanner.getInputStream(), "No hosts or file specified", GenericUtils.EMPTY_OBJECT_ARRAY);
+            ValidateUtils.checkNotNull(scanner.getInputStream(), "No hosts or file specified");
         } else {
-            ValidateUtils.checkTrue(scanner.getInputStream() == null, "Both hosts and file specified", GenericUtils.EMPTY_OBJECT_ARRAY);
+            ValidateUtils.checkTrue(scanner.getInputStream() == null, "Both hosts and file specified");
             
             // convert the hosts from the arguments into a "file" - one host per line
             try(ByteArrayOutputStream baos = new ByteArrayOutputStream(hosts.size() * 32)) {

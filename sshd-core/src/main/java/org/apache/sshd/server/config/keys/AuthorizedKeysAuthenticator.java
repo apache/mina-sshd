@@ -49,7 +49,7 @@ public class AuthorizedKeysAuthenticator extends ModifiableFileWatcher implement
             new AtomicReference<PublickeyAuthenticator>(RejectAllPublickeyAuthenticator.INSTANCE);
 
     public AuthorizedKeysAuthenticator(File file) {
-        this(ValidateUtils.checkNotNull(file, "No file to watch", GenericUtils.EMPTY_OBJECT_ARRAY).toPath());
+        this(ValidateUtils.checkNotNull(file, "No file to watch").toPath());
     }
 
     public AuthorizedKeysAuthenticator(Path file) {
@@ -71,7 +71,7 @@ public class AuthorizedKeysAuthenticator extends ModifiableFileWatcher implement
 
         try {
             PublickeyAuthenticator delegate =
-                    ValidateUtils.checkNotNull(resolvePublickeyAuthenticator(username, session), "No delegate", GenericUtils.EMPTY_OBJECT_ARRAY);
+                    ValidateUtils.checkNotNull(resolvePublickeyAuthenticator(username, session), "No delegate");
             boolean accepted = delegate.authenticate(username, key, session);
             if (log.isDebugEnabled()) {
                 log.debug("authenticate(" + username + ")[" + session + "][" + key.getAlgorithm() + "] accepted " + accepted + " from " + getPath());

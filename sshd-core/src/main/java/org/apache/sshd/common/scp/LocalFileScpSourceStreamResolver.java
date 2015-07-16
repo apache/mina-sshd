@@ -44,7 +44,7 @@ public class LocalFileScpSourceStreamResolver extends AbstractLoggingBean implem
     private final ScpTimestamp time;
 
     public LocalFileScpSourceStreamResolver(Path path) throws IOException {
-        this.path = ValidateUtils.checkNotNull(path, "No path specified", GenericUtils.EMPTY_OBJECT_ARRAY);
+        this.path = ValidateUtils.checkNotNull(path, "No path specified");
         this.name = path.getFileName();
         this.perms = IoUtils.getPermissions(path);
 

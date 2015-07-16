@@ -39,7 +39,7 @@ public abstract class AbstractSignature implements Signature {
     private final String algorithm;
 
     protected AbstractSignature(String algorithm) {
-        this.algorithm = ValidateUtils.checkNotNullAndNotEmpty(algorithm, "No signature algorithm specified", GenericUtils.EMPTY_OBJECT_ARRAY);
+        this.algorithm = ValidateUtils.checkNotNullAndNotEmpty(algorithm, "No signature algorithm specified");
     }
 
     @Override
@@ -51,13 +51,13 @@ public abstract class AbstractSignature implements Signature {
     @Override
     public void initVerifier(PublicKey key) throws Exception {
         signature = SecurityUtils.getSignature(getAlgorithm());
-        signature.initVerify(ValidateUtils.checkNotNull(key, "No public key provided", GenericUtils.EMPTY_OBJECT_ARRAY));
+        signature.initVerify(ValidateUtils.checkNotNull(key, "No public key provided"));
     }
 
     @Override
     public void initSigner(PrivateKey key) throws Exception {
         signature = SecurityUtils.getSignature(getAlgorithm());
-        signature.initSign(ValidateUtils.checkNotNull(key, "No private key provided", GenericUtils.EMPTY_OBJECT_ARRAY));
+        signature.initSign(ValidateUtils.checkNotNull(key, "No private key provided"));
     }
 
     @Override

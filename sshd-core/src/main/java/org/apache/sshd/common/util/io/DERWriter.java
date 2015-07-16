@@ -49,11 +49,11 @@ public class DERWriter extends FilterOutputStream {
     }
 
     public DERWriter(OutputStream stream) {
-        super(ValidateUtils.checkNotNull(stream, "No output stream", GenericUtils.EMPTY_OBJECT_ARRAY));
+        super(ValidateUtils.checkNotNull(stream, "No output stream"));
     }
     
     public void writeBigInteger(BigInteger value) throws IOException {
-        writeBigInteger(ValidateUtils.checkNotNull(value, "No value", GenericUtils.EMPTY_OBJECT_ARRAY).toByteArray());
+        writeBigInteger(ValidateUtils.checkNotNull(value, "No value").toByteArray());
     }
 
     public void writeBigInteger(byte ... bytes) throws IOException {

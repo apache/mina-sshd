@@ -62,7 +62,7 @@ public class Utils {
         }
 
         
-        File targetFolder = ValidateUtils.checkNotNull(detectTargetFolder(Utils.class), "Failed to detect target folder", GenericUtils.EMPTY_OBJECT_ARRAY);
+        File targetFolder = ValidateUtils.checkNotNull(detectTargetFolder(Utils.class), "Failed to detect target folder");
         File file = new File(targetFolder, "hostkey." + DEFAULT_TEST_HOST_KEY_PROVIDER_ALGORITHM.toLowerCase());
         SimpleGeneratorHostKeyProvider keyProvider = new SimpleGeneratorHostKeyProvider();
         keyProvider.setFile(file);
@@ -100,12 +100,12 @@ public class Utils {
     }
 
     private static <P extends KeyPairProvider> P validateKeyPairProvider(P provider) {
-        ValidateUtils.checkNotNull(provider, "No provider", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkNotNull(provider, "No provider");
 
         // get the I/O out of the way
-        Iterable<KeyPair>   keys=ValidateUtils.checkNotNull(provider.loadKeys(), "No keys loaded", GenericUtils.EMPTY_OBJECT_ARRAY);
+        Iterable<KeyPair>   keys=ValidateUtils.checkNotNull(provider.loadKeys(), "No keys loaded");
         if (keys instanceof Collection<?>) {
-            ValidateUtils.checkNotNullAndNotEmpty((Collection<?>) keys, "Empty keys loaded", GenericUtils.EMPTY_OBJECT_ARRAY);
+            ValidateUtils.checkNotNullAndNotEmpty((Collection<?>) keys, "Empty keys loaded");
         }
         
         return provider;

@@ -42,7 +42,7 @@ public class ClientConnectionService extends AbstractConnectionService {
     public ClientConnectionService(Session s) throws SshException {
         super(s);
 
-        ValidateUtils.checkTrue(s instanceof ClientSession, "Client side service used on server side", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkTrue(s instanceof ClientSession, "Client side service used on server side");
     }
 
     @Override

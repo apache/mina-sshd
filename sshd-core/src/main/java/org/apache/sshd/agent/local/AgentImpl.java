@@ -74,7 +74,7 @@ public class AgentImpl implements SshAgent {
         }
 
         try {
-            Pair<KeyPair, String> pp = ValidateUtils.checkNotNull(getKeyPair(keys, key), "Key not found", GenericUtils.EMPTY_OBJECT_ARRAY);
+            Pair<KeyPair, String> pp = ValidateUtils.checkNotNull(getKeyPair(keys, key), "Key not found");
             KeyPair kp = ValidateUtils.checkNotNull(pp.getFirst(), "No key pair for agent=%s", pp.getSecond());
             PublicKey pubKey = ValidateUtils.checkNotNull(kp.getPublic(), "No public key for agent=%s", pp.getSecond());
 

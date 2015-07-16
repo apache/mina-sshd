@@ -182,8 +182,8 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     protected void checkConfig() {
         super.checkConfig();
         
-        ValidateUtils.checkNotNull(getTcpipForwarderFactory(), "TcpipForwarderFactory not set", GenericUtils.EMPTY_OBJECT_ARRAY);
-        ValidateUtils.checkNotNull(getServerKeyVerifier(), "ServerKeyVerifier not set", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkNotNull(getTcpipForwarderFactory(), "TcpipForwarderFactory not set");
+        ValidateUtils.checkNotNull(getServerKeyVerifier(), "ServerKeyVerifier not set");
 
         // Register the additional agent forwarding channel if needed
         SshAgentFactory agentFactory = getAgentFactory();

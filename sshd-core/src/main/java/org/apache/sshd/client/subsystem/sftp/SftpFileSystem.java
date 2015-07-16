@@ -70,7 +70,7 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> {
         super(provider);
         this.id = id;
         this.session = session;
-        this.selector = ValidateUtils.checkNotNull(selector, "No SFTP version selector provided", GenericUtils.EMPTY_OBJECT_ARRAY);
+        this.selector = ValidateUtils.checkNotNull(selector, "No SFTP version selector provided");
         this.stores = Collections.unmodifiableList(Collections.<FileStore>singletonList(new SftpFileStore(id, this)));
         this.pool = new LinkedBlockingQueue<>(FactoryManagerUtils.getIntProperty(session, POOL_SIZE_PROP, DEFAULT_POOL_SIZE));
         try (SftpClient client = getClient()) {

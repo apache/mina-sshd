@@ -222,7 +222,7 @@ public class DefaultSshFuture<T extends SshFuture> extends AbstractLoggingBean i
 
     @Override
     public T addListener(SshFutureListener<T> listener) {
-        ValidateUtils.checkNotNull(listener, "Missing listener argument", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkNotNull(listener, "Missing listener argument");
         boolean notifyNow = false;
         synchronized (lock) {
             if (result != null) {
@@ -251,7 +251,7 @@ public class DefaultSshFuture<T extends SshFuture> extends AbstractLoggingBean i
 
     @Override
     public T removeListener(SshFutureListener<T> listener) {
-        ValidateUtils.checkNotNull(listener, "No listener provided", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkNotNull(listener, "No listener provided");
 
         synchronized (lock) {
             if (result == null) {

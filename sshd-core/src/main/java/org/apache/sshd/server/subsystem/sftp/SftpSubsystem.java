@@ -899,7 +899,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             }
         }
 
-        ValidateUtils.checkNotNullAndNotEmpty(algos, "No hash algorithms specified", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkNotNullAndNotEmpty(algos, "No hash algorithms specified");
         
         NamedFactory<? extends Digest> factory = null;
         for (String a : algos) {
@@ -918,7 +918,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         ValidateUtils.checkTrue(startOffset >= 0L, "Invalid start offset: %d", startOffset);
         ValidateUtils.checkTrue(length >= 0L, "Invalid length: %d", length);
         ValidateUtils.checkTrue((blockSize == 0) || (blockSize >= SftpConstants.MIN_CHKFILE_BLOCKSIZE), "Invalid block size: %d", blockSize);
-        ValidateUtils.checkNotNull(factory, "No digest factory provided", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkNotNull(factory, "No digest factory provided");
         buffer.putString(factory.getName());
         
         long effectiveLength = length;
@@ -1840,7 +1840,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                 throw new EOFException("Empty directory");
             }
             
-            ValidateUtils.checkNotNull(reply, "No reply buffer created", GenericUtils.EMPTY_OBJECT_ARRAY);
+            ValidateUtils.checkNotNull(reply, "No reply buffer created");
         } catch (IOException | RuntimeException e) {
             sendStatus(BufferUtils.clear(buffer), id, e);
             return;

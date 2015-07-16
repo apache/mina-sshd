@@ -48,9 +48,9 @@ public abstract class Nio2Service extends CloseableUtils.AbstractInnerCloseable 
 
     protected Nio2Service(FactoryManager manager, IoHandler handler, AsynchronousChannelGroup group) {
         log.trace("Creating {}", getClass().getSimpleName());
-        this.manager = ValidateUtils.checkNotNull(manager, "No factory manager provided", GenericUtils.EMPTY_OBJECT_ARRAY);
-        this.handler = ValidateUtils.checkNotNull(handler, "No I/O handler provided", GenericUtils.EMPTY_OBJECT_ARRAY);
-        this.group = ValidateUtils.checkNotNull(group, "No async. channel group provided", GenericUtils.EMPTY_OBJECT_ARRAY);
+        this.manager = ValidateUtils.checkNotNull(manager, "No factory manager provided");
+        this.handler = ValidateUtils.checkNotNull(handler, "No I/O handler provided");
+        this.group = ValidateUtils.checkNotNull(group, "No async. channel group provided");
         this.sessions = new ConcurrentHashMap<>();
     }
 

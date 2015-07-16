@@ -60,8 +60,8 @@ public class SftpFileChannel extends FileChannel {
     private final AtomicReference<Thread> blockingThreadHolder = new AtomicReference<>(null);
 
     public SftpFileChannel(SftpPath p, Collection<SftpClient.OpenMode> modes) throws IOException {
-        this.p = ValidateUtils.checkNotNull(p, "No target path", GenericUtils.EMPTY_OBJECT_ARRAY);
-        this.modes = ValidateUtils.checkNotNull(modes, "No channel modes specified", GenericUtils.EMPTY_OBJECT_ARRAY);
+        this.p = ValidateUtils.checkNotNull(p, "No target path");
+        this.modes = ValidateUtils.checkNotNull(modes, "No channel modes specified");
         
         SftpFileSystem  fs=p.getFileSystem();
         sftp = fs.getClient();

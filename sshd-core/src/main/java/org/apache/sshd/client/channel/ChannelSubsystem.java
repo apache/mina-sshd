@@ -37,7 +37,7 @@ public class ChannelSubsystem extends ChannelSession {
     private final String subsystem;
 
     public ChannelSubsystem(String subsystem) {
-        this.subsystem = ValidateUtils.checkNotNullAndNotEmpty(subsystem, "Subsystem may not be null/empty", GenericUtils.EMPTY_OBJECT_ARRAY);
+        this.subsystem = ValidateUtils.checkNotNullAndNotEmpty(subsystem, "Subsystem may not be null/empty");
     }
 
     @Override

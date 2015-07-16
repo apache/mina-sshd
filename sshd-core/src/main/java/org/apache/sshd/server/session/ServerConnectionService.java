@@ -36,7 +36,7 @@ public class ServerConnectionService extends AbstractConnectionService {
     protected ServerConnectionService(Session s) throws SshException {
         super(s);
         
-        ValidateUtils.checkTrue(s instanceof ServerSession, "Server side service used on client side", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkTrue(s instanceof ServerSession, "Server side service used on client side");
 
         if (!session.isAuthenticated()) {
             throw new SshException("Session is not authenticated");

@@ -32,7 +32,7 @@ public class IoWriteFutureImpl extends AbstractIoWriteFuture {
 
     public IoWriteFutureImpl(Buffer buffer) {
         super(null);
-        this.buffer = ValidateUtils.checkNotNull(buffer, "No buffer provided", GenericUtils.EMPTY_OBJECT_ARRAY);
+        this.buffer = ValidateUtils.checkNotNull(buffer, "No buffer provided");
     }
 
     public Buffer getBuffer() {

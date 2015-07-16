@@ -56,7 +56,7 @@ public class ServerUserAuthService extends CloseableUtils.AbstractCloseable impl
     private int nbAuthRequests;
 
     public ServerUserAuthService(Session s) throws SshException {
-        ValidateUtils.checkTrue(s instanceof ServerSession, "Server side service used on client side", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkTrue(s instanceof ServerSession, "Server side service used on client side");
         if (s.isAuthenticated()) {
             throw new SshException("Session already authenticated");
         }

@@ -170,7 +170,7 @@ public abstract class AbstractFactoryManager extends CloseableUtils.AbstractInne
     }
 
     public void setProperties(Map<String, Object> properties) {
-        this.properties = ValidateUtils.checkNotNull(properties, "Null properties not allowed", GenericUtils.EMPTY_OBJECT_ARRAY);
+        this.properties = ValidateUtils.checkNotNull(properties, "Null properties not allowed");
     }
 
     @Override
@@ -305,7 +305,7 @@ public abstract class AbstractFactoryManager extends CloseableUtils.AbstractInne
     }
     
     protected void checkConfig() {
-        ValidateUtils.checkNotNullAndNotEmpty(getKeyExchangeFactories(), "KeyExchangeFactories not set", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkNotNullAndNotEmpty(getKeyExchangeFactories(), "KeyExchangeFactories not set");
 
         if (getScheduledExecutorService() == null) {
             setScheduledExecutorService(
@@ -313,11 +313,11 @@ public abstract class AbstractFactoryManager extends CloseableUtils.AbstractInne
                     true);
         }
 
-        ValidateUtils.checkNotNullAndNotEmpty(getCipherFactories(), "CipherFactories not set", GenericUtils.EMPTY_OBJECT_ARRAY);
-        ValidateUtils.checkNotNullAndNotEmpty(getCompressionFactories(), "CompressionFactories not set", GenericUtils.EMPTY_OBJECT_ARRAY);
-        ValidateUtils.checkNotNullAndNotEmpty(getMacFactories(), "MacFactories not set", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkNotNullAndNotEmpty(getCipherFactories(), "CipherFactories not set");
+        ValidateUtils.checkNotNullAndNotEmpty(getCompressionFactories(), "CompressionFactories not set");
+        ValidateUtils.checkNotNullAndNotEmpty(getMacFactories(), "MacFactories not set");
 
-        ValidateUtils.checkNotNull(getRandomFactory(), "RandomFactory not set", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkNotNull(getRandomFactory(), "RandomFactory not set");
 
         if (getIoServiceFactoryFactory() == null) {
             setIoServiceFactoryFactory(new DefaultIoServiceFactoryFactory());

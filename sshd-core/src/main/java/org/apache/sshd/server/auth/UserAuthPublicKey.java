@@ -43,7 +43,7 @@ public class UserAuthPublicKey extends AbstractUserAuth {
 
     @Override
     public Boolean doAuth(Buffer buffer, boolean init) throws Exception {
-        ValidateUtils.checkTrue(init, "Instance not initialized", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkTrue(init, "Instance not initialized");
         boolean hasSig = buffer.getBoolean();
         String alg = buffer.getString();
 
@@ -63,7 +63,7 @@ public class UserAuthPublicKey extends AbstractUserAuth {
         byte[] sig = hasSig ? buffer.getBytes() : null;
 
         PublickeyAuthenticator authenticator = 
-                ValidateUtils.checkNotNull(manager.getPublickeyAuthenticator(), "No PublickeyAuthenticator configured", GenericUtils.EMPTY_OBJECT_ARRAY);
+                ValidateUtils.checkNotNull(manager.getPublickeyAuthenticator(), "No PublickeyAuthenticator configured");
         if (!authenticator.authenticate(username, key, session)) {
             return Boolean.FALSE;
         }

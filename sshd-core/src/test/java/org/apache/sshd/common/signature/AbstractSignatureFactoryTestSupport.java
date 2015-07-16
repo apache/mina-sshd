@@ -52,7 +52,7 @@ public abstract class AbstractSignatureFactoryTestSupport extends BaseTestSuppor
     private final int keySize;
 
     protected AbstractSignatureFactoryTestSupport(String keyType, int keySize) {
-        this.keyType = ValidateUtils.checkNotNullAndNotEmpty(keyType, "No key type specified", GenericUtils.EMPTY_OBJECT_ARRAY);
+        this.keyType = ValidateUtils.checkNotNullAndNotEmpty(keyType, "No key type specified");
         ValidateUtils.checkTrue(keySize > 0, "Invalid key size: %d", keySize);
         this.keySize = keySize;
     }

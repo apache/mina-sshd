@@ -107,7 +107,7 @@ public abstract class BaseTestSupport extends Assert {
     protected File detectTargetFolder() throws IllegalStateException {
         synchronized(TEMP_SUBFOLDER_NAME) {
             if (targetFolder == null) {
-                targetFolder = ValidateUtils.checkNotNull(Utils.detectTargetFolder(getClass()), "Failed to detect target folder", GenericUtils.EMPTY_OBJECT_ARRAY);
+                targetFolder = ValidateUtils.checkNotNull(Utils.detectTargetFolder(getClass()), "Failed to detect target folder");
             }
         }
 

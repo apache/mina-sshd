@@ -87,7 +87,7 @@ public abstract class AbstractConnectionService extends CloseableUtils.AbstractI
     protected boolean allowMoreSessions = true;
 
     protected AbstractConnectionService(Session session) {
-        ValidateUtils.checkTrue(session instanceof AbstractSession, "Not an AbstractSession", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkTrue(session instanceof AbstractSession, "Not an AbstractSession");
         this.session = (AbstractSession) session;
         FactoryManager manager = session.getFactoryManager();
         agentForward = new AgentForwardSupport(this);

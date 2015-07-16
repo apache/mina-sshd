@@ -66,9 +66,9 @@ public class DSSPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<DSAP
 
     @Override
     public String encodePublicKey(OutputStream s, DSAPublicKey key) throws IOException {
-        ValidateUtils.checkNotNull(key, "No public key provided", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkNotNull(key, "No public key provided");
 
-        DSAParams keyParams = ValidateUtils.checkNotNull(key.getParams(), "No DSA params available", GenericUtils.EMPTY_OBJECT_ARRAY);
+        DSAParams keyParams = ValidateUtils.checkNotNull(key.getParams(), "No DSA params available");
         encodeString(s, KeyPairProvider.SSH_DSS);
         encodeBigInt(s, keyParams.getP());
         encodeBigInt(s, keyParams.getQ());

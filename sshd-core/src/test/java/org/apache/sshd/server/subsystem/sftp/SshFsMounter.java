@@ -74,11 +74,11 @@ public class SshFsMounter {
         private Future<?> future;
 
         public MounterCommand(String command) {
-            this.command = ValidateUtils.checkNotNullAndNotEmpty(command, "No command", GenericUtils.EMPTY_OBJECT_ARRAY);
+            this.command = ValidateUtils.checkNotNullAndNotEmpty(command, "No command");
 
             String[] comps = GenericUtils.split(this.command, ' ');
             int numComps = GenericUtils.length(comps);
-            cmdName = GenericUtils.trimToEmpty(ValidateUtils.checkNotNullAndNotEmpty(comps[0], "No command name", GenericUtils.EMPTY_OBJECT_ARRAY));
+            cmdName = GenericUtils.trimToEmpty(ValidateUtils.checkNotNullAndNotEmpty(comps[0], "No command name"));
             if (numComps > 1) {
                 args = new ArrayList<String>(numComps - 1);
                 for (int index = 1; index < numComps; index++) {
@@ -298,7 +298,7 @@ public class SshFsMounter {
         props.putAll(options);
         sshd.setPort(port);
 
-        File targetFolder = ValidateUtils.checkNotNull(Utils.detectTargetFolder(MounterCommandFactory.class), "Failed to detect target folder", GenericUtils.EMPTY_OBJECT_ARRAY);
+        File targetFolder = ValidateUtils.checkNotNull(Utils.detectTargetFolder(MounterCommandFactory.class), "Failed to detect target folder");
         if (SecurityUtils.isBouncyCastleRegistered()) {
             sshd.setKeyPairProvider(SecurityUtils.createGeneratorHostKeyProvider(new File(targetFolder, "key.pem").toPath()));
         } else {

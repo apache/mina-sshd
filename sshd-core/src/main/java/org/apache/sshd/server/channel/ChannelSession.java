@@ -612,7 +612,7 @@ public class ChannelSession extends AbstractServerChannel {
     }
 
     protected boolean handleAgentForwarding(Buffer buffer) throws IOException {
-        ValidateUtils.checkTrue(session instanceof ServerSession, "Session not a server one", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkTrue(session instanceof ServerSession, "Session not a server one");
         FactoryManager manager = session.getFactoryManager();
         ForwardingFilter filter = manager.getTcpipForwardingFilter();
         SshAgentFactory factory = manager.getAgentFactory();
@@ -629,7 +629,7 @@ public class ChannelSession extends AbstractServerChannel {
     }
 
     protected boolean handleX11Forwarding(Buffer buffer) throws IOException {
-        ValidateUtils.checkTrue(session instanceof ServerSession, "Session not a server one", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkTrue(session instanceof ServerSession, "Session not a server one");
         FactoryManager manager = session.getFactoryManager();
         ForwardingFilter filter = manager.getTcpipForwardingFilter();
         if ((filter == null) || (!filter.canForwardX11(session))) {

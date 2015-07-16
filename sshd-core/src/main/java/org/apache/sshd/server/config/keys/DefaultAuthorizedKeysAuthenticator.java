@@ -64,11 +64,11 @@ public class DefaultAuthorizedKeysAuthenticator extends AuthorizedKeysAuthentica
     }
 
     public DefaultAuthorizedKeysAuthenticator(File file, boolean strict) {
-        this(ValidateUtils.checkNotNull(file, "No file provided", GenericUtils.EMPTY_OBJECT_ARRAY).toPath(), strict, IoUtils.getLinkOptions(false));
+        this(ValidateUtils.checkNotNull(file, "No file provided").toPath(), strict, IoUtils.getLinkOptions(false));
     }
 
     public DefaultAuthorizedKeysAuthenticator(String user, File file, boolean strict) {
-        this(user, ValidateUtils.checkNotNull(file, "No file provided", GenericUtils.EMPTY_OBJECT_ARRAY).toPath(), strict, IoUtils.getLinkOptions(false));
+        this(user, ValidateUtils.checkNotNull(file, "No file provided").toPath(), strict, IoUtils.getLinkOptions(false));
     }
 
     public DefaultAuthorizedKeysAuthenticator(Path path, boolean strict, LinkOption ... options) {
@@ -77,7 +77,7 @@ public class DefaultAuthorizedKeysAuthenticator extends AuthorizedKeysAuthentica
 
     public DefaultAuthorizedKeysAuthenticator(String user, Path path, boolean strict, LinkOption ... options) {
         super(path, options);
-        this.user = ValidateUtils.checkNotNullAndNotEmpty(user, "No username provided", GenericUtils.EMPTY_OBJECT_ARRAY);
+        this.user = ValidateUtils.checkNotNullAndNotEmpty(user, "No username provided");
         this.strict = strict;
     }
 

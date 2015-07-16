@@ -78,8 +78,8 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
     protected IoAcceptor acceptor;
 
     public DefaultTcpipForwarder(ConnectionService service) {
-        this.service = ValidateUtils.checkNotNull(service, "No connection service", GenericUtils.EMPTY_OBJECT_ARRAY);
-        this.session = ValidateUtils.checkNotNull(service.getSession(), "No session", GenericUtils.EMPTY_OBJECT_ARRAY);
+        this.service = ValidateUtils.checkNotNull(service, "No connection service");
+        this.session = ValidateUtils.checkNotNull(service.getSession(), "No session");
     }
 
     public final ConnectionService getConnectionService() {
@@ -92,9 +92,9 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
 
     @Override
     public synchronized SshdSocketAddress startLocalPortForwarding(SshdSocketAddress local, SshdSocketAddress remote) throws IOException {
-        ValidateUtils.checkNotNull(local, "Local address is null", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkNotNull(local, "Local address is null");
         ValidateUtils.checkTrue(local.getPort() >= 0, "Invalid local port: %s", local);
-        ValidateUtils.checkNotNull(remote, "Remote address is null", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkNotNull(remote, "Remote address is null");
 
         if (isClosed()) {
             throw new IllegalStateException("TcpipForwarder is closed");
@@ -123,7 +123,7 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
 
     @Override
     public synchronized void stopLocalPortForwarding(SshdSocketAddress local) throws IOException {
-        ValidateUtils.checkNotNull(local, "Local address is null", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkNotNull(local, "Local address is null");
 
         SshdSocketAddress bound;
         synchronized(localToRemote) {
@@ -144,8 +144,8 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
 
     @Override
     public synchronized SshdSocketAddress startRemotePortForwarding(SshdSocketAddress remote, SshdSocketAddress local) throws IOException {
-        ValidateUtils.checkNotNull(local, "Local address is null", GenericUtils.EMPTY_OBJECT_ARRAY);
-        ValidateUtils.checkNotNull(remote, "Remote address is null", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkNotNull(local, "Local address is null");
+        ValidateUtils.checkNotNull(remote, "Remote address is null");
 
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_GLOBAL_REQUEST);
         buffer.putString("tcpip-forward");
@@ -202,7 +202,7 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
 
     @Override
     public synchronized SshdSocketAddress startDynamicPortForwarding(SshdSocketAddress local) throws IOException {
-        ValidateUtils.checkNotNull(local, "Local address is null", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkNotNull(local, "Local address is null");
         ValidateUtils.checkTrue(local.getPort() >= 0, "Invalid local port: %s", local);
 
         if (isClosed()) {
@@ -260,7 +260,7 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
 
     @Override
     public synchronized SshdSocketAddress localPortForwardingRequested(SshdSocketAddress local) throws IOException {
-        ValidateUtils.checkNotNull(local, "Local address is null", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkNotNull(local, "Local address is null");
         ValidateUtils.checkTrue(local.getPort() >= 0, "Invalid local port: %s", local);
         
         FactoryManager manager = session.getFactoryManager();

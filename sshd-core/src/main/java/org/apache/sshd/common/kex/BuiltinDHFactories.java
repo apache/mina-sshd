@@ -182,7 +182,7 @@ public enum BuiltinDHFactories implements DHFactory {
      * with the same name (case <U>insensitive</U>).
      */
     public static final void registerExtension(DHFactory extension) {
-        String  name=ValidateUtils.checkNotNull(extension, "No extension provided", GenericUtils.EMPTY_OBJECT_ARRAY).getName();
+        String  name=ValidateUtils.checkNotNull(extension, "No extension provided").getName();
         ValidateUtils.checkTrue(fromFactoryName(name) == null, "Extension overrides built-in: %s", name);
 
         synchronized(extensions) {

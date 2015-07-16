@@ -77,7 +77,7 @@ public class DefaultOpenFuture extends DefaultSshFuture<OpenFuture> implements O
 
     @Override   // TODO for JDK-8 make this a default method
     public void setException(Throwable exception) {
-        ValidateUtils.checkNotNull(exception, "No exception provided", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkNotNull(exception, "No exception provided");
         setValue(exception);
     }
 }

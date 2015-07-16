@@ -141,7 +141,7 @@ public enum ECCurves implements NamedResource, OptionalFeature {
     public abstract Digest getDigestForParams();
 
     ECCurves(String name, ECParameterSpec params, int numOctets) {
-        this.name = ValidateUtils.checkNotNullAndNotEmpty(name, "No curve name", GenericUtils.EMPTY_OBJECT_ARRAY);
+        this.name = ValidateUtils.checkNotNullAndNotEmpty(name, "No curve name");
         this.keyType = Constants.ECDSA_SHA2_PREFIX + name;
         this.params = ValidateUtils.checkNotNull(params, "No EC params for %s", name);
         this.keySize = getCurveSize(params);
@@ -250,9 +250,9 @@ public enum ECCurves implements NamedResource, OptionalFeature {
      * @throws IllegalArgumentException if invalid parameters provided
      */
     public static int getCurveSize(ECParameterSpec params) {
-        EllipticCurve   curve = ValidateUtils.checkNotNull(params, "No EC params", GenericUtils.EMPTY_OBJECT_ARRAY).getCurve();
-        ECField field = ValidateUtils.checkNotNull(curve, "No EC curve", GenericUtils.EMPTY_OBJECT_ARRAY).getField();
-        return ValidateUtils.checkNotNull(field, "No EC field", GenericUtils.EMPTY_OBJECT_ARRAY).getFieldSize();
+        EllipticCurve   curve = ValidateUtils.checkNotNull(params, "No EC params").getCurve();
+        ECField field = ValidateUtils.checkNotNull(curve, "No EC curve").getField();
+        return ValidateUtils.checkNotNull(field, "No EC field").getFieldSize();
     }
 
     public static byte[] encodeECPoint(ECPoint group, ECParameterSpec params) {

@@ -145,7 +145,7 @@ public class GitSshdSessionFactory extends SshSessionFactory {
 
                 @Override
                 public int exitValue() {
-                    Integer status = ValidateUtils.checkNotNull(channel.getExitStatus(), "No channel status available", GenericUtils.EMPTY_OBJECT_ARRAY);
+                    Integer status = ValidateUtils.checkNotNull(channel.getExitStatus(), "No channel status available");
                     return status.intValue();
                 }
 

@@ -35,7 +35,7 @@ public class LocalForwardingEntry extends SshdSocketAddress {
 
     public LocalForwardingEntry(String hostName, String alias, int port) {
         super(hostName, port);
-        this.alias = ValidateUtils.checkNotNullAndNotEmpty(alias, "No host alias", GenericUtils.EMPTY_OBJECT_ARRAY);
+        this.alias = ValidateUtils.checkNotNullAndNotEmpty(alias, "No host alias");
     }
 
     public String getAlias() {

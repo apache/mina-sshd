@@ -169,7 +169,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
 
     @Override
     public void addPasswordIdentity(String password) {
-        identities.add(ValidateUtils.checkNotNullAndNotEmpty(password, "No password provided", GenericUtils.EMPTY_OBJECT_ARRAY));
+        identities.add(ValidateUtils.checkNotNullAndNotEmpty(password, "No password provided"));
         if (log.isDebugEnabled()) { // don't show the password in the log
             log.debug("addPasswordIdentity(" + KeyUtils.getFingerPrint(password) + ")");
         }
@@ -191,9 +191,9 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
 
     @Override
     public void addPublicKeyIdentity(KeyPair kp) {
-        ValidateUtils.checkNotNull(kp, "No key-pair to add", GenericUtils.EMPTY_OBJECT_ARRAY);
-        ValidateUtils.checkNotNull(kp.getPublic(), "No public key", GenericUtils.EMPTY_OBJECT_ARRAY);
-        ValidateUtils.checkNotNull(kp.getPrivate(), "No private key", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkNotNull(kp, "No key-pair to add");
+        ValidateUtils.checkNotNull(kp.getPublic(), "No public key");
+        ValidateUtils.checkNotNull(kp.getPrivate(), "No private key");
 
         identities.add(kp);
 
@@ -555,7 +555,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
 
     @Override
     protected void setKexSeed(byte... seed) {
-        I_C = ValidateUtils.checkNotNullAndNotEmpty(seed, "No KEX seed", GenericUtils.EMPTY_OBJECT_ARRAY);
+        I_C = ValidateUtils.checkNotNullAndNotEmpty(seed, "No KEX seed");
     }
 
     @Override

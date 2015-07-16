@@ -61,7 +61,7 @@ public class ChannelPipedInputStream extends InputStream implements ChannelPiped
     private boolean writerClosed;
 
     public ChannelPipedInputStream(Window localWindow) {
-        this.localWindow = ValidateUtils.checkNotNull(localWindow, "No local window provided", GenericUtils.EMPTY_OBJECT_ARRAY);
+        this.localWindow = ValidateUtils.checkNotNull(localWindow, "No local window provided");
         this.timeout = FactoryManagerUtils.getLongProperty(localWindow.getProperties(), FactoryManager.WINDOW_TIMEOUT, DEFAULT_TIMEOUT);
     }
 

@@ -107,7 +107,7 @@ public class DefaultScpClient extends AbstractScpClient {
 
     @Override
     public void upload(final InputStream local, final String remote, final long size, final Collection<PosixFilePermission> perms, final ScpTimestamp time) throws IOException {
-        int namePos = ValidateUtils.checkNotNullAndNotEmpty(remote, "No remote location specified", GenericUtils.EMPTY_OBJECT_ARRAY).lastIndexOf('/');
+        int namePos = ValidateUtils.checkNotNullAndNotEmpty(remote, "No remote location specified").lastIndexOf('/');
         final String name = (namePos < 0)
                           ? remote
                           : ValidateUtils.checkNotNullAndNotEmpty(remote.substring(namePos + 1), "No name value in remote=%s", remote)

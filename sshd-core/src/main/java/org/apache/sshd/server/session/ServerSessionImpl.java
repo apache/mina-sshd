@@ -120,7 +120,7 @@ public class ServerSessionImpl extends AbstractSession implements ServerSession 
 
     @Override
     protected void setKexSeed(byte... seed) {
-        I_S = ValidateUtils.checkNotNullAndNotEmpty(seed, "No KEX seed", GenericUtils.EMPTY_OBJECT_ARRAY);
+        I_S = ValidateUtils.checkNotNullAndNotEmpty(seed, "No KEX seed");
     }
 
     @Override
@@ -209,7 +209,7 @@ public class ServerSessionImpl extends AbstractSession implements ServerSession 
     @Override
     public KeyPair getHostKey() {
         String value = getNegotiatedKexParameter(KexProposalOption.SERVERKEYS);
-        KeyPairProvider provider = ValidateUtils.checkNotNull(factoryManager.getKeyPairProvider(), "No host keys provider", GenericUtils.EMPTY_OBJECT_ARRAY);
+        KeyPairProvider provider = ValidateUtils.checkNotNull(factoryManager.getKeyPairProvider(), "No host keys provider");
         return provider.loadKey(value);
     }
 

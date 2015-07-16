@@ -88,13 +88,13 @@ public class DefaultConnectFuture extends DefaultSshFuture<ConnectFuture> implem
 
     @Override   // TODO in JDK-8 make this a default method
     public void setSession(ClientSession session) {
-        ValidateUtils.checkNotNull(session, "No client session provided", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkNotNull(session, "No client session provided");
         setValue(session);
     }
 
     @Override   // TODO in JDK-8 make this a default method
     public void setException(Throwable exception) {
-        ValidateUtils.checkNotNull(exception, "No exception provided", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkNotNull(exception, "No exception provided");
         setValue(exception);
     }
 }

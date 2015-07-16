@@ -30,16 +30,24 @@ public final class ValidateUtils {
         throw new UnsupportedOperationException("No instance");
     }
 
+    public static final <T> T checkNotNull(T t, String message) {
+        checkTrue(t != null, message);
+        return t;
+    }
+
     public static final <T> T checkNotNull(T t, String message, Object arg) {
-        if (t == null) {
-            throwIllegalArgumentException(message, arg);
-        }
-        
+        checkTrue(t != null, message, arg);
         return t;
     }
 
     public static final <T> T checkNotNull(T t, String message, Object ... args) {
         checkTrue(t != null, message, args);
+        return t;
+    }
+
+    public static final String checkNotNullAndNotEmpty(String t, String message) {
+        t = checkNotNull(t, message).trim();
+        checkTrue(GenericUtils.length(t) > 0, message);
         return t;
     }
 
@@ -79,9 +87,9 @@ public final class ValidateUtils {
         return t;
     }
 
-    public static final void checkTrue(boolean flag, String message, long arg) {
+    public static final void checkTrue(boolean flag, String message) {
         if (!flag) {
-            throwIllegalArgumentException(message, Long.valueOf(arg));
+            throwIllegalArgumentException(message, GenericUtils.EMPTY_OBJECT_ARRAY);
         }
     }
 

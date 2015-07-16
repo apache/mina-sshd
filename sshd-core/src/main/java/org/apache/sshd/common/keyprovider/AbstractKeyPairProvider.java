@@ -39,7 +39,7 @@ public abstract class AbstractKeyPairProvider extends AbstractLoggingBean implem
 
     @Override
     public KeyPair loadKey(String type) {
-        ValidateUtils.checkNotNullAndNotEmpty(type, "No key type to load", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkNotNullAndNotEmpty(type, "No key type to load");
 
         Iterable<KeyPair> keys = loadKeys();
         for (KeyPair key : keys) {

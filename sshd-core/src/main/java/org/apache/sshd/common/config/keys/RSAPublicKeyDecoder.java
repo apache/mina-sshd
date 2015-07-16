@@ -64,7 +64,7 @@ public class RSAPublicKeyDecoder extends AbstractPublicKeyEntryDecoder<RSAPublic
     
     @Override
     public String encodePublicKey(OutputStream s, RSAPublicKey key) throws IOException {
-        ValidateUtils.checkNotNull(key, "No public key provided", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkNotNull(key, "No public key provided");
         encodeString(s, KeyPairProvider.SSH_RSA);
         encodeBigInt(s, key.getPublicExponent());
         encodeBigInt(s, key.getModulus());

@@ -40,7 +40,7 @@ public abstract class AbstractDHClientKeyExchange extends AbstractDHKeyExchange 
     @Override
     public void init(AbstractSession s, byte[] V_S, byte[] V_C, byte[] I_S, byte[] I_C) throws Exception {
         super.init(s, V_S, V_C, I_S, I_C);
-        ValidateUtils.checkTrue(s instanceof ClientSession, "Using a client side KeyExchange on a server", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkTrue(s instanceof ClientSession, "Using a client side KeyExchange on a server");
     }
 
     @Override
