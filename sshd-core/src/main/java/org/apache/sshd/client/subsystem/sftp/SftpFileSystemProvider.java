@@ -318,11 +318,10 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             @Override
             public Iterator<Path> iterator() {
                 return new Iterator<Path>() {
-                    private boolean dotIgnored, dotdotIgnored;
-                    private SftpClient.DirEntry curEntry = nextEntry();
-
                     @SuppressWarnings("synthetic-access")
                     private final Iterator<SftpClient.DirEntry> it = iter.iterator();
+                    private boolean dotIgnored, dotdotIgnored;
+                    private SftpClient.DirEntry curEntry = nextEntry();
 
                     @Override
                     public boolean hasNext() {
