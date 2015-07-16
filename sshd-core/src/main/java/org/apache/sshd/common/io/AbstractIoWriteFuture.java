@@ -46,7 +46,7 @@ public abstract class AbstractIoWriteFuture extends DefaultSshFuture<IoWriteFutu
     @Override      // TODO for JDK-8 make this a default method
     public void verify(long timeout) throws IOException {
         Boolean result = verifyResult(Boolean.class, timeout);
-        if (!result.booleanValue()) {
+        if (!result) {
             throw new SshException("Write failed signalled");
         }
     }
@@ -54,7 +54,7 @@ public abstract class AbstractIoWriteFuture extends DefaultSshFuture<IoWriteFutu
     @Override      // TODO for JDK-8 make this a default method
     public boolean isWritten() {
         Object value = getValue();
-        return (value instanceof Boolean) && ((Boolean) value).booleanValue();
+        return (value instanceof Boolean) && (Boolean) value;
     }
 
     @Override      // TODO for JDK-8 make this a default method

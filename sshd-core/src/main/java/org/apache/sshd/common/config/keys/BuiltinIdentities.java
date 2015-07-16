@@ -109,7 +109,7 @@ public enum BuiltinIdentities implements Identity {
      * @return The matching {@link BuiltinIdentities} whose {@link #getName()}
      * value matches case <U>insensitive</U> or {@code null} if no match found
      */
-    public static final BuiltinIdentities fromName(String name) {
+    public static BuiltinIdentities fromName(String name) {
         return NamedResource.Utils.findByName(name, String.CASE_INSENSITIVE_ORDER, VALUES);
     }
 
@@ -118,7 +118,7 @@ public enum BuiltinIdentities implements Identity {
      * @return The matching {@link BuiltinIdentities} whose {@link #getAlgorithm()}
      * value matches case <U>insensitive</U> or {@code null} if no match found
      */
-    public static final BuiltinIdentities fromAlgorithm(String algorithm) {
+    public static BuiltinIdentities fromAlgorithm(String algorithm) {
         if (GenericUtils.isEmpty(algorithm)) {
             return null;
         }
@@ -139,7 +139,7 @@ public enum BuiltinIdentities implements Identity {
      * match could be found
      * @see #fromKey(Key)
      */
-    public static final BuiltinIdentities fromKeyPair(KeyPair kp) {
+    public static BuiltinIdentities fromKeyPair(KeyPair kp) {
         if (kp == null) {
             return null;
         }
@@ -159,7 +159,7 @@ public enum BuiltinIdentities implements Identity {
      * private key type matches the requested one or {@code null} if no match found
      * @see #fromKeyType(Class)
      */
-    public static final BuiltinIdentities fromKey(Key key) {
+    public static BuiltinIdentities fromKey(Key key) {
         return fromKeyType((key == null) ? null : key.getClass());
     }
 
@@ -171,7 +171,7 @@ public enum BuiltinIdentities implements Identity {
      * @see #getPublicKeyType()
      * @see #getPrivateKeyType() 
      */
-    public static final BuiltinIdentities fromKeyType(Class<?> clazz) {
+    public static BuiltinIdentities fromKeyType(Class<?> clazz) {
         if ((clazz == null) || (!Key.class.isAssignableFrom(clazz))) {
             return null;
         }

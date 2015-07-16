@@ -61,7 +61,8 @@ public enum TimeValueConfig {
 
     public static final Set<TimeValueConfig> VALUES=
             Collections.unmodifiableSet(EnumSet.allOf(TimeValueConfig.class));
-    public static final TimeValueConfig fromValueChar(char ch) {
+
+    public static TimeValueConfig fromValueChar(char ch) {
         if ((ch <= ' ') || (ch >= 0x7F)) {
             return null;
         }
@@ -81,7 +82,7 @@ public enum TimeValueConfig {
      * @see #parse(String)
      * @see #durationOf(Map)
      */
-    public static final long durationOf(String s) {
+    public static long durationOf(String s) {
         Map<TimeValueConfig,Long>   spec=parse(s);
         return durationOf(spec);
     }
@@ -93,7 +94,7 @@ public enum TimeValueConfig {
      * @throws NumberFormatException If bad numbers found - e.g., negative counts
      * @throws IllegalArgumentException If bad format - e.g., unknown unit
      */
-    public static final Map<TimeValueConfig,Long> parse(String s) throws NumberFormatException, IllegalArgumentException {
+    public static Map<TimeValueConfig,Long> parse(String s) throws NumberFormatException, IllegalArgumentException {
         if (GenericUtils.isEmpty(s)) {
             return Collections.emptyMap();
         }
@@ -116,8 +117,8 @@ public enum TimeValueConfig {
             }
 
             String  v=s.substring(lastPos, curPos);
-            Long    count=Long.valueOf(v);
-            if (count.longValue() < 0L) {
+            long    count=Long.parseLong(v);
+            if (count < 0L) {
                 throw new IllegalArgumentException("parse(" + s + ") negative count (" + v + ") for " + c.name());
             }
 
@@ -133,8 +134,8 @@ public enum TimeValueConfig {
 
         if (lastPos < s.length()) {
             String  v=s.substring(lastPos);
-            Long    count=Long.valueOf(v);
-            if (count.longValue() < 0L) {
+            long    count=Long.parseLong(v);
+            if (count < 0L) {
                 throw new IllegalArgumentException("parse(" + s + ") negative count (" + v + ") for last component");
             }
 
@@ -152,7 +153,7 @@ public enum TimeValueConfig {
      * @return The total duration in milliseconds
      * @throws IllegalArgumentException If negative count for a time unit
      */
-    public static final long durationOf(Map<TimeValueConfig,? extends Number> spec) throws IllegalArgumentException {
+    public static long durationOf(Map<TimeValueConfig,? extends Number> spec) throws IllegalArgumentException {
         if (GenericUtils.isEmpty(spec)) {
             return (-1L);
         }

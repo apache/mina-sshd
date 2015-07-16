@@ -35,7 +35,7 @@ public class DefaultCloseFuture extends DefaultSshFuture<CloseFuture> implements
     @Override   // TODO for JDK-8 make this a default method
     public boolean isClosed() {
         if (isDone()) {
-            return ((Boolean) getValue()).booleanValue();
+            return (Boolean) getValue();
         } else {
             return false;
         }

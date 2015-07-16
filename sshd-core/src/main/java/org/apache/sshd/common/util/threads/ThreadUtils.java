@@ -68,7 +68,7 @@ public class ThreadUtils {
                         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
                             String name = method.getName();
                             if ("isShutdown".equals(name)) {
-                                return Boolean.valueOf(stopped.get());
+                                return stopped.get();
                             } else if ("shutdown".equals(name)) {
                                 stopped.set(true);
                                 return null;    // void...

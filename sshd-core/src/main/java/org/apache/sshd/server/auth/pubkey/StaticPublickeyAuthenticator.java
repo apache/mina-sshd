@@ -43,7 +43,7 @@ public abstract class StaticPublickeyAuthenticator extends AbstractLoggingBean i
         boolean accepted = isAccepted();
         if (log.isDebugEnabled()) {
             log.debug("authenticate({}[{}][{}][{}]: {}",
-                      username, session, key.getAlgorithm(), KeyUtils.getFingerPrint(key), Boolean.valueOf(accepted));
+                      username, session, key.getAlgorithm(), KeyUtils.getFingerPrint(key), accepted);
         }
 
         return accepted;

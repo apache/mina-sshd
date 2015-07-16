@@ -68,7 +68,7 @@ public enum CompressionConfigValue implements CompressionFactory {
     public static final Set<CompressionConfigValue> VALUES=
             Collections.unmodifiableSet(EnumSet.allOf(CompressionConfigValue.class));
 
-    public static final CompressionConfigValue fromName(String n) {
+    public static CompressionConfigValue fromName(String n) {
         if (GenericUtils.isEmpty(n)) {
             return null;
         }

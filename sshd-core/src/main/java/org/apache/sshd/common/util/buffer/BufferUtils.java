@@ -170,7 +170,7 @@ public class BufferUtils {
      * @param value The 32-bit value 
      * @param buf A work buffer to use - must have enough space to contain 4 bytes
      * @throws IOException If failed to write the value or work buffer to small
-     * @see #writeInt(OutputStream, long, byte[], int, int)
+     * @see #writeInt(OutputStream, int, byte[], int, int)
      */
     public static void writeInt(OutputStream output, int value, byte[] buf) throws IOException {
         writeUInt(output, value, buf, 0, GenericUtils.length(buf));
@@ -286,7 +286,7 @@ public class BufferUtils {
                 }
             };
 
-    public static final int getNextPowerOf2(int i) {
+    public static int getNextPowerOf2(int i) {
         int j = 1;
         while (j < i) {
             j <<= 1;

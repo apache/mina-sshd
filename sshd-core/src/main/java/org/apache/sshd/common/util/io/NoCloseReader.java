@@ -36,7 +36,7 @@ public class NoCloseReader extends FilterReader {
         // ignored
     }
     
-    public static final Reader resolveReader(Reader r, boolean okToClose) {
+    public static Reader resolveReader(Reader r, boolean okToClose) {
         if ((r == null) || okToClose) {
             return r;
         } else {

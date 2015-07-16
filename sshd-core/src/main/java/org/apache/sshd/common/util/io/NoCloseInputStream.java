@@ -37,7 +37,7 @@ public class NoCloseInputStream extends FilterInputStream {
         // ignored
     }
 
-    public static final InputStream resolveInputStream(InputStream input, boolean okToClose) {
+    public static InputStream resolveInputStream(InputStream input, boolean okToClose) {
         if ((input == null) || okToClose) {
             return input;
         } else {

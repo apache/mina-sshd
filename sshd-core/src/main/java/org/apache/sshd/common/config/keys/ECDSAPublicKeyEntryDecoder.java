@@ -132,10 +132,10 @@ public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<EC
 
     @Override
     public String encodePublicKey(OutputStream s, ECPublicKey key) throws IOException {
-        ValidateUtils.checkNotNull(key, "No public key provided", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkNotNull(key, "No public key provided");
         
-        ECParameterSpec params = ValidateUtils.checkNotNull(key.getParams(), "No EC parameters available", GenericUtils.EMPTY_OBJECT_ARRAY);
-        ECCurves curve = ValidateUtils.checkNotNull(ECCurves.fromCurveParameters(params), "Cannot determine curve", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ECParameterSpec params = ValidateUtils.checkNotNull(key.getParams(), "No EC parameters available");
+        ECCurves curve = ValidateUtils.checkNotNull(ECCurves.fromCurveParameters(params), "Cannot determine curve");
         String keyType = curve.getKeyType(), curveName = curve.getName();
         encodeString(s, keyType);
         // see rfc5656 section 3.1
@@ -336,7 +336,8 @@ public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<EC
 
         public static final Set<ECPointCompression> VALUES=
                 Collections.unmodifiableSet(EnumSet.allOf(ECPointCompression.class));
-        public static final ECPointCompression fromIndicatorValue(int value) {
+
+        public static ECPointCompression fromIndicatorValue(int value) {
             if ((value < 0) || (value > 0xFF)) {
                 return null;    // must be a byte value
             }

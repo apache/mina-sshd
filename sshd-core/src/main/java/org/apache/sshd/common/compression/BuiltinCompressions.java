@@ -80,7 +80,7 @@ public enum BuiltinCompressions implements CompressionFactory {
         name = n;
     }
 
-    public static final Set<BuiltinCompressions> VALUES =
+    public static Set<BuiltinCompressions> VALUES =
             Collections.unmodifiableSet(EnumSet.allOf(BuiltinCompressions.class));
     private static final Map<String,CompressionFactory>   extensions =
             new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
@@ -93,7 +93,7 @@ public enum BuiltinCompressions implements CompressionFactory {
      * or overrides a built-in one or overrides another registered factory
      * with the same name (case <U>insensitive</U>).
      */
-    public static final void registerExtension(CompressionFactory extension) {
+    public static void registerExtension(CompressionFactory extension) {
         String  name=ValidateUtils.checkNotNull(extension, "No extension provided").getName();
         ValidateUtils.checkTrue(fromFactoryName(name) == null, "Extension overrides built-in: %s", name);
 
@@ -107,7 +107,7 @@ public enum BuiltinCompressions implements CompressionFactory {
      * @return A {@link SortedSet} of the currently registered extensions, sorted
      * according to the factory name (case <U>insensitive</U>)
      */
-    public static final SortedSet<CompressionFactory> getRegisteredExtensions() {
+    public static SortedSet<CompressionFactory> getRegisteredExtensions() {
         // TODO for JDK-8 return Collections.emptySortedSet()
         synchronized(extensions) {
             return GenericUtils.asSortedSet(NamedResource.BY_NAME_COMPARATOR, extensions.values());
@@ -119,7 +119,7 @@ public enum BuiltinCompressions implements CompressionFactory {
      * @param name The factory name - ignored if {@code null}/empty
      * @return The registered extension - {@code null} if not found
      */
-    public static final CompressionFactory unregisterExtension(String name) {
+    public static CompressionFactory unregisterExtension(String name) {
         if (GenericUtils.isEmpty(name)) {
             return null;
         }
@@ -129,7 +129,7 @@ public enum BuiltinCompressions implements CompressionFactory {
         }
     }
 
-    public static final BuiltinCompressions fromFactoryName(String name) {
+    public static BuiltinCompressions fromFactoryName(String name) {
         return NamedResource.Utils.findByName(name, String.CASE_INSENSITIVE_ORDER, VALUES);
     }
 
@@ -140,15 +140,15 @@ public enum BuiltinCompressions implements CompressionFactory {
      * factories and the unknown ones. <B>Note:</B> it is up to caller to
      * ensure that the lists do not contain duplicates
      */
-    public static final ParseResult parseCompressionsList(String Compressions) {
+    public static ParseResult parseCompressionsList(String Compressions) {
         return parseCompressionsList(GenericUtils.split(Compressions, ','));
     }
 
-    public static final ParseResult parseCompressionsList(String ... Compressions) {
+    public static ParseResult parseCompressionsList(String ... Compressions) {
         return parseCompressionsList(GenericUtils.isEmpty((Object[]) Compressions) ? Collections.<String>emptyList() : Arrays.asList(Compressions));
     }
 
-    public static final ParseResult parseCompressionsList(Collection<String> Compressions) {
+    public static ParseResult parseCompressionsList(Collection<String> Compressions) {
         if (GenericUtils.isEmpty(Compressions)) {
             return ParseResult.EMPTY;
         }
@@ -176,7 +176,7 @@ public enum BuiltinCompressions implements CompressionFactory {
      * @return The factory or {@code null} if it is neither a built-in one
      * or a registered extension 
      */
-    public static final CompressionFactory resolveFactory(String name) {
+    public static CompressionFactory resolveFactory(String name) {
         if (GenericUtils.isEmpty(name)) {
             return null;
         }
@@ -195,17 +195,17 @@ public enum BuiltinCompressions implements CompressionFactory {
      * Holds the result of {@link BuiltinCompressions#parseCompressionsList(String)}
      * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
      */
-    public static final class ParseResult extends NamedFactoriesListParseResult<Compression,CompressionFactory> {
-        public static final ParseResult EMPTY=new ParseResult(Collections.<CompressionFactory>emptyList(), Collections.<String>emptyList());
+    public static class ParseResult extends NamedFactoriesListParseResult<Compression,CompressionFactory> {
+        public static ParseResult EMPTY=new ParseResult(Collections.<CompressionFactory>emptyList(), Collections.<String>emptyList());
         
         public ParseResult(List<CompressionFactory> parsed, List<String> unsupported) {
             super(parsed, unsupported);
         }
     }
 
-    public static final class Constants {
-        public static final String  NONE="none";
-        public static final String  ZLIB="zlib";
-        public static final String  DELAYED_ZLIB="zlib@openssh.com";
+    public static class Constants {
+        public static String  NONE="none";
+        public static String  ZLIB="zlib";
+        public static String  DELAYED_ZLIB="zlib@openssh.com";
     }
 }

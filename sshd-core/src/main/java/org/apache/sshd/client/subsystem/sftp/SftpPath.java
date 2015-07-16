@@ -33,9 +33,6 @@ public class SftpPath extends BasePath<SftpPath, SftpFileSystem> {
 
     @Override
     public SftpPath toRealPath(LinkOption... options) throws IOException {
-//        try (SftpClient client = fileSystem.getClient()) {
-//            client.realP
-//        }
         // TODO: handle links
         SftpPath absolute = toAbsolutePath();
         FileSystem fs = getFileSystem();

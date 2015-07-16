@@ -265,7 +265,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             String msg = buffer.getString();
             String lang = buffer.getString();
             if (log.isTraceEnabled()) {
-                log.trace("checkStatus(id={}) - status: {} [{}] {}", Integer.valueOf(id), Integer.valueOf(substatus), lang, msg);
+                log.trace("checkStatus(id={}) - status: {} [{}] {}", id, substatus, lang, msg);
             }
 
             if (substatus != SSH_FX_OK) {
@@ -285,7 +285,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             String msg = buffer.getString();
             String lang = buffer.getString();
             if (log.isTraceEnabled()) {
-                log.trace("checkHandle(id={}) - status: {} [{}] {}", Integer.valueOf(id), Integer.valueOf(substatus), lang, msg);
+                log.trace("checkHandle(id={}) - status: {} [{}] {}", id, substatus, lang, msg);
             }
             throw new SftpException(substatus, msg);
         } else if (type == SSH_FXP_HANDLE) {
@@ -304,7 +304,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             String msg = buffer.getString();
             String lang = buffer.getString();
             if (log.isTraceEnabled()) {
-                log.trace("checkAttributes(id={}) - status: {} [{}] {}", Integer.valueOf(id), Integer.valueOf(substatus), lang, msg);
+                log.trace("checkAttributes(id={}) - status: {} [{}] {}", id, substatus, lang, msg);
             }
             throw new SftpException(substatus, msg);
         } else if (type == SSH_FXP_ATTRS) {
@@ -323,7 +323,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             String msg = buffer.getString();
             String lang = buffer.getString();
             if (log.isTraceEnabled()) {
-                log.trace("checkOneName(id={}) - status: {} [{}] {}", Integer.valueOf(id), Integer.valueOf(substatus), lang, msg);
+                log.trace("checkOneName(id={}) - status: {} [{}] {}", id, substatus, lang, msg);
             }
             throw new SftpException(substatus, msg);
         } else if (type == SSH_FXP_NAME) {
@@ -338,7 +338,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             }
             Attributes attrs = readAttributes(buffer);
             if (log.isTraceEnabled()) {
-                log.trace("checkOneName(id={}) ({})[{}]: {}", Integer.valueOf(id), name, longName, attrs);
+                log.trace("checkOneName(id={}) ({})[{}]: {}", id, name, longName, attrs);
             }
             return name;
         } else {
@@ -689,7 +689,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             String msg = buffer.getString();
             String lang = buffer.getString();
             if (log.isTraceEnabled()) {
-                log.trace("checkData(id={}) - status: {} [{}] {}", Integer.valueOf(id), Integer.valueOf(substatus), lang, msg);
+                log.trace("checkData(id={}) - status: {} [{}] {}", id, substatus, lang, msg);
             }
 
             if (substatus == SSH_FX_EOF) {
@@ -792,7 +792,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             String msg = buffer.getString();
             String lang = buffer.getString();
             if (log.isTraceEnabled()) {
-                log.trace("checkDir(id={}) - status: {} [{}] {}", Integer.valueOf(id), Integer.valueOf(substatus), lang, msg);
+                log.trace("checkDir(id={}) - status: {} [{}] {}", id, substatus, lang, msg);
             }
             if (substatus == SSH_FX_EOF) {
                 return null;
@@ -807,7 +807,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
                 String longName = (version == SFTP_V3) ? buffer.getString() : null;
                 Attributes attrs = readAttributes(buffer);
                 if (log.isTraceEnabled()) {
-                    log.trace("checkDir(id={})[{}] ({})[{}]: {}", Integer.valueOf(id), Integer.valueOf(i), name, longName, attrs);
+                    log.trace("checkDir(id={})[{}] ({})[{}]: {}", id, i, name, longName, attrs);
                 }
 
                 entries.add(new DirEntry(name, longName, attrs));

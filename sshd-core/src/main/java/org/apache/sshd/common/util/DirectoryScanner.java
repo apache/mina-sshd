@@ -228,7 +228,7 @@ public class DirectoryScanner {
             throw new IllegalStateException("No includes set ");
         }
 
-        filesIncluded = new ArrayList<String>();
+        filesIncluded = new ArrayList<>();
 
         scandir(basedir, "");
 
@@ -252,9 +252,9 @@ public class DirectoryScanner {
             newfiles = new String[0];
         }
 
-        for (int i = 0; i < newfiles.length; i++) {
-            String name = vpath + newfiles[i];
-            File file = new File(dir, newfiles[i]);
+        for (String newfile : newfiles) {
+            String name = vpath + newfile;
+            File file = new File(dir, newfile);
             if (file.isDirectory()) {
                 if (isIncluded(name)) {
                     filesIncluded.add(name);
@@ -293,8 +293,8 @@ public class DirectoryScanner {
      *         include pattern, or <code>false</code> otherwise.
      */
     protected boolean isIncluded(String name) {
-        for (int i = 0; i < includes.length; i++) {
-            if (SelectorUtils.matchPath(includes[i], name, isCaseSensitive)) {
+        for (String include : includes) {
+            if (SelectorUtils.matchPath(include, name, isCaseSensitive)) {
                 return true;
             }
         }
@@ -310,8 +310,8 @@ public class DirectoryScanner {
      *         least one include pattern, or <code>false</code> otherwise.
      */
     protected boolean couldHoldIncluded(String name) {
-        for (int i = 0; i < includes.length; i++) {
-            if (SelectorUtils.matchPatternStart(includes[i], name, isCaseSensitive)) {
+        for (String include : includes) {
+            if (SelectorUtils.matchPatternStart(include, name, isCaseSensitive)) {
                 return true;
             }
         }
@@ -361,8 +361,8 @@ public class DirectoryScanner {
             return text;
         }
 
-        StringBuffer buf = new StringBuffer(text.length());
-        int start = 0, end = 0;
+        StringBuilder buf = new StringBuilder(text.length());
+        int start = 0, end;
         while ((end = text.indexOf(repl, start)) != -1) {
             buf.append(text.substring(start, end)).append(with);
             start = end + repl.length();

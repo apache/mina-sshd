@@ -171,7 +171,7 @@ public class UserAuthGSS extends AbstractUserAuth {
                     session.writePacket(b);
                     return null;
                 } else {
-                    return Boolean.valueOf(established);
+                    return established;
                 }
             }
         }

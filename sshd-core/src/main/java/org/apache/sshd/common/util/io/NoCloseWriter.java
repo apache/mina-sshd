@@ -36,7 +36,7 @@ public class NoCloseWriter extends FilterWriter {
         // ignored
     }
     
-    public static final Writer resolveWriter(Writer r, boolean okToClose) {
+    public static Writer resolveWriter(Writer r, boolean okToClose) {
         if ((r == null) || okToClose) {
             return r;
         } else {

@@ -226,7 +226,7 @@ public class PublicKeyEntry implements Serializable {
      * @return The updated appendable instance
      * @throws IOException If failed to append the data
      */
-    public static final <A extends Appendable> A appendPublicKeyEntry(A sb, PublicKey key) throws IOException {
+    public static <A extends Appendable> A appendPublicKeyEntry(A sb, PublicKey key) throws IOException {
         @SuppressWarnings("unchecked")
         PublicKeyEntryDecoder<PublicKey,?> decoder = (PublicKeyEntryDecoder<PublicKey,?>) KeyUtils.getPublicKeyEntryDecoder(key);
         if (decoder == null) {
@@ -263,7 +263,7 @@ public class PublicKeyEntry implements Serializable {
      * {@code known_hosts}, {@code authorized_keys}, etc.
      */
     @SuppressWarnings("synthetic-access")
-    public static final File getDefaultKeysFolder() {
+    public static File getDefaultKeysFolder() {
         return LazyDefaultKeysFolderHolder.folder;
     }
 }

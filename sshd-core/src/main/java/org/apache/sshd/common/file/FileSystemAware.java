@@ -28,7 +28,7 @@ public interface FileSystemAware {
     /**
      * Set the file system in which this shell will be executed.
      *
-     * @param fileSystem
+     * @param fileSystem the file system
      */
     void setFileSystem(FileSystem fileSystem);
 }

@@ -218,7 +218,7 @@ public class ScpCommandFactory implements CommandFactory, Cloneable, ExecutorSer
      * @return configured {@link Command} instance
      * @throws IllegalArgumentException if not an SCP command and no
      *         delegate command factory is available
-     * @see #SCP_COMMAND_PREFIX
+     * @see ScpHelper#SCP_COMMAND_PREFIX
      */
     @Override
     public Command createCommand(String command) {

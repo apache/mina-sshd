@@ -39,7 +39,7 @@ public class StaticPasswordAuthenticator extends AbstractLoggingBean implements 
     public final boolean authenticate(String username, String password, ServerSession session) {
         boolean accepted = isAccepted();
         if (log.isDebugEnabled()) {
-            log.debug("authenticate({}[{}]: {}", username, session, Boolean.valueOf(accepted));
+            log.debug("authenticate({}[{}]: {}", username, session, accepted);
         }
         
         return accepted;

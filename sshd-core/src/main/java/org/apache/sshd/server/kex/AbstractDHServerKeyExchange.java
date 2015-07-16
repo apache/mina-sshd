@@ -41,12 +41,12 @@ public abstract class AbstractDHServerKeyExchange extends AbstractDHKeyExchange 
     @Override
     public void init(AbstractSession s, byte[] V_S, byte[] V_C, byte[] I_S, byte[] I_C) throws Exception {
         super.init(s, V_S, V_C, I_S, I_C);
-        ValidateUtils.checkTrue(s instanceof ServerSession, "Using a server side KeyExchange on a client", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkTrue(s instanceof ServerSession, "Using a server side KeyExchange on a client");
         session = (ServerSession) s;
     }
 
     @Override
     public PublicKey getServerKey() {
-        return ValidateUtils.checkNotNull(session.getHostKey(), "No server key pair available", GenericUtils.EMPTY_OBJECT_ARRAY).getPublic();
+        return ValidateUtils.checkNotNull(session.getHostKey(), "No server key pair available").getPublic();
     }
 }

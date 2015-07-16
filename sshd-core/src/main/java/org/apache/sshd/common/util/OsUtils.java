@@ -28,7 +28,7 @@ public final class OsUtils {
 
     static {
         String os = System.getProperty("os.name").toLowerCase();
-        win32 = 0 <= os.indexOf("windows");
+        win32 = os.contains("windows");
     }
 
     /** @return true if the host is a UNIX system (and not Windows). */

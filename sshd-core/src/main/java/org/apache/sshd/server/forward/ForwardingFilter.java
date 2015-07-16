@@ -103,7 +103,7 @@ public interface ForwardingFilter {
          * @see #fromName(String)
          * @see #fromEnumName(String)
          */
-        public static final Type fromString(String name) {
+        public static Type fromString(String name) {
             if (GenericUtils.isEmpty(name)) {
                 return null;
             }
@@ -121,7 +121,7 @@ public interface ForwardingFilter {
          * @return The matching {@link Type} value - case <U>insensitive</U>,
          * or {@code null} if no match found
          */
-        public static final Type fromName(String name) {
+        public static Type fromName(String name) {
             return NamedResource.Utils.findByName(name, String.CASE_INSENSITIVE_ORDER, VALUES);
         }
         
@@ -130,7 +130,7 @@ public interface ForwardingFilter {
          * @return The matching {@link Type} value - case <U>insensitive</U>,
          * or {@code null} if no match found
          */
-        public static final Type fromEnumName(String name) {
+        public static Type fromEnumName(String name) {
             if (GenericUtils.isEmpty(name)) {
                 return null;
             }

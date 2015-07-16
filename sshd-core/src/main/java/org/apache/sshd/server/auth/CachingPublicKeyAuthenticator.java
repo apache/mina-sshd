@@ -51,11 +51,11 @@ public class CachingPublicKeyAuthenticator implements PublickeyAuthenticator, Se
         
         Boolean result = map.get(key);
         if (result == null) {
-            result = Boolean.valueOf(authenticator.authenticate(username, key, session));
+            result = authenticator.authenticate(username, key, session);
             map.put(key, result);
         }
 
-        return result.booleanValue();
+        return result;
     }
 
     @Override

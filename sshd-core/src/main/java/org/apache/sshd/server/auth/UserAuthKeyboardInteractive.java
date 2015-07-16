@@ -79,7 +79,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
                 throw new SshException("Expected 1 response from user but received " + num);
             }
             String password = buffer.getString();
-            return Boolean.valueOf(checkPassword(session, username, password));
+            return checkPassword(session, username, password);
         }
     }
 

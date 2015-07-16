@@ -84,10 +84,10 @@ public class SecurityUtils {
                 getKeyPairGenerator("EC");
                 hasEcc = Boolean.TRUE;
             } catch (Throwable t) {
-                hasEcc = Boolean.TRUE;
+                hasEcc = Boolean.FALSE;
             }
         }
-        return hasEcc.booleanValue();
+        return hasEcc;
     }
 
     public static synchronized void setSecurityProvider(String securityProvider) {
@@ -96,7 +96,7 @@ public class SecurityUtils {
     }
 
     public static synchronized void setRegisterBouncyCastle(boolean registerBouncyCastle) {
-        SecurityUtils.registerBouncyCastle = Boolean.valueOf(registerBouncyCastle);
+        SecurityUtils.registerBouncyCastle = registerBouncyCastle;
         registrationDone = false;
     }
 
@@ -119,7 +119,7 @@ public class SecurityUtils {
                     registerBouncyCastle = Boolean.valueOf(prop);
                 }
             }
-            if ((securityProvider == null) && ((registerBouncyCastle == null) || registerBouncyCastle.booleanValue())) {
+            if ((securityProvider == null) && ((registerBouncyCastle == null) || registerBouncyCastle)) {
                 // Use an inner class to avoid a strong dependency from SshServer on BouncyCastle
                 try {
                     new BouncyCastleRegistration().call();

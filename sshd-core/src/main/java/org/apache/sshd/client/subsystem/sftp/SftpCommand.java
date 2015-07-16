@@ -371,7 +371,7 @@ public class SftpCommand implements Channel {
         }
     }
 
-    public static interface CommandExecutor extends NamedResource {
+    public interface CommandExecutor extends NamedResource {
         // return value is whether to stop running
         boolean executeCommand(String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr) throws Exception; 
     }

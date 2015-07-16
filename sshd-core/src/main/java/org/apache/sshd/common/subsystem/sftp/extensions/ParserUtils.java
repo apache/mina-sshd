@@ -123,7 +123,7 @@ public final class ParserUtils {
         }
     }
 
-    public static final List<ExtensionParser<?>> getRegisteredParsers() {
+    public static List<ExtensionParser<?>> getRegisteredParsers() {
         synchronized(parsersMap) {
             if (parsersMap.isEmpty()) {
                 return Collections.emptyList();
@@ -133,7 +133,7 @@ public final class ParserUtils {
         }
     }
 
-    public static final Set<String> supportedExtensions(Map<String,?> parsed) {
+    public static Set<String> supportedExtensions(Map<String,?> parsed) {
         if (GenericUtils.isEmpty(parsed)) {
             return Collections.emptySet();
         }
@@ -163,7 +163,7 @@ public final class ParserUtils {
      * @see #getRegisteredParser(String)
      * @see ExtensionParser#transform(Object)
      */
-    public static final Map<String,Object> parse(Map<String,byte[]> extensions) {
+    public static Map<String,Object> parse(Map<String,byte[]> extensions) {
         if (GenericUtils.isEmpty(extensions)) {
             return Collections.emptyMap();
         }
@@ -181,7 +181,7 @@ public final class ParserUtils {
         return data;
     }
 
-    public static final Object parse(String name, byte ... encoded) {
+    public static Object parse(String name, byte ... encoded) {
         ExtensionParser<?> parser = getRegisteredParser(name);
         if (parser == null) {
             return null;

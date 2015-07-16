@@ -147,7 +147,7 @@ public class SocksProxy extends CloseableUtils.AbstractCloseable implements IoHa
                     host = getNTString(buffer);
                 }
                 if (log.isDebugEnabled()) {
-                    log.debug("Received socks4 connection request for {} to {}:{}", userId, host, Integer.valueOf(port));
+                    log.debug("Received socks4 connection request for {} to {}:{}", userId, host, port);
                 }
 
                 SshdSocketAddress remote = new SshdSocketAddress(host, port);

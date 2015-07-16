@@ -57,7 +57,7 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
                     try {
                         Nio2Session session = new Nio2Session(Nio2Connector.this, manager, handler, socket);
                         handler.sessionCreated(session);
-                        sessions.put(Long.valueOf(session.getId()), session);
+                        sessions.put(session.getId(), session);
                         future.setSession(session);
                         session.startReading();
                     } catch (Throwable e) {

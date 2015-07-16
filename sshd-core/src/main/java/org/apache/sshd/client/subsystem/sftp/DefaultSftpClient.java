@@ -190,7 +190,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
         int id = buffer.getInt();
         buffer.rpos(0);
         synchronized (messages) {
-            messages.put(Integer.valueOf(id), buffer);
+            messages.put(id, buffer);
             messages.notifyAll();
         }
     }
@@ -214,7 +214,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
                 if (closing) {
                     throw new SshException("Channel has been closed");
                 }
-                Buffer buffer = messages.remove(Integer.valueOf(id));
+                Buffer buffer = messages.remove(id);
                 if (buffer != null) {
                     return buffer;
                 }
@@ -292,7 +292,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
             String msg = buffer.getString();
             String lang = buffer.getString();
             if (log.isTraceEnabled()) {
-                log.trace("init(id={}) - status: {} [{}] {}", Integer.valueOf(id), Integer.valueOf(substatus), lang, msg);
+                log.trace("init(id={}) - status: {} [{}] {}", id, substatus, lang, msg);
             }
 
             throw new SftpException(substatus, msg);
@@ -308,24 +308,22 @@ public class DefaultSftpClient extends AbstractSftpClient {
      */
     public int negotiateVersion(SftpVersionSelector selector) throws IOException {
         int current = getVersion();
-        Set<Integer> available = GenericUtils.asSortedSet(Collections.singleton(Integer.valueOf(current)));
+        Set<Integer> available = GenericUtils.asSortedSet(Collections.singleton(current));
         Map<String,?> parsed = getParsedServerExtensions();
         Collection<String> extensions = ParserUtils.supportedExtensions(parsed);
-        if ((GenericUtils.size(extensions) > 0) && extensions.contains(SftpConstants.EXT_VERSELECT)) {
+        if (!GenericUtils.isEmpty(extensions) && extensions.contains(SftpConstants.EXT_VERSELECT)) {
             Versions vers = GenericUtils.isEmpty(parsed) ? null : (Versions) parsed.get(SftpConstants.EXT_VERSIONS);
             Collection<String> reported = (vers == null) ? null : vers.versions;
             if (GenericUtils.size(reported) > 0) {
                 for (String v : reported) {
-                    if (!available.add(Integer.valueOf(v))) {
-                        continue;
-                    }
+                    available.add(Integer.valueOf(v));
                 }
             }
         }
 
         int selected = selector.selectVersion(current, new ArrayList<>(available));
         if (log.isDebugEnabled()) {
-            log.debug("negotiateVersion({}) {} -> {}", Integer.valueOf(current), available, Integer.valueOf(selected));
+            log.debug("negotiateVersion({}) {} -> {}", current, available, selected);
         }
 
         if (selected == current) {

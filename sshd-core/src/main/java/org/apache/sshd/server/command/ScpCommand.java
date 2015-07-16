@@ -199,7 +199,7 @@ public class ScpCommand extends AbstractLoggingBean implements Command, Runnable
         if ((executors != null) && (!executors.isShutdown()) && shutdownExecutor) {
             Collection<Runnable> runners = executors.shutdownNow();
             if (log.isDebugEnabled()) {
-                log.debug("destroy() - shutdown executor service - runners count=" + ((runners == null) ? 0 : runners.size()));
+                log.debug("destroy() - shutdown executor service - runners count=" + runners.size());
             }
         }
 

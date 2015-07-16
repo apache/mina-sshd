@@ -286,7 +286,7 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
      * MACs according to the <tt>ignoreUnsupported</tt> parameter
      * @see BuiltinMacs#isSupported()
      */
-    public static final List<NamedFactory<Mac>> setUpDefaultMacs(boolean ignoreUnsupported) {
+    public static List<NamedFactory<Mac>> setUpDefaultMacs(boolean ignoreUnsupported) {
         return NamedFactory.Utils.setUpBuiltinFactories(ignoreUnsupported, DEFAULT_MAC_PREFERENCE);
     }
     
@@ -316,7 +316,7 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
      * signatures according to the <tt>ignoreUnsupported</tt> parameter
      * @see BuiltinSignatures#isSupported()
      */
-    public static final List<NamedFactory<Signature>> setUpDefaultSignatures(boolean ignoreUnsupported) {
+    public static List<NamedFactory<Signature>> setUpDefaultSignatures(boolean ignoreUnsupported) {
         return NamedFactory.Utils.setUpBuiltinFactories(ignoreUnsupported, DEFAULT_SIGNATURE_PREFERENCE);
     }
 }

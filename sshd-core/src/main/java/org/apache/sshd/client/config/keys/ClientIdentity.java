@@ -281,7 +281,7 @@ public final class ClientIdentity {
      * <U>insensitive</U>), value=the {@link KeyPair} of the identity
      * @throws IOException If failed to access the file system
      * @throws GeneralSecurityException If failed to load the keys
-     * @see #scanIdentitiesFolder(Path, Collection, Transformer, LinkOption...)
+     * @see #scanIdentitiesFolder(Path, boolean, Collection, Transformer, LinkOption...)
      * @see IdentityUtils#loadIdentities(Map, FilePasswordProvider, OpenOption...)
      */
     public static Map<String,KeyPair> loadIdentities(

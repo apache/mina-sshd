@@ -181,7 +181,7 @@ public enum BuiltinDHFactories implements DHFactory {
      * or overrides a built-in one or overrides another registered factory
      * with the same name (case <U>insensitive</U>).
      */
-    public static final void registerExtension(DHFactory extension) {
+    public static void registerExtension(DHFactory extension) {
         String  name=ValidateUtils.checkNotNull(extension, "No extension provided").getName();
         ValidateUtils.checkTrue(fromFactoryName(name) == null, "Extension overrides built-in: %s", name);
 
@@ -195,7 +195,7 @@ public enum BuiltinDHFactories implements DHFactory {
      * @return A {@link SortedSet} of the currently registered extensions, sorted
      * according to the factory name (case <U>insensitive</U>)
      */
-    public static final SortedSet<DHFactory> getRegisteredExtensions() {
+    public static SortedSet<DHFactory> getRegisteredExtensions() {
         // TODO for JDK-8 return Collections.emptySortedSet()
         synchronized(extensions) {
             return GenericUtils.asSortedSet(NamedResource.BY_NAME_COMPARATOR, extensions.values());
@@ -207,7 +207,7 @@ public enum BuiltinDHFactories implements DHFactory {
      * @param name The factory name - ignored if {@code null}/empty
      * @return The registered extension - {@code null} if not found
      */
-    public static final DHFactory unregisterExtension(String name) {
+    public static DHFactory unregisterExtension(String name) {
         if (GenericUtils.isEmpty(name)) {
             return null;
         }
@@ -222,7 +222,7 @@ public enum BuiltinDHFactories implements DHFactory {
      * @return The matching {@link BuiltinDHFactories} (case <U>insensitive</U>)
      * or {@code null} if no match found
      */
-    public static final BuiltinDHFactories fromFactoryName(String name) {
+    public static BuiltinDHFactories fromFactoryName(String name) {
         return NamedResource.Utils.findByName(name, String.CASE_INSENSITIVE_ORDER, VALUES);
     }
 
@@ -241,15 +241,15 @@ public enum BuiltinDHFactories implements DHFactory {
      * <B>Note:</B> it is up to caller to ensure that the list does not
      * contain duplicates
      */
-    public static final ParseResult parseDHFactoriesList(String dhList) {
+    public static ParseResult parseDHFactoriesList(String dhList) {
         return parseDHFactoriesList(GenericUtils.split(dhList, ','));
     }
 
-    public static final ParseResult parseDHFactoriesList(String ... dhList) {
+    public static ParseResult parseDHFactoriesList(String ... dhList) {
         return parseDHFactoriesList(GenericUtils.isEmpty((Object[]) dhList) ? Collections.<String>emptyList() : Arrays.asList(dhList));
     }
 
-    public static final ParseResult parseDHFactoriesList(Collection<String> dhList) {
+    public static ParseResult parseDHFactoriesList(Collection<String> dhList) {
         if (GenericUtils.isEmpty(dhList)) {
             return ParseResult.EMPTY;
         }
@@ -276,7 +276,7 @@ public enum BuiltinDHFactories implements DHFactory {
      * @return The factory or {@code null} if it is neither a built-in one
      * or a registered extension 
      */
-    public static final DHFactory resolveFactory(String name) {
+    public static DHFactory resolveFactory(String name) {
         if (GenericUtils.isEmpty(name)) {
             return null;
         }

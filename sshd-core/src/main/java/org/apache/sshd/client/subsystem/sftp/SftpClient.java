@@ -73,7 +73,7 @@ public interface SftpClient extends SubsystemClient {
         CreateTime,
     }
 
-    public static class Handle {
+    class Handle {
         private final byte[] id;
 
         public Handle(byte[] id) {
@@ -126,13 +126,13 @@ public interface SftpClient extends SubsystemClient {
         }
     }
 
-    public static abstract class CloseableHandle extends Handle implements Channel, Closeable {
+    abstract class CloseableHandle extends Handle implements Channel, Closeable {
         protected CloseableHandle(byte[] id) {
             super(id);
         }
     }
 
-    public static class Attributes {
+    class Attributes {
         public final Set<Attribute> flags = EnumSet.noneOf(Attribute.class);
         public long size;
         public int type;
@@ -252,7 +252,7 @@ public interface SftpClient extends SubsystemClient {
         }
     }
 
-    public static class DirEntry {
+    class DirEntry {
         public String filename;
         public String longFilename;
         public Attributes attributes;
@@ -410,7 +410,6 @@ public interface SftpClient extends SubsystemClient {
 
     /**
      * @param extensionName The extension name
-     * @return The {@link SftpClientExtension} name - ignored if {@code null}/empty
      * @return The extension instance - <B>Note:</B> it is up to the caller
      * to invoke {@link SftpClientExtension#isSupported()} - {@code null} if
      * this extension type is not implemented by the client

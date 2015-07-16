@@ -193,7 +193,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
                 if ((cond & mask) != 0) {
                     if (log.isTraceEnabled()) {
                         log.trace("WaitFor call returning on channel {}, mask={}, cond={}",
-                                  new Object[] { this, Integer.valueOf(mask), Integer.valueOf(cond) });
+                                  this, mask, cond);
                     }
                     return cond;
                 }
@@ -210,7 +210,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
                 }
                 try {
                     if (log.isTraceEnabled()) {
-                        log.trace("Waiting for lock on channel {}, mask={}, cond={}", this, Integer.valueOf(mask), Integer.valueOf(cond));
+                        log.trace("Waiting for lock on channel {}, mask={}, cond={}", this, mask, cond);
                     }
                     if (timeout > 0) {
                         lock.wait(timeout);
@@ -337,7 +337,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         @Override
         public Result process(Channel channel, String request, boolean wantReply, Buffer buffer) throws Exception {
             if ("exit-status".equals(request)) {
-                exitStatus = Integer.valueOf(buffer.getInt());
+                exitStatus = buffer.getInt();
                 notifyStateChanged();
                 return Result.ReplySuccess;
             }

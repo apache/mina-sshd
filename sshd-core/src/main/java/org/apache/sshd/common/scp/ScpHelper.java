@@ -148,7 +148,7 @@ public class ScpHelper extends AbstractLoggingBean {
             if (status == null) {
                 throw new SshException("Target directory " + path + " is most like inaccessible");
             }
-            if (!status.booleanValue()) {
+            if (!status) {
                 throw new SshException("Target directory " + path + " does not exist");
             }
             if (!Files.isDirectory(path, options)) {
@@ -230,10 +230,10 @@ public class ScpHelper extends AbstractLoggingBean {
         }
 
         Path file=null;
-        if (status.booleanValue() && Files.isDirectory(path, options)) {
+        if (status && Files.isDirectory(path, options)) {
             String localName = name.replace('/', File.separatorChar);
             file = path.resolve(localName);
-        } else if (!status.booleanValue()) {
+        } else if (!status) {
             Path parent = path.getParent();
 
             status = IoUtils.checkFileExists(parent, options);
@@ -241,7 +241,7 @@ public class ScpHelper extends AbstractLoggingBean {
                 throw new AccessDeniedException("Receive directory parent (" + parent + ") existence status cannot be determined for " + path);
             }
                 
-            if (status.booleanValue() && Files.isDirectory(parent, options)) { 
+            if (status && Files.isDirectory(parent, options)) {
                 file = path;
             }
         }
@@ -421,13 +421,13 @@ public class ScpHelper extends AbstractLoggingBean {
                     } else if (Files.isDirectory(file, options)) {
                         if (!recursive) {
                             out.write(ScpHelper.WARNING);
-                            out.write((path.toString().replace(File.separatorChar, '/') + " not a regular file\n").getBytes(StandardCharsets.UTF_8));
+                            out.write((path.replace(File.separatorChar, '/') + " not a regular file\n").getBytes(StandardCharsets.UTF_8));
                         } else {
                             sendDir(file, preserve, bufferSize);
                         }
                     } else {
                         out.write(ScpHelper.WARNING);
-                        out.write((path.toString().replace(File.separatorChar, '/') + " unknown file type\n").getBytes(StandardCharsets.UTF_8));
+                        out.write((path.replace(File.separatorChar, '/') + " unknown file type\n").getBytes(StandardCharsets.UTF_8));
                     }
                 }
             } else {
@@ -457,7 +457,7 @@ public class ScpHelper extends AbstractLoggingBean {
         if (status == null) {
             throw new AccessDeniedException("Send file existence status cannot be determined: " + file);
         }
-        if (!status.booleanValue()) {
+        if (!status) {
             throw new IOException(file + ": no such file or directory");
         }
 
@@ -522,11 +522,9 @@ public class ScpHelper extends AbstractLoggingBean {
 
         ScpTimestamp time = resolver.getTimestamp();
         if (preserve && (time != null)) {
-            String cmd = new StringBuilder(Long.SIZE)
-                    .append('T').append(TimeUnit.MILLISECONDS.toSeconds(time.lastModifiedTime)).append(' ').append('0')
-                    .append(' ').append(TimeUnit.MILLISECONDS.toSeconds(time.lastAccessTime)).append(' ').append('0')
-                    .append('\n')
-                    .toString();
+            String cmd = "T" + TimeUnit.MILLISECONDS.toSeconds(time.lastModifiedTime)
+                    + ' ' + '0' + ' ' + TimeUnit.MILLISECONDS.toSeconds(time.lastAccessTime)
+                    + ' ' + '0' + '\n';
             out.write(cmd.getBytes(StandardCharsets.UTF_8));
             out.flush();
             readAck(false);
@@ -535,12 +533,7 @@ public class ScpHelper extends AbstractLoggingBean {
         Set<PosixFilePermission> perms = EnumSet.copyOf(resolver.getPermissions());
         String octalPerms = preserve ? getOctalPermissions(perms) : "0644";
         String fileName = resolver.getFileName();
-        String cmd = new StringBuilder(octalPerms.length() + fileName.length() + Long.SIZE /* some extra delimiters */)
-            .append('C').append(octalPerms)
-            .append(' ').append(fileSize)
-            .append(' ').append(fileName)
-            .append('\n')
-            .toString();
+        String cmd = "C" + octalPerms + ' ' + fileSize + ' ' + fileName + '\n';
         out.write(cmd.getBytes(StandardCharsets.UTF_8));
         out.flush();
         readAck(false);
@@ -567,32 +560,17 @@ public class ScpHelper extends AbstractLoggingBean {
 
         BasicFileAttributes basic = Files.getFileAttributeView(path, BasicFileAttributeView.class).readAttributes();
         if (preserve) {
-            StringBuilder buf = new StringBuilder();
-            buf.append("T");
-            buf.append(basic.lastModifiedTime().to(TimeUnit.SECONDS));
-            buf.append(" ");
-            buf.append("0");
-            buf.append(" ");
-            buf.append(basic.lastAccessTime().to(TimeUnit.SECONDS));
-            buf.append(" ");
-            buf.append("0");
-            buf.append("\n");
-            out.write(buf.toString().getBytes(StandardCharsets.UTF_8));
+            out.write(("T" + basic.lastModifiedTime().to(TimeUnit.SECONDS) + " "
+                    + "0" + " " + basic.lastAccessTime().to(TimeUnit.SECONDS) + " "
+                    + "0" + "\n").getBytes(StandardCharsets.UTF_8));
             out.flush();
             readAck(false);
         }
 
         LinkOption[] options = IoUtils.getLinkOptions(false);
         Set<PosixFilePermission> perms = IoUtils.getPermissions(path, options);
-        StringBuilder buf = new StringBuilder();
-        buf.append("D");
-        buf.append(preserve ? getOctalPermissions(perms) : "0755");
-        buf.append(" ");
-        buf.append("0"); // length
-        buf.append(" ");
-        buf.append(path.getFileName().toString());
-        buf.append("\n");
-        out.write(buf.toString().getBytes(StandardCharsets.UTF_8));
+        out.write(("D" + (preserve ? getOctalPermissions(perms) : "0755") + " "
+                + "0" + " " + path.getFileName().toString() + "\n").getBytes(StandardCharsets.UTF_8));
         out.flush();
         readAck(false);
 
@@ -660,7 +638,7 @@ public class ScpHelper extends AbstractLoggingBean {
             }
         }
 
-        return String.format("%04o", Integer.valueOf(pf));
+        return String.format("%04o", pf);
     }
 
     public static Set<PosixFilePermission> setOctalPermissions(Path path, String str) throws IOException {

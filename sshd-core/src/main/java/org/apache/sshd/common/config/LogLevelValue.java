@@ -39,7 +39,8 @@ public enum LogLevelValue {
 
     public static final Set<LogLevelValue> VALUES=
             Collections.unmodifiableSet(EnumSet.allOf(LogLevelValue.class));
-    public static final LogLevelValue fromName(String n) {
+
+    public static LogLevelValue fromName(String n) {
         if (GenericUtils.isEmpty(n)) {
             return null;
         }

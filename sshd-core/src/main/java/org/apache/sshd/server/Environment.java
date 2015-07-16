@@ -33,24 +33,24 @@ public interface Environment {
     /**
      * Key for the user environment variable
      */
-    public static final String ENV_USER = "USER";
+    String ENV_USER = "USER";
     /**
      * Key for the lines environment variable. Specifies the number of
      * lines visible on the client side. {@link Environment#ENV_LINES} and
      * {@link Environment#ENV_COLUMNS} make up the console screen size.
      */
-    public static final String ENV_LINES = "LINES";
+    String ENV_LINES = "LINES";
     /**
      * Key for the columns environment variable. Specifies the number of
      * columns visible on the client side. {@link Environment#ENV_LINES} and
      * {@link Environment#ENV_COLUMNS} make up the console screen size.
      */
-    public static final String ENV_COLUMNS = "COLUMNS";
+    String ENV_COLUMNS = "COLUMNS";
     /**
      * Key for the term environment variable. Describes the terminal or
      * terminal emulation which is in use.
      */
-    public static final String ENV_TERM = "TERM";
+    String ENV_TERM = "TERM";
 
     /**
      * Retrieve the environment map

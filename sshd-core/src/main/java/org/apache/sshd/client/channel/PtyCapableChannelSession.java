@@ -78,13 +78,13 @@ public class PtyCapableChannelSession extends ChannelSession {
                 private static final long serialVersionUID = 1L;    // we're not serializing it
 
                 {
-                    put(PtyMode.ISIG, Integer.valueOf(1));
-                    put(PtyMode.ICANON, Integer.valueOf(1));
-                    put(PtyMode.ECHO, Integer.valueOf(1));
-                    put(PtyMode.ECHOE, Integer.valueOf(1));
-                    put(PtyMode.ECHOK, Integer.valueOf(1));
-                    put(PtyMode.ECHONL, Integer.valueOf(0));
-                    put(PtyMode.NOFLSH, Integer.valueOf(0));
+                    put(PtyMode.ISIG, 1);
+                    put(PtyMode.ICANON, 1);
+                    put(PtyMode.ECHO, 1);
+                    put(PtyMode.ECHOE, 1);
+                    put(PtyMode.ECHOK, 1);
+                    put(PtyMode.ECHONL, 0);
+                    put(PtyMode.NOFLSH, 0);
                 }
             });
 
@@ -95,8 +95,8 @@ public class PtyCapableChannelSession extends ChannelSession {
     private int ptyLines = DEFAULT_ROWS_COUNT;
     private int ptyWidth = DEFAULT_WIDTH;
     private int ptyHeight = DEFAULT_HEIGHT;
-    private Map<PtyMode, Integer> ptyModes = new EnumMap<PtyMode, Integer>(PtyMode.class);
-    private final Map<String, String> env = new LinkedHashMap<String, String>();
+    private Map<PtyMode, Integer> ptyModes = new EnumMap<>(PtyMode.class);
+    private final Map<String, String> env = new LinkedHashMap<>();
 
     public PtyCapableChannelSession(boolean usePty) {
         this.usePty = usePty;
@@ -207,8 +207,8 @@ public class PtyCapableChannelSession extends ChannelSession {
         if (usePty) {
             if (log.isDebugEnabled()) {
                 log.debug("Send SSH_MSG_CHANNEL_REQUEST pty-req: type={}, cols={}, lines={}, height={}, width={}, modes={}",
-                          ptyType, Integer.valueOf(ptyColumns), Integer.valueOf(ptyLines),
-                          Integer.valueOf(ptyHeight), Integer.valueOf(ptyWidth), ptyModes);
+                          ptyType, ptyColumns, ptyLines,
+                          ptyHeight, ptyWidth, ptyModes);
             }
 
             buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST);

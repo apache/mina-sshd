@@ -114,7 +114,7 @@ public enum BuiltinMacs implements MacFactory {
      * or overrides a built-in one or overrides another registered factory
      * with the same name (case <U>insensitive</U>).
      */
-    public static final void registerExtension(MacFactory extension) {
+    public static void registerExtension(MacFactory extension) {
         String  name=ValidateUtils.checkNotNull(extension, "No extension provided").getName();
         ValidateUtils.checkTrue(fromFactoryName(name) == null, "Extension overrides built-in: %s", name);
 
@@ -128,7 +128,7 @@ public enum BuiltinMacs implements MacFactory {
      * @return A {@link SortedSet} of the currently registered extensions, sorted
      * according to the factory name (case <U>insensitive</U>)
      */
-    public static final SortedSet<MacFactory> getRegisteredExtensions() {
+    public static SortedSet<MacFactory> getRegisteredExtensions() {
         // TODO for JDK-8 return Collections.emptySortedSet()
         synchronized(extensions) {
             return GenericUtils.asSortedSet(NamedResource.BY_NAME_COMPARATOR, extensions.values());
@@ -140,7 +140,7 @@ public enum BuiltinMacs implements MacFactory {
      * @param name The factory name - ignored if {@code null}/empty
      * @return The registered extension - {@code null} if not found
      */
-    public static final MacFactory unregisterExtension(String name) {
+    public static MacFactory unregisterExtension(String name) {
         if (GenericUtils.isEmpty(name)) {
             return null;
         }
@@ -199,15 +199,15 @@ public enum BuiltinMacs implements MacFactory {
      * factories and the unknown ones. <B>Note:</B> it is up to caller to
      * ensure that the lists do not contain duplicates
      */
-    public static final ParseResult parseMacsList(String macs) {
+    public static ParseResult parseMacsList(String macs) {
         return parseMacsList(GenericUtils.split(macs, ','));
     }
 
-    public static final ParseResult parseMacsList(String ... macs) {
+    public static ParseResult parseMacsList(String ... macs) {
         return parseMacsList(GenericUtils.isEmpty((Object[]) macs) ? Collections.<String>emptyList() : Arrays.asList(macs));
     }
 
-    public static final ParseResult parseMacsList(Collection<String> macs) {
+    public static ParseResult parseMacsList(Collection<String> macs) {
         if (GenericUtils.isEmpty(macs)) {
             return ParseResult.EMPTY;
         }
@@ -235,7 +235,7 @@ public enum BuiltinMacs implements MacFactory {
      * @return The factory or {@code null} if it is neither a built-in one
      * or a registered extension 
      */
-    public static final MacFactory resolveFactory(String name) {
+    public static MacFactory resolveFactory(String name) {
         if (GenericUtils.isEmpty(name)) {
             return null;
         }

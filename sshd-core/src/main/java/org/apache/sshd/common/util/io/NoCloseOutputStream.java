@@ -37,7 +37,7 @@ public class NoCloseOutputStream extends FilterOutputStream {
         // ignored
     }
 
-    public static final OutputStream resolveOutputStream(OutputStream output, boolean okToClose) {
+    public static OutputStream resolveOutputStream(OutputStream output, boolean okToClose) {
         if ((output == null) || okToClose) {
             return output;
         } else {

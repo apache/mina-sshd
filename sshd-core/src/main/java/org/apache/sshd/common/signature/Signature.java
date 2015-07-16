@@ -40,7 +40,7 @@ public interface Signature {
     void initVerifier(PublicKey key) throws Exception;
 
     /**
-     * @param prvkey The {@link PrivateKey} to be used for signing
+     * @param key The {@link PrivateKey} to be used for signing
      * @throws Exception If failed to initialize
      */
     void initSigner(PrivateKey key) throws Exception;

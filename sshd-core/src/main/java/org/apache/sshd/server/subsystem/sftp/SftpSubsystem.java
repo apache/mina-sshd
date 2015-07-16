@@ -627,7 +627,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         int id = buffer.getInt();
         if (log.isDebugEnabled()) {
             log.debug("process(length={}, type={}, id={})",
-                      Integer.valueOf(length), Integer.valueOf(type), Integer.valueOf(id));
+                    length, type, id);
         }
 
         switch (type) {
@@ -777,13 +777,13 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         Path abs = file.toAbsolutePath();
         Path nrm = abs.normalize();
         if (log.isDebugEnabled()) {
-            log.debug("doSpaceAvailable(id={}) path={}[{}]", Integer.valueOf(id), path, nrm);
+            log.debug("doSpaceAvailable(id={}) path={}[{}]", id, path, nrm);
         }
 
         FileStore store = Files.getFileStore(nrm);
         if (log.isTraceEnabled()) {
             log.trace("doSpaceAvailable(id={}) path={}[{}] - {}[{}]",
-                      Integer.valueOf(id), path, nrm, store.name(), store.type());
+                    id, path, nrm, store.name(), store.type());
         }
         
         return new SpaceAvailableExtensionInfo(store);
@@ -989,7 +989,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                     byte[] hashValue = digest.digest(); // NOTE: this also resets the hash for the next read
                     if (log.isTraceEnabled()) {
                         log.trace("doCheckFileHash({})[{}] offset={}, length={} - hash={}",
-                                  file, Integer.valueOf(count), Long.valueOf(startOffset), Long.valueOf(length),
+                                  file, count, startOffset, length,
                                   BufferUtils.printHex(':', hashValue));
                     }
                     buffer.putBytes(hashValue);
@@ -1008,7 +1008,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             hashValue = doMD5Hash(id, targetType, target, startOffset, length, quickCheckHash);
             if (log.isTraceEnabled()) {
                 log.debug("doMD5Hash({})[{}] offset={}, length={}, quick-hash={} - hash={}",
-                          targetType, target, Long.valueOf(startOffset), Long.valueOf(length), BufferUtils.printHex(':', quickCheckHash),
+                          targetType, target, startOffset, length, BufferUtils.printHex(':', quickCheckHash),
                           BufferUtils.printHex(':', hashValue));
             }
 
@@ -1028,7 +1028,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     protected byte[] doMD5Hash(int id, String targetType, String target, long startOffset, long length, byte[] quickCheckHash) throws Exception {
         if (log.isDebugEnabled()) {
             log.debug("doMD5Hash({})[{}] offset={}, length={}, quick-hash={}",
-                      targetType, target, Long.valueOf(startOffset), Long.valueOf(length), BufferUtils.printHex(':', quickCheckHash));
+                      targetType, target, startOffset, length, BufferUtils.printHex(':', quickCheckHash));
         }
 
         Path path;
@@ -1127,7 +1127,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                 } else {
                     if (log.isTraceEnabled()) {
                         log.trace("doMD5Hash({}) offset={}, length={} - quick-hash mismatched expected={}, actual={}",
-                                  path, Long.valueOf(startOffset), Long.valueOf(length),
+                                  path, startOffset, length,
                                   BufferUtils.printHex(':', quickCheckHash), BufferUtils.printHex(':', hashValue));
                     }
                 }
@@ -1160,7 +1160,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
 
         if (log.isTraceEnabled()) {
             log.trace("doMD5Hash({}) offset={}, length={} - matches={}, quick={} hash={}",
-                      path, Long.valueOf(startOffset), Long.valueOf(length), Boolean.valueOf(hashMatches),
+                      path, startOffset, length, hashMatches,
                       BufferUtils.printHex(':', quickCheckHash), BufferUtils.printHex(':', hashValue));
         }
 
@@ -1187,7 +1187,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         if (result == null) {   // response sent internally
             session.close(true);
             return;
-        } if (result.booleanValue()) {
+        } if (result) {
             version = Integer.parseInt(proposed);
             sendStatus(BufferUtils.clear(buffer), id, SSH_FX_OK, "");
         } else {
@@ -1249,17 +1249,17 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         // check if user wants to use a specific version
         Integer sftpVersion = FactoryManagerUtils.getInteger(session, SFTP_VERSION);
         if (sftpVersion != null) {
-            int forcedValue = sftpVersion.intValue();
+            int forcedValue = sftpVersion;
             if ((forcedValue < LOWER_SFTP_IMPL) || (forcedValue > HIGHER_SFTP_IMPL)) {
                 throw new IllegalStateException("Forced SFTP version (" + sftpVersion + ") not within supported values: " + available);
             }
-            low = hig = sftpVersion.intValue();
+            low = hig = sftpVersion;
             available = sftpVersion.toString();
         }
 
         if (log.isTraceEnabled()) {
             log.trace("checkVersionCompatibility(id={}) - proposed={}, available={}",
-                      Integer.valueOf(id), Integer.valueOf(proposed), available);
+                    id, proposed, available);
         }
 
         if ((proposed < low) || (proposed > hig)) {
@@ -1290,7 +1290,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         Handle p = handles.get(handle);
         if (log.isDebugEnabled()) {
             log.debug("Received SSH_FXP_BLOCK (handle={}[{}], offset={}, length={}, mask=0x{})",
-                      handle, p, Long.valueOf(offset), Long.valueOf(length), Integer.toHexString(mask));
+                      handle, p, offset, length, Integer.toHexString(mask));
         }
         
         FileHandle fileHandle = validateHandle(handle, p, FileHandle.class);
@@ -1316,7 +1316,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         Handle p = handles.get(handle);
         if (log.isDebugEnabled()) {
             log.debug("Received SSH_FXP_UNBLOCK (handle={}[{}], offset={}, length={})",
-                      handle, p, Long.valueOf(offset), Long.valueOf(length));
+                      handle, p, offset, length);
         }
 
         FileHandle fileHandle = validateHandle(handle, p, FileHandle.class);
@@ -1341,7 +1341,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     protected void doLink(int id, String targetPath, String linkPath, boolean symLink) throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("Received SSH_FXP_LINK (linkpath={}, targetpath={}, symlink={})",
-                      linkPath, targetPath, Boolean.valueOf(symLink));
+                      linkPath, targetPath, symLink);
         }
         
         Path link = resolveFile(linkPath);
@@ -1461,8 +1461,8 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         if (log.isDebugEnabled()) {
             log.debug("SSH_FXP_EXTENDED[{}] read={}[{}], read-offset={}, read-length={}, write={}[{}], write-offset={})",
                       SftpConstants.EXT_COPYDATA,
-                      readHandle, rh, Long.valueOf(readOffset), Long.valueOf(readLength),
-                      writeHandle, wh, Long.valueOf(writeOffset));
+                      readHandle, rh, readOffset, readLength,
+                      writeHandle, wh, writeOffset);
         }
 
         FileHandle srcHandle = validateHandle(readHandle, rh, FileHandle.class);
@@ -1545,7 +1545,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     protected void doCopyFile(int id, String srcFile, String dstFile, boolean overwriteDestination) throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("SSH_FXP_EXTENDED[{}] (src={}, dst={}, overwrite=0x{})",
-                      SftpConstants.EXT_COPYFILE, srcFile, dstFile, Boolean.valueOf(overwriteDestination));
+                      SftpConstants.EXT_COPYFILE, srcFile, dstFile, overwriteDestination);
         }
         
         doCopyFile(id, srcFile, dstFile,
@@ -1627,7 +1627,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                 if (control == SSH_FXP_REALPATH_STAT_IF) {
                     if (status == null) {
                         attrs = handleUnknownStatusFileAttributes(p, SSH_FILEXFER_ATTR_ALL, options);
-                    } else if (status.booleanValue()) {
+                    } else if (status) {
                         try {
                             attrs = getAttributes(p, IoUtils.getLinkOptions(false));
                         } catch (IOException e) {
@@ -1644,7 +1644,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                 } else if (control == SSH_FXP_REALPATH_STAT_ALWAYS) {
                     if (status == null) {
                         attrs = handleUnknownStatusFileAttributes(p, SSH_FILEXFER_ATTR_ALL, options);
-                    } else if (status.booleanValue()) {
+                    } else if (status) {
                         attrs = getAttributes(p, options);
                     } else {
                         throw new FileNotFoundException(p.toString());
@@ -1695,7 +1695,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         Path abs = f.toAbsolutePath();
         Path p = abs.normalize();
         Boolean status = IoUtils.checkFileExists(p, options);
-        return new Pair<Path, Boolean>(p, status);
+        return new Pair<>(p, status);
     }
 
     protected void doRemoveDirectory(Buffer buffer, int id) throws IOException {
@@ -1744,7 +1744,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             throw new AccessDeniedException("Cannot validate make-directory existence for " + p);
         }
 
-        if (status.booleanValue()) {
+        if (status) {
             if (Files.isDirectory(p, options)) {
                 throw new FileAlreadyExistsException(p.toString(), p.toString(), "Target directory already exists");
             } else {
@@ -1778,7 +1778,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         if (status == null) {
             throw new AccessDeniedException("Cannot determine existence of remove candidate: " + p);
         }
-        if (!status.booleanValue()) {
+        if (!status) {
             throw new FileNotFoundException(p.toString());
         } else if (Files.isDirectory(p, options)) {
             throw new FileNotFoundException(p.toString() + " is as a folder");
@@ -1806,7 +1806,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                 throw new AccessDeniedException("Cannot determine existence of read-dir for " + file);
             }
 
-            if (!status.booleanValue()) {
+            if (!status) {
                 throw new FileNotFoundException(file.toString());
             } else if (!Files.isDirectory(file, options)) {
                 throw new NotDirectoryException(file.toString());
@@ -1828,7 +1828,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                 int count = doReadDir(id, dh, reply, FactoryManagerUtils.getIntProperty(session, MAX_PACKET_LENGTH_PROP, DEFAULT_MAX_PACKET_LENGTH));
                 BufferUtils.updateLengthPlaceholder(reply, lenPos, count);
                 if (log.isDebugEnabled()) {
-                    log.debug("doReadDir({})[{}] - sent {} entries", handle, h, Integer.valueOf(count));
+                    log.debug("doReadDir({})[{}] - sent {} entries", handle, h, count);
                 }
                 if ((!dh.isSendDot()) && (!dh.isSendDotDot()) && (!dh.hasNext())) {
                     // if no more files to send
@@ -1873,7 +1873,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             throw new AccessDeniedException("Cannot determine open-dir existence for " + p);
         }
 
-        if (!status.booleanValue()) {
+        if (!status) {
             throw new FileNotFoundException(path);
         } else if (!Files.isDirectory(p, options)) {
             throw new NotDirectoryException(path);
@@ -1999,7 +1999,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         Handle h = handles.get(handle);
         if (log.isDebugEnabled()) {
             log.debug("Received SSH_FXP_WRITE (handle={}[{}], offset={}, data=byte[{}])",
-                      handle, h, Long.valueOf(offset), Integer.valueOf(length));
+                      handle, h, offset, length);
         }
         
         FileHandle fh = validateHandle(handle, h, FileHandle.class);
@@ -2046,7 +2046,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         Handle h = handles.get(handle);
         if (log.isDebugEnabled()) {
             log.debug("Received SSH_FXP_READ (handle={}[{}], offset={}, length={})",
-                      handle, h, Long.valueOf(offset), Integer.valueOf(length));
+                      handle, h, offset, length);
         }
         ValidateUtils.checkTrue(length > 0, "Invalid read length: %d", length);
         FileHandle fh = validateHandle(handle, h, FileHandle.class);
@@ -2559,7 +2559,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
 
         Number length = (Number) attributes.get("size");
         if (length == null) {
-            length = Long.valueOf(0L);
+            length = 0L;
         }
         String lengthString = String.format("%1$8s", length);
 
@@ -2571,23 +2571,13 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             perms = EnumSet.noneOf(PosixFilePermission.class);
         }
 
-        StringBuilder sb = new StringBuilder();
-        sb.append((isDirectory != null && isDirectory.booleanValue()) ? "d" : (isLink != null && isLink.booleanValue()) ? "l" : "-");
-        sb.append(PosixFilePermissions.toString(perms));
-        sb.append("  ");
-        sb.append(attributes.containsKey("nlink") ? attributes.get("nlink") : "1");
-        sb.append(" ");
-        sb.append(username);
-        sb.append(" ");
-        sb.append(group);
-        sb.append(" ");
-        sb.append(lengthString);
-        sb.append(" ");
-        sb.append(getUnixDate((FileTime) attributes.get("lastModifiedTime")));
-        sb.append(" ");
-        sb.append(getShortName(f));
-
-        return sb.toString();
+        return (getBool(isDirectory) ? "d" :
+                (getBool(isLink) ? "l" : "-"))
+                    + PosixFilePermissions.toString(perms) + "  "
+                    + (attributes.containsKey("nlink") ? attributes.get("nlink") : "1")
+                    + " " + username + " " + group + " " + lengthString + " "
+                    + getUnixDate((FileTime) attributes.get("lastModifiedTime"))
+                    + " " + getShortName(f);
     }
 
     protected String getShortName(Path f) throws IOException {
@@ -2663,7 +2653,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         Boolean status = IoUtils.checkFileExists(file, options);
         if (status == null) {
             return handleUnknownStatusFileAttributes(file, flags, options);
-        } else if (!status.booleanValue()) {
+        } else if (!status) {
             throw new FileNotFoundException(file.toString());
         } else {
             return getAttributes(file, flags, options);
@@ -2751,7 +2741,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     }
 
     protected boolean getBool(Boolean bool) {
-        return (bool != null) && bool.booleanValue();
+        return bool != null && bool;
     }
 
     protected Map<String, Object> getAttributes(Path file, LinkOption ... options) throws IOException {
@@ -2783,7 +2773,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         Collection<String>  views;
 
         if (GenericUtils.isEmpty(supportedViews)) {
-            views = Collections.<String>emptyList();
+            views = Collections.emptyList();
         } else if (supportedViews.contains("unix")) {
             views = DEFAULT_UNIX_VIEW;
         } else {
@@ -3013,14 +3003,14 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             }
         }
         if ((flags & SSH_FILEXFER_ATTR_SIZE) != 0) {
-            attrs.put("size", Long.valueOf(buffer.getLong()));
+            attrs.put("size", buffer.getLong());
         }
         if ((flags & SSH_FILEXFER_ATTR_ALLOCATION_SIZE) != 0) {
-            attrs.put("allocationSize", Long.valueOf(buffer.getLong()));
+            attrs.put("allocationSize", buffer.getLong());
         }
         if ((flags & SSH_FILEXFER_ATTR_UIDGID) != 0) {
-            attrs.put("uid", Integer.valueOf(buffer.getInt()));
-            attrs.put("gid", Integer.valueOf(buffer.getInt()));
+            attrs.put("uid", buffer.getInt());
+            attrs.put("gid", buffer.getInt());
         }
         if ((flags & SSH_FILEXFER_ATTR_OWNERGROUP) != 0) {
             attrs.put("owner", new DefaultGroupPrincipal(buffer.getString()));
@@ -3260,7 +3250,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     protected void sendStatus(Buffer buffer, int id, int substatus, String msg, String lang) throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("Send SSH_FXP_STATUS (substatus={}, lang={}, msg={})",
-                      Integer.valueOf(substatus), lang, msg);
+                    substatus, lang, msg);
         }
 
         buffer.putByte((byte) SSH_FXP_STATUS);
@@ -3302,7 +3292,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             if ((executors != null) && (!executors.isShutdown()) && shutdownExecutor) {
                 Collection<Runnable> runners = executors.shutdownNow();
                 if (log.isDebugEnabled()) {
-                    log.debug("destroy() - shutdown executor service - runners count=" + ((runners == null) ? 0 : runners.size()));
+                    log.debug("destroy() - shutdown executor service - runners count=" + runners.size());
                 }
             }
 

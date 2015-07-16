@@ -112,7 +112,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
         int originatorPort = buffer.getInt();
         if (log.isDebugEnabled()) {
             log.debug("Receiving request for direct tcpip: hostToConnect={}, portToConnect={}, originatorIpAddress={}, originatorPort={}",
-                      hostToConnect, Integer.valueOf(portToConnect), originatorIpAddress, Integer.valueOf(originatorPort));
+                      hostToConnect, portToConnect, originatorIpAddress, originatorPort);
         }
 
         final SshdSocketAddress address;
@@ -226,7 +226,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
                         if ((executors != null) && (!executors.isShutdown()) && shutdown) {
                             Collection<Runnable> runners = executors.shutdownNow();
                             if (log.isDebugEnabled()) {
-                                log.debug("destroy() - shutdown executor service - runners count=" + ((runners == null) ? 0 : runners.size()));
+                                log.debug("destroy() - shutdown executor service - runners count=" + runners.size());
                             }
                         }
                     }

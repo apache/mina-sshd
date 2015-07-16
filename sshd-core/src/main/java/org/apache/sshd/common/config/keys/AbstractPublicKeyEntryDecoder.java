@@ -52,9 +52,9 @@ public abstract class AbstractPublicKeyEntryDecoder<PUB extends PublicKey,PRV ex
     private final Collection<String>    names;
     
     protected AbstractPublicKeyEntryDecoder(Class<PUB> pubType, Class<PRV> prvType, Collection<String> names) {
-        this.pubType = ValidateUtils.checkNotNull(pubType, "No public key type specified", GenericUtils.EMPTY_OBJECT_ARRAY);
-        this.prvType = ValidateUtils.checkNotNull(prvType, "No private key type specified", GenericUtils.EMPTY_OBJECT_ARRAY);
-        this.names = ValidateUtils.checkNotNullAndNotEmpty(names, "No type names provided", GenericUtils.EMPTY_OBJECT_ARRAY);
+        this.pubType = ValidateUtils.checkNotNull(pubType, "No public key type specified");
+        this.prvType = ValidateUtils.checkNotNull(prvType, "No private key type specified");
+        this.names = ValidateUtils.checkNotNullAndNotEmpty(names, "No type names provided");
     }
 
     @Override
@@ -175,33 +175,33 @@ public abstract class AbstractPublicKeyEntryDecoder<PUB extends PublicKey,PRV ex
         return getPublicKeyType().getSimpleName() + ": " + getSupportedTypeNames();
     }
 
-    public static final int encodeString(OutputStream s, String v) throws IOException {
+    public static int encodeString(OutputStream s, String v) throws IOException {
         return encodeString(s, v, StandardCharsets.UTF_8);
     }
 
-    public static final int encodeString(OutputStream s, String v, String charset) throws IOException {
+    public static int encodeString(OutputStream s, String v, String charset) throws IOException {
         return encodeString(s, v, Charset.forName(charset));
     }
 
-    public static final int encodeString(OutputStream s, String v, Charset cs) throws IOException {
+    public static int encodeString(OutputStream s, String v, Charset cs) throws IOException {
         return writeRLEBytes(s, v.getBytes(cs));
     }
 
-    public static final int encodeBigInt(OutputStream s, BigInteger v) throws IOException {
+    public static int encodeBigInt(OutputStream s, BigInteger v) throws IOException {
         return writeRLEBytes(s, v.toByteArray());
     }
 
-    public static final int writeRLEBytes(OutputStream s, byte ... bytes) throws IOException {
+    public static int writeRLEBytes(OutputStream s, byte ... bytes) throws IOException {
         return writeRLEBytes(s, bytes, 0, bytes.length);
     }
 
-    public static final int writeRLEBytes(OutputStream s, byte[] bytes, int off, int len) throws IOException {
+    public static int writeRLEBytes(OutputStream s, byte[] bytes, int off, int len) throws IOException {
         byte[]  lenBytes=encodeInt(s, len);
         s.write(bytes, off, len);
         return lenBytes.length + len;
     }
 
-    public static final byte[] encodeInt(OutputStream s, int v) throws IOException {
+    public static byte[] encodeInt(OutputStream s, int v) throws IOException {
         byte[]  bytes={
                 (byte) ((v >> 24) & 0xFF),
                 (byte) ((v >> 16) & 0xFF),
@@ -212,31 +212,31 @@ public abstract class AbstractPublicKeyEntryDecoder<PUB extends PublicKey,PRV ex
         return bytes;
     }
 
-    public static final String decodeString(InputStream s) throws IOException {
+    public static String decodeString(InputStream s) throws IOException {
         return decodeString(s, StandardCharsets.UTF_8);
     }
 
-    public static final String decodeString(InputStream s, String charset) throws IOException {
+    public static String decodeString(InputStream s, String charset) throws IOException {
         return decodeString(s, Charset.forName(charset));
     }
 
-    public static final String decodeString(InputStream s, Charset cs) throws IOException {
+    public static String decodeString(InputStream s, Charset cs) throws IOException {
         byte[]  bytes=readRLEBytes(s);
         return new String(bytes, cs);
     }
 
-    public static final BigInteger decodeBigInt(InputStream s) throws IOException {
+    public static BigInteger decodeBigInt(InputStream s) throws IOException {
         return new BigInteger(readRLEBytes(s));
     }
 
-    public static final byte[] readRLEBytes(InputStream s) throws IOException {
+    public static byte[] readRLEBytes(InputStream s) throws IOException {
         int     len=decodeInt(s);
         byte[]  bytes=new byte[len];
         IoUtils.readFully(s, bytes);
         return bytes;
     }
 
-    public static final int decodeInt(InputStream s) throws IOException {
+    public static int decodeInt(InputStream s) throws IOException {
         byte[]  bytes={ 0, 0, 0, 0 };
         IoUtils.readFully(s, bytes);
         return ((bytes[0] & 0xFF) << 24)

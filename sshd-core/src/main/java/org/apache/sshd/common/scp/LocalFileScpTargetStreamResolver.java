@@ -61,12 +61,12 @@ public class LocalFileScpTargetStreamResolver extends AbstractLoggingBean implem
         }
 
         LinkOption[] options = IoUtils.getLinkOptions(false);
-        if (status.booleanValue() && Files.isDirectory(path, options)) {
+        if (status && Files.isDirectory(path, options)) {
             String localName = name.replace('/', File.separatorChar);   // in case we are running on Windows
             file = path.resolve(localName);
-        } else if (status.booleanValue() && Files.isRegularFile(path, options)) {
+        } else if (status && Files.isRegularFile(path, options)) {
             file = path;
-        } else if (!status.booleanValue()) {
+        } else if (!status) {
             Path parent = path.getParent();
             
             Boolean parentStatus = IoUtils.checkFileExists(parent, options);
@@ -74,7 +74,7 @@ public class LocalFileScpTargetStreamResolver extends AbstractLoggingBean implem
                 throw new AccessDeniedException("Receive file parent (" + parent + ") existence status cannot be determined for " + path);
             }
 
-            if (parentStatus.booleanValue() && Files.isDirectory(parent, options)) {
+            if (parentStatus && Files.isDirectory(parent, options)) {
                 file = path;
             }
         }
@@ -88,7 +88,7 @@ public class LocalFileScpTargetStreamResolver extends AbstractLoggingBean implem
             throw new AccessDeniedException("Receive file existence status cannot be determined: " + file);
         }
 
-        if (fileStatus.booleanValue()) {
+        if (fileStatus) {
             if (Files.isDirectory(file, options)) {
                 throw new IOException("File is a directory: " + file);
             }

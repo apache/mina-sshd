@@ -36,7 +36,7 @@ public class FactoryManagerUtils {
      * @return The resolved property
      * @throws NumberFormatException if malformed value
      */
-    public static final long getLongProperty(Session session, String name, long defaultValue) {
+    public static long getLongProperty(Session session, String name, long defaultValue) {
         return getLongProperty(session.getFactoryManager(), name, defaultValue);
     }
 
@@ -48,7 +48,7 @@ public class FactoryManagerUtils {
      * @return The resolved property
      * @throws NumberFormatException if malformed value
      */
-    public static final long getLongProperty(FactoryManager manager, String name, long defaultValue) {
+    public static long getLongProperty(FactoryManager manager, String name, long defaultValue) {
         return getLongProperty(manager.getProperties(), name, defaultValue);
     }
 
@@ -60,12 +60,12 @@ public class FactoryManagerUtils {
      * @return The resolved property
      * @throws NumberFormatException if malformed value
      */
-    public static final long getLongProperty(Map<String,?> props, String name, long defaultValue) {
+    public static long getLongProperty(Map<String,?> props, String name, long defaultValue) {
         Object value = GenericUtils.isEmpty(props) ? null : props.get(name);
         if (value == null) {
             return defaultValue;
         } else if (value instanceof Long) {
-            return ((Long) value).longValue();
+            return (Long) value;
         } else {    // we parse the string in case it is not a valid long value
             return Long.parseLong(value.toString());
         }
@@ -77,7 +77,7 @@ public class FactoryManagerUtils {
      * @return The {@link Long} value or {@code null} if property not found or empty string
      * @throws NumberFormatException if malformed value
      */
-    public static final Long getLong(Session session, String name) {
+    public static Long getLong(Session session, String name) {
         return getLong(session.getFactoryManager(), name);
     }
 
@@ -87,7 +87,7 @@ public class FactoryManagerUtils {
      * @return The {@link Long} value or {@code null} if property not found
      * @throws NumberFormatException if malformed value
      */
-    public static final Long getLong(FactoryManager manager, String name) {
+    public static Long getLong(FactoryManager manager, String name) {
         return getLong(manager.getProperties(), name);
     }
 
@@ -98,7 +98,7 @@ public class FactoryManagerUtils {
      * empty string
      * @throws NumberFormatException if malformed value
      */
-    public static final Long getLong(Map<String,?> props, String name) {
+    public static Long getLong(Map<String,?> props, String name) {
         Object value = GenericUtils.isEmpty(props) ? null : props.get(name);
         if (value == null) {
             return null;
@@ -109,46 +109,46 @@ public class FactoryManagerUtils {
         }
     }
 
-    public static final Object updateProperty(Session session, String name, long value) {
+    public static Object updateProperty(Session session, String name, long value) {
         return updateProperty(session, name, Long.toString(value));
     }
 
-    public static final Object updateProperty(FactoryManager manager, String name, long value) {
+    public static Object updateProperty(FactoryManager manager, String name, long value) {
         return updateProperty(manager.getProperties(), name, value);
     }
 
-    public static final Object updateProperty(Map<String,Object> props, String name, long value) {
+    public static Object updateProperty(Map<String,Object> props, String name, long value) {
         return updateProperty(props, name, Long.valueOf(value));
     }
 
-    public static final int getIntProperty(Session session, String name, int defaultValue) {
+    public static int getIntProperty(Session session, String name, int defaultValue) {
         return getIntProperty(session.getFactoryManager(), name, defaultValue);
     }
 
-    public static final int getIntProperty(FactoryManager manager, String name, int defaultValue) {
+    public static int getIntProperty(FactoryManager manager, String name, int defaultValue) {
         return getIntProperty(manager.getProperties(), name, defaultValue);
     }
 
-    public static final int getIntProperty(Map<String,?> props, String name, int defaultValue) {
+    public static int getIntProperty(Map<String,?> props, String name, int defaultValue) {
         Object value = GenericUtils.isEmpty(props) ? null : props.get(name);
         if (value == null) {
             return defaultValue;
         } else if (value instanceof Integer) {
-            return ((Integer) value).intValue();
+            return (Integer) value;
         } else {    // we parse the string in case this is NOT an integer
             return Integer.parseInt(value.toString());
         }
     }
 
-    public static final Integer getInteger(Session session, String name) {
+    public static Integer getInteger(Session session, String name) {
         return getInteger(session.getFactoryManager(), name);
     }
 
-    public static final Integer getInteger(FactoryManager manager, String name) {
+    public static Integer getInteger(FactoryManager manager, String name) {
         return getInteger(manager.getProperties(), name);
     }
 
-    public static final Integer getInteger(Map<String,?> props, String name) {
+    public static Integer getInteger(Map<String,?> props, String name) {
         Object value = GenericUtils.isEmpty(props) ? null : props.get(name);
         if (value == null) {
             return null;
@@ -159,44 +159,44 @@ public class FactoryManagerUtils {
         }
     }
 
-    public static final Object updateProperty(Session session, String name, int value) {
+    public static Object updateProperty(Session session, String name, int value) {
         return updateProperty(session.getFactoryManager(), name, value);
     }
 
-    public static final Object updateProperty(FactoryManager manager, String name, int value) {
+    public static Object updateProperty(FactoryManager manager, String name, int value) {
         return updateProperty(manager.getProperties(), name, value);
     }
 
-    public static final Object updateProperty(Map<String,Object> props, String name, int value) {
+    public static Object updateProperty(Map<String,Object> props, String name, int value) {
         return updateProperty(props, name, Integer.valueOf(value));
     }
 
-    public static final boolean getBooleanProperty(Session session, String name, boolean defaultValue) {
+    public static boolean getBooleanProperty(Session session, String name, boolean defaultValue) {
         return getBooleanProperty(session.getFactoryManager(), name, defaultValue);
     }
 
-    public static final boolean getBooleanProperty(FactoryManager manager, String name, boolean defaultValue) {
+    public static boolean getBooleanProperty(FactoryManager manager, String name, boolean defaultValue) {
         return getBooleanProperty(manager.getProperties(), name, defaultValue);
     }
 
-    public static final boolean getBooleanProperty(Map<String,?> props, String name, boolean defaultValue) {
+    public static boolean getBooleanProperty(Map<String,?> props, String name, boolean defaultValue) {
         Boolean value = getBoolean(props, name);
         if (value == null) {
             return defaultValue;
         } else {
-            return value.booleanValue();
+            return value;
         }
     }
 
-    public static final Boolean getBoolean(Session session, String name) {
+    public static Boolean getBoolean(Session session, String name) {
         return getBoolean(session.getFactoryManager(), name);
     }
 
-    public static final Boolean getBoolean(FactoryManager manager, String name) {
+    public static Boolean getBoolean(FactoryManager manager, String name) {
         return getBoolean(manager.getProperties(), name);
     }
 
-    public static final Boolean getBoolean(Map<String,?> props, String name) {
+    public static Boolean getBoolean(Map<String,?> props, String name) {
         Object  value = GenericUtils.isEmpty(props) ? null : props.get(name);
         if (value == null) {
             return null;
@@ -207,39 +207,39 @@ public class FactoryManagerUtils {
         }
     }
 
-    public static final Object updateProperty(Session session, String name, boolean value) {
+    public static Object updateProperty(Session session, String name, boolean value) {
         return updateProperty(session.getFactoryManager(), name, value);
     }
 
-    public static final Object updateProperty(FactoryManager manager, String name, boolean value) {
+    public static Object updateProperty(FactoryManager manager, String name, boolean value) {
         return updateProperty(manager.getProperties(), name, value);
     }
 
-    public static final Object updateProperty(Map<String,Object> props, String name, boolean value) {
+    public static Object updateProperty(Map<String,Object> props, String name, boolean value) {
         return updateProperty(props, name, Boolean.valueOf(value));
     }
 
-    public static final String getString(Session session, String name) {
+    public static String getString(Session session, String name) {
         return getStringProperty(session, name, null);
     }
 
-    public static final String getStringProperty(Session session, String name, String defaultValue) {
+    public static String getStringProperty(Session session, String name, String defaultValue) {
         return getStringProperty(session.getFactoryManager(), name, defaultValue);
     }
 
-    public static final String getString(FactoryManager manager, String name) {
+    public static String getString(FactoryManager manager, String name) {
         return getStringProperty(manager, name, null);
     }
 
-    public static final String getStringProperty(FactoryManager manager, String name, String defaultValue) {
+    public static String getStringProperty(FactoryManager manager, String name, String defaultValue) {
         return getStringProperty(manager.getProperties(), name, defaultValue);
     }
 
-    public static final String getString(Map<String,?> props, String name) {
+    public static String getString(Map<String,?> props, String name) {
         return getStringProperty(props, name, null);
     }
 
-    public static final String getStringProperty(Map<String,?> props, String name, String defaultValue) {
+    public static String getStringProperty(Map<String,?> props, String name, String defaultValue) {
         Object value = GenericUtils.isEmpty(props) ? null : props.get(name);
         String s = (value == null) ? null : value.toString();
         if (GenericUtils.isEmpty(s)) {

@@ -60,7 +60,7 @@ public final class LoggingUtils {
      *      </LI>
      * </UL></P>
      */
-    public static final boolean isLoggable(Level level, Level threshold) {
+    public static boolean isLoggable(Level level, Level threshold) {
         if ((level == null) || (threshold == null)) {
             return false;
         } else if (Level.OFF.equals(level) || Level.OFF.equals(threshold)) {
@@ -74,7 +74,7 @@ public final class LoggingUtils {
         }
     }
 
-    public static final SimplifiedLog wrap(final Logger logger) {
+    public static SimplifiedLog wrap(final Logger logger) {
         if (logger == null) {
             return SimplifiedLog.EMPTY;
         } else {
@@ -96,7 +96,7 @@ public final class LoggingUtils {
     }
 
     // NOTE: assume that level enabled has been checked !!!
-    public static final void logMessage(Logger logger, Level level, Object message, Throwable t) {
+    public static void logMessage(Logger logger, Level level, Object message, Throwable t) {
         if ((logger == null) || (level == null) || Level.OFF.equals(level)) {
             return;
         } else if (Level.SEVERE.equals(level)) {
@@ -126,7 +126,7 @@ public final class LoggingUtils {
      *      <LI>All other levels return {@link Logger#isTraceEnabled()}</LI>
      * </UL>
      */
-    public static final boolean isLoggable(Logger logger, Level level) {
+    public static boolean isLoggable(Logger logger, Level level) {
         if ((logger == null) || (level == null) || Level.OFF.equals(level)) {
             return false;
         } else if (Level.SEVERE.equals(level)) {

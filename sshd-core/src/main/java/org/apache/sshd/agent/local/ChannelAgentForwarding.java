@@ -67,10 +67,6 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
         // be sent after we return.
         //
         super.close(true);
-
-        // We also need to close the socket.
-        //
-//        Socket.close(handle);
     }
 
     @Override
@@ -87,7 +83,6 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
     @Override
     public void handleEof() throws IOException {
         super.handleEof();
-//        close(true);
     }
 
     @Override

@@ -53,7 +53,7 @@ public enum PtyMode {
 
     private int v;
 
-    private PtyMode(int v) {
+    PtyMode(int v) {
         this.v = v;
     }
 
@@ -69,12 +69,12 @@ public enum PtyMode {
                     
                     {
                         for (PtyMode c : PtyMode.values()) {
-                            put(Integer.valueOf(c.toInt()), c);
+                            put(c.toInt(), c);
                         }
                     }
             });
 
     public static PtyMode fromInt(int b) {
-        return commands.get(Integer.valueOf(0x00FF & (b + 256)));
+        return commands.get(0x00FF & (b + 0x100));
     }
 }

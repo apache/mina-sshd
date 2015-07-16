@@ -145,35 +145,35 @@ public class SshConfigFileReader {
         public static final SyslogFacilityValue DEFAULT_SYSLOG_FACILITY=SyslogFacilityValue.AUTH;
     public static final String  SUBSYSTEM_CONFIG_PROP="Subsystem";
 
-    public static final Properties readConfigFile(File file) throws IOException {
+    public static Properties readConfigFile(File file) throws IOException {
         return readConfigFile(file.toPath(), IoUtils.EMPTY_OPEN_OPTIONS);
     }
 
-    public static final Properties readConfigFile(Path path, OpenOption ... options) throws IOException {
+    public static Properties readConfigFile(Path path, OpenOption ... options) throws IOException {
         try(InputStream input = Files.newInputStream(path, options)) {
             return readConfigFile(input, true);
         }
     }
 
-    public static final Properties readConfigFile(URL url) throws IOException {
+    public static Properties readConfigFile(URL url) throws IOException {
         try(InputStream input=url.openStream()) {
             return readConfigFile(input, true);
         }
     }
 
-    public static final Properties readConfigFile(String path) throws IOException {
+    public static Properties readConfigFile(String path) throws IOException {
         try(InputStream input=new FileInputStream(path)) {
             return readConfigFile(input, true);
         }
     }
 
-    public static final Properties readConfigFile(InputStream input, boolean okToClose) throws IOException {
+    public static Properties readConfigFile(InputStream input, boolean okToClose) throws IOException {
         try(Reader      reader=new InputStreamReader(NoCloseInputStream.resolveInputStream(input, okToClose), StandardCharsets.UTF_8)) {
             return readConfigFile(reader, true);
         }
     }
 
-    public static final Properties readConfigFile(Reader reader, boolean okToClose) throws IOException {
+    public static Properties readConfigFile(Reader reader, boolean okToClose) throws IOException {
         try(BufferedReader  buf=new BufferedReader(NoCloseReader.resolveReader(reader, okToClose))) {
             return readConfigFile(buf);
         }
@@ -188,7 +188,7 @@ public class SshConfigFileReader {
      * @return The read properties
      * @throws IOException If failed to read or malformed content
      */
-    public static final Properties readConfigFile(BufferedReader rdr) throws IOException {
+    public static Properties readConfigFile(BufferedReader rdr) throws IOException {
         Properties  props=new Properties();
         int         lineNumber=1;
         for (String line=rdr.readLine(); line != null; line=rdr.readLine(), lineNumber++) {
@@ -241,7 +241,7 @@ public class SshConfigFileReader {
      * @return The resolved property
      * @throws NumberFormatException if malformed value
      */
-    public static final long getLongProperty(Properties props, String name, long defaultValue) {
+    public static long getLongProperty(Properties props, String name, long defaultValue) {
         String value = (props == null) ? null : props.getProperty(name);
         if (GenericUtils.isEmpty(value)) {
             return defaultValue;
@@ -257,7 +257,7 @@ public class SshConfigFileReader {
      * empty string
      * @throws NumberFormatException if malformed value
      */
-    public static final Long getLong(Properties props, String name) {
+    public static Long getLong(Properties props, String name) {
         String value = (props == null) ? null : props.getProperty(name);
         if (GenericUtils.isEmpty(value)) {
             return null;
@@ -274,7 +274,7 @@ public class SshConfigFileReader {
      * @return The resolved property
      * @throws NumberFormatException if malformed value
      */
-    public static final int getIntProperty(Properties props, String name, int defaultValue) {
+    public static int getIntProperty(Properties props, String name, int defaultValue) {
         String value = (props == null) ? null : props.getProperty(name);
         if (GenericUtils.isEmpty(value)) {
             return defaultValue;
@@ -290,7 +290,7 @@ public class SshConfigFileReader {
      * empty string
      * @throws NumberFormatException if malformed value
      */
-    public static final Integer getInteger(Properties props, String name) {
+    public static Integer getInteger(Properties props, String name) {
         String value = (props == null) ? null : props.getProperty(name);
         if (GenericUtils.isEmpty(value)) {
             return null;
@@ -307,7 +307,7 @@ public class SshConfigFileReader {
      * @return The resolved property
      * @throws NumberFormatException if malformed value
      */
-    public static final boolean getBooleanProperty(Properties props, String name, boolean defaultValue) {
+    public static boolean getBooleanProperty(Properties props, String name, boolean defaultValue) {
         String value = (props == null) ? null : props.getProperty(name);
         if (GenericUtils.isEmpty(value)) {
             return defaultValue;
@@ -323,12 +323,12 @@ public class SshConfigFileReader {
      * empty string
      * @throws NumberFormatException if malformed value
      */
-    public static final Boolean getBoolean(Properties props, String name) {
+    public static Boolean getBoolean(Properties props, String name) {
         String value = (props == null) ? null : props.getProperty(name);
         if (GenericUtils.isEmpty(value)) {
             return null;
         } else {
-            return Boolean.valueOf(parseBooleanValue(value));
+            return parseBooleanValue(value);
         }
     }
 
@@ -339,7 +339,7 @@ public class SshConfigFileReader {
      * input string 
      * @return The result
      */
-    public static final boolean parseBooleanValue(String v, boolean defaultValue) {
+    public static boolean parseBooleanValue(String v, boolean defaultValue) {
         if (GenericUtils.isEmpty(v)) {
             return defaultValue;
         } else {
@@ -353,7 +353,7 @@ public class SshConfigFileReader {
      * @return The result - <B>Note:</B> {@code null}/empty values are
      * intrepreted as {@code false}
      */
-    public static final boolean parseBooleanValue(String v) {
+    public static boolean parseBooleanValue(String v) {
         if ("yes".equalsIgnoreCase(v)
           || "y".equalsIgnoreCase(v)
           || "on".equalsIgnoreCase(v)
@@ -366,7 +366,7 @@ public class SshConfigFileReader {
     
     /**
      * @param props The {@link Properties} - ignored if {@code null}/empty
-     * @return A {@BuiltinCiphers.ParseResult} of all the {@link NamedFactory}-ies
+     * @return A {@link BuiltinCiphers.ParseResult} of all the {@link NamedFactory}-ies
      * whose name appears in the string and represent a built-in cipher.
      * Any unknown name is <U>ignored</U>. The order of the returned result
      * is the same as the original order - bar the unknown ciphers.
@@ -375,7 +375,7 @@ public class SshConfigFileReader {
      * @see #CIPHERS_CONFIG_PROP
      * @see BuiltinCiphers#parseCiphersList(String)
      */
-    public static final BuiltinCiphers.ParseResult getCiphers(Properties props) {
+    public static BuiltinCiphers.ParseResult getCiphers(Properties props) {
         return BuiltinCiphers.parseCiphersList((props == null) ? null : props.getProperty(CIPHERS_CONFIG_PROP));
     }
     
@@ -390,7 +390,7 @@ public class SshConfigFileReader {
      * @see #MACS_CONFIG_PROP
      * @see BuiltinMacs#parseMacsList(String)
      */
-    public static final BuiltinMacs.ParseResult getMacs(Properties props) {
+    public static BuiltinMacs.ParseResult getMacs(Properties props) {
         return BuiltinMacs.parseMacsList((props == null) ? null : props.getProperty(MACS_CONFIG_PROP));
     }
     
@@ -404,7 +404,7 @@ public class SshConfigFileReader {
      * @see #HOST_KEY_ALGORITHMS_CONFIG_PROP
      * @see BuiltinSignatures#parseSignatureList(String)
      */
-    public static final BuiltinSignatures.ParseResult getSignatures(Properties props) {
+    public static BuiltinSignatures.ParseResult getSignatures(Properties props) {
         return BuiltinSignatures.parseSignatureList((props == null) ? null : props.getProperty(HOST_KEY_ALGORITHMS_CONFIG_PROP));
     }
     
@@ -418,7 +418,7 @@ public class SshConfigFileReader {
      * @see #KEX_ALGORITHMS_CONFIG_PROP
      * @see BuiltinDHFactories#parseDHFactoriesList(String)
      */
-    public static final BuiltinDHFactories.ParseResult getKexFactories(Properties props) {
+    public static BuiltinDHFactories.ParseResult getKexFactories(Properties props) {
         return BuiltinDHFactories.parseDHFactoriesList((props == null) ? null : props.getProperty(KEX_ALGORITHMS_CONFIG_PROP));
     }
     
@@ -427,17 +427,17 @@ public class SshConfigFileReader {
      * @return The matching {@link NamedFactory} for the configured value.
      * {@code null} if no configuration or unknown name specified 
      */
-    public static final CompressionFactory getCompression(Properties props) {
+    public static CompressionFactory getCompression(Properties props) {
         return CompressionConfigValue.fromName((props == null) ? null : props.getProperty(COMPRESSION_PROP));
     }
     
-    public static final <S extends SshServer> S configure(S server, Properties props, boolean lenient, boolean ignoreUnsupported) {
+    public static <S extends SshServer> S configure(S server, Properties props, boolean lenient, boolean ignoreUnsupported) {
         configure((AbstractFactoryManager) server, props, lenient, ignoreUnsupported);
         configureKeyExchanges(server, props, lenient, ServerBuilder.DH2KEX, ignoreUnsupported);
         return server;
     }
 
-    public static final <C extends SshClient> C configure(C client, Properties props, boolean lenient, boolean ignoreUnsupported) {
+    public static <C extends SshClient> C configure(C client, Properties props, boolean lenient, boolean ignoreUnsupported) {
         configure((AbstractFactoryManager) client, props, lenient, ignoreUnsupported);
         configureKeyExchanges(client, props, lenient, ClientBuilder.DH2KEX, ignoreUnsupported);
         return client;
@@ -463,7 +463,7 @@ public class SshConfigFileReader {
      * or unsupported values there is an empty configuration exception is thrown
      * @return The configured manager
      */
-    public static final <M extends AbstractFactoryManager> M configure(M manager, Properties props, boolean lenient, boolean ignoreUnsupported) {
+    public static <M extends AbstractFactoryManager> M configure(M manager, Properties props, boolean lenient, boolean ignoreUnsupported) {
         configureCiphers(manager, props, lenient, ignoreUnsupported);
         configureSignatures(manager, props, lenient, ignoreUnsupported);
         configureMacs(manager, props, lenient, ignoreUnsupported);
@@ -472,13 +472,13 @@ public class SshConfigFileReader {
         return manager;
     }
 
-    public static final <M extends AbstractFactoryManager> M configureCiphers(M manager, Properties props, boolean lenient, boolean ignoreUnsupported) {
-        ValidateUtils.checkNotNull(props, "No properties to configure", GenericUtils.EMPTY_OBJECT_ARRAY);
+    public static <M extends AbstractFactoryManager> M configureCiphers(M manager, Properties props, boolean lenient, boolean ignoreUnsupported) {
+        ValidateUtils.checkNotNull(props, "No properties to configure");
         return configureCiphers(manager, props.getProperty(CIPHERS_CONFIG_PROP, DEFAULT_CIPHERS), lenient, ignoreUnsupported);
     }
 
-    public static final <M extends AbstractFactoryManager> M configureCiphers(M manager, String value, boolean lenient, boolean ignoreUnsupported) {
-        ValidateUtils.checkNotNull(manager, "No manager to configure", GenericUtils.EMPTY_OBJECT_ARRAY);
+    public static <M extends AbstractFactoryManager> M configureCiphers(M manager, String value, boolean lenient, boolean ignoreUnsupported) {
+        ValidateUtils.checkNotNull(manager, "No manager to configure");
 
         BuiltinCiphers.ParseResult  result=BuiltinCiphers.parseCiphersList(value);
         Collection<String>          unsupported=result.getUnsupportedFactories();
@@ -490,13 +490,13 @@ public class SshConfigFileReader {
         return manager;
     }
 
-    public static final <M extends AbstractFactoryManager> M configureSignatures(M manager, Properties props, boolean lenient, boolean ignoreUnsupported) {
-        ValidateUtils.checkNotNull(props, "No properties to configure", GenericUtils.EMPTY_OBJECT_ARRAY);
+    public static <M extends AbstractFactoryManager> M configureSignatures(M manager, Properties props, boolean lenient, boolean ignoreUnsupported) {
+        ValidateUtils.checkNotNull(props, "No properties to configure");
         return configureSignatures(manager, props.getProperty(HOST_KEY_ALGORITHMS_CONFIG_PROP, DEFAULT_HOST_KEY_ALGORITHMS), lenient, ignoreUnsupported);
     }
 
-    public static final <M extends AbstractFactoryManager> M configureSignatures(M manager, String value, boolean lenient, boolean ignoreUnsupported) {
-        ValidateUtils.checkNotNull(manager, "No manager to configure", GenericUtils.EMPTY_OBJECT_ARRAY);
+    public static <M extends AbstractFactoryManager> M configureSignatures(M manager, String value, boolean lenient, boolean ignoreUnsupported) {
+        ValidateUtils.checkNotNull(manager, "No manager to configure");
 
         BuiltinSignatures.ParseResult   result=BuiltinSignatures.parseSignatureList(value);
         Collection<String>              unsupported=result.getUnsupportedFactories();
@@ -508,13 +508,13 @@ public class SshConfigFileReader {
         return manager;
     }
     
-    public static final <M extends AbstractFactoryManager> M configureMacs(M manager, Properties props, boolean lenient, boolean ignoreUnsupported) {
-        ValidateUtils.checkNotNull(props, "No properties to configure", GenericUtils.EMPTY_OBJECT_ARRAY);
+    public static <M extends AbstractFactoryManager> M configureMacs(M manager, Properties props, boolean lenient, boolean ignoreUnsupported) {
+        ValidateUtils.checkNotNull(props, "No properties to configure");
         return configureMacs(manager, props.getProperty(MACS_CONFIG_PROP, DEFAULT_MACS), lenient, ignoreUnsupported);
     }
 
-    public static final <M extends AbstractFactoryManager> M configureMacs(M manager, String value, boolean lenient, boolean ignoreUnsupported) {
-        ValidateUtils.checkNotNull(manager, "No manager to configure", GenericUtils.EMPTY_OBJECT_ARRAY);
+    public static <M extends AbstractFactoryManager> M configureMacs(M manager, String value, boolean lenient, boolean ignoreUnsupported) {
+        ValidateUtils.checkNotNull(manager, "No manager to configure");
 
         BuiltinMacs.ParseResult result=BuiltinMacs.parseMacsList(value);
         Collection<String>      unsupported=result.getUnsupportedFactories();
@@ -540,16 +540,16 @@ public class SshConfigFileReader {
      * @see #KEX_ALGORITHMS_CONFIG_PROP
      * @see #DEFAULT_KEX_ALGORITHMS
      */
-    public static final <M extends AbstractFactoryManager> M configureKeyExchanges(
+    public static <M extends AbstractFactoryManager> M configureKeyExchanges(
             M manager, Properties props, boolean lenient, Transformer<? super DHFactory, ? extends NamedFactory<KeyExchange>> xformer, boolean ignoreUnsupported) {
-        ValidateUtils.checkNotNull(props, "No properties to configure", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkNotNull(props, "No properties to configure");
         return configureKeyExchanges(manager, props.getProperty(KEX_ALGORITHMS_CONFIG_PROP, DEFAULT_KEX_ALGORITHMS), lenient, xformer, ignoreUnsupported);
     }
 
-    public static final <M extends AbstractFactoryManager> M configureKeyExchanges(
+    public static <M extends AbstractFactoryManager> M configureKeyExchanges(
             M manager, String value, boolean lenient, Transformer<? super DHFactory, ? extends NamedFactory<KeyExchange>> xformer, boolean ignoreUnsupported) {
-        ValidateUtils.checkNotNull(manager, "No manager to configure", GenericUtils.EMPTY_OBJECT_ARRAY);
-        ValidateUtils.checkNotNull(xformer, "No DHFactory transformer", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkNotNull(manager, "No manager to configure");
+        ValidateUtils.checkNotNull(xformer, "No DHFactory transformer");
 
         BuiltinDHFactories.ParseResult  result=BuiltinDHFactories.parseDHFactoriesList(value);
         Collection<String>              unsupported=result.getUnsupportedFactories();
@@ -572,9 +572,9 @@ public class SshConfigFileReader {
      * @return The configured manager - <B>Note:</B> if the result of filtering due
      * to lenient mode or ignored unsupported value is empty then no factories are set
      */
-    public static final <M extends AbstractFactoryManager> M configureCompression(M manager, Properties props, boolean lenient, boolean ignoreUnsupported) {
-        ValidateUtils.checkNotNull(manager, "No manager to configure", GenericUtils.EMPTY_OBJECT_ARRAY);
-        ValidateUtils.checkNotNull(props, "No properties to configure", GenericUtils.EMPTY_OBJECT_ARRAY);
+    public static <M extends AbstractFactoryManager> M configureCompression(M manager, Properties props, boolean lenient, boolean ignoreUnsupported) {
+        ValidateUtils.checkNotNull(manager, "No manager to configure");
+        ValidateUtils.checkNotNull(props, "No properties to configure");
         
         String               value=props.getProperty(COMPRESSION_PROP, DEFAULT_COMPRESSION);
         CompressionFactory   factory=CompressionConfigValue.fromName(value);
@@ -587,8 +587,8 @@ public class SshConfigFileReader {
     }
 
     // accepts BOTH CompressionConfigValue(s) and/or BuiltinCompressions - including extensions
-    public static final <M extends AbstractFactoryManager> M configureCompression(M manager, String value, boolean lenient, boolean ignoreUnsupported) {
-        ValidateUtils.checkNotNull(manager, "No manager to configure", GenericUtils.EMPTY_OBJECT_ARRAY);
+    public static <M extends AbstractFactoryManager> M configureCompression(M manager, String value, boolean lenient, boolean ignoreUnsupported) {
+        ValidateUtils.checkNotNull(manager, "No manager to configure");
 
         CompressionFactory   factory=CompressionConfigValue.fromName(value);
         if (factory != null) {

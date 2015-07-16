@@ -66,11 +66,11 @@ public enum BuiltinIoServiceFactoryFactories implements NamedFactory<IoServiceFa
     public static final Set<BuiltinIoServiceFactoryFactories> VALUES = 
             Collections.unmodifiableSet(EnumSet.allOf(BuiltinIoServiceFactoryFactories.class));
 
-    public static final BuiltinIoServiceFactoryFactories fromFactoryName(String name) {
+    public static BuiltinIoServiceFactoryFactories fromFactoryName(String name) {
         return NamedResource.Utils.findByName(name, String.CASE_INSENSITIVE_ORDER, VALUES);
     }
     
-    public static final BuiltinIoServiceFactoryFactories fromFactoryClass(Class<?> clazz) {
+    public static BuiltinIoServiceFactoryFactories fromFactoryClass(Class<?> clazz) {
         if ((clazz == null) || (!IoServiceFactoryFactory.class.isAssignableFrom(clazz))) {
             return null;
         }

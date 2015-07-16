@@ -58,7 +58,7 @@ public abstract class AbstractChannel
 
     public static final long DEFAULT_CHANNEL_CLOSE_TIMEOUT = 5000;
 
-    protected static enum GracefulState {
+    protected enum GracefulState {
         Opened, CloseSent, CloseReceived, Closed
     }
 
@@ -137,7 +137,7 @@ public abstract class AbstractChannel
         String req = buffer.getString();
         boolean wantReply = buffer.getBoolean();
         if (log.isDebugEnabled()) {
-            log.debug("Received SSH_MSG_CHANNEL_REQUEST {} on channel {} (wantReply {})", new Object[] { req, this, Boolean.valueOf(wantReply) });
+            log.debug("Received SSH_MSG_CHANNEL_REQUEST {} on channel {} (wantReply {})", req, this, wantReply);
         }
         for (RequestHandler<Channel> handler : handlers) {
             RequestHandler.Result result;

@@ -30,82 +30,82 @@ public final class ValidateUtils {
         throw new UnsupportedOperationException("No instance");
     }
 
-    public static final <T> T checkNotNull(T t, String message) {
+    public static <T> T checkNotNull(T t, String message) {
         checkTrue(t != null, message);
         return t;
     }
 
-    public static final <T> T checkNotNull(T t, String message, Object arg) {
+    public static <T> T checkNotNull(T t, String message, Object arg) {
         checkTrue(t != null, message, arg);
         return t;
     }
 
-    public static final <T> T checkNotNull(T t, String message, Object ... args) {
+    public static <T> T checkNotNull(T t, String message, Object ... args) {
         checkTrue(t != null, message, args);
         return t;
     }
 
-    public static final String checkNotNullAndNotEmpty(String t, String message) {
+    public static String checkNotNullAndNotEmpty(String t, String message) {
         t = checkNotNull(t, message).trim();
         checkTrue(GenericUtils.length(t) > 0, message);
         return t;
     }
 
-    public static final String checkNotNullAndNotEmpty(String t, String message, Object arg) {
+    public static String checkNotNullAndNotEmpty(String t, String message, Object arg) {
         t = checkNotNull(t, message, arg).trim();
         checkTrue(GenericUtils.length(t) > 0, message, arg);
         return t;
     }
 
-    public static final String checkNotNullAndNotEmpty(String t, String message, Object ... args) {
+    public static String checkNotNullAndNotEmpty(String t, String message, Object ... args) {
         t = checkNotNull(t, message, args).trim();
         checkTrue(GenericUtils.length(t) > 0, message, args);
         return t;
     }
 
-    public static final <K,V,M extends Map<K,V>> M checkNotNullAndNotEmpty(M t, String message, Object ... args) {
+    public static <K,V,M extends Map<K,V>> M checkNotNullAndNotEmpty(M t, String message, Object ... args) {
         t = checkNotNull(t, message, args);
         checkTrue(GenericUtils.size(t) > 0, message, args);
         return t;
     }
 
-    public static final <T,C extends Collection<T>> C checkNotNullAndNotEmpty(C t, String message, Object ... args) {
+    public static <T,C extends Collection<T>> C checkNotNullAndNotEmpty(C t, String message, Object ... args) {
         t = checkNotNull(t, message, args);
         checkTrue(GenericUtils.size(t) > 0, message, args);
         return t;
     }
 
-    public static final byte[] checkNotNullAndNotEmpty(byte[] t, String message, Object ... args) {
+    public static byte[] checkNotNullAndNotEmpty(byte[] t, String message, Object ... args) {
         t = checkNotNull(t, message, args);
         checkTrue(GenericUtils.length(t) > 0, message, args);
         return t;
     }
 
-    public static final <T> T[] checkNotNullAndNotEmpty(T[] t, String message, Object ... args) {
+    public static <T> T[] checkNotNullAndNotEmpty(T[] t, String message, Object ... args) {
         t = checkNotNull(t, message, args);
         checkTrue(GenericUtils.length(t) > 0, message, args);
         return t;
     }
 
-    public static final void checkTrue(boolean flag, String message) {
+    public static void checkTrue(boolean flag, String message) {
         if (!flag) {
             throwIllegalArgumentException(message, GenericUtils.EMPTY_OBJECT_ARRAY);
         }
     }
 
-    public static final void checkTrue(boolean flag, String message, Object arg) {
+    public static void checkTrue(boolean flag, String message, Object arg) {
         if (!flag) {
             throwIllegalArgumentException(message, arg);
         }
     }
 
-    public static final void checkTrue(boolean flag, String message, Object ... args) {
+    public static void checkTrue(boolean flag, String message, Object ... args) {
         if (!flag) {
             throwIllegalArgumentException(message, args);
         }
     }
     
-    public static final void throwIllegalArgumentException(String message, Object ... args) {
+    public static void throwIllegalArgumentException(String message, Object ... args) {
         throw new IllegalArgumentException(String.format(message, args));
     }
 }

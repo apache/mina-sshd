@@ -112,7 +112,7 @@ public class ChannelAsyncInputStream extends CloseableUtils.AbstractCloseable im
             } catch (IOException e) {
                 channel.getSession().exceptionCaught(e);
             }
-            future.setValue(Integer.valueOf(nbRead));
+            future.setValue(nbRead);
         }
     }
 

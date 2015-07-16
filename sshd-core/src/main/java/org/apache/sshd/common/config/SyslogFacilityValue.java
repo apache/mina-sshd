@@ -34,7 +34,8 @@ public enum SyslogFacilityValue {
 
     public static final Set<SyslogFacilityValue> VALUES=
             Collections.unmodifiableSet(EnumSet.allOf(SyslogFacilityValue.class));
-    public static final SyslogFacilityValue fromName(String n) {
+
+    public static SyslogFacilityValue fromName(String n) {
         if (GenericUtils.isEmpty(n)) {
             return null;
         }

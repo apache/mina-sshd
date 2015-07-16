@@ -55,12 +55,12 @@ public class SttySupport {
                         v = findChar(stty, "rprnt");
                     }
                     if (v >= 0) {
-                        modes.put(mode, Integer.valueOf(v));
+                        modes.put(mode, v);
                     }
                 } else {
                     int v = findFlag(stty, str);
                     if (v >= 0) {
-                        modes.put(mode, Integer.valueOf(v));
+                        modes.put(mode, v);
                     }
                 }
             }
@@ -102,7 +102,7 @@ public class SttySupport {
                 continue;
             }
             String val = stty.substring(idx2 + 1, idx3 < 0 ? stty.length() : idx3).trim();
-            if (val.indexOf("undef") >= 0) {
+            if (val.contains("undef")) {
                 return -1;
             }
             if (val.length() == 2 && val.charAt(0) == '^') {

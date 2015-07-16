@@ -73,7 +73,7 @@ public abstract class Nio2Service extends CloseableUtils.AbstractInnerCloseable 
     }
 
     public void sessionClosed(Nio2Session session) {
-        sessions.remove(Long.valueOf(session.getId()));
+        sessions.remove(session.getId());
     }
 
     protected <T> void setOption(NetworkChannel socket, String property, SocketOption<T> option, T defaultValue) throws IOException {

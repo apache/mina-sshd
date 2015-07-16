@@ -448,7 +448,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         if (replaceExisting) {
             deleteIfExists(target);
         } else {
-            if (status.booleanValue()) {
+            if (status) {
                 throw new FileAlreadyExistsException(target.toString());
             }
         }
@@ -515,7 +515,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
 
         if (replaceExisting) {
             deleteIfExists(target);
-        } else if (status.booleanValue()) {
+        } else if (status) {
             throw new FileAlreadyExistsException(target.toString());
         }
 
@@ -813,19 +813,19 @@ public class SftpFileSystemProvider extends FileSystemProvider {
                     map.put(attr, v.creationTime());
                     break;
                 case "size":
-                    map.put(attr, Long.valueOf(v.size()));
+                    map.put(attr, v.size());
                     break;
                 case "isRegularFile":
-                    map.put(attr, Boolean.valueOf(v.isRegularFile()));
+                    map.put(attr, v.isRegularFile());
                     break;
                 case "isDirectory":
-                    map.put(attr, Boolean.valueOf(v.isDirectory()));
+                    map.put(attr, v.isDirectory());
                     break;
                 case "isSymbolicLink":
-                    map.put(attr, Boolean.valueOf(v.isSymbolicLink()));
+                    map.put(attr, v.isSymbolicLink());
                     break;
                 case "isOther":
-                    map.put(attr, Boolean.valueOf(v.isOther()));
+                    map.put(attr, v.isOther());
                     break;
                 case "fileKey":
                     map.put(attr, v.fileKey());
@@ -1097,7 +1097,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             }
         }
 
-        return String.format("%04o", Integer.valueOf(pf));
+        return String.format("%04o", pf);
     }
 
     /**
@@ -1107,7 +1107,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
      * @return The unique identifier
      * @see #getFileSystemIdentifier(String, int, String)
      */
-    public static final String getFileSystemIdentifier(URI uri) {
+    public static String getFileSystemIdentifier(URI uri) {
         String userInfo = ValidateUtils.checkNotNullAndNotEmpty(uri.getUserInfo(), "UserInfo not provided");
         String[] ui = GenericUtils.split(userInfo, ':');
         ValidateUtils.checkTrue(GenericUtils.length(ui) == 2, "Invalid user info: %s", userInfo);
@@ -1120,7 +1120,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
      * @return The unique identifier
      * @see #getFileSystemIdentifier(String, int, String)
      */
-    public static final String getFileSystemIdentifier(ClientSession session) {
+    public static String getFileSystemIdentifier(ClientSession session) {
         IoSession ioSession = session.getIoSession();
         SocketAddress addr = ioSession.getRemoteAddress();
         String username = session.getUsername();
@@ -1132,15 +1132,13 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         }
     }
 
-    public static final String getFileSystemIdentifier(String host, int port, String username) {
-        return new StringBuilder(GenericUtils.length(host) + 1 + /* port */ + 5 + 1 + GenericUtils.length(username))
-                .append(GenericUtils.trimToEmpty(host))
-                .append(':').append((port <= 0) ? SshConfigFileReader.DEFAULT_PORT : port)
-                .append(':').append(GenericUtils.trimToEmpty(username))
-                .toString();
+    public static String getFileSystemIdentifier(String host, int port, String username) {
+        return GenericUtils.trimToEmpty(host) + ':'
+                + ((port <= 0) ? SshConfigFileReader.DEFAULT_PORT : port) + ':'
+                + GenericUtils.trimToEmpty(username);
     }
 
-    public static final URI createFileSystemURI(String host, int port, String username, String password) {
+    public static URI createFileSystemURI(String host, int port, String username, String password) {
         return URI.create(SftpConstants.SFTP_SUBSYSTEM_NAME + "://" + username + ":" + password + "@" + host + ":" + port + "/");
     }
 }

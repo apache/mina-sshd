@@ -126,19 +126,19 @@ public abstract class MinaService extends CloseableUtils.AbstractCloseable imple
         Integer intVal;
         Boolean boolVal;
         if ((boolVal = getBoolean(FactoryManager.SOCKET_KEEPALIVE)) != null) {
-            config.setKeepAlive(boolVal.booleanValue());
+            config.setKeepAlive(boolVal);
         }
         if ((intVal = getInteger(FactoryManager.SOCKET_SNDBUF)) != null) {
-            config.setSendBufferSize(intVal.intValue());
+            config.setSendBufferSize(intVal);
         }
         if ((intVal = getInteger(FactoryManager.SOCKET_RCVBUF)) != null) {
-            config.setReceiveBufferSize(intVal.intValue());
+            config.setReceiveBufferSize(intVal);
         }
         if ((intVal = getInteger(FactoryManager.SOCKET_LINGER)) != null) {
-            config.setSoLinger(intVal.intValue());
+            config.setSoLinger(intVal);
         }
         if ((boolVal = getBoolean(FactoryManager.SOCKET_LINGER)) != null) {
-            config.setTcpNoDelay(boolVal.booleanValue());
+            config.setTcpNoDelay(boolVal);
         }
         if (sessionConfig != null) {
             config.setAll(sessionConfig);

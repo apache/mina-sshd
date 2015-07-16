@@ -146,7 +146,7 @@ public abstract class AbstractConnectionService extends CloseableUtils.AbstractI
                 throw new IllegalStateException("Session is being closed: " + toString());
             }
 
-            channels.put(Integer.valueOf(channelId), channel);
+            channels.put(channelId, channel);
         }
         
         if (log.isDebugEnabled()) {
@@ -162,7 +162,7 @@ public abstract class AbstractConnectionService extends CloseableUtils.AbstractI
      */
     @Override
     public void unregisterChannel(Channel channel) {
-        channels.remove(Integer.valueOf(channel.getId()));
+        channels.remove(channel.getId());
     }
 
     @Override
@@ -230,7 +230,7 @@ public abstract class AbstractConnectionService extends CloseableUtils.AbstractI
 
     public void channelOpenFailure(Buffer buffer) throws IOException {
         AbstractClientChannel channel = (AbstractClientChannel) getChannel(buffer);
-        Integer id = Integer.valueOf(channel.getId());
+        int id = channel.getId();
         if (log.isDebugEnabled()) {
             log.debug("Received SSH_MSG_CHANNEL_OPEN_FAILURE on channel {}", id);
         }
@@ -328,7 +328,7 @@ public abstract class AbstractConnectionService extends CloseableUtils.AbstractI
      */
     protected Channel getChannel(Buffer buffer) throws IOException {
         int recipient = buffer.getInt();
-        Channel channel = channels.get(Integer.valueOf(recipient));
+        Channel channel = channels.get(recipient);
         if (channel == null) {
             buffer.rpos(buffer.rpos() - 5);
             int cmd = buffer.getUByte();

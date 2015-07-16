@@ -137,7 +137,7 @@ public enum BuiltinSignatures implements SignatureFactory {
      * or overrides a built-in one or overrides another registered factory
      * with the same name (case <U>insensitive</U>).
      */
-    public static final void registerExtension(SignatureFactory extension) {
+    public static void registerExtension(SignatureFactory extension) {
         String  name=ValidateUtils.checkNotNull(extension, "No extension provided").getName();
         ValidateUtils.checkTrue(fromFactoryName(name) == null, "Extension overrides built-in: %s", name);
 
@@ -151,7 +151,7 @@ public enum BuiltinSignatures implements SignatureFactory {
      * @return A {@link SortedSet} of the currently registered extensions, sorted
      * according to the factory name (case <U>insensitive</U>)
      */
-    public static final SortedSet<SignatureFactory> getRegisteredExtensions() {
+    public static SortedSet<SignatureFactory> getRegisteredExtensions() {
         // TODO for JDK-8 return Collections.emptySortedSet()
         synchronized(extensions) {
             return GenericUtils.asSortedSet(NamedResource.BY_NAME_COMPARATOR, extensions.values());
@@ -163,7 +163,7 @@ public enum BuiltinSignatures implements SignatureFactory {
      * @param name The factory name - ignored if {@code null}/empty
      * @return The registered extension - {@code null} if not found
      */
-    public static final SignatureFactory unregisterExtension(String name) {
+    public static SignatureFactory unregisterExtension(String name) {
         if (GenericUtils.isEmpty(name)) {
             return null;
         }
@@ -225,15 +225,15 @@ public enum BuiltinSignatures implements SignatureFactory {
      * <B>Note:</B> it is up to caller to ensure that the list does not
      * contain duplicates
      */
-    public static final ParseResult parseSignatureList(String sigs) {
+    public static ParseResult parseSignatureList(String sigs) {
         return parseSignatureList(GenericUtils.split(sigs, ','));
     }
 
-    public static final ParseResult parseSignatureList(String ... sigs) {
+    public static ParseResult parseSignatureList(String ... sigs) {
         return parseSignatureList(GenericUtils.isEmpty((Object[]) sigs) ? Collections.<String>emptyList() : Arrays.asList(sigs));
     }
 
-    public static final ParseResult parseSignatureList(Collection<String> sigs) {
+    public static ParseResult parseSignatureList(Collection<String> sigs) {
         if (GenericUtils.isEmpty(sigs)) {
             return ParseResult.EMPTY;
         }
@@ -261,7 +261,7 @@ public enum BuiltinSignatures implements SignatureFactory {
      * @return The factory or {@code null} if it is neither a built-in one
      * or a registered extension 
      */
-    public static final SignatureFactory resolveFactory(String name) {
+    public static SignatureFactory resolveFactory(String name) {
         if (GenericUtils.isEmpty(name)) {
             return null;
         }

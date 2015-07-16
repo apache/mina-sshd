@@ -306,50 +306,42 @@ public class ChannelSession extends AbstractServerChannel {
      * to generate it
      */
     public Boolean handleRequest(String type, Buffer buffer) throws IOException {
-        if ("env".equals(type)) {
-            return Boolean.valueOf(handleEnv(buffer));
-        }
-        if ("pty-req".equals(type)) {
-            return Boolean.valueOf(handlePtyReq(buffer));
-        }
-        if ("window-change".equals(type)) {
-            return Boolean.valueOf(handleWindowChange(buffer));
-        }
-        if ("signal".equals(type)) {
-            return Boolean.valueOf(handleSignal(buffer));
-        }
-        if ("break".equals(type)) {
-            return Boolean.valueOf(handleBreak(buffer));
-        }
-        if ("shell".equals(type)) {
-            if ((this.type == null) && handleShell(buffer)) {
-                this.type = type;
-                return Boolean.TRUE;
-            } else {
-                return Boolean.FALSE;
-            }
-        }
-        if ("exec".equals(type)) {
-            if ((this.type == null) && handleExec(buffer)) {
-                this.type = type;
-                return Boolean.TRUE;
-            } else {
-                return Boolean.FALSE;
-            }
-        }
-        if ("subsystem".equals(type)) {
-            if ((this.type == null) && handleSubsystem(buffer)) {
-                this.type = type;
-                return Boolean.TRUE;
-            } else {
-                return Boolean.FALSE;
-            }
-        }
-        if ("auth-agent-req@openssh.com".equals(type)) {
-            return Boolean.valueOf(handleAgentForwarding(buffer));
-        }
-        if ("x11-req".equals(type)) {
-            return Boolean.valueOf(handleX11Forwarding(buffer));
+        switch (type) {
+            case "env":
+                return handleEnv(buffer);
+            case "pty-req":
+                return handlePtyReq(buffer);
+            case "window-change":
+                return handleWindowChange(buffer);
+            case "signal":
+                return handleSignal(buffer);
+            case "break":
+                return handleBreak(buffer);
+            case "shell":
+                if ((this.type == null) && handleShell(buffer)) {
+                    this.type = type;
+                    return Boolean.TRUE;
+                } else {
+                    return Boolean.FALSE;
+                }
+            case "exec":
+                if ((this.type == null) && handleExec(buffer)) {
+                    this.type = type;
+                    return Boolean.TRUE;
+                } else {
+                    return Boolean.FALSE;
+                }
+            case "subsystem":
+                if ((this.type == null) && handleSubsystem(buffer)) {
+                    this.type = type;
+                    return Boolean.TRUE;
+                } else {
+                    return Boolean.FALSE;
+                }
+            case "auth-agent-req@openssh.com":
+                return handleAgentForwarding(buffer);
+            case "x11-req":
+                return handleX11Forwarding(buffer);
         }
         return null;
     }
@@ -359,7 +351,7 @@ public class ChannelSession extends AbstractServerChannel {
         String value = buffer.getString();
         addEnvVariable(name, value);
         if (log.isDebugEnabled()) {
-            log.debug("env for channel {}: {} = {}", Integer.valueOf(id), name, value);
+            log.debug("env for channel {}: {} = {}", id, name, value);
         }
         return true;
     }
@@ -388,14 +380,12 @@ public class ChannelSession extends AbstractServerChannel {
                        ((modes[i++] << 16) & 0x00ff0000) |
                        ((modes[i++] <<  8) & 0x0000ff00) |
                        ((modes[i++]) & 0x000000ff);
-            ptyModes.put(mode, Integer.valueOf(val));
+            ptyModes.put(mode, val);
         }
         if (log.isDebugEnabled()) {
             log.debug("pty for channel {}: term={}, size=({} - {}), pixels=({}, {}), modes=[{}]",
-                      Integer.valueOf(id), term, 
-                      Integer.valueOf(tColumns), Integer.valueOf(tRows),
-                      Integer.valueOf(tWidth), Integer.valueOf(tHeight),
-                      ptyModes);
+                    id, term, tColumns, tRows,
+                    tWidth, tHeight, ptyModes);
         }
 
         addEnvVariable(Environment.ENV_TERM, term);
@@ -411,9 +401,8 @@ public class ChannelSession extends AbstractServerChannel {
         int tHeight = buffer.getInt();
         if (log.isDebugEnabled()) {
             log.debug("window-change for channel {}: ({} - {}), ({}, {})",
-                      Integer.valueOf(id),
-                      Integer.valueOf(tColumns), Integer.valueOf(tRows),
-                      Integer.valueOf(tWidth), Integer.valueOf(tHeight));
+                    id, tColumns, tRows,
+                    tWidth, tHeight);
         }
 
         final StandardEnvironment e = getEnvironment();
@@ -426,7 +415,7 @@ public class ChannelSession extends AbstractServerChannel {
     protected boolean handleSignal(Buffer buffer) throws IOException {
         String name = buffer.getString();
         if (log.isDebugEnabled()) {
-            log.debug("Signal received on channel {}: {}", Integer.valueOf(id), name);
+            log.debug("Signal received on channel {}: {}", id, name);
         }
 
         final Signal signal = Signal.get(name);
@@ -441,7 +430,7 @@ public class ChannelSession extends AbstractServerChannel {
     protected boolean handleBreak(Buffer buffer) throws IOException {
         String name = buffer.getString();
         if (log.isDebugEnabled()) {
-            log.debug("Break received on channel {}: {}", Integer.valueOf(id), name);
+            log.debug("Break received on channel {}: {}", id, name);
         }
 
         getEnvironment().signal(Signal.INT);
@@ -685,7 +674,7 @@ public class ChannelSession extends AbstractServerChannel {
             if (r == null) {
                 return Result.Unsupported;
             } else {
-                return r.booleanValue() ? Result.ReplySuccess : Result.ReplyFailure;
+                return r ? Result.ReplySuccess : Result.ReplyFailure;
             }
         }
     }

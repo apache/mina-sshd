@@ -58,7 +58,7 @@ public final class GenericUtils {
         throw new UnsupportedOperationException("No instance");
     }
 
-    public static final String trimToEmpty(String s) {
+    public static String trimToEmpty(String s) {
         if (s == null) {
             return "";
         } else {
@@ -66,7 +66,7 @@ public final class GenericUtils {
         }
     }
 
-    public static final int safeCompare(String s1, String s2, boolean caseSensitive) {
+    public static int safeCompare(String s1, String s2, boolean caseSensitive) {
         if (s1 == s2) {
             return 0;
         } else if (s1 == null) {
@@ -80,7 +80,7 @@ public final class GenericUtils {
         }
     }
 
-    public static final int length(CharSequence cs) {
+    public static int length(CharSequence cs) {
         if (cs == null) {
             return 0;
         } else {
@@ -88,7 +88,7 @@ public final class GenericUtils {
         }
     }
 
-    public static final boolean isEmpty(CharSequence cs) {
+    public static boolean isEmpty(CharSequence cs) {
         if (length(cs) <= 0) {
             return true;
         } else {
@@ -97,7 +97,7 @@ public final class GenericUtils {
     }
 
     // a List would be better, but we want to be compatible with String.split(...)
-    public static final String[] split(String s, char ch) {
+    public static String[] split(String s, char ch) {
         if (isEmpty(s)) {
             return EMPTY_STRING_ARRAY;
         }
@@ -131,15 +131,15 @@ public final class GenericUtils {
         return values.toArray(new String[values.size()]);
     }
 
-    public static final <T> String join(T[] values, char ch) {
+    public static <T> String join(T[] values, char ch) {
         return join(isEmpty(values) ? Collections.<T>emptyList() : Arrays.asList(values), ch);
     }
 
-    public static final String join(Iterable<?> iter, char ch) {
+    public static String join(Iterable<?> iter, char ch) {
         return join((iter == null) ? null : iter.iterator(), ch);
     }
     
-    public static final String join(Iterator<?> iter, char ch) {
+    public static String join(Iterator<?> iter, char ch) {
         if ((iter == null) || (!iter.hasNext())) {
             return "";
         }
@@ -156,15 +156,15 @@ public final class GenericUtils {
         return sb.toString();
     }
 
-    public static final <T> String join(T[] values, CharSequence sep) {
+    public static <T> String join(T[] values, CharSequence sep) {
         return join(isEmpty(values) ? Collections.<T>emptyList() : Arrays.asList(values), sep);
     }
 
-    public static final String join(Iterable<?> iter, CharSequence sep) {
+    public static String join(Iterable<?> iter, CharSequence sep) {
         return join((iter == null) ? null : iter.iterator(), sep);
     }
     
-    public static final String join(Iterator<?> iter, CharSequence sep) {
+    public static String join(Iterator<?> iter, CharSequence sep) {
         if ((iter == null) || (!iter.hasNext())) {
             return "";
         }
@@ -181,7 +181,7 @@ public final class GenericUtils {
         return sb.toString();
     }
     
-    public static final int size(Collection<?> c) {
+    public static int size(Collection<?> c) {
         if (c == null) {
             return 0;
         } else {
@@ -189,7 +189,7 @@ public final class GenericUtils {
         }
     }
 
-    public static final boolean isEmpty(Collection<?> c) {
+    public static boolean isEmpty(Collection<?> c) {
         if (size(c) <= 0) {
             return true;
         } else {
@@ -197,7 +197,7 @@ public final class GenericUtils {
         }
     }
 
-    public static final int size(Map<?,?> m) {
+    public static int size(Map<?,?> m) {
         if (m == null) {
             return 0;
         } else {
@@ -205,7 +205,7 @@ public final class GenericUtils {
         }
     }
 
-    public static final boolean isEmpty(Map<?,?> m) {
+    public static boolean isEmpty(Map<?,?> m) {
         if (size(m) <= 0) {
             return true;
         } else {
@@ -213,7 +213,7 @@ public final class GenericUtils {
         }
     }
 
-    public static final boolean isEmpty(byte[] a) {
+    public static boolean isEmpty(byte[] a) {
         if (length(a) <= 0) {
             return true;
         } else {
@@ -221,7 +221,7 @@ public final class GenericUtils {
         }
     }
 
-    public static final int length(byte ... a) {
+    public static int length(byte ... a) {
         if (a == null) {
             return 0;
         } else {
@@ -230,7 +230,7 @@ public final class GenericUtils {
     }
 
     @SafeVarargs
-    public static final <T> int length(T ... a) {
+    public static <T> int length(T ... a) {
         if (a == null) {
             return 0;
         } else {
@@ -238,7 +238,7 @@ public final class GenericUtils {
         }
     }
 
-    public static final <T> boolean isEmpty(Iterable<? extends T> iter) {
+    public static <T> boolean isEmpty(Iterable<? extends T> iter) {
         if (iter == null) {
             return true;
         } else if (iter instanceof Collection<?>) {
@@ -248,7 +248,7 @@ public final class GenericUtils {
         }
     }
 
-    public static final <T> boolean isEmpty(Iterator<? extends T> iter) {
+    public static <T> boolean isEmpty(Iterator<? extends T> iter) {
         if (iter == null) {
             return true;
         } else if (iter.hasNext()) {
@@ -259,7 +259,7 @@ public final class GenericUtils {
     }
 
     @SafeVarargs
-    public static final <T> boolean isEmpty(T ... a) {
+    public static <T> boolean isEmpty(T ... a) {
         if (length(a) <= 0) {
             return true;
         } else {
@@ -268,11 +268,11 @@ public final class GenericUtils {
     }
 
     @SafeVarargs    // there is no EnumSet.of(...) so we have to provide our own
-    public static final <E extends Enum<E>> Set<E> of(E ... values) {
+    public static <E extends Enum<E>> Set<E> of(E ... values) {
         return of(isEmpty(values) ? Collections.<E>emptySet() : Arrays.asList(values));
     }
 
-    public static final <E extends Enum<E>> Set<E> of(Collection<? extends E> values) {
+    public static <E extends Enum<E>> Set<E> of(Collection<? extends E> values) {
         if (isEmpty(values)) {
             return Collections.emptySet();
         }
@@ -304,12 +304,12 @@ public final class GenericUtils {
     };
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    public static final <V extends Comparable<V>> Comparator<V> naturalComparator() {
+    public static <V extends Comparable<V>> Comparator<V> naturalComparator() {
         // TODO for JDK-8 use Comparator.naturalOrder() 
         return (Comparator) naturalOrderComparator;
     }
 
-    public static final <V extends Comparable<V>> SortedSet<V> asSortedSet(Collection<? extends V> values) {
+    public static <V extends Comparable<V>> SortedSet<V> asSortedSet(Collection<? extends V> values) {
         // TODO for JDK-8 use Comparator.naturalOrder() 
         return asSortedSet(GenericUtils.<V>naturalComparator(), values);
     }
@@ -320,7 +320,7 @@ public final class GenericUtils {
      * @return A {@link SortedSet} containing the values (if any) sorted
      * using the provided comparator
      */
-    public static final <V> SortedSet<V> asSortedSet(Comparator<? super V> comp, Collection<? extends V> values) {
+    public static <V> SortedSet<V> asSortedSet(Comparator<? super V> comp, Collection<? extends V> values) {
         // TODO for JDK-8 return Collections.emptySortedSet()
         SortedSet<V>    set=new TreeSet<V>(ValidateUtils.checkNotNull(comp, "No comparator"));
         if (size(values) > 0) {
@@ -337,9 +337,9 @@ public final class GenericUtils {
      * @return If the sequence contains any of the {@link #QUOTES}
      * on <U>both</U> ends, then they are stripped, otherwise
      * nothing is done
-     * @see #stripDelimiters(CharSeqeuence, char)
+     * @see #stripDelimiters(CharSequence, char)
      */
-    public static final CharSequence stripQuotes(CharSequence s) {
+    public static  CharSequence stripQuotes(CharSequence s) {
         if (isEmpty(s)) {
             return s;
         }
@@ -361,7 +361,7 @@ public final class GenericUtils {
      * @return If the sequence contains the delimiter on <U>both</U> ends,
      * then it is are stripped, otherwise nothing is done
      */
-    public static final CharSequence stripDelimiters(CharSequence s, char delim) {
+    public static CharSequence stripDelimiters(CharSequence s, char delim) {
         if (isEmpty(s) || (s.length() < 2)) {
             return s;
         }

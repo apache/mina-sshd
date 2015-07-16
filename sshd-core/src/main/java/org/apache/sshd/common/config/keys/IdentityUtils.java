@@ -54,11 +54,8 @@ public final class IdentityUtils {
         if (GenericUtils.isEmpty(type)) {
             return null;
         } else {
-            return new StringBuilder(GenericUtils.length(prefix) + type.length() + GenericUtils.length(suffix))
-                            .append(GenericUtils.trimToEmpty(prefix))
-                            .append(type.toLowerCase())
-                            .append(GenericUtils.trimToEmpty(suffix))
-                            .toString();
+            return GenericUtils.trimToEmpty(prefix)
+                    + type.toLowerCase() + GenericUtils.trimToEmpty(suffix);
         }
     }
 

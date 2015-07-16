@@ -56,8 +56,8 @@ public interface Compression {
      * <code>compress</code> or <code>uncompress</code> methods can be
      * called.
      *
-     * @param type
-     * @param level
+     * @param type compression type
+     * @param level compression level
      */
     void init(Type type, int level);
 

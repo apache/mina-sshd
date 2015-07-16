@@ -46,7 +46,7 @@ public class UserAuthPassword extends AbstractUserAuth {
             throw new IllegalStateException("Password changes are not supported");
         }
         String password = buffer.getString();
-        return Boolean.valueOf(checkPassword(session, username, password));
+        return checkPassword(session, username, password);
     }
 
     protected boolean checkPassword(ServerSession session, String username, String password) throws Exception {

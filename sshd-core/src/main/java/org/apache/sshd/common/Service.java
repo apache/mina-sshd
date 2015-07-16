@@ -43,12 +43,4 @@ public interface Service extends Closeable {
      */
     void process(int cmd, Buffer buffer) throws Exception;
 
-    /**
-     * Close the service.
-     * @param immediately
-     *
-     */
-    @Override
-    CloseFuture close(boolean immediately);
-
 }

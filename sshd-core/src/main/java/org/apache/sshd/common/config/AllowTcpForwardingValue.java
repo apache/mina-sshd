@@ -37,8 +37,9 @@ public enum AllowTcpForwardingValue {
 
     public static final Set<AllowTcpForwardingValue>    VALUES=
             Collections.unmodifiableSet(EnumSet.allOf(AllowTcpForwardingValue.class));
+
     // NOTE: it also interprets "yes" as "all" and "no" as "none"
-    public static final AllowTcpForwardingValue fromString(String s) {
+    public static AllowTcpForwardingValue fromString(String s) {
         if (GenericUtils.isEmpty(s)) {
             return null;
         }

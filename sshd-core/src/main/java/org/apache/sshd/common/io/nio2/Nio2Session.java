@@ -213,7 +213,7 @@ public class Nio2Session extends CloseableUtils.AbstractCloseable implements IoS
             @SuppressWarnings("synthetic-access")
             protected void onCompleted(Integer result, Object attachment) {
                 try {
-                    if (result.intValue() >= 0) {
+                    if (result >= 0) {
                         log.debug("Read {} bytes", result);
                         buffer.flip();
                         handler.messageReceived(Nio2Session.this, bufReader);

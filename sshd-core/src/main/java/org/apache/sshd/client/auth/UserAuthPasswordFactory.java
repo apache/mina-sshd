@@ -32,6 +32,7 @@ public class UserAuthPasswordFactory implements UserAuthFactory {
     public String getName() {
         return "password";
     }
+
     @Override
     public UserAuth create() {
         return new UserAuthPassword();

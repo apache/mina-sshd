@@ -66,7 +66,7 @@ public interface NamedResource {
     /**
      * Utility class to help using {@link NamedResource}s
      */
-    public static final class Utils {
+    final class Utils {
         /**
          * @param resources The named resources
          * @return A {@link List} of all the factories names - in same order

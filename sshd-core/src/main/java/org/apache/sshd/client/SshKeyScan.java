@@ -198,15 +198,14 @@ public class SshKeyScan extends AbstractSimplifiedLog
             client = SshClient.setUpDefaultClient();
             client.setServerKeyVerifier(this);
 
-            BufferedReader rdr = new BufferedReader(new InputStreamReader(getInputStream(), StandardCharsets.UTF_8));
-            try {
+            try (BufferedReader rdr = new BufferedReader(new InputStreamReader(getInputStream(), StandardCharsets.UTF_8))) {
                 client.start();
                 for (String line = rdr.readLine(); line != null; line = rdr.readLine()) {
                     String[] hosts = GenericUtils.split(GenericUtils.trimToEmpty(line), ',');
                     if (GenericUtils.isEmpty(hosts)) {
                         continue;
                     }
-                    
+
                     for (String h : hosts) {
                         if (!isOpen()) {
                             throw new InterruptedIOException("Closed while preparing to contact host=" + h);
@@ -214,7 +213,7 @@ public class SshKeyScan extends AbstractSimplifiedLog
 
                         try {
                             resolveServerKeys(client, h, pairsMap, sigFactories);
-                        } catch(Exception e) {
+                        } catch (Exception e) {
                             // check if interrupted while scanning host keys
                             if (e instanceof InterruptedIOException) {
                                 throw e;
@@ -229,8 +228,6 @@ public class SshKeyScan extends AbstractSimplifiedLog
                         }
                     }
                 }
-            } finally {
-                rdr.close();
             }
         } finally {
             try {
@@ -396,7 +393,7 @@ public class SshKeyScan extends AbstractSimplifiedLog
         log(Level.INFO, sb);
     }
 
-    private static final String toString(SocketAddress addr) {
+    private static String toString(SocketAddress addr) {
         if (addr == null) {
             return null;
         } else if (addr instanceof InetSocketAddress) {
@@ -532,7 +529,7 @@ public class SshKeyScan extends AbstractSimplifiedLog
     //////////////////////////////////////////////////////////////////////////
 
     // returns a List of the hosts to be contacted
-    public static final List<String> parseCommandLineArguments(SshKeyScan scanner, String ... args) throws IOException {
+    public static List<String> parseCommandLineArguments(SshKeyScan scanner, String ... args) throws IOException {
         int numArgs = GenericUtils.length(args);
         for (int index=0; index < numArgs; index++) {
             String optName = args[index];
@@ -599,7 +596,7 @@ public class SshKeyScan extends AbstractSimplifiedLog
 
     /* -------------------------------------------------------------------- */
 
-    public static final <S extends SshKeyScan> S setInputStream(S scanner, Collection<String> hosts) throws IOException {
+    public static <S extends SshKeyScan> S setInputStream(S scanner, Collection<String> hosts) throws IOException {
         if (GenericUtils.isEmpty(hosts)) {
             ValidateUtils.checkNotNull(scanner.getInputStream(), "No hosts or file specified");
         } else {
@@ -622,7 +619,7 @@ public class SshKeyScan extends AbstractSimplifiedLog
         return scanner;
     }
 
-    public static final <S extends SshKeyScan> S initializeScanner(S scanner, Collection<String> hosts) throws IOException {
+    public static <S extends SshKeyScan> S initializeScanner(S scanner, Collection<String> hosts) throws IOException {
         setInputStream(scanner, hosts);
         if (scanner.getPort() <= 0) {
             scanner.setPort(SshConfigFileReader.DEFAULT_PORT);

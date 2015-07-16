@@ -79,7 +79,7 @@ public class DefaultAuthFuture extends DefaultSshFuture<AuthFuture> implements A
 
     @Override   // TODO for JDK-8 make this a default method
     public void setAuthed(boolean authed) {
-        setValue(Boolean.valueOf(authed));
+        setValue(authed);
     }
 
     @Override   // TODO for JDK-8 make this a default method

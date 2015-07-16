@@ -44,8 +44,7 @@ public class Moduli {
 
     public static List<DhGroup> parseModuli(URL url) throws IOException {
         List<DhGroup> groups = new ArrayList<DhGroup>();
-        BufferedReader r = new BufferedReader(new InputStreamReader(url.openStream()));
-        try {
+        try (BufferedReader r = new BufferedReader(new InputStreamReader(url.openStream()))) {
             String line;
             while ((line = r.readLine()) != null) {
                 line = line.trim();
@@ -79,8 +78,6 @@ public class Moduli {
                 groups.add(group);
             }
             return groups;
-        } finally {
-            r.close();
         }
     }
 

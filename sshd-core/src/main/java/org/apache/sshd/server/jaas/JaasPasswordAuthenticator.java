@@ -68,13 +68,13 @@ public class JaasPasswordAuthenticator extends AbstractLoggingBean implements Pa
             LoginContext loginContext = new LoginContext(domain, subject, new CallbackHandler() {
                 @Override
                 public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException {
-                    for (int i = 0; i < callbacks.length; i++) {
-                        if (callbacks[i] instanceof NameCallback) {
-                            ((NameCallback) callbacks[i]).setName(username);
-                        } else if (callbacks[i] instanceof PasswordCallback) {
-                            ((PasswordCallback) callbacks[i]).setPassword(password.toCharArray());
+                    for (Callback callback : callbacks) {
+                        if (callback instanceof NameCallback) {
+                            ((NameCallback) callback).setName(username);
+                        } else if (callback instanceof PasswordCallback) {
+                            ((PasswordCallback) callback).setPassword(password.toCharArray());
                         } else {
-                            throw new UnsupportedCallbackException(callbacks[i]);
+                            throw new UnsupportedCallbackException(callback);
                         }
                     }
                 }
