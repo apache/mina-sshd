@@ -23,7 +23,7 @@ package org.apache.sshd.server.auth;
  */
 public class UserAuthPasswordFactory implements UserAuthFactory {
     public static final UserAuthPasswordFactory INSTANCE = new UserAuthPasswordFactory();
-    
+
     public UserAuthPasswordFactory() {
         super();
     }
@@ -32,6 +32,7 @@ public class UserAuthPasswordFactory implements UserAuthFactory {
     public String getName() {
         return "password";
     }
+
     @Override
     public UserAuth create() {
         return new UserAuthPassword();

@@ -31,7 +31,6 @@ import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.kex.KeyExchangeFactory;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.signature.Signature;
-import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
@@ -44,6 +43,10 @@ public class DHGServer extends AbstractDHServerKeyExchange {
 
     protected final DHFactory factory;
     protected AbstractDH dh;
+
+    protected DHGServer(DHFactory factory) {
+        this.factory = ValidateUtils.checkNotNull(factory, "No factory");
+    }
 
     public static KeyExchangeFactory newFactory(final DHFactory factory) {
         return new KeyExchangeFactory() {
@@ -66,13 +69,9 @@ public class DHGServer extends AbstractDHServerKeyExchange {
         };
     }
 
-    protected DHGServer(DHFactory factory) {
-        this.factory = ValidateUtils.checkNotNull(factory, "No factory");
-    }
-
     @Override
-    public void init(AbstractSession s, byte[] V_S, byte[] V_C, byte[] I_S, byte[] I_C) throws Exception {
-        super.init(s, V_S, V_C, I_S, I_C);
+    public void init(AbstractSession s, byte[] v_s, byte[] v_c, byte[] i_s, byte[] i_c) throws Exception {
+        super.init(s, v_s, v_c, i_s, i_c);
         dh = factory.create();
         hash = dh.getHash();
         hash.init();
@@ -83,15 +82,15 @@ public class DHGServer extends AbstractDHServerKeyExchange {
     public boolean next(Buffer buffer) throws Exception {
         int cmd = buffer.getUByte();
         if (cmd != SshConstants.SSH_MSG_KEXDH_INIT) {
-            throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED, 
-                                   "Protocol error: expected packet " + SshConstants.SSH_MSG_KEXDH_INIT + ", got " + cmd);
+            throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
+                    "Protocol error: expected packet " + SshConstants.SSH_MSG_KEXDH_INIT + ", got " + cmd);
         }
         log.debug("Received SSH_MSG_KEXDH_INIT");
         e = buffer.getMPIntAsBytes();
         dh.setF(e);
-        K = dh.getK();
+        k = dh.getK();
 
-        byte[] K_S;
+        byte[] k_s;
         KeyPair kp = ValidateUtils.checkNotNull(session.getHostKey(), "No server key pair available");
         String algo = session.getNegotiatedKexParameter(KexProposalOption.SERVERKEYS);
         FactoryManager manager = session.getFactoryManager();
@@ -103,29 +102,29 @@ public class DHGServer extends AbstractDHServerKeyExchange {
 
         buffer = new ByteArrayBuffer();
         buffer.putRawPublicKey(kp.getPublic());
-        K_S = buffer.getCompactData();
+        k_s = buffer.getCompactData();
 
         buffer.clear();
-        buffer.putBytes(V_C);
-        buffer.putBytes(V_S);
-        buffer.putBytes(I_C);
-        buffer.putBytes(I_S);
-        buffer.putBytes(K_S);
+        buffer.putBytes(v_c);
+        buffer.putBytes(v_s);
+        buffer.putBytes(i_c);
+        buffer.putBytes(i_s);
+        buffer.putBytes(k_s);
         buffer.putMPInt(e);
         buffer.putMPInt(f);
-        buffer.putMPInt(K);
+        buffer.putMPInt(k);
         hash.update(buffer.array(), 0, buffer.available());
-        H = hash.digest();
+        h = hash.digest();
 
         byte[] sigH;
         buffer.clear();
-        sig.update(H, 0, H.length);
+        sig.update(h, 0, h.length);
         buffer.putString(algo);
         buffer.putBytes(sig.sign());
         sigH = buffer.getCompactData();
 
         if (log.isDebugEnabled()) {
-            log.debug("K_S:  {}", BufferUtils.printHex(K_S));
+            log.debug("K_S:  {}", BufferUtils.printHex(k_s));
             log.debug("f:    {}", BufferUtils.printHex(f));
             log.debug("sigH: {}", BufferUtils.printHex(sigH));
         }
@@ -136,7 +135,7 @@ public class DHGServer extends AbstractDHServerKeyExchange {
         buffer.rpos(5);
         buffer.wpos(5);
         buffer.putByte(SshConstants.SSH_MSG_KEXDH_REPLY);
-        buffer.putBytes(K_S);
+        buffer.putBytes(k_s);
         buffer.putBytes(f);
         buffer.putBytes(sigH);
         session.writePacket(buffer);

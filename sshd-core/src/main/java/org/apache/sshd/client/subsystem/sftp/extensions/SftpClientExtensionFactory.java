@@ -31,5 +31,6 @@ import org.apache.sshd.common.NamedResource;
 public interface SftpClientExtensionFactory extends NamedResource {
     // TODO make this a default method for JDK-8
     SftpClientExtension create(SftpClient client, RawSftpClient raw);
-    SftpClientExtension create(SftpClient client, RawSftpClient raw, Map<String,byte[]> extensions, Map<String,?> parsed);
+
+    SftpClientExtension create(SftpClient client, RawSftpClient raw, Map<String, byte[]> extensions, Map<String, ?> parsed);
 }

@@ -33,7 +33,7 @@ public class ValidateUtilsTest extends BaseTestSupport {
         super();
     }
 
-    @Test(expected=IllegalArgumentException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void checkNotNull() {
         ValidateUtils.checkNotNull(getClass(), getCurrentTestName());
         ValidateUtils.checkNotNull(null, getCurrentTestName());

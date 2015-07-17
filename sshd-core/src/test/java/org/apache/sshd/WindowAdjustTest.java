@@ -56,7 +56,7 @@ import org.junit.runners.MethodSorters;
 /**
  * This test simulates heavy traffic coming from the server towards the client making sure the traffic does not get stuck.
  * Especially if the server receives window adjust message while it tries to transfer all the data.
- *
+ * <p/>
  * AsyncInPendingWrapper in this test serves as a handler for WritePendingException, which can occur when sending too many messages one after another.
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
@@ -94,21 +94,21 @@ public class WindowAdjustTest {
         }
     }
 
-    @Test(timeout=60*1000L)
+    @Test(timeout = 60 * 1000L)
     public void testTrafficHeavyLoad() throws Exception {
-        
-        try(SshClient client = SshClient.setUpDefaultClient()) {
+
+        try (SshClient client = SshClient.setUpDefaultClient()) {
             client.start();
-    
-            try(final ClientSession session = client.connect("admin", "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+
+            try (final ClientSession session = client.connect("admin", "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
                 session.addPasswordIdentity("admin");
                 session.auth().verify();
-        
-                try(final ClientChannel channel = session.createShellChannel()) {
+
+                try (final ClientChannel channel = session.createShellChannel()) {
                     channel.setOut(new VerifyingOutputStream(channel, END_FILE));
                     channel.setErr(new NoCloseOutputStream(System.err));
                     channel.open();
-            
+
                     channel.waitFor(ClientChannel.CLOSED, 0);
                 }
                 session.close(true);
@@ -133,7 +133,7 @@ public class WindowAdjustTest {
 
         @Override
         public void write(int b) throws IOException {
-            if(String.valueOf((char)b).equals(endFile)) {
+            if (String.valueOf((char) b).equals(endFile)) {
                 channel.close(true);
             }
         }
@@ -248,14 +248,14 @@ public class WindowAdjustTest {
                     @SuppressWarnings("synthetic-access")
                     @Override
                     public void operationComplete(final IoWriteFuture future) {
-                        if(wasPending) {
+                        if (wasPending) {
                             pending.remove();
                         }
                         writePendingIfAny();
                     }
                 });
             } catch (final WritePendingException e) {
-                if(!wasPending){
+                if (!wasPending) {
                     queueRequest(msg);
                 }
             }
@@ -267,7 +267,7 @@ public class WindowAdjustTest {
             }
 
             final Buffer msg = pending.peek();
-            writeWithPendingDetection( msg, true);
+            writeWithPendingDetection(msg, true);
         }
 
         private void queueRequest(final Buffer msg) {

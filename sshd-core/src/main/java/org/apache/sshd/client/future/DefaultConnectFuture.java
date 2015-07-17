@@ -25,7 +25,6 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.future.DefaultSshFuture;
 import org.apache.sshd.common.io.IoSession;
-import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
@@ -42,7 +41,7 @@ public class DefaultConnectFuture extends DefaultSshFuture<ConnectFuture> implem
     public ConnectFuture verify(long count, TimeUnit unit) throws IOException {
         return verify(unit.toMillis(count));
     }
-    
+
     @Override   // TODO in JDK-8 make this a default method
     public ConnectFuture verify(long timeout) throws IOException {
         long startTime = System.nanoTime();

@@ -33,7 +33,8 @@ import org.apache.sshd.common.util.ValidateUtils;
 public class BaseDigest implements Digest {
 
     private final String algorithm;
-    private final int bsize, h;
+    private final int bsize;
+    private final int h;
     private final String s;
     private MessageDigest md;
 
@@ -43,7 +44,7 @@ public class BaseDigest implements Digest {
      * object will be done in the {@link #init()} method.
      *
      * @param algorithm the JCE algorithm to use for this digest
-     * @param bsize the block size of this digest
+     * @param bsize     the block size of this digest
      */
     public BaseDigest(String algorithm, int bsize) {
         this.algorithm = ValidateUtils.checkNotNullAndNotEmpty(algorithm, "No algorithm");
@@ -91,18 +92,20 @@ public class BaseDigest implements Digest {
     @Override
     public int compareTo(Digest that) {
         if (that == null) {
-            return (-1);    // push null(s) to end
+            return -1;    // push null(s) to end
         } else if (this == that) {
             return 0;
         }
 
-        String thisAlg = getAlgorithm(), thatAlg = that.getAlgorithm();
+        String thisAlg = getAlgorithm();
+        String thatAlg = that.getAlgorithm();
         int nRes = GenericUtils.safeCompare(thisAlg, thatAlg, false);
         if (nRes != 0) {
             return nRes;    // debug breakpoint
         }
-        
-        if ((nRes = Integer.compare(this.getBlockSize(), that.getBlockSize())) != 0) {
+
+        nRes = Integer.compare(this.getBlockSize(), that.getBlockSize());
+        if (nRes != 0) {
             return nRes;    // debug breakpoint
         }
 
@@ -120,13 +123,9 @@ public class BaseDigest implements Digest {
         if (getClass() != obj.getClass()) {
             return false;
         }
-        
+
         int nRes = compareTo((Digest) obj);
-        if (nRes == 0) {
-            return true;
-        } else {
-            return false;
-        }
+        return nRes == 0;
     }
 
     @Override

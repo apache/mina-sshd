@@ -63,7 +63,7 @@ public class AgentServer extends AbstractLoggingBean implements Closeable, Execu
     public AgentServer(SshAgent agent, ExecutorService executor, boolean shutdownOnExit) {
         this.agent = agent;
         this.service = (executor == null) ? ThreadUtils.newSingleThreadExecutor("AgentServer[" + agent + "]") : executor;
-        this.shutdownExecutor = (service == executor) ?  shutdownOnExit : true;
+        this.shutdownExecutor = (service == executor) ? shutdownOnExit : true;
     }
 
     public SshAgent getAgent() {
@@ -93,23 +93,23 @@ public class AgentServer extends AbstractLoggingBean implements Closeable, Execu
         if (result != Status.APR_SUCCESS) {
             throwException(result);
         }
-        
+
         ExecutorService executor = getExecutorService();
         agentThread = executor.submit(new Runnable() {
-                @SuppressWarnings("synthetic-access")
-                @Override
-                public void run() {
-                    try {
-                        while (true) {
-                            long clientSock = Local.accept(handle);
-                            Socket.timeoutSet(clientSock, 10000000);    // TODO make this configurable
-                            new SshAgentSession(clientSock, agent).run();
-                        }
-                    } catch (Exception e) {
-                        log.error("Failed to run session", e);
+            @SuppressWarnings("synthetic-access")
+            @Override
+            public void run() {
+                try {
+                    while (true) {
+                        long clientSock = Local.accept(handle);
+                        Socket.timeoutSet(clientSock, 10000000);    // TODO make this configurable
+                        new SshAgentSession(clientSock, agent).run();
                     }
+                } catch (Exception e) {
+                    log.error("Failed to run session", e);
                 }
-            });
+            }
+        });
         return authSocket;
     }
 
@@ -118,12 +118,12 @@ public class AgentServer extends AbstractLoggingBean implements Closeable, Execu
         IOException err = null;
         try {
             agent.close();
-        } catch(IOException e) {
+        } catch (IOException e) {
             err = e;
         }
 
         Socket.close(handle);
-        
+
         try {
             if ((agentThread != null) && (!agentThread.isDone())) {
                 agentThread.cancel(true);
@@ -131,7 +131,7 @@ public class AgentServer extends AbstractLoggingBean implements Closeable, Execu
         } finally {
             agentThread = null;
         }
-        
+
         ExecutorService executor = getExecutorService();
         if ((executor != null) && isShutdownOnExit() && (!executor.isShutdown())) {
             Collection<?> runners = executor.shutdownNow();
@@ -139,7 +139,7 @@ public class AgentServer extends AbstractLoggingBean implements Closeable, Execu
                 log.debug("Shut down runners count=" + GenericUtils.size(runners));
             }
         }
-        
+
         if (err != null) {
             throw err;
         }
@@ -162,7 +162,7 @@ public class AgentServer extends AbstractLoggingBean implements Closeable, Execu
                 while (true) {
                     int result = Socket.recv(socket, buf, 0, buf.length);
                     if (result == -Status.APR_EOF) {
-                        break;    
+                        break;
                     } else if (result < Status.APR_SUCCESS) {
                         throwException(result);
                     }
@@ -188,13 +188,14 @@ public class AgentServer extends AbstractLoggingBean implements Closeable, Execu
 
     /**
      * transform an APR error number in a more fancy exception
+     *
      * @param code APR error code
      * @throws java.io.IOException the produced exception for the given APR error number
      */
     private static void throwException(int code) throws IOException {
         throw new IOException(
-                org.apache.tomcat.jni.Error.strerror(-code) +
-                " (code: " + code + ")");
+                org.apache.tomcat.jni.Error.strerror(-code)
+                        + " (code: " + code + ")");
     }
 
 }

@@ -88,16 +88,16 @@ public class BuiltinIdentitiesTest extends BaseTestSupport {
             if (!Modifier.isStatic(mods)) {
                 continue;
             }
-            
+
             if (!Modifier.isFinal(mods)) {
                 continue;
             }
-            
+
             Class<?> type = f.getType();
             if (!String.class.isAssignableFrom(type)) {
                 continue;
             }
-            
+
             String name = f.getName(), value = (String) f.get(null);
             BuiltinIdentities id = BuiltinIdentities.fromName(value);
             assertNotNull("No match found for field " + name + "=" + value, id);

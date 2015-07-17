@@ -45,7 +45,6 @@ import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.SessionTimeoutListener;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.CloseableUtils;
-import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.forward.ForwardingFilter;
@@ -57,7 +56,7 @@ import org.apache.sshd.server.forward.ForwardingFilter;
  */
 public abstract class AbstractFactoryManager extends CloseableUtils.AbstractInnerCloseable implements FactoryManager {
 
-    protected Map<String,Object> properties = new HashMap<String,Object>();
+    protected Map<String, Object> properties = new HashMap<String, Object>();
     protected IoServiceFactoryFactory ioServiceFactoryFactory;
     protected IoServiceFactory ioServiceFactory;
     protected List<NamedFactory<KeyExchange>> keyExchangeFactories;
@@ -188,7 +187,7 @@ public abstract class AbstractFactoryManager extends CloseableUtils.AbstractInne
     }
 
     public int getNioWorkers() {
-        int nb=FactoryManagerUtils.getIntProperty(this, NIO_WORKERS, DEFAULT_NIO_WORKERS);
+        int nb = FactoryManagerUtils.getIntProperty(this, NIO_WORKERS, DEFAULT_NIO_WORKERS);
         if (nb > 0) {
             return nb;
         } else {    // it may have been configured to a negative value
@@ -303,7 +302,7 @@ public abstract class AbstractFactoryManager extends CloseableUtils.AbstractInne
         }
         sessionTimeoutListener = null;
     }
-    
+
     protected void checkConfig() {
         ValidateUtils.checkNotNullAndNotEmpty(getKeyExchangeFactories(), "KeyExchangeFactories not set");
 

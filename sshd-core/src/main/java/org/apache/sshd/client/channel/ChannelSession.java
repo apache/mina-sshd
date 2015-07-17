@@ -38,6 +38,7 @@ import org.apache.sshd.common.util.threads.ThreadUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ChannelSession extends AbstractClientChannel {
+
     private ExecutorService pumperService;
     private Future<?> pumper;
     private boolean shutdownPumper;
@@ -81,22 +82,24 @@ public class ChannelSession extends AbstractClientChannel {
             if (in != null) {
                 // allocate a temporary executor service if none provided
                 ExecutorService service = getExecutorService();
-                if ((pumperService = service) == null) {
+                if (service == null) {
                     pumperService = ThreadUtils.newSingleThreadExecutor("ClientInputStreamPump[" + this.toString() + "]");
+                } else {
+                    pumperService = service;
                 }
-                
+
                 // shutdown the temporary executor service if had to create it
-                shutdownPumper = (pumperService == service) ? isShutdownOnExit() : true;
+                shutdownPumper = (pumperService != service) || isShutdownOnExit();
 
                 // Interrupt does not really work and the thread will only exit when
                 // the call to read() will return.  So ensure this thread is a daemon
                 // to avoid blocking the whole app
                 pumper = pumperService.submit(new Runnable() {
-                        @Override
-                        public void run() {
-                            pumpInputStream();
-                        }
-                    });
+                    @Override
+                    public void run() {
+                        pumpInputStream();
+                    }
+                });
             }
         }
     }
@@ -108,9 +111,9 @@ public class ChannelSession extends AbstractClientChannel {
                 if (!pumper.isDone()) {
                     pumper.cancel(true);
                 }
-                
+
                 pumperService.shutdownNow();
-            } catch(Exception e) {
+            } catch (Exception e) {
                 // we log it as DEBUG since it is relatively harmless
                 if (log.isDebugEnabled()) {
                     log.debug("Failed (" + e.getClass().getSimpleName() + ") to shutdown stream pumper: " + e.getMessage());

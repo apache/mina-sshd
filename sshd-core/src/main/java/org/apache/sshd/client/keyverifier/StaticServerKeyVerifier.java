@@ -29,10 +29,11 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
  * Returns the same constant answer {@code true/false} regardless
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class StaticServerKeyVerifier extends AbstractLoggingBean implements ServerKeyVerifier {
-    private final boolean   acceptance;
+    private final boolean acceptance;
 
     protected StaticServerKeyVerifier(boolean acceptance) {
         this.acceptance = acceptance;
@@ -46,12 +47,12 @@ public abstract class StaticServerKeyVerifier extends AbstractLoggingBean implem
     public final boolean verifyServerKey(ClientSession sshClientSession, SocketAddress remoteAddress, PublicKey serverKey) {
         if (isAccepted()) {
             log.warn("Server at {} presented unverified {} key: {}",
-                     new Object[] { remoteAddress, (serverKey == null) ? null : serverKey.getAlgorithm(), KeyUtils.getFingerPrint(serverKey) });
+                    new Object[]{remoteAddress, (serverKey == null) ? null : serverKey.getAlgorithm(), KeyUtils.getFingerPrint(serverKey)});
             return true;
         } else {
             if (log.isDebugEnabled()) {
                 log.debug("Reject server {} unverified {} key: {}",
-                          new Object[] { remoteAddress, (serverKey == null) ? null : serverKey.getAlgorithm(), KeyUtils.getFingerPrint(serverKey) });
+                        new Object[]{remoteAddress, (serverKey == null) ? null : serverKey.getAlgorithm(), KeyUtils.getFingerPrint(serverKey)});
             }
 
             return false;

@@ -35,25 +35,28 @@ public class VersionsParser extends AbstractParser<Versions> {
     /**
      * The &quot;versions&quot; extension data as per
      * <A HREF="http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt">DRAFT 09 Section 4.6</A>
+     *
      * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
      */
     public static class Versions {
         public static final char SEP = ',';
 
+        // CHECKSTYLE:OFF
         public Collection<String> versions;
+        // CHECKSTYLE:ON
 
         @Override
         public String toString() {
             return GenericUtils.join(versions, ',');
         }
     }
-    
+
     public static final VersionsParser INSTANCE = new VersionsParser();
 
     public VersionsParser() {
         super(SftpConstants.EXT_VERSIONS);
     }
-    
+
     @Override
     public Versions parse(byte[] input, int offset, int len) {
         return parse(new String(input, offset, len, StandardCharsets.UTF_8));
@@ -63,8 +66,8 @@ public class VersionsParser extends AbstractParser<Versions> {
         String[] comps = GenericUtils.split(value, Versions.SEP);
         Versions v = new Versions();
         v.versions = GenericUtils.isEmpty(comps)
-                    ? Collections.<String>emptyList()
-                    : Arrays.asList(comps);
+                ? Collections.<String>emptyList()
+                : Arrays.asList(comps);
         return v;
     }
 }

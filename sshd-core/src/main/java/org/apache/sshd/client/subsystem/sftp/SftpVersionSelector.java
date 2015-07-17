@@ -25,21 +25,23 @@ import java.util.List;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface SftpVersionSelector {
-    /**
-     * @param current The current version negotiated with the server
-     * @param available Extra versions available - may be empty and/or contain
-     * only the current one
-     * @return The new requested version - if same as current, then nothing is done
-     */
-    int selectVersion(int current, List<Integer> available);
-    
+
     /**
      * An {@link SftpVersionSelector} that returns the current version
      */
     SftpVersionSelector CURRENT = new SftpVersionSelector() {
-            @Override
-            public int selectVersion(int current, List<Integer> available) {
-                return current;
-            }
-        };
+        @Override
+        public int selectVersion(int current, List<Integer> available) {
+            return current;
+        }
+    };
+
+    /**
+     * @param current   The current version negotiated with the server
+     * @param available Extra versions available - may be empty and/or contain
+     *                  only the current one
+     * @return The new requested version - if same as current, then nothing is done
+     */
+    int selectVersion(int current, List<Integer> available);
+
 }

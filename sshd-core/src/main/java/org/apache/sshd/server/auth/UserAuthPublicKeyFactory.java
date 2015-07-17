@@ -34,6 +34,7 @@ public class UserAuthPublicKeyFactory implements UserAuthFactory {
     public String getName() {
         return NAME;
     }
+
     @Override
     public UserAuth create() {
         return new UserAuthPublicKey();

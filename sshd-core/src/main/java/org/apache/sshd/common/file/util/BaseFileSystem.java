@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -75,7 +75,7 @@ public abstract class BaseFileSystem<T extends Path> extends FileSystem {
         if (!GenericUtils.isEmpty(first)) {
             appendDedupSep(sb, first.replace('\\', '/'));   // in case we are running on Windows
         }
-        
+
         if (GenericUtils.length(more) > 0) {
             for (String segment : more) {
                 if ((sb.length() > 0) && (sb.charAt(sb.length() - 1) != '/')) {
@@ -90,13 +90,14 @@ public abstract class BaseFileSystem<T extends Path> extends FileSystem {
             sb.setLength(sb.length() - 1);
         }
 
-        String path = sb.toString(), root = null;
+        String path = sb.toString();
+        String root = null;
         if (path.startsWith("/")) {
             root = "/";
             path = path.substring(1);
         }
 
-        String[] names=GenericUtils.split(path, '/');
+        String[] names = GenericUtils.split(path, '/');
         return create(root, names);
     }
 
@@ -128,7 +129,7 @@ public abstract class BaseFileSystem<T extends Path> extends FileSystem {
                 break;
             default:
                 throw new UnsupportedOperationException("Unsupported path matcher syntax: \'" + syntax + "\'");
-            }
+        }
         final Pattern regex = Pattern.compile(expr);
         return new PathMatcher() {
             @Override
@@ -148,81 +149,72 @@ public abstract class BaseFileSystem<T extends Path> extends FileSystem {
         for (int i = 0; i < arr.length; i++) {
             char ch = arr[i];
             switch (ch) {
-            case '\\':
-                if (++i >= arr.length) {
-                    sb.append('\\');
-                } else {
-                    char next = arr[i];
-                    switch (next) {
-                    case ',':
-                        // escape not needed
-                        break;
-                    case 'Q':
-                    case 'E':
-                        // extra escape needed
+                case '\\':
+                    if (++i >= arr.length) {
                         sb.append('\\');
-                    default:
+                    } else {
+                        char next = arr[i];
+                        switch (next) {
+                            case ',':
+                                // escape not needed
+                                break;
+                            case 'Q':
+                            case 'E':
+                                // extra escape needed
+                                sb.append("\\\\");
+                                break;
+                            default:
+                                sb.append('\\');
+                                break;
+                        }
+                        sb.append(next);
+                    }
+                    break;
+                case '*':
+                    sb.append(inClass == 0 ? ".*" : "*");
+                    break;
+                case '?':
+                    sb.append(inClass == 0 ? '.' : '?');
+                    break;
+                case '[':
+                    inClass++;
+                    firstIndexInClass = i + 1;
+                    sb.append('[');
+                    break;
+                case ']':
+                    inClass--;
+                    sb.append(']');
+                    break;
+                case '.':
+                case '(':
+                case ')':
+                case '+':
+                case '|':
+                case '^':
+                case '$':
+                case '@':
+                case '%':
+                    if (inClass == 0 || (firstIndexInClass == i && ch == '^')) {
                         sb.append('\\');
                     }
-                    sb.append(next);
-                }
-                break;
-            case '*':
-                if (inClass == 0)
-                    sb.append(".*");
-                else
-                    sb.append('*');
-                break;
-            case '?':
-                if (inClass == 0)
-                    sb.append('.');
-                else
-                    sb.append('?');
-                break;
-            case '[':
-                inClass++;
-                firstIndexInClass = i+1;
-                sb.append('[');
-                break;
-            case ']':
-                inClass--;
-                sb.append(']');
-                break;
-            case '.':
-            case '(':
-            case ')':
-            case '+':
-            case '|':
-            case '^':
-            case '$':
-            case '@':
-            case '%':
-                if (inClass == 0 || (firstIndexInClass == i && ch == '^'))
-                    sb.append('\\');
-                sb.append(ch);
-                break;
-            case '!':
-                if (firstIndexInClass == i)
-                    sb.append('^');
-                else
-                    sb.append('!');
-                break;
-            case '{':
-                inGroup++;
-                sb.append('(');
-                break;
-            case '}':
-                inGroup--;
-                sb.append(')');
-                break;
-            case ',':
-                if (inGroup > 0)
-                    sb.append('|');
-                else
-                    sb.append(',');
-                break;
-            default:
-                sb.append(ch);
+                    sb.append(ch);
+                    break;
+                case '!':
+                    sb.append(firstIndexInClass == i ? '^' : '!');
+                    break;
+                case '{':
+                    inGroup++;
+                    sb.append('(');
+                    break;
+                case '}':
+                    inGroup--;
+                    sb.append(')');
+                    break;
+                case ',':
+                    sb.append(inGroup > 0 ? '|' : ',');
+                    break;
+                default:
+                    sb.append(ch);
             }
         }
         return sb.toString();

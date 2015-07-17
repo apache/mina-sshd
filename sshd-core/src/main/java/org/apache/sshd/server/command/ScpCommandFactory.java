@@ -35,9 +35,8 @@ import org.apache.sshd.server.CommandFactory;
  * or can be used to augment another <code>CommandFactory</code> and provides
  * <code>SCP</code> support.
  *
- * @see ScpCommand
- *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @see ScpCommand
  */
 public class ScpCommandFactory implements CommandFactory, Cloneable, ExecutorServiceConfigurer {
     /**
@@ -144,8 +143,8 @@ public class ScpCommandFactory implements CommandFactory, Cloneable, ExecutorSer
     }
 
     /**
-     * @param shutdown  If {@code true} the {@link ExecutorService#shutdownNow()}
-     *                  will be called when command terminates - unless it is the ad-hoc
+     * @param shutdown If {@code true} the {@link ExecutorService#shutdownNow()}
+     *                 will be called when command terminates - unless it is the ad-hoc
      *                 service, which will be shutdown regardless
      */
     @Override
@@ -158,13 +157,15 @@ public class ScpCommandFactory implements CommandFactory, Cloneable, ExecutorSer
     }
 
     /**
-     * @param sendSize  Size (in bytes) of buffer to use when sending files
+     * @param sendSize Size (in bytes) of buffer to use when sending files
      * @see ScpHelper#MIN_SEND_BUFFER_SIZE
      */
     public void setSendBufferSize(int sendSize) {
-        if ((sendBufferSize = sendSize) < ScpHelper.MIN_SEND_BUFFER_SIZE) {
-            throw new IllegalArgumentException("<ScpCommandFactory>() send buffer size (" + sendSize + ") below minimum required (" + ScpHelper.MIN_SEND_BUFFER_SIZE + ")");
+        if (sendSize < ScpHelper.MIN_SEND_BUFFER_SIZE) {
+            throw new IllegalArgumentException("<ScpCommandFactory>() send buffer size "
+                    + "(" + sendSize + ") below minimum required (" + ScpHelper.MIN_SEND_BUFFER_SIZE + ")");
         }
+        sendBufferSize = sendSize;
     }
 
     public int getReceiveBufferSize() {
@@ -172,13 +173,15 @@ public class ScpCommandFactory implements CommandFactory, Cloneable, ExecutorSer
     }
 
     /**
-     * @param receiveSize   Size (in bytes) of buffer to use when receiving files
+     * @param receiveSize Size (in bytes) of buffer to use when receiving files
      * @see ScpHelper#MIN_RECEIVE_BUFFER_SIZE
      */
     public void setReceiveBufferSize(int receiveSize) {
-        if ((receiveBufferSize = receiveSize) < ScpHelper.MIN_RECEIVE_BUFFER_SIZE) {
-            throw new IllegalArgumentException("<ScpCommandFactory>() receive buffer size (" + receiveSize + ") below minimum required (" + ScpHelper.MIN_RECEIVE_BUFFER_SIZE + ")");
+        if (receiveSize < ScpHelper.MIN_RECEIVE_BUFFER_SIZE) {
+            throw new IllegalArgumentException("<ScpCommandFactory>() receive buffer size "
+                    + "(" + receiveSize + ") below minimum required (" + ScpHelper.MIN_RECEIVE_BUFFER_SIZE + ")");
         }
+        receiveBufferSize = receiveSize;
     }
 
     /**
@@ -214,10 +217,10 @@ public class ScpCommandFactory implements CommandFactory, Cloneable, ExecutorSer
      * correct. If parsing fails the responsibility is delegated to
      * the configured {@link CommandFactory} instance; if one exist.
      *
-     * @param command command to parse 
+     * @param command command to parse
      * @return configured {@link Command} instance
      * @throws IllegalArgumentException if not an SCP command and no
-     *         delegate command factory is available
+     *                                  delegate command factory is available
      * @see ScpHelper#SCP_COMMAND_PREFIX
      */
     @Override
@@ -240,12 +243,11 @@ public class ScpCommandFactory implements CommandFactory, Cloneable, ExecutorSer
             ScpCommandFactory other = getClass().cast(super.clone());
             // clone the listeners set as well
             other.listeners = this.listeners.isEmpty()
-                            ? new CopyOnWriteArraySet<ScpTransferEventListener>()
-                            : new CopyOnWriteArraySet<>(this.listeners)
-                            ;
+                    ? new CopyOnWriteArraySet<ScpTransferEventListener>()
+                    : new CopyOnWriteArraySet<>(this.listeners);
             other.listenerProxy = EventListenerUtils.proxyWrapper(ScpTransferEventListener.class, getClass().getClassLoader(), other.listeners);
             return other;
-        } catch(CloneNotSupportedException e) {
+        } catch (CloneNotSupportedException e) {
             throw new RuntimeException(e);    // un-expected...
         }
     }

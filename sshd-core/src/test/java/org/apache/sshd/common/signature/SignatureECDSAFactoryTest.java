@@ -37,6 +37,7 @@ import org.junit.runners.Parameterized.Parameters;
 
 /**
  * Makes sure that all the available {@link Signature} implementations are tested
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
@@ -48,13 +49,13 @@ public class SignatureECDSAFactoryTest extends AbstractSignatureFactoryTestSuppo
                             BuiltinSignatures.nistp256,
                             BuiltinSignatures.nistp384,
                             BuiltinSignatures.nistp521
-                        ));
+                    ));
 
     @Parameters(name = "keySize={0}")
     public static Collection<Object[]> parameters() {
         return parameterize(ECCurves.VALUES);
     }
-    
+
     public SignatureECDSAFactoryTest(ECCurves curve) {
         super(curve.getName(), curve.getKeySize());
     }

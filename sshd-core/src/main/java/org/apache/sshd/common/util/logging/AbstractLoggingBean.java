@@ -26,21 +26,23 @@ import org.slf4j.LoggerFactory;
  * Serves as a common base class for the vast majority of classes that require
  * some kind of logging. Facilitates quick and easy replacement of the actual used
  * logger from one framework to another
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractLoggingBean {
     protected final Logger log;
-    
+
     /**
      * Default constructor - creates a logger using the full class name
      */
     protected AbstractLoggingBean() {
         log = LoggerFactory.getLogger(getClass());
     }
-    
+
     /**
      * Create a logger for instances of the same class for which we might
      * want to have a &quot;discriminator&quot; for them
+     *
      * @param discriminator The discriminator value
      */
     protected AbstractLoggingBean(String discriminator) {

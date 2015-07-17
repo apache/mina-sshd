@@ -18,8 +18,6 @@
  */
 package org.apache.sshd.client.subsystem.sftp;
 
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FX_LOCK_CONFLICT;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
@@ -46,9 +44,18 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FX_LOCK_CONFLICT;
+
 public class SftpFileChannel extends FileChannel {
     public static final String COPY_BUFSIZE_PROP = "sftp-channel-copy-buf-size";
-        public static final int DEFAULT_TRANSFER_BUFFER_SIZE = IoUtils.DEFAULT_COPY_SIZE;
+    public static final int DEFAULT_TRANSFER_BUFFER_SIZE = IoUtils.DEFAULT_COPY_SIZE;
+
+    public static final Set<SftpClient.OpenMode> READ_MODES =
+            Collections.unmodifiableSet(EnumSet.of(SftpClient.OpenMode.Read));
+
+    public static final Set<SftpClient.OpenMode> WRITE_MODES =
+            Collections.unmodifiableSet(
+                    EnumSet.of(SftpClient.OpenMode.Write, SftpClient.OpenMode.Append, SftpClient.OpenMode.Create, SftpClient.OpenMode.Truncate));
 
     private final SftpPath p;
     private final Collection<SftpClient.OpenMode> modes;
@@ -61,8 +68,8 @@ public class SftpFileChannel extends FileChannel {
     public SftpFileChannel(SftpPath p, Collection<SftpClient.OpenMode> modes) throws IOException {
         this.p = ValidateUtils.checkNotNull(p, "No target path");
         this.modes = ValidateUtils.checkNotNull(modes, "No channel modes specified");
-        
-        SftpFileSystem  fs=p.getFileSystem();
+
+        SftpFileSystem fs = p.getFileSystem();
         sftp = fs.getClient();
         handle = sftp.open(p.toString(), modes);
     }
@@ -85,9 +92,6 @@ public class SftpFileChannel extends FileChannel {
         List<ByteBuffer> buffers = Arrays.asList(dsts).subList(offset, offset + length);
         return doRead(buffers, -1);
     }
-
-    public static final Set<SftpClient.OpenMode> READ_MODES=
-            Collections.unmodifiableSet(EnumSet.of(SftpClient.OpenMode.Read));
 
     protected long doRead(List<ByteBuffer> buffers, long position) throws IOException {
         ensureOpen(READ_MODES);
@@ -124,9 +128,9 @@ public class SftpFileChannel extends FileChannel {
                 if (totalRead > 0) {
                     return totalRead;
                 }
-                
+
                 if (eof) {
-                    return (-1);
+                    return -1;
                 } else {
                     return 0;
                 }
@@ -157,10 +161,6 @@ public class SftpFileChannel extends FileChannel {
         List<ByteBuffer> buffers = Arrays.asList(srcs).subList(offset, offset + length);
         return doWrite(buffers, -1);
     }
-
-    public static final Set<SftpClient.OpenMode> WRITE_MODES=
-            Collections.unmodifiableSet(
-                EnumSet.of(SftpClient.OpenMode.Write, SftpClient.OpenMode.Append, SftpClient.OpenMode.Create, SftpClient.OpenMode.Truncate));
 
     protected long doWrite(List<ByteBuffer> buffers, long position) throws IOException {
         ensureOpen(WRITE_MODES);
@@ -280,9 +280,9 @@ public class SftpFileChannel extends FileChannel {
         boolean completed = false;
         long curPos = (position >= 0L) ? position : posTracker.get();
         long totalRead = 0L;
-        byte[] buffer = new byte[(int) Math.min(copySize,count)];
+        byte[] buffer = new byte[(int) Math.min(copySize, count)];
 
-        synchronized(lock) {
+        synchronized (lock) {
             try {
                 beginBlocking();
 
@@ -375,22 +375,23 @@ public class SftpFileChannel extends FileChannel {
     /**
      * Checks that the channel is open and that its current mode contains
      * at least one of the required ones
+     *
      * @param reqModes The required modes - ignored if {@code null}/empty
      * @throws IOException If channel not open or the required modes are not
-     * satisfied
+     *                     satisfied
      */
     private void ensureOpen(Collection<SftpClient.OpenMode> reqModes) throws IOException {
         if (!isOpen()) {
             throw new ClosedChannelException();
         }
-        
+
         if (GenericUtils.size(reqModes) > 0) {
             for (SftpClient.OpenMode m : reqModes) {
                 if (this.modes.contains(m)) {
                     return;
                 }
             }
-            
+
             throw new IOException("ensureOpen(" + p + ") current channel modes (" + this.modes + ") do contain any of the required: " + reqModes);
         }
     }

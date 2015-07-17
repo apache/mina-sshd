@@ -25,9 +25,9 @@ package org.apache.sshd.client.keyverifier;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public final class AcceptAllServerKeyVerifier extends StaticServerKeyVerifier {
-	public static final AcceptAllServerKeyVerifier INSTANCE = new AcceptAllServerKeyVerifier();
+    public static final AcceptAllServerKeyVerifier INSTANCE = new AcceptAllServerKeyVerifier();
 
-	private AcceptAllServerKeyVerifier() {
-	    super(true);
-	}
+    private AcceptAllServerKeyVerifier() {
+        super(true);
+    }
 }

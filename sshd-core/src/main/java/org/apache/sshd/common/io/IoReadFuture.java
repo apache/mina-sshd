@@ -27,10 +27,13 @@ import org.apache.sshd.common.util.buffer.Buffer;
 public interface IoReadFuture extends SshFuture<IoReadFuture> {
     /**
      * Wait and verify that the read succeeded.
+     *
      * @throws IOException if the action failed for any reason
      */
     void verify() throws IOException;
+
     void verify(long timeout, TimeUnit unit) throws IOException;
+
     void verify(long timeoutMillis) throws IOException;
 
     Buffer getBuffer();

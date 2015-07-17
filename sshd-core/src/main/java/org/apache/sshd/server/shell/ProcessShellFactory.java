@@ -45,16 +45,16 @@ import org.apache.sshd.server.Command;
  */
 public class ProcessShellFactory extends AbstractLoggingBean implements Factory<Command> {
 
-    public static enum TtyOptions {
+    public enum TtyOptions {
         Echo,
         INlCr,
         ICrNl,
         ONlCr,
         OCrNl;
-        
-        
+
         public static final Set<TtyOptions> LINUX_OPTIONS =
                 Collections.unmodifiableSet(EnumSet.of(TtyOptions.ONlCr));
+
         public static final Set<TtyOptions> WINDOWS_OPTIONS =
                 Collections.unmodifiableSet(EnumSet.of(TtyOptions.Echo, TtyOptions.ICrNl, TtyOptions.ONlCr));
 
@@ -113,7 +113,7 @@ public class ProcessShellFactory extends AbstractLoggingBean implements Factory<
 
         @SuppressWarnings("synthetic-access")
         @Override
-        public void start(Map<String,String> env) throws IOException {
+        public void start(Map<String, String> env) throws IOException {
             String[] cmds = new String[command.length];
             for (int i = 0; i < cmds.length; i++) {
                 if ("$USER".equals(command[i])) {
@@ -125,7 +125,7 @@ public class ProcessShellFactory extends AbstractLoggingBean implements Factory<
             ProcessBuilder builder = new ProcessBuilder(cmds);
             if (GenericUtils.size(env) > 0) {
                 try {
-                    Map<String,String> procEnv = builder.environment();
+                    Map<String, String> procEnv = builder.environment();
                     procEnv.putAll(env);
                 } catch (Exception e) {
                     log.warn("Could not set environment for command=" + GenericUtils.join(cmds, ' '), e);
@@ -187,20 +187,25 @@ public class ProcessShellFactory extends AbstractLoggingBean implements Factory<
         protected class TtyFilterInputStream extends FilterInputStream {
             private Buffer buffer;
             private int lastChar;
+
             public TtyFilterInputStream(InputStream in) {
                 super(in);
                 buffer = new ByteArrayBuffer(32);
             }
+
             synchronized void write(int c) {
                 buffer.putByte((byte) c);
             }
+
             synchronized void write(byte[] buf, int off, int len) {
                 buffer.putBytes(buf, off, len);
             }
+
             @Override
             public int available() throws IOException {
                 return super.available() + buffer.available();
             }
+
             @SuppressWarnings("synthetic-access")
             @Override
             public synchronized int read() throws IOException {
@@ -223,6 +228,7 @@ public class ProcessShellFactory extends AbstractLoggingBean implements Factory<
                 lastChar = c;
                 return c;
             }
+
             @Override
             public synchronized int read(byte[] b, int off, int len) throws IOException {
                 if (buffer.available() == 0) {
@@ -239,10 +245,12 @@ public class ProcessShellFactory extends AbstractLoggingBean implements Factory<
 
         protected class TtyFilterOutputStream extends FilterOutputStream {
             private TtyFilterInputStream echo;
+
             public TtyFilterOutputStream(OutputStream out, TtyFilterInputStream echo) {
                 super(out);
                 this.echo = echo;
             }
+
             @SuppressWarnings("synthetic-access")
             @Override
             public void write(int c) throws IOException {
@@ -256,6 +264,7 @@ public class ProcessShellFactory extends AbstractLoggingBean implements Factory<
                     echo.write(c);
                 }
             }
+
             @Override
             public void write(byte[] b, int off, int len) throws IOException {
                 for (int i = off; i < len; i++) {

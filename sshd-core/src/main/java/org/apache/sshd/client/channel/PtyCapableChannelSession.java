@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.PtyMode;
 import org.apache.sshd.common.channel.SttySupport;
@@ -39,33 +40,34 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
  * ignored).</P>
  * <P>A typical code snippet would be:</P>
  * <CODE><PRE>
- *      client = SshClient.setUpDefaultClient();
- *      client.start();
- *
- *      try(ClientSession s = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
- *          s.addPasswordIdentity(getCurrentTestName());
- *          s.auth().verify(5L, TimeUnit.SECONDS);
- *
- *          try(ChannelExec shell = s.createExecChannel("my super duper command")) {
- *              shell.setEnv("var1", "val1");
- *              shell.setEnv("var2", "val2");
- *              ...etc...
- *              shell.setPtyType(...);
- *              shell.setPtyLines(...);
- *              ...etc...
- *
- *              shell.open().verify(5L, TimeUnit.SECONDS);
- *              shell.waitFor(ClientChannel.CLOSED, TimeUnit.SECONDS.toMillis(17L));    // can use zero for infinite wait
- *               
- *              Integer status = shell.getExitStatus();
- *              if (status.intValue() != 0) {
- *                  ...error...
- *              }
- *          }
- *      } finally {
- *          client.stop();
- *      }
+ * client = SshClient.setUpDefaultClient();
+ * client.start();
+ * <p/>
+ * try(ClientSession s = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+ * s.addPasswordIdentity(getCurrentTestName());
+ * s.auth().verify(5L, TimeUnit.SECONDS);
+ * <p/>
+ * try(ChannelExec shell = s.createExecChannel("my super duper command")) {
+ * shell.setEnv("var1", "val1");
+ * shell.setEnv("var2", "val2");
+ * ...etc...
+ * shell.setPtyType(...);
+ * shell.setPtyLines(...);
+ * ...etc...
+ * <p/>
+ * shell.open().verify(5L, TimeUnit.SECONDS);
+ * shell.waitFor(ClientChannel.CLOSED, TimeUnit.SECONDS.toMillis(17L));    // can use zero for infinite wait
+ * <p/>
+ * Integer status = shell.getExitStatus();
+ * if (status.intValue() != 0) {
+ * ...error...
+ * }
+ * }
+ * } finally {
+ * client.stop();
+ * }
  * </PRE></CODE>
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class PtyCapableChannelSession extends ChannelSession {
@@ -207,8 +209,8 @@ public class PtyCapableChannelSession extends ChannelSession {
         if (usePty) {
             if (log.isDebugEnabled()) {
                 log.debug("Send SSH_MSG_CHANNEL_REQUEST pty-req: type={}, cols={}, lines={}, height={}, width={}, modes={}",
-                          ptyType, ptyColumns, ptyLines,
-                          ptyHeight, ptyWidth, ptyModes);
+                        ptyType, ptyColumns, ptyLines,
+                        ptyHeight, ptyWidth, ptyModes);
             }
 
             buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST);
@@ -222,13 +224,13 @@ public class PtyCapableChannelSession extends ChannelSession {
             buffer.putInt(ptyWidth);
 
             Buffer modes = new ByteArrayBuffer(GenericUtils.size(ptyModes) * (1 + (Integer.SIZE / Byte.SIZE)) + Byte.SIZE);
-            for (Map.Entry<PtyMode,? extends Number> modeEntry : ptyModes.entrySet()) {
+            for (Map.Entry<PtyMode, ? extends Number> modeEntry : ptyModes.entrySet()) {
                 PtyMode mode = modeEntry.getKey();
                 Number value = modeEntry.getValue();
                 modes.putByte((byte) mode.toInt());
                 modes.putInt(value.longValue());
             }
-            modes.putByte(PtyMode.TTY_OP_END);    
+            modes.putByte(PtyMode.TTY_OP_END);
             buffer.putBytes(modes.getCompactData());
             writePacket(buffer);
         }

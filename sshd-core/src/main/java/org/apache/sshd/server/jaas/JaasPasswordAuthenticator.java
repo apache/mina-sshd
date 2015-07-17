@@ -19,7 +19,6 @@
 package org.apache.sshd.server.jaas;
 
 import java.io.IOException;
-
 import javax.security.auth.Subject;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
@@ -44,7 +43,7 @@ public class JaasPasswordAuthenticator extends AbstractLoggingBean implements Pa
     public JaasPasswordAuthenticator() {
         this(null);
     }
-    
+
     public JaasPasswordAuthenticator(String domain) {
         this.domain = domain;
     }
@@ -59,9 +58,9 @@ public class JaasPasswordAuthenticator extends AbstractLoggingBean implements Pa
 
     @Override
     public boolean authenticate(String username, String password, ServerSession session) {
-    	return authenticate(username, password);
+        return authenticate(username, password);
     }
-    
+
     public boolean authenticate(final String username, final String password) {
         try {
             Subject subject = new Subject();

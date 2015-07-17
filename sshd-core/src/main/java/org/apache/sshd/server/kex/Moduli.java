@@ -31,7 +31,7 @@ import java.util.List;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class Moduli {
+public final class Moduli {
 
     public static final int MODULI_TYPE_SAFE = 2;
     public static final int MODULI_TESTS_COMPOSITE = 0x01;
@@ -40,6 +40,10 @@ public class Moduli {
         int size;
         BigInteger g;
         BigInteger p;
+    }
+
+    // Private constructor
+    private Moduli() {
     }
 
     public static List<DhGroup> parseModuli(URL url) throws IOException {
@@ -79,10 +83,6 @@ public class Moduli {
             }
             return groups;
         }
-    }
-
-    // Private constructor
-    private Moduli() {
     }
 
 }

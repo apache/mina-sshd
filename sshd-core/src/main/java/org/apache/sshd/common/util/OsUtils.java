@@ -24,24 +24,30 @@ package org.apache.sshd.common.util;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public final class OsUtils {
-    private static final boolean win32;
+
+    private static final boolean WIN32;
+
+    private OsUtils() {
+        throw new UnsupportedOperationException("No instance allowed");
+    }
 
     static {
         String os = System.getProperty("os.name").toLowerCase();
-        win32 = os.contains("windows");
+        WIN32 = os.contains("windows");
     }
 
-    /** @return true if the host is a UNIX system (and not Windows). */
+    /**
+     * @return true if the host is a UNIX system (and not Windows).
+     */
     public static boolean isUNIX() {
-        return !win32;
+        return !WIN32;
     }
 
-    /** @return true if the host is Windows (and not UNIX). */
+    /**
+     * @return true if the host is Windows (and not UNIX).
+     */
     public static boolean isWin32() {
-        return win32;
+        return WIN32;
     }
 
-    private OsUtils () {
-        throw new UnsupportedOperationException("No instance allowed");
-    }
 }

@@ -29,6 +29,7 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 /**
  * Parses the &quot;supported&quot; extension as defined in
  * <A HREF="http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-05.txt">DRAFT 05 - section 4.4</A>
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class SupportedParser extends AbstractParser<Supported> {
@@ -37,22 +38,23 @@ public class SupportedParser extends AbstractParser<Supported> {
      * @see <A HREF="http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-05.txt">DRAFT 05 - section 4.4</A>
      */
     public static class Supported {
+        // CHECKSTYLE:OFF
         public int supportedAttributeMask;
         public int supportedAttributeBits;
         public int supportedOpenFlags;
         public int supportedAccessMask;
         public int maxReadSize;
         public Collection<String> extensionNames;
-        
+        // CHECKSTYLE:ON
+
         @Override
         public String toString() {
             return "attrsMask=0x" + Integer.toHexString(supportedAttributeMask)
-                 + ",attrsBits=0x" + Integer.toHexString(supportedAttributeBits)
-                 + ",openFlags=0x" + Integer.toHexString(supportedOpenFlags)
-                 + ",accessMask=0x" + Integer.toHexString(supportedAccessMask)
-                 + ",maxReadSize=" + maxReadSize
-                 + ",extensions=" + extensionNames
-                 ;
+                    + ",attrsBits=0x" + Integer.toHexString(supportedAttributeBits)
+                    + ",openFlags=0x" + Integer.toHexString(supportedOpenFlags)
+                    + ",accessMask=0x" + Integer.toHexString(supportedAccessMask)
+                    + ",maxReadSize=" + maxReadSize
+                    + ",extensions=" + extensionNames;
         }
     }
 

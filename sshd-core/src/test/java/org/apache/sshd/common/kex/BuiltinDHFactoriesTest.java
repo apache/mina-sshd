@@ -57,30 +57,30 @@ public class BuiltinDHFactoriesTest extends BaseTestSupport {
 
     @Test
     public void testAllConstantsCovered() throws Exception {
-        Set<BuiltinDHFactories> avail=EnumSet.noneOf(BuiltinDHFactories.class);
-        Field[]             fields=BuiltinDHFactories.Constants.class.getFields();
+        Set<BuiltinDHFactories> avail = EnumSet.noneOf(BuiltinDHFactories.class);
+        Field[] fields = BuiltinDHFactories.Constants.class.getFields();
         for (Field f : fields) {
-            String          name=(String) f.get(null);
-            BuiltinDHFactories  value=BuiltinDHFactories.fromFactoryName(name);
+            String name = (String) f.get(null);
+            BuiltinDHFactories value = BuiltinDHFactories.fromFactoryName(name);
             assertNotNull("No match found for " + name, value);
             assertTrue(name + " re-specified", avail.add(value));
         }
-        
+
         assertEquals("Incomplete coverage", BuiltinDHFactories.VALUES, avail);
     }
 
     @Test
     public void testParseDHFactorysList() {
-        List<String>    builtin=NamedResource.Utils.getNameList(BuiltinDHFactories.VALUES);
-        List<String>    unknown=Arrays.asList(getClass().getPackage().getName(), getClass().getSimpleName(), getCurrentTestName());
-        Random          rnd=new Random();
-        for (int index=0; index < (builtin.size() + unknown.size()); index++) {
+        List<String> builtin = NamedResource.Utils.getNameList(BuiltinDHFactories.VALUES);
+        List<String> unknown = Arrays.asList(getClass().getPackage().getName(), getClass().getSimpleName(), getCurrentTestName());
+        Random rnd = new Random();
+        for (int index = 0; index < (builtin.size() + unknown.size()); index++) {
             Collections.shuffle(builtin, rnd);
             Collections.shuffle(unknown, rnd);
-            
-            List<String>    weavedList=new ArrayList<String>(builtin.size() + unknown.size());
-            for (int bIndex=0, uIndex=0; (bIndex < builtin.size()) || (uIndex < unknown.size()); ) {
-                boolean useBuiltin=false;
+
+            List<String> weavedList = new ArrayList<String>(builtin.size() + unknown.size());
+            for (int bIndex = 0, uIndex = 0; (bIndex < builtin.size()) || (uIndex < unknown.size()); ) {
+                boolean useBuiltin = false;
                 if (bIndex < builtin.size()) {
                     useBuiltin = (uIndex < unknown.size()) ? rnd.nextBoolean() : true;
                 }
@@ -88,17 +88,17 @@ public class BuiltinDHFactoriesTest extends BaseTestSupport {
                 if (useBuiltin) {
                     weavedList.add(builtin.get(bIndex));
                     bIndex++;
-                } else if (uIndex < unknown.size()){
+                } else if (uIndex < unknown.size()) {
                     weavedList.add(unknown.get(uIndex));
                     uIndex++;
                 }
             }
 
-            String          fullList=GenericUtils.join(weavedList, ',');
-            ParseResult     result=BuiltinDHFactories.parseDHFactoriesList(fullList);
-            List<String>    parsed=NamedResource.Utils.getNameList(result.getParsedFactories());
-            List<String>    missing=result.getUnsupportedFactories();
-            
+            String fullList = GenericUtils.join(weavedList, ',');
+            ParseResult result = BuiltinDHFactories.parseDHFactoriesList(fullList);
+            List<String> parsed = NamedResource.Utils.getNameList(result.getParsedFactories());
+            List<String> missing = result.getUnsupportedFactories();
+
             // makes sure not only that the contents are the same but also the order
             assertListEquals(fullList + "[parsed]", builtin, parsed);
             assertListEquals(fullList + "[unsupported]", unknown, missing);
@@ -108,8 +108,8 @@ public class BuiltinDHFactoriesTest extends BaseTestSupport {
     @Test
     public void testResolveFactoryOnBuiltinValues() {
         for (DHFactory expected : BuiltinDHFactories.VALUES) {
-            String              name=expected.getName();
-            DHFactory   actual=BuiltinDHFactories.resolveFactory(name);
+            String name = expected.getName();
+            DHFactory actual = BuiltinDHFactories.resolveFactory(name);
             assertSame(name, expected, actual);
         }
     }
@@ -120,20 +120,20 @@ public class BuiltinDHFactoriesTest extends BaseTestSupport {
             try {
                 BuiltinDHFactories.registerExtension(expected);
                 fail("Unexpected sucess for " + expected.getName());
-            } catch(IllegalArgumentException e) {
+            } catch (IllegalArgumentException e) {
                 // expected - ignored
             }
         }
     }
 
-    @Test(expected=IllegalArgumentException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testNotAllowedToOverrideRegisteredFactories() {
-        DHFactory    expected=Mockito.mock(DHFactory.class);
+        DHFactory expected = Mockito.mock(DHFactory.class);
         Mockito.when(expected.getName()).thenReturn(getCurrentTestName());
 
-        String  name=expected.getName();
+        String name = expected.getName();
         try {
-            for (int index=1; index <= Byte.SIZE; index++) {
+            for (int index = 1; index <= Byte.SIZE; index++) {
                 BuiltinDHFactories.registerExtension(expected);
                 assertEquals("Unexpected success at attempt #" + index, 1, index);
             }
@@ -144,18 +144,18 @@ public class BuiltinDHFactoriesTest extends BaseTestSupport {
 
     @Test
     public void testResolveFactoryOnRegisteredExtension() {
-        DHFactory    expected=Mockito.mock(DHFactory.class);
+        DHFactory expected = Mockito.mock(DHFactory.class);
         Mockito.when(expected.getName()).thenReturn(getCurrentTestName());
 
-        String  name=expected.getName();
+        String name = expected.getName();
         try {
             assertNull("Extension already registered", BuiltinDHFactories.resolveFactory(name));
             BuiltinDHFactories.registerExtension(expected);
 
-            DHFactory    actual=BuiltinDHFactories.resolveFactory(name);
+            DHFactory actual = BuiltinDHFactories.resolveFactory(name);
             assertSame("Mismatched resolved instance", expected, actual);
         } finally {
-            DHFactory    actual=BuiltinDHFactories.unregisterExtension(name);
+            DHFactory actual = BuiltinDHFactories.unregisterExtension(name);
             assertSame("Mismatched unregistered instance", expected, actual);
             assertNull("Extension not un-registered", BuiltinDHFactories.resolveFactory(name));
         }

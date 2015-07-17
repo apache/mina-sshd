@@ -111,15 +111,17 @@ public class EmbeddedCommandRunner {
                 writer.println(CLIText.get().mostCommonlyUsedCommandsAre);
                 final CommandRef[] common = CommandCatalog.common();
                 int width = 0;
-                for (final CommandRef c : common)
+                for (final CommandRef c : common) {
                     width = Math.max(width, c.getName().length());
+                }
                 width += 2;
 
                 for (final CommandRef c : common) {
                     writer.print(' ');
                     writer.print(c.getName());
-                    for (int i = c.getName().length(); i < width; i++)
+                    for (int i = c.getName().length(); i < width; i++) {
                         writer.print(' ');
+                    }
                     writer.print(CLIText.get().resourceBundle().getString(c.getUsage()));
                     writer.println();
                 }
@@ -153,17 +155,19 @@ public class EmbeddedCommandRunner {
         
         Boolean success = (Boolean) call(cmd, "requiresRepository"); 
         if (success.booleanValue()) {
-            call(cmd, "init", new Class[] { Repository.class, String.class }, new Object[] { openGitDir(gitdir), gitdir });
+            call(cmd, "init", new Class[] {Repository.class, String.class}, new Object[] {openGitDir(gitdir), gitdir});
         } else {
-            call(cmd, "init", new Class[] { Repository.class, String.class }, new Object[] { null, gitdir });
+            call(cmd, "init", new Class[] {Repository.class, String.class}, new Object[] {null, gitdir});
         }
         try {
             cmd.execute(arguments.toArray(new String[arguments.size()]));
         } finally {
-            if (get(cmd, "outw") != null)
+            if (get(cmd, "outw") != null) {
                 ((ThrowingPrintWriter) get(cmd, "outw")).flush();
-            if (get(cmd, "errw") != null)
+            }
+            if (get(cmd, "errw") != null) {
                 ((ThrowingPrintWriter) get(cmd, "errw")).flush();
+            }
         }
     }
 

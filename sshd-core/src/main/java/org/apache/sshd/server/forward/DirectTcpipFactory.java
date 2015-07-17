@@ -24,7 +24,7 @@ import org.apache.sshd.server.forward.TcpipServerChannel.TcpipFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class DirectTcpipFactory extends TcpipFactory {
-    public static final DirectTcpipFactory  INSTANCE = new DirectTcpipFactory();
+    public static final DirectTcpipFactory INSTANCE = new DirectTcpipFactory();
 
     public DirectTcpipFactory() {
         super(ForwardingFilter.Type.Direct);

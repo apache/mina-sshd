@@ -40,7 +40,7 @@ public interface InvertedShell {
      * @param env
      * @throws IOException
      */
-    void start(Map<String,String> env) throws IOException;
+    void start(Map<String, String> env) throws IOException;
 
     /**
      * Returns the output stream used to feed the shell.
@@ -52,18 +52,21 @@ public interface InvertedShell {
 
     /**
      * Return an InputStream representing the output stream of the shell.
+     *
      * @return
      */
     InputStream getOutputStream();
 
     /**
      * Return an InputStream representing the error stream of the shell.
+     *
      * @return
      */
     InputStream getErrorStream();
 
     /**
      * Check if the underlying shell is still alive
+     *
      * @return
      */
     boolean isAlive();

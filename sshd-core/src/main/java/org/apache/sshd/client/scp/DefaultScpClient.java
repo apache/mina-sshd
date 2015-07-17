@@ -38,7 +38,6 @@ import org.apache.sshd.common.scp.ScpHelper;
 import org.apache.sshd.common.scp.ScpSourceStreamResolver;
 import org.apache.sshd.common.scp.ScpTimestamp;
 import org.apache.sshd.common.scp.ScpTransferEventListener;
-import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
@@ -96,10 +95,10 @@ public class DefaultScpClient extends AbstractScpClient {
         try {
             ScpHelper helper = new ScpHelper(channel.getInvertedOut(), channel.getInvertedIn(), fs, listener);
             helper.receive(local,
-                           options.contains(Option.Recursive),
-                           options.contains(Option.TargetIsDirectory),
-                           options.contains(Option.PreserveAttributes),
-                           ScpHelper.DEFAULT_RECEIVE_BUFFER_SIZE);
+                    options.contains(Option.Recursive),
+                    options.contains(Option.TargetIsDirectory),
+                    options.contains(Option.PreserveAttributes),
+                    ScpHelper.DEFAULT_RECEIVE_BUFFER_SIZE);
         } finally {
             channel.close(false);
         }
@@ -109,51 +108,15 @@ public class DefaultScpClient extends AbstractScpClient {
     public void upload(final InputStream local, final String remote, final long size, final Collection<PosixFilePermission> perms, final ScpTimestamp time) throws IOException {
         int namePos = ValidateUtils.checkNotNullAndNotEmpty(remote, "No remote location specified").lastIndexOf('/');
         final String name = (namePos < 0)
-                          ? remote
-                          : ValidateUtils.checkNotNullAndNotEmpty(remote.substring(namePos + 1), "No name value in remote=%s", remote)
-                          ;
+                ? remote
+                : ValidateUtils.checkNotNullAndNotEmpty(remote.substring(namePos + 1), "No name value in remote=%s", remote);
         final String cmd = createSendCommand(remote, (time != null) ? EnumSet.of(Option.PreserveAttributes) : Collections.<Option>emptySet());
         ChannelExec channel = openCommandChannel(clientSession, cmd);
         try {
             ScpHelper helper = new ScpHelper(channel.getInvertedOut(), channel.getInvertedIn(), new MockFileSystem(remote), listener);
             final Path mockPath = new MockPath(remote);
-            helper.sendStream(new ScpSourceStreamResolver() {
-                                    @Override
-                                    public String getFileName() throws IOException {
-                                        return name;
-                                    }
-                    
-                                    @Override
-                                    public Path getEventListenerFilePath() {
-                                        return mockPath;
-                                    }
-                    
-                                    @Override
-                                    public Collection<PosixFilePermission> getPermissions() throws IOException {
-                                        return perms;
-                                    }
-                    
-                                    @Override
-                                    public ScpTimestamp getTimestamp() throws IOException {
-                                        return time;
-                                    }
-                    
-                                    @Override
-                                    public long getSize() throws IOException {
-                                        return size;
-                                    }
-                    
-                                    @Override
-                                    public InputStream resolveSourceStream() throws IOException {
-                                        return local;
-                                    }
-                                    
-                                    @Override
-                                    public String toString() {
-                                        return cmd;
-                                    }
-                              },
-                              (time != null), ScpHelper.DEFAULT_SEND_BUFFER_SIZE);
+            helper.sendStream(new StreamResolver(name, mockPath, perms, time, size, local, cmd),
+                              time != null, ScpHelper.DEFAULT_SEND_BUFFER_SIZE);
         } finally {
             channel.close(false);
         }
@@ -179,12 +142,67 @@ public class DefaultScpClient extends AbstractScpClient {
             } finally {
                 try {
                     fs.close();
-                } catch(UnsupportedOperationException e) {
+                } catch (UnsupportedOperationException e) {
                     // Ignore
                 }
             }
         } finally {
             channel.close(false);
+        }
+    }
+
+    private static class StreamResolver implements ScpSourceStreamResolver {
+        private final String name;
+        private final Path mockPath;
+        private final Collection<PosixFilePermission> perms;
+        private final ScpTimestamp time;
+        private final long size;
+        private final java.io.InputStream local;
+        private final String cmd;
+
+        public StreamResolver(String name, Path mockPath, Collection<PosixFilePermission> perms, ScpTimestamp time, long size, InputStream local, String cmd) {
+            this.name = name;
+            this.mockPath = mockPath;
+            this.perms = perms;
+            this.time = time;
+            this.size = size;
+            this.local = local;
+            this.cmd = cmd;
+        }
+
+        @Override
+        public String getFileName() throws java.io.IOException {
+            return name;
+        }
+
+        @Override
+        public Path getEventListenerFilePath() {
+            return mockPath;
+        }
+
+        @Override
+        public Collection<PosixFilePermission> getPermissions() throws IOException {
+            return perms;
+        }
+
+        @Override
+        public ScpTimestamp getTimestamp() throws IOException {
+            return time;
+        }
+
+        @Override
+        public long getSize() throws IOException {
+            return size;
+        }
+
+        @Override
+        public InputStream resolveSourceStream() throws IOException {
+            return local;
+        }
+
+        @Override
+        public String toString() {
+            return cmd;
         }
     }
 }

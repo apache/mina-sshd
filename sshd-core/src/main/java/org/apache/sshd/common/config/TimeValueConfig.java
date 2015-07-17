@@ -39,7 +39,19 @@ public enum TimeValueConfig {
     DAYS('d', 'D', TimeUnit.DAYS.toMillis(1L)),
     WEEKS('w', 'W', TimeUnit.DAYS.toMillis(7L));
 
-    private final char  loChar, hiChar;
+    public static final Set<TimeValueConfig> VALUES =
+            Collections.unmodifiableSet(EnumSet.allOf(TimeValueConfig.class));
+
+    private final char loChar;
+    private final char hiChar;
+    private final long interval;
+
+    TimeValueConfig(char lo, char hi, long interval) {
+        loChar = lo;
+        hiChar = hi;
+        this.interval = interval;
+    }
+
     public final char getLowerCaseValue() {
         return loChar;
     }
@@ -48,19 +60,9 @@ public enum TimeValueConfig {
         return hiChar;
     }
 
-    private final long  interval;
     public final long getInterval() {
         return interval;
     }
-
-    TimeValueConfig(char lo, char hi, long duration) {
-        loChar = lo;
-        hiChar = hi;
-        interval = duration;
-    }
-
-    public static final Set<TimeValueConfig> VALUES=
-            Collections.unmodifiableSet(EnumSet.allOf(TimeValueConfig.class));
 
     public static TimeValueConfig fromValueChar(char ch) {
         if ((ch <= ' ') || (ch >= 0x7F)) {
@@ -83,26 +85,26 @@ public enum TimeValueConfig {
      * @see #durationOf(Map)
      */
     public static long durationOf(String s) {
-        Map<TimeValueConfig,Long>   spec=parse(s);
+        Map<TimeValueConfig, Long> spec = parse(s);
         return durationOf(spec);
     }
 
     /**
      * @param s An input time specification containing possibly mixed numbers
-     * and units - e.g., {@code 3h10m} to indicate 3 hours and 10 minutes
+     *          and units - e.g., {@code 3h10m} to indicate 3 hours and 10 minutes
      * @return A {@link Map} specifying for each time unit its count
-     * @throws NumberFormatException If bad numbers found - e.g., negative counts
+     * @throws NumberFormatException    If bad numbers found - e.g., negative counts
      * @throws IllegalArgumentException If bad format - e.g., unknown unit
      */
-    public static Map<TimeValueConfig,Long> parse(String s) throws NumberFormatException, IllegalArgumentException {
+    public static Map<TimeValueConfig, Long> parse(String s) throws NumberFormatException, IllegalArgumentException {
         if (GenericUtils.isEmpty(s)) {
             return Collections.emptyMap();
         }
 
-        int lastPos=0;
-        Map<TimeValueConfig,Long>   spec=new EnumMap<TimeValueConfig,Long>(TimeValueConfig.class);
-        for (int curPos=0; curPos < s.length(); curPos++) {
-            char    ch=s.charAt(curPos);
+        int lastPos = 0;
+        Map<TimeValueConfig, Long> spec = new EnumMap<TimeValueConfig, Long>(TimeValueConfig.class);
+        for (int curPos = 0; curPos < s.length(); curPos++) {
+            char ch = s.charAt(curPos);
             if ((ch >= '0') && (ch <= '9')) {
                 continue;
             }
@@ -111,35 +113,36 @@ public enum TimeValueConfig {
                 throw new IllegalArgumentException("parse(" + s + ") missing count value at index=" + curPos);
             }
 
-            TimeValueConfig c=fromValueChar(ch);
+            TimeValueConfig c = fromValueChar(ch);
             if (c == null) {
                 throw new IllegalArgumentException("parse(" + s + ") unknown time value character: " + String.valueOf(ch));
             }
 
-            String  v=s.substring(lastPos, curPos);
-            long    count=Long.parseLong(v);
+            String v = s.substring(lastPos, curPos);
+            long count = Long.parseLong(v);
             if (count < 0L) {
                 throw new IllegalArgumentException("parse(" + s + ") negative count (" + v + ") for " + c.name());
             }
 
-            Long    prev=spec.put(c, count);
+            Long prev = spec.put(c, count);
             if (prev != null) {
                 throw new IllegalArgumentException("parse(" + s + ") " + c.name() + " value re-specified: current=" + count + ", previous=" + prev);
             }
 
-            if ((lastPos=curPos+1) >= s.length()) {
+            lastPos = curPos + 1;
+            if (lastPos >= s.length()) {
                 break;
             }
         }
 
         if (lastPos < s.length()) {
-            String  v=s.substring(lastPos);
-            long    count=Long.parseLong(v);
+            String v = s.substring(lastPos);
+            long count = Long.parseLong(v);
             if (count < 0L) {
                 throw new IllegalArgumentException("parse(" + s + ") negative count (" + v + ") for last component");
             }
 
-            Long    prev=spec.put(SECONDS, count);
+            Long prev = spec.put(SECONDS, count);
             if (prev != null) {
                 throw new IllegalArgumentException("parse(" + s + ") last component (" + SECONDS.name() + ") value re-specified: current=" + count + ", previous=" + prev);
             }
@@ -153,21 +156,21 @@ public enum TimeValueConfig {
      * @return The total duration in milliseconds
      * @throws IllegalArgumentException If negative count for a time unit
      */
-    public static long durationOf(Map<TimeValueConfig,? extends Number> spec) throws IllegalArgumentException {
+    public static long durationOf(Map<TimeValueConfig, ? extends Number> spec) throws IllegalArgumentException {
         if (GenericUtils.isEmpty(spec)) {
-            return (-1L);
+            return -1L;
         }
 
-        long    total=0L;
-        for (Map.Entry<TimeValueConfig,? extends Number> se : spec.entrySet()) {
-            TimeValueConfig v=se.getKey();
-            Number          c=se.getValue();
-            long            factor=c.longValue();
+        long total = 0L;
+        for (Map.Entry<TimeValueConfig, ? extends Number> se : spec.entrySet()) {
+            TimeValueConfig v = se.getKey();
+            Number c = se.getValue();
+            long factor = c.longValue();
             if (factor < 0L) {
                 throw new IllegalArgumentException("valueOf(" + spec + ") bad factor (" + c + ") for " + v.name());
             }
 
-            long    added=v.getInterval() * factor;
+            long added = v.getInterval() * factor;
             total += added;
         }
 

@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -40,13 +40,14 @@ public class NativeFileSystemFactory extends AbstractLoggingBean implements File
     public NativeFileSystemFactory() {
         this(false);
     }
-    
+
     public NativeFileSystemFactory(boolean createHome) {
         this.createHome = createHome;
     }
 
     /**
      * Should the home directories be created automatically
+     *
      * @return true if the file system will create the home directory if not available
      */
     public boolean isCreateHome() {
@@ -55,6 +56,7 @@ public class NativeFileSystemFactory extends AbstractLoggingBean implements File
 
     /**
      * Set if the home directories be created automatically
+     *
      * @param createHome true if the file system will create the home directory if not available
      */
     public void setCreateHome(boolean createHome) {

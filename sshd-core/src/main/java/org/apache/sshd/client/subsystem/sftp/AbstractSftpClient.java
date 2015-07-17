@@ -19,6 +19,34 @@
 
 package org.apache.sshd.client.subsystem.sftp;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.attribute.FileTime;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+
+import org.apache.sshd.client.subsystem.sftp.extensions.BuiltinSftpClientExtensions;
+import org.apache.sshd.client.subsystem.sftp.extensions.SftpClientExtension;
+import org.apache.sshd.client.subsystem.sftp.extensions.SftpClientExtensionFactory;
+import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.subsystem.sftp.SftpConstants;
+import org.apache.sshd.common.subsystem.sftp.extensions.ParserUtils;
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.common.util.io.InputStreamWithChannel;
+import org.apache.sshd.common.util.io.OutputStreamWithChannel;
+import org.apache.sshd.common.util.logging.AbstractLoggingBean;
+
 import static org.apache.sshd.common.subsystem.sftp.SftpConstants.ACE4_APPEND_DATA;
 import static org.apache.sshd.common.subsystem.sftp.SftpConstants.ACE4_READ_ATTRIBUTES;
 import static org.apache.sshd.common.subsystem.sftp.SftpConstants.ACE4_READ_DATA;
@@ -86,44 +114,17 @@ import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IFDIR;
 import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IFLNK;
 import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IFREG;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.file.attribute.FileTime;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-
-import org.apache.sshd.client.subsystem.sftp.extensions.BuiltinSftpClientExtensions;
-import org.apache.sshd.client.subsystem.sftp.extensions.SftpClientExtension;
-import org.apache.sshd.client.subsystem.sftp.extensions.SftpClientExtensionFactory;
-import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.subsystem.sftp.SftpConstants;
-import org.apache.sshd.common.subsystem.sftp.extensions.ParserUtils;
-import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.ValidateUtils;
-import org.apache.sshd.common.util.buffer.Buffer;
-import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
-import org.apache.sshd.common.util.io.InputStreamWithChannel;
-import org.apache.sshd.common.util.io.OutputStreamWithChannel;
-import org.apache.sshd.common.util.logging.AbstractLoggingBean;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractSftpClient extends AbstractLoggingBean implements SftpClient, RawSftpClient {
-    private final AtomicReference<Map<String,Object>> parsedExtensionsHolder = new AtomicReference<Map<String,Object>>(null);
+
+    private final AtomicReference<Map<String, Object>> parsedExtensionsHolder = new AtomicReference<>(null);
 
     protected AbstractSftpClient() {
         super();
     }
-    
+
     @Override
     public String getName() {
         return SftpConstants.SFTP_SUBSYSTEM_NAME;
@@ -133,9 +134,9 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
     public CloseableHandle open(String path) throws IOException {
         return open(path, Collections.<OpenMode>emptySet());
     }
-    
+
     @Override
-    public CloseableHandle open(String path, OpenMode ... options) throws IOException {
+    public CloseableHandle open(String path, OpenMode... options) throws IOException {
         return open(path, GenericUtils.of(options));
     }
 
@@ -143,9 +144,9 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
     public void rename(String oldPath, String newPath) throws IOException {
         rename(oldPath, newPath, Collections.<CopyMode>emptySet());
     }
-    
+
     @Override
-    public void rename(String oldPath, String newPath, CopyMode ... options) throws IOException {
+    public void rename(String oldPath, String newPath, CopyMode... options) throws IOException {
         rename(oldPath, newPath, GenericUtils.of(options));
     }
 
@@ -160,17 +161,17 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
     }
 
     @Override
-    public InputStream read(String path, OpenMode ... mode) throws IOException {
+    public InputStream read(String path, OpenMode... mode) throws IOException {
         return read(path, DEFAULT_READ_BUFFER_SIZE, mode);
     }
 
     @Override
-    public InputStream read(String path, int bufferSize, OpenMode ... mode) throws IOException {
+    public InputStream read(String path, int bufferSize, OpenMode... mode) throws IOException {
         return read(path, bufferSize, GenericUtils.of(mode));
     }
 
     @Override
-    public InputStream read(String path, Collection<OpenMode>  mode) throws IOException {
+    public InputStream read(String path, Collection<OpenMode> mode) throws IOException {
         return read(path, DEFAULT_READ_BUFFER_SIZE, mode);
     }
 
@@ -190,7 +191,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
     }
 
     @Override
-    public OutputStream write(String path, OpenMode ... mode) throws IOException {
+    public OutputStream write(String path, OpenMode... mode) throws IOException {
         return write(path, DEFAULT_WRITE_BUFFER_SIZE, mode);
     }
 
@@ -200,7 +201,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
     }
 
     @Override
-    public OutputStream write(String path, int bufferSize, OpenMode ... mode) throws IOException {
+    public OutputStream write(String path, int bufferSize, OpenMode... mode) throws IOException {
         return write(path, bufferSize, GenericUtils.of(mode));
     }
 
@@ -216,7 +217,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
 
     @Override
     public <E extends SftpClientExtension> E getExtension(Class<? extends E> extensionType) {
-        Object  instance = getExtension(BuiltinSftpClientExtensions.fromType(extensionType));
+        Object instance = getExtension(BuiltinSftpClientExtensions.fromType(extensionType));
         if (instance == null) {
             return null;
         } else {
@@ -228,30 +229,31 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
     public SftpClientExtension getExtension(String extensionName) {
         return getExtension(BuiltinSftpClientExtensions.fromName(extensionName));
     }
-    
+
     protected SftpClientExtension getExtension(SftpClientExtensionFactory factory) {
         if (factory == null) {
             return null;
         }
 
-        Map<String,byte[]> extensions = getServerExtensions();
-        Map<String,Object> parsed = getParsedServerExtensions(extensions);
+        Map<String, byte[]> extensions = getServerExtensions();
+        Map<String, Object> parsed = getParsedServerExtensions(extensions);
         return factory.create(this, this, extensions, parsed);
     }
 
-    protected Map<String,Object> getParsedServerExtensions() {
+    protected Map<String, Object> getParsedServerExtensions() {
         return getParsedServerExtensions(getServerExtensions());
     }
 
-    protected Map<String,Object> getParsedServerExtensions(Map<String,byte[]> extensions) {
-        Map<String,Object> parsed = parsedExtensionsHolder.get();
+    protected Map<String, Object> getParsedServerExtensions(Map<String, byte[]> extensions) {
+        Map<String, Object> parsed = parsedExtensionsHolder.get();
         if (parsed == null) {
-            if ((parsed=ParserUtils.parse(extensions)) == null) {
-                parsed = Collections.<String,Object>emptyMap();
+            parsed = ParserUtils.parse(extensions);
+            if (parsed == null) {
+                parsed = Collections.emptyMap();
             }
             parsedExtensionsHolder.set(parsed);
         }
-        
+
         return parsed;
     }
 
@@ -302,7 +304,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
      */
     protected void checkStatus(int id, int substatus, String msg, String lang) throws IOException {
         if (log.isTraceEnabled()) {
-            log.trace("checkStatus(id=" + id + ") status: " + substatus + " [" + lang + "]" + msg );
+            log.trace("checkStatus(id=" + id + ") status: " + substatus + " [" + lang + "]" + msg);
         }
 
         if (substatus != SSH_FX_OK) {
@@ -410,7 +412,8 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             if (len != 1) {
                 throw new SshException("SFTP error: received " + len + " names instead of 1");
             }
-            String name = buffer.getString(), longName = null;
+            String name = buffer.getString();
+            String longName = null;
             int version = getVersion();
             if (version == SFTP_V3) {
                 longName = buffer.getString();
@@ -474,7 +477,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
                 attrs.flags.add(Attribute.Perms);
                 attrs.perms = buffer.getInt();
             }
-            
+
             // update the permissions according to the type
             switch (attrs.type) {
                 case SSH_FILEXFER_TYPE_REGULAR:
@@ -515,7 +518,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
         long secs = buffer.getLong();
         long millis = secs * 1000;
         if ((flags & SSH_FILEXFER_ATTR_SUBSECOND_TIMES) != 0) {
-            millis += buffer.getInt() / 1000000l;
+            millis += buffer.getInt() / 1000000L;
         }
         return FileTime.from(millis, TimeUnit.MILLISECONDS);
     }
@@ -641,7 +644,8 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
 
         Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE /* some extra fields */);
         buffer.putString(path);
-        int version = getVersion(), mode = 0;
+        int version = getVersion();
+        int mode = 0;
         if (version == SFTP_V3) {
             for (OpenMode m : options) {
                 switch (m) {
@@ -730,7 +734,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
         Buffer buffer = new ByteArrayBuffer(oldPath.length() + newPath.length() + Long.SIZE /* some extra fields */);
         buffer.putString(oldPath);
         buffer.putString(newPath);
-        
+
         int numOptions = GenericUtils.size(options);
         int version = getVersion();
         if (version >= SFTP_V5) {
@@ -751,7 +755,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             buffer.putInt(opts);
         } else if (numOptions > 0) {
             throw new UnsupportedOperationException("rename(" + oldPath + " => " + newPath + ")"
-                                                  + " - copy options can not be used with this SFTP version: " + options);
+                    + " - copy options can not be used with this SFTP version: " + options);
         }
         checkStatus(SSH_FXP_RENAME, buffer);
     }
@@ -809,13 +813,13 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
         // do some bounds checking first
         if ((fileOffset < 0) || (srcOffset < 0) || (len < 0)) {
             throw new IllegalArgumentException("write(" + handle + ") please ensure all parameters "
-                                             + " are non-negative values: file-offset=" + fileOffset
-                                             + ", src-offset=" + srcOffset + ", len=" + len);
+                    + " are non-negative values: file-offset=" + fileOffset
+                    + ", src-offset=" + srcOffset + ", len=" + len);
         }
         if ((srcOffset + len) > src.length) {
             throw new IllegalArgumentException("write(" + handle + ")"
-                                             + " cannot read bytes " + srcOffset + " to " + (srcOffset + len)
-                                             + " when array is only of length " + src.length);
+                    + " cannot read bytes " + srcOffset + " to " + (srcOffset + len)
+                    + " when array is only of length " + src.length);
         }
         if (!isOpen()) {
             throw new IOException("write(" + handle + "/" + fileOffset + ")[" + srcOffset + "/" + len + "] client is closed");
@@ -835,7 +839,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             throw new IOException("mkdir(" + path + ") client is closed");
         }
 
-        Buffer buffer = new ByteArrayBuffer(path.length() +  Long.SIZE /* some extra fields */);
+        Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE /* some extra fields */);
         buffer.putString(path);
         buffer.putInt(0);
 
@@ -853,7 +857,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             throw new IOException("rmdir(" + path + ") client is closed");
         }
 
-        Buffer buffer = new ByteArrayBuffer(path.length() +  Long.SIZE /* some extra fields */);
+        Buffer buffer = new ByteArrayBuffer(path.length() + Long.SIZE /* some extra fields */);
         buffer.putString(path);
         checkStatus(SSH_FXP_RMDIR, buffer);
     }
@@ -1076,79 +1080,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
         if (!isOpen()) {
             throw new IOException("readDir(" + path + ") client is closed");
         }
-
-        return new Iterable<DirEntry>() {
-            @Override
-            public Iterator<DirEntry> iterator() {
-                return new Iterator<DirEntry>() {
-                    private CloseableHandle handle;
-                    private List<DirEntry> entries;
-                    private int index;
-
-                    {
-                        open();
-                        load();
-                    }
-
-                    @Override
-                    public boolean hasNext() {
-                        return (entries != null) && (index < entries.size());
-                    }
-
-                    @Override
-                    public DirEntry next() {
-                        DirEntry entry = entries.get(index++);
-                        if (index >= entries.size()) {
-                            load();
-                        }
-                        return entry;
-                    }
-
-                    @SuppressWarnings("synthetic-access")
-                    private void open() {
-                        try {
-                            handle = openDir(path);
-                            if (log.isDebugEnabled()) {
-                                log.debug("readDir(" + path + ") handle=" + handle);
-                            }
-                        } catch (IOException e) {
-                            if (log.isDebugEnabled()) {
-                                log.debug("readDir(" + path + ") failed (" + e.getClass().getSimpleName() + ") to open dir: " + e.getMessage());
-                            }
-                            throw new RuntimeException(e);
-                        }
-                    }
-
-                    @SuppressWarnings("synthetic-access")
-                    private void load() {
-                        try {
-                            entries = readDir(handle);
-                            index = 0;
-                            if (entries == null) {
-                                handle.close();
-                            }
-                        } catch (IOException e) {
-                            entries = null;
-                            try {
-                                handle.close();
-                            } catch (IOException t) {
-                                if (log.isTraceEnabled()) {
-                                    log.trace(t.getClass().getSimpleName() + " while close handle=" + handle
-                                            + " due to " + e.getClass().getSimpleName() + " [" + e.getMessage() + "]"
-                                            + ": " + t.getMessage());
-                                }
-                            }
-                            throw new RuntimeException(e);
-                        }
-                    }
-
-                    @Override
-                    public void remove() {
-                        throw new UnsupportedOperationException("readDir(" + path + ") Iterator#remove() N/A");
-                    }
-                };
-            }
-        };
+        return new DirEntryIterable(path);
     }
 
     @Override
@@ -1161,72 +1093,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             throw new IOException("read(" + path + ")[" + mode + "] size=" + bufferSize + ": client is closed");
         }
 
-        return new InputStreamWithChannel() {
-            private byte[] bb = new byte[1];
-            private byte[] buffer = new byte[bufferSize];
-            private int index;
-            private int available;
-            private CloseableHandle handle = AbstractSftpClient.this.open(path, mode);
-            private long offset;
-
-            @Override
-            public boolean isOpen() {
-                return (handle != null) && handle.isOpen();
-            }
-
-            @Override
-            public int read() throws IOException {
-                int read = read(bb, 0, 1);
-                if (read > 0) {
-                    return bb[0];
-                }
-
-                return read;
-            }
-
-            @Override
-            public int read(byte[] b, int off, int len) throws IOException {
-                if (!isOpen()) {
-                    throw new IOException("read(" + path + ") stream closed");
-                }
-
-                int idx = off;
-                while (len > 0) {
-                    if (index >= available) {
-                        available = AbstractSftpClient.this.read(handle, offset, buffer, 0, buffer.length);
-                        if (available < 0) {
-                            if (idx == off) {
-                                return -1;
-                            } else {
-                                break;
-                            }
-                        }
-                        offset += available;
-                        index = 0;
-                    }
-                    if (index >= available) {
-                        break;
-                    }
-                    int nb = Math.min(len, available - index);
-                    System.arraycopy(buffer, index, b, idx, nb);
-                    index += nb;
-                    idx += nb;
-                    len -= nb;
-                }
-                return idx - off;
-            }
-
-            @Override
-            public void close() throws IOException {
-                if (isOpen()) {
-                    try {
-                        handle.close();
-                    } finally {
-                        handle = null;
-                    }
-                }
-            }
-        };
+        return new SftpInputStreamWithChannel(bufferSize, path, mode);
     }
 
     @Override
@@ -1239,69 +1106,236 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             throw new IOException("write(" + path + ")[" + mode + "] size=" + bufferSize + ": client is closed");
         }
 
-        return new OutputStreamWithChannel() {
-            private byte[] bb = new byte[1];
-            private byte[] buffer = new byte[bufferSize];
+        return new SftpOutputStreamWithChannel(bufferSize, path, mode);
+    }
+
+    private class DirEntryIterable implements Iterable<DirEntry> {
+
+        private final String path;
+
+        public DirEntryIterable(String path) {
+            this.path = path;
+        }
+
+        @Override
+        public Iterator<DirEntry> iterator() {
+            return new DirEntryIterator();
+        }
+
+        private class DirEntryIterator implements Iterator<DirEntry> {
+            private CloseableHandle handle;
+            private List<DirEntry> entries;
             private int index;
-            private CloseableHandle handle = AbstractSftpClient.this.open(path, mode);
-            private long offset;
 
-            @Override
-            public boolean isOpen() {
-                return (handle != null) && handle.isOpen();
+            public DirEntryIterator() {
+                open();
+                load();
             }
 
             @Override
-            public void write(int b) throws IOException {
-                bb[0] = (byte) b;
-                write(bb, 0, 1);
+            public boolean hasNext() {
+                return (entries != null) && (index < entries.size());
             }
 
             @Override
-            public void write(byte[] b, int off, int len) throws IOException {
-                if (!isOpen()) {
-                    throw new IOException("write(" + path + ")[len=" + len + "] stream is closed");
+            public DirEntry next() {
+                DirEntry entry = entries.get(index++);
+                if (index >= entries.size()) {
+                    load();
                 }
+                return entry;
+            }
 
-                do {
-                    int nb = Math.min(len, buffer.length - index);
-                    System.arraycopy(b, off, buffer, index, nb);
-                    index += nb;
-                    if (index == buffer.length) {
-                        flush();
+            @SuppressWarnings("synthetic-access")
+            private void open() {
+                try {
+                    handle = openDir(path);
+                    if (log.isDebugEnabled()) {
+                        log.debug("readDir(" + path + ") handle=" + handle);
                     }
-                    off += nb;
-                    len -= nb;
-                } while (len > 0);
-            }
-
-            @Override
-            public void flush() throws IOException {
-                if (!isOpen()) {
-                    throw new IOException("flush(" + path + ") stream is closed");
+                } catch (IOException e) {
+                    if (log.isDebugEnabled()) {
+                        log.debug("readDir(" + path + ") failed (" + e.getClass().getSimpleName() + ") to open dir: " + e.getMessage());
+                    }
+                    throw new RuntimeException(e);
                 }
+            }
 
-                AbstractSftpClient.this.write(handle, offset, buffer, 0, index);
-                offset += index;
-                index = 0;
+            @SuppressWarnings("synthetic-access")
+            private void load() {
+                try {
+                    entries = readDir(handle);
+                    index = 0;
+                    if (entries == null) {
+                        handle.close();
+                    }
+                } catch (IOException e) {
+                    entries = null;
+                    try {
+                        handle.close();
+                    } catch (IOException t) {
+                        if (log.isTraceEnabled()) {
+                            log.trace(t.getClass().getSimpleName() + " while close handle=" + handle
+                                    + " due to " + e.getClass().getSimpleName() + " [" + e.getMessage() + "]"
+                                    + ": " + t.getMessage());
+                        }
+                    }
+                    throw new RuntimeException(e);
+                }
             }
 
             @Override
-            public void close() throws IOException {
-                if (isOpen()) {
+            public void remove() {
+                throw new UnsupportedOperationException("readDir(" + path + ") Iterator#remove() N/A");
+            }
+        }
+    }
+
+    private class SftpOutputStreamWithChannel extends OutputStreamWithChannel {
+        private final String path;
+        private byte[] bb;
+        private byte[] buffer;
+        private int index;
+        private CloseableHandle handle;
+        private long offset;
+
+        public SftpOutputStreamWithChannel(int bufferSize, String path, Collection<OpenMode> mode) throws IOException {
+            this.path = path;
+            bb = new byte[1];
+            buffer = new byte[bufferSize];
+            handle = AbstractSftpClient.this.open(path, mode);
+        }
+
+        @Override
+        public boolean isOpen() {
+            return (handle != null) && handle.isOpen();
+        }
+
+        @Override
+        public void write(int b) throws IOException {
+            bb[0] = (byte) b;
+            write(bb, 0, 1);
+        }
+
+        @Override
+        public void write(byte[] b, int off, int len) throws IOException {
+            if (!isOpen()) {
+                throw new IOException("write(" + path + ")[len=" + len + "] stream is closed");
+            }
+
+            do {
+                int nb = Math.min(len, buffer.length - index);
+                System.arraycopy(b, off, buffer, index, nb);
+                index += nb;
+                if (index == buffer.length) {
+                    flush();
+                }
+                off += nb;
+                len -= nb;
+            } while (len > 0);
+        }
+
+        @Override
+        public void flush() throws IOException {
+            if (!isOpen()) {
+                throw new IOException("flush(" + path + ") stream is closed");
+            }
+
+            AbstractSftpClient.this.write(handle, offset, buffer, 0, index);
+            offset += index;
+            index = 0;
+        }
+
+        @Override
+        public void close() throws IOException {
+            if (isOpen()) {
+                try {
                     try {
-                        try {
-                            if (index > 0) {
-                                flush();
-                            }
-                        } finally {
-                            handle.close();
+                        if (index > 0) {
+                            flush();
                         }
                     } finally {
-                        handle = null;
+                        handle.close();
                     }
+                } finally {
+                    handle = null;
                 }
             }
-        };
+        }
+    }
+
+    private class SftpInputStreamWithChannel extends InputStreamWithChannel {
+        private final String path;
+        private byte[] bb;
+        private byte[] buffer;
+        private int index;
+        private int available;
+        private CloseableHandle handle;
+        private long offset;
+
+        public SftpInputStreamWithChannel(int bufferSize, String path, Collection<OpenMode> mode) throws IOException {
+            this.path = path;
+            bb = new byte[1];
+            buffer = new byte[bufferSize];
+            handle = AbstractSftpClient.this.open(path, mode);
+        }
+
+        @Override
+        public boolean isOpen() {
+            return (handle != null) && handle.isOpen();
+        }
+
+        @Override
+        public int read() throws IOException {
+            int read = read(bb, 0, 1);
+            if (read > 0) {
+                return bb[0];
+            }
+
+            return read;
+        }
+
+        @Override
+        public int read(byte[] b, int off, int len) throws IOException {
+            if (!isOpen()) {
+                throw new IOException("read(" + path + ") stream closed");
+            }
+
+            int idx = off;
+            while (len > 0) {
+                if (index >= available) {
+                    available = AbstractSftpClient.this.read(handle, offset, buffer, 0, buffer.length);
+                    if (available < 0) {
+                        if (idx == off) {
+                            return -1;
+                        } else {
+                            break;
+                        }
+                    }
+                    offset += available;
+                    index = 0;
+                }
+                if (index >= available) {
+                    break;
+                }
+                int nb = Math.min(len, available - index);
+                System.arraycopy(buffer, index, b, idx, nb);
+                index += nb;
+                idx += nb;
+                len -= nb;
+            }
+            return idx - off;
+        }
+
+        @Override
+        public void close() throws IOException {
+            if (isOpen()) {
+                try {
+                    handle.close();
+                } finally {
+                    handle = null;
+                }
+            }
+        }
     }
 }

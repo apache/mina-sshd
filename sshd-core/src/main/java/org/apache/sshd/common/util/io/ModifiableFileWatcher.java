@@ -29,21 +29,23 @@ import java.nio.file.attribute.FileTime;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
  * Watches over changes for a file and re-loads them if file has changed - including
  * if file is deleted or (re-)created
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ModifiableFileWatcher extends AbstractLoggingBean {
+
+    protected final LinkOption[] options;
+
     private final Path file;
     private final AtomicBoolean lastExisted = new AtomicBoolean(false);
     private final AtomicLong lastSize = new AtomicLong(Long.MIN_VALUE);
     private final AtomicLong lastModified = new AtomicLong(-1L);
-    protected final LinkOption[] options;
 
     public ModifiableFileWatcher(File file) {
         this(ValidateUtils.checkNotNull(file, "No file to watch").toPath());
@@ -53,19 +55,19 @@ public class ModifiableFileWatcher extends AbstractLoggingBean {
         this(file, IoUtils.getLinkOptions(false));
     }
 
-    public ModifiableFileWatcher(Path file, LinkOption ... options) {
+    public ModifiableFileWatcher(Path file, LinkOption... options) {
         this.file = ValidateUtils.checkNotNull(file, "No path to watch");
         // use a clone to avoid being sensitive to changes in the passed array
         this.options = (options == null) ? IoUtils.EMPTY_LINK_OPTIONS : options.clone();
     }
-    
+
     /**
      * @return The watched {@link Path}
      */
     public final Path getPath() {
         return file;
     }
-    
+
     public final boolean exists() throws IOException {
         return Files.exists(getPath(), options);
     }
@@ -74,7 +76,7 @@ public class ModifiableFileWatcher extends AbstractLoggingBean {
         if (exists()) {
             return Files.size(getPath());
         } else {
-            return (-1L);
+            return -1L;
         }
     }
 
@@ -97,13 +99,13 @@ public class ModifiableFileWatcher extends AbstractLoggingBean {
         if (exists != lastExisted.getAndSet(exists)) {
             return true;
         }
-        
+
         if (!exists) {
             // file did not exist and still does not exist
             resetReloadAttributes();
             return false;
         }
-        
+
         long size = size();
         if (size < 0L) {
             // means file no longer exists
@@ -127,10 +129,10 @@ public class ModifiableFileWatcher extends AbstractLoggingBean {
         if (timestamp != lastModified.getAndSet(timestamp)) {
             return true;
         }
-        
+
         return false;
     }
-    
+
     /**
      * Resets the state attributes used to detect changes to the initial
      * construction values - i.e., file assumed not to exist and no known
@@ -147,6 +149,7 @@ public class ModifiableFileWatcher extends AbstractLoggingBean {
      * e.g., file existence, size and last-modified time once re-loading is
      * successfully completed. If the file does not exist then the attributes
      * are reset to an &quot;unknown&quot; state.
+     *
      * @throws IOException If failed to access the file (if exists)
      * @see #resetReloadAttributes()
      */
@@ -155,7 +158,7 @@ public class ModifiableFileWatcher extends AbstractLoggingBean {
             long size = size();
             FileTime modifiedTime = lastModified();
 
-            if ((size >= 0L) && (modifiedTime != null)) {
+            if (size >= 0L && modifiedTime != null) {
                 lastExisted.set(true);
                 lastSize.set(size);
                 lastModified.set(modifiedTime.toMillis());

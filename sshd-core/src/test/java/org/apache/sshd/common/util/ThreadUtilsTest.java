@@ -40,23 +40,23 @@ public class ThreadUtilsTest extends BaseTestSupport {
 
     @Test
     public void testProtectExecutorServiceShutdown() {
-        for (boolean shutdownOnExit : new boolean[] { true, false }) {
+        for (boolean shutdownOnExit : new boolean[]{true, false}) {
             assertNull("Unexpected instance for shutdown=" + shutdownOnExit, ThreadUtils.protectExecutorServiceShutdown(null, shutdownOnExit));
         }
 
-        ExecutorService service=Executors.newSingleThreadExecutor();
+        ExecutorService service = Executors.newSingleThreadExecutor();
         try {
             assertSame("Unexpected wrapped instance", service, ThreadUtils.protectExecutorServiceShutdown(service, true));
-            
-            ExecutorService wrapped=ThreadUtils.protectExecutorServiceShutdown(service, false);
+
+            ExecutorService wrapped = ThreadUtils.protectExecutorServiceShutdown(service, false);
             try {
                 assertNotSame("No wrapping occurred", service, wrapped);
 
                 wrapped.shutdown();
                 assertTrue("Wrapped service not shutdown", wrapped.isShutdown());
                 assertFalse("Protected service is shutdown", service.isShutdown());
-                
-                Collection<?>   running=wrapped.shutdownNow();
+
+                Collection<?> running = wrapped.shutdownNow();
                 assertTrue("Non-empty runners list", running.isEmpty());
                 assertTrue("Wrapped service not shutdownNow", wrapped.isShutdown());
                 assertFalse("Protected service is shutdownNow", service.isShutdown());

@@ -18,10 +18,6 @@
  */
 package org.apache.sshd.server.jaas;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-
 import javax.security.auth.Subject;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
@@ -32,6 +28,9 @@ import javax.security.auth.login.AppConfigurationEntry;
 import javax.security.auth.login.Configuration;
 import javax.security.auth.login.LoginException;
 import javax.security.auth.spi.LoginModule;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.sshd.util.BaseTestSupport;
 import org.junit.After;
@@ -53,12 +52,13 @@ public class JaasPasswordAuthenticatorTest extends BaseTestSupport {
         Configuration config = new Configuration() {
             @Override
             public AppConfigurationEntry[] getAppConfigurationEntry(String name) {
-                return new AppConfigurationEntry[] {
+                return new AppConfigurationEntry[]{
                         new AppConfigurationEntry(DummyLoginModule.class.getName(),
-                                                  AppConfigurationEntry.LoginModuleControlFlag.REQUIRED,
-                                                  new HashMap<String,Object>())
+                                AppConfigurationEntry.LoginModuleControlFlag.REQUIRED,
+                                new HashMap<String, Object>())
                 };
             }
+
             @Override
             public void refresh() {
                 // ignored

@@ -31,16 +31,16 @@ import org.apache.sshd.common.util.Pair;
  */
 public interface CheckFileHandleExtension extends SftpClientExtension {
     /**
-     * @param handle Remote file {@link Handle} - must be a file and opened for read
-     * @param algorithms Hash algorithms in preferred order
+     * @param handle      Remote file {@link Handle} - must be a file and opened for read
+     * @param algorithms  Hash algorithms in preferred order
      * @param startOffset Start offset of the hash
-     * @param length Length of data to hash - if zero then till EOF
-     * @param blockSize Input block size to calculate individual hashes - if
-     * zero the <U>one</U> hash of <U>all</U> the data
+     * @param length      Length of data to hash - if zero then till EOF
+     * @param blockSize   Input block size to calculate individual hashes - if
+     *                    zero the <U>one</U> hash of <U>all</U> the data
      * @return A {@link Pair} where left=hash algorithm name, right=the calculated
      * hashes.
      * @throws IOException If failed to execute the command
      */
-    Pair<String,Collection<byte[]>> checkFileHandle(Handle handle, Collection<String> algorithms, long startOffset, long length, int blockSize) throws IOException;
+    Pair<String, Collection<byte[]>> checkFileHandle(Handle handle, Collection<String> algorithms, long startOffset, long length, int blockSize) throws IOException;
 
 }

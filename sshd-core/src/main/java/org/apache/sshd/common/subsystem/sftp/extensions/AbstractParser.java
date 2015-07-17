@@ -41,9 +41,9 @@ public abstract class AbstractParser<T> implements ExtensionParser<T> {
     public T transform(byte[] input) {
         return parse(input);
     }
-    
+
     @Override   // TODO in JDK-8 make this a default method
     public T parse(byte[] input) {
         return parse(input, 0, GenericUtils.length(input));
-    }   
+    }
 }

@@ -78,15 +78,15 @@ public class ScpHelper extends AbstractLoggingBean {
     public static final int MIN_RECEIVE_BUFFER_SIZE = MIN_COPY_BUFFER_SIZE;
     public static final int MIN_SEND_BUFFER_SIZE = MIN_COPY_BUFFER_SIZE;
 
-    public static final int S_IRUSR =  0000400;
-    public static final int S_IWUSR =  0000200;
-    public static final int S_IXUSR =  0000100;
-    public static final int S_IRGRP =  0000040;
-    public static final int S_IWGRP =  0000020;
-    public static final int S_IXGRP =  0000010;
-    public static final int S_IROTH =  0000004;
-    public static final int S_IWOTH =  0000002;
-    public static final int S_IXOTH =  0000001;
+    public static final int S_IRUSR = 0000400;
+    public static final int S_IWUSR = 0000200;
+    public static final int S_IXUSR = 0000100;
+    public static final int S_IRGRP = 0000040;
+    public static final int S_IWGRP = 0000020;
+    public static final int S_IXGRP = 0000010;
+    public static final int S_IROTH = 0000004;
+    public static final int S_IWOTH = 0000002;
+    public static final int S_IXOTH = 0000001;
 
     protected final FileSystem fileSystem;
     protected final InputStream in;
@@ -144,7 +144,7 @@ public class ScpHelper extends AbstractLoggingBean {
     public void receive(final Path path, final boolean recursive, boolean shouldBeDir, final boolean preserve, final int bufferSize) throws IOException {
         if (shouldBeDir) {
             LinkOption[] options = IoUtils.getLinkOptions(false);
-            Boolean      status = IoUtils.checkFileExists(path, options);
+            Boolean status = IoUtils.checkFileExists(path, options);
             if (status == null) {
                 throw new SshException("Target directory " + path + " is most like inaccessible");
             }
@@ -180,6 +180,9 @@ public class ScpHelper extends AbstractLoggingBean {
                     return;
                 case 'D':
                     isDir = true;
+                    line = String.valueOf((char) c) + readLine();
+                    log.debug("Received header: " + line);
+                    break;
                 case 'C':
                     line = String.valueOf((char) c) + readLine();
                     log.debug("Received header: " + line);
@@ -207,6 +210,7 @@ public class ScpHelper extends AbstractLoggingBean {
             }
         }
     }
+
     public void receiveDir(String header, Path path, ScpTimestamp time, boolean preserve, int bufferSize) throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("Receiving directory {}", path);
@@ -229,7 +233,7 @@ public class ScpHelper extends AbstractLoggingBean {
             throw new AccessDeniedException("Receive directory existence status cannot be determined: " + path);
         }
 
-        Path file=null;
+        Path file = null;
         if (status && Files.isDirectory(path, options)) {
             String localName = name.replace('/', File.separatorChar);
             file = path.resolve(localName);
@@ -240,7 +244,7 @@ public class ScpHelper extends AbstractLoggingBean {
             if (status == null) {
                 throw new AccessDeniedException("Receive directory parent (" + parent + ") existence status cannot be determined for " + path);
             }
-                
+
             if (status && Files.isDirectory(parent, options)) {
                 file = path;
             }
@@ -268,7 +272,7 @@ public class ScpHelper extends AbstractLoggingBean {
         time = null;
         try {
             listener.startFolderEvent(FileOperation.RECEIVE, path, perms);
-            for (; ; ) {
+            for (;;) {
                 header = readLine();
                 if (log.isDebugEnabled()) {
                     log.debug("Received header: " + header);
@@ -367,8 +371,8 @@ public class ScpHelper extends AbstractLoggingBean {
 
         if (time != null) {
             BasicFileAttributeView view = Files.getFileAttributeView(file, BasicFileAttributeView.class);
-            FileTime lastModified = FileTime.from(time.lastModifiedTime, TimeUnit.MILLISECONDS);
-            FileTime lastAccess = FileTime.from(time.lastAccessTime, TimeUnit.MILLISECONDS);
+            FileTime lastModified = FileTime.from(time.getLastModifiedTime(), TimeUnit.MILLISECONDS);
+            FileTime lastAccess = FileTime.from(time.getLastAccessTime(), TimeUnit.MILLISECONDS);
             if (log.isTraceEnabled()) {
                 log.trace("updateFileProperties(" + file + ") last-modified=" + lastModified + ", last-access=" + lastAccess);
             }
@@ -382,7 +386,7 @@ public class ScpHelper extends AbstractLoggingBean {
 
     public String readLine(boolean canEof) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        for (; ; ) {
+        for (;;) {
             int c = in.read();
             if (c == '\n') {
                 return baos.toString();
@@ -399,8 +403,8 @@ public class ScpHelper extends AbstractLoggingBean {
 
     public void send(Collection<String> paths, boolean recursive, boolean preserve, int bufferSize) throws IOException {
         readAck(false);
-        
-        LinkOption[]    options=IoUtils.getLinkOptions(false);
+
+        LinkOption[] options = IoUtils.getLinkOptions(false);
         for (String pattern : paths) {
             pattern = pattern.replace('/', File.separatorChar);
 
@@ -445,14 +449,14 @@ public class ScpHelper extends AbstractLoggingBean {
 
     public void sendPaths(Collection<? extends Path> paths, boolean recursive, boolean preserve, int bufferSize) throws IOException {
         readAck(false);
-        
-        LinkOption[]    options=IoUtils.getLinkOptions(false);
+
+        LinkOption[] options = IoUtils.getLinkOptions(false);
         for (Path file : paths) {
             send(file, recursive, preserve, bufferSize, options);
         }
     }
 
-    protected void send(Path file, boolean recursive, boolean preserve, int bufferSize, LinkOption ... options) throws IOException {
+    protected void send(Path file, boolean recursive, boolean preserve, int bufferSize, LinkOption... options) throws IOException {
         Boolean status = IoUtils.checkFileExists(file, options);
         if (status == null) {
             throw new AccessDeniedException("Send file existence status cannot be determined: " + file);
@@ -522,8 +526,8 @@ public class ScpHelper extends AbstractLoggingBean {
 
         ScpTimestamp time = resolver.getTimestamp();
         if (preserve && (time != null)) {
-            String cmd = "T" + TimeUnit.MILLISECONDS.toSeconds(time.lastModifiedTime)
-                    + ' ' + '0' + ' ' + TimeUnit.MILLISECONDS.toSeconds(time.lastAccessTime)
+            String cmd = "T" + TimeUnit.MILLISECONDS.toSeconds(time.getLastModifiedTime())
+                    + ' ' + '0' + ' ' + TimeUnit.MILLISECONDS.toSeconds(time.getLastAccessTime())
                     + ' ' + '0' + '\n';
             out.write(cmd.getBytes(StandardCharsets.UTF_8));
             out.flush();
@@ -598,7 +602,7 @@ public class ScpHelper extends AbstractLoggingBean {
         readAck(false);
     }
 
-    public static String getOctalPermissions(Path path, LinkOption ... options) throws IOException {
+    public static String getOctalPermissions(Path path, LinkOption... options) throws IOException {
         return getOctalPermissions(IoUtils.getPermissions(path, options));
     }
 
@@ -689,20 +693,20 @@ public class ScpHelper extends AbstractLoggingBean {
     public int readAck(boolean canEof) throws IOException {
         int c = in.read();
         switch (c) {
-        case -1:
-            if (!canEof) {
-                throw new EOFException("readAck - EOF before ACK");
-            }
-            break;
-        case OK:
-            break;
-        case WARNING:
-            log.warn("Received warning: " + readLine());
-            break;
-        case ERROR:
-            throw new IOException("Received nack: " + readLine());
-        default:
-            break;
+            case -1:
+                if (!canEof) {
+                    throw new EOFException("readAck - EOF before ACK");
+                }
+                break;
+            case OK:
+                break;
+            case WARNING:
+                log.warn("Received warning: " + readLine());
+                break;
+            case ERROR:
+                throw new IOException("Received nack: " + readLine());
+            default:
+                break;
         }
         return c;
     }

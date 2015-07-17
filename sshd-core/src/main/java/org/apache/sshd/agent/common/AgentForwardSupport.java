@@ -65,8 +65,8 @@ public class AgentForwardSupport extends CloseableUtils.AbstractCloseable {
     protected void doCloseImmediately() {
         try {
             close();
-        } catch(IOException e) {
-            throw new RuntimeException("Failed (" + e.getClass().getSimpleName() + ") to close agent: " + e.getMessage(), e); 
+        } catch (IOException e) {
+            throw new RuntimeException("Failed (" + e.getClass().getSimpleName() + ") to close agent: " + e.getMessage(), e);
         }
         super.doCloseImmediately();
     }

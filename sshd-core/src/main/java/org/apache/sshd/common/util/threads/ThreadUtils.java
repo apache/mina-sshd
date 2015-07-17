@@ -38,7 +38,11 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ThreadUtils {
+public final class ThreadUtils {
+
+    private ThreadUtils() {
+        throw new UnsupportedOperationException("No instance");
+    }
 
     /**
      * Wraps an {@link ExecutorService} in such a way as to &quot;protect&quot;
@@ -90,22 +94,23 @@ public class ThreadUtils {
     /**
      * Attempts to find the most suitable {@link ClassLoader} as follows:</BR>
      * <UL>
-     *      <LI>
-     *      Check the {@link Thread#getContextClassLoader()} value
-     *      </LI>
-     *      
-     *      <LI>
-     *      If no thread context class loader then check the anchor
-     *      class (if given) for its class loader
-     *      </LI>
-     *      
-     *      <LI>
-     *      If still no loader available, then use {@link ClassLoader#getSystemClassLoader()}
-     *      </LI>
+     * <LI>
+     * Check the {@link Thread#getContextClassLoader()} value
+     * </LI>
+     * <p/>
+     * <LI>
+     * If no thread context class loader then check the anchor
+     * class (if given) for its class loader
+     * </LI>
+     * <p/>
+     * <LI>
+     * If still no loader available, then use {@link ClassLoader#getSystemClassLoader()}
+     * </LI>
      * </UL>
+     *
      * @param anchor The anchor {@link Class} to use if no current thread
-     * - ignored if {@code null}
-     * context class loader
+     *               - ignored if {@code null}
+     *               context class loader
      * @return The resolver {@link ClassLoader}
      */
     public static ClassLoader resolveDefaultClassLoader(Class<?> anchor) {
@@ -128,18 +133,18 @@ public class ThreadUtils {
 
     public static ExecutorService newFixedThreadPool(String poolName, int nThreads) {
         return new ThreadPoolExecutor(nThreads, nThreads,
-                                      0L, TimeUnit.MILLISECONDS,
-                                      new LinkedBlockingQueue<Runnable>(),
-                                      new SshdThreadFactory(poolName),
-                                      new ThreadPoolExecutor.CallerRunsPolicy());
+                0L, TimeUnit.MILLISECONDS,
+                new LinkedBlockingQueue<Runnable>(),
+                new SshdThreadFactory(poolName),
+                new ThreadPoolExecutor.CallerRunsPolicy());
     }
 
     public static ExecutorService newCachedThreadPool(String poolName) {
         return new ThreadPoolExecutor(0, Integer.MAX_VALUE,
-                                      60L, TimeUnit.SECONDS,
-                                      new SynchronousQueue<Runnable>(),
-                                      new SshdThreadFactory(poolName),
-                                      new ThreadPoolExecutor.CallerRunsPolicy());
+                60L, TimeUnit.SECONDS,
+                new SynchronousQueue<Runnable>(),
+                new SshdThreadFactory(poolName),
+                new ThreadPoolExecutor.CallerRunsPolicy());
     }
 
     public static ScheduledExecutorService newSingleThreadScheduledExecutor(String poolName) {
@@ -176,10 +181,6 @@ public class ThreadUtils {
             return t;
         }
 
-    }
-
-    private ThreadUtils() {
-        // no instance allowe
     }
 
 }

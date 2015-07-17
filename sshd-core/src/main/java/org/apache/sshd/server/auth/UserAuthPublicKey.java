@@ -23,7 +23,6 @@ import java.security.PublicKey;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.signature.Signature;
-import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -62,7 +61,7 @@ public class UserAuthPublicKey extends AbstractUserAuth {
 
         byte[] sig = hasSig ? buffer.getBytes() : null;
 
-        PublickeyAuthenticator authenticator = 
+        PublickeyAuthenticator authenticator =
                 ValidateUtils.checkNotNull(manager.getPublickeyAuthenticator(), "No PublickeyAuthenticator configured");
         if (!authenticator.authenticate(username, key, session)) {
             return Boolean.FALSE;

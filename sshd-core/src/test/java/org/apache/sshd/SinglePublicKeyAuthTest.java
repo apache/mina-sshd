@@ -110,11 +110,11 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
             }
         });
         delegate = auth;
-        
-        try(SshClient client = SshClient.setUpDefaultClient()) {
+
+        try (SshClient client = SshClient.setUpDefaultClient()) {
             client.start();
-            
-            try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+
+            try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
                 session.addPublicKeyIdentity(pairRsaBad);
                 session.addPublicKeyIdentity(pairRsa);
                 session.auth().verify(5L, TimeUnit.SECONDS);
@@ -146,11 +146,11 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
                 return key.equals(pairRsa.getPublic());
             }
         };
-        
-        try(SshClient client = SshClient.setUpDefaultClient()) {
+
+        try (SshClient client = SshClient.setUpDefaultClient()) {
             client.start();
-            
-            try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+
+            try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
                 session.addPublicKeyIdentity(pairRsaBad);
                 session.addPublicKeyIdentity(pairRsa);
                 assertTrue("Failed to authenticate", session.auth().await().isSuccess());
@@ -160,7 +160,7 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
         }
 
         assertEquals("Mismatched attempted keys count", 2, count.size());
-        
+
         String badFingerPrint = KeyUtils.getFingerPrint(pairRsaBad.getPublic());
         Number badIndex = count.get(badFingerPrint);
         assertNotNull("Missing bad RSA key", badIndex);
@@ -176,6 +176,7 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
         public TestCachingPublicKeyAuthenticator(PublickeyAuthenticator authenticator) {
             super(authenticator);
         }
+
         public Map<ServerSession, Map<PublicKey, Boolean>> getCache() {
             return cache;
         }

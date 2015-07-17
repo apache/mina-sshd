@@ -22,9 +22,10 @@ import java.util.Objects;
 
 /**
  * Represents a pair of values
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class Pair<U,V> {
+public class Pair<U, V> {
     private final U first;
     private final V second;
 

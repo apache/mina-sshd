@@ -52,7 +52,7 @@ public class ClientUserAuthService extends CloseableUtils.AbstractCloseable impl
      */
     private final AuthFuture authFuture;
 
-    protected final ClientSessionImpl session;
+    private final ClientSessionImpl session;
 
     private List<Object> identities;
     private String service;
@@ -61,6 +61,8 @@ public class ClientUserAuthService extends CloseableUtils.AbstractCloseable impl
     private List<String> clientMethods;
     private List<String> serverMethods;
     private UserAuth userAuth;
+
+    private int currentMethod;
 
     public ClientUserAuthService(Session s) {
         if (!(s instanceof ClientSessionImpl)) {
@@ -75,7 +77,7 @@ public class ClientUserAuthService extends CloseableUtils.AbstractCloseable impl
         String prefs = FactoryManagerUtils.getString(manager, ClientFactoryManager.PREFERRED_AUTHS);
         if (!GenericUtils.isEmpty(prefs)) {
             for (String pref : prefs.split(",")) {
-                NamedFactory<UserAuth> factory = NamedResource.Utils.findByName(pref, String.CASE_INSENSITIVE_ORDER, authFactories); 
+                NamedFactory<UserAuth> factory = NamedResource.Utils.findByName(pref, String.CASE_INSENSITIVE_ORDER, authFactories);
                 if (factory != null) {
                     clientMethods.add(pref);
                 } else {
@@ -135,10 +137,9 @@ public class ClientUserAuthService extends CloseableUtils.AbstractCloseable impl
         }
     }
 
-    private int currentMethod;
-
     /**
      * execute one step in user authentication.
+     *
      * @param buffer
      * @throws java.io.IOException
      */
@@ -209,7 +210,8 @@ public class ClientUserAuthService extends CloseableUtils.AbstractCloseable impl
                 return;
             }
             String method = clientMethods.get(currentMethod);
-            if ((userAuth = NamedFactory.Utils.create(authFactories, method)) == null) {
+            userAuth = NamedFactory.Utils.create(authFactories, method);
+            if (userAuth == null) {
                 throw new UnsupportedOperationException("Failed to find a user-auth factory for method=" + method);
             }
             userAuth.init(session, service, identities);

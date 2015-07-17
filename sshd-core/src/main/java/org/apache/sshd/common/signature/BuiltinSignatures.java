@@ -43,6 +43,7 @@ import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * Provides easy access to the currently implemented signatures
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public enum BuiltinSignatures implements SignatureFactory {
@@ -63,7 +64,7 @@ public enum BuiltinSignatures implements SignatureFactory {
         public Signature create() {
             return new SignatureECDSA("SHA256withECDSA");
         }
-        
+
         @Override
         public boolean isSupported() {
             return SecurityUtils.isBouncyCastleRegistered() || SecurityUtils.hasEcc();
@@ -74,7 +75,7 @@ public enum BuiltinSignatures implements SignatureFactory {
         public Signature create() {
             return new SignatureECDSA("SHA384withECDSA");
         }
-        
+
         @Override
         public boolean isSupported() {
             return SecurityUtils.isBouncyCastleRegistered() || SecurityUtils.hasEcc();
@@ -85,14 +86,24 @@ public enum BuiltinSignatures implements SignatureFactory {
         public Signature create() {
             return new SignatureECDSA("SHA512withECDSA");
         }
-        
+
         @Override
         public boolean isSupported() {
             return SecurityUtils.isBouncyCastleRegistered() || SecurityUtils.hasEcc();
         }
     };
 
+    public static final Set<BuiltinSignatures> VALUES =
+            Collections.unmodifiableSet(EnumSet.allOf(BuiltinSignatures.class));
+
+    private static final Map<String, SignatureFactory> EXTENSIONS =
+            new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+
     private final String factoryName;
+
+    BuiltinSignatures(String facName) {
+        factoryName = facName;
+    }
 
     public static Signature getByCurveSize(ECParameterSpec params) {
         int curveSize = ECCurves.getCurveSize(params);
@@ -115,35 +126,27 @@ public enum BuiltinSignatures implements SignatureFactory {
         return getName();
     }
 
-    BuiltinSignatures(String facName) {
-        factoryName = facName;
-    }
-
     @Override
     public boolean isSupported() {
         return true;
     }
 
-    public static final Set<BuiltinSignatures> VALUES = 
-            Collections.unmodifiableSet(EnumSet.allOf(BuiltinSignatures.class));
-    private static final Map<String,SignatureFactory>   extensions = 
-            new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-
     /**
      * Registered a {@link NamedFactory} to be available besides the built-in
      * ones when parsing configuration
+     *
      * @param extension The factory to register
      * @throws IllegalArgumentException if factory instance is {@code null},
-     * or overrides a built-in one or overrides another registered factory
-     * with the same name (case <U>insensitive</U>).
+     *                                  or overrides a built-in one or overrides another registered factory
+     *                                  with the same name (case <U>insensitive</U>).
      */
     public static void registerExtension(SignatureFactory extension) {
-        String  name=ValidateUtils.checkNotNull(extension, "No extension provided").getName();
+        String name = ValidateUtils.checkNotNull(extension, "No extension provided").getName();
         ValidateUtils.checkTrue(fromFactoryName(name) == null, "Extension overrides built-in: %s", name);
 
-        synchronized(extensions) {
-            ValidateUtils.checkTrue(!extensions.containsKey(name), "Extension overrides existing: %s", name);
-            extensions.put(name, extension);
+        synchronized (EXTENSIONS) {
+            ValidateUtils.checkTrue(!EXTENSIONS.containsKey(name), "Extension overrides existing: %s", name);
+            EXTENSIONS.put(name, extension);
         }
     }
 
@@ -153,13 +156,14 @@ public enum BuiltinSignatures implements SignatureFactory {
      */
     public static SortedSet<SignatureFactory> getRegisteredExtensions() {
         // TODO for JDK-8 return Collections.emptySortedSet()
-        synchronized(extensions) {
-            return GenericUtils.asSortedSet(NamedResource.BY_NAME_COMPARATOR, extensions.values());
+        synchronized (EXTENSIONS) {
+            return GenericUtils.asSortedSet(NamedResource.BY_NAME_COMPARATOR, EXTENSIONS.values());
         }
     }
 
     /**
      * Unregisters specified extension
+     *
      * @param name The factory name - ignored if {@code null}/empty
      * @return The registered extension - {@code null} if not found
      */
@@ -167,9 +171,9 @@ public enum BuiltinSignatures implements SignatureFactory {
         if (GenericUtils.isEmpty(name)) {
             return null;
         }
-        
-        synchronized(extensions) {
-            return extensions.remove(name);
+
+        synchronized (EXTENSIONS) {
+            return EXTENSIONS.remove(name);
         }
     }
 
@@ -214,10 +218,10 @@ public enum BuiltinSignatures implements SignatureFactory {
     public static BuiltinSignatures fromFactoryName(String name) {
         return NamedResource.Utils.findByName(name, String.CASE_INSENSITIVE_ORDER, VALUES);
     }
-    
+
     /**
      * @param sigs A comma-separated list of signatures' names - ignored
-     * if {@code null}/empty
+     *             if {@code null}/empty
      * @return A {@link ParseResult} of all the {@link NamedFactory} whose
      * name appears in the string and represent a built-in signature. Any
      * unknown name is <U>ignored</I>. The order of the returned result
@@ -229,7 +233,7 @@ public enum BuiltinSignatures implements SignatureFactory {
         return parseSignatureList(GenericUtils.split(sigs, ','));
     }
 
-    public static ParseResult parseSignatureList(String ... sigs) {
+    public static ParseResult parseSignatureList(String... sigs) {
         return parseSignatureList(GenericUtils.isEmpty((Object[]) sigs) ? Collections.<String>emptyList() : Arrays.asList(sigs));
     }
 
@@ -237,11 +241,11 @@ public enum BuiltinSignatures implements SignatureFactory {
         if (GenericUtils.isEmpty(sigs)) {
             return ParseResult.EMPTY;
         }
-        
-        List<SignatureFactory>  factories=new ArrayList<>(sigs.size());
-        List<String>            unknown=Collections.emptyList();
+
+        List<SignatureFactory> factories = new ArrayList<>(sigs.size());
+        List<String> unknown = Collections.emptyList();
         for (String name : sigs) {
-            SignatureFactory s=resolveFactory(name);
+            SignatureFactory s = resolveFactory(name);
             if (s != null) {
                 factories.add(s);
             } else {
@@ -252,37 +256,38 @@ public enum BuiltinSignatures implements SignatureFactory {
                 unknown.add(name);
             }
         }
-        
+
         return new ParseResult(factories, unknown);
     }
 
     /**
      * @param name The factory name
      * @return The factory or {@code null} if it is neither a built-in one
-     * or a registered extension 
+     * or a registered extension
      */
     public static SignatureFactory resolveFactory(String name) {
         if (GenericUtils.isEmpty(name)) {
             return null;
         }
 
-        SignatureFactory  s=fromFactoryName(name);
+        SignatureFactory s = fromFactoryName(name);
         if (s != null) {
             return s;
         }
-        
-        synchronized(extensions) {
-            return extensions.get(name);
+
+        synchronized (EXTENSIONS) {
+            return EXTENSIONS.get(name);
         }
     }
 
     /**
      * Holds the result of the {@link BuiltinSignatures#parseSignatureList(String)}
+     *
      * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
      */
-    public static final class ParseResult extends NamedFactoriesListParseResult<Signature,SignatureFactory> {
-        public static final ParseResult EMPTY=new ParseResult(Collections.<SignatureFactory>emptyList(), Collections.<String>emptyList());
-        
+    public static final class ParseResult extends NamedFactoriesListParseResult<Signature, SignatureFactory> {
+        public static final ParseResult EMPTY = new ParseResult(Collections.<SignatureFactory>emptyList(), Collections.<String>emptyList());
+
         public ParseResult(List<SignatureFactory> parsed, List<String> unsupported) {
             super(parsed, unsupported);
         }

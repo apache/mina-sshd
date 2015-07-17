@@ -153,6 +153,12 @@ public interface FactoryManager {
     String NIO2_READ_BUFFER_SIZE = "nio2-read-buf-size";
 
     /**
+     * The default reported version of {@link #getVersion()} if the built-in
+     * version information cannot be accessed
+     */
+    String DEFAULT_VERSION = "SSHD-UNKNOWN";
+
+    /**
      * <P>A map of properties that can be used to configure the SSH server
      * or client.  This map will never be changed by either the server or
      * client and is not supposed to be changed at runtime (changes are not
@@ -167,21 +173,17 @@ public interface FactoryManager {
      * value is a {@code long} then it will be parsed into one. Also, if
      * the mapped value is an {@code Integer} but a {@code long} is expected,
      * then it will be converted into one.
+     *
      * @return a valid <code>Map</code> containing configuration values, never {@code null}
      */
-    Map<String,Object> getProperties();
-
-    /**
-     * The default reported version of {@link #getVersion()} if the built-in
-     * version information cannot be accessed
-     */
-    String DEFAULT_VERSION = "SSHD-UNKNOWN";
+    Map<String, Object> getProperties();
 
     /**
      * An upper case string identifying the version of the
      * software used on client or server side.
      * This version includes the name of the software and usually
      * looks like: <code>SSHD-1.0</code>
+     *
      * @return the version of the software
      */
     String getVersion();
@@ -279,7 +281,7 @@ public interface FactoryManager {
      * Retrieve the <code>FileSystemFactory</code> to be used to traverse the file system.
      *
      * @return a valid <code>FileSystemFactory</code> object or {@code null} if file based
-     *         interactions are not supported on this server
+     * interactions are not supported on this server
      */
     FileSystemFactory getFileSystemFactory();
 

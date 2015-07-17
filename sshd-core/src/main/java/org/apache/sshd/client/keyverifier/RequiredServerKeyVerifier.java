@@ -32,26 +32,26 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class RequiredServerKeyVerifier extends AbstractLoggingBean implements ServerKeyVerifier {
-	private final PublicKey requiredKey;
+    private final PublicKey requiredKey;
 
-	public RequiredServerKeyVerifier(PublicKey requiredKey) {
-		this.requiredKey = requiredKey;
-	}
+    public RequiredServerKeyVerifier(PublicKey requiredKey) {
+        this.requiredKey = requiredKey;
+    }
 
-	public final PublicKey getRequiredKey() {
-	    return requiredKey;
-	}
+    public final PublicKey getRequiredKey() {
+        return requiredKey;
+    }
 
-	@Override
+    @Override
     public boolean verifyServerKey(ClientSession sshClientSession, SocketAddress remoteAddress, PublicKey serverKey) {
-		if (requiredKey.equals(serverKey)) {
-		    if (log.isDebugEnabled()) {
-		        log.debug("Server at {} presented expected key: {}", remoteAddress, BufferUtils.printHex(serverKey.getEncoded()));
-		    }
-			return true;
-		} else {
+        if (requiredKey.equals(serverKey)) {
+            if (log.isDebugEnabled()) {
+                log.debug("Server at {} presented expected key: {}", remoteAddress, BufferUtils.printHex(serverKey.getEncoded()));
+            }
+            return true;
+        } else {
             log.error("Server at {} presented wrong key: {}", remoteAddress, BufferUtils.printHex(serverKey.getEncoded()));
             return false;
         }
-	}
+    }
 }

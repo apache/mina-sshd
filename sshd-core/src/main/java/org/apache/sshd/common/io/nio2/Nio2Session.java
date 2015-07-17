@@ -47,9 +47,9 @@ public class Nio2Session extends CloseableUtils.AbstractCloseable implements IoS
 
     public static final int DEFAULT_READBUF_SIZE = 32 * 1024;
 
-    private static final AtomicLong sessionIdGenerator = new AtomicLong(100L);
+    private static final AtomicLong SESSION_ID_GENERATOR = new AtomicLong(100L);
 
-    private final long id = sessionIdGenerator.incrementAndGet();
+    private final long id = SESSION_ID_GENERATOR.incrementAndGet();
     private final Nio2Service service;
     private final IoHandler handler;
     private final AsynchronousSocketChannel socket;
@@ -189,22 +189,23 @@ public class Nio2Session extends CloseableUtils.AbstractCloseable implements IoS
     public void startReading(byte[] buf) {
         startReading(buf, 0, buf.length);
     }
-    
+
     public void startReading(byte[] buf, int offset, int len) {
         startReading(ByteBuffer.wrap(buf, offset, len));
     }
 
     public void startReading(final ByteBuffer buffer) {
         doReadCycle(buffer, new Readable() {
-                @Override
-                public int available() {
-                    return buffer.remaining();
-                }
-                @Override
-                public void getRawBytes(byte[] data, int offset, int len) {
-                    buffer.get(data, offset, len);
-                }
-            });
+            @Override
+            public int available() {
+                return buffer.remaining();
+            }
+
+            @Override
+            public void getRawBytes(byte[] data, int offset, int len) {
+                buffer.get(data, offset, len);
+            }
+        });
     }
 
     protected void doReadCycle(final ByteBuffer buffer, final Readable bufReader) {

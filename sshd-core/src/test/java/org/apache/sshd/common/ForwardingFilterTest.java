@@ -41,12 +41,12 @@ public class ForwardingFilterTest extends BaseTestSupport {
 
     @Test
     public void testFromStringForwardingFilterType() {
-        for (String name : new String[] { null, "", getCurrentTestName() }) {
+        for (String name : new String[]{null, "", getCurrentTestName()}) {
             assertNull("Unexpected value for name='" + name + "'", ForwardingFilter.Type.fromString(name));
         }
 
         for (ForwardingFilter.Type expected : ForwardingFilter.Type.VALUES) {
-            for (String name : new String[] { expected.name(), expected.getName() }) {
+            for (String name : new String[]{expected.name(), expected.getName()}) {
                 for (int index = 0; index < name.length(); index++) {
                     ForwardingFilter.Type actual = ForwardingFilter.Type.fromString(name);
                     assertSame("Mismatched instance for name=" + name, expected, actual);
@@ -55,6 +55,7 @@ public class ForwardingFilterTest extends BaseTestSupport {
             }
         }
     }
+
     @Test
     public void testAcceptAllForwardingFilter() {
         testStaticDecisionForwardingFilter(AcceptAllForwardingFilter.INSTANCE, true);
@@ -67,12 +68,12 @@ public class ForwardingFilterTest extends BaseTestSupport {
 
     private static void testStaticDecisionForwardingFilter(StaticDecisionForwardingFilter filter, boolean expected) {
         assertEquals("Mismatched acceptance status", expected, filter.isAccepted());
-        
-        Session session=Mockito.mock(Session.class);
+
+        Session session = Mockito.mock(Session.class);
         assertEquals("Mismatched 'canForwardAgent' result", expected, filter.canForwardAgent(session));
         assertEquals("Mismatched 'canForwardX11' result", expected, filter.canForwardX11(session));
         assertEquals("Mismatched 'canListen' result", expected, filter.canListen(SshdSocketAddress.LOCALHOST_ADDRESS, session));
-        
+
         for (ForwardingFilter.Type t : ForwardingFilter.Type.VALUES) {
             assertEquals("Mismatched 'canConnect(" + t + ")' result", expected, filter.canConnect(t, SshdSocketAddress.LOCALHOST_ADDRESS, session));
         }

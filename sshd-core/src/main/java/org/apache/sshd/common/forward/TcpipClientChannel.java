@@ -63,7 +63,8 @@ public class TcpipClientChannel extends AbstractClientChannel {
 
     @Override
     public synchronized OpenFuture open() throws IOException {
-        final InetSocketAddress src, dst;
+        final InetSocketAddress src;
+        final InetSocketAddress dst;
         switch (typeEnum) {
             case Direct:
                 src = (InetSocketAddress) serverSession.getRemoteAddress();
@@ -100,7 +101,8 @@ public class TcpipClientChannel extends AbstractClientChannel {
         if (streaming == Streaming.Async) {
             throw new IllegalArgumentException("Asynchronous streaming isn't supported yet on this channel");
         }
-        invertedIn = out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA);
+        out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA);
+        invertedIn = out;
     }
 
     @Override

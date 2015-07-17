@@ -63,7 +63,7 @@ public class ClientIdentityTest extends BaseTestSupport {
                 System.out.println("Skip non-existing identity file " + file);
                 continue;
             }
-            
+
             if (!type.isSupported()) {
                 System.out.println("Skip unsupported identity file " + file);
                 continue;
@@ -72,13 +72,13 @@ public class ClientIdentityTest extends BaseTestSupport {
             expected.add(type);
         }
 
-        Map<String,KeyPair> ids = ClientIdentity.loadDefaultIdentities(
+        Map<String, KeyPair> ids = ClientIdentity.loadDefaultIdentities(
                 resFolder,
                 false,   // don't be strict
                 null,    // none of the files is password protected
                 options);
         assertEquals("Mismatched loaded ids count", GenericUtils.size(expected), GenericUtils.size(ids));
-        
+
         Collection<KeyPair> pairs = new ArrayList<KeyPair>(ids.size());
         for (BuiltinIdentities type : BuiltinIdentities.VALUES) {
             if (expected.contains(type)) {
@@ -87,7 +87,7 @@ public class ClientIdentityTest extends BaseTestSupport {
                 pairs.add(kp);
             }
         }
-        
+
         KeyPairProvider provider = IdentityUtils.createKeyPairProvider(ids, true /* supported only */);
         assertNotNull("No provider generated", provider);
 
@@ -95,7 +95,7 @@ public class ClientIdentityTest extends BaseTestSupport {
         for (KeyPair kp : keys) {
             assertTrue("Unexpected loaded key: " + kp, pairs.remove(kp));
         }
-        
+
         assertEquals("Not all pairs listed", 0, pairs.size());
     }
 }

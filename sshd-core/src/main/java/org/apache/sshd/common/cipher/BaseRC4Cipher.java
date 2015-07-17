@@ -27,7 +27,7 @@ import org.apache.sshd.common.util.SecurityUtils;
  */
 public class BaseRC4Cipher extends BaseCipher {
 
-    public static final int	SKIP_SIZE = 1536;
+    public static final int SKIP_SIZE = 1536;
 
     public BaseRC4Cipher(int ivsize, int bsize) {
         super(ivsize, bsize, "ARCFOUR", "RC4");
@@ -38,7 +38,7 @@ public class BaseRC4Cipher extends BaseCipher {
         key = resize(key, bsize);
         try {
             cipher = SecurityUtils.getCipher(transformation);
-            cipher.init((mode == Mode.Encrypt ? javax.crypto.Cipher.ENCRYPT_MODE : javax.crypto.Cipher.DECRYPT_MODE),
+            cipher.init(mode == Mode.Encrypt ? javax.crypto.Cipher.ENCRYPT_MODE : javax.crypto.Cipher.DECRYPT_MODE,
                     new SecretKeySpec(key, algorithm));
 
             byte[] foo = new byte[1];

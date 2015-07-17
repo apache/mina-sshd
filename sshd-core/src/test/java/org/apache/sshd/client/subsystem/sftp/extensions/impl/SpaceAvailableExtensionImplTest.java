@@ -73,29 +73,29 @@ public class SpaceAvailableExtensionImplTest extends AbstractSftpClientTestSuppo
         final String queryPath = Utils.resolveRelativeRemotePath(parentPath, lclSftp);
         final SpaceAvailableExtensionInfo expected = new SpaceAvailableExtensionInfo(store);
         sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(new SftpSubsystemFactory() {
-                @Override
-                public Command create() {
-                    return new SftpSubsystem(getExecutorService(), isShutdownOnExit(), getUnsupportedAttributePolicy()) {
-                        @Override
-                        protected SpaceAvailableExtensionInfo doSpaceAvailable(int id, String path) throws IOException {
-                            if (!queryPath.equals(path)) {
-                                throw new StreamCorruptedException("Mismatched query paths: expected=" + queryPath + ", actual=" + path);
-                            }
-
-                            return expected;
+            @Override
+            public Command create() {
+                return new SftpSubsystem(getExecutorService(), isShutdownOnExit(), getUnsupportedAttributePolicy()) {
+                    @Override
+                    protected SpaceAvailableExtensionInfo doSpaceAvailable(int id, String path) throws IOException {
+                        if (!queryPath.equals(path)) {
+                            throw new StreamCorruptedException("Mismatched query paths: expected=" + queryPath + ", actual=" + path);
                         }
-                    };
-                }
-            }));
 
-        try(SshClient client = SshClient.setUpDefaultClient()) {
+                        return expected;
+                    }
+                };
+            }
+        }));
+
+        try (SshClient client = SshClient.setUpDefaultClient()) {
             client.start();
-            
+
             try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
                 session.addPasswordIdentity(getCurrentTestName());
                 session.auth().verify(5L, TimeUnit.SECONDS);
-                
-                try(SftpClient sftp = session.createSftpClient()) {
+
+                try (SftpClient sftp = session.createSftpClient()) {
                     SpaceAvailableExtension ext = assertExtensionCreated(sftp, SpaceAvailableExtension.class);
                     SpaceAvailableExtensionInfo actual = ext.available(queryPath);
                     assertEquals("Mismatched information", expected, actual);

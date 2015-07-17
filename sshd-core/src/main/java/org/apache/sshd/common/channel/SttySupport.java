@@ -30,11 +30,15 @@ import java.util.TreeMap;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SttySupport {
+public final class SttySupport {
 
     private static String sttyCommand = System.getProperty("sshd.sttyCommand", "stty");
     private static String ttyProps;
     private static long ttyPropsLastFetched;
+
+    private SttySupport() {
+        throw new UnsupportedOperationException("No instance allowed");
+    }
 
     public static Map<PtyMode, Integer> getUnixPtyModes() throws IOException, InterruptedException {
         return parsePtyModes(getTtyProps());
@@ -121,12 +125,12 @@ public class SttySupport {
     }
 
     /**
-     *  Returns the value of "stty size" width param.
-     *
-     *  <strong>Note</strong>: this method caches the value from the
-     *  first time it is called in order to increase speed, which means
-     *  that changing to size of the terminal will not be reflected
-     *  in the console.
+     * Returns the value of "stty size" width param.
+     * <p/>
+     * <strong>Note</strong>: this method caches the value from the
+     * first time it is called in order to increase speed, which means
+     * that changing to size of the terminal will not be reflected
+     * in the console.
      */
     public static int getTerminalWidth() {
         int val = -1;
@@ -145,12 +149,12 @@ public class SttySupport {
     }
 
     /**
-     *  Returns the value of "stty size" height param.
-     *
-     *  <strong>Note</strong>: this method caches the value from the
-     *  first time it is called in order to increase speed, which means
-     *  that changing to size of the terminal will not be reflected
-     *  in the console.
+     * Returns the value of "stty size" height param.
+     * <p/>
+     * <strong>Note</strong>: this method caches the value from the
+     * first time it is called in order to increase speed, which means
+     * that changing to size of the terminal will not be reflected
+     * in the console.
      */
     public static int getTerminalHeight() {
         int val = -1;
@@ -169,13 +173,12 @@ public class SttySupport {
     }
 
     private static int getTerminalProperty(String prop)
-                                    throws IOException, InterruptedException {
+            throws IOException, InterruptedException {
         // need to be able handle both output formats:
         // speed 9600 baud; 24 rows; 140 columns;
         // and:
         // speed 38400 baud; rows = 49; columns = 111; ypixels = 0; xpixels = 0;
-        for (StringTokenizer tok = new StringTokenizer(getTtyProps(), ";\n");
-                 tok.hasMoreTokens();) {
+        for (StringTokenizer tok = new StringTokenizer(getTtyProps(), ";\n"); tok.hasMoreTokens();) {
             String str = tok.nextToken().trim();
 
             if (str.startsWith(prop)) {
@@ -203,33 +206,33 @@ public class SttySupport {
 
 
     /**
-     *  Execute the stty command with the specified arguments
-     *  against the current active terminal.
+     * Execute the stty command with the specified arguments
+     * against the current active terminal.
      */
     public static String stty(final String args)
-                        throws IOException, InterruptedException {
+            throws IOException, InterruptedException {
         return exec("stty " + args + " < /dev/tty").trim();
     }
 
     /**
-     *  Execute the specified command and return the output
-     *  (both stdout and stderr).
+     * Execute the specified command and return the output
+     * (both stdout and stderr).
      */
     public static String exec(final String cmd)
-                        throws IOException, InterruptedException {
+            throws IOException, InterruptedException {
         return exec(new String[] {
-                        "sh",
-                        "-c",
-                        cmd
-                    });
+            "sh",
+            "-c",
+            cmd
+        });
     }
 
     /**
-     *  Execute the specified command and return the output
-     *  (both stdout and stderr).
+     * Execute the specified command and return the output
+     * (both stdout and stderr).
      */
     private static String exec(final String[] cmd)
-                        throws IOException, InterruptedException {
+            throws IOException, InterruptedException {
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
 
         Process p = Runtime.getRuntime().exec(cmd);
@@ -256,16 +259,16 @@ public class SttySupport {
     }
 
     /**
-     *  The command to use to set the terminal options. Defaults
-     *  to "stty", or the value of the system property "jline.sttyCommand".
+     * The command to use to set the terminal options. Defaults
+     * to "stty", or the value of the system property "jline.sttyCommand".
      */
     public static void setSttyCommand(String cmd) {
         sttyCommand = cmd;
     }
 
     /**
-     *  The command to use to set the terminal options. Defaults
-     *  to "stty", or the value of the system property "jline.sttyCommand".
+     * The command to use to set the terminal options. Defaults
+     * to "stty", or the value of the system property "jline.sttyCommand".
      */
     public static String getSttyCommand() {
         return sttyCommand;

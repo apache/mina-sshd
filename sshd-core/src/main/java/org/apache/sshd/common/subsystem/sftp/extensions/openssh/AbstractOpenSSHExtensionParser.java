@@ -25,11 +25,11 @@ import java.util.Objects;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.subsystem.sftp.extensions.AbstractParser;
 import org.apache.sshd.common.subsystem.sftp.extensions.openssh.AbstractOpenSSHExtensionParser.OpenSSHExtension;
-import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * Base class for various {@code XXX@openssh.com} extension data reports
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractOpenSSHExtensionParser extends AbstractParser<OpenSSHExtension> {
@@ -75,21 +75,17 @@ public abstract class AbstractOpenSSHExtensionParser extends AbstractParser<Open
             if (getClass() != obj.getClass()) {
                 return false;
             }
-            
+
             OpenSSHExtension other = (OpenSSHExtension) obj;
-            if (Objects.equals(getName(), other.getName())
-             && Objects.equals(getVersion(), other.getVersion())) {
-                return true;
-            } else {
-                return false;
-            }
+            return Objects.equals(getName(), other.getName())
+                    && Objects.equals(getVersion(), other.getVersion());
         }
 
         @Override
         public OpenSSHExtension clone() {
             try {
                 return getClass().cast(super.clone());
-            } catch(CloneNotSupportedException e) {
+            } catch (CloneNotSupportedException e) {
                 throw new RuntimeException("Unexpected clone exception " + toString() + ": " + e.getMessage());
             }
         }
@@ -99,7 +95,7 @@ public abstract class AbstractOpenSSHExtensionParser extends AbstractParser<Open
             return getName() + " " + getVersion();
         }
     }
-    
+
     protected AbstractOpenSSHExtensionParser(String name) {
         super(name);
     }
@@ -108,7 +104,7 @@ public abstract class AbstractOpenSSHExtensionParser extends AbstractParser<Open
     public OpenSSHExtension parse(byte[] input, int offset, int len) {
         return parse(new String(input, offset, len, StandardCharsets.UTF_8));
     }
-    
+
     public OpenSSHExtension parse(String version) {
         return new OpenSSHExtension(getName(), version);
     }

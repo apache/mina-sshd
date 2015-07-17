@@ -31,8 +31,9 @@ public interface ServerSession extends Session {
     /**
      * @return The {@link ServerFactoryManager} for this session
      */
-    @Override ServerFactoryManager getFactoryManager();
-    
+    @Override
+    ServerFactoryManager getFactoryManager();
+
     /**
      * @return The {@link KeyPair} representing the current session's used keys
      * on KEX
@@ -41,6 +42,7 @@ public interface ServerSession extends Session {
 
     /**
      * Retrieve the current number of sessions active for a given username.
+     *
      * @param userName The name of the user - ignored if {@code null}/empty
      * @return The current number of live <code>SshSession</code> objects associated with the user
      */

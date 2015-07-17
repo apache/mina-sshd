@@ -29,7 +29,6 @@ import org.apache.sshd.client.keyverifier.AcceptAllServerKeyVerifier;
 import org.apache.sshd.common.BaseBuilder;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.channel.Channel;
-import org.apache.sshd.common.kex.BuiltinDHFactories;
 import org.apache.sshd.common.kex.DHFactory;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.util.Transformer;
@@ -39,19 +38,25 @@ import org.apache.sshd.server.forward.ForwardedTcpipFactory;
  * SshClient builder
  */
 public class ClientBuilder extends BaseBuilder<SshClient, ClientBuilder> {
-    public static final Transformer<DHFactory,NamedFactory<KeyExchange>> DH2KEX =
-            new Transformer<DHFactory, NamedFactory<KeyExchange>>() {
-                @Override
-                public NamedFactory<KeyExchange> transform(DHFactory factory) {
-                    if (factory == null) {
-                        return null;
-                    } else if (factory.isGroupExchange()) {
-                        return DHGEXClient.newFactory(factory);
-                    } else {
-                        return DHGClient.newFactory(factory);
-                    }
+    public static final Transformer<DHFactory, NamedFactory<KeyExchange>> DH2KEX =
+        new Transformer<DHFactory, NamedFactory<KeyExchange>>() {
+            @Override
+            public NamedFactory<KeyExchange> transform(DHFactory factory) {
+                if (factory == null) {
+                    return null;
+                } else if (factory.isGroupExchange()) {
+                    return DHGEXClient.newFactory(factory);
+                } else {
+                    return DHGClient.newFactory(factory);
                 }
-            };
+            }
+        };
+
+    public static final List<NamedFactory<Channel>> DEFAULT_CHANNEL_FACTORIES =
+            Collections.unmodifiableList(Arrays.<NamedFactory<Channel>>asList(ForwardedTcpipFactory.INSTANCE));
+
+    public static final ServerKeyVerifier DEFAULT_SERVER_KEY_VERIFIER = AcceptAllServerKeyVerifier.INSTANCE;
+
     protected ServerKeyVerifier serverKeyVerifier;
 
     public ClientBuilder() {
@@ -62,10 +67,6 @@ public class ClientBuilder extends BaseBuilder<SshClient, ClientBuilder> {
         this.serverKeyVerifier = serverKeyVerifier;
         return me();
     }
-
-    public static final List<NamedFactory<Channel>> DEFAULT_CHANNEL_FACTORIES =
-            Collections.unmodifiableList(Arrays.<NamedFactory<Channel>>asList(ForwardedTcpipFactory.INSTANCE));
-    public static final ServerKeyVerifier DEFAULT_SERVER_KEY_VERIFIER = AcceptAllServerKeyVerifier.INSTANCE;
 
     @Override
     protected ClientBuilder fillWithDefaultValues() {
@@ -99,15 +100,15 @@ public class ClientBuilder extends BaseBuilder<SshClient, ClientBuilder> {
 
     /**
      * @param ignoreUnsupported If {@code true} then all the default
-     * key exchanges are included, regardless of whether they are currently
-     * supported by the JCE. Otherwise, only the supported ones out of the
-     * list are included
+     *                          key exchanges are included, regardless of whether they are currently
+     *                          supported by the JCE. Otherwise, only the supported ones out of the
+     *                          list are included
      * @return A {@link List} of the default {@link NamedFactory}
      * instances of the {@link KeyExchange}s according to the preference
      * order defined by {@link #DEFAULT_KEX_PREFERENCE}.
      * <B>Note:</B> the list may be filtered to exclude unsupported JCE
      * key exchanges according to the <tt>ignoreUnsupported</tt> parameter
-     * @see BuiltinDHFactories#isSupported()
+     * @see org.apache.sshd.common.kex.BuiltinDHFactories#isSupported()
      */
     public static List<NamedFactory<KeyExchange>> setUpDefaultKeyExchanges(boolean ignoreUnsupported) {
         return NamedFactory.Utils.setUpTransformedFactories(ignoreUnsupported, DEFAULT_KEX_PREFERENCE, DH2KEX);

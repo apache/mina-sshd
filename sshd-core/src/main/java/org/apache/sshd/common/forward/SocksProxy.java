@@ -36,6 +36,7 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
 /**
  * SOCKS proxy server, supporting simple socks4/5 protocols.
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @see <A HREF="https://en.wikipedia.org/wiki/SOCKS">SOCKS Wikipedia</A>
  */
@@ -85,9 +86,9 @@ public class SocksProxy extends CloseableUtils.AbstractCloseable implements IoHa
     }
 
     @Override
-    public void exceptionCaught(IoSession ioSession, Throwable cause) throws Exception {
+    public void exceptionCaught(IoSession session, Throwable cause) throws Exception {
         log.warn("Exception caught, closing socks proxy", cause);
-        ioSession.close(false);
+        session.close(false);
     }
 
     public abstract class Proxy implements Closeable {
@@ -138,9 +139,9 @@ public class SocksProxy extends CloseableUtils.AbstractCloseable implements IoHa
                 }
                 int port = getUShort(buffer);
                 String host = Integer.toString(getUByte(buffer)) + "."
-                            + Integer.toString(getUByte(buffer)) + "."
-                            + Integer.toString(getUByte(buffer)) + "."
-                            + Integer.toString(getUByte(buffer));
+                        + Integer.toString(getUByte(buffer)) + "."
+                        + Integer.toString(getUByte(buffer)) + "."
+                        + Integer.toString(getUByte(buffer));
                 String userId = getNTString(buffer);
                 // Socks4a
                 if (host.startsWith("0.0.0.")) {
@@ -246,20 +247,20 @@ public class SocksProxy extends CloseableUtils.AbstractCloseable implements IoHa
                 String host;
                 if (type == 0x01) {
                     host = Integer.toString(getUByte(buffer)) + "."
-                         + Integer.toString(getUByte(buffer)) + "."
-                         + Integer.toString(getUByte(buffer)) + "."
-                         + Integer.toString(getUByte(buffer));
+                            + Integer.toString(getUByte(buffer)) + "."
+                            + Integer.toString(getUByte(buffer)) + "."
+                            + Integer.toString(getUByte(buffer));
                 } else if (type == 0x03) {
                     host = getBLString(buffer);
                 } else if (type == 0x04) {
                     host = Integer.toHexString(getUShort(buffer)) + ":"
-                         + Integer.toHexString(getUShort(buffer)) + ":"
-                         + Integer.toHexString(getUShort(buffer)) + ":"
-                         + Integer.toHexString(getUShort(buffer)) + ":"
-                         + Integer.toHexString(getUShort(buffer)) + ":"
-                         + Integer.toHexString(getUShort(buffer)) + ":"
-                         + Integer.toHexString(getUShort(buffer)) + ":"
-                         + Integer.toHexString(getUShort(buffer));
+                            + Integer.toHexString(getUShort(buffer)) + ":"
+                            + Integer.toHexString(getUShort(buffer)) + ":"
+                            + Integer.toHexString(getUShort(buffer)) + ":"
+                            + Integer.toHexString(getUShort(buffer)) + ":"
+                            + Integer.toHexString(getUShort(buffer)) + ":"
+                            + Integer.toHexString(getUShort(buffer)) + ":"
+                            + Integer.toHexString(getUShort(buffer));
                 } else {
                     throw new IllegalStateException("Unsupported address type: " + type);
                 }

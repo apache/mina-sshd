@@ -30,7 +30,8 @@ import org.apache.sshd.common.util.io.DERParser;
 import org.apache.sshd.common.util.io.DERWriter;
 
 /**
- * Signature algorithm for EC keys using ECDSA. 
+ * Signature algorithm for EC keys using ECDSA.
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @see <A HREF="http://tools.ietf.org/html/rfc3278#section-8.2">RFC3278 section 8.2</A>
  */
@@ -44,12 +45,12 @@ public class SignatureECDSA extends AbstractSignature {
     public byte[] sign() throws Exception {
         byte[] sig = signature.sign();
 
-        try(DERParser parser = new DERParser(sig)) {
+        try (DERParser parser = new DERParser(sig)) {
             int type = parser.read();
             if (type != 0x30) {
                 throw new IOException("Invalid signature format - not a DER SEQUENCE: 0x" + Integer.toHexString(type));
             }
-    
+
             // length of remaining encoding of the 2 integers
             int remainLen = parser.readLength();
             /*
@@ -69,7 +70,7 @@ public class SignatureECDSA extends AbstractSignature {
             Buffer rsBuf = new ByteArrayBuffer();
             rsBuf.putMPInt(r);
             rsBuf.putMPInt(s);
-    
+
             return rsBuf.getCompactData();
         }
     }
@@ -77,7 +78,7 @@ public class SignatureECDSA extends AbstractSignature {
     @Override
     public boolean verify(byte[] sig) throws Exception {
         byte[] data = sig;
-        Pair<String,byte[]> encoding = extractEncodedSignature(data);
+        Pair<String, byte[]> encoding = extractEncodedSignature(data);
         if (encoding != null) {
             String keyType = encoding.getFirst();
             ECCurves curve = ECCurves.fromKeyType(keyType);
@@ -87,18 +88,20 @@ public class SignatureECDSA extends AbstractSignature {
 
         Buffer rsBuf = new ByteArrayBuffer(data);
 
-        byte[] rArray = rsBuf.getMPIntAsBytes(), rEncoding;
-        try(DERWriter w = new DERWriter(rArray.length + 4)) {     // in case length > 0x7F
+        byte[] rArray = rsBuf.getMPIntAsBytes();
+        byte[] rEncoding;
+        try (DERWriter w = new DERWriter(rArray.length + 4)) {     // in case length > 0x7F
             w.writeBigInteger(rArray);
             rEncoding = w.toByteArray();
         }
-        
-        byte[] sArray = rsBuf.getMPIntAsBytes(), sEncoding;
-        try(DERWriter w = new DERWriter(sArray.length + 4)) {     // in case length > 0x7F
+
+        byte[] sArray = rsBuf.getMPIntAsBytes();
+        byte[] sEncoding;
+        try (DERWriter w = new DERWriter(sArray.length + 4)) {     // in case length > 0x7F
             w.writeBigInteger(sArray);
             sEncoding = w.toByteArray();
         }
-        
+
         int remaining = rsBuf.available();
         if (remaining != 0) {
             throw new IOException("Signature had padding - remaining=" + remaining);
@@ -106,7 +109,7 @@ public class SignatureECDSA extends AbstractSignature {
 
         int length = rEncoding.length + sEncoding.length;
         byte[] encoded;
-        try(DERWriter w = new DERWriter(1 + length + 4)) {  // in case length > 0x7F
+        try (DERWriter w = new DERWriter(1 + length + 4)) {  // in case length > 0x7F
             w.write(0x30); // SEQUENCE
             w.writeLength(length);
             w.write(rEncoding);

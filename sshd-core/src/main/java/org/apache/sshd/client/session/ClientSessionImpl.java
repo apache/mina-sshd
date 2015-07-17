@@ -81,32 +81,34 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
      * objects are {@link String}s and equal to each other
      */
     public static final Comparator<Object> PASSWORD_IDENTITY_COMPARATOR = new Comparator<Object>() {
-            @Override
-            public int compare(Object o1, Object o2) {
-                if ((!(o1 instanceof String)) || (!(o2 instanceof String))) {
-                    return (-1);
-                } else {
-                    return ((String) o1).compareTo((String) o2);
-                }
+        @Override
+        public int compare(Object o1, Object o2) {
+            if (!(o1 instanceof String) || !(o2 instanceof String)) {
+                return -1;
+            } else {
+                return ((String) o1).compareTo((String) o2);
             }
-        };
+        }
+    };
 
     /**
      * Compares 2 {@link KeyPair} identities - returns zero ONLY if <U>both</U> compared
      * objects are {@link KeyPair}s and equal to each other
      */
     public static final Comparator<Object> KEYPAIR_IDENTITY_COMPARATOR = new Comparator<Object>() {
-            @Override
-            public int compare(Object o1, Object o2) {
-                if ((!(o1 instanceof KeyPair)) || (!(o2 instanceof KeyPair))) {
-                    return (-1);
-                } else if (KeyUtils.compareKeyPairs((KeyPair) o1, (KeyPair) o2)) {
-                    return 0; 
-                } else {
-                    return 1;
-                }
+        @Override
+        public int compare(Object o1, Object o2) {
+            if ((!(o1 instanceof KeyPair)) || (!(o2 instanceof KeyPair))) {
+                return -1;
+            } else if (KeyUtils.compareKeyPairs((KeyPair) o1, (KeyPair) o2)) {
+                return 0;
+            } else {
+                return 1;
             }
-        };
+        }
+    };
+
+    protected AuthFuture authFuture;
 
     /**
      * For clients to store their own metadata
@@ -121,8 +123,6 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
     private final List<Object> identities = new ArrayList<>();
     private UserInteraction userInteraction;
     private ScpTransferEventListener scpListener;
-
-    protected AuthFuture authFuture;
 
     public ClientSessionImpl(ClientFactoryManager client, IoSession session) throws Exception {
         super(false, client, session);
@@ -153,9 +153,9 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
     protected Service[] getServices() {
         Service[] services;
         if (nextService != null) {
-            services = new Service[] { currentService, nextService };
+            services = new Service[]{currentService, nextService};
         } else if (currentService != null) {
-            services = new Service[] { currentService };
+            services = new Service[]{currentService};
         } else {
             services = new Service[0];
         }
@@ -207,7 +207,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         if (kp == null) {
             return null;
         }
-        
+
         int index = findIdentityIndex(KEYPAIR_IDENTITY_COMPARATOR, kp);
         if (index >= 0) {
             return (KeyPair) identities.remove(index);
@@ -223,8 +223,8 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
                 return index;
             }
         }
-        
-        return (-1);
+
+        return -1;
     }
 
     @Override
@@ -242,10 +242,11 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         if (username == null) {
             throw new IllegalStateException("No username specified when the session was created");
         }
-        
+
         ClientUserAuthService authService = getUserAuthService();
         synchronized (lock) {
-            return authFuture = authService.auth(identities, nextServiceName());
+            authFuture = authService.auth(identities, nextServiceName());
+            return authFuture;
         }
     }
 
@@ -272,22 +273,24 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
     @SuppressWarnings("rawtypes")
     public SshFuture switchToNoneCipher() throws IOException {
         if (!(currentService instanceof AbstractConnectionService)
-         || !((AbstractConnectionService) currentService).getChannels().isEmpty()) {
+                || !((AbstractConnectionService) currentService).getChannels().isEmpty()) {
             throw new IllegalStateException("The switch to the none cipher must be done immediately after authentication");
         }
         if (kexState.compareAndSet(KexState.DONE, KexState.INIT)) {
             reexchangeFuture = new DefaultSshFuture(null);
-            
-            String c2sEncServer, s2cEncServer;
-            synchronized(serverProposal) {
+
+            String c2sEncServer;
+            String s2cEncServer;
+            synchronized (serverProposal) {
                 c2sEncServer = serverProposal.get(KexProposalOption.C2SENC);
-                s2cEncServer  = serverProposal.get(KexProposalOption.S2CENC);
+                s2cEncServer = serverProposal.get(KexProposalOption.S2CENC);
             }
             boolean c2sEncServerNone = BuiltinCiphers.Constants.isNoneCipherIncluded(c2sEncServer);
             boolean s2cEncServerNone = BuiltinCiphers.Constants.isNoneCipherIncluded(s2cEncServer);
 
-            String c2sEncClient, s2cEncClient;
-            synchronized(clientProposal) {
+            String c2sEncClient;
+            String s2cEncClient;
+            synchronized (clientProposal) {
                 c2sEncClient = clientProposal.get(KexProposalOption.C2SENC);
                 s2cEncClient = clientProposal.get(KexProposalOption.S2CENC);
             }
@@ -301,9 +304,9 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
                 reexchangeFuture.setValue(new SshException("Client does not support none cipher"));
             } else {
                 log.info("Switching to none cipher");
-                
-                Map<KexProposalOption,String> proposal = new EnumMap<KexProposalOption, String>(KexProposalOption.class);
-                synchronized(clientProposal) {
+
+                Map<KexProposalOption, String> proposal = new EnumMap<KexProposalOption, String>(KexProposalOption.class);
+                synchronized (clientProposal) {
                     proposal.putAll(clientProposal);
                 }
 
@@ -442,7 +445,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
     @Override
     public FileSystem createSftpFileSystem(SftpVersionSelector selector, int readBufferSize, int writeBufferSize) throws IOException {
         SftpFileSystemProvider provider = new SftpFileSystemProvider((org.apache.sshd.client.SshClient) factoryManager, selector);
-        SftpFileSystem  fs = provider.newFileSystem(this);
+        SftpFileSystem fs = provider.newFileSystem(this);
         fs.setReadBufferSize(readBufferSize);
         fs.setWriteBufferSize(writeBufferSize);
         return fs;
@@ -536,7 +539,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         log.debug("Server version string: {}", serverVersion);
         if (!(serverVersion.startsWith("SSH-2.0-") || serverVersion.startsWith("SSH-1.99-"))) {
             throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_VERSION_NOT_SUPPORTED,
-                                   "Unsupported protocol version: " + serverVersion);
+                    "Unsupported protocol version: " + serverVersion);
         }
         return true;
     }
@@ -548,14 +551,14 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
     }
 
     @Override
-    protected byte[] sendKexInit(Map<KexProposalOption,String> proposal) throws IOException {
+    protected byte[] sendKexInit(Map<KexProposalOption, String> proposal) throws IOException {
         mergeProposals(clientProposal, proposal);
         return super.sendKexInit(proposal);
     }
 
     @Override
     protected void setKexSeed(byte... seed) {
-        I_C = ValidateUtils.checkNotNullAndNotEmpty(seed, "No KEX seed");
+        i_c = ValidateUtils.checkNotNullAndNotEmpty(seed, "No KEX seed");
     }
 
     @Override
@@ -565,9 +568,9 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
     }
 
     @Override
-    protected void receiveKexInit(Map<KexProposalOption,String> proposal, byte[] seed) throws IOException {
+    protected void receiveKexInit(Map<KexProposalOption, String> proposal, byte[] seed) throws IOException {
         mergeProposals(serverProposal, proposal);
-        I_S = seed;
+        i_s = seed;
     }
 
     @Override

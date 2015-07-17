@@ -44,18 +44,18 @@ public abstract class AbstractMD5HashExtension extends AbstractSftpClientExtensi
         buffer.putLong(offset);
         buffer.putLong(length);
         buffer.putBytes((quickHash == null) ? GenericUtils.EMPTY_BYTE_ARRAY : quickHash);
-        
+
         if (log.isDebugEnabled()) {
             log.debug("doGetHash({})[{}] - offset={}, length={}, quick-hash={}",
-                      opcode, (target instanceof CharSequence) ? target : BufferUtils.printHex(BufferUtils.EMPTY_HEX_SEPARATOR, (byte[]) target),
-                      Long.valueOf(offset), Long.valueOf(length), BufferUtils.printHex(':', quickHash));
+                    opcode, (target instanceof CharSequence) ? target : BufferUtils.printHex(BufferUtils.EMPTY_HEX_SEPARATOR, (byte[]) target),
+                    offset, length, BufferUtils.printHex(':', quickHash));
         }
 
         buffer = checkExtendedReplyBuffer(receive(sendExtendedCommand(buffer)));
         if (buffer == null) {
             throw new StreamCorruptedException("Missing extended reply data");
         }
-        
+
         String targetType = buffer.getString();
         if (String.CASE_INSENSITIVE_ORDER.compare(targetType, opcode) != 0) {
             throw new StreamCorruptedException("Mismatched reply target type: expected=" + opcode + ", actual=" + targetType);
@@ -64,10 +64,10 @@ public abstract class AbstractMD5HashExtension extends AbstractSftpClientExtensi
         byte[] hashValue = buffer.getBytes();
         if (log.isDebugEnabled()) {
             log.debug("doGetHash({})[{}] - offset={}, length={}, quick-hash={} - result={}",
-                    opcode, target, Long.valueOf(offset), Long.valueOf(length),
+                    opcode, target, offset, length,
                     BufferUtils.printHex(':', quickHash), BufferUtils.printHex(':', hashValue));
         }
-        
+
         return hashValue;
     }
 }

@@ -37,19 +37,19 @@ public interface ClientFactoryManager extends FactoryManager {
      * Key used to set the heartbeat interval in milliseconds (0 to disable = default)
      */
     String HEARTBEAT_INTERVAL = "hearbeat-interval";
-        /**
-         * Default value for {@link #HEARTBEAT_INTERVAL} if none configured
-         */
-        long DEFAULT_HEARTBEAT_INTERVAL = 0L;
+    /**
+     * Default value for {@link #HEARTBEAT_INTERVAL} if none configured
+     */
+    long DEFAULT_HEARTBEAT_INTERVAL = 0L;
 
     /**
      * Key used to check the heartbeat request that should be sent to the server
      */
     String HEARTBEAT_REQUEST = "heartbeat-request";
-        /**
-         * Default value for {@link ClientFactoryManager#HEARTBEAT_REQUEST} is none configured
-         */
-        String DEFAULT_KEEP_ALIVE_HEARTBEAT_STRING = "keepalive@sshd.apache.org";
+    /**
+     * Default value for {@link ClientFactoryManager#HEARTBEAT_REQUEST} is none configured
+     */
+    String DEFAULT_KEEP_ALIVE_HEARTBEAT_STRING = "keepalive@sshd.apache.org";
 
     /**
      * Ordered comma separated list of authentications methods.
@@ -64,10 +64,10 @@ public interface ClientFactoryManager extends FactoryManager {
      * The argument to this keyword must be an integer.
      */
     String PASSWORD_PROMPTS = "password-prompts";
-        /**
-         * Default value for {@link #PASSWORD_PROMPTS} if none configured
-         */
-        int DEFAULT_PASSWORD_PROMPTS = 3;
+    /**
+     * Default value for {@link #PASSWORD_PROMPTS} if none configured
+     */
+    int DEFAULT_PASSWORD_PROMPTS = 3;
 
     /**
      * Retrieve the server key verifier to be used to check the key when connecting

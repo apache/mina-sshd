@@ -29,7 +29,6 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.util.Collection;
 import java.util.Set;
 
-import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
@@ -38,7 +37,8 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class LocalFileScpSourceStreamResolver extends AbstractLoggingBean implements ScpSourceStreamResolver {
-    private final Path path, name;
+    private final Path path;
+    private final Path name;
     private final Set<PosixFilePermission> perms;
     private final long size;
     private final ScpTimestamp time;

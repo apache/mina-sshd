@@ -47,7 +47,7 @@ public class SpaceAvailableExtensionImpl extends AbstractSftpClientExtension imp
         if (buffer == null) {
             throw new StreamCorruptedException("Missing extended reply data");
         }
-        
+
         return new SpaceAvailableExtensionInfo(buffer);
     }
 }

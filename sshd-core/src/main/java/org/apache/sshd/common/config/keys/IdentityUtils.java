@@ -46,7 +46,7 @@ public final class IdentityUtils {
 
     /**
      * @param prefix The file name prefix - ignored if {@code null}/empty
-     * @param type The identity type - ignored if {@code null}/empty
+     * @param type   The identity type - ignored if {@code null}/empty
      * @param suffix The file name suffix - ignored if {@code null}/empty
      * @return The identity file name or {@code null} if no name
      */
@@ -60,20 +60,20 @@ public final class IdentityUtils {
     }
 
     /**
-     * @param ids A {@link Map} of the loaded identities where key=the identity type,
-     * value=the matching {@link KeyPair} - ignored if {@code null}/empty
+     * @param ids           A {@link Map} of the loaded identities where key=the identity type,
+     *                      value=the matching {@link KeyPair} - ignored if {@code null}/empty
      * @param supportedOnly If {@code true} then ignore identities that are not
-     * supported internally
+     *                      supported internally
      * @return A {@link KeyPair} for the identities - {@code null} if no identities
      * available (e.g., after filtering unsupported ones)
      * @see BuiltinIdentities
      */
-    public static KeyPairProvider createKeyPairProvider(Map<String,KeyPair> ids, boolean supportedOnly) {
+    public static KeyPairProvider createKeyPairProvider(Map<String, KeyPair> ids, boolean supportedOnly) {
         if (GenericUtils.isEmpty(ids)) {
             return null;
         }
-        
-        Map<String,KeyPair> pairsMap = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+
+        Map<String, KeyPair> pairsMap = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         for (Map.Entry<String, KeyPair> ide : ids.entrySet()) {
             String type = ide.getKey();
             KeyPair kp = ide.getValue();
@@ -81,22 +81,22 @@ public final class IdentityUtils {
             if (id == null) {
                 id = BuiltinIdentities.fromKeyPair(kp);
             }
-            
+
             if (supportedOnly && ((id == null) || (!id.isSupported()))) {
                 continue;
             }
-            
+
             String keyType = KeyUtils.getKeyType(kp);
             if (GenericUtils.isEmpty(keyType)) {
                 continue;
             }
-            
+
             KeyPair prev = pairsMap.put(keyType, kp);
             if (prev != null) {
                 continue;   // less of an offense if 2 pairs mapped to same key type
             }
         }
-        
+
         if (GenericUtils.isEmpty(pairsMap)) {
             return null;
         } else {
@@ -105,36 +105,36 @@ public final class IdentityUtils {
     }
 
     /**
-     * @param paths A {@link Map} of the identities where key=identity type (case
-     * <U>insensitive</U>), value=the {@link Path} of file with the identity key 
+     * @param paths    A {@link Map} of the identities where key=identity type (case
+     *                 <U>insensitive</U>), value=the {@link Path} of file with the identity key
      * @param provider A {@link FilePasswordProvider} - may be {@code null}
-     * if the loaded keys are <U>guaranteed</U> not to be encrypted. The argument
-     * to {@link FilePasswordProvider#getPassword(String)} is the path of the
-     * file whose key is to be loaded
-     * @param options The {@link OpenOption}s to use when reading the key data
+     *                 if the loaded keys are <U>guaranteed</U> not to be encrypted. The argument
+     *                 to {@link FilePasswordProvider#getPassword(String)} is the path of the
+     *                 file whose key is to be loaded
+     * @param options  The {@link OpenOption}s to use when reading the key data
      * @return A {@link Map} of the identities where key=identity type (case
      * <U>insensitive</U>), value=the {@link KeyPair} of the identity
-     * @throws IOException If failed to access the file system
+     * @throws IOException              If failed to access the file system
      * @throws GeneralSecurityException If failed to load the keys
      * @see SecurityUtils#loadKeyPairIdentity(String, InputStream, FilePasswordProvider)
      */
-    public static Map<String,KeyPair> loadIdentities(Map<String,? extends Path> paths, FilePasswordProvider provider, OpenOption ... options)
-        throws IOException, GeneralSecurityException {
+    public static Map<String, KeyPair> loadIdentities(Map<String, ? extends Path> paths, FilePasswordProvider provider, OpenOption... options)
+            throws IOException, GeneralSecurityException {
         if (GenericUtils.isEmpty(paths)) {
             return Collections.emptyMap();
         }
-        
-        Map<String,KeyPair> ids = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-        for (Map.Entry<String,? extends Path> pe : paths.entrySet()) {
+
+        Map<String, KeyPair> ids = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        for (Map.Entry<String, ? extends Path> pe : paths.entrySet()) {
             String type = pe.getKey();
             Path path = pe.getValue();
-            try(InputStream inputStream = Files.newInputStream(path, options)) {
+            try (InputStream inputStream = Files.newInputStream(path, options)) {
                 KeyPair kp = SecurityUtils.loadKeyPairIdentity(path.toString(), inputStream, provider);
                 KeyPair prev = ids.put(type, kp);
                 ValidateUtils.checkTrue(prev == null, "Multiple keys for type=%s", type);
             }
         }
-        
+
         return ids;
     }
 }

@@ -51,7 +51,6 @@ public abstract class NamedResourceListParseResult<R extends NamedResource> exte
     @Override
     public String toString() {
         return "parsed=" + NamedResource.Utils.getNames(getParsedResources())
-             + ";unknown=" + GenericUtils.join(getUnsupportedResources(), ',')
-              ;
+                + ";unknown=" + GenericUtils.join(getUnsupportedResources(), ',');
     }
 }

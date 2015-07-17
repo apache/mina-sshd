@@ -22,6 +22,7 @@ package org.apache.sshd.client;
 /**
  * Just a test class used to invoke {@link SshClient#main(String[])} in
  * order to have logging - which is in {@code test} scope
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class SshClientMain {

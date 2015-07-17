@@ -49,7 +49,7 @@ public class SimpleGeneratorHostKeyProvider extends AbstractGeneratorHostKeyProv
 
     @Override
     protected KeyPair doReadKeyPair(String resourceKey, InputStream inputStream) throws IOException, GeneralSecurityException {
-        try(ObjectInputStream r = new ObjectInputStream(inputStream)) {
+        try (ObjectInputStream r = new ObjectInputStream(inputStream)) {
             try {
                 return (KeyPair) r.readObject();
             } catch (ClassNotFoundException e) {
@@ -60,7 +60,7 @@ public class SimpleGeneratorHostKeyProvider extends AbstractGeneratorHostKeyProv
 
     @Override
     protected void doWriteKeyPair(String resourceKey, KeyPair kp, OutputStream outputStream) throws IOException, GeneralSecurityException {
-        try(ObjectOutputStream w = new ObjectOutputStream(outputStream)) {
+        try (ObjectOutputStream w = new ObjectOutputStream(outputStream)) {
             w.writeObject(kp);
         }
     }

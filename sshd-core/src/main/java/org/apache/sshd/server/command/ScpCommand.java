@@ -84,32 +84,39 @@ public class ScpCommand extends AbstractLoggingBean implements Command, Runnable
     public ScpCommand(String command, ExecutorService executorService, boolean shutdownOnExit, int sendSize, int receiveSize, ScpTransferEventListener eventListener) {
         name = command;
 
-        if ((executors = executorService) == null) {
+        if (executorService == null) {
             String poolName = command.replace(' ', '_').replace('/', ':');
             executors = ThreadUtils.newSingleThreadExecutor(poolName);
             shutdownExecutor = true;    // we always close the ad-hoc executor service
         } else {
+            executors = executorService;
             shutdownExecutor = shutdownOnExit;
         }
 
-        if ((sendBufferSize = sendSize) < ScpHelper.MIN_SEND_BUFFER_SIZE) {
-            throw new IllegalArgumentException("<ScpCommmand>(" + command + ") send buffer size (" + sendSize + ") below minimum required (" + ScpHelper.MIN_SEND_BUFFER_SIZE + ")");
+        if (sendSize < ScpHelper.MIN_SEND_BUFFER_SIZE) {
+            throw new IllegalArgumentException("<ScpCommmand>(" + command + ") send buffer size "
+                    + "(" + sendSize + ") below minimum required "
+                    + "(" + ScpHelper.MIN_SEND_BUFFER_SIZE + ")");
         }
+        sendBufferSize = sendSize;
 
-        if ((receiveBufferSize = receiveSize) < ScpHelper.MIN_RECEIVE_BUFFER_SIZE) {
-            throw new IllegalArgumentException("<ScpCommmand>(" + command + ") receive buffer size (" + sendSize + ") below minimum required (" + ScpHelper.MIN_RECEIVE_BUFFER_SIZE + ")");
+        if (receiveSize < ScpHelper.MIN_RECEIVE_BUFFER_SIZE) {
+            throw new IllegalArgumentException("<ScpCommmand>(" + command + ") receive buffer size "
+                    + "(" + sendSize + ") below minimum required "
+                    + "(" + ScpHelper.MIN_RECEIVE_BUFFER_SIZE + ")");
         }
+        receiveBufferSize = receiveSize;
 
         listener = (eventListener == null) ? ScpTransferEventListener.EMPTY : eventListener;
 
         log.debug("Executing command {}", command);
         String[] args = command.split(" ");
         for (int i = 1; i < args.length; i++) {
-            String  argVal=args[i];
+            String argVal = args[i];
             if (argVal.charAt(0) == '-') {
                 for (int j = 1; j < argVal.length(); j++) {
-                    char    option=argVal.charAt(j);
-                    switch(option) {
+                    char option = argVal.charAt(j);
+                    switch (option) {
                         case 'f':
                             optF = true;
                             break;
@@ -125,13 +132,13 @@ public class ScpCommand extends AbstractLoggingBean implements Command, Runnable
                         case 'd':
                             optD = true;
                             break;
-                          default:  // ignored
+                        default:  // ignored
 //                            error = new IOException("Unsupported option: " + args[i].charAt(j));
 //                            return;
                     }
                 }
             } else {
-                String  prevArg=args[i - 1];
+                String prevArg = args[i - 1];
                 path = command.substring(command.indexOf(prevArg) + prevArg.length() + 1);
                 if (path.startsWith("\"") && path.endsWith("\"") || path.startsWith("'") && path.endsWith("'")) {
                     path = path.substring(1, path.length() - 1);

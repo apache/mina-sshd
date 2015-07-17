@@ -33,6 +33,7 @@ import org.apache.sshd.common.util.io.DERWriter;
 
 /**
  * DSA <code>Signature</code>
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @see <A HREF="https://tools.ietf.org/html/rfc4253#section-6.6">RFC4253 section 6.6</A>
  */
@@ -42,19 +43,19 @@ public class SignatureDSA extends AbstractSignature {
     public static final int MAX_SIGNATURE_VALUE_LENGTH = DSA_SIGNATURE_LENGTH / 2;
 
     protected SignatureDSA(String algorithm) {
-	    super(algorithm);
+        super(algorithm);
     }
 
     @Override
     public byte[] sign() throws Exception {
         byte[] sig = signature.sign();
 
-        try(DERParser parser = new DERParser(sig)) {
+        try (DERParser parser = new DERParser(sig)) {
             int type = parser.read();
             if (type != 0x30) {
                 throw new IOException("Invalid signature format - not a DER SEQUENCE: 0x" + Integer.toHexString(type));
             }
-    
+
             // length of remaining encoding of the 2 integers
             int remainLen = parser.readLength();
             /*
@@ -83,8 +84,8 @@ public class SignatureDSA extends AbstractSignature {
         boolean maxExceeded = data.length > MAX_SIGNATURE_VALUE_LENGTH;
         int dstOffset = maxExceeded ? 0 : (MAX_SIGNATURE_VALUE_LENGTH - data.length);
         System.arraycopy(data, maxExceeded ? 1 : 0,
-                         result, offset + dstOffset,
-                         Math.min(MAX_SIGNATURE_VALUE_LENGTH, data.length));
+                result, offset + dstOffset,
+                Math.min(MAX_SIGNATURE_VALUE_LENGTH, data.length));
     }
 
     @Override
@@ -94,7 +95,7 @@ public class SignatureDSA extends AbstractSignature {
 
         if (sigLen != DSA_SIGNATURE_LENGTH) {
             // probably some encoded data
-            Pair<String,byte[]> encoding = extractEncodedSignature(sig);
+            Pair<String, byte[]> encoding = extractEncodedSignature(sig);
             if (encoding != null) {
                 String keyType = encoding.getFirst();
                 ValidateUtils.checkTrue(KeyPairProvider.SSH_DSS.equals(keyType), "Mismatched key type: %s", keyType);
@@ -105,17 +106,17 @@ public class SignatureDSA extends AbstractSignature {
 
         if (sigLen != DSA_SIGNATURE_LENGTH) {
             throw new SignatureException("Bad signature length (" + sigLen + " instead of " + DSA_SIGNATURE_LENGTH + ")"
-                                      + " for " + BufferUtils.printHex(':', data));
+                    + " for " + BufferUtils.printHex(':', data));
         }
 
         byte[] rEncoding;
-        try(DERWriter w = new DERWriter(MAX_SIGNATURE_VALUE_LENGTH + 4)) {     // in case length > 0x7F
+        try (DERWriter w = new DERWriter(MAX_SIGNATURE_VALUE_LENGTH + 4)) {     // in case length > 0x7F
             w.writeBigInteger(data, 0, MAX_SIGNATURE_VALUE_LENGTH);
             rEncoding = w.toByteArray();
         }
 
         byte[] sEncoding;
-        try(DERWriter w = new DERWriter(MAX_SIGNATURE_VALUE_LENGTH + 4)) {     // in case length > 0x7F
+        try (DERWriter w = new DERWriter(MAX_SIGNATURE_VALUE_LENGTH + 4)) {     // in case length > 0x7F
             w.writeBigInteger(data, MAX_SIGNATURE_VALUE_LENGTH, MAX_SIGNATURE_VALUE_LENGTH);
             sEncoding = w.toByteArray();
         }
@@ -123,7 +124,7 @@ public class SignatureDSA extends AbstractSignature {
 
         int length = rEncoding.length + sEncoding.length;
         byte[] encoded;
-        try(DERWriter w = new DERWriter(1 + length + 4)) {  // in case length > 0x7F
+        try (DERWriter w = new DERWriter(1 + length + 4)) {  // in case length > 0x7F
             w.write(0x30); // SEQUENCE
             w.writeLength(length);
             w.write(rEncoding);

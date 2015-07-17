@@ -35,7 +35,7 @@ public class StaticDecisionForwardingFilter extends AbstractLoggingBean implemen
     public StaticDecisionForwardingFilter(boolean acceptance) {
         this.acceptance = acceptance;
     }
-    
+
     public final boolean isAccepted() {
         return acceptance;
     }
@@ -59,12 +59,12 @@ public class StaticDecisionForwardingFilter extends AbstractLoggingBean implemen
     public boolean canConnect(Type type, SshdSocketAddress address, Session session) {
         return checkAcceptance(type.getName(), session, address);
     }
-    
+
     /**
      * @param request The SSH request that ultimately led to this filter being consulted
      * @param session The requesting {@link Session}
-     * @param target The request target - may be {@link SshdSocketAddress#LOCALHOST_ADDRESS}
-     * if no real target
+     * @param target  The request target - may be {@link SshdSocketAddress#LOCALHOST_ADDRESS}
+     *                if no real target
      * @return The (static) {@link #isAccepted()} flag
      */
     protected boolean checkAcceptance(String request, Session session, SshdSocketAddress target) {

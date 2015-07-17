@@ -42,7 +42,7 @@ import org.apache.sshd.common.util.ValidateUtils;
 
 public abstract class BasePath<T extends BasePath<T, FS>, FS extends BaseFileSystem<T>> implements Path {
 
-    private final FS fileSystem;
+    protected final FS fileSystem;
     protected final String root;
     protected final ImmutableList<String> names;
 
@@ -135,8 +135,8 @@ public abstract class BasePath<T extends BasePath<T, FS>, FS extends BaseFileSys
         T p1 = asT();
         T p2 = checkPath(other);
         return Objects.equals(p1.getFileSystem(), p2.getFileSystem())
-            && Objects.equals(p1.root, p2.root)
-            && startsWith(p1.names, p2.names);
+                && Objects.equals(p1.root, p2.root)
+                && startsWith(p1.names, p2.names);
     }
 
     @Override
@@ -361,7 +361,7 @@ public abstract class BasePath<T extends BasePath<T, FS>, FS extends BaseFileSys
             throw new ProviderMismatchException("Path is not of this class: " + paramPath + "[" + paramPath.getClass().getSimpleName() + "]");
         }
         T t = (T) paramPath;
-        
+
         FileSystem fs = t.getFileSystem();
         if (fs.provider() != this.fileSystem.provider()) {
             throw new ProviderMismatchException("Mismatched providers for " + t);
@@ -393,7 +393,7 @@ public abstract class BasePath<T extends BasePath<T, FS>, FS extends BaseFileSys
             sb.append(root);
         }
         for (String name : names) {
-            if (sb.length() > 0 && sb.charAt(sb.length()  - 1) != '/') {
+            if (sb.length() > 0 && sb.charAt(sb.length() - 1) != '/') {
                 sb.append(fileSystem.getSeparator());
             }
             sb.append(name);

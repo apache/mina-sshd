@@ -52,13 +52,13 @@ import org.junit.runners.MethodSorters;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class SecurityUtilsTest extends BaseTestSupport {
-    private static final String DEFAULT_PASSWORD="super secret passphrase";
+    private static final String DEFAULT_PASSWORD = "super secret passphrase";
     private static final FilePasswordProvider passwordProvider = new FilePasswordProvider() {
-            @Override
-            public String getPassword(String file) throws IOException {
-                return DEFAULT_PASSWORD;
-            }
-        };
+        @Override
+        public String getPassword(String file) throws IOException {
+            return DEFAULT_PASSWORD;
+        }
+    };
 
     public SecurityUtilsTest() {
         super();
@@ -73,13 +73,13 @@ public class SecurityUtilsTest extends BaseTestSupport {
     @Test
     public void testLoadEncryptedAESPrivateKey() {
         Assume.assumeTrue("Bouncycastle not registered", SecurityUtils.isBouncyCastleRegistered());
-        for (BuiltinCiphers c : new BuiltinCiphers[] {
-                BuiltinCiphers.aes128cbc, BuiltinCiphers.aes192cbc, BuiltinCiphers.aes256cbc }) {
+        for (BuiltinCiphers c : new BuiltinCiphers[]{
+                BuiltinCiphers.aes128cbc, BuiltinCiphers.aes192cbc, BuiltinCiphers.aes256cbc}) {
             if (!c.isSupported()) {
                 System.out.println("Skip unsupported encryption scheme: " + c.getName());
                 continue;
             }
-            
+
             testLoadEncryptedRSAPrivateKey("AES-" + c.getKeySize());
         }
     }
@@ -113,7 +113,7 @@ public class SecurityUtilsTest extends BaseTestSupport {
                 System.out.println("Skip unsupported curve: " + c.getName());
                 continue;
             }
-            
+
             testLoadECPrivateKey(getClass().getSimpleName() + "-EC-" + c.getKeySize() + "-KeyPair");
         }
     }
@@ -138,7 +138,7 @@ public class SecurityUtilsTest extends BaseTestSupport {
     }
 
     private static KeyPair testLoadPrivateKeyResource(String name, Class<? extends PublicKey> pubType, Class<? extends PrivateKey> prvType) {
-        AbstractClassLoadableResourceKeyPairProvider  provider = SecurityUtils.createClassLoadableResourceKeyPairProvider();
+        AbstractClassLoadableResourceKeyPairProvider provider = SecurityUtils.createClassLoadableResourceKeyPairProvider();
         provider.setResources(Collections.singletonList(name));
         return testLoadPrivateKey(name, provider, pubType, prvType);
     }
@@ -148,7 +148,7 @@ public class SecurityUtilsTest extends BaseTestSupport {
         provider.setFiles(Collections.singletonList(file));
         return testLoadPrivateKey(file.getAbsolutePath(), provider, pubType, prvType);
     }
-    
+
     private static KeyPair testLoadPrivateKey(String resourceKey, AbstractResourceKeyPairProvider<?> provider, Class<? extends PublicKey> pubType, Class<? extends PrivateKey> prvType) {
         provider.setPasswordFinder(passwordProvider);
         Iterable<KeyPair> iterator = provider.loadKeys();
@@ -156,7 +156,7 @@ public class SecurityUtilsTest extends BaseTestSupport {
         for (KeyPair kp : iterator) {
             pairs.add(kp);
         }
-        
+
         assertEquals("Mismatched loaded pairs count for " + resourceKey, 1, pairs.size());
 
         KeyPair kp = pairs.get(0);

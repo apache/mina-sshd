@@ -21,12 +21,12 @@ package org.apache.sshd.common.session;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.AbstractIoWriteFuture;
 import org.apache.sshd.common.io.IoWriteFuture;
-import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
  * Future holding a packet pending key exchange termination.
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class PendingWriteFuture extends AbstractIoWriteFuture implements SshFutureListener<IoWriteFuture> {

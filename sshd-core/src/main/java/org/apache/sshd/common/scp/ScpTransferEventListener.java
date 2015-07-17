@@ -37,6 +37,33 @@ public interface ScpTransferEventListener extends EventListener {
     }
 
     /**
+     * An &quot;empty&quot; implementation to be used instead of {@code null}s
+     */
+    ScpTransferEventListener EMPTY = new ScpTransferEventListener() {
+        // TODO in JDK 8.0 implement all methods as default with empty body in the interface itself
+
+        @Override
+        public void startFileEvent(FileOperation op, Path file, long length, Set<PosixFilePermission> perms) {
+            // ignored
+        }
+
+        @Override
+        public void endFileEvent(FileOperation op, Path file, long length, Set<PosixFilePermission> perms, Throwable thrown) {
+            // ignored
+        }
+
+        @Override
+        public void startFolderEvent(FileOperation op, Path file, Set<PosixFilePermission> perms) {
+            // ignored
+        }
+
+        @Override
+        public void endFolderEvent(FileOperation op, Path file, Set<PosixFilePermission> perms, Throwable thrown) {
+            // ignored
+        }
+    };
+
+    /**
      * @param op     The {@link FileOperation}
      * @param file   The <U>local</U> referenced file {@link Path}
      * @param length Size (in bytes) of transfered data
@@ -74,30 +101,4 @@ public interface ScpTransferEventListener extends EventListener {
      */
     void endFolderEvent(FileOperation op, Path file, Set<PosixFilePermission> perms, Throwable thrown);
 
-    /**
-     * An &quot;empty&quot; implementation to be used instead of {@code null}s
-     */
-    ScpTransferEventListener EMPTY = new ScpTransferEventListener() {
-        // TODO in JDK 8.0 implement all methods as default with empty body in the interface itself
-
-        @Override
-        public void startFileEvent(FileOperation op, Path file, long length, Set<PosixFilePermission> perms) {
-            // ignored
-        }
-
-        @Override
-        public void endFileEvent(FileOperation op, Path file, long length, Set<PosixFilePermission> perms, Throwable thrown) {
-            // ignored
-        }
-
-        @Override
-        public void startFolderEvent(FileOperation op, Path file, Set<PosixFilePermission> perms) {
-            // ignored
-        }
-
-        @Override
-        public void endFolderEvent(FileOperation op, Path file, Set<PosixFilePermission> perms, Throwable thrown) {
-            // ignored
-        }
-    };
 }

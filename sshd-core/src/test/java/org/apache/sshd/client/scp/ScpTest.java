@@ -38,6 +38,12 @@ import java.util.EnumSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import ch.ethz.ssh2.Connection;
+import ch.ethz.ssh2.ConnectionInfo;
+import ch.ethz.ssh2.SCPClient;
+import com.jcraft.jsch.ChannelExec;
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.JSchException;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.Factory;
@@ -66,14 +72,6 @@ import org.junit.runners.MethodSorters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.jcraft.jsch.ChannelExec;
-import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.JSchException;
-
-import ch.ethz.ssh2.Connection;
-import ch.ethz.ssh2.ConnectionInfo;
-import ch.ethz.ssh2.SCPClient;
-
 /**
  * Test for SCP support.
  *
@@ -90,7 +88,7 @@ public class ScpTest extends BaseTestSupport {
     public ScpTest() throws IOException {
         Path targetPath = detectTargetFolder().toPath();
         Path parentPath = targetPath.getParent();
-        final FileSystem fileSystem = new RootedFileSystemProvider().newFileSystem(parentPath, Collections.<String,Object>emptyMap());
+        final FileSystem fileSystem = new RootedFileSystemProvider().newFileSystem(parentPath, Collections.<String, Object>emptyMap());
         fileSystemFactory = new FileSystemFactory() {
             @Override
             public FileSystem createFileSystem(Session session) throws IOException {
@@ -125,7 +123,7 @@ public class ScpTest extends BaseTestSupport {
         if (session != null) {
             session.disconnect();
         }
-        
+
         if (sshd != null) {
             sshd.stop(true);
         }
@@ -170,7 +168,7 @@ public class ScpTest extends BaseTestSupport {
                     if (sb.length() > 0) {
                         sb.setLength(0);    // start again
                     }
-                    
+
                     sb.append(remoteComps[0]);
                     for (int j = 1; j < remoteComps.length; j++) {
                         String name = remoteComps[j];
@@ -178,11 +176,11 @@ public class ScpTest extends BaseTestSupport {
                         sb.append(name);
                     }
                     slashify(sb, rnd);
-                    
+
                     String path = sb.toString();
                     scp.upload(localPath, path);
                     assertTrue("Remote file not ready for " + path, waitForFile(remoteFile, data.length, TimeUnit.SECONDS.toMillis(5L)));
-                    
+
                     byte[] actual = Files.readAllBytes(remoteFile);
                     assertArrayEquals("Mismatched uploaded data for " + path, data, actual);
                     Files.delete(remoteFile);
@@ -194,10 +192,10 @@ public class ScpTest extends BaseTestSupport {
 
     private static int slashify(StringBuilder sb, Random rnd) {
         int slashes = 1 /* at least one slash */ + rnd.random(Byte.SIZE);
-        for (int k=0; k < slashes; k++) {
+        for (int k = 0; k < slashes; k++) {
             sb.append('/');
         }
-        
+
         return slashes;
     }
 
@@ -232,7 +230,7 @@ public class ScpTest extends BaseTestSupport {
                 String secondPath = Utils.resolveRelativeRemotePath(parentPath, secondRemote);
                 scp.upload(localPath, secondPath);
                 assertFileLength(secondRemote, data.length, TimeUnit.SECONDS.toMillis(5L));
-                
+
                 Path pathRemote = remoteDir.resolve("file-path.txt");
                 String pathPath = Utils.resolveRelativeRemotePath(parentPath, pathRemote);
                 scp.upload(localFile, pathPath);
@@ -375,16 +373,16 @@ public class ScpTest extends BaseTestSupport {
                 writeFile(localOutFile, data);
 
                 assertFalse("Remote folder already exists: " + remoteDir, Files.exists(remoteDir));
-                
+
                 String localOutPath = localOutFile.toString();
                 String remoteOutPath = Utils.resolveRelativeRemotePath(parentPath, remoteOutFile);
                 try {
                     scp.upload(localOutPath, remoteOutPath);
                     fail("Expected IOException for 1st time " + remoteOutPath);
-                } catch(IOException e) {
+                } catch (IOException e) {
                     // ok
                 }
-                
+
                 assertHierarchyTargetFolderExists(remoteDir);
                 scp.upload(localOutPath, remoteOutPath);
                 assertFileLength(remoteOutFile, data.length(), TimeUnit.SECONDS.toMillis(5L));
@@ -392,7 +390,7 @@ public class ScpTest extends BaseTestSupport {
                 Path secondLocal = localDir.resolve(localOutFile.getFileName());
                 scp.download(remoteOutPath, Utils.resolveRelativeRemotePath(parentPath, secondLocal));
                 assertFileLength(secondLocal, data.length(), TimeUnit.SECONDS.toMillis(5L));
-                
+
                 Path localPath = localDir.resolve("file-path.txt");
                 scp.download(remoteOutPath, Utils.resolveRelativeRemotePath(parentPath, localPath));
                 assertFileLength(localPath, data.length(), TimeUnit.SECONDS.toMillis(5L));
@@ -427,14 +425,14 @@ public class ScpTest extends BaseTestSupport {
                 Path remoteDir = assertHierarchyTargetFolderExists(scpRoot.resolve("remote"));
                 Path remote1 = remoteDir.resolve(local1.getFileName());
                 String remote1Path = Utils.resolveRelativeRemotePath(parentPath, remote1);
-                String[] locals = { local1.toString(), local2.toString() };
+                String[] locals = {local1.toString(), local2.toString()};
                 try {
                     scp.upload(locals, remote1Path);
                     fail("Unexpected upload success to missing remote file: " + remote1Path);
                 } catch (IOException e) {
                     // Ok
                 }
-                
+
                 Files.write(remote1, data);
                 try {
                     scp.upload(locals, remote1Path);
@@ -445,7 +443,7 @@ public class ScpTest extends BaseTestSupport {
 
                 Path remoteSubDir = assertHierarchyTargetFolderExists(remoteDir.resolve("dir"));
                 scp.upload(locals, Utils.resolveRelativeRemotePath(parentPath, remoteSubDir));
-                
+
                 Path remoteSub1 = remoteSubDir.resolve(local1.getFileName());
                 assertFileLength(remoteSub1, data.length, TimeUnit.SECONDS.toMillis(5L));
 
@@ -455,7 +453,7 @@ public class ScpTest extends BaseTestSupport {
                 String[] remotes = {
                         Utils.resolveRelativeRemotePath(parentPath, remoteSub1),
                         Utils.resolveRelativeRemotePath(parentPath, remoteSub2),
-                    };
+                };
 
                 try {
                     scp.download(remotes, Utils.resolveRelativeRemotePath(parentPath, local1));
@@ -463,7 +461,7 @@ public class ScpTest extends BaseTestSupport {
                 } catch (IOException e) {
                     // Ok
                 }
-                
+
                 Path localSubDir = localDir.resolve("dir");
                 try {
                     scp.download(remotes, localSubDir);
@@ -507,7 +505,7 @@ public class ScpTest extends BaseTestSupport {
 
                 Path remoteDir = assertHierarchyTargetFolderExists(scpRoot.resolve("remote"));
                 scp.upload(localSubDir, Utils.resolveRelativeRemotePath(parentPath, remoteDir), ScpClient.Option.Recursive);
-                
+
                 Path remoteSubDir = remoteDir.resolve(localSubDir.getFileName());
                 assertFileLength(remoteSubDir.resolve(localSub1.getFileName()), data.length, TimeUnit.SECONDS.toMillis(5L));
                 assertFileLength(remoteSubDir.resolve(localSub2.getFileName()), data.length, TimeUnit.SECONDS.toMillis(5L));
@@ -647,7 +645,7 @@ public class ScpTest extends BaseTestSupport {
 
                 Path remote1 = remoteDir.resolve(local1.getFileName());
                 assertFileLength(remote1, data.length, TimeUnit.SECONDS.toMillis(5L));
-                
+
                 File remFile1 = remote1.toFile();
                 assertLastModifiedTimeEquals(remFile1, lcl1ModSet, lastModSecs);
 
@@ -731,8 +729,7 @@ public class ScpTest extends BaseTestSupport {
                           .append('[').append(new Date(expectedMillis).toString()).append(']')
                           .append(", actual=").append(String.valueOf(actualSeconds))
                           .append('[').append(new Date(actualMillis).toString()).append(']')
-                          .println()
-                          ;
+                          .println();
             }
         } else {
             assertEquals("Mismatched last modified time for " + file.getAbsolutePath(), expectedSeconds, actualSeconds);
@@ -740,8 +737,8 @@ public class ScpTest extends BaseTestSupport {
     }
 
     private static byte[] writeFile(Path path, String data) throws IOException {
-        try(OutputStream fos = Files.newOutputStream(path)) {
-            byte[]  bytes = data.getBytes(StandardCharsets.UTF_8);
+        try (OutputStream fos = Files.newOutputStream(path)) {
+            byte[] bytes = data.getBytes(StandardCharsets.UTF_8);
             fos.write(bytes);
             return bytes;
         }
@@ -752,7 +749,7 @@ public class ScpTest extends BaseTestSupport {
         session = getJschSession();
         try {
             String data = getCurrentTestName() + "\n";
-    
+
             String unixDir = "target/scp";
             String fileName = getCurrentTestName() + ".txt";
             String unixPath = unixDir + "/" + fileName;
@@ -761,27 +758,27 @@ public class ScpTest extends BaseTestSupport {
             Utils.deleteRecursive(root);
             root.mkdirs();
             assertTrue(root.exists());
-    
+
             target.delete();
             assertFalse(target.exists());
             sendFile(unixPath, fileName, data);
             assertFileLength(target, data.length(), TimeUnit.SECONDS.toMillis(5L));
-    
+
             target.delete();
             assertFalse(target.exists());
             sendFile(unixDir, fileName, data);
             assertFileLength(target, data.length(), TimeUnit.SECONDS.toMillis(5L));
-    
+
             sendFileError("target", ScpHelper.SCP_COMMAND_PREFIX, data);
-    
+
             readFileError(unixDir);
-    
+
             assertEquals("Mismatched file data", data, readFile(unixPath, target.length()));
             assertEquals("Mismatched dir data", data, readDir(unixDir, fileName, target.length()));
-    
+
             target.delete();
             root.delete();
-    
+
             sendDir("target", ScpHelper.SCP_COMMAND_PREFIX, fileName, data);
             assertFileLength(target, data.length(), TimeUnit.SECONDS.toMillis(5L));
         } finally {
@@ -802,30 +799,30 @@ public class ScpTest extends BaseTestSupport {
         String fileName = "file.txt";
         Path remoteFile = remoteDir.resolve(fileName);
         String mode = ScpHelper.getOctalPermissions(EnumSet.of(
-                    PosixFilePermission.OTHERS_READ, PosixFilePermission.OTHERS_WRITE,
-                    PosixFilePermission.GROUP_READ, PosixFilePermission.GROUP_WRITE,
-                    PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE
-                ));
+                PosixFilePermission.OTHERS_READ, PosixFilePermission.OTHERS_WRITE,
+                PosixFilePermission.GROUP_READ, PosixFilePermission.GROUP_WRITE,
+                PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE
+        ));
 
         final Connection conn = new Connection("localhost", port);
         try {
             ConnectionInfo info = conn.connect(null, (int) TimeUnit.SECONDS.toMillis(5L), (int) TimeUnit.SECONDS.toMillis(11L));
             System.out.println("Connected: kex=" + info.keyExchangeAlgorithm + ", key-type=" + info.serverHostKeyAlgorithm
-                             + ", c2senc=" + info.clientToServerCryptoAlgorithm + ", s2cenc=" + info.serverToClientCryptoAlgorithm
-                             + ", c2mac=" + info.clientToServerMACAlgorithm + ", s2cmac=" + info.serverToClientMACAlgorithm);
+                    + ", c2senc=" + info.clientToServerCryptoAlgorithm + ", s2cenc=" + info.serverToClientCryptoAlgorithm
+                    + ", c2mac=" + info.clientToServerMACAlgorithm + ", s2cmac=" + info.serverToClientMACAlgorithm);
             conn.authenticateWithPassword(getCurrentTestName(), getCurrentTestName());
 
             final SCPClient scp_client = new SCPClient(conn);
-            try(OutputStream output = scp_client.put(fileName, expected.length, remotePath, mode)) {
+            try (OutputStream output = scp_client.put(fileName, expected.length, remotePath, mode)) {
                 output.write(expected);
             }
-            
+
             assertTrue("Remote file not created: " + remoteFile, Files.exists(remoteFile));
             byte[] remoteData = Files.readAllBytes(remoteFile);
             assertArrayEquals("Mismatched remote put data", expected, remoteData);
-            
+
             Arrays.fill(remoteData, (byte) 0);  // make sure we start with a clean slate 
-            try(InputStream input = scp_client.get(remotePath + "/" + fileName)) {
+            try (InputStream input = scp_client.get(remotePath + "/" + fileName)) {
                 int readLen = input.read(remoteData);
                 assertEquals("Mismatched remote get data size", expected.length, readLen);
                 // make sure we reached EOF
@@ -845,8 +842,8 @@ public class ScpTest extends BaseTestSupport {
 
         int namePos = path.lastIndexOf('/');
         String fileName = (namePos >= 0) ? path.substring(namePos + 1) : path;
-        try(OutputStream os = c.getOutputStream();
-            InputStream is = c.getInputStream()) {
+        try (OutputStream os = c.getOutputStream();
+             InputStream is = c.getInputStream()) {
 
             os.write(0);
             os.flush();
@@ -856,7 +853,7 @@ public class ScpTest extends BaseTestSupport {
             int length = Integer.parseInt(header.substring(6, header.indexOf(' ', 6)));
             os.write(0);
             os.flush();
-    
+
             byte[] buffer = new byte[length];
             length = is.read(buffer, 0, buffer.length);
             assertEquals("Mismatched read data length for " + path, length, buffer.length);
@@ -876,8 +873,8 @@ public class ScpTest extends BaseTestSupport {
         c.setCommand("scp -r -f " + path);
         c.connect();
 
-        try(OutputStream os = c.getOutputStream();
-            InputStream is = c.getInputStream()) {
+        try (OutputStream os = c.getOutputStream();
+             InputStream is = c.getInputStream()) {
             os.write(0);
             os.flush();
 
@@ -913,13 +910,13 @@ public class ScpTest extends BaseTestSupport {
 
     protected String readFileError(String path) throws Exception {
         ChannelExec c = (ChannelExec) session.openChannel("exec");
-        String command = "scp -f " + path; 
+        String command = "scp -f " + path;
         c.setCommand(command);
         c.connect();
 
-        try(OutputStream os = c.getOutputStream();
-            InputStream is = c.getInputStream()) {
-        
+        try (OutputStream os = c.getOutputStream();
+             InputStream is = c.getInputStream()) {
+
             os.write(0);
             os.flush();
             assertEquals("Mismatched response for command: " + command, 2, is.read());
@@ -935,11 +932,11 @@ public class ScpTest extends BaseTestSupport {
         c.setCommand(command);
         c.connect();
 
-        try(OutputStream os = c.getOutputStream();
-            InputStream is = c.getInputStream()) {
+        try (OutputStream os = c.getOutputStream();
+             InputStream is = c.getInputStream()) {
 
             assertAckReceived(is, command);
-            assertAckReceived(os, is, "C7777 " + data.length() + " " + name); 
+            assertAckReceived(os, is, "C7777 " + data.length() + " " + name);
 
             os.write(data.getBytes(StandardCharsets.UTF_8));
             os.flush();
@@ -966,12 +963,12 @@ public class ScpTest extends BaseTestSupport {
 
     protected void sendFileError(String path, String name, String data) throws Exception {
         ChannelExec c = (ChannelExec) session.openChannel("exec");
-        String command = "scp -t " + path; 
+        String command = "scp -t " + path;
         c.setCommand(command);
         c.connect();
 
-        try(OutputStream os = c.getOutputStream();
-            InputStream is = c.getInputStream()) {
+        try (OutputStream os = c.getOutputStream();
+             InputStream is = c.getInputStream()) {
 
             assertAckReceived(is, command);
 
@@ -989,9 +986,9 @@ public class ScpTest extends BaseTestSupport {
         String command = "scp -t -r " + path;
         c.setCommand(command);
         c.connect();
-        
-        try(OutputStream os = c.getOutputStream();
-            InputStream is = c.getInputStream()) {
+
+        try (OutputStream os = c.getOutputStream();
+             InputStream is = c.getInputStream()) {
 
             assertAckReceived(is, command);
             assertAckReceived(os, is, "D0755 0 " + dirName);
@@ -1003,7 +1000,7 @@ public class ScpTest extends BaseTestSupport {
 
             os.write(0);
             os.flush();
-            
+
             os.write("E\n".getBytes(StandardCharsets.UTF_8));
             os.flush();
             assertAckReceived(is, "Signal end of " + path);

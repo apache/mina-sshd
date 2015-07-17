@@ -22,7 +22,6 @@ import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.util.HashMap;
 import java.util.Map;
-
 import javax.security.auth.Subject;
 import javax.security.auth.login.AppConfigurationEntry;
 import javax.security.auth.login.Configuration;
@@ -38,7 +37,11 @@ import org.ietf.jgss.GSSManager;
  * with non-Sun JREs.
  */
 
-public class CredentialHelper {
+public final class CredentialHelper {
+
+    private CredentialHelper() {
+        throw new UnsupportedOperationException("No instance");
+    }
 
     @SuppressWarnings("synthetic-access")
     public static GSSCredential creds(GSSManager mgr, String spn, String keytab) throws LoginException, GSSException {
@@ -58,7 +61,7 @@ public class CredentialHelper {
      * @author Richard Evans
      */
 
-    private static class FixedLoginConfiguration extends Configuration {
+    private static final class FixedLoginConfiguration extends Configuration {
 
         private AppConfigurationEntry entry;
 

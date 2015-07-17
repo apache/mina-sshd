@@ -29,12 +29,18 @@ public interface ServiceFactory extends NamedResource {
     /**
      * Utility class to help using NamedFactories
      */
-    class Utils {
+    final class Utils {
+
+        private Utils() {
+            throw new UnsupportedOperationException("No instance allowed");
+        }
+
         /**
          * Create an instance of the specified name by looking up the needed factory
          * in the list (case <U>insensitive</U>.
+         *
          * @param factories list of available factories
-         * @param name the factory name to use
+         * @param name      the factory name to use
          * @return a newly created object or {@code null} if the factory is not in the list
          * @throws IOException if session creation failed
          * @see ServiceFactory#create(Session)

@@ -27,7 +27,7 @@ import java.io.IOException;
 public interface FilePasswordProvider {
     /**
      * @param resourceKey The resource key representing the <U>private</U>
-     * file
+     *                    file
      * @return The password - if {@code null}/empty then no password is required
      * @throws IOException if cannot resolve password
      */

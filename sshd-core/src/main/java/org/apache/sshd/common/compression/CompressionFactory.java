@@ -19,19 +19,12 @@
 
 package org.apache.sshd.common.compression;
 
-import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.OptionalFeature;
-import org.apache.sshd.common.util.Transformer;
+import org.apache.sshd.common.BuiltinFactory;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface CompressionFactory extends NamedFactory<Compression>, OptionalFeature {
-    // required because of generics issues
-    Transformer<CompressionFactory,NamedFactory<Compression>> FAC2NAMED=new Transformer<CompressionFactory,NamedFactory<Compression>>() {
-        @Override
-        public NamedFactory<Compression> transform(CompressionFactory input) {
-            return input;
-        }
-    };
+// CHECKSTYLE:OFF
+public interface CompressionFactory extends BuiltinFactory<Compression> {
+
 }

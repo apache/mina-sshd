@@ -18,20 +18,6 @@
  */
 package org.apache.sshd.common.session;
 
-import static org.apache.sshd.common.SshConstants.SSH_MSG_CHANNEL_CLOSE;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_CHANNEL_DATA;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_CHANNEL_EOF;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_CHANNEL_FAILURE;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_CHANNEL_OPEN;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_CHANNEL_OPEN_CONFIRMATION;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_CHANNEL_OPEN_FAILURE;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_CHANNEL_REQUEST;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_CHANNEL_WINDOW_ADJUST;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_GLOBAL_REQUEST;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_REQUEST_FAILURE;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_REQUEST_SUCCESS;
-
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
@@ -61,6 +47,20 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.server.channel.OpenChannelException;
 import org.apache.sshd.server.x11.X11ForwardSupport;
 
+import static org.apache.sshd.common.SshConstants.SSH_MSG_CHANNEL_CLOSE;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_CHANNEL_DATA;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_CHANNEL_EOF;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_CHANNEL_FAILURE;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_CHANNEL_OPEN;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_CHANNEL_OPEN_CONFIRMATION;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_CHANNEL_OPEN_FAILURE;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_CHANNEL_REQUEST;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_CHANNEL_WINDOW_ADJUST;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_GLOBAL_REQUEST;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_REQUEST_FAILURE;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_REQUEST_SUCCESS;
+
 /**
  * Base implementation of ConnectionService.
  *
@@ -69,19 +69,26 @@ import org.apache.sshd.server.x11.X11ForwardSupport;
 public abstract class AbstractConnectionService extends CloseableUtils.AbstractInnerCloseable implements ConnectionService {
     /**
      * Property that can be used to configure max. allowed concurrent active channels
+     *
      * @see #registerChannel(Channel)
      */
     public static final String MAX_CONCURRENT_CHANNELS_PROP = "max-sshd-channels";
-        public static final int DEFAULT_MAX_CHANNELS = Integer.MAX_VALUE;
+    public static final int DEFAULT_MAX_CHANNELS = Integer.MAX_VALUE;
 
-    /** Map of channels keyed by the identifier */
+    /**
+     * Map of channels keyed by the identifier
+     */
     protected final Map<Integer, Channel> channels = new ConcurrentHashMap<>();
-    /** Next channel identifier */
+    /**
+     * Next channel identifier
+     */
     protected final AtomicInteger nextChannelId = new AtomicInteger(0);
 
     protected final AbstractSession session;
 
-    /** The tcpip forwarder */
+    /**
+     * The tcpip forwarder
+     */
     protected final TcpipForwarder tcpipForwarder;
     protected final AgentForwardSupport agentForward;
     protected final X11ForwardSupport x11Forward;
@@ -93,7 +100,7 @@ public abstract class AbstractConnectionService extends CloseableUtils.AbstractI
         FactoryManager manager = session.getFactoryManager();
         agentForward = new AgentForwardSupport(this);
         x11Forward = new X11ForwardSupport(this);
-        
+
         TcpipForwarderFactory factory = ValidateUtils.checkNotNull(
                 manager.getTcpipForwarderFactory(),
                 "No forwarder factory",
@@ -149,7 +156,7 @@ public abstract class AbstractConnectionService extends CloseableUtils.AbstractI
 
             channels.put(channelId, channel);
         }
-        
+
         if (log.isDebugEnabled()) {
             log.debug("registerChannel(id={}) {}", Integer.valueOf(channelId), channel);
         }
@@ -462,8 +469,7 @@ public abstract class AbstractConnectionService extends CloseableUtils.AbstractI
 
         byte cmd = RequestHandler.Result.ReplySuccess.equals(result)
                  ? SshConstants.SSH_MSG_CHANNEL_SUCCESS
-                 : SshConstants.SSH_MSG_CHANNEL_FAILURE
-                 ;
+                 : SshConstants.SSH_MSG_CHANNEL_FAILURE;
         buffer.clear();
         // leave room for the SSH header
         buffer.ensureCapacity(5 + 1 + (Integer.SIZE / Byte.SIZE), Int2IntFunction.Utils.add(Byte.SIZE));

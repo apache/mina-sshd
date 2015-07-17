@@ -52,8 +52,15 @@ import org.apache.sshd.common.util.buffer.BufferUtils;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<ECPublicKey,ECPrivateKey> {
+public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<ECPublicKey, ECPrivateKey> {
+
     public static final ECDSAPublicKeyEntryDecoder INSTANCE = new ECDSAPublicKeyEntryDecoder();
+
+    // see rfc5480 section 2.2
+    public static final byte ECPOINT_UNCOMPRESSED_FORM_INDICATOR = 0x04;
+    public static final byte ECPOINT_COMPRESSED_VARIANT_2 = 0x02;
+    public static final byte ECPOINT_COMPRESSED_VARIANT_3 = 0x02;
+
 
     public ECDSAPublicKeyEntryDecoder() {
         super(ECPublicKey.class, ECPrivateKey.class, ECCurves.KEY_TYPES);
@@ -65,7 +72,7 @@ public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<EC
         if (curve == null) {
             throw new InvalidKeySpecException("Not an EC curve name: " + keyType);
         }
-        
+
         if (!SecurityUtils.hasEcc()) {
             throw new NoSuchProviderException("ECC not supported");
         }
@@ -78,17 +85,18 @@ public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<EC
             throw new InvalidKeySpecException("Mismatched key curve name (" + keyCurveName + ") vs. encoded one (" + encCurveName + ")");
         }
 
-        byte[]  octets = readRLEBytes(keyData);
+        byte[] octets = readRLEBytes(keyData);
         final ECPoint w;
         try {
-            if ((w = octetStringToEcPoint(octets)) == null) {
+            w = octetStringToEcPoint(octets);
+            if (w == null) {
                 throw new InvalidKeySpecException("No ECPoint generated for curve=" + keyCurveName + " from octets=" + BufferUtils.printHex(':', octets));
             }
-        } catch(RuntimeException e) {
+        } catch (RuntimeException e) {
             throw new InvalidKeySpecException("Failed (" + e.getClass().getSimpleName() + ")"
-                                            + " to generate ECPoint for curve=" + keyCurveName
-                                            + " from octets=" + BufferUtils.printHex(':', octets)
-                                            + ": " + e.getMessage());
+                    + " to generate ECPoint for curve=" + keyCurveName
+                    + " from octets=" + BufferUtils.printHex(':', octets)
+                    + ": " + e.getMessage());
         }
 
         return generatePublicKey(new ECPublicKeySpec(w, paramSpec));
@@ -103,7 +111,7 @@ public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<EC
         if (key == null) {
             return null;
         }
-        
+
         ECParameterSpec params = key.getParams();
         if (params == null) {
             throw new InvalidKeyException("Missing parameters in key");
@@ -121,7 +129,7 @@ public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<EC
         if (key == null) {
             return null;
         }
-        
+
         ECParameterSpec params = key.getParams();
         if (params == null) {
             throw new InvalidKeyException("Missing parameters in key");
@@ -133,10 +141,11 @@ public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<EC
     @Override
     public String encodePublicKey(OutputStream s, ECPublicKey key) throws IOException {
         ValidateUtils.checkNotNull(key, "No public key provided");
-        
+
         ECParameterSpec params = ValidateUtils.checkNotNull(key.getParams(), "No EC parameters available");
         ECCurves curve = ValidateUtils.checkNotNull(ECCurves.fromCurveParameters(params), "Cannot determine curve");
-        String keyType = curve.getKeyType(), curveName = curve.getName();
+        String keyType = curve.getKeyType();
+        String curveName = curve.getName();
         encodeString(s, keyType);
         // see rfc5656 section 3.1
         encodeString(s, curveName);
@@ -159,7 +168,7 @@ public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<EC
         if (curve == null) {
             throw new InvalidKeySpecException("Unknown curve for key size=" + keySize);
         }
-        
+
         KeyPairGenerator gen = getKeyPairGenerator();
         gen.initialize(curve.getParameters());
         return gen.generateKeyPair();
@@ -174,23 +183,18 @@ public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<EC
         }
     }
 
-    // see rfc5480 section 2.2
-    public static final byte    ECPOINT_UNCOMPRESSED_FORM_INDICATOR=0x04;
-    public static final byte    ECPOINT_COMPRESSED_VARIANT_2=0x02;
-    public static final byte    ECPOINT_COMPRESSED_VARIANT_3=0x02;
-
-    public static ECPoint octetStringToEcPoint(byte ... octets) {
+    public static ECPoint octetStringToEcPoint(byte... octets) {
         if (GenericUtils.isEmpty(octets)) {
             return null;
         }
 
-        int startIndex=findFirstNonZeroIndex(octets);
+        int startIndex = findFirstNonZeroIndex(octets);
         if (startIndex < 0) {
             throw new IllegalArgumentException("All zeroes ECPoint N/A");
         }
 
-        byte                indicator=octets[startIndex];
-        ECPointCompression  compression=ECPointCompression.fromIndicatorValue(indicator);
+        byte indicator = octets[startIndex];
+        ECPointCompression compression = ECPointCompression.fromIndicatorValue(indicator);
         if (compression == null) {
             throw new UnsupportedOperationException("Unknown compression indicator value: 0x" + Integer.toHexString(indicator & 0xFF));
         }
@@ -199,21 +203,23 @@ public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<EC
         return compression.octetStringToEcPoint(octets, startIndex + 1, octets.length - startIndex - 1);
     }
 
-    private static int findFirstNonZeroIndex(byte ... octets) {
+    private static int findFirstNonZeroIndex(byte... octets) {
         if (GenericUtils.isEmpty(octets)) {
-            return (-1);
+            return -1;
         }
 
-        for (int    index=0; index < octets.length; index++) {
+        for (int index = 0; index < octets.length; index++) {
             if (octets[index] != 0) {
                 return index;
             }
         }
 
-        return (-1);    // all zeroes
+        return -1;    // all zeroes
     }
+
     /**
      * The various {@link ECPoint} representation compression indicators
+     *
      * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
      * @see <A HREF="https://www.ietf.org/rfc/rfc5480.txt">RFC-5480 - section 2.2</A>
      */
@@ -221,83 +227,88 @@ public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<EC
         // see http://tools.ietf.org/html/draft-jivsov-ecc-compact-00
         // see http://crypto.stackexchange.com/questions/8914/ecdsa-compressed-public-key-point-back-to-uncompressed-public-key-point
         VARIANT2((byte) 0x02) {
-                @Override
-                public ECPoint octetStringToEcPoint(byte[] octets, int startIndex, int len) {
-                    byte[] xp=new byte[len];
-                    System.arraycopy(octets, startIndex, xp, 0, len);
-                    BigInteger  x=octetStringToInteger(xp);
+            @Override
+            public ECPoint octetStringToEcPoint(byte[] octets, int startIndex, int len) {
+                byte[] xp = new byte[len];
+                System.arraycopy(octets, startIndex, xp, 0, len);
+                BigInteger x = octetStringToInteger(xp);
 
-                    // TODO derive even Y...
-                    throw new UnsupportedOperationException("octetStringToEcPoint(" + name() + ")(X=" + x + ") compression support N/A");
-                }
-            },
+                // TODO derive even Y...
+                throw new UnsupportedOperationException("octetStringToEcPoint(" + name() + ")(X=" + x + ") compression support N/A");
+            }
+        },
         VARIANT3((byte) 0x03) {
-                @Override
-                public ECPoint octetStringToEcPoint(byte[] octets, int startIndex, int len) {
-                    byte[] xp=new byte[len];
-                    System.arraycopy(octets, startIndex, xp, 0, len);
-                    BigInteger  x=octetStringToInteger(xp);
+            @Override
+            public ECPoint octetStringToEcPoint(byte[] octets, int startIndex, int len) {
+                byte[] xp = new byte[len];
+                System.arraycopy(octets, startIndex, xp, 0, len);
+                BigInteger x = octetStringToInteger(xp);
 
-                    // TODO derive odd Y...
-                    throw new UnsupportedOperationException("octetStringToEcPoint(" + name() + ")(X=" + x + ") compression support N/A");
-                }
-            },
+                // TODO derive odd Y...
+                throw new UnsupportedOperationException("octetStringToEcPoint(" + name() + ")(X=" + x + ") compression support N/A");
+            }
+        },
         UNCOMPRESSED((byte) 0x04) {
-                @Override
-                public ECPoint octetStringToEcPoint(byte[] octets, int startIndex, int len) {
-                    int numElements=len / 2;    /* x, y */
-                    if (len != (numElements * 2 )) {    // make sure length is not odd
-                        throw new IllegalArgumentException("octetStringToEcPoint(" + name() + ") "
-                                                         + " invalid remainder octets representation: "
-                                                         + " expected=" + (2 * numElements) + ", actual=" + len);
-                    }
-
-                    byte[] xp=new byte[numElements], yp=new byte[numElements];
-                    System.arraycopy(octets, startIndex, xp, 0, numElements);
-                    System.arraycopy(octets, startIndex + numElements, yp, 0, numElements);
-
-                    BigInteger  x=octetStringToInteger(xp);
-                    BigInteger  y=octetStringToInteger(yp);
-                    return new ECPoint(x, y);
-                }
-                
-                @Override
-                public void writeECPoint(OutputStream s, String curveName, ECPoint p) throws IOException {
-                    ECCurves curve = ECCurves.fromCurveName(curveName);
-                    if (curve == null) {
-                        throw new StreamCorruptedException("writeECPoint(" + name() + ")[" + curveName + "] cannot determine octets count");
-                    }
-                    
-                    int numElements = curve.getNumPointOctets();
-                    AbstractPublicKeyEntryDecoder.encodeInt(s, 1 /* the indicator */ + 2 * numElements);
-                    s.write(getIndicatorValue());
-                    writeCoordinate(s, "X", p.getAffineX(), numElements);
-                    writeCoordinate(s, "Y", p.getAffineY(), numElements);
+            @Override
+            public ECPoint octetStringToEcPoint(byte[] octets, int startIndex, int len) {
+                int numElements = len / 2;    /* x, y */
+                if (len != (numElements * 2)) {    // make sure length is not odd
+                    throw new IllegalArgumentException("octetStringToEcPoint(" + name() + ") "
+                            + " invalid remainder octets representation: "
+                            + " expected=" + (2 * numElements) + ", actual=" + len);
                 }
 
-            };
+                byte[] xp = new byte[numElements];
+                byte[] yp = new byte[numElements];
+                System.arraycopy(octets, startIndex, xp, 0, numElements);
+                System.arraycopy(octets, startIndex + numElements, yp, 0, numElements);
 
-        private final byte  indicatorValue;
-        public final byte getIndicatorValue() {
-            return indicatorValue;
-        }
+                BigInteger x = octetStringToInteger(xp);
+                BigInteger y = octetStringToInteger(yp);
+                return new ECPoint(x, y);
+            }
+
+            @Override
+            public void writeECPoint(OutputStream s, String curveName, ECPoint p) throws IOException {
+                ECCurves curve = ECCurves.fromCurveName(curveName);
+                if (curve == null) {
+                    throw new StreamCorruptedException("writeECPoint(" + name() + ")[" + curveName + "] cannot determine octets count");
+                }
+
+                int numElements = curve.getNumPointOctets();
+                AbstractPublicKeyEntryDecoder.encodeInt(s, 1 /* the indicator */ + 2 * numElements);
+                s.write(getIndicatorValue());
+                writeCoordinate(s, "X", p.getAffineX(), numElements);
+                writeCoordinate(s, "Y", p.getAffineY(), numElements);
+            }
+
+        };
+
+        public static final Set<ECPointCompression> VALUES =
+                Collections.unmodifiableSet(EnumSet.allOf(ECPointCompression.class));
+
+        private final byte indicatorValue;
 
         ECPointCompression(byte indicator) {
             indicatorValue = indicator;
         }
 
+        public final byte getIndicatorValue() {
+            return indicatorValue;
+        }
+
         public abstract ECPoint octetStringToEcPoint(byte[] octets, int startIndex, int len);
 
         public byte[] ecPointToOctetString(String curveName, ECPoint p) {
-            try(ByteArrayOutputStream baos = new ByteArrayOutputStream((2 * 66) + Long.SIZE)) {
+            try (ByteArrayOutputStream baos = new ByteArrayOutputStream((2 * 66) + Long.SIZE)) {
                 writeECPoint(baos, curveName, p);
                 return baos.toByteArray();
-            } catch(IOException e) {
+            } catch (IOException e) {
                 throw new RuntimeException("ecPointToOctetString(" + curveName + ")"
-                                         + " failed (" + e.getClass().getSimpleName() + ")"
-                                         + " to write data: " + e.getMessage(),
-                                           e);
-            } 
+                        + " failed (" + e.getClass().getSimpleName() + ")"
+                        + " to write data: " + e.getMessage(),
+                        e);
+            }
         }
 
         public void writeECPoint(OutputStream s, String curveName, ECPoint p) throws IOException {
@@ -309,9 +320,9 @@ public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<EC
         }
 
         protected void writeCoordinate(OutputStream s, String n, BigInteger v, int numElements) throws IOException {
-            byte[]  vp=v.toByteArray();
-            int     startIndex=0;
-            int     vLen=vp.length;
+            byte[] vp = v.toByteArray();
+            int startIndex = 0;
+            int vLen = vp.length;
             if (vLen > numElements) {
                 if (vp[0] == 0) {   // skip artificial positive sign
                     startIndex++;
@@ -321,21 +332,18 @@ public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<EC
 
             if (vLen > numElements) {
                 throw new StreamCorruptedException("writeCoordinate(" + name() + ")[" + n + "]"
-                                                 + " value length (" + vLen + ") exceeds max. (" + numElements + ")"
-                                                 + " for " + v);
+                        + " value length (" + vLen + ") exceeds max. (" + numElements + ")"
+                        + " for " + v);
             }
 
             if (vLen < numElements) {
-                byte[]  tmp=new byte[numElements];
+                byte[] tmp = new byte[numElements];
                 System.arraycopy(vp, startIndex, tmp, numElements - vLen, vLen);
                 vp = tmp;
             }
 
             s.write(vp, startIndex, vLen);
         }
-
-        public static final Set<ECPointCompression> VALUES=
-                Collections.unmodifiableSet(EnumSet.allOf(ECPointCompression.class));
 
         public static ECPointCompression fromIndicatorValue(int value) {
             if ((value < 0) || (value > 0xFF)) {
@@ -356,10 +364,11 @@ public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<EC
          * As octet strings always represent positive integers, a zero-byte is prepended to
          * the given array if necessary (if is MSB equal to 1), then this is converted to BigInteger
          * The conversion is defined in the Section 2.3.8
+         *
          * @param octets - octet string bytes to be converted
          * @return The {@link BigInteger} representation of the octet string
          */
-        public static BigInteger octetStringToInteger(byte ... octets) {
+        public static BigInteger octetStringToInteger(byte... octets) {
             if (octets == null) {
                 return null;
             } else if (octets.length == 0) {

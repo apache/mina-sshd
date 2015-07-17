@@ -77,17 +77,17 @@ import org.apache.sshd.common.util.io.NoCloseOutputStream;
 
 /**
  * Entry point for the client side of the SSH protocol.
- *
+ * <p/>
  * The default configured client can be created using
  * the {@link #setUpDefaultClient()}.  The next step is to
  * start the client using the {@link #start()} method.
- *
+ * <p/>
  * Sessions can then be created using on of the
  * {@link #connect(String, String, int)} or {@link #connect(String, java.net.SocketAddress)}
  * methods.
- *
+ * <p/>
  * The client can be stopped at anytime using the {@link #stop()} method.
- *
+ * <p/>
  * Following is an example of using the SshClient:
  * <pre>
  *    SshClient client = SshClient.setUpDefaultClient();
@@ -119,6 +119,18 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             return new SshClient();
         }
     };
+
+    public static final List<NamedFactory<UserAuth>> DEFAULT_USER_AUTH_FACTORIES =
+            Collections.unmodifiableList(Arrays.<NamedFactory<UserAuth>>asList(
+                    UserAuthPublicKeyFactory.INSTANCE,
+                    UserAuthKeyboardInteractiveFactory.INSTANCE,
+                    UserAuthPasswordFactory.INSTANCE
+            ));
+    public static final List<ServiceFactory> DEFAULT_SERVICE_FACTORIES =
+            Collections.unmodifiableList(Arrays.asList(
+                    ClientUserAuthServiceFactory.INSTANCE,
+                    ClientConnectionServiceFactory.INSTANCE
+            ));
 
     protected IoConnector connector;
     protected SessionFactory sessionFactory;
@@ -166,22 +178,10 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         this.userAuthFactories = userAuthFactories;
     }
 
-    public static final List<NamedFactory<UserAuth>> DEFAULT_USER_AUTH_FACTORIES =
-            Collections.unmodifiableList(Arrays.<NamedFactory<UserAuth>>asList(
-                    UserAuthPublicKeyFactory.INSTANCE,
-                    UserAuthKeyboardInteractiveFactory.INSTANCE,
-                    UserAuthPasswordFactory.INSTANCE
-                ));
-    public static final List<ServiceFactory> DEFAULT_SERVICE_FACTORIES =
-            Collections.unmodifiableList(Arrays.asList(
-                    ClientUserAuthServiceFactory.INSTANCE,
-                    ClientConnectionServiceFactory.INSTANCE
-                ));
-
     @Override
     protected void checkConfig() {
         super.checkConfig();
-        
+
         ValidateUtils.checkNotNull(getTcpipForwarderFactory(), "TcpipForwarderFactory not set");
         ValidateUtils.checkNotNull(getServerKeyVerifier(), "ServerKeyVerifier not set");
 
@@ -322,8 +322,8 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
     // NOTE: ClientSession#getFactoryManager is the SshClient
     public static ClientSession setupClientSession(
-            String portOption, final BufferedReader stdin, final PrintStream stdout, final PrintStream stderr, String ... args)
-                    throws Exception {
+            String portOption, final BufferedReader stdin, final PrintStream stdout, final PrintStream stderr, String... args)
+            throws Exception {
 
         int port = -1;
         String host = null;
@@ -340,14 +340,15 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                     error = true;
                     break;
                 }
-                
+
                 if (port > 0) {
                     stderr.println(argName + " option value re-specified: " + port);
                     error = true;
                     break;
                 }
-                
-                if ((port=Integer.parseInt(args[++i])) <= 0) {
+
+                port = Integer.parseInt(args[++i]);
+                if (port <= 0) {
                     stderr.println("Bad option value for " + argName + ": " + port);
                     error = true;
                     break;
@@ -358,7 +359,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                     error = true;
                     break;
                 }
-                
+
                 File f = new File(args[++i]);
                 identities.add(f);
             } else if ("-o".equals(argName)) {
@@ -381,7 +382,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                     error = true;
                     break;
                 }
-                
+
                 if (login != null) {
                     stderr.println(argName + " option value re-specified: " + port);
                     error = true;
@@ -400,7 +401,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                 }
             }
         }
-        
+
         if ((!error) && GenericUtils.isEmpty(host)) {
             stderr.println("Hostname not specified");
             error = true;
@@ -409,11 +410,11 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         if (login == null) {
             login = System.getProperty("user.name");
         }
-        
+
         if (port <= 0) {
             port = SshConfigFileReader.DEFAULT_PORT;
         }
-        
+
         if (error) {
             return null;
         }
@@ -443,42 +444,42 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                 }
             }
 
-            Map<String,Object> props = client.getProperties();
+            Map<String, Object> props = client.getProperties();
             props.putAll(options);
-    
+
             client.start();
             client.setUserInteraction(new UserInteraction() {
-                    @Override
-                    public void welcome(String banner) {
-                        stdout.println(banner);
-                    }
-        
-                    @Override
-                    public String[] interactive(String destination, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
-                        int numPropmts = GenericUtils.length(prompt);
-                        String[] answers = new String[numPropmts];
-                        try {
-                            for (int i = 0; i < numPropmts; i++) {
-                                stdout.print(prompt[i] + " ");
-                                answers[i] = stdin.readLine();
-                            }
-                        } catch (IOException e) {
-                            // ignored
+                @Override
+                public void welcome(String banner) {
+                    stdout.println(banner);
+                }
+
+                @Override
+                public String[] interactive(String destination, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
+                    int numPropmts = GenericUtils.length(prompt);
+                    String[] answers = new String[numPropmts];
+                    try {
+                        for (int i = 0; i < numPropmts; i++) {
+                            stdout.print(prompt[i] + " ");
+                            answers[i] = stdin.readLine();
                         }
-                        return answers;
+                    } catch (IOException e) {
+                        // ignored
                     }
-                });
-            
+                    return answers;
+                }
+            });
+
             // TODO use a configurable wait time
             ClientSession session = client.connect(login, host, port).await().getSession();
             try {
                 session.auth().verify();    // TODO use a configurable wait time
                 return session;
-            } catch(Exception e) {
+            } catch (Exception e) {
                 session.close(true);
                 throw e;
             }
-        } catch(Exception e) {
+        } catch (Exception e) {
             client.close();
             throw e;
         }
@@ -494,18 +495,15 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                 String throwable = "";
                 if (record.getThrown() != null) {
                     StringWriter sw = new StringWriter();
-                    PrintWriter pw = new PrintWriter(sw);
-                    pw.println();
-                    record.getThrown().printStackTrace(pw);
-                    pw.close();
+                    try (PrintWriter pw = new PrintWriter(sw)) {
+                        pw.println();
+                        record.getThrown().printStackTrace(pw);
+                    }
                     throwable = sw.toString();
                 }
                 return String.format("%1$tY-%1$tm-%1$td: %2$-7.7s: %3$-32.32s: %4$s%5$s%n",
-                        new Date(record.getMillis()),
-                        record.getLevel().getName(),
-                        record.getLoggerName(),
-                        message,
-                        throwable);
+                        new Date(record.getMillis()), record.getLevel().getName(),
+                        record.getLoggerName(), message, throwable);
             }
         });
         Logger root = Logger.getLogger("");
@@ -514,7 +512,8 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         }
         root.addHandler(fh);
 
-        PrintStream stdout=System.out, stderr=System.err;
+        PrintStream stdout = System.out;
+        PrintStream stderr = System.err;
         boolean agentForward = false;
         List<String> command = null;
         int logLevel = 0;
@@ -535,8 +534,9 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                     error = true;
                     break;
                 }
-                
-                if ((socksPort=Integer.parseInt(args[++i])) <= 0) {
+
+                socksPort = Integer.parseInt(args[++i]);
+                if (socksPort <= 0) {
                     stderr.println("Bad option value for " + argName + ": " + socksPort);
                     error = true;
                     break;
@@ -573,10 +573,11 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             root.setLevel(Level.FINEST);
         }
 
-        ClientSession session=null;
-        try(BufferedReader stdin = new BufferedReader(new InputStreamReader(new NoCloseInputStream(System.in)))) {
+        ClientSession session = null;
+        try (BufferedReader stdin = new BufferedReader(new InputStreamReader(new NoCloseInputStream(System.in)))) {
             if (!error) {
-                if ((session=setupClientSession("-p", stdin, stdout, stderr, args)) == null) {
+                session = setupClientSession("-p", stdin, stdout, stderr, args);
+                if (session == null) {
                     error = true;
                 }
             }
@@ -587,7 +588,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                 return;
             }
 
-            try(SshClient client = (SshClient) session.getFactoryManager()) {
+            try (SshClient client = (SshClient) session.getFactoryManager()) {
                 /*
                 String authSock = System.getenv(SshAgent.SSH_AUTHSOCKET_ENV_NAME);
                 if (authSock == null && provider != null) {
@@ -602,7 +603,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                     props.put(SshAgent.SSH_AUTHSOCKET_ENV_NAME, authSock);
                 }
                 */
-    
+
                 try {
                     if (socksPort >= 0) {
                         session.startDynamicPortForwarding(new SshdSocketAddress("localhost", socksPort));
@@ -621,7 +622,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                             w.close();
                             channel = session.createChannel(ClientChannel.CHANNEL_EXEC, w.toString());
                         }
-                        
+
                         try {
                             channel.setOut(new NoCloseOutputStream(System.out));
                             channel.setErr(new NoCloseOutputStream(System.err));
@@ -636,9 +637,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                     client.stop();
                 }
             } finally {
-                if (session != null) {
-                    session.close();
-                }
+                session.close();
             }
         }
     }

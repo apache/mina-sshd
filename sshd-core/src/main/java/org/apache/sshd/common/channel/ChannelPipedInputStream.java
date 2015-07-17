@@ -29,7 +29,6 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.FactoryManagerUtils;
-import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -94,7 +93,7 @@ public class ChannelPipedInputStream extends InputStream implements ChannelPiped
             if (l == -1) {
                 return -1;
             }
-            return (b[0] & 0xff);
+            return b[0] & 0xff;
         }
     }
 
@@ -103,7 +102,7 @@ public class ChannelPipedInputStream extends InputStream implements ChannelPiped
         long startTime = System.currentTimeMillis();
         lock.lock();
         try {
-            for (int index=0;; index++) {
+            for (int index = 0;; index++) {
                 if ((closed && writerClosed && eofSent) || (closed && !writerClosed)) {
                     throw new IOException("Pipe closed after " + index + " cycles");
                 }

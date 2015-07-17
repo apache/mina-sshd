@@ -70,28 +70,28 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
             if (result != Status.APR_SUCCESS) {
                 throwException(result);
             }
-            
+
             ExecutorService service = getExecutorService();
             forwardService = (service == null) ? ThreadUtils.newSingleThreadExecutor("ChannelAgentForwarding[" + authSocket + "]") : service;
             shutdownForwarder = (service == forwardService) ? isShutdownOnExit() : true;
             forwarder = forwardService.submit(new Runnable() {
-                    @SuppressWarnings("synthetic-access")
-                    @Override
-                    public void run() {
-                        try {
-                            byte[] buf = new byte[1024];
-                            while (true) {
-                                int len = Socket.recv(handle, buf, 0, buf.length);
-                                if (len > 0) {
-                                    out.write(buf, 0, len);
-                                    out.flush();
-                                }
+                @SuppressWarnings("synthetic-access")
+                @Override
+                public void run() {
+                    try {
+                        byte[] buf = new byte[1024];
+                        while (true) {
+                            int len = Socket.recv(handle, buf, 0, buf.length);
+                            if (len > 0) {
+                                out.write(buf, 0, len);
+                                out.flush();
                             }
-                        } catch (IOException e) {
-                            close(true);
                         }
+                    } catch (IOException e) {
+                        close(true);
                     }
-                });
+                }
+            });
             f.setOpened();
 
         } catch (Exception e) {
@@ -110,7 +110,7 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
 
         // We also need to close the socket.
         Socket.close(handle);
-        
+
         try {
             if ((forwarder != null) && (!forwarder.isDone())) {
                 forwarder.cancel(true);
@@ -118,9 +118,9 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
         } finally {
             forwarder = null;
         }
-        
+
         try {
-            if  ((forwardService != null) && shutdownForwarder) {
+            if ((forwardService != null) && shutdownForwarder) {
                 Collection<?> runners = forwardService.shutdownNow();
                 if (log.isDebugEnabled()) {
                     log.debug("Shut down runners count=" + GenericUtils.size(runners));
@@ -164,6 +164,7 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
 
     /**
      * transform an APR error number in a more fancy exception
+     *
      * @param code APR error code
      * @throws java.io.IOException the produced exception for the given APR error number
      */

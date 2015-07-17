@@ -61,12 +61,13 @@ import org.apache.sshd.common.util.SecurityUtils;
 
 /**
  * Provides an abstract message buffer for encoding SSH messages
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class Buffer implements Readable {
 
     // TODO use Long.BYTES in JDK-8
-    protected final byte[]  workBuf = new byte[Long.SIZE / Byte.SIZE];
+    protected final byte[] workBuf = new byte[Long.SIZE / Byte.SIZE];
 
     protected Buffer() {
         super();
@@ -77,6 +78,7 @@ public abstract class Buffer implements Readable {
     ======================*/
 
     public abstract int rpos();
+
     public abstract void rpos(int rpos);
 
     public abstract int wpos();
@@ -84,6 +86,7 @@ public abstract class Buffer implements Readable {
     public abstract void wpos(int wpos);
 
     public abstract int capacity();
+
     public abstract byte[] array();
 
     public abstract void compact();
@@ -124,9 +127,8 @@ public abstract class Buffer implements Readable {
         // TODO use Short.BYTES for JDK-8
         ensureAvailable(Short.SIZE / Byte.SIZE);
         getRawBytes(workBuf, 0, Short.SIZE / Byte.SIZE);
-        short v = (short) (((workBuf[1] << Byte.SIZE) & 0xFF00)
-                         | ((workBuf[0] ) & 0xF))
-                ;
+        short v = (short) ((workBuf[1] << Byte.SIZE) & 0xFF00);
+        v |= workBuf[0] & 0xF;
         return v;
     }
 
@@ -146,14 +148,14 @@ public abstract class Buffer implements Readable {
         ensureAvailable(Long.SIZE / Byte.SIZE);
         getRawBytes(workBuf, 0, Long.SIZE / Byte.SIZE);
         @SuppressWarnings("cast")
-        long l = (((long) workBuf[0] << 56) & 0xff00000000000000L)|
-                 (((long) workBuf[1] << 48) & 0x00ff000000000000L)|
-                 (((long) workBuf[2] << 40) & 0x0000ff0000000000L)|
-                 (((long) workBuf[3] << 32) & 0x000000ff00000000L)|
-                 (((long) workBuf[4] << 24) & 0x00000000ff000000L)|
-                 (((long) workBuf[5] << 16) & 0x0000000000ff0000L)|
-                 (((long) workBuf[6] <<  8) & 0x000000000000ff00L)|
-                 (((long) workBuf[7]      ) & 0x00000000000000ffL);
+        long l = ((long) workBuf[0] << 56) & 0xff00000000000000L;
+        l |= ((long) workBuf[1] << 48) & 0x00ff000000000000L;
+        l |= ((long) workBuf[2] << 40) & 0x0000ff0000000000L;
+        l |= ((long) workBuf[3] << 32) & 0x000000ff00000000L;
+        l |= ((long) workBuf[4] << 24) & 0x00000000ff000000L;
+        l |= ((long) workBuf[5] << 16) & 0x0000000000ff0000L;
+        l |= ((long) workBuf[6] << 8) & 0x000000000000ff00L;
+        l |= ((long) workBuf[7]) & 0x00000000000000ffL;
         return l;
     }
 
@@ -167,9 +169,9 @@ public abstract class Buffer implements Readable {
 
     /**
      * @param usePrependedLength If {@code true} then there is a 32-bit
-     * value indicating the number of strings to read. Otherwise, the
-     * method will use a &quot;greedy&quot; reading of strings while more
-     * data available
+     *                           value indicating the number of strings to read. Otherwise, the
+     *                           method will use a &quot;greedy&quot; reading of strings while more
+     *                           data available
      * @return A {@link Collection} of the read strings
      * @see #getStringList(boolean, Charset)
      */
@@ -179,13 +181,13 @@ public abstract class Buffer implements Readable {
 
     /**
      * @param usePrependedLength If {@code true} then there is a 32-bit
-     * value indicating the number of strings to read. Otherwise, the
-     * method will use a &quot;greedy&quot; reading of strings while more
-     * data available
-     * @param charset The {@link Charset} to use for the string
+     *                           value indicating the number of strings to read. Otherwise, the
+     *                           method will use a &quot;greedy&quot; reading of strings while more
+     *                           data available
+     * @param charset            The {@link Charset} to use for the string
      * @return A {@link Collection} of the read strings
      * @see {@link #getStringList(int, Charset)}
-     * @see {@link #getAvailableStrings()} 
+     * @see {@link #getAvailableStrings()}
      */
     public Collection<String> getStringList(boolean usePrependedLength, Charset charset) {
         if (usePrependedLength) {
@@ -212,11 +214,11 @@ public abstract class Buffer implements Readable {
      */
     public Collection<String> getAvailableStrings(Charset charset) {
         Collection<String> list = new LinkedList<String>();
-        while(available() > 0) {
+        while (available() > 0) {
             String s = getString(charset);
             list.add(s);
         }
-        
+
         return list;
     }
 
@@ -230,7 +232,7 @@ public abstract class Buffer implements Readable {
     }
 
     /**
-     * @param count The <U>exact</V> number of strings to read - can be zero
+     * @param count   The <U>exact</V> number of strings to read - can be zero
      * @param charset The {@link Charset} of the strings
      * @return A {@link List} with the specified number of strings
      */
@@ -238,16 +240,16 @@ public abstract class Buffer implements Readable {
         if (count == 0) {
             return Collections.emptyList();
         }
-        
+
         List<String> list = new ArrayList<String>(count);
         for (int index = 0; index < count; index++) {
             String s = getString(charset);
             list.add(s);
         }
-        
+
         return list;
     }
-    
+
     public abstract String getString(Charset charset);
 
     public BigInteger getMPInt() {
@@ -300,7 +302,7 @@ public abstract class Buffer implements Readable {
                 KeyFactory keyFactory = SecurityUtils.getKeyFactory("DSA");
                 return keyFactory.generatePublic(new DSAPublicKeySpec(y, p, q, g));
             }
-            
+
             ECCurves curve = ECCurves.fromKeyType(keyAlg);
             if (curve == null) {
                 throw new NoSuchAlgorithmException("Unsupported raw public algorithm: " + keyAlg);
@@ -328,11 +330,11 @@ public abstract class Buffer implements Readable {
         ECPoint w;
         try {
             w = ECDSAPublicKeyEntryDecoder.octetStringToEcPoint(octets);
-        } catch(RuntimeException e) {
+        } catch (RuntimeException e) {
             throw new InvalidKeySpecException("getRawECKey(" + expectedCurve + ")"
-                                            + " cannot (" + e.getClass().getSimpleName() + ")"
-                                            + " retrieve W value: " + e.getMessage(),
-                                              e);
+                    + " cannot (" + e.getClass().getSimpleName() + ")"
+                    + " retrieve W value: " + e.getMessage(),
+                    e);
         }
 
         KeyFactory keyFactory = SecurityUtils.getKeyFactory("EC");
@@ -366,7 +368,7 @@ public abstract class Buffer implements Readable {
                 pub = keyFactory.generatePublic(new DSAPublicKeySpec(y, p, q, g));
                 prv = keyFactory.generatePrivate(new DSAPrivateKeySpec(x, p, q, g));
             } else {
-                ECCurves    curve = ECCurves.fromKeyType(keyAlg);
+                ECCurves curve = ECCurves.fromKeyType(keyAlg);
                 if (curve == null) {
                     throw new NoSuchAlgorithmException("Unsupported key pair algorithm: " + keyAlg);
                 }
@@ -397,11 +399,11 @@ public abstract class Buffer implements Readable {
         ECPoint group;
         try {
             group = ECDSAPublicKeyEntryDecoder.octetStringToEcPoint(groupBytes);
-        } catch(RuntimeException e) {
+        } catch (RuntimeException e) {
             throw new InvalidKeySpecException("extractEC(" + expectedCurveName + ")"
-                                            + " failed (" + e.getClass().getSimpleName() + ")"
-                                            + " to decode EC group for curve: " + e.getMessage(),
-                                              e);
+                    + " failed (" + e.getClass().getSimpleName() + ")"
+                    + " to decode EC group for curve: " + e.getMessage(),
+                    e);
         }
 
         KeyFactory keyFactory = SecurityUtils.getKeyFactory("EC");
@@ -435,18 +437,20 @@ public abstract class Buffer implements Readable {
 
     /**
      * Writes 16 bits
+     *
      * @param i
      */
     public void putShort(int i) {
         // TODO use Short.BYTES for JDK-8
         ensureCapacity(Short.SIZE / Byte.SIZE);
-        workBuf[0] = (byte) (i >>  8);
-        workBuf[1] = (byte) (i      );
+        workBuf[0] = (byte) (i >> 8);
+        workBuf[1] = (byte) i;
         putRawBytes(workBuf, 0, Short.SIZE / Byte.SIZE);
     }
 
     /**
      * Writes 32 bits
+     *
      * @param i The 32-bit value
      */
     public void putInt(long i) {
@@ -458,6 +462,7 @@ public abstract class Buffer implements Readable {
 
     /**
      * Writes 64 bits
+     *
      * @param i
      */
     public void putLong(long i) {
@@ -469,8 +474,8 @@ public abstract class Buffer implements Readable {
         workBuf[3] = (byte) (i >> 32);
         workBuf[4] = (byte) (i >> 24);
         workBuf[5] = (byte) (i >> 16);
-        workBuf[6] = (byte) (i >>  8);
-        workBuf[7] = (byte) (i      );
+        workBuf[6] = (byte) (i >> 8);
+        workBuf[7] = (byte) i;
         putRawBytes(workBuf, 0, Long.SIZE / Byte.SIZE);
     }
 
@@ -489,10 +494,11 @@ public abstract class Buffer implements Readable {
 
     /**
      * Encodes the {@link Objects#toString(Object)} value of each member.
-     * @param objects The objects to be encoded in the buffer - OK if
-     * {@code null}/empty
+     *
+     * @param objects       The objects to be encoded in the buffer - OK if
+     *                      {@code null}/empty
      * @param prependLength If {@code true} then the list is preceded by
-     * a 32-bit count of the number of members in the list 
+     *                      a 32-bit count of the number of members in the list
      * @see #putStringList(Collection, Charset, boolean)
      */
     public void putStringList(Collection<?> objects, boolean prependLength) {
@@ -501,11 +507,12 @@ public abstract class Buffer implements Readable {
 
     /**
      * Encodes the {@link Objects#toString(Object)} value of each member
-     * @param objects The objects to be encoded in the buffer - OK if
-     * {@code null}/empty
-     * @param charset The {@link Charset} to use for encoding
+     *
+     * @param objects       The objects to be encoded in the buffer - OK if
+     *                      {@code null}/empty
+     * @param charset       The {@link Charset} to use for encoding
      * @param prependLength If {@code true} then the list is preceded by
-     * a 32-bit count of the number of members in the list 
+     *                      a 32-bit count of the number of members in the list
      * @see #putString(String, Charset)
      */
     public void putStringList(Collection<?> objects, Charset charset, boolean prependLength) {
@@ -517,7 +524,7 @@ public abstract class Buffer implements Readable {
         if (numObjects <= 0) {
             return;
         }
-        
+
         for (Object o : objects) {
             putString(Objects.toString(o), charset);
         }
@@ -538,7 +545,7 @@ public abstract class Buffer implements Readable {
     public void putMPInt(byte[] foo) {
         if ((foo[0] & 0x80) != 0) {
             putInt(foo.length + 1 /* padding */);
-            putByte((byte)0);
+            putByte((byte) 0);
         } else {
             putInt(foo.length);
         }
@@ -570,8 +577,8 @@ public abstract class Buffer implements Readable {
             putMPInt(rsaPub.getPublicExponent());
             putMPInt(rsaPub.getModulus());
         } else if (key instanceof DSAPublicKey) {
-            DSAPublicKey    dsaPub = (DSAPublicKey) key;
-            DSAParams       dsaParams = dsaPub.getParams();
+            DSAPublicKey dsaPub = (DSAPublicKey) key;
+            DSAParams dsaParams = dsaPub.getParams();
 
             putString(KeyPairProvider.SSH_DSS);
             putMPInt(dsaParams.getP());
@@ -595,11 +602,11 @@ public abstract class Buffer implements Readable {
     }
 
     public void putKeyPair(KeyPair kp) {
-        PublicKey   pubKey = kp.getPublic();
-        PrivateKey  prvKey = kp.getPrivate();
+        PublicKey pubKey = kp.getPublic();
+        PrivateKey prvKey = kp.getPrivate();
         if (prvKey instanceof RSAPrivateCrtKey) {
-            RSAPublicKey        rsaPub = (RSAPublicKey) pubKey;
-            RSAPrivateCrtKey    rsaPrv = (RSAPrivateCrtKey) prvKey;
+            RSAPublicKey rsaPub = (RSAPublicKey) pubKey;
+            RSAPrivateCrtKey rsaPrv = (RSAPrivateCrtKey) prvKey;
 
             putString(KeyPairProvider.SSH_RSA);
             putMPInt(rsaPub.getPublicExponent());
@@ -609,9 +616,9 @@ public abstract class Buffer implements Readable {
             putMPInt(rsaPrv.getPrimeQ());
             putMPInt(rsaPrv.getPrimeP());
         } else if (pubKey instanceof DSAPublicKey) {
-            DSAPublicKey    dsaPub = (DSAPublicKey) pubKey;
-            DSAParams       dsaParams = dsaPub.getParams();
-            DSAPrivateKey   dsaPrv = (DSAPrivateKey) prvKey;
+            DSAPublicKey dsaPub = (DSAPublicKey) pubKey;
+            DSAParams dsaParams = dsaPub.getParams();
+            DSAPrivateKey dsaPrv = (DSAPrivateKey) prvKey;
 
             putString(KeyPairProvider.SSH_DSS);
             putMPInt(dsaParams.getP());
@@ -625,7 +632,7 @@ public abstract class Buffer implements Readable {
             ECParameterSpec ecParams = ecPub.getParams();
             ECCurves curve = ECCurves.fromCurveParameters(ecParams);
             if (curve == null) {
-                throw new BufferException("Unsupported EC curve parameters");    
+                throw new BufferException("Unsupported EC curve parameters");
             }
 
             putString(curve.getKeyType());
@@ -642,14 +649,15 @@ public abstract class Buffer implements Readable {
     }
 
     /**
-     * @param capacity The requires capacity
+     * @param capacity     The requires capacity
      * @param growthFactor An {@link Int2IntFunction} that is invoked
-     * if the current capacity is insufficient. The argument is the minimum
-     * required new data length, the function result should be the
-     * effective new data length to be allocated - if less than minimum
-     * then an exception is thrown
+     *                     if the current capacity is insufficient. The argument is the minimum
+     *                     required new data length, the function result should be the
+     *                     effective new data length to be allocated - if less than minimum
+     *                     then an exception is thrown
      */
     public abstract void ensureCapacity(int capacity, Int2IntFunction growthFactor);
+
     protected abstract int size();
 
     @Override

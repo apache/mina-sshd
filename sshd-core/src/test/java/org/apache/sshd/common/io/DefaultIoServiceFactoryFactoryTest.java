@@ -44,9 +44,9 @@ public class DefaultIoServiceFactoryFactoryTest extends BaseTestSupport {
     public void testBuiltinIoServiceFactoryFactories() {
         for (BuiltinIoServiceFactoryFactories f : BuiltinIoServiceFactoryFactories.VALUES) {
             String name = f.getName();
-            IoServiceFactoryFactory factoryInstance = 
+            IoServiceFactoryFactory factoryInstance =
                     DefaultIoServiceFactoryFactory.newInstance(IoServiceFactoryFactory.class, name);
-            Class<?>    expected = f.getFactoryClass(), actual = factoryInstance.getClass();
+            Class<?> expected = f.getFactoryClass(), actual = factoryInstance.getClass();
             assertSame(name, expected, actual);
         }
     }
@@ -60,25 +60,25 @@ public class DefaultIoServiceFactoryFactoryTest extends BaseTestSupport {
         Mockito.when(service.isTerminated()).thenReturn(Boolean.TRUE);
 
         FactoryManager manager = Mockito.mock(FactoryManager.class);
-        Mockito.when(manager.getProperties()).thenReturn(Collections.<String,Object>emptyMap());
+        Mockito.when(manager.getProperties()).thenReturn(Collections.<String, Object>emptyMap());
 
         String propName = IoServiceFactoryFactory.class.getName();
         for (BuiltinIoServiceFactoryFactories f : BuiltinIoServiceFactoryFactories.VALUES) {
             String name = f.getName();
             try {
                 System.setProperty(propName, name);
-                for (boolean shutdownOnExit : new boolean[] { true, false } ) {
+                for (boolean shutdownOnExit : new boolean[]{true, false}) {
                     DefaultIoServiceFactoryFactory defaultFactory = new DefaultIoServiceFactoryFactory(service, shutdownOnExit);
 
-                    try(IoServiceFactory factory = defaultFactory.create(manager)) {
+                    try (IoServiceFactory factory = defaultFactory.create(manager)) {
                         assertObjectInstanceOf(name + "/" + shutdownOnExit + " no executor service configuration", ExecutorServiceCarrier.class, factory);
-                        
-                        ExecutorServiceCarrier  carrier = (ExecutorServiceCarrier) factory;
+
+                        ExecutorServiceCarrier carrier = (ExecutorServiceCarrier) factory;
                         assertSame(name + "/" + shutdownOnExit + " - mismatched executor service", service, carrier.getExecutorService());
                         assertEquals(name + "/" + shutdownOnExit + " - mismatched shutdown on exit", shutdownOnExit, carrier.isShutdownOnExit());
                     }
                 }
-            }  finally {
+            } finally {
                 System.clearProperty(propName);
             }
         }

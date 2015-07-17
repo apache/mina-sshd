@@ -21,8 +21,6 @@ package org.apache.sshd.server.subsystem.sftp;
 
 import java.util.concurrent.ExecutorService;
 
-import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
-import org.apache.sshd.server.subsystem.sftp.UnsupportedAttributePolicy;
 import org.apache.sshd.util.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;

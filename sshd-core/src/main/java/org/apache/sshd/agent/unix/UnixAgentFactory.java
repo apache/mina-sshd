@@ -40,17 +40,17 @@ public class UnixAgentFactory implements SshAgentFactory, ExecutorServiceConfigu
     private ExecutorService executor;
     private boolean shutdownExecutor;
     private final NamedFactory<Channel> factory = new ChannelAgentForwardingFactory() {
-            @Override
-            public ExecutorService getExecutorService() {
-                return UnixAgentFactory.this.getExecutorService();
-            }
-    
-            @Override
-            public boolean isShutdownOnExit() {
-                return UnixAgentFactory.this.isShutdownOnExit();
-            }
-            
-        };
+        @Override
+        public ExecutorService getExecutorService() {
+            return UnixAgentFactory.this.getExecutorService();
+        }
+
+        @Override
+        public boolean isShutdownOnExit() {
+            return UnixAgentFactory.this.isShutdownOnExit();
+        }
+
+    };
 
     public UnixAgentFactory() {
         super();
@@ -100,7 +100,7 @@ public class UnixAgentFactory implements SshAgentFactory, ExecutorServiceConfigu
     public SshAgentServer createServer(ConnectionService service) throws IOException {
         Session session = ValidateUtils.checkNotNull(service.getSession(), "No session");
         ValidateUtils.checkTrue(session instanceof ServerSession,
-                                "The session used to create an agent server proxy must be a server session");
+                "The session used to create an agent server proxy must be a server session");
         return new AgentServerProxy(service, getExecutorService(), isShutdownOnExit());
     }
 }

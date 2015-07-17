@@ -32,9 +32,10 @@ public interface ScpTargetStreamResolver {
     /**
      * Called when receiving a file in order to obtain an output stream
      * for the incoming data
-     * @param name File name as received from remote site
+     *
+     * @param name   File name as received from remote site
      * @param length Number of bytes expected to receive
-     * @param perms The {@link Set} of {@link PosixFilePermission} expected
+     * @param perms  The {@link Set} of {@link PosixFilePermission} expected
      * @return The {@link OutputStream} to write the incoming data
      * @throws IOException If failed to create the stream
      */
@@ -47,12 +48,13 @@ public interface ScpTargetStreamResolver {
 
     /**
      * Called after successful reception of the data (and after closing the stream)
-     * @param name File name as received from remote site
+     *
+     * @param name     File name as received from remote site
      * @param preserve If {@code true} then the resolver should attempt to preserve
-     * the specified permissions and timestamp
-     * @param perms The {@link Set} of {@link PosixFilePermission} expected
-     * @param time If not {@code null} then the required timestamp(s) on the
-     * incoming data
+     *                 the specified permissions and timestamp
+     * @param perms    The {@link Set} of {@link PosixFilePermission} expected
+     * @param time     If not {@code null} then the required timestamp(s) on the
+     *                 incoming data
      * @throws IOException If failed to post-process the incoming data
      */
     void postProcessReceivedData(String name, boolean preserve, Set<PosixFilePermission> perms, ScpTimestamp time) throws IOException;

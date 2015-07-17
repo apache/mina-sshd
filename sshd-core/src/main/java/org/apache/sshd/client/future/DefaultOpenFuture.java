@@ -23,7 +23,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.DefaultSshFuture;
-import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
@@ -43,7 +42,7 @@ public class DefaultOpenFuture extends DefaultSshFuture<OpenFuture> implements O
 
     @Override   // TODO for JDK-8 make this a default method
     public void verify(long timeout, TimeUnit unit) throws IOException {
-        verify(unit.toMillis(timeout));        
+        verify(unit.toMillis(timeout));
     }
 
     @Override   // TODO for JDK-8 make this a default method

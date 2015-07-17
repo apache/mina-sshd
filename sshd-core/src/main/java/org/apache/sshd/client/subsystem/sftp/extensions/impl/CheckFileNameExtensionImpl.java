@@ -33,7 +33,7 @@ import org.apache.sshd.common.util.Pair;
  */
 public class CheckFileNameExtensionImpl extends AbstractCheckFileExtension implements CheckFileNameExtension {
     public CheckFileNameExtensionImpl(SftpClient client, RawSftpClient raw, Collection<String> extras) {
-        super(SftpConstants.EXT_CHKFILE_NAME, client, raw, extras);
+        super(SftpConstants.EXT_CHECK_FILE_NAME, client, raw, extras);
     }
 
     @Override

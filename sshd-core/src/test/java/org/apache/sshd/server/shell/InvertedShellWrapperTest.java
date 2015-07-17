@@ -37,9 +37,9 @@ public class InvertedShellWrapperTest extends BaseTestSupport {
     public void testStreamsAreFlushedBeforeClosing() throws Exception {
         BogusInvertedShell shell = newShell("out", "err");
         shell.setAlive(false);
-        try(ByteArrayInputStream in = new ByteArrayInputStream("in".getBytes(StandardCharsets.UTF_8));
-            ByteArrayOutputStream out = new ByteArrayOutputStream(50);
-            ByteArrayOutputStream err = new ByteArrayOutputStream()) {
+        try (ByteArrayInputStream in = new ByteArrayInputStream("in".getBytes(StandardCharsets.UTF_8));
+             ByteArrayOutputStream out = new ByteArrayOutputStream(50);
+             ByteArrayOutputStream err = new ByteArrayOutputStream()) {
 
             InvertedShellWrapper wrapper = new InvertedShellWrapper(shell);
             wrapper.setInputStream(in);
@@ -47,9 +47,9 @@ public class InvertedShellWrapperTest extends BaseTestSupport {
             wrapper.setErrorStream(err);
             wrapper.setExitCallback(new BogusExitCallback());
             wrapper.start(new BogusEnvironment());
-    
+
             wrapper.pumpStreams();
-    
+
             // check the streams were flushed before exiting
             assertEquals("in", shell.getInputStream().toString());
             assertEquals("out", out.toString());

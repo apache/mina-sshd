@@ -26,11 +26,11 @@ import org.apache.sshd.common.Factory;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class FactoriesListParseResult<T,F extends Factory<T>> extends ListParseResult<F> {
+public abstract class FactoriesListParseResult<T, F extends Factory<T>> extends ListParseResult<F> {
     protected FactoriesListParseResult(List<F> parsed, List<String> unsupported) {
         super(parsed, unsupported);
     }
-    
+
     /**
      * @return The {@link List} of successfully parsed {@link Factory} instances
      * in the <U>same order</U> as they were encountered during parsing

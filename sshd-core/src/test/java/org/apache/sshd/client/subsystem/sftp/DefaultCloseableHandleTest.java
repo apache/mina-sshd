@@ -48,14 +48,14 @@ public class DefaultCloseableHandleTest extends BaseTestSupport {
         final byte[] id = getCurrentTestName().getBytes(StandardCharsets.UTF_8);
         SftpClient client = Mockito.mock(SftpClient.class);
         Mockito.doAnswer(new Answer<Void>() {
-                @Override
-                public Void answer(InvocationOnMock invocation) throws Throwable {
-                    Object[] args = invocation.getArguments();
-                    Handle handle = (Handle) args[0];
-                    assertArrayEquals("Mismatched closing handle", id, handle.getIdentifier());
-                    return null;
-                }
-            }).when(client).close(Matchers.any(Handle.class));
+            @Override
+            public Void answer(InvocationOnMock invocation) throws Throwable {
+                Object[] args = invocation.getArguments();
+                Handle handle = (Handle) args[0];
+                assertArrayEquals("Mismatched closing handle", id, handle.getIdentifier());
+                return null;
+            }
+        }).when(client).close(Matchers.any(Handle.class));
 
         CloseableHandle handle = new DefaultCloseableHandle(client, id);
         try {
@@ -73,19 +73,19 @@ public class DefaultCloseableHandleTest extends BaseTestSupport {
         SftpClient client = Mockito.mock(SftpClient.class);
         final AtomicBoolean closeCalled = new AtomicBoolean(false);
         Mockito.doAnswer(new Answer<Void>() {
-                @Override
-                public Void answer(InvocationOnMock invocation) throws Throwable {
-                    Object[] args = invocation.getArguments();
-                    assertFalse("Close already called on handle=" + args[0], closeCalled.getAndSet(true));
-                    return null;
-                }
-            }).when(client).close(Matchers.any(Handle.class));
+            @Override
+            public Void answer(InvocationOnMock invocation) throws Throwable {
+                Object[] args = invocation.getArguments();
+                assertFalse("Close already called on handle=" + args[0], closeCalled.getAndSet(true));
+                return null;
+            }
+        }).when(client).close(Matchers.any(Handle.class));
 
         CloseableHandle handle = new DefaultCloseableHandle(client, getCurrentTestName().getBytes(StandardCharsets.UTF_8));
-        for (int index=0; index < Byte.SIZE; index++) {
+        for (int index = 0; index < Byte.SIZE; index++) {
             handle.close();
         }
-        
+
         assertTrue("Close method not called", closeCalled.get());
     }
 }

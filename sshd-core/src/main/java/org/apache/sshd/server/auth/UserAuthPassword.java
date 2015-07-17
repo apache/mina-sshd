@@ -18,7 +18,6 @@
  */
 package org.apache.sshd.server.auth;
 
-import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.server.ServerFactoryManager;

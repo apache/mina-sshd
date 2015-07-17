@@ -20,17 +20,11 @@
 package org.apache.sshd.common.channel;
 
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.util.Transformer;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+// CHECKSTYLE:OFF
 public interface ChannelFactory extends NamedFactory<Channel> {
-    // required because of generics issues
-    Transformer<ChannelFactory,NamedFactory<Channel>> FAC2NAMED=new Transformer<ChannelFactory,NamedFactory<Channel>>() {
-        @Override
-        public NamedFactory<Channel> transform(ChannelFactory input) {
-            return input;
-        }
-    };
+
 }

@@ -25,7 +25,7 @@ import org.apache.sshd.server.forward.TcpipServerChannel.TcpipFactory;
  */
 public class ForwardedTcpipFactory extends TcpipFactory {
     public static final ForwardedTcpipFactory INSTANCE = new ForwardedTcpipFactory();
-    
+
     public ForwardedTcpipFactory() {
         super(ForwardingFilter.Type.Forwarded);
     }

@@ -20,18 +20,11 @@
 package org.apache.sshd.common.kex;
 
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.util.Transformer;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+// CHECKSTYLE:OFF
 public interface KeyExchangeFactory extends NamedFactory<KeyExchange> {
-    // required because of generics issues
-    Transformer<KeyExchangeFactory,NamedFactory<KeyExchange>> FAC2NAMED=new Transformer<KeyExchangeFactory,NamedFactory<KeyExchange>>() {
-        @Override
-        public NamedFactory<KeyExchange> transform(KeyExchangeFactory input) {
-            return input;
-        }
-    };
 
 }

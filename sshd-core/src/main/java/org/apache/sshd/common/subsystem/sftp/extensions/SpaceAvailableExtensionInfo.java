@@ -30,11 +30,13 @@ import org.apache.sshd.common.util.buffer.Buffer;
  * @see <A HREF="http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt">DRAFT 09 section 9.2</A>
  */
 public class SpaceAvailableExtensionInfo implements Cloneable {
+    // CHECKSTYLE:OFF
     public long bytesOnDevice;
     public long unusedBytesOnDevice;
     public long bytesAvailableToUser;
     public long unusedBytesAvailableToUser;
     public int bytesPerAllocationUnit;
+    // CHECKSTYLE:ON
 
     public SpaceAvailableExtensionInfo() {
         super();
@@ -46,21 +48,22 @@ public class SpaceAvailableExtensionInfo implements Cloneable {
 
     public SpaceAvailableExtensionInfo(FileStore store) throws IOException {
         bytesOnDevice = store.getTotalSpace();
-        
-        long unallocated = store.getUnallocatedSpace(), usable = store.getUsableSpace();
+
+        long unallocated = store.getUnallocatedSpace();
+        long usable = store.getUsableSpace();
         unusedBytesOnDevice = Math.max(unallocated, usable);
-        
+
         // the rest are intentionally  left zero indicating "UNKNOWN"
     }
 
     @Override
     public int hashCode() {
-        return GenericUtils.hashCode(bytesOnDevice)
-             + GenericUtils.hashCode(unusedBytesOnDevice)
-             + GenericUtils.hashCode(bytesAvailableToUser)
-             + GenericUtils.hashCode(unusedBytesAvailableToUser)
-             + bytesPerAllocationUnit
-             ;
+        int result = GenericUtils.hashCode(bytesOnDevice);
+        result = 31 * result + GenericUtils.hashCode(unusedBytesOnDevice);
+        result = 31 * result + GenericUtils.hashCode(bytesAvailableToUser);
+        result = 31 * result + GenericUtils.hashCode(unusedBytesAvailableToUser);
+        result = 31 * result + bytesPerAllocationUnit;
+        return result;
     }
 
     @Override
@@ -76,22 +79,18 @@ public class SpaceAvailableExtensionInfo implements Cloneable {
         }
 
         SpaceAvailableExtensionInfo other = (SpaceAvailableExtensionInfo) obj;
-        if ((this.bytesOnDevice == other.bytesOnDevice)
-         && (this.unusedBytesOnDevice == other.unusedBytesOnDevice)
-         && (this.bytesAvailableToUser == other.bytesAvailableToUser)
-         && (this.unusedBytesAvailableToUser == other.unusedBytesAvailableToUser)
-         && (this.bytesPerAllocationUnit == other.bytesPerAllocationUnit)) {
-            return true;
-        } else {
-            return false;   // debug breakpoint
-        }
+        return this.bytesOnDevice == other.bytesOnDevice
+                && this.unusedBytesOnDevice == other.unusedBytesOnDevice
+                && this.bytesAvailableToUser == other.bytesAvailableToUser
+                && this.unusedBytesAvailableToUser == other.unusedBytesAvailableToUser
+                && this.bytesPerAllocationUnit == other.bytesPerAllocationUnit;
     }
 
     @Override
     public SpaceAvailableExtensionInfo clone() {
         try {
             return getClass().cast(super.clone());
-        } catch(CloneNotSupportedException e) {
+        } catch (CloneNotSupportedException e) {
             throw new RuntimeException("Failed to close " + toString() + ": " + e.getMessage());
         }
     }
@@ -99,13 +98,12 @@ public class SpaceAvailableExtensionInfo implements Cloneable {
     @Override
     public String toString() {
         return "bytesOnDevice=" + bytesOnDevice
-            + ",unusedBytesOnDevice=" + unusedBytesOnDevice
-            + ",bytesAvailableToUser=" + bytesAvailableToUser
-            + ",unusedBytesAvailableToUser=" + unusedBytesAvailableToUser
-            + ",bytesPerAllocationUnit=" + bytesPerAllocationUnit
-            ;
+                + ",unusedBytesOnDevice=" + unusedBytesOnDevice
+                + ",bytesAvailableToUser=" + bytesAvailableToUser
+                + ",unusedBytesAvailableToUser=" + unusedBytesAvailableToUser
+                + ",bytesPerAllocationUnit=" + bytesPerAllocationUnit;
     }
-    
+
     public static SpaceAvailableExtensionInfo decode(Buffer buffer) {
         SpaceAvailableExtensionInfo info = new SpaceAvailableExtensionInfo();
         decode(buffer, info);
@@ -119,7 +117,7 @@ public class SpaceAvailableExtensionInfo implements Cloneable {
         info.unusedBytesAvailableToUser = buffer.getLong();
         info.bytesPerAllocationUnit = buffer.getInt();
     }
-    
+
     public static void encode(Buffer buffer, SpaceAvailableExtensionInfo info) {
         buffer.putLong(info.bytesOnDevice);
         buffer.putLong(info.unusedBytesOnDevice);

@@ -47,13 +47,13 @@ import org.apache.sshd.common.util.buffer.Buffer;
 
 public class SftpFileSystem extends BaseFileSystem<SftpPath> {
     public static final String POOL_SIZE_PROP = "sftp-fs-pool-size";
-        public static final int DEFAULT_POOL_SIZE = 8;
+    public static final int DEFAULT_POOL_SIZE = 8;
 
     public static final Set<String> SUPPORTED_VIEWS =
             Collections.unmodifiableSet(
                     GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER,
                             Arrays.asList(
-                                "basic", "posix", "owner"
+                                    "basic", "posix", "owner"
                             )));
 
     private final String id;
@@ -156,7 +156,7 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> {
             String fsId = getId();
             SftpFileSystem fs = provider.removeFileSystem(fsId);
             session.close(true);
-            
+
             if ((fs != null) && (fs != this)) {
                 throw new FileSystemException(fsId, fsId, "Mismatched FS instance for id=" + fsId);
             }
@@ -183,11 +183,12 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> {
         return defaultDir;
     }
 
-    private class Wrapper extends AbstractSftpClient {
+    private final class Wrapper extends AbstractSftpClient {
 
         private final SftpClient delegate;
         private final AtomicInteger count = new AtomicInteger(1);
-        private final int readSize, writeSize;
+        private final int readSize;
+        private final int writeSize;
 
         private Wrapper(SftpClient delegate, int readSize, int writeSize) {
             this.delegate = delegate;
@@ -217,11 +218,7 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> {
 
         @Override
         public boolean isOpen() {
-            if (count.get() > 0) {
-                return true;
-            } else {
-                return false;   // debug breakpoint
-            }
+            return count.get() > 0;
         }
 
         @SuppressWarnings("synthetic-access")
@@ -466,7 +463,7 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> {
             if (!isOpen()) {
                 throw new IOException("send(cmd=" + cmd + ") client is closed");
             }
-            
+
             if (delegate instanceof RawSftpClient) {
                 return ((RawSftpClient) delegate).send(cmd, buffer);
             } else {
@@ -479,7 +476,7 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> {
             if (!isOpen()) {
                 throw new IOException("receive(id=" + id + ") client is closed");
             }
-            
+
             if (delegate instanceof RawSftpClient) {
                 return ((RawSftpClient) delegate).receive(id);
             } else {
@@ -519,8 +516,12 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> {
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
             DefaultUserPrincipal that = (DefaultUserPrincipal) o;
             return name.equals(that.name);
         }

@@ -29,6 +29,7 @@ import org.apache.sshd.server.session.ServerSession;
 
 /**
  * Caches the result per session
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class CachingPublicKeyAuthenticator implements PublickeyAuthenticator, SessionListener {
@@ -48,7 +49,7 @@ public class CachingPublicKeyAuthenticator implements PublickeyAuthenticator, Se
             cache.put(session, map);
             session.addListener(this);
         }
-        
+
         Boolean result = map.get(key);
         if (result == null) {
             result = authenticator.authenticate(username, key, session);

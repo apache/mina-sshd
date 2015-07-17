@@ -55,7 +55,7 @@ public class AuthorizedKeyEntryTest extends BaseTestSupport {
     public void testReadAuthorizedKeysFile() throws Exception {
         URL url = getClass().getResource(AuthorizedKeyEntry.STD_AUTHORIZED_KEYS_FILENAME);
         assertNotNull("Missing " + AuthorizedKeyEntry.STD_AUTHORIZED_KEYS_FILENAME + " resource", url);
-        
+
         runAuthorizedKeysTests(AuthorizedKeyEntry.readAuthorizedKeys(url));
     }
 
@@ -63,22 +63,22 @@ public class AuthorizedKeyEntryTest extends BaseTestSupport {
     public void testEncodePublicKeyEntry() throws Exception {
         URL url = getClass().getResource(AuthorizedKeyEntry.STD_AUTHORIZED_KEYS_FILENAME);
         assertNotNull("Missing " + AuthorizedKeyEntry.STD_AUTHORIZED_KEYS_FILENAME + " resource", url);
-        
-        StringBuilder sb = new StringBuilder(Byte.MAX_VALUE); 
-        try(BufferedReader rdr = new BufferedReader(new InputStreamReader(url.openStream(), StandardCharsets.UTF_8))) {
+
+        StringBuilder sb = new StringBuilder(Byte.MAX_VALUE);
+        try (BufferedReader rdr = new BufferedReader(new InputStreamReader(url.openStream(), StandardCharsets.UTF_8))) {
             for (String line = rdr.readLine(); line != null; line = rdr.readLine()) {
                 line = GenericUtils.trimToEmpty(line);
                 if (GenericUtils.isEmpty(line) || (line.charAt(0) == PublicKeyEntry.COMMENT_CHAR)) {
                     continue;
                 }
-                
+
                 int pos = line.indexOf(' ');
                 String keyType = line.substring(0, pos), data = line;
                 // assume this happens if starts with login options
                 if (KeyUtils.getPublicKeyEntryDecoder(keyType) == null) {
                     data = line.substring(pos + 1).trim();
                 }
-                
+
                 AuthorizedKeyEntry entry = AuthorizedKeyEntry.parseAuthorizedKeyEntry(data);
                 if (sb.length() > 0) {
                     sb.setLength(0);
@@ -86,7 +86,7 @@ public class AuthorizedKeyEntryTest extends BaseTestSupport {
 
                 PublicKey key = entry.appendPublicKey(sb);
                 assertNotNull("No key for line=" + line, key);
-                
+
                 String encoded = sb.toString();
                 assertEquals("Mismatched encoded form for line=" + line, data, encoded);
             }
@@ -118,15 +118,15 @@ public class AuthorizedKeyEntryTest extends BaseTestSupport {
 
     private static Collection<AuthorizedKeyEntry> testReadAuthorizedKeys(Collection<AuthorizedKeyEntry> entries) throws Exception {
         assertFalse("No entries read", GenericUtils.isEmpty(entries));
-        
+
         Exception err = null;
         for (AuthorizedKeyEntry entry : entries) {
             try {
                 ValidateUtils.checkNotNull(entry.resolvePublicKey(), "No public key resolved from %s", entry);
-            } catch(Exception e) {
+            } catch (Exception e) {
                 System.err.append("Failed (").append(e.getClass().getSimpleName()).append(')')
-                          .append(" to resolve key of entry=").append(entry.toString())
-                          .append(": ").println(e.getMessage());
+                        .append(" to resolve key of entry=").append(entry.toString())
+                        .append(": ").println(e.getMessage());
                 err = e;
             }
         }
@@ -134,17 +134,17 @@ public class AuthorizedKeyEntryTest extends BaseTestSupport {
         if (err != null) {
             throw err;
         }
-        
+
         return entries;
     }
-    
+
     private PublickeyAuthenticator testAuthorizedKeysAuth(Collection<AuthorizedKeyEntry> entries) throws Exception {
-        Collection<PublicKey>  keySet = AuthorizedKeyEntry.resolveAuthorizedKeys(entries);
+        Collection<PublicKey> keySet = AuthorizedKeyEntry.resolveAuthorizedKeys(entries);
         PublickeyAuthenticator auth = AuthorizedKeyEntry.fromAuthorizedEntries(entries);
         for (PublicKey key : keySet) {
             assertTrue("Failed to authenticate with key=" + key.getAlgorithm(), auth.authenticate(getCurrentTestName(), key, null));
         }
-        
+
         return auth;
     }
 }

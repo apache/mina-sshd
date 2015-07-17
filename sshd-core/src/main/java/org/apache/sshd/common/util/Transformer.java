@@ -26,33 +26,51 @@ import java.util.Objects;
  */
 public interface Transformer<I, O> {
     // TODO in JDK-8 replace this with Function
+
+    /**
+     * Invokes {@link Objects#toString(Object)} on the argument
+     */
+    Transformer<Object, String> TOSTRING = new Transformer<Object, String>() {
+        @Override
+        public String transform(Object input) {
+            return Objects.toString(input);
+        }
+    };
+
+    /**
+     * Returns {@link Enum#name()} or {@code null} if argument is {@code null}
+     */
+    Transformer<Enum<?>, String> ENUM_NAME_EXTRACTOR = new Transformer<Enum<?>, String>() {
+        @Override
+        public String transform(Enum<?> input) {
+            if (input == null) {
+                return null;
+            } else {
+                return input.name();
+            }
+        }
+    };
+
     /**
      * @param input Input value
      * @return Transformed output value
      */
     O transform(I input);
 
-    /**
-     * Invokes {@link Objects#toString(Object)} on the argument
-     */
-    Transformer<Object,String> TOSTRING=new Transformer<Object,String>() {
-            @Override
-            public String transform(Object input) {
-                return Objects.toString(input);
-            }
-        };
+    final class Utils {
 
-    /**
-     * Returns {@link Enum#name()} or {@code null} if argument is {@code null}
-     */
-    Transformer<Enum<?>,String> ENUM_NAME_EXTRACTOR=new Transformer<Enum<?>,String>() {
-            @Override
-            public String transform(Enum<?> input) {
-                if (input == null) {
-                    return null;
-                } else {
-                    return input.name();
+        private Utils() {
+            throw new UnsupportedOperationException("No instance allowed");
+        }
+
+        public static <U extends V, V> Transformer<U, V> identity() {
+            return new Transformer<U, V>() {
+                @Override
+                public V transform(U input) {
+                    return input;
                 }
-            }
-        };
+            };
+        }
+
+    }
 }

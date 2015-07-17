@@ -54,22 +54,22 @@ public class ClientSessionImplTest extends BaseTestSupport {
     public void testAddRemoveIdentities() throws Exception {
         ClientFactoryManager client = Mockito.mock(ClientFactoryManager.class);
         Mockito.when(client.getTcpipForwarderFactory()).thenReturn(DefaultTcpipForwarderFactory.INSTANCE);
-        
+
         Factory<Random> randomFactory = new SingletonRandomFactory(JceRandomFactory.INSTANCE);
         Mockito.when(client.getRandomFactory()).thenReturn(randomFactory);
-        
+
         List<ServiceFactory> serviceFactories = Arrays.asList(
-                    ClientUserAuthServiceFactory.INSTANCE,
-                    ClientConnectionServiceFactory.INSTANCE
-                );
+                ClientUserAuthServiceFactory.INSTANCE,
+                ClientConnectionServiceFactory.INSTANCE
+        );
         Mockito.when(client.getServiceFactories()).thenReturn(serviceFactories);
 
-        try(ClientSession session = new ClientSessionImpl(client, Mockito.mock(IoSession.class)) {
+        try (ClientSession session = new ClientSessionImpl(client, Mockito.mock(IoSession.class)) {
             @Override
             protected void sendClientIdentification() {
                 // ignored
             }
-            
+
             @Override
             protected byte[] sendKexInit() throws IOException {
                 return GenericUtils.EMPTY_BYTE_ARRAY;
@@ -84,17 +84,17 @@ public class ClientSessionImplTest extends BaseTestSupport {
                 String expected = getCurrentTestName();
                 assertNull("Unexpected initial password identity", session.removePasswordIdentity(expected));
                 session.addPasswordIdentity(expected);
-    
+
                 String actual = session.removePasswordIdentity(expected);
                 assertSame("Mismatched removed password identity", expected, actual);
                 assertNull("Password identity not removed", session.removePasswordIdentity(expected));
             }
-            
+
             {
                 KeyPair expected = new KeyPair(Mockito.mock(PublicKey.class), Mockito.mock(PrivateKey.class));
                 assertNull("Unexpected initial pubket identity", session.removePublicKeyIdentity(expected));
                 session.addPublicKeyIdentity(expected);
-                
+
                 KeyPair actual = session.removePublicKeyIdentity(expected);
                 assertSame("Mismatched removed pubkey identity", expected, actual);
                 assertNull("Pubkey identity not removed", session.removePublicKeyIdentity(expected));

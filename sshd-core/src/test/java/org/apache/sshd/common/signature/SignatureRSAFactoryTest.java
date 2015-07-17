@@ -50,7 +50,7 @@ public class SignatureRSAFactoryTest extends AbstractSignatureFactoryTestSupport
     public SignatureRSAFactoryTest(int keySize) {
         super(KeyPairProvider.SSH_RSA, keySize);
     }
-    
+
     @Test
     public void testRSAPublicKeyAuth() throws Exception {
         testKeyPairProvider(RSAPublicKeyDecoder.INSTANCE, FACTORIES);

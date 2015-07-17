@@ -56,10 +56,10 @@ public class BuiltinCiphersTest extends BaseTestSupport {
     @Test
     public void testFromEnumName() {
         for (BuiltinCiphers expected : BuiltinCiphers.VALUES) {
-            String  name=expected.name();
+            String name = expected.name();
 
-            for (int index=0; index < name.length(); index++) {
-                BuiltinCiphers  actual=BuiltinCiphers.fromString(name);
+            for (int index = 0; index < name.length(); index++) {
+                BuiltinCiphers actual = BuiltinCiphers.fromString(name);
                 assertSame(name + " - mismatched enum values", expected, actual);
                 name = shuffleCase(name);   // prepare for next time
             }
@@ -69,10 +69,10 @@ public class BuiltinCiphersTest extends BaseTestSupport {
     @Test
     public void testFromFactoryName() {
         for (BuiltinCiphers expected : BuiltinCiphers.VALUES) {
-            String  name=expected.getName();
-            
-            for (int index=0; index < name.length(); index++) {
-                BuiltinCiphers  actual=BuiltinCiphers.fromFactoryName(name);
+            String name = expected.getName();
+
+            for (int index = 0; index < name.length(); index++) {
+                BuiltinCiphers actual = BuiltinCiphers.fromFactoryName(name);
                 assertSame(name + " - mismatched enum values", expected, actual);
                 name = shuffleCase(name);   // prepare for next time
             }
@@ -86,19 +86,19 @@ public class BuiltinCiphersTest extends BaseTestSupport {
                 System.out.append("Skip unsupported cipher: ").println(expected);
                 continue;
             }
-            
-            NamedFactory<Cipher>    factory=expected;
+
+            NamedFactory<Cipher> factory = expected;
             assertEquals(expected.name() + " - mismatched factory names", expected.getName(), factory.getName());
 
-            BuiltinCiphers  actual=BuiltinCiphers.fromFactory(factory);
+            BuiltinCiphers actual = BuiltinCiphers.fromFactory(factory);
             assertSame(expected.getName() + " - mismatched enum values", expected, actual);
         }
     }
 
     @Test
     public void testAllConstantsCovered() throws Exception {
-        Set<BuiltinCiphers> avail=EnumSet.noneOf(BuiltinCiphers.class);
-        Field[]             fields=BuiltinCiphers.Constants.class.getFields();
+        Set<BuiltinCiphers> avail = EnumSet.noneOf(BuiltinCiphers.class);
+        Field[] fields = BuiltinCiphers.Constants.class.getFields();
         for (Field f : fields) {
             int mods = f.getModifiers();
             if (!Modifier.isStatic(mods)) {
@@ -115,19 +115,19 @@ public class BuiltinCiphersTest extends BaseTestSupport {
             assertNotNull("No match found for " + name, value);
             assertTrue(name + " re-specified", avail.add(value));
         }
-        
+
         assertEquals("Incomplete coverage", BuiltinCiphers.VALUES, avail);
     }
 
     @Test   // make sure that if a cipher is reported as supported we can indeed use it
     public void testSupportedCipher() throws Exception {
         Exception err = null;
-        Random  rnd = new Random(System.nanoTime());
+        Random rnd = new Random(System.nanoTime());
         for (BuiltinCiphers c : BuiltinCiphers.VALUES) {
             if (c.isSupported()) {
                 try {
                     testCipherEncryption(rnd, c.create());
-                } catch(Exception e) {
+                } catch (Exception e) {
                     System.err.println("Failed (" + e.getClass().getSimpleName() + ") to encrypt using " + c + ": " + e.getMessage());
                     err = e;
                 }
@@ -135,7 +135,7 @@ public class BuiltinCiphersTest extends BaseTestSupport {
                 System.out.append("Skip unsupported cipher: ").println(c);
             }
         }
-        
+
         if (err != null) {
             throw err;
         }
@@ -143,12 +143,12 @@ public class BuiltinCiphersTest extends BaseTestSupport {
 
     @Test   // make sure that the reported support matches reality by trying to encrypt something
     public void testCipherSupportDetection() throws Exception {
-        Random  rnd = new Random(System.nanoTime());
+        Random rnd = new Random(System.nanoTime());
         for (BuiltinCiphers c : BuiltinCiphers.VALUES) {
             try {
                 testCipherEncryption(rnd, c.create());
                 assertTrue("Mismatched support report for " + c, c.isSupported());
-            } catch(Exception e) {
+            } catch (Exception e) {
                 assertFalse("Mismatched support report for " + c, c.isSupported());
             }
         }
@@ -156,14 +156,14 @@ public class BuiltinCiphersTest extends BaseTestSupport {
 
     @Test
     public void testSshClientSupportedCiphersConfiguration() throws Exception {
-        try(SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = SshClient.setUpDefaultClient()) {
             testSupportedCiphersConfiguration(client);
         }
     }
 
     @Test
     public void testSshSercerSupportedCiphersConfiguration() throws Exception {
-        try(SshServer server = SshServer.setUpDefaultServer()) {
+        try (SshServer server = SshServer.setUpDefaultServer()) {
             testSupportedCiphersConfiguration(server);
         }
     }
@@ -181,35 +181,35 @@ public class BuiltinCiphersTest extends BaseTestSupport {
                 assertTrue("Supported cipher not configured by default: " + c, names.contains(c.getName()));
             }
         }
-        
+
         return manager;
     }
 
     private static void testCipherEncryption(Random rnd, Cipher cipher) throws Exception {
-        byte[] key=new byte[cipher.getBlockSize()];
+        byte[] key = new byte[cipher.getBlockSize()];
         rnd.nextBytes(key);
-        byte[] iv=new byte[cipher.getIVSize()];
+        byte[] iv = new byte[cipher.getIVSize()];
         rnd.nextBytes(iv);
         cipher.init(Cipher.Mode.Encrypt, key, iv);
 
-        byte[] data=new byte[cipher.getBlockSize()];
+        byte[] data = new byte[cipher.getBlockSize()];
         rnd.nextBytes(data);
-        
+
         cipher.update(data);
     }
 
     @Test
     public void testParseCiphersList() {
-        List<String>    builtin=NamedResource.Utils.getNameList(BuiltinCiphers.VALUES);
-        List<String>    unknown=Arrays.asList(getClass().getPackage().getName(), getClass().getSimpleName(), getCurrentTestName());
-        Random          rnd=new Random();
-        for (int index=0; index < (builtin.size() + unknown.size()); index++) {
+        List<String> builtin = NamedResource.Utils.getNameList(BuiltinCiphers.VALUES);
+        List<String> unknown = Arrays.asList(getClass().getPackage().getName(), getClass().getSimpleName(), getCurrentTestName());
+        Random rnd = new Random();
+        for (int index = 0; index < (builtin.size() + unknown.size()); index++) {
             Collections.shuffle(builtin, rnd);
             Collections.shuffle(unknown, rnd);
-            
-            List<String>    weavedList=new ArrayList<String>(builtin.size() + unknown.size());
-            for (int bIndex=0, uIndex=0; (bIndex < builtin.size()) || (uIndex < unknown.size()); ) {
-                boolean useBuiltin=false;
+
+            List<String> weavedList = new ArrayList<String>(builtin.size() + unknown.size());
+            for (int bIndex = 0, uIndex = 0; (bIndex < builtin.size()) || (uIndex < unknown.size()); ) {
+                boolean useBuiltin = false;
                 if (bIndex < builtin.size()) {
                     useBuiltin = (uIndex < unknown.size()) ? rnd.nextBoolean() : true;
                 }
@@ -217,17 +217,17 @@ public class BuiltinCiphersTest extends BaseTestSupport {
                 if (useBuiltin) {
                     weavedList.add(builtin.get(bIndex));
                     bIndex++;
-                } else if (uIndex < unknown.size()){
+                } else if (uIndex < unknown.size()) {
                     weavedList.add(unknown.get(uIndex));
                     uIndex++;
                 }
             }
 
-            String          fullList=GenericUtils.join(weavedList, ',');
-            ParseResult     result=BuiltinCiphers.parseCiphersList(fullList);
-            List<String>    parsed=NamedResource.Utils.getNameList(result.getParsedFactories());
-            List<String>    missing=result.getUnsupportedFactories();
-            
+            String fullList = GenericUtils.join(weavedList, ',');
+            ParseResult result = BuiltinCiphers.parseCiphersList(fullList);
+            List<String> parsed = NamedResource.Utils.getNameList(result.getParsedFactories());
+            List<String> missing = result.getUnsupportedFactories();
+
             // makes sure not only that the contents are the same but also the order
             assertListEquals(fullList + "[parsed]", builtin, parsed);
             assertListEquals(fullList + "[unsupported]", unknown, missing);
@@ -237,8 +237,8 @@ public class BuiltinCiphersTest extends BaseTestSupport {
     @Test
     public void testResolveFactoryOnBuiltinValues() {
         for (NamedFactory<Cipher> expected : BuiltinCiphers.VALUES) {
-            String                  name=expected.getName();
-            NamedFactory<Cipher>    actual=BuiltinCiphers.resolveFactory(name);
+            String name = expected.getName();
+            NamedFactory<Cipher> actual = BuiltinCiphers.resolveFactory(name);
             assertSame(name, expected, actual);
         }
     }
@@ -249,20 +249,20 @@ public class BuiltinCiphersTest extends BaseTestSupport {
             try {
                 BuiltinCiphers.registerExtension(expected);
                 fail("Unexpected sucess for " + expected.getName());
-            } catch(IllegalArgumentException e) {
+            } catch (IllegalArgumentException e) {
                 // expected - ignored
             }
         }
     }
 
-    @Test(expected=IllegalArgumentException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testNotAllowedToOverrideRegisteredFactories() {
-        CipherFactory    expected=Mockito.mock(CipherFactory.class);
+        CipherFactory expected = Mockito.mock(CipherFactory.class);
         Mockito.when(expected.getName()).thenReturn(getCurrentTestName());
 
-        String  name=expected.getName();
+        String name = expected.getName();
         try {
-            for (int index=1; index <= Byte.SIZE; index++) {
+            for (int index = 1; index <= Byte.SIZE; index++) {
                 BuiltinCiphers.registerExtension(expected);
                 assertEquals("Unexpected success at attempt #" + index, 1, index);
             }
@@ -273,32 +273,21 @@ public class BuiltinCiphersTest extends BaseTestSupport {
 
     @Test
     public void testResolveFactoryOnRegisteredExtension() {
-        CipherFactory    expected=Mockito.mock(CipherFactory.class);
+        CipherFactory expected = Mockito.mock(CipherFactory.class);
         Mockito.when(expected.getName()).thenReturn(getCurrentTestName());
 
-        String  name=expected.getName();
+        String name = expected.getName();
         try {
             assertNull("Extension already registered", BuiltinCiphers.resolveFactory(name));
             BuiltinCiphers.registerExtension(expected);
 
-            NamedFactory<Cipher>    actual=BuiltinCiphers.resolveFactory(name);
+            NamedFactory<Cipher> actual = BuiltinCiphers.resolveFactory(name);
             assertSame("Mismatched resolved instance", expected, actual);
         } finally {
-            NamedFactory<Cipher>    actual=BuiltinCiphers.unregisterExtension(name);
+            NamedFactory<Cipher> actual = BuiltinCiphers.unregisterExtension(name);
             assertSame("Mismatched unregistered instance", expected, actual);
             assertNull("Extension not un-registered", BuiltinCiphers.resolveFactory(name));
         }
     }
 
-    @Test
-    public void testFac2NamedTransformer() {
-        assertNull("Invalid null transformation", CipherFactory.FAC2NAMED.transform(null));
-        for (CipherFactory expected : BuiltinCiphers.VALUES) {
-            NamedFactory<Cipher>   actual=CipherFactory.FAC2NAMED.transform(expected);
-            assertSame("Mismatched transformed instance for " + expected.getName(), expected, actual);
-        }
-        
-        CipherFactory   mock=Mockito.mock(CipherFactory.class);
-        assertSame("Mismatched transformed mocked instance", mock, CipherFactory.FAC2NAMED.transform(mock));
-    }
 }

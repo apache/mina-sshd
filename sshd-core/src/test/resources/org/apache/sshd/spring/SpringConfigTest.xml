@@ -25,16 +25,17 @@
                            http://www.springframework.org/schema/util
                            http://www.springframework.org/schema/util/spring-util.xsd">
 
-    <bean name="sshServer" class="org.apache.sshd.server.SshServer" factory-method="setUpDefaultServer" init-method="start" destroy-method="stop">
+    <bean name="sshServer" class="org.apache.sshd.server.SshServer" factory-method="setUpDefaultServer"
+          init-method="start" destroy-method="stop">
         <!--property name="port" value="8000" /-->
         <property name="shellFactory">
-            <util:constant static-field="org.apache.sshd.server.shell.InteractiveProcessShellFactory.INSTANCE" />
+            <util:constant static-field="org.apache.sshd.server.shell.InteractiveProcessShellFactory.INSTANCE"/>
         </property>
         <property name="keyPairProvider">
-            <bean class="org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider" />
+            <bean class="org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider"/>
         </property>
         <property name="passwordAuthenticator">
-            <util:constant static-field="org.apache.sshd.util.BogusPasswordAuthenticator.INSTANCE" />
+            <util:constant static-field="org.apache.sshd.util.BogusPasswordAuthenticator.INSTANCE"/>
         </property>
         <property name="publickeyAuthenticator">
             <util:constant static-field="org.apache.sshd.server.auth.pubkey.AcceptAllPublickeyAuthenticator.INSTANCE"/>

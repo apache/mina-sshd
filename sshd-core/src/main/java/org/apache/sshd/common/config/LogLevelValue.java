@@ -37,7 +37,7 @@ public enum LogLevelValue {
      */
     QUIET, FATAL, ERROR, INFO, VERBOSE, DEBUG, DEBUG1, DEBUG2, DEBUG3;
 
-    public static final Set<LogLevelValue> VALUES=
+    public static final Set<LogLevelValue> VALUES =
             Collections.unmodifiableSet(EnumSet.allOf(LogLevelValue.class));
 
     public static LogLevelValue fromName(String n) {

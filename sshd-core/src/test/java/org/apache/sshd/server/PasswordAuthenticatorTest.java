@@ -53,21 +53,21 @@ public class PasswordAuthenticatorTest extends BaseTestSupport {
     }
 
     private void testStaticPasswordAuthenticator(StaticPasswordAuthenticator authenticator) throws Exception {
-        Method      method = PasswordAuthenticator.class.getMethod("authenticate", String.class, String.class, ServerSession.class);
-        Object[]    args = { getCurrentTestName(),  getClass().getName(), null /* ServerSession */ };
-        Object[]    invArgs = new Object[args.length];    
-        Random      rnd = new Random(System.nanoTime());
-        boolean     expected = authenticator.isAccepted();
-        for (int index=0; index < Long.SIZE; index++) {
-            for (int j=0; j < args.length; j++) {
+        Method method = PasswordAuthenticator.class.getMethod("authenticate", String.class, String.class, ServerSession.class);
+        Object[] args = {getCurrentTestName(), getClass().getName(), null /* ServerSession */};
+        Object[] invArgs = new Object[args.length];
+        Random rnd = new Random(System.nanoTime());
+        boolean expected = authenticator.isAccepted();
+        for (int index = 0; index < Long.SIZE; index++) {
+            for (int j = 0; j < args.length; j++) {
                 if (rnd.nextBoolean()) {
                     invArgs[j] = args[j];
                 } else {
                     invArgs[j] = null;
                 }
             }
-            
-            Object  result = method.invoke(authenticator, invArgs);
+
+            Object result = method.invoke(authenticator, invArgs);
             assertTrue("No boolean result", result instanceof Boolean);
             assertEquals("Mismatched result for " + Arrays.toString(invArgs), expected, ((Boolean) result).booleanValue());
         }

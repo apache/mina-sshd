@@ -24,7 +24,7 @@ import java.security.PrivilegedAction;
 
 /**
  */
-public abstract class Nio2CompletionHandler<V,A> implements CompletionHandler<V,A> {
+public abstract class Nio2CompletionHandler<V, A> implements CompletionHandler<V, A> {
 
     @Override
     public void completed(final V result, final A attachment) {

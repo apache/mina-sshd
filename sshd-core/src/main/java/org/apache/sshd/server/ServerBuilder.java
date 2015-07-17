@@ -27,7 +27,6 @@ import org.apache.sshd.common.BaseBuilder;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.RequestHandler;
-import org.apache.sshd.common.kex.BuiltinDHFactories;
 import org.apache.sshd.common.kex.DHFactory;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.session.ConnectionService;
@@ -47,19 +46,36 @@ import org.apache.sshd.server.kex.DHGServer;
  * SshServer builder
  */
 public class ServerBuilder extends BaseBuilder<SshServer, ServerBuilder> {
-    public static final Transformer<DHFactory,NamedFactory<KeyExchange>>    DH2KEX = 
-            new Transformer<DHFactory, NamedFactory<KeyExchange>>() {
-                @Override
-                public NamedFactory<KeyExchange> transform(DHFactory factory) {
-                    if (factory == null) {
-                        return null;
-                    } else if (factory.isGroupExchange()) {
-                        return DHGEXServer.newFactory(factory);
-                    } else {
-                        return DHGServer.newFactory(factory);
-                    }
+
+    public static final Transformer<DHFactory, NamedFactory<KeyExchange>> DH2KEX =
+        new Transformer<DHFactory, NamedFactory<KeyExchange>>() {
+            @Override
+            public NamedFactory<KeyExchange> transform(DHFactory factory) {
+                if (factory == null) {
+                    return null;
+                } else if (factory.isGroupExchange()) {
+                    return DHGEXServer.newFactory(factory);
+                } else {
+                    return DHGServer.newFactory(factory);
                 }
-            };
+            }
+        };
+
+    public static final List<NamedFactory<Channel>> DEFAULT_CHANNEL_FACTORIES =
+        Collections.unmodifiableList(Arrays.<NamedFactory<Channel>>asList(
+            ChannelSessionFactory.INSTANCE,
+            DirectTcpipFactory.INSTANCE
+        ));
+
+    public static final List<RequestHandler<ConnectionService>> DEFAULT_GLOBAL_REQUEST_HANDLERS =
+        Collections.unmodifiableList(Arrays.<RequestHandler<ConnectionService>>asList(
+            KeepAliveHandler.INSTANCE,
+            NoMoreSessionsHandler.INSTANCE,
+            TcpipForwardHandler.INSTANCE,
+            CancelTcpipForwardHandler.INSTANCE
+        ));
+
+    public static final PublickeyAuthenticator DEFAULT_PUBLIC_KEY_AUTHENTICATOR = DefaultAuthorizedKeysAuthenticator.INSTANCE;
 
     protected PublickeyAuthenticator pubkeyAuthenticator;
 
@@ -71,20 +87,6 @@ public class ServerBuilder extends BaseBuilder<SshServer, ServerBuilder> {
         pubkeyAuthenticator = auth;
         return this;
     }
-
-    public static final List<NamedFactory<Channel>> DEFAULT_CHANNEL_FACTORIES =
-            Collections.unmodifiableList(Arrays.<NamedFactory<Channel>>asList(
-                    ChannelSessionFactory.INSTANCE,
-                    DirectTcpipFactory.INSTANCE
-                ));
-    public static final List<RequestHandler<ConnectionService>> DEFAULT_GLOBAL_REQUEST_HANDLERS =
-            Collections.unmodifiableList(Arrays.<RequestHandler<ConnectionService>>asList(
-                    KeepAliveHandler.INSTANCE,
-                    NoMoreSessionsHandler.INSTANCE,
-                    TcpipForwardHandler.INSTANCE,
-                    CancelTcpipForwardHandler.INSTANCE
-                ));
-    public static final PublickeyAuthenticator DEFAULT_PUBLIC_KEY_AUTHENTICATOR = DefaultAuthorizedKeysAuthenticator.INSTANCE;
 
     @Override
     protected ServerBuilder fillWithDefaultValues() {
@@ -109,7 +111,7 @@ public class ServerBuilder extends BaseBuilder<SshServer, ServerBuilder> {
         if (factory == null) {
             factory = SshServer.DEFAULT_SSH_SERVER_FACTORY;
         }
-        
+
         return me();
     }
 
@@ -122,15 +124,15 @@ public class ServerBuilder extends BaseBuilder<SshServer, ServerBuilder> {
 
     /**
      * @param ignoreUnsupported If {@code true} then all the default
-     * key exchanges are included, regardless of whether they are currently
-     * supported by the JCE. Otherwise, only the supported ones out of the
-     * list are included
+     *                          key exchanges are included, regardless of whether they are currently
+     *                          supported by the JCE. Otherwise, only the supported ones out of the
+     *                          list are included
      * @return A {@link List} of the default {@link NamedFactory}
      * instances of the {@link KeyExchange}s according to the preference
      * order defined by {@link #DEFAULT_KEX_PREFERENCE}.
      * <B>Note:</B> the list may be filtered to exclude unsupported JCE
      * key exchanges according to the <tt>ignoreUnsupported</tt> parameter
-     * @see BuiltinDHFactories#isSupported()
+     * @see org.apache.sshd.common.kex.BuiltinDHFactories#isSupported()
      */
     public static List<NamedFactory<KeyExchange>> setUpDefaultKeyExchanges(boolean ignoreUnsupported) {
         return NamedFactory.Utils.setUpTransformedFactories(ignoreUnsupported, DEFAULT_KEX_PREFERENCE, DH2KEX);

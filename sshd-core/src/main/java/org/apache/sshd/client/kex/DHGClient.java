@@ -47,6 +47,10 @@ public class DHGClient extends AbstractDHClientKeyExchange {
     protected final DHFactory factory;
     protected AbstractDH dh;
 
+    protected DHGClient(DHFactory factory) {
+        this.factory = ValidateUtils.checkNotNull(factory, "No factory");
+    }
+
     public static final KeyExchangeFactory newFactory(final DHFactory delegate) {
         return new KeyExchangeFactory() {
             @Override
@@ -68,22 +72,18 @@ public class DHGClient extends AbstractDHClientKeyExchange {
         };
     }
 
-    protected DHGClient(DHFactory factory) {
-        this.factory = ValidateUtils.checkNotNull(factory, "No factory");
-    }
-
     @Override
-    public void init(AbstractSession s, byte[] V_S, byte[] V_C, byte[] I_S, byte[] I_C) throws Exception {
-        super.init(s, V_S, V_C, I_S, I_C);
+    public void init(AbstractSession s, byte[] v_s, byte[] v_c, byte[] i_s, byte[] i_c) throws Exception {
+        super.init(s, v_s, v_c, i_s, i_c);
         dh = getDH();
-        hash =  dh.getHash();
+        hash = dh.getHash();
         hash.init();
         e = dh.getE();
 
         log.debug("Send SSH_MSG_KEXDH_INIT");
         Buffer buffer = s.createBuffer(SshConstants.SSH_MSG_KEXDH_INIT);
         buffer.putMPInt(e);
-        
+
         s.writePacket(buffer);
     }
 
@@ -96,18 +96,18 @@ public class DHGClient extends AbstractDHClientKeyExchange {
         int cmd = buffer.getUByte();
         if (cmd != SshConstants.SSH_MSG_KEXDH_REPLY) {
             throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
-                                   "Protocol error: expected packet SSH_MSG_KEXDH_REPLY, got " + cmd);
+                    "Protocol error: expected packet SSH_MSG_KEXDH_REPLY, got " + cmd);
         }
 
         log.debug("Received SSH_MSG_KEXDH_REPLY");
-        
-        byte[] K_S = buffer.getBytes();
+
+        byte[] k_s = buffer.getBytes();
         f = buffer.getMPIntAsBytes();
         byte[] sig = buffer.getBytes();
         dh.setF(f);
-        K = dh.getK();
+        k = dh.getK();
 
-        buffer = new ByteArrayBuffer(K_S);
+        buffer = new ByteArrayBuffer(k_s);
         serverKey = buffer.getRawPublicKey();
         final String keyAlg = KeyUtils.getKeyType(serverKey);
         if (GenericUtils.isEmpty(keyAlg)) {
@@ -115,24 +115,24 @@ public class DHGClient extends AbstractDHClientKeyExchange {
         }
 
         buffer = new ByteArrayBuffer();
-        buffer.putBytes(V_C);
-        buffer.putBytes(V_S);
-        buffer.putBytes(I_C);
-        buffer.putBytes(I_S);
-        buffer.putBytes(K_S);
+        buffer.putBytes(v_c);
+        buffer.putBytes(v_s);
+        buffer.putBytes(i_c);
+        buffer.putBytes(i_s);
+        buffer.putBytes(k_s);
         buffer.putMPInt(e);
         buffer.putMPInt(f);
-        buffer.putMPInt(K);
+        buffer.putMPInt(k);
         hash.update(buffer.array(), 0, buffer.available());
-        H = hash.digest();
+        h = hash.digest();
 
         Session session = getSession();
         FactoryManager manager = session.getFactoryManager();
         Signature verif = ValidateUtils.checkNotNull(NamedFactory.Utils.create(manager.getSignatureFactories(), keyAlg),
-                            "No verifier located for algorithm=%s",
-                            keyAlg);
+                "No verifier located for algorithm=%s",
+                keyAlg);
         verif.initVerifier(serverKey);
-        verif.update(H);
+        verif.update(h);
         if (!verif.verify(sig)) {
             throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED, "KeyExchange signature verification failed");
         }

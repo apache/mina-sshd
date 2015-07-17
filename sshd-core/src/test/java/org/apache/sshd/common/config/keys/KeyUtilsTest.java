@@ -59,11 +59,11 @@ public class KeyUtilsTest extends BaseTestSupport {
             try {
                 KeyPair kp = generateKeyPair(KeyPairProvider.SSH_RSA, keySize);
                 testKeyPairCloning(KeyPairProvider.SSH_RSA, keySize, kp);
-            } catch(GeneralSecurityException e) {
+            } catch (GeneralSecurityException e) {
                 err = GenericUtils.accumulateException(err, e);
             }
         }
-        
+
         if (err != null) {
             throw err;
         }
@@ -77,11 +77,11 @@ public class KeyUtilsTest extends BaseTestSupport {
             try {
                 KeyPair kp = generateKeyPair(KeyPairProvider.SSH_DSS, keySize);
                 testKeyPairCloning(KeyPairProvider.SSH_DSS, keySize, kp);
-            } catch(GeneralSecurityException e) {
+            } catch (GeneralSecurityException e) {
                 err = GenericUtils.accumulateException(err, e);
             }
         }
-        
+
         if (err != null) {
             throw err;
         }
@@ -98,11 +98,11 @@ public class KeyUtilsTest extends BaseTestSupport {
             try {
                 KeyPair kp = generateKeyPair(keyType, keySize);
                 testKeyPairCloning(keyType, keySize, kp);
-            } catch(GeneralSecurityException e) {
+            } catch (GeneralSecurityException e) {
                 err = GenericUtils.accumulateException(err, e);
             }
         }
-        
+
         if (err != null) {
             throw err;
         }
@@ -113,22 +113,22 @@ public class KeyUtilsTest extends BaseTestSupport {
         for (DigestInformation info : BuiltinDigests.VALUES) {
             final Exception thrown = new DigestException(info.getAlgorithm() + ":" + info.getBlockSize());
             final Digest digest = new BaseDigest(info.getAlgorithm(), info.getBlockSize()) {
-                    @Override
-                    public byte[] digest() throws Exception {
-                        throw thrown;
-                    }
-                };
+                @Override
+                public byte[] digest() throws Exception {
+                    throw thrown;
+                }
+            };
             String actual = KeyUtils.getFingerPrint(new DigestFactory() {
-                    @Override
-                    public String getName() {
-                        return getCurrentTestName();
-                    }
+                @Override
+                public String getName() {
+                    return getCurrentTestName();
+                }
 
-                    @Override
-                    public Digest create() {
-                        return digest;
-                    }
-                }, getCurrentTestName());
+                @Override
+                public Digest create() {
+                    return digest;
+                }
+            }, getCurrentTestName());
             String expected = thrown.getClass().getSimpleName();
             assertEquals("Mismatched fingerprint for " + thrown.getMessage(), expected, actual);
         }
@@ -141,7 +141,7 @@ public class KeyUtilsTest extends BaseTestSupport {
         try {
             for (NamedFactory<? extends Digest> f : BuiltinDigests.VALUES) {
                 KeyUtils.setDefaultFingerPrintFactory(f);
-                
+
                 String data = getClass().getName() + "#" + getCurrentTestName() + "(" + f.getName() + ")";
                 String expected = KeyUtils.getFingerPrint(f, data);
                 String actual = KeyUtils.getFingerPrint(data);
@@ -156,12 +156,12 @@ public class KeyUtilsTest extends BaseTestSupport {
         try {
             System.out.println("generateKeyPair(" + keyType + ")[" + keySize + "]");
             return KeyUtils.generateKeyPair(keyType, keySize);
-        } catch(GeneralSecurityException e) {
+        } catch (GeneralSecurityException e) {
             System.err.println("Failed (" + e.getClass().getSimpleName() + ") to generate key-pair for " + keyType + "/" + keySize + ": " + e.getMessage());
             throw e;
         }
     }
-    
+
     private static void testKeyPairCloning(String keyType, int keySize, KeyPair kp) throws GeneralSecurityException {
         String prefix = keyType + "[" + keySize + "]";
         System.out.println("testKeyPairCloning(" + prefix + ")");
@@ -169,16 +169,16 @@ public class KeyUtilsTest extends BaseTestSupport {
         KeyPair cloned = KeyUtils.cloneKeyPair(keyType, kp);
         assertNotSame(prefix + ": Key pair not cloned", kp, cloned);
         assertTrue(prefix + ": Cloned pair not equals", KeyUtils.compareKeyPairs(kp, cloned));
-        
+
         {
             PublicKey k1 = kp.getPublic(), k2 = cloned.getPublic();
             assertNotSame(prefix + ": Public key not cloned", k1, k2);
             assertTrue(prefix + ": Cloned public key not equals", KeyUtils.compareKeys(k1, k2));
-            
+
             String f1 = KeyUtils.getFingerPrint(k1), f2 = KeyUtils.getFingerPrint(k2);
             assertEquals(prefix + ": Mismatched fingerprints", f1, f2);
         }
-        
+
         {
             PrivateKey k1 = kp.getPrivate(), k2 = cloned.getPrivate();
             assertNotSame(prefix + ": Private key not cloned", k1, k2);

@@ -68,7 +68,7 @@ public class UserAuthPublicKey extends AbstractLoggingBean implements UserAuth {
                 ids.add(new KeyPairIdentity(session.getFactoryManager(), (KeyPair) o));
             }
         }
-        
+
         FactoryManager manager = session.getFactoryManager();
         SshAgentFactory factory = manager.getAgentFactory();
         if (factory != null) {
@@ -109,7 +109,7 @@ public class UserAuthPublicKey extends AbstractLoggingBean implements UserAuth {
                 session.writePacket(buffer);
                 return true;
             }
-            
+
             log.debug("No more keys to send");
             return false;
         }
@@ -154,15 +154,16 @@ public class UserAuthPublicKey extends AbstractLoggingBean implements UserAuth {
     public void destroy() {
         if (agent != null) {
             try {
-                agent.close();  
-            } catch(IOException e) {
-                throw new RuntimeException("Failed (" + e.getClass().getSimpleName() + ") to close agent: " + e.getMessage(), e); 
+                agent.close();
+            } catch (IOException e) {
+                throw new RuntimeException("Failed (" + e.getClass().getSimpleName() + ") to close agent: " + e.getMessage(), e);
             }
         }
     }
 
     interface PublicKeyIdentity {
         PublicKey getPublicKey();
+
         byte[] sign(byte[] data) throws Exception;
     }
 

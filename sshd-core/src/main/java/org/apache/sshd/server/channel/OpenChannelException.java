@@ -18,8 +18,6 @@
  */
 package org.apache.sshd.server.channel;
 
-import org.apache.sshd.common.SshConstants;
-
 /**
  * Documents failure of a channel to open as expected.
  *
@@ -41,10 +39,10 @@ public class OpenChannelException extends Exception {
     /**
      * The reason code as specified by RFC 4254.
      * <ul>
-     * <li>{@link SshConstants#SSH_OPEN_ADMINISTRATIVELY_PROHIBITED}
-     * <li>{@link SshConstants#SSH_OPEN_CONNECT_FAILED}
-     * <li>{@link SshConstants#SSH_OPEN_UNKNOWN_CHANNEL_TYPE}
-     * <li>{@link SshConstants#SSH_OPEN_RESOURCE_SHORTAGE}
+     * <li>{@link org.apache.sshd.common.SshConstants#SSH_OPEN_ADMINISTRATIVELY_PROHIBITED}
+     * <li>{@link org.apache.sshd.common.SshConstants#SSH_OPEN_CONNECT_FAILED}
+     * <li>{@link org.apache.sshd.common.SshConstants#SSH_OPEN_UNKNOWN_CHANNEL_TYPE}
+     * <li>{@link org.apache.sshd.common.SshConstants#SSH_OPEN_RESOURCE_SHORTAGE}
      * </ul>
      *
      * @return reason code; 0 if no standardized reason code is given.

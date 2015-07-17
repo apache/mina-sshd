@@ -65,7 +65,7 @@ public class KeepAliveTest extends BaseTestSupport {
         sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
         sshd.setPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);
         sshd.start();
-        port  = sshd.getPort();
+        port = sshd.getPort();
     }
 
     @After
@@ -79,15 +79,15 @@ public class KeepAliveTest extends BaseTestSupport {
     public void testClient() throws Exception {
         SshClient client = SshClient.setUpDefaultClient();
         client.start();
-        
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+
+        try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
-            
-            try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL)) {
+
+            try (ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL)) {
                 int state = channel.waitFor(ClientChannel.CLOSED, WAIT);
                 assertEquals("Wrong channel state", ClientChannel.CLOSED | ClientChannel.EOF, state);
-        
+
                 channel.close(false);
             }
         } finally {
@@ -99,15 +99,15 @@ public class KeepAliveTest extends BaseTestSupport {
     public void testClientNew() throws Exception {
         SshClient client = SshClient.setUpDefaultClient();
         client.start();
-        
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+
+        try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
-        
-            try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL)) {
+
+            try (ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL)) {
                 int state = channel.waitFor(ClientChannel.CLOSED, WAIT);
                 assertEquals("Wrong channel state", ClientChannel.CLOSED | ClientChannel.EOF, state);
-        
+
                 channel.close(false);
             }
         } finally {
@@ -121,14 +121,14 @@ public class KeepAliveTest extends BaseTestSupport {
         FactoryManagerUtils.updateProperty(client, ClientFactoryManager.HEARTBEAT_INTERVAL, HEARTBEAT);
         client.start();
 
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
 
-            try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL)) {
+            try (ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL)) {
                 int state = channel.waitFor(ClientChannel.CLOSED, WAIT);
                 assertEquals("Wrong channel state", ClientChannel.TIMEOUT, state);
-    
+
                 channel.close(false);
             }
         } finally {
@@ -142,14 +142,14 @@ public class KeepAliveTest extends BaseTestSupport {
         FactoryManagerUtils.updateProperty(client, ClientFactoryManager.HEARTBEAT_INTERVAL, HEARTBEAT);
         client.start();
 
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
-            
-            try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL)) {
+
+            try (ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL)) {
                 int state = channel.waitFor(ClientChannel.CLOSED, WAIT);
                 assertEquals("Wrong channel state", ClientChannel.TIMEOUT, state);
-        
+
                 channel.close(false);
             }
         } finally {
@@ -163,23 +163,23 @@ public class KeepAliveTest extends BaseTestSupport {
 
         SshClient client = SshClient.setUpDefaultClient();
         client.start();
-        
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+
+        try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
 
-            try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
-                ByteArrayOutputStream out = new ByteArrayOutputStream();
-                ByteArrayOutputStream err = new ByteArrayOutputStream()) {
+            try (ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
+                 ByteArrayOutputStream out = new ByteArrayOutputStream();
+                 ByteArrayOutputStream err = new ByteArrayOutputStream()) {
 
                 channel.setOut(out);
                 channel.setErr(err);
                 channel.open().verify(9L, TimeUnit.SECONDS);
-        
+
                 assertTrue("Latch time out", TestEchoShellFactory.TestEchoShell.latch.await(10L, TimeUnit.SECONDS));
                 int state = channel.waitFor(ClientChannel.CLOSED, WAIT);
                 assertEquals("Wrong channel state", ClientChannel.CLOSED | ClientChannel.EOF | ClientChannel.OPENED, state);
-    
+
                 channel.close(false);
             }
         } finally {
@@ -194,22 +194,22 @@ public class KeepAliveTest extends BaseTestSupport {
         SshClient client = SshClient.setUpDefaultClient();
         client.start();
 
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
-            
-            try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
-                ByteArrayOutputStream out = new ByteArrayOutputStream();
-                ByteArrayOutputStream err = new ByteArrayOutputStream()) {
+
+            try (ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
+                 ByteArrayOutputStream out = new ByteArrayOutputStream();
+                 ByteArrayOutputStream err = new ByteArrayOutputStream()) {
 
                 channel.setOut(out);
                 channel.setErr(err);
                 channel.open().verify(9L, TimeUnit.SECONDS);
-    
+
                 assertTrue("Latch time out", TestEchoShellFactory.TestEchoShell.latch.await(10L, TimeUnit.SECONDS));
                 int state = channel.waitFor(ClientChannel.CLOSED, WAIT);
                 assertEquals("Wrong channel state", ClientChannel.CLOSED | ClientChannel.EOF | ClientChannel.OPENED, state);
-        
+
                 channel.close(false);
             }
         } finally {

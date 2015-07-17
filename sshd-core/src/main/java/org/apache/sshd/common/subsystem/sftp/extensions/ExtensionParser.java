@@ -27,5 +27,6 @@ import org.apache.sshd.common.util.Transformer;
  */
 public interface ExtensionParser<T> extends NamedResource, Transformer<byte[], T> {
     T parse(byte[] input);
+
     T parse(byte[] input, int offset, int len);
 }

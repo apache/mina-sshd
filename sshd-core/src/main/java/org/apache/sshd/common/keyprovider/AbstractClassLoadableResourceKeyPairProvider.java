@@ -33,11 +33,12 @@ import org.apache.sshd.common.util.threads.ThreadUtils;
  * are accessible via {@link ClassLoader#getResourceAsStream(String)}.
  * If no loader configured via {@link #setResourceLoader(ClassLoader)}, then
  * {@link ThreadUtils#resolveDefaultClassLoader(Class)} is used
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractClassLoadableResourceKeyPairProvider extends AbstractResourceKeyPairProvider<String> {
     private ClassLoader classLoader;
-    private Collection<String>  resources;
+    private Collection<String> resources;
 
     protected AbstractClassLoadableResourceKeyPairProvider() {
         classLoader = ThreadUtils.resolveDefaultClassLoader(getClass());
@@ -70,7 +71,7 @@ public abstract class AbstractClassLoadableResourceKeyPairProvider extends Abstr
         if (cl == null) {
             throw new StreamCorruptedException("No resource loader for " + resource);
         }
-        
+
         InputStream input = cl.getResourceAsStream(resource);
         if (input == null) {
             throw new FileNotFoundException("Cannot find resource " + resource);

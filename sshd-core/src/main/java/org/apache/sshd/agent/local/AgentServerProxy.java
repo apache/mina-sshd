@@ -26,7 +26,6 @@ import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.SshAgentServer;
 import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.session.ConnectionService;
-import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
@@ -49,7 +48,7 @@ public class AgentServerProxy extends AbstractLoggingBean implements SshAgentSer
             this.service.registerChannel(channel);
             channel.open().verify(FactoryManagerUtils.getLongProperty(this.service.getSession(), CHANNEL_OPEN_TIMEOUT_PROP, DEFAULT_CHANNEL_OPEN_TIMEOUT));
             return channel.getAgent();
-        } catch(Throwable t) {
+        } catch (Throwable t) {
             if (log.isDebugEnabled()) {
                 log.debug("createClient(" + service.getSession() + ")[" + getId() + ")"
                         + " failed (" + t.getClass().getSimpleName() + ")"
@@ -59,7 +58,7 @@ public class AgentServerProxy extends AbstractLoggingBean implements SshAgentSer
             if (t instanceof IOException) {
                 throw (IOException) t;
             }
-            
+
             throw (IOException) new IOException("Failed (" + t.getClass().getSimpleName() + ") to create client: " + t.getMessage()).initCause(t);
         }
     }

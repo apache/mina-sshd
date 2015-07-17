@@ -22,7 +22,6 @@ package org.apache.sshd.common.kex.dh;
 import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.session.AbstractSession;
-import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
@@ -30,28 +29,29 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractDHKeyExchange extends AbstractLoggingBean implements KeyExchange {
-    private AbstractSession session;
-    protected byte[] V_S;
-    protected byte[] V_C;
-    protected byte[] I_S;
-    protected byte[] I_C;
+
+    protected AbstractSession session;
+    protected byte[] v_s;
+    protected byte[] v_c;
+    protected byte[] i_s;
+    protected byte[] i_c;
     protected Digest hash;
     protected byte[] e;
     protected byte[] f;
-    protected byte[] K;
-    protected byte[] H;
+    protected byte[] k;
+    protected byte[] h;
 
     protected AbstractDHKeyExchange() {
         super();
     }
 
     @Override
-    public void init(AbstractSession s, byte[] V_S, byte[] V_C, byte[] I_S, byte[] I_C) throws Exception {
+    public void init(AbstractSession s, byte[] v_s, byte[] v_c, byte[] i_s, byte[] i_c) throws Exception {
         this.session = ValidateUtils.checkNotNull(s, "No session");
-        this.V_S = ValidateUtils.checkNotNullAndNotEmpty(V_S, "No V_S value");
-        this.V_C = ValidateUtils.checkNotNullAndNotEmpty(V_C, "No V_C value");
-        this.I_S = ValidateUtils.checkNotNullAndNotEmpty(I_S, "No I_S value");
-        this.I_C = ValidateUtils.checkNotNullAndNotEmpty(I_C, "No I_C value");
+        this.v_s = ValidateUtils.checkNotNullAndNotEmpty(v_s, "No v_s value");
+        this.v_c = ValidateUtils.checkNotNullAndNotEmpty(v_c, "No v_c value");
+        this.i_s = ValidateUtils.checkNotNullAndNotEmpty(i_s, "No i_s value");
+        this.i_c = ValidateUtils.checkNotNullAndNotEmpty(i_c, "No i_c value");
     }
 
     public AbstractSession getSession() {
@@ -65,11 +65,11 @@ public abstract class AbstractDHKeyExchange extends AbstractLoggingBean implemen
 
     @Override
     public byte[] getH() {
-        return H;
+        return h;
     }
 
     @Override
     public byte[] getK() {
-        return K;
+        return k;
     }
 }

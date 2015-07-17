@@ -28,7 +28,7 @@ import org.apache.sshd.server.session.ServerSession;
  * Returns the same constant result {@code true/false} regardless
  */
 public abstract class StaticPublickeyAuthenticator extends AbstractLoggingBean implements PublickeyAuthenticator {
-    private final boolean   acceptance;
+    private final boolean acceptance;
 
     protected StaticPublickeyAuthenticator(boolean acceptance) {
         this.acceptance = acceptance;
@@ -43,7 +43,7 @@ public abstract class StaticPublickeyAuthenticator extends AbstractLoggingBean i
         boolean accepted = isAccepted();
         if (log.isDebugEnabled()) {
             log.debug("authenticate({}[{}][{}][{}]: {}",
-                      username, session, key.getAlgorithm(), KeyUtils.getFingerPrint(key), accepted);
+                    username, session, key.getAlgorithm(), KeyUtils.getFingerPrint(key), accepted);
         }
 
         return accepted;

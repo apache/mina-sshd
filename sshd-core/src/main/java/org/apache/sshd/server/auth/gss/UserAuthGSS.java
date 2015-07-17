@@ -20,7 +20,6 @@ package org.apache.sshd.server.auth.gss;
 
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -37,7 +36,7 @@ import org.ietf.jgss.Oid;
 /**
  * <p>Prototype user authentication handling gssapi-with-mic.  Implements <code>HandshakingUserAuth</code> because
  * the process involves several steps.</p>
- *
+ * <p/>
  * <p>Several methods are available for overriding in specific circumstances.</p>
  */
 public class UserAuthGSS extends AbstractUserAuth {
@@ -101,12 +100,10 @@ public class UserAuthGSS extends AbstractUserAuth {
             // No matching mechanism found
 
             return Boolean.FALSE;
-        }
-        else
-        {
+        } else {
             int msg = buffer.getUByte();
             if (!((msg == SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE)
-               || (msg == SshConstants.SSH_MSG_USERAUTH_GSSAPI_MIC) && context.isEstablished())) {
+                    || (msg == SshConstants.SSH_MSG_USERAUTH_GSSAPI_MIC) && context.isEstablished())) {
                 throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
                         "Packet not supported by user authentication method: " + msg);
             }

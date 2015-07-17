@@ -50,8 +50,9 @@ public class MinaConnector extends MinaService implements org.apache.sshd.common
 
     protected IoConnector getConnector() {
         IoConnector connector;
-        synchronized(connectorHolder) {
-            if ((connector = connectorHolder.get()) != null) {
+        synchronized (connectorHolder) {
+            connector = connectorHolder.get();
+            if (connector != null) {
                 return connector;
             }
 

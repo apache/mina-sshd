@@ -26,6 +26,7 @@ import java.util.concurrent.ExecutorService;
  */
 public interface ExecutorServiceCarrier {
     ExecutorService getExecutorService();
+
     /**
      * @return If {@code true} then the {@link ExecutorService#shutdownNow()}
      * will be called (unless it is an internally allocated service which is always

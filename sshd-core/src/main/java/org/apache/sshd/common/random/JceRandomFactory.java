@@ -25,7 +25,7 @@ package org.apache.sshd.common.random;
 public class JceRandomFactory implements RandomFactory {
     public static final JceRandomFactory INSTANCE = new JceRandomFactory();
 
-    public JceRandomFactory () {
+    public JceRandomFactory() {
         super();
     }
 

@@ -71,6 +71,12 @@ public enum BuiltinCiphers implements CipherFactory {
     blowfishcbc(Constants.BLOWFISH_CBC, 8, 16, "Blowfish", "Blowfish/CBC/NoPadding"),
     tripledescbc(Constants.TRIPLE_DES_CBC, 8, 24, "DESede", "DESede/CBC/NoPadding");
 
+    public static final Set<BuiltinCiphers> VALUES =
+            Collections.unmodifiableSet(EnumSet.allOf(BuiltinCiphers.class));
+
+    private static final Map<String, CipherFactory> EXTENSIONS =
+            new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+
     private final String factoryName;
     private final int ivsize;
     private final int blocksize;
@@ -78,16 +84,6 @@ public enum BuiltinCiphers implements CipherFactory {
     private final String algorithm;
     private final String transformation;
     private final boolean supported;
-
-    @Override
-    public final String getName() {
-        return factoryName;
-    }
-
-    @Override
-    public final String toString() {
-        return getName();
-    }
 
     BuiltinCiphers(String factoryName, int ivsize, int blocksize, String algorithm, String transformation) {
         this.factoryName = factoryName;
@@ -105,6 +101,16 @@ public enum BuiltinCiphers implements CipherFactory {
         this.supported = checkSupported(this.transformation, this.keysize);
     }
 
+    @Override
+    public final String getName() {
+        return factoryName;
+    }
+
+    @Override
+    public final String toString() {
+        return getName();
+    }
+
     /**
      * @return {@code true} if the current JVM configuration supports this
      * cipher - e.g., AES-256 requires the <A HREF="http://www.oracle.com/technetwork/java/javase/downloads/">
@@ -118,15 +124,12 @@ public enum BuiltinCiphers implements CipherFactory {
     private static boolean checkSupported(String xform, int keyLength) {
         try {
             int maxKeyLength = javax.crypto.Cipher.getMaxAllowedKeyLength(xform);
-            if (maxKeyLength >= keyLength) {
-                return true;
-            } else {
-                return false;   // debug breakpoint
-            }
+            return maxKeyLength >= keyLength;
         } catch (Exception e) {
             return false;
         }
     }
+
     /**
      * @return The key size (in bits) for the cipher
      */
@@ -167,26 +170,22 @@ public enum BuiltinCiphers implements CipherFactory {
         return new BaseCipher(getIVSize(), getBlockSize(), getAlgorithm(), getTransformation());
     }
 
-    public static Set<BuiltinCiphers> VALUES =
-            Collections.unmodifiableSet(EnumSet.allOf(BuiltinCiphers.class));
-    private static final Map<String,CipherFactory>   extensions =
-            new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-
     /**
      * Registered a {@link NamedFactory} to be available besides the built-in
      * ones when parsing configuration
+     *
      * @param extension The factory to register
      * @throws IllegalArgumentException if factory instance is {@code null},
-     * or overrides a built-in one or overrides another registered factory
-     * with the same name (case <U>insensitive</U>).
+     *                                  or overrides a built-in one or overrides another registered factory
+     *                                  with the same name (case <U>insensitive</U>).
      */
     public static void registerExtension(CipherFactory extension) {
-        String  name=ValidateUtils.checkNotNull(extension, "No extension provided").getName();
+        String name = ValidateUtils.checkNotNull(extension, "No extension provided").getName();
         ValidateUtils.checkTrue(fromFactoryName(name) == null, "Extension overrides built-in: %s", name);
 
-        synchronized(extensions) {
-            ValidateUtils.checkTrue(!extensions.containsKey(name), "Extension overrides existinh: %s", name);
-            extensions.put(name, extension);
+        synchronized (EXTENSIONS) {
+            ValidateUtils.checkTrue(!EXTENSIONS.containsKey(name), "Extension overrides existing: %s", name);
+            EXTENSIONS.put(name, extension);
         }
     }
 
@@ -196,13 +195,14 @@ public enum BuiltinCiphers implements CipherFactory {
      */
     public static SortedSet<CipherFactory> getRegisteredExtensions() {
         // TODO for JDK-8 return Collections.emptySortedSet()
-        synchronized(extensions) {
-            return GenericUtils.asSortedSet(NamedResource.BY_NAME_COMPARATOR, extensions.values());
+        synchronized (EXTENSIONS) {
+            return GenericUtils.asSortedSet(NamedResource.BY_NAME_COMPARATOR, EXTENSIONS.values());
         }
     }
 
     /**
      * Unregisters specified extension
+     *
      * @param name The factory name - ignored if {@code null}/empty
      * @return The registered extension - {@code null} if not found
      */
@@ -210,9 +210,9 @@ public enum BuiltinCiphers implements CipherFactory {
         if (GenericUtils.isEmpty(name)) {
             return null;
         }
-        
-        synchronized(extensions) {
-            return extensions.remove(name);
+
+        synchronized (EXTENSIONS) {
+            return EXTENSIONS.remove(name);
         }
     }
 
@@ -260,7 +260,7 @@ public enum BuiltinCiphers implements CipherFactory {
 
     /**
      * @param ciphers A comma-separated list of ciphers' names - ignored
-     * if {@code null}/empty
+     *                if {@code null}/empty
      * @return A {@link ParseResult} containing the successfully parsed
      * factories and the unknown ones. <B>Note:</B> it is up to caller to
      * ensure that the lists do not contain duplicates
@@ -269,7 +269,7 @@ public enum BuiltinCiphers implements CipherFactory {
         return parseCiphersList(GenericUtils.split(ciphers, ','));
     }
 
-    public static ParseResult parseCiphersList(String ... ciphers) {
+    public static ParseResult parseCiphersList(String... ciphers) {
         return parseCiphersList(GenericUtils.isEmpty((Object[]) ciphers) ? Collections.<String>emptyList() : Arrays.asList(ciphers));
     }
 
@@ -277,11 +277,11 @@ public enum BuiltinCiphers implements CipherFactory {
         if (GenericUtils.isEmpty(ciphers)) {
             return ParseResult.EMPTY;
         }
-        
-        List<CipherFactory> factories=new ArrayList<>(ciphers.size());
-        List<String>        unknown=Collections.emptyList();
+
+        List<CipherFactory> factories = new ArrayList<>(ciphers.size());
+        List<String> unknown = Collections.emptyList();
         for (String name : ciphers) {
-            CipherFactory  c=resolveFactory(name);
+            CipherFactory c = resolveFactory(name);
             if (c != null) {
                 factories.add(c);
             } else {
@@ -292,46 +292,58 @@ public enum BuiltinCiphers implements CipherFactory {
                 unknown.add(name);
             }
         }
-        
+
         return new ParseResult(factories, unknown);
     }
 
     /**
      * @param name The factory name
      * @return The factory or {@code null} if it is neither a built-in one
-     * or a registered extension 
+     * or a registered extension
      */
     public static CipherFactory resolveFactory(String name) {
         if (GenericUtils.isEmpty(name)) {
             return null;
         }
 
-        CipherFactory  c=fromFactoryName(name);
+        CipherFactory c = fromFactoryName(name);
         if (c != null) {
             return c;
         }
-        
-        synchronized(extensions) {
-            return extensions.get(name);
+
+        synchronized (EXTENSIONS) {
+            return EXTENSIONS.get(name);
         }
     }
 
     /**
      * Holds the result of {@link BuiltinCiphers#parseCiphersList(String)}
+     *
      * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
      */
-    public static class ParseResult extends NamedFactoriesListParseResult<Cipher,CipherFactory> {
-        public static ParseResult EMPTY=new ParseResult(Collections.<CipherFactory>emptyList(), Collections.<String>emptyList());
-        
+    public static class ParseResult extends NamedFactoriesListParseResult<Cipher, CipherFactory> {
+        public static final ParseResult EMPTY = new ParseResult(Collections.<CipherFactory>emptyList(), Collections.<String>emptyList());
+
         public ParseResult(List<CipherFactory> parsed, List<String> unsupported) {
             super(parsed, unsupported);
         }
     }
 
     public static class Constants {
-        public static String NONE = "none";
-        public static Pattern NONE_CIPHER_PATTERN =
+        public static final String NONE = "none";
+        public static final Pattern NONE_CIPHER_PATTERN =
                 Pattern.compile("(^|.*,)" + NONE + "($|,.*)");
+
+        public static final String AES128_CBC = "aes128-cbc";
+        public static final String AES128_CTR = "aes128-ctr";
+        public static final String AES192_CBC = "aes192-cbc";
+        public static final String AES192_CTR = "aes192-ctr";
+        public static final String AES256_CBC = "aes256-cbc";
+        public static final String AES256_CTR = "aes256-ctr";
+        public static final String ARCFOUR128 = "arcfour128";
+        public static final String ARCFOUR256 = "arcfour256";
+        public static final String BLOWFISH_CBC = "blowfish-cbc";
+        public static final String TRIPLE_DES_CBC = "3des-cbc";
 
         /**
          * @param s A comma-separated list of ciphers - ignored if {@code null}/empty
@@ -341,24 +353,9 @@ public enum BuiltinCiphers implements CipherFactory {
             if (GenericUtils.isEmpty(s)) {
                 return false;
             }
-            
             Matcher m = NONE_CIPHER_PATTERN.matcher(s);
-            if (m.matches()) {
-                return true;
-            } else {
-                return false;   // debug breakpoint
-            }
+            return m.matches();
         }
 
-        public static String AES128_CBC = "aes128-cbc";
-        public static String AES128_CTR = "aes128-ctr";
-        public static String AES192_CBC = "aes192-cbc";
-        public static String AES192_CTR = "aes192-ctr";
-        public static String AES256_CBC = "aes256-cbc";
-        public static String AES256_CTR = "aes256-ctr";
-        public static String ARCFOUR128 = "arcfour128";
-        public static String ARCFOUR256 = "arcfour256";
-        public static String BLOWFISH_CBC = "blowfish-cbc";
-        public static String TRIPLE_DES_CBC = "3des-cbc";
     }
 }

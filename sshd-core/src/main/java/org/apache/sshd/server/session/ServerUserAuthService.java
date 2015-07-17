@@ -64,11 +64,11 @@ public class ServerUserAuthService extends CloseableUtils.AbstractCloseable impl
         this.session = (ServerSession) s;
         maxAuthRequests = session.getIntProperty(ServerFactoryManager.MAX_AUTH_REQUESTS, DEFAULT_MAX_AUTH_REQUESTS);
 
-        ServerFactoryManager  manager=getFactoryManager();
+        ServerFactoryManager manager = getFactoryManager();
         userAuthFactories = new ArrayList<>(manager.getUserAuthFactories());
         // Get authentication methods
         authMethods = new ArrayList<>();
-        
+
         String mths = FactoryManagerUtils.getString(manager, ServerFactoryManager.AUTH_METHODS);
         if (GenericUtils.isEmpty(mths)) {
             for (NamedFactory<UserAuth> uaf : manager.getUserAuthFactories()) {
@@ -88,7 +88,7 @@ public class ServerUserAuthService extends CloseableUtils.AbstractCloseable impl
                 }
             }
         }
-        
+
         if (log.isDebugEnabled()) {
             log.debug("Authorized authentication methods: {}", NamedResource.Utils.getNames(userAuthFactories));
         }
@@ -148,7 +148,7 @@ public class ServerUserAuthService extends CloseableUtils.AbstractCloseable impl
                     log.debug("Authentication failed: {}", e.getMessage());
                 }
             }
-        } else  {
+        } else {
             if (this.currentAuth == null) {
                 // This should not happen
                 throw new IllegalStateException("No current authentication mechanism for cmd=" + (cmd & 0xFF));

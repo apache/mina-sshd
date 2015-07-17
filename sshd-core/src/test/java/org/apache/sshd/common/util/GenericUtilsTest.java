@@ -40,18 +40,18 @@ public class GenericUtilsTest extends BaseTestSupport {
 
     @Test
     public void testSplitAndJoin() {
-        List<String>  expected=Collections.unmodifiableList(
+        List<String> expected = Collections.unmodifiableList(
                 Arrays.asList(getClass().getPackage().getName().replace('.', '/'), getClass().getSimpleName(), getCurrentTestName()));
 
         // NOTE: we also test characters that have meaning in String.split(...) as regex ones
-        for (char ch : new char[] { ',', '.', '*', '?' }) {
-            String      sep=String.valueOf(ch);
-            String      s=GenericUtils.join(expected, sep);
-            String[]    actual=GenericUtils.split(s, ch);
+        for (char ch : new char[]{',', '.', '*', '?'}) {
+            String sep = String.valueOf(ch);
+            String s = GenericUtils.join(expected, sep);
+            String[] actual = GenericUtils.split(s, ch);
             assertEquals("Mismatched split length for separator=" + sep, expected.size(), GenericUtils.length((Object[]) actual));
-            
-            for (int index=0; index < actual.length; index++) {
-                String  e=expected.get(index), a=actual[index];
+
+            for (int index = 0; index < actual.length; index++) {
+                String e = expected.get(index), a = actual[index];
                 if (!e.endsWith(a)) {
                     fail("Mismatched value at index=" + index + " for separator=" + sep + ": expected=" + e + ", actual=" + a);
                 }
@@ -65,27 +65,27 @@ public class GenericUtilsTest extends BaseTestSupport {
         assertSame("Unexpected un-quoted stripping", expected, GenericUtils.stripQuotes(expected));
 
         StringBuilder sb = new StringBuilder(2 + expected.length()).append('|').append(expected).append('|');
-        for (int index=0; index < GenericUtils.QUOTES.length(); index++) {
+        for (int index = 0; index < GenericUtils.QUOTES.length(); index++) {
             char delim = GenericUtils.QUOTES.charAt(index);
             sb.setCharAt(0, delim);
             sb.setCharAt(sb.length() - 1, delim);
-            
+
             CharSequence actual = GenericUtils.stripQuotes(sb);
             assertEquals("Mismatched result for delim (" + delim + ")", expected, actual.toString());
         }
     }
-    
+
     @Test
     public void testStripOnlyFirstLayerQuotes() {
         StringBuilder sb = new StringBuilder().append("||").append(getCurrentTestName()).append("||");
-        char[] delims = { '\'', '"', '"', '\'' };
-        for (int index=0; index < delims.length; index += 2) {
+        char[] delims = {'\'', '"', '"', '\''};
+        for (int index = 0; index < delims.length; index += 2) {
             char topDelim = delims[index], innerDelim = delims[index + 1];
             sb.setCharAt(0, topDelim);
             sb.setCharAt(1, innerDelim);
             sb.setCharAt(sb.length() - 2, innerDelim);
             sb.setCharAt(sb.length() - 1, topDelim);
-            
+
             CharSequence expected = sb.subSequence(1, sb.length() - 1);
             CharSequence actual = GenericUtils.stripQuotes(sb);
             assertEquals("Mismatched result for delim (" + topDelim + "/" + innerDelim + ")", expected.toString(), actual.toString());
@@ -97,50 +97,50 @@ public class GenericUtilsTest extends BaseTestSupport {
         String expected = getCurrentTestName();
         final char delim = '|';
         assertSame("Unexpected un-delimited stripping", expected, GenericUtils.stripDelimiters(expected, delim));
-        
+
         CharSequence actual = GenericUtils.stripDelimiters(
                 new StringBuilder(2 + expected.length()).append(delim).append(expected).append(delim), delim);
         assertEquals("Mismatched stripped values", expected, actual.toString());
     }
-    
+
     @Test
     public void testStripDelimitersOnlyIfOnBothEnds() {
         final char delim = '$';
-        StringBuilder expected=new StringBuilder().append(delim).append(getCurrentTestName()).append(delim);
-        for (int index : new int[] { 0, expected.length() - 1 }) {
+        StringBuilder expected = new StringBuilder().append(delim).append(getCurrentTestName()).append(delim);
+        for (int index : new int[]{0, expected.length() - 1}) {
             // restore original delimiters
             expected.setCharAt(0, delim);
             expected.setCharAt(expected.length() - 1, delim);
             // trash one end
             expected.setCharAt(index, (char) (delim + 1));
-            
+
             assertSame("Mismatched result for delim at index=" + index, expected, GenericUtils.stripDelimiters(expected, delim));
-        }            
+        }
     }
 
     @Test
     public void testAccumulateExceptionOnNullValues() {
         assertNull("Unexpected null/null result", GenericUtils.accumulateException(null, null));
-        
-        Throwable expected=new NoSuchMethodException(getClass().getName() + "#" + getCurrentTestName());
+
+        Throwable expected = new NoSuchMethodException(getClass().getName() + "#" + getCurrentTestName());
         assertSame("Mismatched null/extra result", expected, GenericUtils.accumulateException(null, expected));
         assertSame("Mismatched current/null result", expected, GenericUtils.accumulateException(expected, null));
     }
 
     @Test
     public void testAccumulateExceptionOnExistingCurrent() {
-        RuntimeException[] expected=new RuntimeException[] {
+        RuntimeException[] expected = new RuntimeException[]{
                 new IllegalArgumentException(getCurrentTestName()),
                 new ClassCastException(getClass().getName()),
                 new NoSuchElementException(getClass().getPackage().getName())
-            };
-        RuntimeException    current=new UnsupportedOperationException("top");
+        };
+        RuntimeException current = new UnsupportedOperationException("top");
         for (RuntimeException extra : expected) {
-            RuntimeException    actual=GenericUtils.accumulateException(current, extra);
+            RuntimeException actual = GenericUtils.accumulateException(current, extra);
             assertSame("Mismatched returned actual exception", current, actual);
         }
-        
-        Throwable[] actual=current.getSuppressed();
+
+        Throwable[] actual = current.getSuppressed();
         assertArrayEquals("Suppressed", expected, actual);
     }
 }

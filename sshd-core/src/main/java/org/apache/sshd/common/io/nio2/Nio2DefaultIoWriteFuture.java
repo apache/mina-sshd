@@ -21,7 +21,6 @@ package org.apache.sshd.common.io.nio2;
 import java.nio.ByteBuffer;
 
 import org.apache.sshd.common.io.AbstractIoWriteFuture;
-import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**

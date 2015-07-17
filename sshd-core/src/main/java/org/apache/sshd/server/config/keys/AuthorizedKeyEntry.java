@@ -57,14 +57,21 @@ import org.apache.sshd.server.auth.pubkey.RejectAllPublickeyAuthenticator;
  * to the <A HREF="http://en.wikibooks.org/wiki/OpenSSH/Client_Configuration_Files#.7E.2F.ssh.2Fauthorized_keys">OpenSSH format</A>.
  * <B>Note:</B> {@code equals/hashCode} check only the key type and data - the
  * comment and/or login options are not considered part of equality
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class AuthorizedKeyEntry extends PublicKeyEntry {
+
+    /**
+     * Standard OpenSSH authorized keys file name
+     */
+    public static final String STD_AUTHORIZED_KEYS_FILENAME = "authorized_keys";
+
     private static final long serialVersionUID = -9007505285002809156L;
 
-    private String  comment;
+    private String comment;
     // for options that have no value, "true" is used
-    private Map<String,String> loginOptions=Collections.emptyMap();
+    private Map<String, String> loginOptions = Collections.emptyMap();
 
     public AuthorizedKeyEntry() {
         super();
@@ -78,23 +85,26 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
         this.comment = value;
     }
 
-    public Map<String,String> getLoginOptions() {
+    public Map<String, String> getLoginOptions() {
         return loginOptions;
     }
 
-    public void setLoginOptions(Map<String,String> value) {
-        if ((this.loginOptions=value) == null) {
+    public void setLoginOptions(Map<String, String> value) {
+        if (value == null) {
             this.loginOptions = Collections.emptyMap();
+        } else {
+            this.loginOptions = value;
         }
     }
 
     @Override
     public PublicKey appendPublicKey(Appendable sb) throws IOException, GeneralSecurityException {
-        Map<String,String> options=getLoginOptions();
+        Map<String, String> options = getLoginOptions();
         if (!GenericUtils.isEmpty(options)) {
             int index = 0;
-            for (Map.Entry<String,String> oe : options.entrySet()) {
-                String key = oe.getKey(), value = oe.getValue();
+            for (Map.Entry<String, String> oe : options.entrySet()) {
+                String key = oe.getKey();
+                String value = oe.getValue();
                 if (index > 0) {
                     sb.append(',');
                 }
@@ -117,31 +127,30 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
         if (!GenericUtils.isEmpty(kc)) {
             sb.append(' ').append(kc);
         }
-        
+
         return key;
     }
 
     @Override
     public String toString() {
-        String   entry = super.toString();
-        String   kc = getComment();
-        Map<?,?> ko=getLoginOptions();
+        String entry = super.toString();
+        String kc = getComment();
+        Map<?, ?> ko = getLoginOptions();
         return (GenericUtils.isEmpty(ko) ? "" : ko.toString() + " ")
                 + entry
-                + (GenericUtils.isEmpty(kc) ? "" : " " + kc)
-                ;
+                + (GenericUtils.isEmpty(kc) ? "" : " " + kc);
     }
-    
-    public static PublickeyAuthenticator fromAuthorizedEntries(Collection<? extends AuthorizedKeyEntry> entries) throws IOException, GeneralSecurityException  {
-        Collection<PublicKey> keys = resolveAuthorizedKeys(entries); 
+
+    public static PublickeyAuthenticator fromAuthorizedEntries(Collection<? extends AuthorizedKeyEntry> entries) throws IOException, GeneralSecurityException {
+        Collection<PublicKey> keys = resolveAuthorizedKeys(entries);
         if (GenericUtils.isEmpty(keys)) {
             return RejectAllPublickeyAuthenticator.INSTANCE;
         } else {
             return new KeySetPublickeyAuthenticator(keys);
         }
     }
-    
-    public static List<PublicKey> resolveAuthorizedKeys(Collection<? extends AuthorizedKeyEntry> entries) throws IOException, GeneralSecurityException  {
+
+    public static List<PublicKey> resolveAuthorizedKeys(Collection<? extends AuthorizedKeyEntry> entries) throws IOException, GeneralSecurityException {
         if (GenericUtils.isEmpty(entries)) {
             return Collections.emptyList();
         }
@@ -151,16 +160,12 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
             PublicKey k = e.resolvePublicKey();
             keys.add(k);
         }
-        
+
         return keys;
     }
 
-    /**
-     * Standard OpenSSH authorized keys file name
-     */
-    public static final String  STD_AUTHORIZED_KEYS_FILENAME="authorized_keys";
     private static final class LazyDefaultAuthorizedKeysFileHolder {
-        private static final File   keysFile=new File(PublicKeyEntry.getDefaultKeysFolder(), STD_AUTHORIZED_KEYS_FILENAME);
+        private static final File KEYS_FILE = new File(PublicKeyEntry.getDefaultKeysFolder(), STD_AUTHORIZED_KEYS_FILENAME);
     }
 
     /**
@@ -168,16 +173,18 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
      */
     @SuppressWarnings("synthetic-access")
     public static File getDefaultAuthorizedKeysFile() {
-        return LazyDefaultAuthorizedKeysFileHolder.keysFile;
+        return LazyDefaultAuthorizedKeysFileHolder.KEYS_FILE;
     }
+
     /**
      * Reads read the contents of the default OpenSSH <code>authorized_keys</code> file
+     *
      * @return A {@link Collection} of all the {@link AuthorizedKeyEntry}-ies found there -
      * or empty if file does not exist
      * @throws IOException If failed to read keys from file
      */
     public static Collection<AuthorizedKeyEntry> readDefaultAuthorizedKeys() throws IOException {
-        File    keysFile=getDefaultAuthorizedKeysFile();
+        File keysFile = getDefaultAuthorizedKeysFile();
         if (keysFile.exists()) {
             return readAuthorizedKeys(keysFile);
         } else {
@@ -187,6 +194,7 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
 
     /**
      * Reads read the contents of an <code>authorized_keys</code> file
+     *
      * @param url The {@link URL} to read from
      * @return A {@link Collection} of all the {@link AuthorizedKeyEntry}-ies found there
      * @throws IOException If failed to read or parse the entries
@@ -198,6 +206,7 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
 
     /**
      * Reads read the contents of an <code>authorized_keys</code> file
+     *
      * @param file The {@link File} to read from
      * @return A {@link Collection} of all the {@link AuthorizedKeyEntry}-ies found there
      * @throws IOException If failed to read or parse the entries
@@ -209,20 +218,22 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
 
     /**
      * Reads read the contents of an <code>authorized_keys</code> file
-     * @param path {@link Path} to read from
+     *
+     * @param path    {@link Path} to read from
      * @param options The {@link OpenOption}s to use - if unspecified then appropriate
-     * defaults assumed 
+     *                defaults assumed
      * @return A {@link Collection} of all the {@link AuthorizedKeyEntry}-ies found there
      * @throws IOException If failed to read or parse the entries
      * @see #readAuthorizedKeys(InputStream, boolean)
      * @see Files#newInputStream(Path, OpenOption...)
      */
-    public static Collection<AuthorizedKeyEntry> readAuthorizedKeys(Path path, OpenOption ... options) throws IOException {
+    public static Collection<AuthorizedKeyEntry> readAuthorizedKeys(Path path, OpenOption... options) throws IOException {
         return readAuthorizedKeys(Files.newInputStream(path, options), true);
     }
 
     /**
      * Reads read the contents of an <code>authorized_keys</code> file
+     *
      * @param filePath The file path to read from
      * @return A {@link Collection} of all the {@link AuthorizedKeyEntry}-ies found there
      * @throws IOException If failed to read or parse the entries
@@ -234,51 +245,54 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
 
     /**
      * Reads read the contents of an <code>authorized_keys</code> file
-     * @param in The {@link InputStream}
+     *
+     * @param in        The {@link InputStream}
      * @param okToClose <code>true</code> if method may close the input stream
-     * regardless of whether successful or failed
+     *                  regardless of whether successful or failed
      * @return A {@link Collection} of all the {@link AuthorizedKeyEntry}-ies found there
      * @throws IOException If failed to read or parse the entries
      * @see #readAuthorizedKeys(Reader, boolean)
      */
     public static Collection<AuthorizedKeyEntry> readAuthorizedKeys(InputStream in, boolean okToClose) throws IOException {
-        try(Reader  rdr=new InputStreamReader(NoCloseInputStream.resolveInputStream(in, okToClose), StandardCharsets.UTF_8)) {
+        try (Reader rdr = new InputStreamReader(NoCloseInputStream.resolveInputStream(in, okToClose), StandardCharsets.UTF_8)) {
             return readAuthorizedKeys(rdr, true);
         }
     }
 
     /**
      * Reads read the contents of an <code>authorized_keys</code> file
-     * @param rdr The {@link Reader}
+     *
+     * @param rdr       The {@link Reader}
      * @param okToClose <code>true</code> if method may close the input stream
-     * regardless of whether successful or failed
+     *                  regardless of whether successful or failed
      * @return A {@link Collection} of all the {@link AuthorizedKeyEntry}-ies found there
      * @throws IOException If failed to read or parse the entries
      * @see #readAuthorizedKeys(BufferedReader)
      */
     public static Collection<AuthorizedKeyEntry> readAuthorizedKeys(Reader rdr, boolean okToClose) throws IOException {
-        try(BufferedReader  buf=new BufferedReader(NoCloseReader.resolveReader(rdr, okToClose))) {
+        try (BufferedReader buf = new BufferedReader(NoCloseReader.resolveReader(rdr, okToClose))) {
             return readAuthorizedKeys(buf);
         }
     }
 
     /**
      * @param rdr The {@link BufferedReader} to use to read the contents of
-     * an <code>authorized_keys</code> file
+     *            an <code>authorized_keys</code> file
      * @return A {@link Collection} of all the {@link AuthorizedKeyEntry}-ies found there
      * @throws IOException If failed to read or parse the entries
      * @see #parseAuthorizedKeyEntry(String)
      */
     public static Collection<AuthorizedKeyEntry> readAuthorizedKeys(BufferedReader rdr) throws IOException {
-        Collection<AuthorizedKeyEntry>  entries=null;
+        Collection<AuthorizedKeyEntry> entries = null;
 
-        for (String line=rdr.readLine(); line != null; line=rdr.readLine()) {
-            final AuthorizedKeyEntry  entry;
+        for (String line = rdr.readLine(); line != null; line = rdr.readLine()) {
+            final AuthorizedKeyEntry entry;
             try {
-                if ((entry=parseAuthorizedKeyEntry(line.trim())) == null) {
+                entry = parseAuthorizedKeyEntry(line.trim());
+                if (entry == null) {
                     continue;
                 }
-            } catch(IllegalArgumentException e) {
+            } catch (IllegalArgumentException e) {
                 throw new StreamCorruptedException(e.getMessage());
             }
 
@@ -308,21 +322,22 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
             return null;
         }
 
-        int startPos=line.indexOf(' ');
+        int startPos = line.indexOf(' ');
         if (startPos <= 0) {
             throw new IllegalArgumentException("Bad format (no key data delimiter): " + line);
         }
 
-        int endPos=line.indexOf(' ', startPos + 1);
+        int endPos = line.indexOf(' ', startPos + 1);
         if (endPos <= startPos) {
             endPos = line.length();
         }
 
         String keyType = line.substring(0, startPos);
-        PublicKeyEntryDecoder<?,?> decoder = KeyUtils.getPublicKeyEntryDecoder(keyType);
-        final AuthorizedKeyEntry    entry;
+        PublicKeyEntryDecoder<?, ?> decoder = KeyUtils.getPublicKeyEntryDecoder(keyType);
+        final AuthorizedKeyEntry entry;
         if (decoder == null) {  // assume this is due to the fact that it starts with login options
-            if ((entry=parseAuthorizedKeyEntry(line.substring(startPos + 1).trim())) == null) {
+            entry = parseAuthorizedKeyEntry(line.substring(startPos + 1).trim());
+            if (entry == null) {
                 throw new IllegalArgumentException("Bad format (no key data after login options): " + line);
             }
 
@@ -336,35 +351,35 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
 
         return entry;
     }
-    
-    public static Map<String,String> parseLoginOptions(String options) {
+
+    public static Map<String, String> parseLoginOptions(String options) {
         // TODO add support if quoted values contain ','
-        String[]    pairs=GenericUtils.split(options, ',');
+        String[] pairs = GenericUtils.split(options, ',');
         if (GenericUtils.isEmpty(pairs)) {
             return Collections.emptyMap();
         }
-        
-        Map<String,String>  optsMap=new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+
+        Map<String, String> optsMap = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         for (String p : pairs) {
             p = GenericUtils.trimToEmpty(p);
             if (GenericUtils.isEmpty(p)) {
                 continue;
             }
-            
-            int             pos=p.indexOf('=');
-            String          name=(pos < 0) ? p : GenericUtils.trimToEmpty(p.substring(0, pos));
-            CharSequence    value=(pos < 0) ? null : GenericUtils.trimToEmpty(p.substring(pos + 1));
+
+            int pos = p.indexOf('=');
+            String name = (pos < 0) ? p : GenericUtils.trimToEmpty(p.substring(0, pos));
+            CharSequence value = (pos < 0) ? null : GenericUtils.trimToEmpty(p.substring(pos + 1));
             value = GenericUtils.stripQuotes(value);
             if (value == null) {
                 value = Boolean.TRUE.toString();
             }
-            
-            String  prev=optsMap.put(name, value.toString());
+
+            String prev = optsMap.put(name, value.toString());
             if (prev != null) {
                 throw new IllegalArgumentException("Multiple values for key=" + name + ": old=" + prev + ", new=" + value);
             }
         }
-        
+
         return optsMap;
     }
 }

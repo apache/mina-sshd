@@ -71,6 +71,7 @@ public interface Session extends Closeable {
      * @return the user name.
      */
     String getUsername();
+
     void setUsername(String username);
 
     /**
@@ -94,8 +95,9 @@ public interface Session extends Closeable {
 
     /**
      * Retrieve one of the negotiated values during the KEX stage
+     *
      * @param paramType The request {@link KexProposalOption} value - ignored
-     * if {@code null} 
+     *                  if {@code null}
      * @return The negotiated parameter value - {@code null} if invalid
      * parameter or no negotiated value
      */
@@ -104,7 +106,7 @@ public interface Session extends Closeable {
     /**
      * Retrieve a configuration property as an integer
      *
-     * @param name the name of the property
+     * @param name         the name of the property
      * @param defaultValue the default value
      * @return the value of the configuration property or the default value if not found
      */
@@ -123,7 +125,7 @@ public interface Session extends Closeable {
      * Create a new buffer for the specified SSH packet and reserve the needed space
      * (5 bytes) for the packet header.
      *
-     * @param cmd the SSH command
+     * @param cmd           the SSH command
      * @param estimatedSize estimated number of bytes the buffer will hold, 0 if unknown.
      * @return a new buffer ready for write
      */
@@ -146,9 +148,9 @@ public interface Session extends Closeable {
      * {@link org.apache.sshd.common.io.IoWriteFuture} will be set with a
      * {@link java.util.concurrent.TimeoutException} exception to indicate a timeout.
      *
-     * @param buffer the buffer to encode and spend
+     * @param buffer  the buffer to encode and spend
      * @param timeout the timeout
-     * @param unit the time unit of the timeout parameter
+     * @param unit    the time unit of the timeout parameter
      * @return a future that can be used to check when the packet has actually been sent
      * @throws java.io.IOException if an error occurred when encoding sending the packet
      */
@@ -214,7 +216,7 @@ public interface Session extends Closeable {
      * Typically it is used as a static variable that is shared between the producer
      * and the consumer. To further restrict access the setting or getting it from
      * the Session you can add static get and set methods, e.g:
-     *
+     * <p/>
      * <pre>
      * private static final AttributeKey&lt;MyValue&gt; MY_KEY = new AttributeKey&lt;MyValue&gt;();
      *
@@ -228,7 +230,6 @@ public interface Session extends Closeable {
      * </pre>
      *
      * @param <T> type of value stored in the attribute.
-     *
      * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
      */
     public class AttributeKey<T> {
@@ -241,6 +242,7 @@ public interface Session extends Closeable {
 
     /**
      * Check if timeout has occurred.
+     *
      * @return the timeout status, never {@code null}
      */
     TimeoutStatus getTimeoutStatus();
@@ -254,11 +256,13 @@ public interface Session extends Closeable {
      * @return Timeout value in milliseconds for communication
      */
     long getIdleTimeout();
-    
+
     boolean isAuthenticated();
+
     void setAuthenticated() throws IOException;
-    
+
     byte[] getSessionId();
+
     KeyExchange getKex();
 
     /**
@@ -267,7 +271,7 @@ public interface Session extends Closeable {
      * asynchronously.
      *
      * @param reason the reason code for this disconnect
-     * @param msg the text message
+     * @param msg    the text message
      * @throws IOException if an error occurred sending the packet
      */
     void disconnect(int reason, String msg) throws IOException;

@@ -18,9 +18,6 @@
  */
 package org.apache.sshd.client.auth;
 
-import static org.apache.sshd.common.SshConstants.SSH_MSG_USERAUTH_INFO_REQUEST;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -34,9 +31,13 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
+import static org.apache.sshd.common.SshConstants.SSH_MSG_USERAUTH_INFO_REQUEST;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE;
+
 /**
  * Manages a &quot;keyboard-interactive&quot; exchange according to
  * <A HREF="https://www.ietf.org/rfc/rfc4256.txt">RFC4256</A>
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class UserAuthKeyboardInteractive extends AbstractLoggingBean implements UserAuth {
@@ -76,7 +77,7 @@ public class UserAuthKeyboardInteractive extends AbstractLoggingBean implements 
             } else {
                 return false;
             }
-            
+
             String username = session.getUsername();
             if (log.isDebugEnabled()) {
                 log.debug("Send SSH_MSG_USERAUTH_REQUEST for keyboard-interactive - user={}, service={}", username, service);
@@ -109,7 +110,7 @@ public class UserAuthKeyboardInteractive extends AbstractLoggingBean implements 
                 prompt[i] = buffer.getString();
                 echo[i] = buffer.getBoolean();
             }
-            
+
             if (log.isDebugEnabled()) {
                 log.debug("Prompt: {}", Arrays.toString(prompt));
                 log.debug("Echo: {}", echo);
@@ -149,19 +150,19 @@ public class UserAuthKeyboardInteractive extends AbstractLoggingBean implements 
     }
 
     /**
-     * @param name The interaction name - may be empty
+     * @param name        The interaction name - may be empty
      * @param instruction The instruction - may be empty
-     * @param lang The language tag - may be empty
-     * @param prompt The prompts - may be empty
-     * @param echo Whether to echo the response for the prompt or not - same
-     * length as the prompts
+     * @param lang        The language tag - may be empty
+     * @param prompt      The prompts - may be empty
+     * @param echo        Whether to echo the response for the prompt or not - same
+     *                    length as the prompts
      * @return The response for each prompt - if {@code null} then the assumption
      * is that some internal error occurred and no response is sent. <B>Note:</B>
      * according to <A HREF="https://www.ietf.org/rfc/rfc4256.txt">RFC4256</A>
      * the number of responses should be <U>exactly</U> the same as the number
      * of prompts. However, since it is the <U>server's</U> responsibility to
      * enforce this we do not validate the response (other than logging it as
-     * a warning...)  
+     * a warning...)
      */
     protected String[] getUserResponses(String name, String instruction, String lang, String[] prompt, boolean[] echo) {
         int num = GenericUtils.length(prompt);
@@ -170,12 +171,12 @@ public class UserAuthKeyboardInteractive extends AbstractLoggingBean implements 
         }
 
         String candidate = getCurrentPasswordCandidate();
-        if (useCurrentPassword(candidate, name, instruction, lang, prompt, echo)) { 
-            return new String[] { candidate };
+        if (useCurrentPassword(candidate, name, instruction, lang, prompt, echo)) {
+            return new String[]{candidate};
         } else {
             UserInteraction ui = session.getUserInteraction();
             if (ui == null) {
-                ClientFactoryManager manager = session.getFactoryManager(); 
+                ClientFactoryManager manager = session.getFactoryManager();
                 ui = manager.getUserInteraction();
             }
 
@@ -184,7 +185,7 @@ public class UserAuthKeyboardInteractive extends AbstractLoggingBean implements 
                 return ui.interactive(dest, name, instruction, lang, prompt, echo);
             }
         }
-        
+
         return null;
     }
 
@@ -205,7 +206,7 @@ public class UserAuthKeyboardInteractive extends AbstractLoggingBean implements 
         if (sepPos <= passPos) {    // no prompt separator or separator before the password keyword
             return false;
         }
-        
+
         return true;
     }
 

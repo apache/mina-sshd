@@ -52,10 +52,34 @@ public enum BuiltinIdentities implements Identity {
         }
     };
 
-    private final String name, algorithm;
+    public static final Set<BuiltinIdentities> VALUES =
+            Collections.unmodifiableSet(EnumSet.allOf(BuiltinIdentities.class));
+
+    public static final Set<String> NAMES =
+            Collections.unmodifiableSet(new TreeSet<String>(String.CASE_INSENSITIVE_ORDER) {
+                private static final long serialVersionUID = 1L;    // we're not serializing it
+
+                {
+                    addAll(NamedResource.Utils.getNameList(VALUES));
+                }
+            });
+
+    private final String name;
+    private final String algorithm;
     private final Class<? extends PublicKey> pubType;
     private final Class<? extends PrivateKey> prvType;
-    
+
+    BuiltinIdentities(String type, Class<? extends PublicKey> pubType, Class<? extends PrivateKey> prvType) {
+        this(type, type, pubType, prvType);
+    }
+
+    BuiltinIdentities(String name, String algorithm, Class<? extends PublicKey> pubType, Class<? extends PrivateKey> prvType) {
+        this.name = name.toLowerCase();
+        this.algorithm = algorithm.toUpperCase();
+        this.pubType = pubType;
+        this.prvType = prvType;
+    }
+
     @Override
     public final String getName() {
         return name;
@@ -81,29 +105,6 @@ public enum BuiltinIdentities implements Identity {
         return prvType;
     }
 
-    BuiltinIdentities(String type, Class<? extends PublicKey> pubType, Class<? extends PrivateKey> prvType) {
-        this(type, type, pubType, prvType);
-    }
-
-    BuiltinIdentities(String name, String algorithm, Class<? extends PublicKey> pubType, Class<? extends PrivateKey> prvType) {
-        this.name = name.toLowerCase();
-        this.algorithm = algorithm.toUpperCase();
-        this.pubType = pubType;
-        this.prvType = prvType;
-    }
-
-    public static final Set<BuiltinIdentities> VALUES =
-            Collections.unmodifiableSet(EnumSet.allOf(BuiltinIdentities.class));
-
-    public static final Set<String> NAMES =
-            Collections.unmodifiableSet(new TreeSet<String>(String.CASE_INSENSITIVE_ORDER) {
-                private static final long serialVersionUID = 1L;    // we're not serializing it
-                
-                {
-                    addAll(NamedResource.Utils.getNameList(VALUES));
-                }
-            });
-
     /**
      * @param name The identity name - ignored if {@code null}/empty
      * @return The matching {@link BuiltinIdentities} whose {@link #getName()}
@@ -122,13 +123,13 @@ public enum BuiltinIdentities implements Identity {
         if (GenericUtils.isEmpty(algorithm)) {
             return null;
         }
-        
+
         for (BuiltinIdentities id : VALUES) {
             if (algorithm.equalsIgnoreCase(id.getAlgorithm())) {
                 return id;
             }
         }
-        
+
         return null;
     }
 
@@ -144,8 +145,8 @@ public enum BuiltinIdentities implements Identity {
             return null;
         }
 
-        BuiltinIdentities   i1 = fromKey(kp.getPublic());
-        BuiltinIdentities   i2 = fromKey(kp.getPrivate());
+        BuiltinIdentities i1 = fromKey(kp.getPublic());
+        BuiltinIdentities i2 = fromKey(kp.getPrivate());
         if (Objects.equals(i1, i2)) {
             return i1;
         } else {
@@ -165,11 +166,11 @@ public enum BuiltinIdentities implements Identity {
 
     /**
      * @param clazz The key type - ignored if {@code null} or not
-     * a {@link Key} class
+     *              a {@link Key} class
      * @return The matching {@link BuiltinIdentities} whose either public or
      * private key type matches the requested one or {@code null} if no match found
      * @see #getPublicKeyType()
-     * @see #getPrivateKeyType() 
+     * @see #getPrivateKeyType()
      */
     public static BuiltinIdentities fromKeyType(Class<?> clazz) {
         if ((clazz == null) || (!Key.class.isAssignableFrom(clazz))) {
@@ -177,12 +178,13 @@ public enum BuiltinIdentities implements Identity {
         }
 
         for (BuiltinIdentities id : VALUES) {
-            Class<?> pubType = id.getPublicKeyType(), prvType = id.getPrivateKeyType();
+            Class<?> pubType = id.getPublicKeyType();
+            Class<?> prvType = id.getPrivateKeyType();
             if (pubType.isAssignableFrom(clazz) || prvType.isAssignableFrom(clazz)) {
                 return id;
             }
         }
-        
+
         return null;
     }
 

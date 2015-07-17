@@ -34,6 +34,7 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 /**
  * A bare-minimum DER encoder - just enough so we can encoder signatures
  * and keys data
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class DERWriter extends FilterOutputStream {
@@ -51,12 +52,12 @@ public class DERWriter extends FilterOutputStream {
     public DERWriter(OutputStream stream) {
         super(ValidateUtils.checkNotNull(stream, "No output stream"));
     }
-    
+
     public void writeBigInteger(BigInteger value) throws IOException {
         writeBigInteger(ValidateUtils.checkNotNull(value, "No value").toByteArray());
     }
 
-    public void writeBigInteger(byte ... bytes) throws IOException {
+    public void writeBigInteger(byte... bytes) throws IOException {
         writeBigInteger(bytes, 0, GenericUtils.length(bytes));
     }
 
@@ -74,7 +75,7 @@ public class DERWriter extends FilterOutputStream {
         write(bytes, off, len);
     }
 
-    public void writeObject(byte tag, int len, byte ... data) throws IOException {
+    public void writeObject(byte tag, int len, byte... data) throws IOException {
         write(tag & 0xFF);
         writeLength(len);
         write(data, 0, len);
@@ -92,7 +93,7 @@ public class DERWriter extends FilterOutputStream {
         BufferUtils.putUInt(len, lenBytes);
 
         int nonZeroPos = 0;
-        for ( ; nonZeroPos < lenBytes.length; nonZeroPos++) {
+        for (; nonZeroPos < lenBytes.length; nonZeroPos++) {
             if (lenBytes[nonZeroPos] != 0) {
                 break;
             }
@@ -102,11 +103,11 @@ public class DERWriter extends FilterOutputStream {
             throw new StreamCorruptedException("All zeroes length representation for len=" + len);
         }
 
-        int bytesLen=lenBytes.length - nonZeroPos;
+        int bytesLen = lenBytes.length - nonZeroPos;
         write(0x80 | bytesLen); // indicate number of octets
         write(lenBytes, nonZeroPos, bytesLen);
     }
-    
+
     public byte[] toByteArray() throws IOException {
         if (this.out instanceof ByteArrayOutputStream) {
             return ((ByteArrayOutputStream) this.out).toByteArray();

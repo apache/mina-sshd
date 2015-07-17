@@ -22,7 +22,11 @@ import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.sshd.common.util.Readable;
 import org.apache.sshd.common.util.buffer.Buffer;
 
-public class MinaSupport {
+public final class MinaSupport {
+
+    private MinaSupport() {
+        throw new UnsupportedOperationException("No instance allowed");
+    }
 
     public static Readable asReadable(final IoBuffer buffer) {
         return new Readable() {

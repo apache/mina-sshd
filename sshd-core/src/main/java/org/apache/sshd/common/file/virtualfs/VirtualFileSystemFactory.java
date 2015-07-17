@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -74,7 +74,7 @@ public class VirtualFileSystemFactory implements FileSystemFactory {
     @Override
     public FileSystem createFileSystem(Session session) throws IOException {
         String dir = computeRootDir(session.getUsername());
-        return new RootedFileSystemProvider().newFileSystem(Paths.get(dir), Collections.<String,Object>emptyMap());
+        return new RootedFileSystemProvider().newFileSystem(Paths.get(dir), Collections.<String, Object>emptyMap());
     }
 
 }

@@ -28,14 +28,14 @@ import org.junit.runners.MethodSorters;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class AES192CTRTest extends BaseCipherTest {
-	public AES192CTRTest() {
-		super();
-	}
+    public AES192CTRTest() {
+        super();
+    }
 
-	@Test
-	public void testEncryptDecrypt() throws Exception {
-		// for AES 256 bits we need the JCE unlimited strength policy
-		ensureKeySizeSupported(16, 24, "AES", "AES/CTR/NoPadding");
-		testEncryptDecrypt(BuiltinCiphers.aes192ctr);
-	}
+    @Test
+    public void testEncryptDecrypt() throws Exception {
+        // for AES 256 bits we need the JCE unlimited strength policy
+        ensureKeySizeSupported(16, 24, "AES", "AES/CTR/NoPadding");
+        testEncryptDecrypt(BuiltinCiphers.aes192ctr);
+    }
 }

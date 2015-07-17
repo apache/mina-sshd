@@ -18,11 +18,6 @@
  */
 package org.apache.sshd.deprecated;
 
-import static org.apache.sshd.common.SshConstants.SSH_MSG_USERAUTH_FAILURE;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_USERAUTH_INFO_REQUEST;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_USERAUTH_SUCCESS;
-
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -30,6 +25,11 @@ import org.apache.sshd.client.auth.UserInteraction;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.util.buffer.Buffer;
+
+import static org.apache.sshd.common.SshConstants.SSH_MSG_USERAUTH_FAILURE;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_USERAUTH_INFO_REQUEST;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_USERAUTH_SUCCESS;
 
 /**
  * Userauth with keyboard-interactive method.
@@ -81,7 +81,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
                     if (num == 0) {
                         rep = new String[0];
                     } else if (num == 1 && password != null && !echo[0] && prompt[0].toLowerCase().startsWith("password:")) {
-                        rep = new String[] { password };
+                        rep = new String[]{password};
                     } else {
                         UserInteraction ui = session.getFactoryManager().getUserInteraction();
                         if (ui != null) {

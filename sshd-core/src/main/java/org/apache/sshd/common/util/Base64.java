@@ -1,21 +1,20 @@
 /*
- *  Licensed to the Apache Software Foundation (ASF) under one
- *  or more contributor license agreements.  See the NOTICE file
- *  distributed with this work for additional information
- *  regarding copyright ownership.  The ASF licenses this file
- *  to you under the Apache License, Version 2.0 (the
- *  "License"); you may not use this file except in compliance
- *  with the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing,
- *  software distributed under the License is distributed on an
- *  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- *  KIND, either express or implied.  See the License for the
- *  specific language governing permissions and limitations
- *  under the License.
- *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 package org.apache.sshd.common.util;
 
@@ -24,24 +23,24 @@ import java.security.InvalidParameterException;
 
 /**
  * Provides Base64 encoding and decoding as defined by RFC 2045.
+ * <p/>
+ * <p>This class implements section <cite>6.8. Base64 Content-Transfer-Encoding</cite>
+ * from RFC 2045 <cite>Multipurpose Internet Mail Extensions (MIME) Part One:
+ * Format of Internet Message Bodies</cite> by Freed and Borenstein.</p>
  *
- * <p>This class implements section <cite>6.8. Base64 Content-Transfer-Encoding</cite> 
- * from RFC 2045 <cite>Multipurpose Internet Mail Extensions (MIME) Part One: 
- * Format of Internet Message Bodies</cite> by Freed and Borenstein.</p> 
- *
- * @see <a href="http://www.ietf.org/rfc/rfc2045.txt">RFC 2045</a>
- *
- *  This class was 
  * @author Apache Software Foundation commons codec (http://commons.apache.org/codec/)
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
- * TODO replace this class with {@code java.util.Base64} when upgrading to JDK 1.8 
+ *         TODO replace this class with {@code java.util.Base64} when upgrading to JDK 1.8
+ * @see <a href="http://www.ietf.org/rfc/rfc2045.txt">RFC 2045</a>
+ * <p/>
+ * This class was
  */
 public class Base64 {
 
     /**
      * Chunk size per RFC 2045 section 6.8.
-     *
-     * <p>The {@value} character limit does not count the trailing CRLF, but counts 
+     * <p/>
+     * <p>The {@value} character limit does not count the trailing CRLF, but counts
      * all other characters, including any equal signs.</p>
      *
      * @see <a href="http://www.ietf.org/rfc/rfc2045.txt">RFC 2045 section 6.8</a>
@@ -136,13 +135,7 @@ public class Base64 {
     }
 
     private static boolean isBase64(byte octect) {
-        if (octect == PAD) {
-            return true;
-        } else if (base64Alphabet[octect] == -1) {
-            return false;
-        } else {
-            return true;
-        }
+        return octect == PAD || base64Alphabet[octect] != -1;
     }
 
     /**
@@ -151,7 +144,7 @@ public class Base64 {
      *
      * @param arrayOctect byte array to test
      * @return true if all bytes are valid characters in the Base64
-     *         alphabet or if the byte array is empty; false, otherwise
+     * alphabet or if the byte array is empty; false, otherwise
      */
     public static boolean isArrayByteBase64(byte[] arrayOctect) {
 
@@ -170,7 +163,7 @@ public class Base64 {
         return true;
     }
 
-    public static String encodeToString(byte ... bytes) {
+    public static String encodeToString(byte... bytes) {
         return new String(encodeBase64(bytes), StandardCharsets.UTF_8);
     }
 
@@ -203,10 +196,10 @@ public class Base64 {
      * supplied object is not of type byte[].
      *
      * @param pObject Object to decode
-     * @return An object (of type byte[]) containing the 
-     *         binary data which corresponds to the byte[] supplied.
+     * @return An object (of type byte[]) containing the
+     * binary data which corresponds to the byte[] supplied.
      * @throws InvalidParameterException if the parameter supplied is not
-     *                          of type byte[]
+     *                                   of type byte[]
      */
     public Object decode(Object pObject) {
         if (!(pObject instanceof byte[])) {
@@ -231,8 +224,8 @@ public class Base64 {
      * chunking the output into 76 character blocks.
      *
      * @param binaryData Array containing binary data to encode.
-     * @param isChunked if isChunked is true this encoder will chunk
-     *                  the base64 output into 76 character blocks
+     * @param isChunked  if isChunked is true this encoder will chunk
+     *                   the base64 output into 76 character blocks
      * @return Base64-encoded data.
      */
     public static byte[] encodeBase64(byte[] binaryData, boolean isChunked) {
@@ -256,17 +249,21 @@ public class Base64 {
         // allow for extra length to account for the separator(s)
         if (isChunked) {
 
-            nbrChunks = (CHUNK_SEPARATOR.length == 0 ? 0 : (int) Math.ceil((float) encodedDataLength / CHUNK_SIZE));
+            nbrChunks = CHUNK_SEPARATOR.length == 0 ? 0 : (int) Math.ceil((float) encodedDataLength / CHUNK_SIZE);
             encodedDataLength += nbrChunks * CHUNK_SEPARATOR.length;
         }
 
         encodedData = new byte[encodedDataLength];
 
-        byte k = 0, l = 0, b1 = 0, b2 = 0, b3 = 0;
+        byte k;
+        byte l;
+        byte b1;
+        byte b2;
+        byte b3;
 
         int encodedIndex = 0;
-        int dataIndex = 0;
-        int i = 0;
+        int dataIndex;
+        int i;
         int nextSeparatorIndex = CHUNK_SIZE;
         int chunksSoFar = 0;
 
@@ -279,9 +276,9 @@ public class Base64 {
             l = (byte) (b2 & 0x0f);
             k = (byte) (b1 & 0x03);
 
-            byte val1 = ((b1 & SIGN) == 0) ? (byte) (b1 >> 2) : (byte) ((b1) >> 2 ^ 0xc0);
-            byte val2 = ((b2 & SIGN) == 0) ? (byte) (b2 >> 4) : (byte) ((b2) >> 4 ^ 0xf0);
-            byte val3 = ((b3 & SIGN) == 0) ? (byte) (b3 >> 6) : (byte) ((b3) >> 6 ^ 0xfc);
+            byte val1 = (b1 & SIGN) == 0 ? (byte) (b1 >> 2) : (byte) (b1 >> 2 ^ 0xc0);
+            byte val2 = (b2 & SIGN) == 0 ? (byte) (b2 >> 4) : (byte) (b2 >> 4 ^ 0xf0);
+            byte val3 = (b3 & SIGN) == 0 ? (byte) (b3 >> 6) : (byte) (b3 >> 6 ^ 0xfc);
 
             encodedData[encodedIndex] = lookUpBase64Alphabet[val1];
             encodedData[encodedIndex + 1] = lookUpBase64Alphabet[val2 | (k << 4)];
@@ -308,7 +305,7 @@ public class Base64 {
         if (fewerThan24bits == EIGHTBIT) {
             b1 = binaryData[dataIndex];
             k = (byte) (b1 & 0x03);
-            byte val1 = ((b1 & SIGN) == 0) ? (byte) (b1 >> 2) : (byte) ((b1) >> 2 ^ 0xc0);
+            byte val1 = ((b1 & SIGN) == 0) ? (byte) (b1 >> 2) : (byte) (b1 >> 2 ^ 0xc0);
             encodedData[encodedIndex] = lookUpBase64Alphabet[val1];
             encodedData[encodedIndex + 1] = lookUpBase64Alphabet[k << 4];
             encodedData[encodedIndex + 2] = PAD;
@@ -320,8 +317,8 @@ public class Base64 {
             l = (byte) (b2 & 0x0f);
             k = (byte) (b1 & 0x03);
 
-            byte val1 = ((b1 & SIGN) == 0) ? (byte) (b1 >> 2) : (byte) ((b1) >> 2 ^ 0xc0);
-            byte val2 = ((b2 & SIGN) == 0) ? (byte) (b2 >> 4) : (byte) ((b2) >> 4 ^ 0xf0);
+            byte val1 = ((b1 & SIGN) == 0) ? (byte) (b1 >> 2) : (byte) (b1 >> 2 ^ 0xc0);
+            byte val2 = ((b2 & SIGN) == 0) ? (byte) (b2 >> 4) : (byte) (b2 >> 4 ^ 0xf0);
 
             encodedData[encodedIndex] = lookUpBase64Alphabet[val1];
             encodedData[encodedIndex + 1] = lookUpBase64Alphabet[val2 | (k << 4)];
@@ -365,23 +362,27 @@ public class Base64 {
 
         int numberQuadruple = base64Data.length / FOURBYTE;
         byte decodedData[];
-        byte b1, b2, b3, b4, marker0, marker1;
+        byte b1;
+        byte b2;
+        byte b3;
+        byte b4;
+        byte marker0;
+        byte marker1;
 
         // Throw away anything not in base64Data
 
         int encodedIndex = 0;
         int dataIndex;
-        {
-            // this sizes the output array properly - rlw
-            int lastData = base64Data.length;
-            // ignore the '=' padding
-            while (base64Data[lastData - 1] == PAD) {
-                if (--lastData == 0) {
-                    return GenericUtils.EMPTY_BYTE_ARRAY;
-                }
+
+        // this sizes the output array properly - rlw
+        int lastData = base64Data.length;
+        // ignore the '=' padding
+        while (base64Data[lastData - 1] == PAD) {
+            if (--lastData == 0) {
+                return GenericUtils.EMPTY_BYTE_ARRAY;
             }
-            decodedData = new byte[lastData - numberQuadruple];
         }
+        decodedData = new byte[lastData - numberQuadruple];
 
         for (int i = 0; i < numberQuadruple; i++) {
             dataIndex = i * 4;
@@ -418,7 +419,7 @@ public class Base64 {
      * Discards any whitespace from a base-64 encoded block.
      *
      * @param data The base-64 encoded data to discard the whitespace
-     * from.
+     *             from.
      * @return The data, less whitespace (see RFC 2045).
      */
     static byte[] discardWhitespace(byte[] data) {
@@ -451,7 +452,7 @@ public class Base64 {
      * encoded data."
      *
      * @param data The base-64 encoded data to groom
-     * @return The data, less non-base64 characters (see RFC 2045) - 
+     * @return The data, less non-base64 characters (see RFC 2045) -
      * may be same as input if all data was base-64
      */
     public static byte[] discardNonBase64(byte[] data) {
@@ -475,7 +476,8 @@ public class Base64 {
                 if (groomedData == null) {
                     groomedData = new byte[data.length - 1 /* the current character, which is NOT BASE64 */];
 
-                    if ((bytesCopied=i) > 0) {
+                    bytesCopied = i;
+                    if (bytesCopied > 0) {
                         System.arraycopy(data, 0, groomedData, 0, bytesCopied);
                     }
                 }
@@ -509,10 +511,10 @@ public class Base64 {
      * supplied object is not of type byte[].
      *
      * @param pObject Object to encode
-     * @return An object (of type byte[]) containing the 
-     *         base64 encoded data which corresponds to the byte[] supplied.
+     * @return An object (of type byte[]) containing the
+     * base64 encoded data which corresponds to the byte[] supplied.
      * @throws InvalidParameterException if the parameter supplied is not
-     *                          of type byte[]
+     *                                   of type byte[]
      */
     public Object encode(Object pObject) {
         if (!(pObject instanceof byte[])) {

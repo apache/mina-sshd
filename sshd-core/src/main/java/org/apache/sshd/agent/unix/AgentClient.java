@@ -55,7 +55,7 @@ public class AgentClient extends AbstractAgentProxy implements Runnable {
 
     public AgentClient(String authSocket, ExecutorService executor, boolean shutdownOnExit) throws IOException {
         this.authSocket = authSocket;
-        
+
         setExecutorService((executor == null) ? ThreadUtils.newSingleThreadExecutor("AgentClient[" + authSocket + "]") : executor);
         setShutdownOnExit((executor == null) ? true : shutdownOnExit);
 
@@ -68,7 +68,7 @@ public class AgentClient extends AbstractAgentProxy implements Runnable {
             }
             receiveBuffer = new ByteArrayBuffer();
             messages = new ArrayBlockingQueue<Buffer>(10);
-            
+
             ExecutorService service = getExecutorService();
             pumper = service.submit(this);
         } catch (IOException e) {
@@ -101,7 +101,7 @@ public class AgentClient extends AbstractAgentProxy implements Runnable {
         } finally {
             try {
                 close();
-            } catch(IOException e) {
+            } catch (IOException e) {
                 if (log.isDebugEnabled()) {
                     log.debug(e.getClass().getSimpleName() + " while closing: " + e.getMessage());
                 }
@@ -136,7 +136,7 @@ public class AgentClient extends AbstractAgentProxy implements Runnable {
         if (open.getAndSet(false)) {
             Socket.close(handle);
         }
-        
+
         if ((pumper != null) && isShutdownOnExit() && (!pumper.isDone())) {
             pumper.cancel(true);
         }
@@ -168,13 +168,14 @@ public class AgentClient extends AbstractAgentProxy implements Runnable {
 
     /**
      * transform an APR error number in a more fancy exception
+     *
      * @param code APR error code
      * @throws java.io.IOException the produced exception for the given APR error number
      */
     private void throwException(int code) throws IOException {
         throw new IOException(
-                org.apache.tomcat.jni.Error.strerror(-code) +
-                " (code: " + code + ")");
+                org.apache.tomcat.jni.Error.strerror(-code)
+                        + " (code: " + code + ")");
     }
 
 }

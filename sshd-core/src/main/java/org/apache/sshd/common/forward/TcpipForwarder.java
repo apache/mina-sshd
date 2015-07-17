@@ -28,14 +28,16 @@ public interface TcpipForwarder extends Closeable {
 
     /**
      * Start forwarding the given local address on the client to the given address on the server.
+     *
      * @param remote The remote address
-     * @param local The local address
+     * @param local  The local address
      * @throws IOException If failed to handle request
      */
     SshdSocketAddress startLocalPortForwarding(SshdSocketAddress local, SshdSocketAddress remote) throws IOException;
 
     /**
      * Stop forwarding the given local address.
+     *
      * @param local The local address
      * @throws IOException If failed to handle request
      */
@@ -44,26 +46,28 @@ public interface TcpipForwarder extends Closeable {
     /**
      * Start forwarding tcpip from the given remote address to the
      * given local address.
-     *
+     * <p/>
      * The remote host name is the address to bind to on the server:
      * <ul>
-     *    <li>"" means that connections are to be accepted on all protocol families
-     *              supported by the SSH implementation</li>
-     *    <li>"0.0.0.0" means to listen on all IPv4 addresses</li>
-     *    <li>"::" means to listen on all IPv6 addresses</li>
-     *    <li>"localhost" means to listen on all protocol families supported by the SSH
-     *              implementation on loopback addresses only, [RFC3330] and RFC3513]</li>
-     *    <li>"127.0.0.1" and "::1" indicate listening on the loopback interfaces for
-     *              IPv4 and IPv6 respectively</li>
+     * <li>"" means that connections are to be accepted on all protocol families
+     * supported by the SSH implementation</li>
+     * <li>"0.0.0.0" means to listen on all IPv4 addresses</li>
+     * <li>"::" means to listen on all IPv6 addresses</li>
+     * <li>"localhost" means to listen on all protocol families supported by the SSH
+     * implementation on loopback addresses only, [RFC3330] and RFC3513]</li>
+     * <li>"127.0.0.1" and "::1" indicate listening on the loopback interfaces for
+     * IPv4 and IPv6 respectively</li>
      * </ul>
+     *
      * @param remote The remote address
-     * @param local The local address
+     * @param local  The local address
      * @throws IOException If failed to handle request
      */
     SshdSocketAddress startRemotePortForwarding(SshdSocketAddress remote, SshdSocketAddress local) throws IOException;
 
     /**
      * Stop forwarding of the given remote address.
+     *
      * @param remote The remote {@link SshdSocketAddress}
      * @throws IOException If failed to handle request
      */
@@ -77,6 +81,7 @@ public interface TcpipForwarder extends Closeable {
 
     /**
      * Called when the other side requested a remote port forward.
+     *
      * @param local The request address
      * @return The bound local addresses
      * @throws IOException If failed to handle request
@@ -85,6 +90,7 @@ public interface TcpipForwarder extends Closeable {
 
     /**
      * Called when the other side cancelled a remote port forward.
+     *
      * @param local The local {@link SshdSocketAddress}
      * @throws IOException If failed to handle request
      */

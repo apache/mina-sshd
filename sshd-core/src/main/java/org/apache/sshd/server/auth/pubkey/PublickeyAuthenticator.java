@@ -32,9 +32,10 @@ public interface PublickeyAuthenticator {
 
     /**
      * Check the validity of a public key.
+     *
      * @param username the username
-     * @param key the key
-     * @param session the server session
+     * @param key      the key
+     * @param session  the server session
      * @return a boolean indicating if authentication succeeded or not
      */
     boolean authenticate(String username, PublicKey key, ServerSession session);

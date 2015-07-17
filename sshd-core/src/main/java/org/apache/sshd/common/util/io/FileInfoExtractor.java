@@ -31,40 +31,39 @@ import java.util.Set;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface FileInfoExtractor<T> {
-    T infoOf(Path file, LinkOption ... options) throws IOException;
-    
+
     FileInfoExtractor<Boolean> EXISTS = new FileInfoExtractor<Boolean>() {
             @Override
             public Boolean infoOf(Path file, LinkOption... options) throws IOException {
-                return Boolean.valueOf(Files.exists(file, options));
+                return Files.exists(file, options);
             }
         };
    
     FileInfoExtractor<Boolean> ISDIR = new FileInfoExtractor<Boolean>() {
             @Override
             public Boolean infoOf(Path file, LinkOption... options) throws IOException {
-                return Boolean.valueOf(Files.isDirectory(file, options));
+                return Files.isDirectory(file, options);
             }
         };
 
     FileInfoExtractor<Boolean> ISREG = new FileInfoExtractor<Boolean>() {
             @Override
             public Boolean infoOf(Path file, LinkOption... options) throws IOException {
-                return Boolean.valueOf(Files.isRegularFile(file, options));
+                return Files.isRegularFile(file, options);
             }
         };
 
     FileInfoExtractor<Boolean> ISSYMLINK = new FileInfoExtractor<Boolean>() {
             @Override
             public Boolean infoOf(Path file, LinkOption... options) throws IOException {
-                return Boolean.valueOf(Files.isSymbolicLink(file));
+                return Files.isSymbolicLink(file);
             }
         };
 
     FileInfoExtractor<Long> SIZE = new FileInfoExtractor<Long>() {
             @Override
             public Long infoOf(Path file, LinkOption... options) throws IOException {
-                return Long.valueOf(Files.size(file));
+                return Files.size(file);
             }
         };
 
@@ -82,4 +81,7 @@ public interface FileInfoExtractor<T> {
         }
         
     };
+
+    T infoOf(Path file, LinkOption ... options) throws IOException;
+
 }

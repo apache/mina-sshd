@@ -34,7 +34,7 @@ import org.apache.sshd.common.util.Pair;
  */
 public class CheckFileHandleExtensionImpl extends AbstractCheckFileExtension implements CheckFileHandleExtension {
     public CheckFileHandleExtensionImpl(SftpClient client, RawSftpClient raw, Collection<String> extras) {
-        super(SftpConstants.EXT_CHKFILE_HANDLE, client, raw, extras);
+        super(SftpConstants.EXT_CHECK_FILE_HANDLE, client, raw, extras);
     }
 
     @Override

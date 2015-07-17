@@ -116,41 +116,51 @@ public class AbstractSessionTest extends BaseTestSupport {
         public MySession() {
             super(true, SshServer.setUpDefaultServer(), null);
         }
+
         @Override
         protected void handleMessage(Buffer buffer) throws Exception {
             // ignored
         }
+
         @Override
         protected boolean readIdentification(Buffer buffer) {
             return false;
         }
+
         public String doReadIdentification(Buffer buffer) {
             return super.doReadIdentification(buffer, false);
         }
+
         @Override
         protected byte[] sendKexInit() throws IOException {
             return GenericUtils.EMPTY_BYTE_ARRAY;
         }
+
         @Override
         protected void receiveKexInit(Map<KexProposalOption, String> proposal, byte[] seed) throws IOException {
             // ignored
         }
+
         @Override
         protected void setKexSeed(byte... seed) {
             // ignored
         }
+
         @Override
         protected String resolveAvailableSignaturesProposal(FactoryManager manager) {
             return null;
         }
+
         @Override
         protected void checkKeys() {
             // ignored
         }
+
         @Override
         public void startService(String name) throws Exception {
             // ignored
         }
+
         @Override
         public void resetIdleTimeout() {
             // ignored

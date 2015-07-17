@@ -18,15 +18,6 @@
  */
 package org.apache.sshd.agent.common;
 
-import static org.apache.sshd.agent.SshAgentConstants.SSH2_AGENTC_ADD_IDENTITY;
-import static org.apache.sshd.agent.SshAgentConstants.SSH2_AGENTC_REMOVE_ALL_IDENTITIES;
-import static org.apache.sshd.agent.SshAgentConstants.SSH2_AGENTC_REMOVE_IDENTITY;
-import static org.apache.sshd.agent.SshAgentConstants.SSH2_AGENTC_REQUEST_IDENTITIES;
-import static org.apache.sshd.agent.SshAgentConstants.SSH2_AGENTC_SIGN_REQUEST;
-import static org.apache.sshd.agent.SshAgentConstants.SSH2_AGENT_IDENTITIES_ANSWER;
-import static org.apache.sshd.agent.SshAgentConstants.SSH2_AGENT_SIGN_RESPONSE;
-import static org.apache.sshd.agent.SshAgentConstants.SSH_AGENT_SUCCESS;
-
 import java.io.IOException;
 import java.security.KeyPair;
 import java.security.PublicKey;
@@ -44,6 +35,15 @@ import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.common.util.threads.ExecutorServiceConfigurer;
+
+import static org.apache.sshd.agent.SshAgentConstants.SSH2_AGENTC_ADD_IDENTITY;
+import static org.apache.sshd.agent.SshAgentConstants.SSH2_AGENTC_REMOVE_ALL_IDENTITIES;
+import static org.apache.sshd.agent.SshAgentConstants.SSH2_AGENTC_REMOVE_IDENTITY;
+import static org.apache.sshd.agent.SshAgentConstants.SSH2_AGENTC_REQUEST_IDENTITIES;
+import static org.apache.sshd.agent.SshAgentConstants.SSH2_AGENTC_SIGN_REQUEST;
+import static org.apache.sshd.agent.SshAgentConstants.SSH2_AGENT_IDENTITIES_ANSWER;
+import static org.apache.sshd.agent.SshAgentConstants.SSH2_AGENT_SIGN_RESPONSE;
+import static org.apache.sshd.agent.SshAgentConstants.SSH_AGENT_SUCCESS;
 
 public abstract class AbstractAgentProxy extends AbstractLoggingBean implements SshAgent, ExecutorServiceConfigurer {
     private ExecutorService executor;
@@ -102,14 +102,14 @@ public abstract class AbstractAgentProxy extends AbstractLoggingBean implements 
         buffer.putBytes(data);
         buffer.putInt(0);
         buffer = request(prepare(buffer));
-        
-        int responseType = buffer.getUByte(); 
+
+        int responseType = buffer.getUByte();
         if (responseType != SSH2_AGENT_SIGN_RESPONSE) {
             throw new SshException("Bad signing response type: " + (responseType & 0xFF));
         }
         Buffer buf = new ByteArrayBuffer(buffer.getBytes());
         String algorithm = buf.getString();
-        byte[] signature = buf.getBytes(); 
+        byte[] signature = buf.getBytes();
         if (log.isDebugEnabled()) {
             log.debug("sign(" + algorithm + "): " + BufferUtils.printHex(':', signature));
         }
@@ -126,7 +126,7 @@ public abstract class AbstractAgentProxy extends AbstractLoggingBean implements 
             log.debug("addIdentity(" + comment + "): " + key.getPublic().getAlgorithm());
         }
         buffer = request(prepare(buffer));
-        
+
         int available = buffer.available();
         int response = (available >= 1) ? buffer.getUByte() : -1;
         if ((available != 1) || (response != SSH_AGENT_SUCCESS)) {

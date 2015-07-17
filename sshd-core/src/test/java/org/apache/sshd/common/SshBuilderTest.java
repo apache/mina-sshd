@@ -50,7 +50,7 @@ public class SshBuilderTest extends BaseTestSupport {
      */
     @Test
     public void testAllBuiltinCiphersListed() {
-        Set<BuiltinCiphers> all=EnumSet.allOf(BuiltinCiphers.class);
+        Set<BuiltinCiphers> all = EnumSet.allOf(BuiltinCiphers.class);
         // The 'none' cipher is not listed as preferred - it is implied
         assertTrue("Missing " + BuiltinCiphers.Constants.NONE + " cipher in all values", all.remove(BuiltinCiphers.none));
         testAllInstancesListed(all, BaseBuilder.DEFAULT_CIPHERS_PREFERENCE);
@@ -97,14 +97,14 @@ public class SshBuilderTest extends BaseTestSupport {
      */
     @Test
     public void testSetUpDefaultCiphers() {
-        for (boolean ignoreUnsupported : new boolean[] { true, false }) {
-            List<NamedFactory<Cipher>>  ciphers=BaseBuilder.setUpDefaultCiphers(ignoreUnsupported);
-            int                         numCiphers=GenericUtils.size(ciphers);
+        for (boolean ignoreUnsupported : new boolean[]{true, false}) {
+            List<NamedFactory<Cipher>> ciphers = BaseBuilder.setUpDefaultCiphers(ignoreUnsupported);
+            int numCiphers = GenericUtils.size(ciphers);
             // make sure returned list size matches expected count
             if (ignoreUnsupported) {
                 assertEquals("Incomplete full ciphers size", BaseBuilder.DEFAULT_CIPHERS_PREFERENCE.size(), numCiphers);
             } else {
-                int expectedCount=0;
+                int expectedCount = 0;
                 for (BuiltinCiphers c : BaseBuilder.DEFAULT_CIPHERS_PREFERENCE) {
                     if (c.isSupported()) {
                         expectedCount++;
@@ -112,19 +112,19 @@ public class SshBuilderTest extends BaseTestSupport {
                 }
                 assertEquals("Incomplete supported ciphers size", expectedCount, numCiphers);
             }
-            
+
             // make sure order is according to the default preference list
-            List<String>    cipherNames=NamedResource.Utils.getNameList(ciphers);
-            int             nameIndex=0;
+            List<String> cipherNames = NamedResource.Utils.getNameList(ciphers);
+            int nameIndex = 0;
             for (BuiltinCiphers c : BaseBuilder.DEFAULT_CIPHERS_PREFERENCE) {
                 if ((!c.isSupported()) && (!ignoreUnsupported)) {
                     continue;
                 }
-                
-                String  expectedName=c.getName();
+
+                String expectedName = c.getName();
                 assertTrue("Out of actual ciphers for expected=" + expectedName, nameIndex < numCiphers);
-                
-                String  actualName=cipherNames.get(nameIndex);
+
+                String actualName = cipherNames.get(nameIndex);
                 assertEquals("Mismatched cipher at position " + nameIndex + " for ignoreUnsupported=" + ignoreUnsupported, expectedName, actualName);
                 nameIndex++;
             }

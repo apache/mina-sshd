@@ -40,25 +40,25 @@ public class FactoryManagerUtilsTest extends BaseTestSupport {
 
     @Test
     public void testLongProperty() {
-        final long      expected=System.currentTimeMillis();
-        final String    name=getCurrentTestName();
-        
+        final long expected = System.currentTimeMillis();
+        final String name = getCurrentTestName();
+
         Session session = createMockSession();
         assertEquals("Mismatched empty props value", expected, FactoryManagerUtils.getLongProperty(session, name, expected));
 
         FactoryManagerUtils.updateProperty(session, name, expected);
         testLongProperty(session, name, expected);
-        
+
         FactoryManagerUtils.updateProperty(session, name, Long.toString(expected));
         testLongProperty(session, name, expected);
     }
-    
+
     private void testLongProperty(Session session, String name, long expected) {
-        FactoryManager  manager = session.getFactoryManager();
-        Map<String,?>   props = manager.getProperties();
-        Object          value = props.get(name);
-        Class<?>        type = value.getClass();
-        String          storage = type.getSimpleName();
+        FactoryManager manager = session.getFactoryManager();
+        Map<String, ?> props = manager.getProperties();
+        Object value = props.get(name);
+        Class<?> type = value.getClass();
+        String storage = type.getSimpleName();
 
         {
             Long actual = FactoryManagerUtils.getLong(session, name);
@@ -75,15 +75,15 @@ public class FactoryManagerUtilsTest extends BaseTestSupport {
 
     @Test
     public void testIntegerProperty() {
-        final int      expected=3777347;
-        final String   name=getCurrentTestName();
-        
+        final int expected = 3777347;
+        final String name = getCurrentTestName();
+
         Session session = createMockSession();
         assertEquals("Mismatched empty props value", expected, FactoryManagerUtils.getIntProperty(session, name, expected));
 
         FactoryManagerUtils.updateProperty(session, name, expected);
         testIntegerProperty(session, name, expected);
-        
+
         FactoryManagerUtils.updateProperty(session, name, Integer.toString(expected));
         testIntegerProperty(session, name, expected);
 
@@ -91,13 +91,13 @@ public class FactoryManagerUtilsTest extends BaseTestSupport {
         FactoryManagerUtils.updateProperty(session, name, Long.valueOf(expected));
         testIntegerProperty(session, name, expected);
     }
-    
+
     private void testIntegerProperty(Session session, String name, int expected) {
-        FactoryManager  manager = session.getFactoryManager();
-        Map<String,?>   props = manager.getProperties();
-        Object          value = props.get(name);
-        Class<?>        type = value.getClass();
-        String          storage = type.getSimpleName();
+        FactoryManager manager = session.getFactoryManager();
+        Map<String, ?> props = manager.getProperties();
+        Object value = props.get(name);
+        Class<?> type = value.getClass();
+        String storage = type.getSimpleName();
 
         {
             Integer actual = FactoryManagerUtils.getInteger(session, name);
@@ -114,26 +114,26 @@ public class FactoryManagerUtilsTest extends BaseTestSupport {
 
     @Test
     public void testBooleanProperty() {
-        for (final boolean expected : new boolean[] { false, true }) {
-            final String   name=getCurrentTestName();
-            
+        for (final boolean expected : new boolean[]{false, true}) {
+            final String name = getCurrentTestName();
+
             Session session = createMockSession();
             assertEquals("Mismatched empty props value", expected, FactoryManagerUtils.getBooleanProperty(session, name, expected));
-    
+
             FactoryManagerUtils.updateProperty(session, name, expected);
             testBooleanProperty(session, name, expected);
-            
+
             FactoryManagerUtils.updateProperty(session, name, Boolean.toString(expected));
             testBooleanProperty(session, name, expected);
         }
     }
-    
+
     private void testBooleanProperty(Session session, String name, boolean expected) {
-        FactoryManager  manager = session.getFactoryManager();
-        Map<String,?>   props = manager.getProperties();
-        Object          value = props.get(name);
-        Class<?>        type = value.getClass();
-        String          storage = type.getSimpleName();
+        FactoryManager manager = session.getFactoryManager();
+        Map<String, ?> props = manager.getProperties();
+        Object value = props.get(name);
+        Class<?> type = value.getClass();
+        String storage = type.getSimpleName();
 
         {
             Boolean actual = FactoryManagerUtils.getBoolean(session, name);
@@ -149,10 +149,10 @@ public class FactoryManagerUtilsTest extends BaseTestSupport {
     }
 
     private Session createMockSession() {
-        Map<String,Object>  props = new TreeMap<String,Object>(String.CASE_INSENSITIVE_ORDER);
-        FactoryManager      manager = Mockito.mock(FactoryManager.class);
+        Map<String, Object> props = new TreeMap<String, Object>(String.CASE_INSENSITIVE_ORDER);
+        FactoryManager manager = Mockito.mock(FactoryManager.class);
         Mockito.when(manager.getProperties()).thenReturn(props);
-        
+
         Session session = Mockito.mock(Session.class);
         Mockito.when(session.getUsername()).thenReturn(getCurrentTestName());
         Mockito.when(session.getFactoryManager()).thenReturn(manager);

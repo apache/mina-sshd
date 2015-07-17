@@ -19,7 +19,6 @@
 package org.apache.sshd.server.channel;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Collection;
@@ -96,7 +95,7 @@ public class ChannelSession extends AbstractServerChannel {
             if (signals == null) {
                 throw new IllegalArgumentException("signals may not be null");
             }
-            
+
             addSignalListener(listener, Arrays.asList(signals));
         }
 
@@ -160,7 +159,8 @@ public class ChannelSession extends AbstractServerChannel {
         /**
          * adds a variable to the environment. This method is called <code>set</code>
          * according to the name of the appropriate posix command <code>set</code>
-         * @param key environment variable name
+         *
+         * @param key   environment variable name
          * @param value environment variable value
          */
         public void set(String key, String value) {
@@ -221,10 +221,12 @@ public class ChannelSession extends AbstractServerChannel {
         public boolean isClosed() {
             return commandExitFuture.isClosed();
         }
+
         @Override
         public boolean isClosing() {
             return isClosed();
         }
+
         @Override
         public CloseFuture close(boolean immediately) {
             if (immediately || command == null) {
@@ -298,12 +300,12 @@ public class ChannelSession extends AbstractServerChannel {
     }
 
     /**
-     * @param type The request type
+     * @param type   The request type
      * @param buffer The {@link Buffer} containing extra request-specific content
      * @return A {@link Boolean} representing the success/failure of handling
      * the request - {@code null} if unknown request received
      * @throws IOException If request requires some extra response and failed
-     * to generate it
+     *                     to generate it
      */
     public Boolean handleRequest(String type, Buffer buffer) throws IOException {
         switch (type) {
@@ -342,8 +344,9 @@ public class ChannelSession extends AbstractServerChannel {
                 return handleAgentForwarding(buffer);
             case "x11-req":
                 return handleX11Forwarding(buffer);
+            default:
+                return null;
         }
-        return null;
     }
 
     protected boolean handleEnv(Buffer buffer) throws IOException {
@@ -376,10 +379,10 @@ public class ChannelSession extends AbstractServerChannel {
                 log.warn("Unknown pty opcode value: " + opcode);
                 break;
             }
-            int val  = ((modes[i++] << 24) & 0xff000000) |
-                       ((modes[i++] << 16) & 0x00ff0000) |
-                       ((modes[i++] <<  8) & 0x0000ff00) |
-                       ((modes[i++]) & 0x000000ff);
+            int val = ((modes[i++] << 24) & 0xff000000)
+                    | ((modes[i++] << 16) & 0x00ff0000)
+                    | ((modes[i++] << 8) & 0x0000ff00)
+                    | ((modes[i++]) & 0x000000ff);
             ptyModes.put(mode, val);
         }
         if (log.isDebugEnabled()) {
@@ -443,15 +446,16 @@ public class ChannelSession extends AbstractServerChannel {
             log.debug("handleShell - closing");
             return false;
         }
-        
+
         ServerFactoryManager manager = ((ServerSession) session).getFactoryManager();
         Factory<Command> factory = manager.getShellFactory();
         if (factory == null) {
             log.debug("handleShell - no shell factory");
             return false;
         }
-        
-        if ((command = factory.create()) == null) {
+
+        command = factory.create();
+        if (command == null) {
             log.debug("handleShell - no shell command");
             return false;
         }
@@ -501,7 +505,8 @@ public class ChannelSession extends AbstractServerChannel {
             return false;
         }
 
-        if ((command = NamedFactory.Utils.create(factories, subsystem)) == null) {
+        command = NamedFactory.Utils.create(factories, subsystem);
+        if (command == null) {
             log.warn("Unsupported subsystem: {}", subsystem);
             return false;
         }
@@ -514,10 +519,10 @@ public class ChannelSession extends AbstractServerChannel {
 
     /**
      * For {@link Command} to install {@link ChannelDataReceiver}.
-     * When you do this, {@link Command#setInputStream(InputStream)} or
+     * When you do this, {@link Command#setInputStream(java.io.InputStream)} or
      * {@link org.apache.sshd.server.AsyncCommand#setIoInputStream(org.apache.sshd.common.io.IoInputStream)}
      * will no longer be invoked. If you call this method from {@link Command#start(Environment)},
-     * the input stream you received in {@link Command#setInputStream(InputStream)} will
+     * the input stream you received in {@link Command#setInputStream(java.io.InputStream)} will
      * not read any data.
      */
     public void setDataReceiver(ChannelDataReceiver receiver) {
@@ -556,7 +561,7 @@ public class ChannelSession extends AbstractServerChannel {
             command.setOutputStream(out);
             command.setErrorStream(err);
         }
-        if (this.receiver==null) {
+        if (this.receiver == null) {
             // if the command hasn't installed any ChannelDataReceiver, install the default
             // and give the command an InputStream
             if (command instanceof AsyncCommand) {

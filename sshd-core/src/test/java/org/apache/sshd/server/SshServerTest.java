@@ -38,7 +38,7 @@ public class SshServerTest extends BaseTestSupport {
 
     @Test
     public void stopMethodShouldBeIdempotent() throws Exception {
-        try(SshServer sshd = new SshServer()) {
+        try (SshServer sshd = new SshServer()) {
             sshd.stop();
             sshd.stop();
             sshd.stop();
@@ -49,12 +49,12 @@ public class SshServerTest extends BaseTestSupport {
     public void testExecutorShutdownFalse() throws Exception {
         ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
-        try(SshServer sshd = createTestServer()) {
+        try (SshServer sshd = createTestServer()) {
             sshd.setScheduledExecutorService(executorService);
-    
+
             sshd.start();
             sshd.stop();
-    
+
             assertFalse(executorService.isShutdown());
             executorService.shutdownNow();
         }
@@ -64,24 +64,24 @@ public class SshServerTest extends BaseTestSupport {
     public void testExecutorShutdownTrue() throws Exception {
         ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
-        try(SshServer sshd = createTestServer()) {
+        try (SshServer sshd = createTestServer()) {
             sshd.setScheduledExecutorService(executorService, true);
-    
+
             sshd.start();
             sshd.stop();
-    
+
             assertTrue(executorService.isShutdown());
         }
     }
 
     @Test
     public void testDynamicPort() throws Exception {
-        try(SshServer sshd = createTestServer()) {
+        try (SshServer sshd = createTestServer()) {
             sshd.setHost("localhost");
             sshd.start();
-    
+
             assertNotEquals(0, sshd.getPort());
-    
+
             sshd.stop();
         }
     }

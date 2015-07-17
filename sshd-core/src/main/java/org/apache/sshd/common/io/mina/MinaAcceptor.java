@@ -36,8 +36,8 @@ import org.apache.sshd.common.FactoryManagerUtils;
 /**
  */
 public class MinaAcceptor extends MinaService implements org.apache.sshd.common.io.IoAcceptor, IoHandler {
-    public static final int DEFAULT_BACKLOG=0;
-    public static final boolean DEFAULT_REUSE_ADDRESS=true;
+    public static final int DEFAULT_BACKLOG = 0;
+    public static final boolean DEFAULT_REUSE_ADDRESS = true;
 
     protected final AtomicReference<IoAcceptor> acceptorHolder = new AtomicReference<>(null);
 
@@ -63,8 +63,9 @@ public class MinaAcceptor extends MinaService implements org.apache.sshd.common.
 
     protected IoAcceptor getAcceptor() {
         IoAcceptor acceptor;
-        synchronized(acceptorHolder) {
-            if ((acceptor = acceptorHolder.get()) != null) {
+        synchronized (acceptorHolder) {
+            acceptor = acceptorHolder.get();
+            if (acceptor != null) {
                 return acceptor;
             }
 
@@ -72,7 +73,7 @@ public class MinaAcceptor extends MinaService implements org.apache.sshd.common.
             acceptor.setHandler(this);
             acceptorHolder.set(acceptor);
         }
-        
+
         log.debug("Created IoAcceptor");
         return acceptor;
     }

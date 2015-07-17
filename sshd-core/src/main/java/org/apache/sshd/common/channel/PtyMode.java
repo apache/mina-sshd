@@ -51,6 +51,18 @@ public enum PtyMode {
     // Speeed
     TTY_OP_ISPEED(128), TTY_OP_OSPEED(129);
 
+    public static final byte TTY_OP_END = 0x00;
+
+    private static final Map<Integer, PtyMode> COMMANDS;
+
+    static {
+        Map<Integer, PtyMode> commands = new java.util.HashMap<>();
+        for (PtyMode c : PtyMode.values()) {
+            commands.put(c.toInt(), c);
+        }
+        COMMANDS = Collections.unmodifiableMap(commands);
+    }
+
     private int v;
 
     PtyMode(int v) {
@@ -61,20 +73,7 @@ public enum PtyMode {
         return v;
     }
 
-    public static final byte TTY_OP_END = 0x00;
-    
-    private static final Map<Integer, PtyMode> commands = 
-            Collections.unmodifiableMap(new HashMap<Integer, PtyMode>() {
-                    private static final long serialVersionUID = 1L;    // we're not serializing it
-                    
-                    {
-                        for (PtyMode c : PtyMode.values()) {
-                            put(c.toInt(), c);
-                        }
-                    }
-            });
-
     public static PtyMode fromInt(int b) {
-        return commands.get(0x00FF & (b + 0x100));
+        return COMMANDS.get(0x00FF & (b + 0x100));
     }
 }

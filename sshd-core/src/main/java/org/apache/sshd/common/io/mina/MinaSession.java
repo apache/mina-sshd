@@ -31,7 +31,6 @@ import org.apache.sshd.common.io.IoService;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.util.CloseableUtils;
-import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 
@@ -94,11 +93,13 @@ public class MinaSession extends CloseableUtils.AbstractInnerCloseable implement
             public boolean isClosing() {
                 return session.isClosing();
             }
+
             @SuppressWarnings("synthetic-access")
             @Override
             public boolean isClosed() {
                 return !session.isConnected();
             }
+
             @SuppressWarnings("synthetic-access")
             @Override
             public org.apache.sshd.common.future.CloseFuture close(boolean immediately) {

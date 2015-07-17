@@ -37,14 +37,14 @@ public class ChannelPipedInputStreamTest extends BaseTestSupport {
     @Test
     public void testAvailable() throws IOException {
         Window window = new Window(new BogusChannel(), null, true, true);
-        try(ChannelPipedInputStream stream = new ChannelPipedInputStream(window)) {
+        try (ChannelPipedInputStream stream = new ChannelPipedInputStream(window)) {
             byte[] b = getCurrentTestName().getBytes(StandardCharsets.UTF_8);
             stream.receive(b, 0, b.length);
             assertEquals("Mismatched reported available size after receive", b.length, stream.available());
-    
+
             stream.eof();
             assertEquals("Mismatched reported available size after EOF", b.length, stream.available());
-    
+
             byte[] readBytes = new byte[b.length + Long.SIZE];
             assertEquals("Mismatched reported read size", b.length, stream.read(readBytes));
             assertStreamEquals(b, readBytes);
@@ -55,12 +55,12 @@ public class ChannelPipedInputStreamTest extends BaseTestSupport {
     @Test
     public void testIdempotentClose() throws IOException {
         Window window = new Window(new BogusChannel(), null, true, true);
-        try(ChannelPipedInputStream stream = new ChannelPipedInputStream(window)) {
+        try (ChannelPipedInputStream stream = new ChannelPipedInputStream(window)) {
             byte[] b = getCurrentTestName().getBytes(StandardCharsets.UTF_8);
             stream.receive(b, 0, b.length);
             stream.eof();
-            
-            for (int index=0; index < Byte.SIZE; index++) {
+
+            for (int index = 0; index < Byte.SIZE; index++) {
                 stream.close();
             }
         }

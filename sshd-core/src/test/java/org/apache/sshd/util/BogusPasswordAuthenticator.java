@@ -40,7 +40,7 @@ public class BogusPasswordAuthenticator extends AbstractLoggingBean implements P
         if (log.isDebugEnabled()) {
             log.debug("authenticate({}) {} / {} - sucess = {}", session, username, password, Boolean.valueOf(result));
         }
-        
+
         return result;
     }
 }

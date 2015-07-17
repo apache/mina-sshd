@@ -141,7 +141,7 @@ public class ChannelAsyncInputStream extends CloseableUtils.AbstractCloseable im
 
         @Override   // TODO for JDK-8 make this a default method
         public void verify(long timeout, TimeUnit unit) throws IOException {
-            verify(unit.toMillis(timeout));        
+            verify(unit.toMillis(timeout));
         }
 
         @Override   // TODO for JDK-8 make this a default method

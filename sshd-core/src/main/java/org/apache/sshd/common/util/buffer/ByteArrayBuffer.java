@@ -26,6 +26,7 @@ import org.apache.sshd.common.util.Readable;
 
 /**
  * Provides an implementation of {@link Buffer} using a backing byte array
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public final class ByteArrayBuffer extends Buffer {

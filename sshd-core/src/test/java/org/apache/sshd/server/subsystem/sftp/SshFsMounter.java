@@ -60,6 +60,7 @@ import org.apache.sshd.util.Utils;
 
 /**
  * A basic implementation to allow remote mounting of the local file system via SFTP
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class SshFsMounter {
@@ -86,7 +87,7 @@ public class SshFsMounter {
                     if (GenericUtils.isEmpty(c)) {
                         continue;
                     }
-                    
+
                     args.add(c);
                 }
             } else {
@@ -117,10 +118,10 @@ public class SshFsMounter {
                 } else {
                     throw new UnsupportedOperationException("Unknown command");
                 }
-                
+
                 log.info("run(" + username + ")[" + command + "] end");
                 callback.onExit(0);
-            } catch(Exception e) {
+            } catch (Exception e) {
                 log.error("run(" + username + ")[" + command + "] " + e.getClass().getSimpleName() + ": " + e.getMessage(), e);
                 stderr.append(e.getClass().getSimpleName()).append(": ").println(e.getMessage());
                 callback.onExit((-1), e.toString());
@@ -171,7 +172,7 @@ public class SshFsMounter {
                     stdout = null;
                 }
             }
-            
+
             if (stderr != null) {
                 try {
                     log.info("destroy(" + username + ")[" + command + "] close stderr");
@@ -181,20 +182,20 @@ public class SshFsMounter {
                     stderr = null;
                 }
             }
-            
+
             if (stdin != null) {
                 try {
                     log.info("destroy(" + username + ")[" + command + "] close stdin");
                     stdin.close();
                     log.info("destroy(" + username + ")[" + command + "] stdin closed");
-                } catch(IOException e) {
+                } catch (IOException e) {
                     log.warn("destroy(" + username + ")[" + command + "] failed (" + e.getClass().getSimpleName() + ") to close stdin: " + e.getMessage());
                 } finally {
                     stdin = null;
                 }
             }
         }
-        
+
         private void stopCommand() {
             if ((future != null) && (!future.isDone())) {
                 try {
@@ -205,7 +206,7 @@ public class SshFsMounter {
                     future = null;
                 }
             }
-            
+
             if ((executor != null) && (!executor.isShutdown())) {
                 try {
                     log.info("stopCommand(" + username + ")[" + command + "] shutdown executor");
@@ -230,7 +231,7 @@ public class SshFsMounter {
             return new MounterCommand(command);
         }
     }
-    
+
     public static void main(String[] args) throws Exception {
         int port = SshConfigFileReader.DEFAULT_PORT;
         boolean error = false;
@@ -250,7 +251,7 @@ public class SshFsMounter {
                     System.err.println("option requires an argument: " + argName);
                     break;
                 }
-                
+
                 String provider = args[++i];
                 if ("mina".equals(provider)) {
                     System.setProperty(IoServiceFactory.class.getName(), MinaServiceFactory.class.getName());
@@ -291,9 +292,9 @@ public class SshFsMounter {
         }
 
         System.err.println("Starting SSHD on port " + port);
-                                                    
+
         SshServer sshd = SshServer.setUpDefaultServer();
-        Map<String,Object> props = sshd.getProperties();
+        Map<String, Object> props = sshd.getProperties();
 //        FactoryManagerUtils.updateProperty(props, ServerFactoryManager.WELCOME_BANNER, "Welcome to SSH-FS Mounter\n");
         props.putAll(options);
         sshd.setPort(port);

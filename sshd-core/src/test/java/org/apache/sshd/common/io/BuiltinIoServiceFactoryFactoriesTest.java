@@ -35,12 +35,12 @@ public class BuiltinIoServiceFactoryFactoriesTest extends BaseTestSupport {
 
     @Test
     public void testFromFactoryName() {
-        for (String name : new String[] { null, "", getCurrentTestName() }) {
+        for (String name : new String[]{null, "", getCurrentTestName()}) {
             assertNull("Unexpected success for name='" + name + "'", BuiltinIoServiceFactoryFactories.fromFactoryName(name));
         }
 
         for (BuiltinIoServiceFactoryFactories expected : BuiltinIoServiceFactoryFactories.VALUES) {
-            String  name=expected.getName();
+            String name = expected.getName();
             assertSame(name, expected, BuiltinIoServiceFactoryFactories.fromFactoryName(name));
         }
     }
@@ -48,7 +48,7 @@ public class BuiltinIoServiceFactoryFactoriesTest extends BaseTestSupport {
     @Test
     public void testFromFactoryClass() {
         for (BuiltinIoServiceFactoryFactories expected : BuiltinIoServiceFactoryFactories.VALUES) {
-            Class<?>    clazz=expected.getFactoryClass();
+            Class<?> clazz = expected.getFactoryClass();
             assertSame(clazz.getSimpleName(), expected, BuiltinIoServiceFactoryFactories.fromFactoryClass(clazz));
         }
     }

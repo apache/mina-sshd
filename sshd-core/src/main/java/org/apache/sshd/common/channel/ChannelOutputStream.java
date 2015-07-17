@@ -87,8 +87,8 @@ public class ChannelOutputStream extends OutputStream implements Channel {
             // out the next packet before we block and wait for space to
             // become available again.
             //
-            int _l = Math.min(l, Math.min(remoteWindow.getSize() + lastSize, remoteWindow.getPacketSize()) - bufferLength);
-            if (_l <= 0) {
+            int l2 = Math.min(l, Math.min(remoteWindow.getSize() + lastSize, remoteWindow.getPacketSize()) - bufferLength);
+            if (l2 <= 0) {
                 if (bufferLength > 0) {
                     flush();
                 } else {
@@ -98,15 +98,15 @@ public class ChannelOutputStream extends OutputStream implements Channel {
                         closed = true;
                         throw e;
                     } catch (InterruptedException e) {
-                        throw (IOException)new InterruptedIOException("Interrupted while waiting for remote space").initCause(e);
+                        throw (IOException) new InterruptedIOException("Interrupted while waiting for remote space").initCause(e);
                     }
                 }
                 continue;
             }
-            buffer.putRawBytes(buf, s, _l);
-            bufferLength += _l;
-            s += _l;
-            l -= _l;
+            buffer.putRawBytes(buf, s, l2);
+            bufferLength += l2;
+            s += l2;
+            l -= l2;
         }
         if (noDelay) {
             flush();
@@ -140,15 +140,15 @@ public class ChannelOutputStream extends OutputStream implements Channel {
                 remoteWindow.waitAndConsume(length);
                 if (log.isDebugEnabled()) {
                     log.debug("Send {} on channel {}",
-                              (cmd == SshConstants.SSH_MSG_CHANNEL_DATA) ? "SSH_MSG_CHANNEL_DATA" : "SSH_MSG_CHANNEL_EXTENDED_DATA",
-                              Integer.valueOf(channel.getId()));
+                            (cmd == SshConstants.SSH_MSG_CHANNEL_DATA) ? "SSH_MSG_CHANNEL_DATA" : "SSH_MSG_CHANNEL_EXTENDED_DATA",
+                            Integer.valueOf(channel.getId()));
                 }
                 channel.writePacket(buf);
             }
-        } catch(WindowClosedException e) {
+        } catch (WindowClosedException e) {
             closed = true;
             throw e;
-        } catch(Exception e) {
+        } catch (Exception e) {
             if (e instanceof IOException) {
                 throw (IOException) e;
             } else {

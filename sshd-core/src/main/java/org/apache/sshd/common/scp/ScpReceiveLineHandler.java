@@ -26,9 +26,9 @@ import java.io.IOException;
  */
 public interface ScpReceiveLineHandler {
     /**
-     * @param line Received SCP input line
+     * @param line  Received SCP input line
      * @param isDir Does the input line refer to a directory
-     * @param time The received {@link ScpTimestamp} - may be {@code null}
+     * @param time  The received {@link ScpTimestamp} - may be {@code null}
      * @throws IOException If failed to process the line
      */
     void process(String line, boolean isDir, ScpTimestamp time) throws IOException;

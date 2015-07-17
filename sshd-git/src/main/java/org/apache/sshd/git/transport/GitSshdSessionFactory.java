@@ -27,9 +27,7 @@ import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.FactoryManagerUtils;
-import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.eclipse.jgit.errors.TransportException;
 import org.eclipse.jgit.transport.CredentialItem;
@@ -46,20 +44,20 @@ import org.eclipse.jgit.util.FS;
  */
 public class GitSshdSessionFactory extends SshSessionFactory {
     /**
-     * Property used to configure the SSHD {@link FactoryManager} with
+     * Property used to configure the SSHD {@link org.apache.sshd.common.FactoryManager} with
      * the default timeout (millis) to connect to the remote SSH server.
      * If not specified then {@link #DEFAULT_CONNECT_TIMEOUT} is used
      */
     public static final String CONNECT_TIMEOUT_PROP = "git-ssh-connect-timeout";
-        public static final long DEFAULT_CONNECT_TIMEOUT = TimeUnit.SECONDS.toMillis(30L);
+    public static final long DEFAULT_CONNECT_TIMEOUT = TimeUnit.SECONDS.toMillis(30L);
 
     /**
-     * Property used to configure the SSHD {@link FactoryManager} with
+     * Property used to configure the SSHD {@link org.apache.sshd.common.FactoryManager} with
      * the default timeout (millis) to authenticate with the remote SSH server.
      * If not specified then {@link #DEFAULT_AUTH_TIMEOUT} is used
      */
     public static final String AUTH_TIMEOUT_PROP = "git-ssh-connect-timeout";
-        public static final long DEFAULT_AUTH_TIMEOUT = TimeUnit.SECONDS.toMillis(15L);
+    public static final long DEFAULT_AUTH_TIMEOUT = TimeUnit.SECONDS.toMillis(15L);
 
     public GitSshdSessionFactory() {
         super();
@@ -107,8 +105,7 @@ public class GitSshdSessionFactory extends SshSessionFactory {
             client.start();
             session = client.connect(user, host, port)
                             .verify(FactoryManagerUtils.getLongProperty(client, CONNECT_TIMEOUT_PROP, DEFAULT_CONNECT_TIMEOUT))
-                            .getSession()
-                            ;
+                            .getSession();
             if (pass != null) {
                 session.addPasswordIdentity(pass);
             }

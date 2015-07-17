@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
 
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.compression.BuiltinCompressions;
 import org.apache.sshd.common.compression.Compression;
 import org.apache.sshd.common.compression.CompressionFactory;
@@ -31,7 +30,8 @@ import org.apache.sshd.common.util.GenericUtils;
 
 /**
  * Provides a &quot;bridge&quot; between the configuration values and the
- * actual {@link NamedFactory} for the {@link Compression}.
+ * actual {@link org.apache.sshd.common.NamedFactory} for the {@link Compression}.
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public enum CompressionConfigValue implements CompressionFactory {
@@ -39,13 +39,20 @@ public enum CompressionConfigValue implements CompressionFactory {
     NO(BuiltinCompressions.none),
     DELAYED(BuiltinCompressions.delayedZlib);
 
+    public static final Set<CompressionConfigValue> VALUES =
+            Collections.unmodifiableSet(EnumSet.allOf(CompressionConfigValue.class));
+
     private final CompressionFactory factory;
 
+    CompressionConfigValue(CompressionFactory delegate) {
+        factory = delegate;
+    }
+
     @Override
-    public final String getName() { 
+    public final String getName() {
         return factory.getName();
     }
-    
+
     @Override
     public final Compression create() {
         return factory.create();
@@ -60,13 +67,6 @@ public enum CompressionConfigValue implements CompressionFactory {
     public final String toString() {
         return getName();
     }
-
-    CompressionConfigValue(CompressionFactory delegate) {
-        factory = delegate;
-    }
-
-    public static final Set<CompressionConfigValue> VALUES=
-            Collections.unmodifiableSet(EnumSet.allOf(CompressionConfigValue.class));
 
     public static CompressionConfigValue fromName(String n) {
         if (GenericUtils.isEmpty(n)) {

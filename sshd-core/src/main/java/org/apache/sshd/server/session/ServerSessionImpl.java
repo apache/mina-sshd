@@ -46,13 +46,12 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.server.ServerFactoryManager;
 
 /**
- *
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ServerSessionImpl extends AbstractSession implements ServerSession {
-    protected static final long MAX_PACKETS = (1l << 31);
+    protected static final long MAX_PACKETS = 1L << 31;
 
     private long maxBytes = 1024 * 1024 * 1024;   // 1 GB
     private long maxKeyInterval = 60 * 60 * 1000; // 1 hour
@@ -91,11 +90,10 @@ public class ServerSessionImpl extends AbstractSession implements ServerSession 
         if (KexState.DONE.equals(kexState.get())) {
             long now = System.currentTimeMillis();
             if ((inPacketsCount.get() > MAX_PACKETS)
-             || (outPacketsCount.get() > MAX_PACKETS)
-             || (inBytesCount.get() > maxBytes)
-             || (outBytesCount.get() > maxBytes)
-             || ((maxKeyInterval > 0L) && ((now - lastKeyTimeValue.get()) > maxKeyInterval)))
-            {
+                    || (outPacketsCount.get() > MAX_PACKETS)
+                    || (inBytesCount.get() > maxBytes)
+                    || (outBytesCount.get() > maxBytes)
+                    || ((maxKeyInterval > 0L) && ((now - lastKeyTimeValue.get()) > maxKeyInterval))) {
                 reExchangeKeys();
             }
         }
@@ -113,14 +111,14 @@ public class ServerSessionImpl extends AbstractSession implements ServerSession 
     }
 
     @Override
-    protected byte[] sendKexInit(Map<KexProposalOption,String> proposal) throws IOException {
+    protected byte[] sendKexInit(Map<KexProposalOption, String> proposal) throws IOException {
         mergeProposals(serverProposal, proposal);
         return super.sendKexInit(proposal);
     }
 
     @Override
     protected void setKexSeed(byte... seed) {
-        I_S = ValidateUtils.checkNotNullAndNotEmpty(seed, "No KEX seed");
+        i_s = ValidateUtils.checkNotNullAndNotEmpty(seed, "No KEX seed");
     }
 
     @Override
@@ -166,8 +164,9 @@ public class ServerSessionImpl extends AbstractSession implements ServerSession 
      * Called by {@link #resolveAvailableSignaturesProposal(FactoryManager)}
      * if none of the provided keys is supported - last chance for the derived
      * implementation to do something
+     *
      * @param supported The supported key types - may be {@code null}/empty
-     * @param provided The available signature types - may be {@code null}/empty
+     * @param provided  The available signature types - may be {@code null}/empty
      * @return The resolved proposal - {@code null} by default
      */
     protected String resolveEmptySignaturesProposal(Iterable<String> supported, Iterable<String> provided) {
@@ -201,9 +200,9 @@ public class ServerSessionImpl extends AbstractSession implements ServerSession 
     }
 
     @Override
-    protected void receiveKexInit(Map<KexProposalOption,String> proposal, byte[] seed) throws IOException {
+    protected void receiveKexInit(Map<KexProposalOption, String> proposal, byte[] seed) throws IOException {
         mergeProposals(clientProposal, proposal);
-        I_C = seed;
+        i_c = seed;
     }
 
     @Override
@@ -220,7 +219,7 @@ public class ServerSessionImpl extends AbstractSession implements ServerSession 
         }
 
         IoService service = ioSession.getService();
-        Map<?,IoSession> sessionsMap = service.getManagedSessions();
+        Map<?, IoSession> sessionsMap = service.getManagedSessions();
         if (GenericUtils.isEmpty(sessionsMap)) {
             return 0;
         }
@@ -231,7 +230,7 @@ public class ServerSessionImpl extends AbstractSession implements ServerSession 
             if (session == null) {
                 continue;
             }
-            
+
             String sessionUser = session.getUsername();
             if ((!GenericUtils.isEmpty(sessionUser)) && Objects.equals(sessionUser, userName)) {
                 totalCount++;
@@ -241,12 +240,12 @@ public class ServerSessionImpl extends AbstractSession implements ServerSession 
         return totalCount;
     }
 
-	/**
-	 * Returns the session id.
-	 * 
-	 * @return The session id.
-	 */
-	public long getId() {
-		return ioSession.getId();
-	}
+    /**
+     * Returns the session id.
+     *
+     * @return The session id.
+     */
+    public long getId() {
+        return ioSession.getId();
+    }
 }

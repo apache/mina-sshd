@@ -32,41 +32,48 @@ import org.apache.sshd.common.util.Transformer;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface NamedResource {
-    /**
-     * @return The resource name
-     */
-    String getName();
-    
+
     /**
      * Compares 2 {@link NamedResource}s according to their {@link #getName()}
      * value case <U>insensitive</U>
      */
-    Comparator<NamedResource> BY_NAME_COMPARATOR=new Comparator<NamedResource>() {
-            @Override
-            public int compare(NamedResource r1, NamedResource r2) {
-                String  n1=r1.getName(), n2=r2.getName();
-                return String.CASE_INSENSITIVE_ORDER.compare(n1, n2);
-            }
-        };
+    Comparator<NamedResource> BY_NAME_COMPARATOR = new Comparator<NamedResource>() {
+        @Override
+        public int compare(NamedResource r1, NamedResource r2) {
+            String n1 = r1.getName();
+            String n2 = r2.getName();
+            return String.CASE_INSENSITIVE_ORDER.compare(n1, n2);
+        }
+    };
 
     /**
      * Returns the value of {@link #getName()} - or {@code null} if argument is {@code null}
      */
-    Transformer<NamedResource,String> NAME_EXTRACTOR=new Transformer<NamedResource,String>() {
-            @Override
-            public String transform(NamedResource input) {
-                if (input == null) {
-                    return null;
-                } else {
-                    return input.getName();
-                }
+    Transformer<NamedResource, String> NAME_EXTRACTOR = new Transformer<NamedResource, String>() {
+        @Override
+        public String transform(NamedResource input) {
+            if (input == null) {
+                return null;
+            } else {
+                return input.getName();
             }
-        };
+        }
+    };
+
+    /**
+     * @return The resource name
+     */
+    String getName();
 
     /**
      * Utility class to help using {@link NamedResource}s
      */
     final class Utils {
+
+        private Utils() {
+            throw new UnsupportedOperationException("No instance allowed");
+        }
+
         /**
          * @param resources The named resources
          * @return A {@link List} of all the factories names - in same order
@@ -84,7 +91,7 @@ public interface NamedResource {
 
             return names;
         }
-        
+
         /**
          * @param resources list of available resources
          * @return A comma separated list of factory names
@@ -92,12 +99,13 @@ public interface NamedResource {
         public static String getNames(Collection<? extends NamedResource> resources) {
             return GenericUtils.join(getNameList(resources), ',');
         }
-      
+
         /**
          * Remove the resource identified by the name from the list.
-         * @param name Name of the resource - ignored if {@code null}/empty
-         * @param c The {@link Comparator} to decide whether the {@link NamedResource#getName()}
-         * matches the <tt>name</tt> parameter
+         *
+         * @param name      Name of the resource - ignored if {@code null}/empty
+         * @param c         The {@link Comparator} to decide whether the {@link NamedResource#getName()}
+         *                  matches the <tt>name</tt> parameter
          * @param resources The {@link NamedResource} to check - ignored if {@code null}/empty
          * @return the removed resource from the list or {@code null} if not in the list
          */
@@ -106,14 +114,14 @@ public interface NamedResource {
             if (r != null) {
                 resources.remove(r);
             }
-            
+
             return r;
         }
 
         /**
-         * @param name Name of the resource - ignored if {@code null}/empty
-         * @param c The {@link Comparator} to decide whether the {@link NamedResource#getName()}
-         * matches the <tt>name</tt> parameter
+         * @param name      Name of the resource - ignored if {@code null}/empty
+         * @param c         The {@link Comparator} to decide whether the {@link NamedResource#getName()}
+         *                  matches the <tt>name</tt> parameter
          * @param resources The {@link NamedResource} to check - ignored if {@code null}/empty
          * @return The <U>first</U> resource whose name matches the parameter (by invoking
          * {@link Comparator#compare(Object, Object)} - {@code null} if no match found
@@ -122,7 +130,7 @@ public interface NamedResource {
             if (GenericUtils.isEmpty(name) || GenericUtils.isEmpty(resources)) {
                 return null;
             }
-            
+
             for (R r : resources) {
                 String n = r.getName();
                 int nRes = c.compare(name, n);
@@ -130,7 +138,7 @@ public interface NamedResource {
                     return r;
                 }
             }
-            
+
             return null;
         }
     }

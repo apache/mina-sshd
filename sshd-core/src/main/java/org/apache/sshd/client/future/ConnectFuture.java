@@ -26,7 +26,7 @@ import org.apache.sshd.common.future.SshFuture;
 
 /**
  * An {@link SshFuture} for asynchronous connections requests.
- * 
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface ConnectFuture extends SshFuture<ConnectFuture> {
@@ -35,13 +35,14 @@ public interface ConnectFuture extends SshFuture<ConnectFuture> {
 
     // wait and verify that connection succeeded within specified timeout
     ConnectFuture verify(long count, TimeUnit unit) throws IOException;
+
     ConnectFuture verify(long timeout) throws IOException;
-    
+
     /**
      * Returns the cause of the connection failure.
      *
      * @return <tt>null</tt> if the connect operation is not finished yet,
-     *         or if the connection attempt is successful.
+     * or if the connection attempt is successful.
      */
     Throwable getException();
 

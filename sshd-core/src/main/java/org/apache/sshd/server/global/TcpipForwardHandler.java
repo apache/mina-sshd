@@ -54,7 +54,7 @@ public class TcpipForwardHandler extends AbstractLoggingBean implements Connecti
             }
 
             port = bound.getPort();
-            if (wantReply){
+            if (wantReply) {
                 buffer.clear();
                 // leave room for the SSH header
                 buffer.ensureCapacity(5 + 1 + (Integer.SIZE / Byte.SIZE), Int2IntFunction.Utils.add(Byte.SIZE));

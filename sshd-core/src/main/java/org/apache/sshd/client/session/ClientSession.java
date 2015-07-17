@@ -24,7 +24,6 @@ import java.security.KeyPair;
 import java.util.Map;
 
 import org.apache.sshd.client.ClientFactoryManager;
-import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.auth.UserInteraction;
 import org.apache.sshd.client.channel.ChannelDirectTcpip;
 import org.apache.sshd.client.channel.ChannelExec;
@@ -42,20 +41,21 @@ import org.apache.sshd.common.session.Session;
 
 /**
  * An authenticated session to a given SSH server
- *
- * A client session is established using the {@link SshClient}.
+ * <p/>
+ * A client session is established using the {@link org.apache.sshd.client.SshClient}.
  * Once the session has been created, the user has to authenticate
- * using either {@link #authPassword(String, String)} or
- * {@link #authPublicKey(String, java.security.KeyPair)}.
- *
+ * using either {@link #addPasswordIdentity(String)} or
+ * {@link #addPublicKeyIdentity(java.security.KeyPair)} followed by
+ * a call to {$link #auth()}.
+ * <p/>
  * From this session, channels can be created using the
  * {@link #createChannel(String)} method.  Multiple channels can
  * be created on a given session concurrently.
- *
+ * <p/>
  * When using the client in an interactive mode, the
  * {@link #waitFor(int, long)} method can be used to listen to specific
  * events such as the session being established, authenticated or closed.
- *
+ * <p/>
  * When a given session is no longer used, it must be closed using the
  * {@link #close(boolean)} method.
  *
@@ -63,10 +63,10 @@ import org.apache.sshd.common.session.Session;
  */
 public interface ClientSession extends Session {
 
-    int TIMEOUT =     0x0001;
-    int CLOSED =      0x0002;
-    int WAIT_AUTH =   0x0004;
-    int AUTHED =      0x0008;
+    int TIMEOUT = 0x0001;
+    int CLOSED = 0x0002;
+    int WAIT_AUTH = 0x0004;
+    int AUTHED = 0x0008;
 
     /**
      * @param password Password to be added - may not be {@code null}/empty
@@ -77,7 +77,7 @@ public interface ClientSession extends Session {
      * @param password The password to remove - ignored if {@code null}/empty
      * @return The removed password - same one that was added via
      * {@link #addPasswordIdentity(String)} - or {@code null} if no
-     * match found 
+     * match found
      */
     String removePasswordIdentity(String password);
 
@@ -95,6 +95,7 @@ public interface ClientSession extends Session {
     KeyPair removePublicKeyIdentity(KeyPair kp);
 
     UserInteraction getUserInteraction();
+
     void setUserInteraction(UserInteraction userInteraction);
 
     /**
@@ -143,6 +144,7 @@ public interface ClientSession extends Session {
 
     /**
      * Create an SCP client from this session.
+     *
      * @return An {@link ScpClient} instance. <B>Note:</B> uses the currently
      * registered {@link ScpTransferEventListener} if any
      * @see #setScpTransferEventListener(ScpTransferEventListener)
@@ -151,10 +153,11 @@ public interface ClientSession extends Session {
 
     /**
      * Create an SCP client from this session.
+     *
      * @param listener A {@link ScpTransferEventListener} that can be used
-     * to receive information about the SCP operations - may be {@code null}
-     * to indicate no more events are required. <B>Note:</B> this listener
-     * is used <U>instead</U> of any listener set via {@link #setScpTransferEventListener(ScpTransferEventListener)}
+     *                 to receive information about the SCP operations - may be {@code null}
+     *                 to indicate no more events are required. <B>Note:</B> this listener
+     *                 is used <U>instead</U> of any listener set via {@link #setScpTransferEventListener(ScpTransferEventListener)}
      * @return An {@link ScpClient} instance
      */
     ScpClient createScpClient(ScpTransferEventListener listener);
@@ -167,31 +170,36 @@ public interface ClientSession extends Session {
 
     /**
      * @param listener A default {@link ScpTransferEventListener} that can be used
-     * to receive information about the SCP operations - may be {@code null}
-     * to indicate no more events are required
+     *                 to receive information about the SCP operations - may be {@code null}
+     *                 to indicate no more events are required
      * @see #createScpClient(ScpTransferEventListener)
      */
     void setScpTransferEventListener(ScpTransferEventListener listener);
 
     /**
      * Create an SFTP client from this session.
+     *
      * @return The created {@link SftpClient}
      * @throws IOException if failed to create the client
      */
     SftpClient createSftpClient() throws IOException;
+
     /**
      * @param selector The {@link SftpVersionSelector} to use - <B>Note:</B>
-     * if the server does not support versions re-negotiation then the
-     * selector will be presented with only one &quot;choice&quot; - the
-     * current version
+     *                 if the server does not support versions re-negotiation then the
+     *                 selector will be presented with only one &quot;choice&quot; - the
+     *                 current version
      * @return The created {@link SftpClient}
      * @throws IOException If failed to create the client or re-negotiate
      */
     SftpClient createSftpClient(SftpVersionSelector selector) throws IOException;
 
     FileSystem createSftpFileSystem() throws IOException;
+
     FileSystem createSftpFileSystem(SftpVersionSelector selector) throws IOException;
+
     FileSystem createSftpFileSystem(int readBufferSize, int writeBufferSize) throws IOException;
+
     FileSystem createSftpFileSystem(SftpVersionSelector selector, int readBufferSize, int writeBufferSize) throws IOException;
 
     /**
@@ -207,19 +215,18 @@ public interface ClientSession extends Session {
     /**
      * Start forwarding tcpip from the given address on the server to the
      * given address on the client.
-     *
+     * <p/>
      * The remote host name is the address to bind to on the server:
      * <ul>
-     *    <li>"" means that connections are to be accepted on all protocol families
-     *              supported by the SSH implementation</li>
-     *    <li>"0.0.0.0" means to listen on all IPv4 addresses</li>
-     *    <li>"::" means to listen on all IPv6 addresses</li>
-     *    <li>"localhost" means to listen on all protocol families supported by the SSH
-     *              implementation on loopback addresses only, [RFC3330] and RFC3513]</li>
-     *    <li>"127.0.0.1" and "::1" indicate listening on the loopback interfaces for
-     *              IPv4 and IPv6 respectively</li>
+     * <li>"" means that connections are to be accepted on all protocol families
+     * supported by the SSH implementation</li>
+     * <li>"0.0.0.0" means to listen on all IPv4 addresses</li>
+     * <li>"::" means to listen on all IPv6 addresses</li>
+     * <li>"localhost" means to listen on all protocol families supported by the SSH
+     * implementation on loopback addresses only, [RFC3330] and RFC3513]</li>
+     * <li>"127.0.0.1" and "::1" indicate listening on the loopback interfaces for
+     * IPv4 and IPv6 respectively</li>
      * </ul>
-     *
      */
     SshdSocketAddress startRemotePortForwarding(SshdSocketAddress remote, SshdSocketAddress local) throws IOException;
 
@@ -258,18 +265,19 @@ public interface ClientSession extends Session {
     /**
      * @return The ClientFactoryManager for this session.
      */
-    @Override ClientFactoryManager getFactoryManager();
+    @Override
+    ClientFactoryManager getFactoryManager();
 
     /**
      * Switch to a none cipher for performance.
-     *
+     * <p/>
      * This should be done after the authentication phase has been performed.
      * After such a switch, interactive channels are not allowed anymore.
      * Both client and server must have been configured to support the none cipher.
      * If that's not the case, the returned future will be set with an exception.
      *
      * @return an {@link SshFuture} that can be used to wait for the exchange
-     *         to be finished
+     * to be finished
      * @throws IOException if a key exchange is already running
      */
     @SuppressWarnings("rawtypes")

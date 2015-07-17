@@ -39,21 +39,34 @@ import org.apache.sshd.common.util.buffer.BufferUtils;
  * <P>Represents a {@link PublicKey} whose data is formatted according to
  * the <A HREF="http://en.wikibooks.org/wiki/OpenSSH">OpenSSH</A> format:</P></BR>
  * <CODE><PRE>
- *      <key-type> <base64-encoded-public-key-data>
+ * <key-type> <base64-encoded-public-key-data>
  * </CODE></PRE>
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class PublicKeyEntry implements Serializable {
+
+    /**
+     * Character used to denote a comment line in the keys file
+     */
+    public static final char COMMENT_CHAR = '#';
+
+
+    /**
+     * Standard folder name used by OpenSSH to hold key files
+     */
+    public static final String STD_KEYFILE_FOLDER_NAME = ".ssh";
+
     private static final long serialVersionUID = -585506072687602760L;
 
-    private String  keyType;
-    private byte[]  keyData;
+    private String keyType;
+    private byte[] keyData;
 
     public PublicKeyEntry() {
         super();
     }
 
-    public PublicKeyEntry(String keyType, byte ... keyData) {
+    public PublicKeyEntry(String keyType, byte... keyData) {
         this.keyType = keyType;
         this.keyData = keyData;
     }
@@ -78,29 +91,29 @@ public class PublicKeyEntry implements Serializable {
      * @return The resolved {@link PublicKey} - never {@code null}.
      * <B>Note:</B> may be called only after key type and data bytes have
      * been set or exception(s) may be thrown
-     * @throws IOException If failed to decode the key
+     * @throws IOException              If failed to decode the key
      * @throws GeneralSecurityException If failed to generate the key
      */
     public PublicKey resolvePublicKey() throws IOException, GeneralSecurityException {
         String kt = getKeyType();
-        PublicKeyEntryDecoder<?,?> decoder = KeyUtils.getPublicKeyEntryDecoder(kt);
+        PublicKeyEntryDecoder<?, ?> decoder = KeyUtils.getPublicKeyEntryDecoder(kt);
         if (decoder == null) {
             throw new InvalidKeySpecException("No decoder registered for key type=" + kt);
         }
-        
+
         byte[] data = getKeyData();
         PublicKey key = decoder.decodePublicKey(data);
         if (key == null) {
             throw new InvalidKeyException("No key of type=" + kt + " decoded for data=" + BufferUtils.printHex(':', data));
         }
-        
+
         return key;
     }
 
     /**
      * @param sb The {@link Appendable} instance to encode the data into
      * @return The {@link PublicKey}
-     * @throws IOException If failed to decode/encode the key
+     * @throws IOException              If failed to decode/encode the key
      * @throws GeneralSecurityException If failed to generate the key
      * @see #resolvePublicKey()
      */
@@ -113,8 +126,7 @@ public class PublicKeyEntry implements Serializable {
     @Override
     public int hashCode() {
         return Objects.hashCode(getKeyType())
-             + Arrays.hashCode(getKeyData())
-             ;
+                + Arrays.hashCode(getKeyData());
     }
 
     /*
@@ -125,40 +137,33 @@ public class PublicKeyEntry implements Serializable {
         if (this == e) {
             return true;
         }
-        
-        if (Objects.equals(getKeyType(), e.getKeyType())
-         && Arrays.equals(getKeyData(), e.getKeyData())) {
-            return true;
-        } else {
-            return false;
-        }
+        return Objects.equals(getKeyType(), e.getKeyType())
+                && Arrays.equals(getKeyData(), e.getKeyData());
     }
 
     @Override
     public boolean equals(Object obj) {
-        if (obj == null)
-            return false;
-        if (this == obj)
-            return true;
-        if (getClass() != obj.getClass())
-            return false;
-
-        if (isEquivalent((PublicKeyEntry) obj)) {
-            return true;
-        } else {
+        if (obj == null) {
             return false;
         }
+        if (this == obj) {
+            return true;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        return isEquivalent((PublicKeyEntry) obj);
     }
-    
+
     @Override
     public String toString() {
         byte[] data = getKeyData();
         return getKeyType() + " " + (GenericUtils.isEmpty(data) ? "<no-key>" : Base64.encodeToString(data));
     }
-    
+
     /**
      * @param data Assumed to contain at least {@code key-type base64-data} (anything
-     * beyond the BASE64 data is ignored) - ignored if {@code null}/empty
+     *             beyond the BASE64 data is ignored) - ignored if {@code null}/empty
      * @return A {@link PublicKeyEntry} or {@code null} if no data
      * @throws IllegalArgumentException if bad format found
      * @see #parsePublicKeyEntry(PublicKeyEntry, String)
@@ -173,9 +178,9 @@ public class PublicKeyEntry implements Serializable {
 
     /**
      * @param entry The {@link PublicKeyEntry} whose contents are to be
-     * updated - ignored if {@code null}
-     * @param data Assumed to contain at least {@code key-type base64-data} (anything
-     * beyond the BASE64 data is ignored) - ignored if {@code null}/empty
+     *              updated - ignored if {@code null}
+     * @param data  Assumed to contain at least {@code key-type base64-data} (anything
+     *              beyond the BASE64 data is ignored) - ignored if {@code null}/empty
      * @return The updated entry instance
      * @throws IllegalArgumentException if bad format found
      */
@@ -183,7 +188,7 @@ public class PublicKeyEntry implements Serializable {
         if (GenericUtils.isEmpty(data) || (entry == null)) {
             return entry;
         }
-        
+
         int startPos = data.indexOf(' ');
         if (startPos <= 0) {
             throw new IllegalArgumentException("Bad format (no key data delimiter): " + data);
@@ -194,13 +199,13 @@ public class PublicKeyEntry implements Serializable {
             endPos = data.length();
         }
 
-        String  keyType = data.substring(0, startPos);
-        String  b64Data = data.substring(startPos + 1, endPos).trim();
-        byte[]  keyData = Base64.decodeString(b64Data);
+        String keyType = data.substring(0, startPos);
+        String b64Data = data.substring(startPos + 1, endPos).trim();
+        byte[] keyData = Base64.decodeString(b64Data);
         if (GenericUtils.isEmpty(keyData)) {
             throw new IllegalArgumentException("Bad format (no BASE64 key data): " + data);
         }
-        
+
         entry.setKeyType(keyType);
         entry.setKeyData(keyData);
         return entry;
@@ -214,47 +219,38 @@ public class PublicKeyEntry implements Serializable {
     public static String toString(PublicKey key) throws IllegalArgumentException {
         try {
             return appendPublicKeyEntry(new StringBuilder(Byte.MAX_VALUE), key).toString();
-        } catch(IOException e) {
+        } catch (IOException e) {
             throw new IllegalArgumentException("Failed (" + e.getClass().getSimpleName() + ") to encode: " + e.getMessage(), e);
         }
     }
 
     /**
      * Encodes a public key data the same way as the {@link #parsePublicKeyEntry(String)} expects it
-     * @param sb The {@link Appendable} instance to encode the data into
+     *
+     * @param sb  The {@link Appendable} instance to encode the data into
      * @param key The {@link PublicKey}
      * @return The updated appendable instance
      * @throws IOException If failed to append the data
      */
     public static <A extends Appendable> A appendPublicKeyEntry(A sb, PublicKey key) throws IOException {
         @SuppressWarnings("unchecked")
-        PublicKeyEntryDecoder<PublicKey,?> decoder = (PublicKeyEntryDecoder<PublicKey,?>) KeyUtils.getPublicKeyEntryDecoder(key);
+        PublicKeyEntryDecoder<PublicKey, ?> decoder = (PublicKeyEntryDecoder<PublicKey, ?>) KeyUtils.getPublicKeyEntryDecoder(key);
         if (decoder == null) {
             throw new StreamCorruptedException("Cannot retrived decoder for key=" + key.getAlgorithm());
         }
-        
-        try(ByteArrayOutputStream s=new ByteArrayOutputStream(Byte.MAX_VALUE)) {
+
+        try (ByteArrayOutputStream s = new ByteArrayOutputStream(Byte.MAX_VALUE)) {
             String keyType = decoder.encodePublicKey(s, key);
             byte[] bytes = s.toByteArray();
             String b64Data = Base64.encodeToString(bytes);
             sb.append(keyType).append(' ').append(b64Data);
         }
-        
+
         return sb;
     }
-    /**
-     * Character used to denote a comment line in the keys file
-     */
-    public static final char COMMENT_CHAR='#';
-
-
-    /**
-     * Standard folder name used by OpenSSH to hold key files
-     */
-    public static final String STD_KEYFILE_FOLDER_NAME=".ssh";
 
     private static final class LazyDefaultKeysFolderHolder {
-        private static final File   folder=
+        private static final File FOLDER =
                 new File(System.getProperty("user.home") + File.separator + STD_KEYFILE_FOLDER_NAME);
     }
 
@@ -264,6 +260,6 @@ public class PublicKeyEntry implements Serializable {
      */
     @SuppressWarnings("synthetic-access")
     public static File getDefaultKeysFolder() {
-        return LazyDefaultKeysFolderHolder.folder;
+        return LazyDefaultKeysFolderHolder.FOLDER;
     }
 }

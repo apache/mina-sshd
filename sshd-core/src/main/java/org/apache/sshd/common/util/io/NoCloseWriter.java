@@ -35,7 +35,7 @@ public class NoCloseWriter extends FilterWriter {
     public void close() throws IOException {
         // ignored
     }
-    
+
     public static Writer resolveWriter(Writer r, boolean okToClose) {
         if ((r == null) || okToClose) {
             return r;

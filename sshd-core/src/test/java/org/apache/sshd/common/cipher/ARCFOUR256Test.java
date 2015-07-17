@@ -28,14 +28,14 @@ import org.junit.runners.MethodSorters;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class ARCFOUR256Test extends BaseCipherTest {
-	public ARCFOUR256Test() {
-		super();
-	}
+    public ARCFOUR256Test() {
+        super();
+    }
 
-	@Test
-	public void testEncryptDecrypt() throws Exception {
-		// for RC4 256 bits we need the JCE unlimited strength policy
-		ensureKeySizeSupported(32, "ARCFOUR", "RC4");
-		testEncryptDecrypt(BuiltinCiphers.arcfour256);
-	}
+    @Test
+    public void testEncryptDecrypt() throws Exception {
+        // for RC4 256 bits we need the JCE unlimited strength policy
+        ensureKeySizeSupported(32, "ARCFOUR", "RC4");
+        testEncryptDecrypt(BuiltinCiphers.arcfour256);
+    }
 }

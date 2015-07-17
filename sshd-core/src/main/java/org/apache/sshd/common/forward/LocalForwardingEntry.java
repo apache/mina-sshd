@@ -63,12 +63,12 @@ public class LocalForwardingEntry extends SshdSocketAddress {
     public String toString() {
         return super.toString() + " - " + getAlias();
     }
-    
+
     /**
-     * @param host The host - ignored if {@code null}/empty - i.e., no match reported
-     * @param port The port - ignored if non-positive - i.e., no match reported
+     * @param host    The host - ignored if {@code null}/empty - i.e., no match reported
+     * @param port    The port - ignored if non-positive - i.e., no match reported
      * @param entries The {@link Collection} of {@link LocalForwardingEntry} to check
-     * - ignored if {@code null}/empty - i.e., no match reported
+     *                - ignored if {@code null}/empty - i.e., no match reported
      * @return The <U>first</U> entry whose host or alias matches the host name - case
      * <U>sensitive</U> <B>and</B> has a matching port - {@code null} if no match found
      */
@@ -76,13 +76,13 @@ public class LocalForwardingEntry extends SshdSocketAddress {
         if (GenericUtils.isEmpty(host) || (port <= 0) || (GenericUtils.isEmpty(entries))) {
             return null;
         }
-        
+
         for (LocalForwardingEntry e : entries) {
             if ((port == e.getPort()) && (host.equals(e.getHostName()) || host.equals(e.getAlias()))) {
                 return e;
             }
         }
-        
+
         return null;    // no match found
     }
 }

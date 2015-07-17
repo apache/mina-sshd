@@ -47,6 +47,7 @@ public interface Signature {
 
     /**
      * Update the computed signature with the given data
+     *
      * @param hash The hash data buffer
      * @throws Exception If failed to update
      * @see #update(byte[], int, int)
@@ -55,9 +56,10 @@ public interface Signature {
 
     /**
      * Update the computed signature with the given data
+     *
      * @param hash The hash data buffer
-     * @param off Offset of hash data in buffer
-     * @param len Length of hash data
+     * @param off  Offset of hash data in buffer
+     * @param len  Length of hash data
      * @throws Exception If failed to update
      */
     void update(byte[] hash, int off, int len) throws Exception;
@@ -73,6 +75,7 @@ public interface Signature {
 
     /**
      * Compute the signature
+     *
      * @return The signature value
      * @throws Exception If failed to calculate the signature
      */

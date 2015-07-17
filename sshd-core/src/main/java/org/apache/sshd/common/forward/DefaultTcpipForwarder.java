@@ -60,23 +60,23 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
 
     private final ConnectionService service;
     private final IoHandlerFactory socksProxyIoHandlerFactory = new IoHandlerFactory() {
-            @Override
-            public IoHandler create() {
-                return new SocksProxy(getConnectionService());
-            }
-        };
+        @Override
+        public IoHandler create() {
+            return new SocksProxy(getConnectionService());
+        }
+    };
     private final Session session;
     private final Map<Integer, SshdSocketAddress> localToRemote = new HashMap<>();
     private final Map<Integer, SshdSocketAddress> remoteToLocal = new HashMap<>();
     private final Map<Integer, SocksProxy> dynamicLocal = new HashMap<>();
     private final Set<LocalForwardingEntry> localForwards = new HashSet<>();
     private final IoHandlerFactory staticIoHandlerFactory = new IoHandlerFactory() {
-            @Override
-            public IoHandler create() {
-                return new StaticIoHandler();
-            }
-        };
-    protected IoAcceptor acceptor;
+        @Override
+        public IoHandler create() {
+            return new StaticIoHandler();
+        }
+    };
+    private IoAcceptor acceptor;
 
     public DefaultTcpipForwarder(ConnectionService service) {
         this.service = ValidateUtils.checkNotNull(service, "No connection service");
@@ -107,10 +107,10 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
         InetSocketAddress bound = doBind(local, staticIoHandlerFactory);
         int port = bound.getPort();
         SshdSocketAddress prev;
-        synchronized(localToRemote) {
+        synchronized (localToRemote) {
             prev = localToRemote.put(port, remote);
         }
-        
+
         if (prev != null) {
             throw new IOException("Multiple local port forwarding bindings on port=" + port + ": current=" + remote + ", previous=" + prev);
         }
@@ -127,7 +127,7 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
         ValidateUtils.checkNotNull(local, "Local address is null");
 
         SshdSocketAddress bound;
-        synchronized(localToRemote) {
+        synchronized (localToRemote) {
             bound = localToRemote.remove(local.getPort());
         }
 
@@ -160,10 +160,10 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
         int port = (remote.getPort() == 0) ? result.getInt() : remote.getPort();
         // TODO: Is it really safe to only store the local address after the request ?
         SshdSocketAddress prev;
-        synchronized(remoteToLocal) {
+        synchronized (remoteToLocal) {
             prev = remoteToLocal.put(port, local);
         }
-        
+
         if (prev != null) {
             throw new IOException("Multiple remote port forwarding bindings on port=" + port + ": current=" + remote + ", previous=" + prev);
         }
@@ -179,7 +179,7 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
     @Override
     public synchronized void stopRemotePortForwarding(SshdSocketAddress remote) throws IOException {
         SshdSocketAddress bound;
-        synchronized(remoteToLocal) {
+        synchronized (remoteToLocal) {
             bound = remoteToLocal.remove(remote.getPort());
         }
 
@@ -213,13 +213,14 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
             throw new IllegalStateException("TcpipForwarder is closing");
         }
 
-        SocksProxy socksProxy = new SocksProxy(service), prev;
+        SocksProxy socksProxy = new SocksProxy(service);
+        SocksProxy prev;
         InetSocketAddress bound = doBind(local, socksProxyIoHandlerFactory);
         int port = bound.getPort();
-        synchronized(dynamicLocal) {
+        synchronized (dynamicLocal) {
             prev = dynamicLocal.put(port, socksProxy);
         }
-        
+
         if (prev != null) {
             throw new IOException("Multiple dynamic port mappings found for port=" + port + ": current=" + socksProxy + ", previous=" + prev);
         }
@@ -228,14 +229,14 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
         if (log.isDebugEnabled()) {
             log.debug("startDynamicPortForwarding(" + local + "): " + result);
         }
-        
+
         return result;
     }
 
     @Override
     public synchronized void stopDynamicPortForwarding(SshdSocketAddress local) throws IOException {
         Closeable obj;
-        synchronized(dynamicLocal) {
+        synchronized (dynamicLocal) {
             obj = dynamicLocal.remove(local.getPort());
         }
 
@@ -254,7 +255,7 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
 
     @Override
     public synchronized SshdSocketAddress getForwardedPort(int remotePort) {
-        synchronized(remoteToLocal) {
+        synchronized (remoteToLocal) {
             return remoteToLocal.get(remotePort);
         }
     }
@@ -263,7 +264,7 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
     public synchronized SshdSocketAddress localPortForwardingRequested(SshdSocketAddress local) throws IOException {
         ValidateUtils.checkNotNull(local, "Local address is null");
         ValidateUtils.checkTrue(local.getPort() >= 0, "Invalid local port: %s", local);
-        
+
         FactoryManager manager = session.getFactoryManager();
         ForwardingFilter filter = manager.getTcpipForwardingFilter();
         if ((filter == null) || (!filter.canListen(local, session))) {
@@ -279,11 +280,11 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
         }
 
         boolean added;
-        synchronized(localForwards) {
+        synchronized (localForwards) {
             // NOTE !!! it is crucial to use the bound address host name first
             added = localForwards.add(new LocalForwardingEntry(result.getHostName(), local.getHostName(), result.getPort()));
         }
-        
+
         if (!added) {
             throw new IOException("Failed to add local port forwarding entry for " + local + " -> " + result);
         }
@@ -293,8 +294,9 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
     @Override
     public synchronized void localPortForwardingCancelled(SshdSocketAddress local) throws IOException {
         LocalForwardingEntry entry;
-        synchronized(localForwards) {
-            if ((entry=LocalForwardingEntry.findMatchingEntry(local.getHostName(), local.getPort(), localForwards)) != null) {
+        synchronized (localForwards) {
+            entry = LocalForwardingEntry.findMatchingEntry(local.getHostName(), local.getPort(), localForwards);
+            if (entry != null) {
                 localForwards.remove(entry);
             }
         }
@@ -317,7 +319,7 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
     }
 
     /**
-     * @param address The request bind address
+     * @param address        The request bind address
      * @param handlerFactory A {@link Factory} to create an {@link IoHandler} if necessary
      * @return The {@link InetSocketAddress} to which the binding occurred
      * @throws IOException If failed to bind
@@ -333,7 +335,7 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
         // TODO find a better way to determine the resulting bind address - what if multi-threaded calls...
         Set<SocketAddress> before = acceptor.getBoundAddresses();
         try {
-            InetSocketAddress bindAddress = address.toInetSocketAddress(); 
+            InetSocketAddress bindAddress = address.toInetSocketAddress();
             acceptor.bind(bindAddress);
 
             Set<SocketAddress> after = acceptor.getBoundAddresses();
@@ -374,7 +376,7 @@ public class DefaultTcpipForwarder extends CloseableUtils.AbstractInnerCloseable
         @SuppressWarnings("synthetic-access")
         @Override
         public void sessionCreated(final IoSession session) throws Exception {
-            InetSocketAddress local = (InetSocketAddress) session.getLocalAddress(); 
+            InetSocketAddress local = (InetSocketAddress) session.getLocalAddress();
             int localPort = local.getPort();
             SshdSocketAddress remote = localToRemote.get(localPort);
             final TcpipClientChannel channel;

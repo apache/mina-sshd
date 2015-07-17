@@ -45,12 +45,13 @@ import org.apache.sshd.common.util.io.IoUtils;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractPublicKeyEntryDecoder<PUB extends PublicKey,PRV extends PrivateKey>
-               implements PublicKeyEntryDecoder<PUB,PRV> {
+public abstract class AbstractPublicKeyEntryDecoder<PUB extends PublicKey, PRV extends PrivateKey>
+        implements PublicKeyEntryDecoder<PUB, PRV> {
+
     private final Class<PUB> pubType;
     private final Class<PRV> prvType;
-    private final Collection<String>    names;
-    
+    private final Collection<String> names;
+
     protected AbstractPublicKeyEntryDecoder(Class<PUB> pubType, Class<PRV> prvType, Collection<String> names) {
         this.pubType = ValidateUtils.checkNotNull(pubType, "No public key type specified");
         this.prvType = ValidateUtils.checkNotNull(prvType, "No private key type specified");
@@ -72,33 +73,29 @@ public abstract class AbstractPublicKeyEntryDecoder<PUB extends PublicKey,PRV ex
         if (kp == null) {
             return null;
         }
-        
+
         PUB pubCloned = null;
-        {
-            PublicKey pubOriginal = kp.getPublic();
-            Class<PUB> pubExpected = getPublicKeyType();
-            if (pubOriginal != null) {
-                Class<?> orgType = pubOriginal.getClass();
-                if (!pubExpected.isAssignableFrom(orgType)) {
-                    throw new InvalidKeyException("Mismatched public key types: expected=" + pubExpected.getSimpleName() + ", actual=" + orgType.getSimpleName());
-                }
-                
-                pubCloned = clonePublicKey(pubExpected.cast(pubOriginal));
+        PublicKey pubOriginal = kp.getPublic();
+        Class<PUB> pubExpected = getPublicKeyType();
+        if (pubOriginal != null) {
+            Class<?> orgType = pubOriginal.getClass();
+            if (!pubExpected.isAssignableFrom(orgType)) {
+                throw new InvalidKeyException("Mismatched public key types: expected=" + pubExpected.getSimpleName() + ", actual=" + orgType.getSimpleName());
             }
+
+            pubCloned = clonePublicKey(pubExpected.cast(pubOriginal));
         }
 
         PRV prvCloned = null;
-        {
-            PrivateKey prvOriginal = kp.getPrivate();
-            Class<PRV> prvExpected = getPrivateKeyType();
-            if (prvOriginal != null) {
-                Class<?> orgType = prvOriginal.getClass();
-                if (!prvExpected.isAssignableFrom(orgType)) {
-                    throw new InvalidKeyException("Mismatched private key types: expected=" + prvExpected.getSimpleName() + ", actual=" + orgType.getSimpleName());
-                }
-                
-                prvCloned = clonePrivateKey(prvExpected.cast(prvOriginal));
+        PrivateKey prvOriginal = kp.getPrivate();
+        Class<PRV> prvExpected = getPrivateKeyType();
+        if (prvOriginal != null) {
+            Class<?> orgType = prvOriginal.getClass();
+            if (!prvExpected.isAssignableFrom(orgType)) {
+                throw new InvalidKeyException("Mismatched private key types: expected=" + prvExpected.getSimpleName() + ", actual=" + orgType.getSimpleName());
             }
+
+            prvCloned = clonePrivateKey(prvExpected.cast(prvOriginal));
         }
 
         return new KeyPair(pubCloned, prvCloned);
@@ -120,7 +117,7 @@ public abstract class AbstractPublicKeyEntryDecoder<PUB extends PublicKey,PRV ex
             return null;
         }
 
-        try(InputStream stream=new ByteArrayInputStream(keyData, offset, length)) {
+        try (InputStream stream = new ByteArrayInputStream(keyData, offset, length)) {
             return decodePublicKey(stream);
         }
     }
@@ -142,30 +139,30 @@ public abstract class AbstractPublicKeyEntryDecoder<PUB extends PublicKey,PRV ex
     }
 
     public PUB generatePublicKey(KeySpec keySpec) throws GeneralSecurityException {
-        KeyFactory  factory = getKeyFactoryInstance();
-        Class<PUB>    keyType = getPublicKeyType();
+        KeyFactory factory = getKeyFactoryInstance();
+        Class<PUB> keyType = getPublicKeyType();
         return keyType.cast(factory.generatePublic(keySpec));
     }
 
     public PRV generatePrivateKey(KeySpec keySpec) throws GeneralSecurityException {
-        KeyFactory  factory = getKeyFactoryInstance();
-        Class<PRV>    keyType = getPrivateKeyType();
+        KeyFactory factory = getKeyFactoryInstance();
+        Class<PRV> keyType = getPrivateKeyType();
         return keyType.cast(factory.generatePrivate(keySpec));
     }
 
     /**
      * @param keyType The reported / encode key type
      * @param keyData The key data bytes stream positioned after the key type decoding
-     * and making sure it is one of the supported types
+     *                and making sure it is one of the supported types
      * @return The decoded {@link PublicKey}
-     * @throws IOException If failed to read from the data stream
+     * @throws IOException              If failed to read from the data stream
      * @throws GeneralSecurityException If failed to generate the key
      */
     public abstract PUB decodePublicKey(String keyType, InputStream keyData) throws IOException, GeneralSecurityException;
 
     @Override
     public KeyPair generateKeyPair(int keySize) throws GeneralSecurityException {
-        KeyPairGenerator    gen=getKeyPairGenerator();
+        KeyPairGenerator gen = getKeyPairGenerator();
         gen.initialize(keySize);
         return gen.generateKeyPair();
     }
@@ -191,23 +188,23 @@ public abstract class AbstractPublicKeyEntryDecoder<PUB extends PublicKey,PRV ex
         return writeRLEBytes(s, v.toByteArray());
     }
 
-    public static int writeRLEBytes(OutputStream s, byte ... bytes) throws IOException {
+    public static int writeRLEBytes(OutputStream s, byte... bytes) throws IOException {
         return writeRLEBytes(s, bytes, 0, bytes.length);
     }
 
     public static int writeRLEBytes(OutputStream s, byte[] bytes, int off, int len) throws IOException {
-        byte[]  lenBytes=encodeInt(s, len);
+        byte[] lenBytes = encodeInt(s, len);
         s.write(bytes, off, len);
         return lenBytes.length + len;
     }
 
     public static byte[] encodeInt(OutputStream s, int v) throws IOException {
-        byte[]  bytes={
-                (byte) ((v >> 24) & 0xFF),
-                (byte) ((v >> 16) & 0xFF),
-                (byte) ((v >>  8) & 0xFF),
-                (byte) (    v     & 0xFF)
-              };
+        byte[] bytes = {
+            (byte) ((v >> 24) & 0xFF),
+            (byte) ((v >> 16) & 0xFF),
+            (byte) ((v >> 8) & 0xFF),
+            (byte) (v & 0xFF)
+        };
         s.write(bytes);
         return bytes;
     }
@@ -221,7 +218,7 @@ public abstract class AbstractPublicKeyEntryDecoder<PUB extends PublicKey,PRV ex
     }
 
     public static String decodeString(InputStream s, Charset cs) throws IOException {
-        byte[]  bytes=readRLEBytes(s);
+        byte[] bytes = readRLEBytes(s);
         return new String(bytes, cs);
     }
 
@@ -230,18 +227,18 @@ public abstract class AbstractPublicKeyEntryDecoder<PUB extends PublicKey,PRV ex
     }
 
     public static byte[] readRLEBytes(InputStream s) throws IOException {
-        int     len=decodeInt(s);
-        byte[]  bytes=new byte[len];
+        int len = decodeInt(s);
+        byte[] bytes = new byte[len];
         IoUtils.readFully(s, bytes);
         return bytes;
     }
 
     public static int decodeInt(InputStream s) throws IOException {
-        byte[]  bytes={ 0, 0, 0, 0 };
+        byte[] bytes = {0, 0, 0, 0};
         IoUtils.readFully(s, bytes);
         return ((bytes[0] & 0xFF) << 24)
-             | ((bytes[1] & 0xFF) << 16)
-             | ((bytes[2] & 0xFF) << 8)
-             | (bytes[3] & 0xFF);
+                | ((bytes[1] & 0xFF) << 16)
+                | ((bytes[2] & 0xFF) << 8)
+                | (bytes[3] & 0xFF);
     }
 }

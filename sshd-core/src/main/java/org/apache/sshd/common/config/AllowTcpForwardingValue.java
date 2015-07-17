@@ -35,7 +35,7 @@ public enum AllowTcpForwardingValue {
     LOCAL,
     REMOTE;
 
-    public static final Set<AllowTcpForwardingValue>    VALUES=
+    public static final Set<AllowTcpForwardingValue> VALUES =
             Collections.unmodifiableSet(EnumSet.allOf(AllowTcpForwardingValue.class));
 
     // NOTE: it also interprets "yes" as "all" and "no" as "none"

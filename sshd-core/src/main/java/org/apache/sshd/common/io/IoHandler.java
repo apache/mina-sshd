@@ -28,7 +28,7 @@ public interface IoHandler {
 
     void sessionClosed(IoSession session) throws Exception;
 
-    void exceptionCaught(IoSession ioSession, Throwable cause) throws Exception;
+    void exceptionCaught(IoSession session, Throwable cause) throws Exception;
 
     void messageReceived(IoSession session, Readable message) throws Exception;
 

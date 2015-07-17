@@ -42,22 +42,38 @@ public enum KexProposalOption {
     C2SLANG(Constants.PROPOSAL_LANG_CTOS, "languages (client to server)"),
     S2CLANG(Constants.PROPOSAL_LANG_STOC, "languages (server to client)");
 
-    private final int proposalIndex;
     /**
-     * @return The proposal option location in the KEX array
+     * A {@link List} of all the options <U>sorted</U> according to {@link #getProposalIndex(){
+     *
+     * @see #BY_PROPOSAL_INDEX
      */
-    public final int getProposalIndex() {
-        return proposalIndex;
-    }
+    public static final List<KexProposalOption> VALUES =
+        Collections.unmodifiableList(new ArrayList<KexProposalOption>(EnumSet.allOf(KexProposalOption.class)) {
+            private static final long serialVersionUID = 1L;    // we're not serializing it
+
+            {
+                Collections.sort(this, BY_PROPOSAL_INDEX);
+            }
+        });
+
+    public static final int PROPOSAL_MAX = VALUES.size();
+
+    /**
+     * Compares values according to {@link KexProposalOption#getProposalIndex()}
+     */
+    public static final Comparator<KexProposalOption> BY_PROPOSAL_INDEX =
+        new Comparator<KexProposalOption>() {
+            @Override
+            public int compare(KexProposalOption o1, KexProposalOption o2) {
+                int i1 = (o1 == null) ? (-1) : o1.getProposalIndex();
+                int i2 = (o2 == null) ? (-1) : o2.getProposalIndex();
+                return Integer.compare(i1, i2);
+            }
+        };
+
+    private final int proposalIndex;
 
     private final String description;
-    /**
-     * @return User-friendly name for the KEX negotiation item
-     * @see <A HREF="http://tools.ietf.org/html/rfc4253#section-7.1">RFC-4253 - section 7.1</A>
-     */
-    public final String getDescription() {
-        return description;
-    }
 
     KexProposalOption(int index, String desc) {
         proposalIndex = index;
@@ -65,31 +81,19 @@ public enum KexProposalOption {
     }
 
     /**
-     * Compares values according to {@link KexProposalOption#getProposalIndex()}
+     * @return The proposal option location in the KEX array
      */
-    public static final Comparator<KexProposalOption> BY_PROPOSAL_INDEX = 
-            new Comparator<KexProposalOption>() {
-                @Override
-                public int compare(KexProposalOption o1, KexProposalOption o2) {
-                    int i1 = (o1 == null) ? (-1) : o1.getProposalIndex();
-                    int i2 = (o2 == null) ? (-1) : o2.getProposalIndex();
-                    return Integer.compare(i1, i2);
-                }
-            };
-    
+    public final int getProposalIndex() {
+        return proposalIndex;
+    }
+
     /**
-     * A {@link List} of all the options <U>sorted</U> according to {@link #getProposalIndex(){
-     * @see #BY_PROPOSAL_INDEX
+     * @return User-friendly name for the KEX negotiation item
+     * @see <A HREF="http://tools.ietf.org/html/rfc4253#section-7.1">RFC-4253 - section 7.1</A>
      */
-    public static final List<KexProposalOption> VALUES = 
-            Collections.unmodifiableList(new ArrayList<KexProposalOption>(EnumSet.allOf(KexProposalOption.class)) {
-                private static final long serialVersionUID = 1L;    // we're not serializing it
-                
-                {
-                    Collections.sort(this, BY_PROPOSAL_INDEX);
-                }
-            });
-    public static final int PROPOSAL_MAX = VALUES.size();
+    public final String getDescription() {
+        return description;
+    }
 
     /**
      * @param n The option name - ignored if {@code null}/empty
@@ -100,13 +104,13 @@ public enum KexProposalOption {
         if (GenericUtils.isEmpty(n)) {
             return null;
         }
-        
+
         for (KexProposalOption o : VALUES) {
             if (n.equalsIgnoreCase(o.name())) {
                 return o;
             }
         }
-        
+
         return null;
     }
 

@@ -67,7 +67,7 @@ import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 
 /**
  * The SshServer class is the main entry point for the server side of the SSH protocol.
- *
+ * <p/>
  * The SshServer has to be configured before being started.  Such configuration can be
  * done either using a dependency injection mechanism (such as the Spring framework)
  * or programmatically. Basic setup is usually done using the {@link #setUpDefaultServer()}
@@ -75,18 +75,16 @@ import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
  * Besides this basic setup, a few things have to be manually configured such as the
  * port number, {@link Factory}, the {@link org.apache.sshd.common.keyprovider.KeyPairProvider}
  * and the {@link PasswordAuthenticator}.
- *
+ * <p/>
  * Some properties can also be configured using the {@link #setProperties(java.util.Map)}
  * method.
- *
+ * <p/>
  * Once the SshServer instance has been configured, it can be started using the
  * {@link #start()} method and stopped using the {@link #stop()} method.
  *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @see ServerFactoryManager
  * @see org.apache.sshd.common.FactoryManager
- *
- *
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class SshServer extends AbstractFactoryManager implements ServerFactoryManager, Closeable {
 
@@ -96,6 +94,24 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
             return new SshServer();
         }
     };
+
+    public static final List<ServiceFactory> DEFAULT_SERVICE_FACTORIES =
+            Collections.unmodifiableList(Arrays.asList(
+                    ServerUserAuthServiceFactory.INSTANCE,
+                    ServerConnectionServiceFactory.INSTANCE
+            ));
+    public static final UserAuthPublicKeyFactory DEFAULT_USER_AUTH_PUBLIC_KEY_FACTORY =
+            UserAuthPublicKeyFactory.INSTANCE;
+
+    public static final UserAuthGSSFactory DEFAULT_USER_AUTH_GSS_FACTORY =
+            UserAuthGSSFactory.INSTANCE;
+
+    public static final UserAuthPasswordFactory DEFAULT_USER_AUTH_PASSWORD_FACTORY =
+            UserAuthPasswordFactory.INSTANCE;
+
+    public static final UserAuthKeyboardInteractiveFactory DEFAULT_USER_AUTH_KB_INTERACTIVE_FACTORY =
+            UserAuthKeyboardInteractiveFactory.INSTANCE;
+
 
     protected IoAcceptor acceptor;
     protected String host;
@@ -198,11 +214,11 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
 
     @Override
     public GSSAuthenticator getGSSAuthenticator() {
-      return gssAuthenticator;
+        return gssAuthenticator;
     }
 
     public void setGSSAuthenticator(GSSAuthenticator gssAuthenticator) {
-      this.gssAuthenticator = gssAuthenticator;
+        this.gssAuthenticator = gssAuthenticator;
     }
 
     @Override
@@ -210,22 +226,8 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         this.tcpipForwardingFilter = forwardingFilter;
     }
 
-    public static final List<ServiceFactory> DEFAULT_SERVICE_FACTORIES =
-            Collections.unmodifiableList(Arrays.asList(
-                    ServerUserAuthServiceFactory.INSTANCE,
-                    ServerConnectionServiceFactory.INSTANCE
-            ));
-    public static final UserAuthPublicKeyFactory DEFAULT_USER_AUTH_PUBLIC_KEY_FACTORY =
-            UserAuthPublicKeyFactory.INSTANCE;
-    public static final UserAuthGSSFactory DEFAULT_USER_AUTH_GSS_FACTORY =
-            UserAuthGSSFactory.INSTANCE;
-    public static final UserAuthPasswordFactory DEFAULT_USER_AUTH_PASSWORD_FACTORY =
-            UserAuthPasswordFactory.INSTANCE;
-    public static final UserAuthKeyboardInteractiveFactory DEFAULT_USER_AUTH_KB_INTERACTIVE_FACTORY =
-            UserAuthKeyboardInteractiveFactory.INSTANCE;
-
     @Override
-    protected void checkConfig() { 
+    protected void checkConfig() {
         super.checkConfig();
 
         ValidateUtils.checkTrue(getPort() >= 0 /* zero means not set yet */, "Bad port number: %d", Integer.valueOf(getPort()));
@@ -244,7 +246,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
             if (getGSSAuthenticator() != null) {
                 factories.add(DEFAULT_USER_AUTH_GSS_FACTORY);
             }
-            
+
             ValidateUtils.checkTrue(factories.size() > 0, "UserAuthFactories not set");
             setUserAuthFactories(factories);
         }
@@ -260,7 +262,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
 
     /**
      * Start the SSH server and accept incoming exceptions on the configured port.
-     * 
+     *
      * @throws IOException
      */
     public void start() throws IOException {
@@ -273,7 +275,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
 
         setupSessionTimeout(sessionFactory);
 
-        String  hostsList=getHost();
+        String hostsList = getHost();
         if (!GenericUtils.isEmpty(hostsList)) {
             String[] hosts = GenericUtils.split(hostsList, ',');
             for (String host : hosts) {
@@ -441,9 +443,9 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         }
 
         System.err.println("Starting SSHD on port " + port);
-                                                    
+
         SshServer sshd = SshServer.setUpDefaultServer();
-        Map<String,Object> props = sshd.getProperties();
+        Map<String, Object> props = sshd.getProperties();
         FactoryManagerUtils.updateProperty(props, ServerFactoryManager.WELCOME_BANNER, "Welcome to SSHD\n");
         props.putAll(options);
         sshd.setPort(port);
@@ -454,21 +456,21 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
             sshd.setKeyPairProvider(new SimpleGeneratorHostKeyProvider(new File("key.ser")));
         }
 
-        sshd.setShellFactory(InteractiveProcessShellFactory.INSTANCE);
+        sshd.setShellFactory(new InteractiveProcessShellFactory());
         sshd.setPasswordAuthenticator(new PasswordAuthenticator() {
-                @Override
-                public boolean authenticate(String username, String password, ServerSession session) {
-                    return (username != null) && username.equals(password);
-                }
-            });
+            @Override
+            public boolean authenticate(String username, String password, ServerSession session) {
+                return (username != null) && username.equals(password);
+            }
+        });
         sshd.setPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);
         sshd.setTcpipForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
         sshd.setCommandFactory(new ScpCommandFactory.Builder().withDelegate(new CommandFactory() {
-                @Override
-                public Command createCommand(String command) {
-                    return new ProcessShellFactory(GenericUtils.split(command, ' ')).create();
-                }
-            }).build());
+            @Override
+            public Command createCommand(String command) {
+                return new ProcessShellFactory(GenericUtils.split(command, ' ')).create();
+            }
+        }).build());
         sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(new SftpSubsystemFactory()));
         sshd.start();
 

@@ -32,13 +32,13 @@ public class MinaServiceFactoryFactory extends AbstractIoServiceFactoryFactory {
     }
 
     /**
-     * @param executors The {@link ExecutorService} to use for spawning threads.
-     * If {@code null} then an internal service is allocated - in which case it
-     * is automatically shutdown regardless of the value of the <tt>shutdownOnExit</tt>
-     * parameter value
+     * @param executors      The {@link ExecutorService} to use for spawning threads.
+     *                       If {@code null} then an internal service is allocated - in which case it
+     *                       is automatically shutdown regardless of the value of the <tt>shutdownOnExit</tt>
+     *                       parameter value
      * @param shutdownOnExit If {@code true} then the {@link ExecutorService#shutdownNow()}
-     * will be called (unless it is an internally allocated service which is always
-     * closed)
+     *                       will be called (unless it is an internally allocated service which is always
+     *                       closed)
      */
     public MinaServiceFactoryFactory(ExecutorService executors, boolean shutdownOnExit) {
         super(executors, shutdownOnExit);

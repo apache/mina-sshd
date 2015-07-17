@@ -28,8 +28,8 @@ import org.apache.sshd.common.util.threads.ExecutorServiceConfigurer;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractIoServiceFactoryFactory
-                extends AbstractLoggingBean
-                implements IoServiceFactoryFactory, ExecutorServiceConfigurer {
+        extends AbstractLoggingBean
+        implements IoServiceFactoryFactory, ExecutorServiceConfigurer {
 
     private ExecutorService executorService;
     private boolean shutdownExecutor;
@@ -56,7 +56,7 @@ public abstract class AbstractIoServiceFactoryFactory
     @Override
     public void setExecutorService(ExecutorService service) {
         executorService = service;
-        
+
     }
 
     @Override

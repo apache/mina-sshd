@@ -21,7 +21,6 @@ package org.apache.sshd.client.channel;
 import java.io.IOException;
 
 import org.apache.sshd.common.SshConstants;
-import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 

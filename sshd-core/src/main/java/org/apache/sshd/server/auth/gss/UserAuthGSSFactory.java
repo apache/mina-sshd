@@ -26,7 +26,7 @@ import org.apache.sshd.server.auth.UserAuthFactory;
  */
 public class UserAuthGSSFactory implements UserAuthFactory {
     public static final UserAuthGSSFactory INSTANCE = new UserAuthGSSFactory();
-    
+
     public UserAuthGSSFactory() {
         super();
     }

@@ -28,8 +28,8 @@ import org.apache.sshd.common.util.GenericUtils;
  */
 public abstract class AbstractDH {
 
-    protected BigInteger K; // shared secret key
-    private byte[] K_array;
+    protected BigInteger k; // shared secret key
+    private byte[] k_array;
 
     protected AbstractDH() {
         super();
@@ -42,11 +42,11 @@ public abstract class AbstractDH {
     protected abstract byte[] calculateK() throws Exception;
 
     public byte[] getK() throws Exception {
-        if (K == null) {
-            K_array = calculateK();
-            K = new BigInteger(K_array);
+        if (k == null) {
+            k_array = calculateK();
+            k = new BigInteger(k_array);
         }
-        return K_array;
+        return k_array;
     }
 
     public abstract Digest getHash() throws Exception;
@@ -56,10 +56,11 @@ public abstract class AbstractDH {
      * is a byte array, which can (by chance, roughly 1 out of 256 times) begin
      * with zero byte (some JCE providers might strip this, though). In SSH,
      * the shared secret is an integer, so we need to strip the leading zero(es).
+     *
      * @param x The original array
-     * @return An (possibly) sub-array guaranteed to start with a non-zero byte 
-     * @see <A HREF="https://issues.apache.org/jira/browse/SSHD-330">SSHD-330</A>
+     * @return An (possibly) sub-array guaranteed to start with a non-zero byte
      * @throws IllegalArgumentException If all zeroes array
+     * @see <A HREF="https://issues.apache.org/jira/browse/SSHD-330">SSHD-330</A>
      */
     public static byte[] stripLeadingZeroes(byte[] x) {
         int length = GenericUtils.length(x);
@@ -76,7 +77,7 @@ public abstract class AbstractDH {
             System.arraycopy(x, i, ret, 0, ret.length);
             return ret;
         }
-        
+
         // all zeroes
         throw new IllegalArgumentException("No non-zero values in generated secret");
     }

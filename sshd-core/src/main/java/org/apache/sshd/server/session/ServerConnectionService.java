@@ -23,7 +23,6 @@ import java.io.IOException;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.session.AbstractConnectionService;
 import org.apache.sshd.common.session.Session;
-import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
@@ -35,7 +34,7 @@ public class ServerConnectionService extends AbstractConnectionService {
 
     protected ServerConnectionService(Session s) throws SshException {
         super(s);
-        
+
         ValidateUtils.checkTrue(s instanceof ServerSession, "Server side service used on client side");
 
         if (!session.isAuthenticated()) {

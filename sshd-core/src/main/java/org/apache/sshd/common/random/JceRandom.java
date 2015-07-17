@@ -21,7 +21,7 @@ package org.apache.sshd.common.random;
 import java.security.SecureRandom;
 
 /**
- * A <code>Random</code> implementation using the built-in {@link SecureRandom} PRNG. 
+ * A <code>Random</code> implementation using the built-in {@link SecureRandom} PRNG.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -31,7 +31,7 @@ public class JceRandom extends AbstractRandom {
     private final SecureRandom random = new SecureRandom();
 
     public JceRandom() {
-      super();
+        super();
     }
 
     @Override

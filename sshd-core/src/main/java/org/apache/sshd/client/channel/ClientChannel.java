@@ -41,14 +41,14 @@ public interface ClientChannel extends Channel {
     String CHANNEL_SHELL = "shell";
     String CHANNEL_SUBSYSTEM = "subsystem";
 
-    int TIMEOUT =     0x0001;
-    int CLOSED =      0x0002;
+    int TIMEOUT = 0x0001;
+    int CLOSED = 0x0002;
     int STDOUT_DATA = 0x0004;
     int STDERR_DATA = 0x0008;
-    int EOF =         0x0010;
+    int EOF = 0x0010;
     int EXIT_STATUS = 0x0020;
     int EXIT_SIGNAL = 0x0040;
-    int OPENED =      0x0080;
+    int OPENED = 0x0080;
 
     enum Streaming {
         Async,

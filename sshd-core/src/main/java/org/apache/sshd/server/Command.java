@@ -24,7 +24,7 @@ import java.io.OutputStream;
 
 /**
  * Represents a command, shell or subsystem that can be used to send command.
- *
+ * <p/>
  * This command have direct streams, meaning those streams will be provided by the ssh server
  * for the shell to use directy. This interface is suitable for implementing commands in java,
  * rather than using external processes.  For wrapping such processes or using inverted streams,
@@ -34,24 +34,28 @@ public interface Command {
 
     /**
      * Set the input stream that can be used by the shell to read input.
+     *
      * @param in
      */
     void setInputStream(InputStream in);
 
     /**
      * Set the output stream that can be used by the shell to write its output.
+     *
      * @param out
      */
     void setOutputStream(OutputStream out);
 
     /**
      * Set the error stream that can be used by the shell to write its errors.
+     *
      * @param err
      */
     void setErrorStream(OutputStream err);
 
     /**
      * Set the callback that the shell has to call when it is closed.
+     *
      * @param callback
      */
     void setExitCallback(ExitCallback callback);

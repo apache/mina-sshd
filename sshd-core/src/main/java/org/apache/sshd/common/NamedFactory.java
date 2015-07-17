@@ -27,6 +27,7 @@ import org.apache.sshd.common.util.Transformer;
 /**
  * A named factory is a factory identified by a name.
  * Such names are used mainly in the algorithm negotiation at the beginning of the SSH connection.
+ *
  * @param <T> The create object instance type
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -35,16 +36,22 @@ public interface NamedFactory<T> extends Factory<T>, NamedResource {
      * Utility class to help using NamedFactories
      */
     final class Utils {
+
+        private Utils() {
+            throw new UnsupportedOperationException("No instance allowed");
+        }
+
         /**
          * Create an instance of the specified name by looking up the needed factory
          * in the list.
+         *
          * @param factories list of available factories
-         * @param name the factory name to use
-         * @param <T> type of object to create
+         * @param name      the factory name to use
+         * @param <T>       type of object to create
          * @return a newly created object or {@code null} if the factory is not in the list
          */
         public static <T> T create(Collection<? extends NamedFactory<T>> factories, String name) {
-            NamedFactory<? extends T>   f=NamedResource.Utils.findByName(name, String.CASE_INSENSITIVE_ORDER, factories);
+            NamedFactory<? extends T> f = NamedResource.Utils.findByName(name, String.CASE_INSENSITIVE_ORDER, factories);
             if (f != null) {
                 return f.create();
             } else {
@@ -52,27 +59,26 @@ public interface NamedFactory<T> extends Factory<T>, NamedResource {
             }
         }
 
-        public static <S extends OptionalFeature,T,E extends NamedFactory<T>> List<NamedFactory<T>> setUpTransformedFactories(
-                boolean ignoreUnsupported, Collection<? extends S> preferred, Transformer<? super S,? extends E> xform) {
-            List<NamedFactory<T>>   avail=new ArrayList<>(preferred.size());
+        public static <S extends OptionalFeature, T, E extends NamedFactory<T>> List<NamedFactory<T>> setUpTransformedFactories(
+                boolean ignoreUnsupported, Collection<? extends S> preferred, Transformer<? super S, ? extends E> xform) {
+            List<NamedFactory<T>> avail = new ArrayList<>(preferred.size());
             for (S f : preferred) {
                 if (ignoreUnsupported || f.isSupported()) {
                     avail.add(xform.transform(f));
                 }
             }
-            
             return avail;
         }
 
-        public static <T,E extends NamedFactory<T> & OptionalFeature> List<NamedFactory<T>> setUpBuiltinFactories(
+        public static <T, E extends NamedFactory<T> & OptionalFeature> List<NamedFactory<T>> setUpBuiltinFactories(
                 boolean ignoreUnsupported, Collection<? extends E> preferred) {
-            List<NamedFactory<T>>   avail=new ArrayList<>(preferred.size());
+            List<NamedFactory<T>> avail = new ArrayList<>(preferred.size());
             for (E f : preferred) {
                 if (ignoreUnsupported || f.isSupported()) {
                     avail.add(f);
                 }
             }
-            
+
             return avail;
         }
     }

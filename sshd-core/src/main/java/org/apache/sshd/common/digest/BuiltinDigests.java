@@ -39,9 +39,18 @@ public enum BuiltinDigests implements DigestInformation, DigestFactory {
     sha384(Constants.SHA384, "SHA-384", 48),
     sha512(Constants.SHA512, "SHA-512", 64);
 
+    public static final Set<BuiltinDigests> VALUES =
+            Collections.unmodifiableSet(EnumSet.allOf(BuiltinDigests.class));
+
     private final String algorithm;
     private final int blockSize;
     private final String factoryName;
+
+    BuiltinDigests(String factoryName, String algorithm, int blockSize) {
+        this.factoryName = factoryName;
+        this.algorithm = algorithm;
+        this.blockSize = blockSize;
+    }
 
     @Override
     public final String getName() {
@@ -67,15 +76,6 @@ public enum BuiltinDigests implements DigestInformation, DigestFactory {
     public final Digest create() {
         return new BaseDigest(getAlgorithm(), getBlockSize());
     }
-
-    BuiltinDigests(String factoryName, String algorithm, int blockSize) {
-        this.factoryName = factoryName;
-        this.algorithm = algorithm;
-        this.blockSize = blockSize;
-    }
-
-    public static final Set<BuiltinDigests> VALUES =
-            Collections.unmodifiableSet(EnumSet.allOf(BuiltinDigests.class));
 
     /**
      * @param s The {@link Enum}'s name - ignored if {@code null}/empty

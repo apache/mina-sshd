@@ -20,17 +20,22 @@
 package org.apache.sshd.common.channel;
 
 import org.apache.sshd.common.util.Transformer;
+import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface ChannelRequestHandler extends RequestHandler<Channel> {
+
     // required because of generics issues
-    Transformer<ChannelRequestHandler,RequestHandler<Channel>> CHANN2HNDLR =
-            new Transformer<ChannelRequestHandler, RequestHandler<Channel>>() {
-                @Override
-                public RequestHandler<Channel> transform(ChannelRequestHandler input) {
-                    return input;
-                }
-            };
+    Transformer<ChannelRequestHandler, RequestHandler<Channel>> CHANN2HNDLR =
+        new Transformer<ChannelRequestHandler, RequestHandler<Channel>>() {
+            @Override
+            public RequestHandler<Channel> transform(ChannelRequestHandler input) {
+                return input;
+            }
+        };
+
+    Result process(Channel channel, String request, boolean wantReply, Buffer buffer) throws Exception;
+
 }

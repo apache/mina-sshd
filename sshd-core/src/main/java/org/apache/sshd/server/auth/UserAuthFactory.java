@@ -20,18 +20,11 @@
 package org.apache.sshd.server.auth;
 
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.util.Transformer;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+// CHECKSTYLE:OFF
 public interface UserAuthFactory extends NamedFactory<UserAuth> {
-    // required because of generics issues
-    Transformer<UserAuthFactory,NamedFactory<UserAuth>> FAC2NAMED=new Transformer<UserAuthFactory,NamedFactory<UserAuth>>() {
-        @Override
-        public NamedFactory<UserAuth> transform(UserAuthFactory input) {
-            return input;
-        }
-    };
 
 }

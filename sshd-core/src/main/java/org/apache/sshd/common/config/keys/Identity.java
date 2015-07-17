@@ -27,6 +27,7 @@ import org.apache.sshd.common.OptionalFeature;
 
 /**
  * Represents an SSH key type
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface Identity extends NamedResource, OptionalFeature {
@@ -34,7 +35,8 @@ public interface Identity extends NamedResource, OptionalFeature {
      * @return The key algorithm - e.g., RSA, DSA, EC
      */
     String getAlgorithm();
-    
+
     Class<? extends PublicKey> getPublicKeyType();
+
     Class<? extends PrivateKey> getPrivateKeyType();
 }

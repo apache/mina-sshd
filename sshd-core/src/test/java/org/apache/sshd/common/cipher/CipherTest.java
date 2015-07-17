@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import com.jcraft.jsch.JSch;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.random.Random;
@@ -46,8 +47,6 @@ import org.junit.runners.MethodSorters;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
-import com.jcraft.jsch.JSch;
-
 /**
  * Test Cipher algorithms.
  *
@@ -63,23 +62,23 @@ public class CipherTest extends BaseTestSupport {
      */
     private static final List<Object[]> PARAMETERS =
             Collections.unmodifiableList(Arrays.asList(
-                new Object[] { BuiltinCiphers.aes128cbc, com.jcraft.jsch.jce.AES128CBC.class, NUM_LOADTEST_ROUNDS },
-                new Object[] { BuiltinCiphers.tripledescbc, com.jcraft.jsch.jce.TripleDESCBC.class, NUM_LOADTEST_ROUNDS },
-                new Object[] { BuiltinCiphers.blowfishcbc, com.jcraft.jsch.jce.BlowfishCBC.class, NUM_LOADTEST_ROUNDS },
-                new Object[] { BuiltinCiphers.aes192cbc, com.jcraft.jsch.jce.AES192CBC.class, NUM_LOADTEST_ROUNDS  },
-                new Object[] { BuiltinCiphers.aes256cbc, com.jcraft.jsch.jce.AES256CBC.class, NUM_LOADTEST_ROUNDS  }
-                    ));
+                    new Object[]{BuiltinCiphers.aes128cbc, com.jcraft.jsch.jce.AES128CBC.class, NUM_LOADTEST_ROUNDS},
+                    new Object[]{BuiltinCiphers.tripledescbc, com.jcraft.jsch.jce.TripleDESCBC.class, NUM_LOADTEST_ROUNDS},
+                    new Object[]{BuiltinCiphers.blowfishcbc, com.jcraft.jsch.jce.BlowfishCBC.class, NUM_LOADTEST_ROUNDS},
+                    new Object[]{BuiltinCiphers.aes192cbc, com.jcraft.jsch.jce.AES192CBC.class, NUM_LOADTEST_ROUNDS},
+                    new Object[]{BuiltinCiphers.aes256cbc, com.jcraft.jsch.jce.AES256CBC.class, NUM_LOADTEST_ROUNDS}
+            ));
 
     @SuppressWarnings("synthetic-access")
-    private static final List<NamedResource> TEST_CIPHERS = 
+    private static final List<NamedResource> TEST_CIPHERS =
             Collections.unmodifiableList(new ArrayList<NamedResource>(PARAMETERS.size()) {
                 private static final long serialVersionUID = 1L;    // we're not serializing it
-                
+
                 {
                     for (Object[] params : PARAMETERS) {
                         add((NamedResource) params[0]);
                     }
-                    
+
                     add(BuiltinCiphers.none);
                 }
             });
@@ -105,14 +104,14 @@ public class CipherTest extends BaseTestSupport {
     @Test
     public void testBuiltinCipherSession() throws Exception {
         Assume.assumeTrue("No internal support for " + builtInCipher.getName(), builtInCipher.isSupported() && checkCipher(jschCipher.getName()));
-        
-        try(SshServer sshd = SshServer.setUpDefaultServer()) {
+
+        try (SshServer sshd = SshServer.setUpDefaultServer()) {
             sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
             sshd.setCipherFactories(Arrays.<NamedFactory<org.apache.sshd.common.cipher.Cipher>>asList(builtInCipher));
             sshd.setShellFactory(new EchoShellFactory());
             sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
             sshd.start();
-         
+
             try {
                 runJschTest(sshd.getPort());
             } finally {
@@ -129,14 +128,14 @@ public class CipherTest extends BaseTestSupport {
         com.jcraft.jsch.Session s = sch.getSession(getCurrentTestName(), "localhost", port);
         s.setUserInfo(new SimpleUserInfo(getCurrentTestName()));
         s.connect();
-        
+
         try {
             com.jcraft.jsch.Channel c = s.openChannel("shell");
             c.connect();
-            
-            try(OutputStream os = c.getOutputStream();
-                InputStream is = c.getInputStream()) {
-                String expected = "this is my command\n"; 
+
+            try (OutputStream os = c.getOutputStream();
+                 InputStream is = c.getInputStream()) {
+                String expected = "this is my command\n";
                 byte[] expData = expected.getBytes(StandardCharsets.UTF_8);
                 byte[] actData = new byte[expData.length + Long.SIZE /* just in case */];
                 for (int i = 0; i < 10; i++) {
@@ -179,16 +178,15 @@ public class CipherTest extends BaseTestSupport {
         System.err.println(factory.getName() + "[" + numRounds + "]: " + (t1 - t0) + " ms");
     }
 
-    static boolean checkCipher(String cipher){
-        try{
-            Class<?> c=Class.forName(cipher);
-            com.jcraft.jsch.Cipher _c = (com.jcraft.jsch.Cipher)(c.newInstance());
+    static boolean checkCipher(String cipher) {
+        try {
+            Class<?> c = Class.forName(cipher);
+            com.jcraft.jsch.Cipher _c = (com.jcraft.jsch.Cipher) (c.newInstance());
             _c.init(com.jcraft.jsch.Cipher.ENCRYPT_MODE,
                     new byte[_c.getBlockSize()],
                     new byte[_c.getIVSize()]);
             return true;
-        }
-        catch(Exception e){
+        } catch (Exception e) {
             System.err.println("checkCipher(" + cipher + ") " + e.getClass().getSimpleName() + ": " + e.getMessage());
             return false;
         }

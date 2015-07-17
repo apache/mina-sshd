@@ -35,7 +35,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class OpenSSHFsyncExtensionImpl extends AbstractSftpClientExtension implements OpenSSHFsyncExtension {
-    public OpenSSHFsyncExtensionImpl(SftpClient client, RawSftpClient raw, Map<String,byte[]> extensions) {
+    public OpenSSHFsyncExtensionImpl(SftpClient client, RawSftpClient raw, Map<String, byte[]> extensions) {
         super(FsyncExtensionParser.NAME, client, raw, extensions);
     }
 

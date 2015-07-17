@@ -59,38 +59,40 @@ import org.junit.runner.Description;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class BaseTestSupport extends Assert {
-    public static final String TEMP_SUBFOLDER_NAME="temp";
+    public static final String TEMP_SUBFOLDER_NAME = "temp";
 
     // useful test sizes for keys
     @SuppressWarnings("boxing")
     public static final List<Integer> DSS_SIZES =
-        Collections.unmodifiableList(Arrays.asList(512, 768, 1024));
+            Collections.unmodifiableList(Arrays.asList(512, 768, 1024));
     @SuppressWarnings("boxing")
     public static final List<Integer> RSA_SIZES =
             Collections.unmodifiableList(Arrays.asList(1024, 2048, 3072, 4096));
 
-    @Rule public final TestWatcher rule = new TestWatcher() {
-            // TODO consider using a ThreadLocal storage for the start time - provided
-            //      the code is assured to call starting/finished on the same thread
-            private long startTime;
-    
-            @Override
-            protected void starting(Description description) {
-                System.out.println("\nStarting " + description.getClassName() + ":" + description.getMethodName() + "...\n");
-                startTime = System.currentTimeMillis();
-            }
-    
-            @Override
-            protected void finished(Description description) {
-                long duration = System.currentTimeMillis() - startTime;
-                System.out.println("\nFinished " + description.getClassName() + ":" + description.getMethodName() + " in " + duration + " ms\n");
-            }
-        };
-    @Rule public final TestName TEST_NAME_HOLDER = new TestName();
-    private File    targetFolder;
+    @Rule
+    public final TestWatcher rule = new TestWatcher() {
+        // TODO consider using a ThreadLocal storage for the start time - provided
+        //      the code is assured to call starting/finished on the same thread
+        private long startTime;
+
+        @Override
+        protected void starting(Description description) {
+            System.out.println("\nStarting " + description.getClassName() + ":" + description.getMethodName() + "...\n");
+            startTime = System.currentTimeMillis();
+        }
+
+        @Override
+        protected void finished(Description description) {
+            long duration = System.currentTimeMillis() - startTime;
+            System.out.println("\nFinished " + description.getClassName() + ":" + description.getMethodName() + " in " + duration + " ms\n");
+        }
+    };
+    @Rule
+    public final TestName TEST_NAME_HOLDER = new TestName();
+    private File targetFolder;
 
     protected BaseTestSupport() {
-    	super();
+        super();
     }
 
     public final String getCurrentTestName() {
@@ -101,11 +103,12 @@ public abstract class BaseTestSupport extends Assert {
      * Attempts to detect the location of the Maven &quot;target&quot; folder
      * associated with the project that contains the actual class extending this
      * base class
+     *
      * @return The {@link File} representing the location of the &quot;target&quot; folder
      * @throws IllegalArgumentException If failed to detect the folder
      */
     protected File detectTargetFolder() throws IllegalStateException {
-        synchronized(TEMP_SUBFOLDER_NAME) {
+        synchronized (TEMP_SUBFOLDER_NAME) {
             if (targetFolder == null) {
                 targetFolder = ValidateUtils.checkNotNull(Utils.detectTargetFolder(getClass()), "Failed to detect target folder");
             }
@@ -168,10 +171,10 @@ public abstract class BaseTestSupport extends Assert {
         if (GenericUtils.isEmpty(params)) {
             return Collections.emptyList();
         }
-        
+
         List<Object[]> result = new ArrayList<Object[]>(params.size());
         for (Object p : params) {
-            result.add(new Object[] { p });
+            result.add(new Object[]{p});
         }
 
         return result;
@@ -192,25 +195,25 @@ public abstract class BaseTestSupport extends Assert {
         if (expected == actual) {
             return;
         }
-        
-        for (int index=0; expected.hasNext(); index++) {
+
+        for (int index = 0; expected.hasNext(); index++) {
             assertTrue(message + "[next actual index=" + index + "]", actual.hasNext());
-            
-            T   expValue = expected.next(), actValue = actual.next();
+
+            T expValue = expected.next(), actValue = actual.next();
             assertEquals(message + "[iterator index=" + index + "]", expValue, actValue);
         }
-        
+
         // once expected is exhausted make sure no more actual items left
         assertFalse(message + "[non-empty-actual]", actual.hasNext());
     }
 
-    public static Path assertHierarchyTargetFolderExists(Path folder, LinkOption ... options) throws IOException {
+    public static Path assertHierarchyTargetFolderExists(Path folder, LinkOption... options) throws IOException {
         if (Files.exists(folder, options)) {
             assertTrue("Target is an existing file instead of a folder: " + folder, Files.isDirectory(folder, options));
         } else {
             Files.createDirectories(folder);
         }
-        
+
         return folder;
     }
 
@@ -220,25 +223,25 @@ public abstract class BaseTestSupport extends Assert {
         } else {
             assertTrue("Failed to create hierarchy of " + folder.getAbsolutePath(), folder.mkdirs());
         }
-        
+
         return folder;
     }
-    
+
     public static void assertObjectInstanceOf(String message, Class<?> expected, Object obj) {
         assertNotNull(message + " - no actual object", obj);
-        
-        Class<?>    actual=obj.getClass();
+
+        Class<?> actual = obj.getClass();
         if (!expected.isAssignableFrom(actual)) {
             fail(message + " - actual object type (" + actual.getName() + ") incompatible with expected (" + expected.getName() + ")");
         }
     }
-    
+
     public static <E> void assertListEquals(String message, List<? extends E> expected, List<? extends E> actual) {
-        int expSize=GenericUtils.size(expected), actSize=GenericUtils.size(actual);
+        int expSize = GenericUtils.size(expected), actSize = GenericUtils.size(actual);
         assertEquals(message + "[size]", expSize, actSize);
-        
-        for (int index=0; index < expSize; index++) {
-            E expValue=expected.get(index), actValue=actual.get(index);
+
+        for (int index = 0; index < expSize; index++) {
+            E expValue = expected.get(index), actValue = actual.get(index);
             assertEquals(message + "[" + index + "]", expValue, actValue);
         }
     }
@@ -273,7 +276,7 @@ public abstract class BaseTestSupport extends Assert {
         if (expected == actual) {
             return;
         }
-        
+
         assertEquals(message + "[e]", expected.getPublicExponent(), actual.getPublicExponent());
         assertEquals(message + "[n]", expected.getModulus(), actual.getModulus());
     }
@@ -282,7 +285,7 @@ public abstract class BaseTestSupport extends Assert {
         if (expected == actual) {
             return;
         }
-        
+
         assertEquals(message + "[y]", expected.getY(), actual.getY());
         assertDSAParamsEquals(message + "[params]", expected.getParams(), actual.getParams());
     }
@@ -300,7 +303,7 @@ public abstract class BaseTestSupport extends Assert {
         if (expected == actual) {
             return;
         }
-        
+
         assertEquals(message + "[d]", expected.getPrivateExponent(), actual.getPrivateExponent());
         assertEquals(message + "[n]", expected.getModulus(), actual.getModulus());
     }
@@ -309,7 +312,7 @@ public abstract class BaseTestSupport extends Assert {
         if (expected == actual) {
             return;
         }
-        
+
         assertEquals(message + "[x]", expected.getX(), actual.getX());
         assertDSAParamsEquals(message + "[params]", expected.getParams(), actual.getParams());
     }
@@ -385,8 +388,9 @@ public abstract class BaseTestSupport extends Assert {
 
     /**
      * Waits the specified timeout for the file to exist and have the required length
-     * @param file The file {@link Path} to check
-     * @param length Expected length
+     *
+     * @param file    The file {@link Path} to check
+     * @param length  Expected length
      * @param timeout Timeout (msec.) to wait for satisfying the requirements
      * @throws Exception If failed to access the file
      */
@@ -397,7 +401,7 @@ public abstract class BaseTestSupport extends Assert {
         assertTrue("File not found: " + file, Files.exists(file));
         assertEquals("Mismatched file size for " + file, length, Files.size(file));
     }
-    
+
     public static boolean waitForFile(Path file, long length, long timeout) throws Exception {
         while (timeout > 0L) {
             long sleepTime = Math.min(timeout, 100L);
@@ -408,11 +412,11 @@ public abstract class BaseTestSupport extends Assert {
             long sleepStart = System.nanoTime();
             Thread.sleep(sleepTime);
             long sleepEnd = System.nanoTime(), nanoSleep = sleepEnd - sleepStart;
-            
+
             sleepTime = TimeUnit.NANOSECONDS.toMillis(nanoSleep);
             timeout -= sleepTime;
         }
-        
+
         return false;
     }
 }

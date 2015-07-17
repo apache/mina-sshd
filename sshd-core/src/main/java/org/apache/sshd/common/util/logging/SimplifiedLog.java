@@ -16,7 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
 package org.apache.sshd.common.util.logging;
 
 import java.util.logging.Level;
@@ -25,29 +24,30 @@ import java.util.logging.Level;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface SimplifiedLog {
+
+    /**
+     * An &quot;empty&quot; {@link SimplifiedLog} that does nothing
+     */
+    SimplifiedLog EMPTY = new AbstractSimplifiedLog() {
+        @Override
+        public boolean isEnabled(Level level) {
+            return false;
+        }
+
+        @Override
+        public void log(Level level, Object message, Throwable t) {
+            return;
+        }
+
+        @Override
+        public String toString() {
+            return "EMPTY";
+        }
+    };
+
     boolean isEnabled(Level level);
 
     void log(Level level, Object message);
 
     void log(Level level, Object message, Throwable t);
-
-    /**
-     * An &quot;empty&quot; {@link SimplifiedLog} that does nothing
-     */
-    SimplifiedLog   EMPTY=new AbstractSimplifiedLog() {
-            @Override
-            public boolean isEnabled(Level level) {
-                return false;
-            }
-
-            @Override
-            public void log(Level level, Object message, Throwable t) {
-                return;
-            }
-
-            @Override
-            public String toString() {
-                return "EMPTY";
-            }
-        };
 }

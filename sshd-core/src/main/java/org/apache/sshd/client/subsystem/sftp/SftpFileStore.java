@@ -77,7 +77,7 @@ public class SftpFileStore extends FileStore {
 
     @Override
     public boolean supportsFileAttributeView(Class<? extends FileAttributeView> type) {
-        SftpFileSystem  sftpFs = getFileSystem();
+        SftpFileSystem sftpFs = getFileSystem();
         SftpFileSystemProvider provider = sftpFs.provider();
         return provider.isSupportedFileAttributeView(type);
     }
@@ -87,14 +87,10 @@ public class SftpFileStore extends FileStore {
         if (GenericUtils.isEmpty(name)) {
             return false;   // debug breakpoint
         }
-        
-        FileSystem  sftpFs = getFileSystem();
+
+        FileSystem sftpFs = getFileSystem();
         Collection<String> views = sftpFs.supportedFileAttributeViews();
-        if (GenericUtils.isEmpty(views) || (!views.contains(name))) {
-            return false;   // debug breakpoint
-        } else {
-            return true;
-        }
+        return !GenericUtils.isEmpty(views) && views.contains(name);
     }
 
     @Override

@@ -19,19 +19,12 @@
 
 package org.apache.sshd.common.cipher;
 
-import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.OptionalFeature;
-import org.apache.sshd.common.util.Transformer;
+import org.apache.sshd.common.BuiltinFactory;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface CipherFactory extends NamedFactory<Cipher>, OptionalFeature {
-    // required because of generics issues
-    Transformer<CipherFactory,NamedFactory<Cipher>> FAC2NAMED=new Transformer<CipherFactory,NamedFactory<Cipher>>() {
-        @Override
-        public NamedFactory<Cipher> transform(CipherFactory input) {
-            return input;
-        }
-    };
+// CHECKSTYLE:OFF
+public interface CipherFactory extends BuiltinFactory<Cipher> {
+
 }

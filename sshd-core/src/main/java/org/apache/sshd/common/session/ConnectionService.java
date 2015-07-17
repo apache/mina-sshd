@@ -32,6 +32,7 @@ import org.apache.sshd.common.forward.TcpipForwarder;
 public interface ConnectionService extends Service {
     /**
      * Register a newly created channel with a new unique identifier
+     *
      * @param channel The {@link Channel} to register
      * @return The assigned id of this channel
      * @throws IOException If failed to initialize and register the channel
@@ -47,6 +48,7 @@ public interface ConnectionService extends Service {
 
     /**
      * Retrieve the tcpip forwarder
+     *
      * @return
      */
     TcpipForwarder getTcpipForwarder();

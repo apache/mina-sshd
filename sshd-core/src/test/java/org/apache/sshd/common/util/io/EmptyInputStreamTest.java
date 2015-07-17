@@ -39,14 +39,14 @@ public class EmptyInputStreamTest extends BaseTestSupport {
 
     @Test
     public void testEmptyInputStream() throws IOException {
-        try(EmptyInputStream in = new EmptyInputStream()) {
+        try (EmptyInputStream in = new EmptyInputStream()) {
             testEmptyInputStream(in, false);
         }
     }
 
     @Test
     public void testCloseableEmptyInputStream() throws IOException {
-        try(EmptyInputStream in = new CloseableEmptyInputStream()) {
+        try (EmptyInputStream in = new CloseableEmptyInputStream()) {
             testEmptyInputStream(in, true);
         }
     }
@@ -62,7 +62,7 @@ public class EmptyInputStreamTest extends BaseTestSupport {
         try {
             in.mark(Long.SIZE);
             fail(message + ": unexpected mark success");
-        } catch(UnsupportedOperationException e) {
+        } catch (UnsupportedOperationException e) {
             // expected
         }
 
@@ -70,7 +70,7 @@ public class EmptyInputStreamTest extends BaseTestSupport {
             int len = in.available();
             assertFalse(message + ": Unexpected success in available(): " + len, errorExpected);
             assertEquals(message + ": Mismatched available() result", 0, len);
-        } catch(IOException e) {
+        } catch (IOException e) {
             assertTrue(message + ": Unexpected error on available(): " + e.getMessage(), errorExpected);
         }
 
@@ -78,7 +78,7 @@ public class EmptyInputStreamTest extends BaseTestSupport {
             int data = in.read();
             assertFalse(message + ": Unexpected success in read(): " + data, errorExpected);
             assertEquals(message + ": Mismatched read() result", (-1), data);
-        } catch(IOException e) {
+        } catch (IOException e) {
             assertTrue(message + ": Unexpected error on read(): " + e.getMessage(), errorExpected);
         }
 
@@ -87,7 +87,7 @@ public class EmptyInputStreamTest extends BaseTestSupport {
             int len = in.read(bytes);
             assertFalse(message + ": Unexpected success in read([]): " + BufferUtils.printHex(':', bytes), errorExpected);
             assertEquals(message + ": Mismatched read([]) result", (-1), len);
-        } catch(IOException e) {
+        } catch (IOException e) {
             assertTrue(message + ": Unexpected error on read([]): " + e.getMessage(), errorExpected);
         }
 
@@ -95,7 +95,7 @@ public class EmptyInputStreamTest extends BaseTestSupport {
             int len = in.read(bytes, 0, bytes.length);
             assertFalse(message + ": Unexpected success in read([],int,int): " + BufferUtils.printHex(':', bytes), errorExpected);
             assertEquals(message + ": Mismatched read([],int,int) result", (-1), len);
-        } catch(IOException e) {
+        } catch (IOException e) {
             assertTrue(message + ": Unexpected error on read([],int,int): " + e.getMessage(), errorExpected);
         }
 
@@ -103,14 +103,14 @@ public class EmptyInputStreamTest extends BaseTestSupport {
             long len = in.skip(Byte.MAX_VALUE);
             assertFalse(message + ": Unexpected success in skip(): " + len, errorExpected);
             assertEquals(message + ": Mismatched skip() result", 0L, len);
-        } catch(IOException e) {
+        } catch (IOException e) {
             assertTrue(message + ": Unexpected error on skip(): " + e.getMessage(), errorExpected);
         }
 
         try {
             in.reset();
             assertFalse(message + ": Unexpected success in reset()", errorExpected);
-        } catch(IOException e) {
+        } catch (IOException e) {
             assertTrue(message + ": Unexpected error on reset(): " + e.getMessage(), errorExpected);
         }
     }

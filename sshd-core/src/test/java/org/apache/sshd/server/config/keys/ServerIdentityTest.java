@@ -53,7 +53,7 @@ public class ServerIdentityTest extends BaseTestSupport {
     @Test
     public void testLoadServerIdentities() throws Exception {
         Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
-        
+
         Path resFolder = getClassResourcesFolder(TEST_SUBFOLDER, getClass()).toPath();
         Collection<Path> paths = new ArrayList<Path>(BuiltinIdentities.VALUES.size());
         LinkOption[] options = IoUtils.getLinkOptions(false);
@@ -65,7 +65,7 @@ public class ServerIdentityTest extends BaseTestSupport {
                 System.out.println("Skip non-existing identity file " + file);
                 continue;
             }
-            
+
             if (!type.isSupported()) {
                 System.out.println("Skip unsupported identity file " + file);
                 continue;
@@ -74,13 +74,13 @@ public class ServerIdentityTest extends BaseTestSupport {
             paths.add(file);
             expected.add(type);
         }
-        
+
         Properties props = new Properties();
         props.setProperty(ServerIdentity.HOST_KEY_CONFIG_PROP, GenericUtils.join(paths, ','));
-        
-        Map<String,KeyPair> ids = ServerIdentity.loadIdentities(props, options);
+
+        Map<String, KeyPair> ids = ServerIdentity.loadIdentities(props, options);
         assertEquals("Mismatched loaded ids count", GenericUtils.size(paths), GenericUtils.size(ids));
-        
+
         Collection<KeyPair> pairs = new ArrayList<KeyPair>(ids.size());
         for (BuiltinIdentities type : BuiltinIdentities.VALUES) {
             if (expected.contains(type)) {
@@ -89,7 +89,7 @@ public class ServerIdentityTest extends BaseTestSupport {
                 pairs.add(kp);
             }
         }
-        
+
         KeyPairProvider provider = IdentityUtils.createKeyPairProvider(ids, true /* supported only */);
         assertNotNull("No provider generated", provider);
 
@@ -97,7 +97,7 @@ public class ServerIdentityTest extends BaseTestSupport {
         for (KeyPair kp : keys) {
             assertTrue("Unexpected loaded key: " + kp, pairs.remove(kp));
         }
-        
+
         assertEquals("Not all pairs listed", 0, pairs.size());
     }
 }

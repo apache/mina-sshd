@@ -62,7 +62,7 @@ public class LoadTest extends BaseTestSupport {
         sshd.setShellFactory(new EchoShellFactory());
         sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
         sshd.start();
-        port  = sshd.getPort();
+        port = sshd.getPort();
     }
 
     @After
@@ -120,37 +120,37 @@ public class LoadTest extends BaseTestSupport {
     }
 
     protected void runClient(String msg) throws Exception {
-        try(SshClient client = SshClient.setUpDefaultClient()) {
-            Map<String,Object>  props=client.getProperties();
+        try (SshClient client = SshClient.setUpDefaultClient()) {
+            Map<String, Object> props = client.getProperties();
             FactoryManagerUtils.updateProperty(props, FactoryManager.MAX_PACKET_SIZE, 1024 * 16);
             FactoryManagerUtils.updateProperty(props, FactoryManager.WINDOW_SIZE, 1024 * 8);
             client.setKeyExchangeFactories(Arrays.asList(
                     ClientBuilder.DH2KEX.transform(BuiltinDHFactories.dhg1)));
             client.setCipherFactories(Arrays.<NamedFactory<Cipher>>asList(BuiltinCiphers.blowfishcbc));
             client.start();
-            try(ClientSession session = client.connect("sshd", "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+            try (ClientSession session = client.connect("sshd", "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
                 session.addPasswordIdentity("sshd");
                 session.auth().verify(5L, TimeUnit.SECONDS);
-    
-                try(ByteArrayOutputStream out = new ByteArrayOutputStream();
-                    ByteArrayOutputStream err = new ByteArrayOutputStream();
-                    ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL)) {
+
+                try (ByteArrayOutputStream out = new ByteArrayOutputStream();
+                     ByteArrayOutputStream err = new ByteArrayOutputStream();
+                     ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL)) {
                     channel.setOut(out);
                     channel.setErr(err);
 
                     try {
                         channel.open().verify(9L, TimeUnit.SECONDS);
-                        try(OutputStream pipedIn = channel.getInvertedIn()) {
+                        try (OutputStream pipedIn = channel.getInvertedIn()) {
                             msg += "\nexit\n";
                             pipedIn.write(msg.getBytes(StandardCharsets.UTF_8));
                             pipedIn.flush();
                         }
-            
+
                         channel.waitFor(ClientChannel.CLOSED, 0);
-                    } finally {    
+                    } finally {
                         channel.close(false);
                     }
-    
+
                     assertArrayEquals("Mismatched message data", msg.getBytes(StandardCharsets.UTF_8), out.toByteArray());
                 }
             } finally {

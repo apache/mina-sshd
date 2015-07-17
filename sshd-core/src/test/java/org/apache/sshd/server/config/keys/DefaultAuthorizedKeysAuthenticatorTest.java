@@ -46,20 +46,20 @@ public class DefaultAuthorizedKeysAuthenticatorTest extends BaseTestSupport {
 
     @Test
     public void testUsernameValidation() throws Exception {
-        Path file=new File(new File(detectTargetFolder(), TEMP_SUBFOLDER_NAME), getCurrentTestName()).toPath();
+        Path file = new File(new File(detectTargetFolder(), TEMP_SUBFOLDER_NAME), getCurrentTestName()).toPath();
         URL url = getClass().getResource(AuthorizedKeyEntry.STD_AUTHORIZED_KEYS_FILENAME);
         assertNotNull("Missing " + AuthorizedKeyEntry.STD_AUTHORIZED_KEYS_FILENAME + " resource", url);
 
-        try(InputStream input = url.openStream();
-            OutputStream output = Files.newOutputStream(file)) {
+        try (InputStream input = url.openStream();
+             OutputStream output = Files.newOutputStream(file)) {
             IoUtils.copy(input, output);
         }
-        
+
         Collection<AuthorizedKeyEntry> entries = AuthorizedKeyEntry.readAuthorizedKeys(file);
-        Collection<PublicKey>  keySet = AuthorizedKeyEntry.resolveAuthorizedKeys(entries);
+        Collection<PublicKey> keySet = AuthorizedKeyEntry.resolveAuthorizedKeys(entries);
         PublickeyAuthenticator auth = new DefaultAuthorizedKeysAuthenticator(file, false);
         String thisUser = System.getProperty("user.name");
-        for (String username : new String[] { null, "", thisUser, getClass().getName() + "#" + getCurrentTestName() }) {
+        for (String username : new String[]{null, "", thisUser, getClass().getName() + "#" + getCurrentTestName()}) {
             boolean expected = thisUser.equals(username);
             for (PublicKey key : keySet) {
                 boolean actual = auth.authenticate(username, key, null);

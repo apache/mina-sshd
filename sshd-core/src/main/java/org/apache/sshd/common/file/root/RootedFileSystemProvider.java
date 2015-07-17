@@ -32,7 +32,6 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.FileStore;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystemAlreadyExistsException;
-import java.nio.file.FileSystemException;
 import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
@@ -49,7 +48,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
-import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 
@@ -88,7 +86,7 @@ public class RootedFileSystemProvider extends FileSystemProvider {
 
     protected FileSystem newFileSystem(Object src, Path path, Map<String, ?> env) throws IOException {
         Path root = ensureDirectory(path).toRealPath();
-        RootedFileSystem rootedFs=null;
+        RootedFileSystem rootedFs = null;
         synchronized (fileSystems) {
             if (!this.fileSystems.containsKey(root)) {
                 rootedFs = new RootedFileSystem(this, path, env);
@@ -105,7 +103,8 @@ public class RootedFileSystemProvider extends FileSystemProvider {
     }
 
     protected Path uriToPath(URI uri) {
-        String scheme = uri.getScheme(), expected = getScheme();
+        String scheme = uri.getScheme();
+        String expected = getScheme();
         if ((scheme == null) || (!scheme.equalsIgnoreCase(expected))) {
             throw new IllegalArgumentException("URI scheme (" + scheme + ") is not '" + expected + "'");
         }
@@ -162,7 +161,8 @@ public class RootedFileSystemProvider extends FileSystemProvider {
     }
 
     @Override
-    public AsynchronousFileChannel newAsynchronousFileChannel(Path path, Set<? extends OpenOption> options, ExecutorService executor, FileAttribute<?>... attrs) throws IOException {
+    public AsynchronousFileChannel newAsynchronousFileChannel(Path path, Set<? extends OpenOption> options,
+                                                              ExecutorService executor, FileAttribute<?>... attrs) throws IOException {
         Path r = unroot(path);
         FileSystemProvider p = provider(r);
         return p.newAsynchronousFileChannel(r, options, executor, attrs);
@@ -269,17 +269,17 @@ public class RootedFileSystemProvider extends FileSystemProvider {
         Path rootInstance = null;
         RootedFileSystem fsInstance = null;
         synchronized (fileSystems) {
-            for (Map.Entry<Path,RootedFileSystem> fse : fileSystems.entrySet()) {
+            for (Map.Entry<Path, RootedFileSystem> fse : fileSystems.entrySet()) {
                 Path root = fse.getKey();
                 RootedFileSystem fs = fse.getValue();
                 if (real.equals(root)) {
                     return fs;  // we were lucky to have the root
                 }
-                
+
                 if (!real.startsWith(root)) {
                     continue;
                 }
-                
+
                 // if already have a candidate prefer the longer match since both are prefixes of the real path
                 if ((rootInstance == null) || (rootInstance.getNameCount() < root.getNameCount())) {
                     rootInstance = root;
@@ -291,7 +291,7 @@ public class RootedFileSystemProvider extends FileSystemProvider {
         if (fsInstance == null) {
             throw new FileSystemNotFoundException(path.toString());
         }
-        
+
         return fsInstance;
     }
 
@@ -335,7 +335,7 @@ public class RootedFileSystemProvider extends FileSystemProvider {
         return fs.provider();
     }
 
-    private static Path root(FileSystem  fs, Path nat) {
+    private static Path root(FileSystem fs, Path nat) {
         RootedFileSystem rfs = (RootedFileSystem) fs;
         if (nat.isAbsolute()) {
             Path root = rfs.getRoot();
@@ -354,7 +354,7 @@ public class RootedFileSystemProvider extends FileSystemProvider {
         ValidateUtils.checkNotNull(path, "No path to unroot");
         if (!(path instanceof RootedPath)) {
             throw new ProviderMismatchException("unroot(" + path + ") is not a " + RootedPath.class.getSimpleName()
-                                              + " but rather a " + path.getClass().getSimpleName());
+                    + " but rather a " + path.getClass().getSimpleName());
         }
 
         RootedPath p = (RootedPath) path;

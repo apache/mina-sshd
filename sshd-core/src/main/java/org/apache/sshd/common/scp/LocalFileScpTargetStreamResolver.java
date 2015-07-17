@@ -68,7 +68,7 @@ public class LocalFileScpTargetStreamResolver extends AbstractLoggingBean implem
             file = path;
         } else if (!status) {
             Path parent = path.getParent();
-            
+
             Boolean parentStatus = IoUtils.checkFileExists(parent, options);
             if (parentStatus == null) {
                 throw new AccessDeniedException("Receive file parent (" + parent + ") existence status cannot be determined for " + path);
@@ -78,11 +78,11 @@ public class LocalFileScpTargetStreamResolver extends AbstractLoggingBean implem
                 file = path;
             }
         }
-        
+
         if (file == null) {
             throw new IOException("Can not write to " + path);
         }
-        
+
         Boolean fileStatus = IoUtils.checkFileExists(file, options);
         if (fileStatus == null) {
             throw new AccessDeniedException("Receive file existence status cannot be determined: " + file);
@@ -133,8 +133,8 @@ public class LocalFileScpTargetStreamResolver extends AbstractLoggingBean implem
 
         if (time != null) {
             BasicFileAttributeView view = Files.getFileAttributeView(path, BasicFileAttributeView.class);
-            FileTime lastModified = FileTime.from(time.lastModifiedTime, TimeUnit.MILLISECONDS);
-            FileTime lastAccess = FileTime.from(time.lastAccessTime, TimeUnit.MILLISECONDS);
+            FileTime lastModified = FileTime.from(time.getLastModifiedTime(), TimeUnit.MILLISECONDS);
+            FileTime lastAccess = FileTime.from(time.getLastAccessTime(), TimeUnit.MILLISECONDS);
             if (log.isTraceEnabled()) {
                 log.trace("updateFileProperties(" + name + ")[" + path + "] last-modified=" + lastModified + ", last-access=" + lastAccess);
             }

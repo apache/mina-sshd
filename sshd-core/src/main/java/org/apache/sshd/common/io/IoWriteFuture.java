@@ -26,10 +26,13 @@ import org.apache.sshd.common.future.SshFuture;
 public interface IoWriteFuture extends SshFuture<IoWriteFuture> {
     /**
      * Wait and verify that the write succeeded.
+     *
      * @throws IOException if the write failed for any reason
      */
     void verify() throws IOException;
+
     void verify(long count, TimeUnit unit) throws IOException;
+
     void verify(long timeout) throws IOException;
 
     /**

@@ -26,6 +26,7 @@ import org.apache.sshd.client.subsystem.sftp.extensions.SftpClientExtension;
 
 /**
  * Implements the &quot;fstatvfs@openssh.com&quot; extension command
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface OpenSSHStatHandleExtension extends SftpClientExtension {

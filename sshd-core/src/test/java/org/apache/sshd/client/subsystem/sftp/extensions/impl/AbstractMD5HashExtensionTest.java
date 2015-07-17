@@ -63,11 +63,11 @@ public class AbstractMD5HashExtensionTest extends AbstractSftpClientTestSupport 
     private static final List<Integer> DATA_SIZES =
             Collections.unmodifiableList(
                     Arrays.asList(
-                                Integer.valueOf(Byte.MAX_VALUE),
-                                Integer.valueOf(SftpConstants.MD5_QUICK_HASH_SIZE),
-                                Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE),
-                                Integer.valueOf(Byte.SIZE * IoUtils.DEFAULT_COPY_SIZE)
-                            ));
+                            Integer.valueOf(Byte.MAX_VALUE),
+                            Integer.valueOf(SftpConstants.MD5_QUICK_HASH_SIZE),
+                            Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE),
+                            Integer.valueOf(Byte.SIZE * IoUtils.DEFAULT_COPY_SIZE)
+                    ));
 
     @Parameters(name = "dataSize={0}")
     public static Collection<Object[]> parameters() {
@@ -97,7 +97,7 @@ public class AbstractMD5HashExtensionTest extends AbstractSftpClientTestSupport 
 
     private void testMD5HashExtension(int dataSize) throws Exception {
         byte[] seed = (getClass().getName() + "#" + getCurrentTestName() + "-" + dataSize + System.getProperty("line.separator")).getBytes(StandardCharsets.UTF_8);
-        try(ByteArrayOutputStream baos=new ByteArrayOutputStream(dataSize + seed.length)) {
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream(dataSize + seed.length)) {
             while (baos.size() < dataSize) {
                 baos.write(seed);
             }
@@ -131,42 +131,42 @@ public class AbstractMD5HashExtensionTest extends AbstractSftpClientTestSupport 
         String srcPath = Utils.resolveRelativeRemotePath(parentPath, srcFile);
         String srcFolder = Utils.resolveRelativeRemotePath(parentPath, srcFile.getParent());
 
-        try(SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = SshClient.setUpDefaultClient()) {
             client.start();
-            
+
             try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
                 session.addPasswordIdentity(getCurrentTestName());
                 session.auth().verify(5L, TimeUnit.SECONDS);
-                
-                try(SftpClient sftp = session.createSftpClient()) {
+
+                try (SftpClient sftp = session.createSftpClient()) {
                     MD5FileExtension file = assertExtensionCreated(sftp, MD5FileExtension.class);
                     try {
                         byte[] actual = file.getHash(srcFolder, 0L, 0L, quickHash);
                         fail("Unexpected file success on folder=" + srcFolder + ": " + BufferUtils.printHex(':', actual));
-                    } catch(IOException e) {    // expected - not allowed to hash a folder
+                    } catch (IOException e) {    // expected - not allowed to hash a folder
                         assertTrue("Not an SftpException for file hash on " + srcFolder, e instanceof SftpException);
                     }
 
                     MD5HandleExtension hndl = assertExtensionCreated(sftp, MD5HandleExtension.class);
-                    try(CloseableHandle dirHandle = sftp.openDir(srcFolder)) {
+                    try (CloseableHandle dirHandle = sftp.openDir(srcFolder)) {
                         try {
                             byte[] actual = hndl.getHash(dirHandle, 0L, 0L, quickHash);
                             fail("Unexpected handle success on folder=" + srcFolder + ": " + BufferUtils.printHex(':', actual));
-                        } catch(IOException e) {    // expected - not allowed to hash a folder
+                        } catch (IOException e) {    // expected - not allowed to hash a folder
                             assertTrue("Not an SftpException for handle hash on " + srcFolder, e instanceof SftpException);
                         }
                     }
 
-                    try(CloseableHandle fileHandle = sftp.open(srcPath, SftpClient.OpenMode.Read)) {
-                        for (byte[] qh : new byte[][] { GenericUtils.EMPTY_BYTE_ARRAY, quickHash }) {
-                            for (boolean useFile : new boolean[] { true, false }) {
+                    try (CloseableHandle fileHandle = sftp.open(srcPath, SftpClient.OpenMode.Read)) {
+                        for (byte[] qh : new byte[][]{GenericUtils.EMPTY_BYTE_ARRAY, quickHash}) {
+                            for (boolean useFile : new boolean[]{true, false}) {
                                 byte[] actualHash = useFile ? file.getHash(srcPath, 0L, 0L, qh) : hndl.getHash(fileHandle, 0L, 0L, qh);
                                 String type = useFile ? file.getClass().getSimpleName() : hndl.getClass().getSimpleName();
                                 if (!Arrays.equals(expectedHash, actualHash)) {
                                     fail("Mismatched hash for quick=" + BufferUtils.printHex(':', qh)
-                                       + " using " + type + " on " + srcFile
-                                       + ": expected=" + BufferUtils.printHex(':', expectedHash)
-                                       + ", actual=" + BufferUtils.printHex(':', actualHash));
+                                            + " using " + type + " on " + srcFile
+                                            + ": expected=" + BufferUtils.printHex(':', expectedHash)
+                                            + ", actual=" + BufferUtils.printHex(':', actualHash));
                                 }
                             }
                         }

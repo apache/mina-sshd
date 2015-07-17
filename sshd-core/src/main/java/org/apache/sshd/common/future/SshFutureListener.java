@@ -32,8 +32,8 @@ public interface SshFutureListener<T extends SshFuture> extends EventListener {
      * Invoked when the operation associated with the {@link SshFuture}
      * has been completed even if you add the listener after the completion.
      *
-     * @param future  The source {@link SshFuture} which called this
-     *                callback.
+     * @param future The source {@link SshFuture} which called this
+     *               callback.
      */
     void operationComplete(T future);
 

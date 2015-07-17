@@ -38,17 +38,17 @@ public class DelegatingServerKeyVerifier extends AbstractLoggingBean implements 
         super();
     }
 
-	@Override
+    @Override
     public boolean verifyServerKey(ClientSession sshClientSession, SocketAddress remoteAddress, PublicKey serverKey) {
-		Map<Object, Object> metadataMap = sshClientSession.getMetadataMap();
-		Object verifier = metadataMap.get(ServerKeyVerifier.class);
-		if (verifier == null) {
-		    if (log.isTraceEnabled()) {
-		        log.trace("verifyServerKey(" + remoteAddress + ") No verifier found in ClientSession metadata; accepting server key");
-		    }
-			return true;
-		}
-		// We throw if it's not a ServerKeyVerifier...
-		return ((ServerKeyVerifier) verifier).verifyServerKey(sshClientSession, remoteAddress, serverKey);
-	}
+        Map<Object, Object> metadataMap = sshClientSession.getMetadataMap();
+        Object verifier = metadataMap.get(ServerKeyVerifier.class);
+        if (verifier == null) {
+            if (log.isTraceEnabled()) {
+                log.trace("verifyServerKey(" + remoteAddress + ") No verifier found in ClientSession metadata; accepting server key");
+            }
+            return true;
+        }
+        // We throw if it's not a ServerKeyVerifier...
+        return ((ServerKeyVerifier) verifier).verifyServerKey(sshClientSession, remoteAddress, serverKey);
+    }
 }

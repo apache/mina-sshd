@@ -18,15 +18,6 @@
  */
 package org.apache.sshd.common.session;
 
-import static org.apache.sshd.common.SshConstants.SSH_MSG_DEBUG;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_DISCONNECT;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_IGNORE;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_KEXINIT;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_NEWKEYS;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_SERVICE_ACCEPT;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_SERVICE_REQUEST;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_UNIMPLEMENTED;
-
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.nio.charset.StandardCharsets;
@@ -74,21 +65,31 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
+import static org.apache.sshd.common.SshConstants.SSH_MSG_DEBUG;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_DISCONNECT;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_IGNORE;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_KEXINIT;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_NEWKEYS;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_SERVICE_ACCEPT;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_SERVICE_REQUEST;
+import static org.apache.sshd.common.SshConstants.SSH_MSG_UNIMPLEMENTED;
+
 /**
  * The AbstractSession handles all the basic SSH protocol such as key exchange, authentication,
  * encoding and decoding. Both server side and client side sessions should inherit from this
  * abstract class. Some basic packet processing methods are defined but the actual call to these
  * methods should be done from the {@link #handleMessage(org.apache.sshd.common.util.buffer.Buffer)}
  * method, which is dependant on the state and side of this session.
- *
+ * <p/>
  * TODO: if there is any very big packet, decoderBuffer and uncompressBuffer will get quite big
- *        and they won't be resized down at any time. Though the packet size is really limited
- *        by the channel max packet size
+ * and they won't be resized down at any time. Though the packet size is really limited
+ * by the channel max packet size
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractSession extends CloseableUtils.AbstractInnerCloseable implements Session {
-    public static final String  DEFAULT_SSH_VERSION_PREFIX="SSH-2.0-";
+
+    public static final String DEFAULT_SSH_VERSION_PREFIX = "SSH-2.0-";
 
     /**
      * Name of the property where this session is stored in the attributes of the
@@ -97,20 +98,34 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
      */
     public static final String SESSION = "org.apache.sshd.session";
 
-    /** Client or server side */
+    /**
+     * Client or server side
+     */
     protected final boolean isServer;
-    /** The factory manager used to retrieve factories of Ciphers, Macs and other objects */
+    /**
+     * The factory manager used to retrieve factories of Ciphers, Macs and other objects
+     */
     protected final FactoryManager factoryManager;
-    /** The underlying MINA session */
+    /**
+     * The underlying MINA session
+     */
     protected final IoSession ioSession;
-    /** The pseudo random generator */
+    /**
+     * The pseudo random generator
+     */
     protected final Random random;
-    /** Boolean indicating if this session has been authenticated or not */
+    /**
+     * Boolean indicating if this session has been authenticated or not
+     */
     protected boolean authed;
-    /** The name of the authenticated user */
+    /**
+     * The name of the authenticated user
+     */
     protected String username;
 
-    /** Session listeners container */
+    /**
+     * Session listeners container
+     */
     protected final List<SessionListener> listeners = new CopyOnWriteArrayList<SessionListener>();
     protected final SessionListener sessionListenerProxy;
     //
@@ -120,11 +135,11 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     protected String serverVersion;
     protected String clientVersion;
     // if empty then means not-initialized
-    protected final Map<KexProposalOption,String> serverProposal = new EnumMap<>(KexProposalOption.class);
-    protected final Map<KexProposalOption,String> clientProposal = new EnumMap<>(KexProposalOption.class);
-    private final Map<KexProposalOption,String> negotiationResult  = new EnumMap<>(KexProposalOption.class);
-    protected byte[] I_C; // the payload of the client's SSH_MSG_KEXINIT
-    protected byte[] I_S; // the payload of the factoryManager's SSH_MSG_KEXINIT
+    protected final Map<KexProposalOption, String> serverProposal = new EnumMap<>(KexProposalOption.class);
+    protected final Map<KexProposalOption, String> clientProposal = new EnumMap<>(KexProposalOption.class);
+    protected final Map<KexProposalOption, String> negotiationResult = new EnumMap<>(KexProposalOption.class);
+    protected byte[] i_c; // the payload of the client's SSH_MSG_KEXINIT
+    protected byte[] i_s; // the payload of the factoryManager's SSH_MSG_KEXINIT
     protected KeyExchange kex;
     protected final AtomicReference<KexState> kexState = new AtomicReference<KexState>(KexState.UNKNOWN);
     @SuppressWarnings("rawtypes")
@@ -155,8 +170,8 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     protected final Map<AttributeKey<?>, Object> attributes = new ConcurrentHashMap<>();
 
     // Session timeout
-    protected long authTimeoutTimestamp = 0L;
-    protected long idleTimeoutTimestamp = 0L;
+    protected long authTimeoutTimestamp;
+    protected long idleTimeoutTimestamp;
     protected long authTimeoutMs = TimeUnit.MINUTES.toMillis(2);          // 2 minutes in milliseconds
     protected long idleTimeoutMs = TimeUnit.MINUTES.toMillis(10);         // 10 minutes in milliseconds
     protected long disconnectTimeoutMs = TimeUnit.SECONDS.toMillis(10);   // 10 seconds in milliseconds
@@ -178,7 +193,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
      * Create a new session.
      *
      * @param factoryManager the factory manager
-     * @param ioSession the underlying MINA session
+     * @param ioSession      the underlying MINA session
      */
     public AbstractSession(boolean isServer, FactoryManager factoryManager, IoSession ioSession) {
         this.isServer = isServer;
@@ -212,7 +227,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
      *
      * @param ioSession the MINA session
      * @param allowNull if <code>true</code>, a {@code null} value may be
-     *        returned if no session is attached
+     *                  returned if no session is attached
      * @return the session attached to the MINA session or {@code null}
      */
     public static AbstractSession getSession(IoSession ioSession, boolean allowNull) {
@@ -227,7 +242,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
      * Attach a session to the MINA session
      *
      * @param ioSession the MINA session
-     * @param session the session to attach
+     * @param session   the session to attach
      */
     public static void attachSession(IoSession ioSession, AbstractSession session) {
         ioSession.setAttribute(SESSION, session);
@@ -266,13 +281,13 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
 
     @Override
     public String getNegotiatedKexParameter(KexProposalOption paramType) {
-    	if (paramType == null) {
-    		return null;
-    	}
+        if (paramType == null) {
+            return null;
+        }
 
-    	synchronized(negotiationResult) {
-    		return negotiationResult.get(paramType);
-    	}
+        synchronized (negotiationResult) {
+            return negotiationResult.get(paramType);
+        }
     }
 
     @Override
@@ -288,7 +303,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
 
     /**
      * Main input point for the MINA framework.
-     *
+     * <p/>
      * This method will be called each time new data is received on
      * the socket and will append it to the input buffer before
      * calling the {@link #decode()} method.
@@ -334,12 +349,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
         int cmd = buffer.getUByte();
         switch (cmd) {
             case SSH_MSG_DISCONNECT: {
-                int code = buffer.getInt();
-                String msg = buffer.getString();
-                if (log.isDebugEnabled()) {
-                    log.debug("Received SSH_MSG_DISCONNECT (reason={}, msg={})", Integer.valueOf(code), msg);
-                }
-                close(true);
+                handleDisconnect(buffer);
                 break;
             }
             case SSH_MSG_IGNORE: {
@@ -362,69 +372,16 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
                 break;
             }
             case SSH_MSG_SERVICE_REQUEST:
-                String service = buffer.getString();
-                log.debug("Received SSH_MSG_SERVICE_REQUEST '{}'", service);
-                validateKexState(cmd, KexState.DONE);
-                try {
-                    startService(service);
-                } catch (Exception e) {
-                    log.debug("Service " + service + " rejected", e);
-                    disconnect(SshConstants.SSH2_DISCONNECT_SERVICE_NOT_AVAILABLE, "Bad service request: " + service);
-                    break;
-                }
-                log.debug("Accepted service {}", service);
-                Buffer response = createBuffer(SshConstants.SSH_MSG_SERVICE_ACCEPT);
-                response.putString(service);
-                writePacket(response);
+                handleServiceRequest(buffer);
                 break;
             case SSH_MSG_SERVICE_ACCEPT:
-                log.debug("Received SSH_MSG_SERVICE_ACCEPT");
-                validateKexState(cmd, KexState.DONE);
-                serviceAccept();
+                handleServiceAccept();
                 break;
             case SSH_MSG_KEXINIT:
-                log.debug("Received SSH_MSG_KEXINIT");
-                receiveKexInit(buffer);
-                if (kexState.compareAndSet(KexState.DONE, KexState.RUN)) {
-                    sendKexInit();
-                } else if (!kexState.compareAndSet(KexState.INIT, KexState.RUN)) {
-                    throw new IllegalStateException("Received SSH_MSG_KEXINIT while key exchange is running");
-                }
-
-                {
-                    Map<KexProposalOption,String> result = negotiate();
-                    String kexAlgorithm = result.get(KexProposalOption.ALGORITHMS);
-                    kex = ValidateUtils.checkNotNull(NamedFactory.Utils.create(factoryManager.getKeyExchangeFactories(), kexAlgorithm),
-                                                     "Unknown negotiated KEX algorithm: %s",
-                                                     kexAlgorithm);
-                    kex.init(this, serverVersion.getBytes(StandardCharsets.UTF_8), clientVersion.getBytes(StandardCharsets.UTF_8), I_S, I_C);
-                }
-
-                sendEvent(SessionListener.Event.KexCompleted);
+                handleKexInit(buffer);
                 break;
             case SSH_MSG_NEWKEYS:
-                log.debug("Received SSH_MSG_NEWKEYS");
-                validateKexState(cmd, KexState.KEYS);
-                receiveNewKeys();
-                if (reexchangeFuture != null) {
-                    reexchangeFuture.setValue(Boolean.TRUE);
-                }
-                sendEvent(SessionListener.Event.KeyEstablished);
-                synchronized (pendingPackets) {
-                    if (!pendingPackets.isEmpty()) {
-                        log.debug("Dequeing pending packets");
-                        synchronized (encodeLock) {
-                            PendingWriteFuture future;
-                            while ((future = pendingPackets.poll()) != null) {
-                                doWritePacket(future.getBuffer()).addListener(future);
-                            }
-                        }
-                    }
-                    kexState.set(KexState.DONE);
-                }
-                synchronized (lock) {
-                    lock.notifyAll();
-                }
+                handleNewKeys(cmd);
                 break;
             default:
                 if ((cmd >= SshConstants.SSH_MSG_KEX_FIRST) && (cmd <= SshConstants.SSH_MSG_KEX_LAST)) {
@@ -446,6 +403,82 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
         checkRekey();
     }
 
+    private void handleDisconnect(Buffer buffer) {
+        int code = buffer.getInt();
+        String msg = buffer.getString();
+        if (log.isDebugEnabled()) {
+            log.debug("Received SSH_MSG_DISCONNECT (reason={}, msg={})", Integer.valueOf(code), msg);
+        }
+        close(true);
+    }
+
+    private void handleServiceRequest(Buffer buffer) throws IOException {
+        String service = buffer.getString();
+        log.debug("Received SSH_MSG_SERVICE_REQUEST '{}'", service);
+        validateKexState(SSH_MSG_SERVICE_REQUEST, KexState.DONE);
+        try {
+            startService(service);
+        } catch (Exception e) {
+            log.debug("Service " + service + " rejected", e);
+            disconnect(SshConstants.SSH2_DISCONNECT_SERVICE_NOT_AVAILABLE, "Bad service request: " + service);
+            return;
+        }
+        log.debug("Accepted service {}", service);
+        Buffer response = createBuffer(SshConstants.SSH_MSG_SERVICE_ACCEPT);
+        response.putString(service);
+        writePacket(response);
+    }
+
+    private void handleServiceAccept() throws java.io.IOException {
+        log.debug("Received SSH_MSG_SERVICE_ACCEPT");
+        validateKexState(SSH_MSG_SERVICE_ACCEPT, org.apache.sshd.common.kex.KexState.DONE);
+        serviceAccept();
+    }
+
+    private void handleKexInit(org.apache.sshd.common.util.buffer.Buffer buffer) throws Exception {
+        log.debug("Received SSH_MSG_KEXINIT");
+        receiveKexInit(buffer);
+        if (kexState.compareAndSet(org.apache.sshd.common.kex.KexState.DONE, org.apache.sshd.common.kex.KexState.RUN)) {
+            sendKexInit();
+        } else if (!kexState.compareAndSet(org.apache.sshd.common.kex.KexState.INIT, org.apache.sshd.common.kex.KexState.RUN)) {
+            throw new IllegalStateException("Received SSH_MSG_KEXINIT while key exchange is running");
+        }
+
+        java.util.Map<org.apache.sshd.common.kex.KexProposalOption, String> result = negotiate();
+        String kexAlgorithm = result.get(org.apache.sshd.common.kex.KexProposalOption.ALGORITHMS);
+        kex = org.apache.sshd.common.util.ValidateUtils.checkNotNull(org.apache.sshd.common.NamedFactory.Utils.create(factoryManager.getKeyExchangeFactories(), kexAlgorithm),
+                "Unknown negotiated KEX algorithm: %s",
+                kexAlgorithm);
+        kex.init(this, serverVersion.getBytes(java.nio.charset.StandardCharsets.UTF_8), clientVersion.getBytes(java.nio.charset.StandardCharsets.UTF_8), i_s, i_c);
+
+        sendEvent(org.apache.sshd.common.session.SessionListener.Event.KexCompleted);
+    }
+
+    private void handleNewKeys(int cmd) throws Exception {
+        log.debug("Received SSH_MSG_NEWKEYS");
+        validateKexState(cmd, org.apache.sshd.common.kex.KexState.KEYS);
+        receiveNewKeys();
+        if (reexchangeFuture != null) {
+            reexchangeFuture.setValue(Boolean.TRUE);
+        }
+        sendEvent(org.apache.sshd.common.session.SessionListener.Event.KeyEstablished);
+        synchronized (pendingPackets) {
+            if (!pendingPackets.isEmpty()) {
+                log.debug("Dequeing pending packets");
+                synchronized (encodeLock) {
+                    PendingWriteFuture future;
+                    while ((future = pendingPackets.poll()) != null) {
+                        doWritePacket(future.getBuffer()).addListener(future);
+                    }
+                }
+            }
+            kexState.set(org.apache.sshd.common.kex.KexState.DONE);
+        }
+        synchronized (lock) {
+            lock.notifyAll();
+        }
+    }
+
     protected void validateKexState(int cmd, KexState expected) {
         KexState actual = kexState.get();
         if (!expected.equals(actual)) {
@@ -458,7 +491,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
      * The session will be closed and a disconnect packet will be
      * sent before if the given exception is an
      * {@link org.apache.sshd.common.SshException}.
-     * 
+     *
      * @param t the exception to process
      */
     @Override
@@ -503,7 +536,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     }
 
     protected Service[] getServices() {
-        return currentService != null ? new Service[] { currentService } : new Service[0];
+        return currentService != null ? new Service[]{currentService} : new Service[0];
     }
 
     @Override
@@ -662,7 +695,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
             // Check that the packet has some free space for the header
             if (buffer.rpos() < 5) {
                 log.warn("Performance cost: when sending a packet, ensure that "
-                           + "5 bytes are available in front of the buffer");
+                        + "5 bytes are available in front of the buffer");
                 Buffer nb = new ByteArrayBuffer();
                 nb.wpos(5);
                 nb.putBuffer(buffer);
@@ -747,7 +780,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
                     if (decoderLength < 5 || decoderLength > (256 * 1024)) {
                         log.warn("Error decoding packet (invalid length) {}", decoderBuffer.printHex());
                         throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
-                                               "Invalid packet length: " + decoderLength);
+                                "Invalid packet length: " + decoderLength);
                     }
                     // Ok, that's good, we can go to the next step
                     decoderState = 1;
@@ -755,7 +788,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
                     // need more data
                     break;
                 }
-            // We have received the beginning of the packet
+                // We have received the beginning of the packet
             } else if (decoderState == 1) {
                 // The read position should always be 4 at this point
                 assert decoderBuffer.rpos() == 4;
@@ -764,7 +797,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
                 if (decoderBuffer.available() >= decoderLength + macSize) {
                     byte[] data = decoderBuffer.array();
                     // Decrypt the remaining of the packet
-                    if (inCipher != null){
+                    if (inCipher != null) {
                         inCipher.update(data, inCipherSize, decoderLength + 4 - inCipherSize);
                     }
                     // Check the mac of the packet
@@ -835,12 +868,12 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     /**
      * Read the other side identification.
      * This method is specific to the client or server side, but both should call
-     * {@link #doReadIdentification(org.apache.sshd.common.util.buffer.Buffer,boolean)} and
+     * {@link #doReadIdentification(org.apache.sshd.common.util.buffer.Buffer, boolean)} and
      * store the result in the needed property.
      *
      * @param buffer the buffer containing the remote identification
      * @return <code>true</code> if the identification has been fully read or
-     *         <code>false</code> if more data is needed
+     * <code>false</code> if more data is needed
      * @throws IOException if an error occurs such as a bad protocol version
      */
     protected abstract boolean readIdentification(Buffer buffer) throws IOException;
@@ -898,29 +931,23 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
      * @param hostKeyTypes the list of supported host key types
      * @return The proposal {@link Map>
      */
-    protected Map<KexProposalOption,String> createProposal(String hostKeyTypes) {
-        Map<KexProposalOption,String> proposal = new EnumMap<>(KexProposalOption.class);
+    protected Map<KexProposalOption, String> createProposal(String hostKeyTypes) {
+        Map<KexProposalOption, String> proposal = new EnumMap<>(KexProposalOption.class);
         proposal.put(KexProposalOption.ALGORITHMS, NamedResource.Utils.getNames(factoryManager.getKeyExchangeFactories()));
         proposal.put(KexProposalOption.SERVERKEYS, hostKeyTypes);
-        
-        {
-            String value = NamedResource.Utils.getNames(factoryManager.getCipherFactories());
-            proposal.put(KexProposalOption.S2CENC, value);
-            proposal.put(KexProposalOption.C2SENC, value);
-        }
 
-        {
-            String value = NamedResource.Utils.getNames(factoryManager.getMacFactories());
-            proposal.put(KexProposalOption.S2CMAC, value);
-            proposal.put(KexProposalOption.C2SMAC, value);
-        }
-        
-        {
-            String value = NamedResource.Utils.getNames(factoryManager.getCompressionFactories());
-            proposal.put(KexProposalOption.S2CCOMP, value);
-            proposal.put(KexProposalOption.C2SCOMP, value);
-        }
-        
+        String ciphers = NamedResource.Utils.getNames(factoryManager.getCipherFactories());
+        proposal.put(KexProposalOption.S2CENC, ciphers);
+        proposal.put(KexProposalOption.C2SENC, ciphers);
+
+        String macs = NamedResource.Utils.getNames(factoryManager.getMacFactories());
+        proposal.put(KexProposalOption.S2CMAC, macs);
+        proposal.put(KexProposalOption.C2SMAC, macs);
+
+        String compressions = NamedResource.Utils.getNames(factoryManager.getCompressionFactories());
+        proposal.put(KexProposalOption.S2CCOMP, compressions);
+        proposal.put(KexProposalOption.C2SCOMP, compressions);
+
         proposal.put(KexProposalOption.S2CLANG, "");
         proposal.put(KexProposalOption.C2SLANG, "");
         return proposal;
@@ -934,7 +961,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
      * @return the sent packet which must be kept for later use
      * @throws IOException if an error occurred sending the packet
      */
-    protected byte[] sendKexInit(Map<KexProposalOption,String> proposal) throws IOException {
+    protected byte[] sendKexInit(Map<KexProposalOption, String> proposal) throws IOException {
         log.debug("Send SSH_MSG_KEXINIT");
         Buffer buffer = createBuffer(SshConstants.SSH_MSG_KEXINIT);
         int p = buffer.wpos();
@@ -963,17 +990,18 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
      * Receive the remote key exchange init message.
      * The packet data is returned for later use.
      *
-     * @param buffer the buffer containing the key exchange init packet
+     * @param buffer   the buffer containing the key exchange init packet
      * @param proposal the remote proposal to fill
      * @return the packet data
      */
-    protected byte[] receiveKexInit(Buffer buffer, Map<KexProposalOption,String> proposal) {
+    protected byte[] receiveKexInit(Buffer buffer, Map<KexProposalOption, String> proposal) {
         // Recreate the packet payload which will be needed at a later time
         byte[] d = buffer.array();
         byte[] data = new byte[buffer.available() + 1 /* the opcode */];
         data[0] = SshConstants.SSH_MSG_KEXINIT;
-        
-        int size = 6, cookieStartPos = buffer.rpos();
+
+        int size = 6;
+        int cookieStartPos = buffer.rpos();
         System.arraycopy(d, cookieStartPos, data, 1, data.length - 1);
         // Skip random cookie data
         buffer.rpos(cookieStartPos + SshConstants.MSG_KEX_COOKIE_SIZE);
@@ -989,11 +1017,12 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
             if (log.isTraceEnabled()) {
                 log.trace("receiveKexInit(" + toString() + ")[" + paramType.getDescription() + "] " + value);
             }
-            int curPos = buffer.rpos(), readLen = curPos - lastPos;
+            int curPos = buffer.rpos();
+            int readLen = curPos - lastPos;
             proposal.put(paramType, value);
             size += readLen;
         }
-        
+
         boolean firstKexPacketFollows = buffer.getBoolean();
         if (log.isTraceEnabled()) {
             log.trace("receiveKexInit(" + toString() + ") first kex packet follows: " + firstKexPacketFollows);
@@ -1031,14 +1060,14 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
      * @throws Exception if an error occurs
      */
     protected void receiveNewKeys() throws Exception {
-        byte[] IVc2s;
-        byte[] IVs2c;
-        byte[] Ec2s;
-        byte[] Es2c;
-        byte[] MACc2s;
-        byte[] MACs2c;
-        byte[] K = kex.getK();
-        byte[] H = kex.getH();
+        byte[] iv_c2s;
+        byte[] iv_s2c;
+        byte[] e_c2s;
+        byte[] e_s2c;
+        byte[] mac_c2s;
+        byte[] mac_s2c;
+        byte[] k = kex.getK();
+        byte[] h = kex.getH();
         Digest hash = kex.getHash();
         Cipher s2ccipher;
         Cipher c2scipher;
@@ -1048,79 +1077,69 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
         Compression c2scomp;
 
         if (sessionId == null) {
-            sessionId = new byte[H.length];
-            System.arraycopy(H, 0, sessionId, 0, H.length);
+            sessionId = new byte[h.length];
+            System.arraycopy(h, 0, sessionId, 0, h.length);
         }
 
         Buffer buffer = new ByteArrayBuffer();
-        buffer.putMPInt(K);
-        buffer.putRawBytes(H);
+        buffer.putMPInt(k);
+        buffer.putRawBytes(h);
         buffer.putByte((byte) 0x41);
         buffer.putRawBytes(sessionId);
         int pos = buffer.available();
         byte[] buf = buffer.array();
         hash.update(buf, 0, pos);
-        IVc2s = hash.digest();
+        iv_c2s = hash.digest();
 
         int j = pos - sessionId.length - 1;
 
         buf[j]++;
         hash.update(buf, 0, pos);
-        IVs2c = hash.digest();
+        iv_s2c = hash.digest();
 
         buf[j]++;
         hash.update(buf, 0, pos);
-        Ec2s = hash.digest();
+        e_c2s = hash.digest();
 
         buf[j]++;
         hash.update(buf, 0, pos);
-        Es2c = hash.digest();
+        e_s2c = hash.digest();
 
         buf[j]++;
         hash.update(buf, 0, pos);
-        MACc2s = hash.digest();
+        mac_c2s = hash.digest();
 
         buf[j]++;
         hash.update(buf, 0, pos);
-        MACs2c = hash.digest();
+        mac_s2c = hash.digest();
 
-        {
-            String value = getNegotiatedKexParameter(KexProposalOption.S2CENC);
-            s2ccipher = ValidateUtils.checkNotNull(NamedFactory.Utils.create(factoryManager.getCipherFactories(), value), "Unknown s2c cipher: %s", value);
-            Es2c = resizeKey(Es2c, s2ccipher.getBlockSize(), hash, K, H);
-            s2ccipher.init(isServer ? Cipher.Mode.Encrypt : Cipher.Mode.Decrypt, Es2c, IVs2c);
-        }
+        String value;
 
-        {
-            String value = getNegotiatedKexParameter(KexProposalOption.S2CMAC);
-            s2cmac = ValidateUtils.checkNotNull(NamedFactory.Utils.create(factoryManager.getMacFactories(), value), "Unknown s2c mac: %s", value);
-            MACs2c = resizeKey(MACs2c, s2cmac.getBlockSize(), hash, K, H);
-            s2cmac.init(MACs2c);
-        }
+        value = getNegotiatedKexParameter(KexProposalOption.S2CENC);
+        s2ccipher = ValidateUtils.checkNotNull(NamedFactory.Utils.create(factoryManager.getCipherFactories(), value), "Unknown s2c cipher: %s", value);
+        e_s2c = resizeKey(e_s2c, s2ccipher.getBlockSize(), hash, k, h);
+        s2ccipher.init(isServer ? Cipher.Mode.Encrypt : Cipher.Mode.Decrypt, e_s2c, iv_s2c);
 
-        {
-            String value = getNegotiatedKexParameter(KexProposalOption.S2CCOMP);
-            s2ccomp = NamedFactory.Utils.create(factoryManager.getCompressionFactories(), value);
-        }
+        value = getNegotiatedKexParameter(KexProposalOption.S2CMAC);
+        s2cmac = ValidateUtils.checkNotNull(NamedFactory.Utils.create(factoryManager.getMacFactories(), value), "Unknown s2c mac: %s", value);
+        mac_s2c = resizeKey(mac_s2c, s2cmac.getBlockSize(), hash, k, h);
+        s2cmac.init(mac_s2c);
 
-        {
-            String value = getNegotiatedKexParameter(KexProposalOption.C2SENC);
-            c2scipher = ValidateUtils.checkNotNull(NamedFactory.Utils.create(factoryManager.getCipherFactories(), value), "Unknown c2s cipher: %s", value);
-            Ec2s = resizeKey(Ec2s, c2scipher.getBlockSize(), hash, K, H);
-            c2scipher.init(isServer ? Cipher.Mode.Decrypt : Cipher.Mode.Encrypt, Ec2s, IVc2s);
-        }
+        value = getNegotiatedKexParameter(KexProposalOption.S2CCOMP);
+        s2ccomp = NamedFactory.Utils.create(factoryManager.getCompressionFactories(), value);
 
-        {
-            String value = getNegotiatedKexParameter(KexProposalOption.C2SMAC);
-            c2smac = ValidateUtils.checkNotNull(NamedFactory.Utils.create(factoryManager.getMacFactories(), value), "Unknown c2s mac: %s", value);
-            MACc2s = resizeKey(MACc2s, c2smac.getBlockSize(), hash, K, H);
-            c2smac.init(MACc2s);
-        }
+        value = getNegotiatedKexParameter(KexProposalOption.C2SENC);
+        c2scipher = ValidateUtils.checkNotNull(NamedFactory.Utils.create(factoryManager.getCipherFactories(), value), "Unknown c2s cipher: %s", value);
+        e_c2s = resizeKey(e_c2s, c2scipher.getBlockSize(), hash, k, h);
+        c2scipher.init(isServer ? Cipher.Mode.Decrypt : Cipher.Mode.Encrypt, e_c2s, iv_c2s);
 
-        {
-            String value = getNegotiatedKexParameter(KexProposalOption.C2SCOMP);
-            c2scomp = NamedFactory.Utils.create(factoryManager.getCompressionFactories(), value);
-        }
+        value = getNegotiatedKexParameter(KexProposalOption.C2SMAC);
+        c2smac = ValidateUtils.checkNotNull(NamedFactory.Utils.create(factoryManager.getMacFactories(), value), "Unknown c2s mac: %s", value);
+        mac_c2s = resizeKey(mac_c2s, c2smac.getBlockSize(), hash, k, h);
+        c2smac.init(mac_c2s);
+
+        value = getNegotiatedKexParameter(KexProposalOption.C2SCOMP);
+        c2scomp = NamedFactory.Utils.create(factoryManager.getCompressionFactories(), value);
 
         if (isServer) {
             outCipher = s2ccipher;
@@ -1157,28 +1176,28 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
      * Private method used while putting new keys into use that will resize the key used to
      * initialize the cipher to the needed length.
      *
-     * @param E the key to resize
+     * @param e         the key to resize
      * @param blockSize the cipher block size
-     * @param hash the hash algorithm
-     * @param K the key exchange K parameter
-     * @param H the key exchange H parameter
+     * @param hash      the hash algorithm
+     * @param k         the key exchange k parameter
+     * @param h         the key exchange h parameter
      * @return the resize key
      * @throws Exception if a problem occur while resizing the key
      */
-    private byte[] resizeKey(byte[] E, int blockSize, Digest hash, byte[] K, byte[] H) throws Exception {
-        while (blockSize > E.length) {
+    private byte[] resizeKey(byte[] e, int blockSize, Digest hash, byte[] k, byte[] h) throws Exception {
+        while (blockSize > e.length) {
             Buffer buffer = new ByteArrayBuffer();
-            buffer.putMPInt(K);
-            buffer.putRawBytes(H);
-            buffer.putRawBytes(E);
+            buffer.putMPInt(k);
+            buffer.putRawBytes(h);
+            buffer.putRawBytes(e);
             hash.update(buffer.array(), 0, buffer.available());
             byte[] foo = hash.digest();
-            byte[] bar = new byte[E.length + foo.length];
-            System.arraycopy(E, 0, bar, 0, E.length);
-            System.arraycopy(foo, 0, bar, E.length, foo.length);
-            E = bar;
+            byte[] bar = new byte[e.length + foo.length];
+            System.arraycopy(e, 0, bar, 0, e.length);
+            System.arraycopy(foo, 0, bar, e.length, foo.length);
+            e = bar;
         }
-        return E;
+        return e;
     }
 
     @Override
@@ -1215,13 +1234,14 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
      * Compute the negotiated proposals by merging the client and
      * server proposal. The negotiated proposal will also be stored in
      * the {@link #negotiationResult} property.
+     *
      * @return The negotiated options {@link Map}
      */
-    protected Map<KexProposalOption,String> negotiate() {
-        Map<KexProposalOption,String> guess = new EnumMap<>(KexProposalOption.class);
+    protected Map<KexProposalOption, String> negotiate() {
+        Map<KexProposalOption, String> guess = new EnumMap<>(KexProposalOption.class);
         for (KexProposalOption paramType : KexProposalOption.VALUES) {
-        	String clientParamValue = clientProposal.get(paramType);
-        	String serverParamValue = serverProposal.get(paramType);
+            String clientParamValue = clientProposal.get(paramType);
+            String serverParamValue = serverProposal.get(paramType);
             String[] c = GenericUtils.split(clientParamValue, ',');
             String[] s = GenericUtils.split(serverParamValue, ',');
             for (String ci : c) {
@@ -1231,39 +1251,39 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
                         break;
                     }
                 }
-                
+
                 String value = guess.get(paramType);
                 if (value != null) {
                     break;
                 }
             }
-            
+
             // check if reached an agreement
             String value = guess.get(paramType);
             if (value == null) {
-            	String	message="Unable to negotiate key exchange for " + paramType.getDescription()
-            				  + " (client: " + clientParamValue + " / server: " + serverParamValue + ")";
+                String message = "Unable to negotiate key exchange for " + paramType.getDescription()
+                        + " (client: " + clientParamValue + " / server: " + serverParamValue + ")";
                 // OK if could not negotiate languages
-            	if (KexProposalOption.S2CLANG.equals(paramType) || KexProposalOption.C2SLANG.equals(paramType)) {
+                if (KexProposalOption.S2CLANG.equals(paramType) || KexProposalOption.C2SLANG.equals(paramType)) {
                     if (log.isTraceEnabled()) {
                         log.trace(message);
                     }
-            	} else {
-            		throw new IllegalStateException(message);
-            	}
+                } else {
+                    throw new IllegalStateException(message);
+                }
             } else {
-            	if (log.isTraceEnabled()) {
-            		log.trace("Kex: negotiate(" +  paramType.getDescription() + ") guess=" + value
-            				+ " (client: " + clientParamValue + " / server: " + serverParamValue + ")");
-            	}
+                if (log.isTraceEnabled()) {
+                    log.trace("Kex: negotiate(" + paramType.getDescription() + ") guess=" + value
+                            + " (client: " + clientParamValue + " / server: " + serverParamValue + ")");
+                }
             }
         }
-        
+
         return setNegotiationResult(guess);
     }
 
-    protected Map<KexProposalOption,String> setNegotiationResult(Map<KexProposalOption,String> guess) {
-        synchronized(negotiationResult) {
+    protected Map<KexProposalOption, String> setNegotiationResult(Map<KexProposalOption, String> guess) {
+        synchronized (negotiationResult) {
             if (!negotiationResult.isEmpty()) {
                 negotiationResult.clear(); // debug breakpoint
             }
@@ -1272,19 +1292,19 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
 
         if (log.isDebugEnabled()) {
             log.debug("Kex: server->client {} {} {}",
-                      guess.get(KexProposalOption.S2CENC),
-                      guess.get(KexProposalOption.S2CMAC),
-                      guess.get(KexProposalOption.S2CCOMP));
+                    guess.get(KexProposalOption.S2CENC),
+                    guess.get(KexProposalOption.S2CMAC),
+                    guess.get(KexProposalOption.S2CCOMP));
             log.debug("Kex: client->server {} {} {}",
-                      guess.get(KexProposalOption.C2SENC),
-                      guess.get(KexProposalOption.C2SMAC),
-                      guess.get(KexProposalOption.C2SCOMP));
+                    guess.get(KexProposalOption.C2SENC),
+                    guess.get(KexProposalOption.C2SMAC),
+                    guess.get(KexProposalOption.C2SCOMP));
         }
-        
+
         return guess;
     }
 
-    protected void requestSuccess(Buffer buffer) throws Exception{
+    protected void requestSuccess(Buffer buffer) throws Exception {
         synchronized (requestResult) {
             requestResult.set(new ByteArrayBuffer(buffer.getCompactData()));
             resetIdleTimeout();
@@ -1292,7 +1312,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
         }
     }
 
-    protected void requestFailure(Buffer buffer) throws Exception{
+    protected void requestFailure(Buffer buffer) throws Exception {
         synchronized (requestResult) {
             requestResult.set(null);
             resetIdleTimeout();
@@ -1303,7 +1323,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     /**
      * Retrieve a configuration property as an integer
      *
-     * @param name the name of the property
+     * @param name         the name of the property
      * @param defaultValue the default value
      * @return the value of the configuration property or the default value if not found
      */
@@ -1339,7 +1359,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     @Override
     @SuppressWarnings("unchecked")
     public <T> T getAttribute(AttributeKey<T> key) {
-        return (T)attributes.get(key);
+        return (T) attributes.get(key);
     }
 
     /**
@@ -1352,7 +1372,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     @Override
     @SuppressWarnings("unchecked")
     public <T, E extends T> T setAttribute(AttributeKey<T> key, E value) {
-        return (T)attributes.put(key, value);
+        return (T) attributes.put(key, value);
     }
 
     @Override
@@ -1381,7 +1401,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     }
 
     protected void sendEvent(SessionListener.Event event) throws IOException {
-    	sessionListenerProxy.sessionEvent(this, event);
+        sessionListenerProxy.sessionEvent(this, event);
     }
 
     @Override
@@ -1403,10 +1423,10 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
         String resolvedAlgorithms = resolveAvailableSignaturesProposal();
         if (GenericUtils.isEmpty(resolvedAlgorithms)) {
             throw new SshException(SshConstants.SSH2_DISCONNECT_HOST_KEY_NOT_VERIFIABLE,
-                                   "sendKexInit() no resolved signatures available");
+                    "sendKexInit() no resolved signatures available");
         }
 
-        Map<KexProposalOption,String> proposal = createProposal(resolvedAlgorithms); 
+        Map<KexProposalOption, String> proposal = createProposal(resolvedAlgorithms);
         byte[] seed = sendKexInit(proposal);
         if (log.isDebugEnabled()) {
             log.debug("sendKexInit(" + proposal + ") seed: " + BufferUtils.printHex(':', seed));
@@ -1417,9 +1437,9 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
 
     /**
      * @param seed The result of the KEXINIT handshake - required for correct
-     * session key establishment
+     *             session key establishment
      */
-    protected abstract void setKexSeed(byte ... seed);
+    protected abstract void setKexSeed(byte... seed);
 
     /**
      * @return A comma-separated list of all the signature protocols to be
@@ -1441,31 +1461,31 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     protected abstract void checkKeys() throws IOException;
 
     protected void receiveKexInit(Buffer buffer) throws IOException {
-        Map<KexProposalOption,String> proposal = new EnumMap<KexProposalOption, String>(KexProposalOption.class);
+        Map<KexProposalOption, String> proposal = new EnumMap<KexProposalOption, String>(KexProposalOption.class);
         byte[] seed = receiveKexInit(buffer, proposal);
         receiveKexInit(proposal, seed);
     }
-    
-    protected abstract void receiveKexInit(Map<KexProposalOption,String> proposal, byte[] seed) throws IOException;
+
+    protected abstract void receiveKexInit(Map<KexProposalOption, String> proposal, byte[] seed) throws IOException;
 
     // returns the proposal argument
-    protected Map<KexProposalOption,String> mergeProposals(Map<KexProposalOption,String> current, Map<KexProposalOption,String> proposal) {
+    protected Map<KexProposalOption, String> mergeProposals(Map<KexProposalOption, String> current, Map<KexProposalOption, String> proposal) {
         if (current == proposal) {
             return proposal; // debug breakpoint
         }
 
-        synchronized(current) {
+        synchronized (current) {
             if (!current.isEmpty()) {
                 current.clear();    // debug breakpoint
             }
-            
+
             if (GenericUtils.isEmpty(proposal)) {
                 return proposal; // debug breakpoint
             }
-            
+
             current.putAll(proposal);
         }
-        
+
         return proposal;
     }
 
@@ -1500,6 +1520,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
 
     /**
      * Check if timeout has occurred.
+     *
      * @return
      */
     @Override
@@ -1509,6 +1530,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
 
     /**
      * What is timeout value in milliseconds for authentication stage
+     *
      * @return
      */
     @Override
@@ -1518,6 +1540,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
 
     /**
      * What is timeout value in milliseconds for communication
+     *
      * @return
      */
     @Override

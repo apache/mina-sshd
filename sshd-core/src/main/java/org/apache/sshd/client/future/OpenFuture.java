@@ -31,17 +31,20 @@ import org.apache.sshd.common.future.SshFuture;
 public interface OpenFuture extends SshFuture<OpenFuture> {
     /**
      * Wait and verify that the channel has been successfully opened.
+     *
      * @throws IOException if the action failed for any reason
      */
     void verify() throws IOException;
+
     void verify(long timeout, TimeUnit unit) throws IOException;
+
     void verify(long timeoutMillis) throws IOException;
 
     /**
      * Returns the cause of the connection failure.
      *
      * @return <tt>null</tt> if the connect operation is not finished yet,
-     *         or if the connection attempt is successful.
+     * or if the connection attempt is successful.
      */
     Throwable getException();
 

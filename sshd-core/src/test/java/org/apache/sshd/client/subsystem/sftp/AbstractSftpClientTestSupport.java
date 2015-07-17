@@ -51,7 +51,7 @@ public abstract class AbstractSftpClientTestSupport extends BaseTestSupport {
     protected AbstractSftpClientTestSupport() throws IOException {
         Path targetPath = detectTargetFolder().toPath();
         Path parentPath = targetPath.getParent();
-        rootFileSystem = new RootedFileSystemProvider().newFileSystem(parentPath, Collections.<String,Object>emptyMap());
+        rootFileSystem = new RootedFileSystemProvider().newFileSystem(parentPath, Collections.<String, Object>emptyMap());
         fileSystemFactory = new FileSystemFactory() {
             @Override
             public FileSystem createFileSystem(Session session) throws IOException {
@@ -71,7 +71,7 @@ public abstract class AbstractSftpClientTestSupport extends BaseTestSupport {
         sshd.start();
         port = sshd.getPort();
     }
-    
+
     protected void tearDownServer() throws Exception {
         if (sshd != null) {
             try {

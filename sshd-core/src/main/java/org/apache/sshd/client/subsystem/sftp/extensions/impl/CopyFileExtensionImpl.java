@@ -34,14 +34,14 @@ import org.apache.sshd.common.util.buffer.Buffer;
  */
 public class CopyFileExtensionImpl extends AbstractSftpClientExtension implements CopyFileExtension {
     public CopyFileExtensionImpl(SftpClient client, RawSftpClient raw, Collection<String> extra) {
-        super(SftpConstants.EXT_COPYFILE, client, raw, extra);
+        super(SftpConstants.EXT_COPY_FILE, client, raw, extra);
     }
 
     @Override
     public void copyFile(String src, String dst, boolean overwriteDestination) throws IOException {
         Buffer buffer = getCommandBuffer((Integer.SIZE / Byte.SIZE) + GenericUtils.length(src)
-                                       + (Integer.SIZE / Byte.SIZE) + GenericUtils.length(dst)
-                                       + 1 /* override destination */);
+                + (Integer.SIZE / Byte.SIZE) + GenericUtils.length(dst)
+                + 1 /* override destination */);
         buffer.putString(src);
         buffer.putString(dst);
         buffer.putBoolean(overwriteDestination);

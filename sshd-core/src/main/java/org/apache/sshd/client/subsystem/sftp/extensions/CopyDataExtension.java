@@ -25,6 +25,7 @@ import org.apache.sshd.client.subsystem.sftp.SftpClient.Handle;
 
 /**
  * Implements the &quot;copy-data&quot; extension
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @see <A HREF="http://tools.ietf.org/id/draft-ietf-secsh-filexfer-extensions-00.txt">DRAFT 00 section 7</A>
  */

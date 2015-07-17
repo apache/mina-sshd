@@ -27,7 +27,12 @@ import org.apache.sshd.common.util.GenericUtils;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class FactoryManagerUtils {
+public final class FactoryManagerUtils {
+
+    private FactoryManagerUtils() {
+        throw new UnsupportedOperationException("No instance allowed");
+    }
+
     /**
      * @param session      The {@link Session} instance
      * @param name         The property name
@@ -60,7 +65,7 @@ public class FactoryManagerUtils {
      * @return The resolved property
      * @throws NumberFormatException if malformed value
      */
-    public static long getLongProperty(Map<String,?> props, String name, long defaultValue) {
+    public static long getLongProperty(Map<String, ?> props, String name, long defaultValue) {
         Object value = GenericUtils.isEmpty(props) ? null : props.get(name);
         if (value == null) {
             return defaultValue;
@@ -98,7 +103,7 @@ public class FactoryManagerUtils {
      * empty string
      * @throws NumberFormatException if malformed value
      */
-    public static Long getLong(Map<String,?> props, String name) {
+    public static Long getLong(Map<String, ?> props, String name) {
         Object value = GenericUtils.isEmpty(props) ? null : props.get(name);
         if (value == null) {
             return null;
@@ -117,7 +122,7 @@ public class FactoryManagerUtils {
         return updateProperty(manager.getProperties(), name, value);
     }
 
-    public static Object updateProperty(Map<String,Object> props, String name, long value) {
+    public static Object updateProperty(Map<String, Object> props, String name, long value) {
         return updateProperty(props, name, Long.valueOf(value));
     }
 
@@ -129,7 +134,7 @@ public class FactoryManagerUtils {
         return getIntProperty(manager.getProperties(), name, defaultValue);
     }
 
-    public static int getIntProperty(Map<String,?> props, String name, int defaultValue) {
+    public static int getIntProperty(Map<String, ?> props, String name, int defaultValue) {
         Object value = GenericUtils.isEmpty(props) ? null : props.get(name);
         if (value == null) {
             return defaultValue;
@@ -148,7 +153,7 @@ public class FactoryManagerUtils {
         return getInteger(manager.getProperties(), name);
     }
 
-    public static Integer getInteger(Map<String,?> props, String name) {
+    public static Integer getInteger(Map<String, ?> props, String name) {
         Object value = GenericUtils.isEmpty(props) ? null : props.get(name);
         if (value == null) {
             return null;
@@ -167,7 +172,7 @@ public class FactoryManagerUtils {
         return updateProperty(manager.getProperties(), name, value);
     }
 
-    public static Object updateProperty(Map<String,Object> props, String name, int value) {
+    public static Object updateProperty(Map<String, Object> props, String name, int value) {
         return updateProperty(props, name, Integer.valueOf(value));
     }
 
@@ -179,7 +184,7 @@ public class FactoryManagerUtils {
         return getBooleanProperty(manager.getProperties(), name, defaultValue);
     }
 
-    public static boolean getBooleanProperty(Map<String,?> props, String name, boolean defaultValue) {
+    public static boolean getBooleanProperty(Map<String, ?> props, String name, boolean defaultValue) {
         Boolean value = getBoolean(props, name);
         if (value == null) {
             return defaultValue;
@@ -196,8 +201,8 @@ public class FactoryManagerUtils {
         return getBoolean(manager.getProperties(), name);
     }
 
-    public static Boolean getBoolean(Map<String,?> props, String name) {
-        Object  value = GenericUtils.isEmpty(props) ? null : props.get(name);
+    public static Boolean getBoolean(Map<String, ?> props, String name) {
+        Object value = GenericUtils.isEmpty(props) ? null : props.get(name);
         if (value == null) {
             return null;
         } else if (value instanceof Boolean) {
@@ -215,7 +220,7 @@ public class FactoryManagerUtils {
         return updateProperty(manager.getProperties(), name, value);
     }
 
-    public static Object updateProperty(Map<String,Object> props, String name, boolean value) {
+    public static Object updateProperty(Map<String, Object> props, String name, boolean value) {
         return updateProperty(props, name, Boolean.valueOf(value));
     }
 
@@ -235,11 +240,11 @@ public class FactoryManagerUtils {
         return getStringProperty(manager.getProperties(), name, defaultValue);
     }
 
-    public static String getString(Map<String,?> props, String name) {
+    public static String getString(Map<String, ?> props, String name) {
         return getStringProperty(props, name, null);
     }
 
-    public static String getStringProperty(Map<String,?> props, String name, String defaultValue) {
+    public static String getStringProperty(Map<String, ?> props, String name, String defaultValue) {
         Object value = GenericUtils.isEmpty(props) ? null : props.get(name);
         String s = (value == null) ? null : value.toString();
         if (GenericUtils.isEmpty(s)) {
@@ -261,10 +266,10 @@ public class FactoryManagerUtils {
      * @param props The {@link Map} of properties to update
      * @param name  The property name
      * @param value The property value - if {@code null}/empty then the
-     * specified property is <U>removed</U> from the properties map
+     *              specified property is <U>removed</U> from the properties map
      * @return The removed or previous value (if any)
      */
-    public static Object updateProperty(Map<String,Object> props, String name, Object value) {
+    public static Object updateProperty(Map<String, Object> props, String name, Object value) {
         if ((value == null) || ((value instanceof CharSequence) && GenericUtils.isEmpty((CharSequence) value))) {
             return props.remove(name);
         } else {

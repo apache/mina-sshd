@@ -23,6 +23,7 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
+import com.jcraft.jsch.JSch;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.cipher.Cipher;
@@ -39,8 +40,6 @@ import org.junit.FixMethodOrder;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
-
-import com.jcraft.jsch.JSch;
 
 /**
  * Test Cipher algorithms.
@@ -124,7 +123,7 @@ public class MacTest extends BaseTestSupport {
         sshd.setShellFactory(new EchoShellFactory());
         sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
         sshd.start();
-        port  = sshd.getPort();
+        port = sshd.getPort();
     }
 
     @After
@@ -141,7 +140,7 @@ public class MacTest extends BaseTestSupport {
         JSch.setConfig("cipher.c2s", "aes128-cbc,3des-cbc,blowfish-cbc,aes192-cbc,aes256-cbc,none");
         JSch.setConfig("mac.s2c", "hmac-md5,hmac-sha1,hmac-sha2-256,hmac-sha1-96,hmac-md5-96,hmac-sha2-512");
         JSch.setConfig("mac.c2s", "hmac-md5,hmac-sha1,hmac-sha2-256,hmac-sha1-96,hmac-md5-96,hmac-sha2-512");
-        JSch.setConfig("hmac-sha2-512",  "com.jcraft.jsch.jce.HMACSHA512");
+        JSch.setConfig("hmac-sha2-512", "com.jcraft.jsch.jce.HMACSHA512");
         com.jcraft.jsch.Session s = sch.getSession(getCurrentTestName(), "localhost", port);
         try {
             s.setUserInfo(new SimpleUserInfo(getCurrentTestName()));
@@ -149,10 +148,10 @@ public class MacTest extends BaseTestSupport {
             com.jcraft.jsch.Channel c = s.openChannel("shell");
             c.connect();
 
-            try(OutputStream os = c.getOutputStream();
-                InputStream is = c.getInputStream()) {
+            try (OutputStream os = c.getOutputStream();
+                 InputStream is = c.getInputStream()) {
 
-                String  expected = "this is my command\n";
+                String expected = "this is my command\n";
                 byte[] bytes = expected.getBytes(StandardCharsets.UTF_8);
                 byte[] data = new byte[bytes.length + Long.SIZE];
                 for (int i = 0; i < 10; i++) {
@@ -170,16 +169,15 @@ public class MacTest extends BaseTestSupport {
         }
     }
 
-    static boolean checkCipher(String cipher){
-        try{
-            Class<?> c=Class.forName(cipher);
-            com.jcraft.jsch.Cipher _c = (com.jcraft.jsch.Cipher)(c.newInstance());
+    static boolean checkCipher(String cipher) {
+        try {
+            Class<?> c = Class.forName(cipher);
+            com.jcraft.jsch.Cipher _c = (com.jcraft.jsch.Cipher) (c.newInstance());
             _c.init(com.jcraft.jsch.Cipher.ENCRYPT_MODE,
                     new byte[_c.getBlockSize()],
                     new byte[_c.getIVSize()]);
             return true;
-        }
-        catch(Exception e){
+        } catch (Exception e) {
             return false;
         }
     }

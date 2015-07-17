@@ -40,7 +40,7 @@ public class SignatureRSA extends AbstractSignature {
     @Override
     public boolean verify(byte[] sig) throws Exception {
         byte[] data = sig;
-        Pair<String,byte[]> encoding = extractEncodedSignature(data);
+        Pair<String, byte[]> encoding = extractEncodedSignature(data);
         if (encoding != null) {
             String keyType = encoding.getFirst();
             ValidateUtils.checkTrue(KeyPairProvider.SSH_RSA.equals(keyType), "Mismatched key type: %s", keyType);

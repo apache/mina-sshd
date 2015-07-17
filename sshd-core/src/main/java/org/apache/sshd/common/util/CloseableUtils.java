@@ -43,8 +43,12 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public final class CloseableUtils {
+
+    /**
+     * Private Constructor
+     */
     private CloseableUtils() {
-        throw new UnsupportedOperationException("No instance");
+        throw new UnsupportedOperationException("No instance allowed");
     }
 
     // TODO once JDK 8+ becomes the minimum for this project, make it a static method in the Closeable interface
@@ -54,7 +58,7 @@ public final class CloseableUtils {
         }
 
         if ((!closeable.isClosed()) && (!closeable.isClosing())) {
-            CloseFuture future=closeable.close(true);
+            CloseFuture future = closeable.close(true);
             future.await();  // TODO use verify + configurable timeout
         }
     }
@@ -65,7 +69,7 @@ public final class CloseableUtils {
         return future;
     }
 
-    public static class Builder implements ObjectBuilder<Closeable> {
+    public static final class Builder implements ObjectBuilder<Closeable> {
 
         private final Object lock;
         private final List<Closeable> closeables = new ArrayList<Closeable>();
@@ -150,11 +154,11 @@ public final class CloseableUtils {
 
     }
 
-    public static abstract class IoBaseCloseable extends AbstractLoggingBean implements Closeable {
+    public abstract static class IoBaseCloseable extends AbstractLoggingBean implements Closeable {
         protected IoBaseCloseable() {
             super();
         }
-        
+
         protected IoBaseCloseable(String discriminator) {
             super(discriminator);
         }
@@ -162,11 +166,7 @@ public final class CloseableUtils {
         // TODO once JDK 8+ becomes the minimum for this project, make it a default method instead of this class
         @Override
         public boolean isOpen() {
-            if (isClosed() || isClosing()) {
-                return false;
-            } else {
-                return true;
-            }
+            return !(isClosed() || isClosing());
         }
 
         // TODO once JDK 8+ becomes the minimum for this project, make it a default method instead of this class
@@ -190,10 +190,12 @@ public final class CloseableUtils {
         public boolean isClosed() {
             return future.isClosed();
         }
+
         @Override
         public boolean isClosing() {
             return closing.get();
         }
+
         @Override
         public CloseFuture close(boolean immediately) {
             if (closing.compareAndSet(false, true)) {
@@ -207,7 +209,7 @@ public final class CloseableUtils {
         }
     }
 
-    private static class ParallelCloseable extends SimpleCloseable {
+    private static final class ParallelCloseable extends SimpleCloseable {
 
         private final Iterable<? extends Closeable> closeables;
 
@@ -308,16 +310,23 @@ public final class CloseableUtils {
         }
     }
 
-    public static abstract class AbstractCloseable extends IoBaseCloseable {
+    public abstract static class AbstractCloseable extends IoBaseCloseable {
 
         protected enum State {
             Opened, Graceful, Immediate, Closed
         }
-        /** Lock object for this session state */
+
+        /**
+         * Lock object for this session state
+         */
         protected final Object lock = new Object();
-        /** State of this object */
+        /**
+         * State of this object
+         */
         protected final AtomicReference<State> state = new AtomicReference<>(State.Opened);
-        /** A future that will be set 'closed' when the object is actually closed */
+        /**
+         * A future that will be set 'closed' when the object is actually closed
+         */
         protected final CloseFuture closeFuture = new DefaultCloseFuture(lock);
 
         protected AbstractCloseable() {
@@ -394,7 +403,7 @@ public final class CloseableUtils {
         /**
          * doCloseImmediately is called once and only once
          * with state == Immediate
-         *
+         * <p/>
          * Overriding methods should always call the base implementation.
          * It may be called concurrently while preClose() or doCloseGracefully is executing
          */
@@ -410,9 +419,7 @@ public final class CloseableUtils {
 
     }
 
-    public static abstract class AbstractInnerCloseable extends AbstractCloseable {
-
-        protected abstract Closeable getInnerCloseable();
+    public abstract static class AbstractInnerCloseable extends AbstractCloseable {
 
         protected AbstractInnerCloseable() {
             super();
@@ -421,6 +428,8 @@ public final class CloseableUtils {
         protected AbstractInnerCloseable(String discriminator) {
             super(discriminator);
         }
+
+        protected abstract Closeable getInnerCloseable();
 
         @Override
         protected CloseFuture doCloseGracefully() {

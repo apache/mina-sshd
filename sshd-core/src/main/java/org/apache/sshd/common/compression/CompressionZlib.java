@@ -31,7 +31,8 @@ import org.apache.sshd.common.util.buffer.Buffer;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class CompressionZlib implements Compression {
-    static private final int BUF_SIZE = 4096;
+
+    private static final int BUF_SIZE = 4096;
 
     private byte[] tmpbuf = new byte[BUF_SIZE];
     private Deflater compresser;

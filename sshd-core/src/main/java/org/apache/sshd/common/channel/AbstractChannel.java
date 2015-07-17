@@ -51,8 +51,8 @@ import org.apache.sshd.common.util.threads.ExecutorServiceConfigurer;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractChannel
-                extends CloseableUtils.AbstractInnerCloseable
-                implements Channel, ExecutorServiceConfigurer {
+        extends CloseableUtils.AbstractInnerCloseable
+        implements Channel, ExecutorServiceConfigurer {
 
     public static final int DEFAULT_WINDOW_SIZE = 0x200000;
     public static final int DEFAULT_PACKET_SIZE = 0x8000;
@@ -63,15 +63,15 @@ public abstract class AbstractChannel
         Opened, CloseSent, CloseReceived, Closed
     }
 
-    private ExecutorService executor;
-    private boolean shutdownExecutor;
+    protected ExecutorService executor;
+    protected boolean shutdownExecutor;
     protected final Window localWindow = new Window(this, null, getClass().getName().contains(".client."), true);
     protected final Window remoteWindow = new Window(this, null, getClass().getName().contains(".client."), false);
     protected ConnectionService service;
     protected Session session;
     protected int id;
     protected int recipient;
-    private final AtomicBoolean eof = new AtomicBoolean(false);
+    protected final AtomicBoolean eof = new AtomicBoolean(false);
     protected AtomicReference<GracefulState> gracefulState = new AtomicReference<GracefulState>(GracefulState.Opened);
     protected final DefaultCloseFuture gracefulFuture = new DefaultCloseFuture(lock);
     protected final List<RequestHandler<Channel>> handlers = new ArrayList<RequestHandler<Channel>>();
@@ -178,8 +178,7 @@ public abstract class AbstractChannel
 
         byte cmd = RequestHandler.Result.ReplySuccess.equals(result)
                  ? SshConstants.SSH_MSG_CHANNEL_SUCCESS
-                 : SshConstants.SSH_MSG_CHANNEL_FAILURE
-                 ;
+                 : SshConstants.SSH_MSG_CHANNEL_FAILURE;
         buffer.clear();
         // leave room for the SSH header
         buffer.ensureCapacity(5 + 1 + (Integer.SIZE / Byte.SIZE), Int2IntFunction.Utils.add(Byte.SIZE));
@@ -274,10 +273,10 @@ public abstract class AbstractChannel
                     AbstractChannel.this.close(true);
                 }
             }
-            
+
             ExecutorService service = getExecutorService();
             if ((service != null) && isShutdownOnExit() && (!service.isShutdown())) {
-                Collection<?>   running = service.shutdownNow();
+                Collection<?> running = service.shutdownNow();
                 if (log.isDebugEnabled()) {
                     log.debug("Shutdown executor service on close - running count=" + GenericUtils.size(running));
                 }
@@ -341,7 +340,7 @@ public abstract class AbstractChannel
     public boolean isEofSignalled() {
         return eof.get();
     }
-    
+
     public void setEofSignalled(boolean on) {
         eof.set(on);
     }

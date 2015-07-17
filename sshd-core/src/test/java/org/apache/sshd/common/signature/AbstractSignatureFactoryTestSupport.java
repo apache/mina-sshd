@@ -32,7 +32,6 @@ import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.config.keys.PublicKeyEntryDecoder;
 import org.apache.sshd.common.keyprovider.AbstractKeyPairProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
-import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.BaseTestSupport;
@@ -82,13 +81,13 @@ public abstract class AbstractSignatureFactoryTestSupport extends BaseTestSuppor
         }
     }
 
-    protected void testKeyPairProvider(PublicKeyEntryDecoder<?,?> decoder, List<NamedFactory<Signature>> signatures) throws Exception {
+    protected void testKeyPairProvider(PublicKeyEntryDecoder<?, ?> decoder, List<NamedFactory<Signature>> signatures) throws Exception {
         testKeyPairProvider(getKeyType(), getKeySize(), decoder, signatures);
     }
 
     protected void testKeyPairProvider(
-            final String keyName, final int keySize, final PublicKeyEntryDecoder<?,?> decoder, List<NamedFactory<Signature>> signatures)
-                    throws Exception {
+            final String keyName, final int keySize, final PublicKeyEntryDecoder<?, ?> decoder, List<NamedFactory<Signature>> signatures)
+            throws Exception {
         testKeyPairProvider(keyName, new Factory<Iterable<KeyPair>>() {
             @Override
             public Iterable<KeyPair> create() {
@@ -105,7 +104,7 @@ public abstract class AbstractSignatureFactoryTestSupport extends BaseTestSuppor
 
     protected void testKeyPairProvider(
             final String keyName, final Factory<Iterable<KeyPair>> factory, List<NamedFactory<Signature>> signatures)
-                    throws Exception {
+            throws Exception {
         final Iterable<KeyPair> iter = factory.create();
         testKeyPairProvider(new AbstractKeyPairProvider() {
             @Override
@@ -123,7 +122,7 @@ public abstract class AbstractSignatureFactoryTestSupport extends BaseTestSuppor
         client = SshClient.setUpDefaultClient();
         client.setSignatureFactories(signatures);
         client.start();
-        try(ClientSession s = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession s = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             s.addPasswordIdentity(getCurrentTestName());
             // allow a rather long timeout since generating some keys may take some time
             s.auth().verify(30L, TimeUnit.SECONDS);

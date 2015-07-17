@@ -18,8 +18,6 @@
  */
 package org.apache.sshd;
 
-import static org.apache.sshd.util.Utils.getFreePort;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -37,6 +35,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.Session;
 import org.apache.commons.httpclient.HostConfiguration;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpVersion;
@@ -63,9 +64,7 @@ import org.junit.runners.MethodSorters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.JSchException;
-import com.jcraft.jsch.Session;
+import static org.apache.sshd.util.Utils.getFreePort;
 
 /**
  * Port forwarding tests
@@ -123,11 +122,11 @@ public class PortForwardingLoadTest extends BaseTestSupport {
     @Test
     public void testLocalForwardingPayload() throws Exception {
         final int NUM_ITERATIONS = 100;
-        final String PAYLOAD_TMP = "This is significantly longer Test Data. This is significantly "+
-                "longer Test Data. This is significantly longer Test Data. This is significantly "+
-                "longer Test Data. This is significantly longer Test Data. This is significantly "+
-                "longer Test Data. This is significantly longer Test Data. This is significantly "+
-                "longer Test Data. This is significantly longer Test Data. This is significantly "+
+        final String PAYLOAD_TMP = "This is significantly longer Test Data. This is significantly " +
+                "longer Test Data. This is significantly longer Test Data. This is significantly " +
+                "longer Test Data. This is significantly longer Test Data. This is significantly " +
+                "longer Test Data. This is significantly longer Test Data. This is significantly " +
+                "longer Test Data. This is significantly longer Test Data. This is significantly " +
                 "longer Test Data. ";
         StringBuilder sb = new StringBuilder(PAYLOAD_TMP.length() * 1000);
         for (int i = 0; i < 1000; i++) {
@@ -135,68 +134,68 @@ public class PortForwardingLoadTest extends BaseTestSupport {
         }
         final String PAYLOAD = sb.toString();
 
-        Session session = createSession();        
-        try(final ServerSocket ss = new ServerSocket()) {
+        Session session = createSession();
+        try (final ServerSocket ss = new ServerSocket()) {
             ss.setReuseAddress(true);
             ss.bind(new InetSocketAddress((InetAddress) null, 0));
             int forwardedPort = ss.getLocalPort();
             int sinkPort = session.setPortForwardingL(0, "localhost", forwardedPort);
             final AtomicInteger conCount = new AtomicInteger(0);
-    
+
             Thread tAcceptor = new Thread(getCurrentTestName() + "Acceptor") {
-                    @SuppressWarnings("synthetic-access")
-                    @Override
-                    public void run() {
-                        try {
-                            byte[] buf = new byte[8192];
-                            log.info("Started...");
-                            for (int i = 0; i < NUM_ITERATIONS; ++i) {
-                                try(Socket s = ss.accept()) {
-                                    conCount.incrementAndGet();
-                                    
-                                    try(InputStream sockIn = s.getInputStream();
-                                        ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-                                    
-                                        int l;
-                                        while ((baos.size() < PAYLOAD.length()) && ((l = sockIn.read(buf)) > 0)) {
-                                            baos.write(buf, 0, l);
-                                        }
-                                    
-                                        assertEquals("Mismatched received data at iteration #" + i, PAYLOAD, baos.toString());
-        
-                                        try(InputStream inputCopy = new ByteArrayInputStream(baos.toByteArray());
-                                            OutputStream sockOut = s.getOutputStream()) {
-                                            
-                                            while ((l = sockIn.read(buf)) > 0) {
-                                                sockOut.write(buf, 0, l);
-                                            }
+                @SuppressWarnings("synthetic-access")
+                @Override
+                public void run() {
+                    try {
+                        byte[] buf = new byte[8192];
+                        log.info("Started...");
+                        for (int i = 0; i < NUM_ITERATIONS; ++i) {
+                            try (Socket s = ss.accept()) {
+                                conCount.incrementAndGet();
+
+                                try (InputStream sockIn = s.getInputStream();
+                                     ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+
+                                    int l;
+                                    while ((baos.size() < PAYLOAD.length()) && ((l = sockIn.read(buf)) > 0)) {
+                                        baos.write(buf, 0, l);
+                                    }
+
+                                    assertEquals("Mismatched received data at iteration #" + i, PAYLOAD, baos.toString());
+
+                                    try (InputStream inputCopy = new ByteArrayInputStream(baos.toByteArray());
+                                         OutputStream sockOut = s.getOutputStream()) {
+
+                                        while ((l = sockIn.read(buf)) > 0) {
+                                            sockOut.write(buf, 0, l);
                                         }
                                     }
                                 }
                             }
-                            log.info("Done");
-                        } catch (Exception e) {
-                            log.error("Failed to complete run loop", e);
                         }
+                        log.info("Done");
+                    } catch (Exception e) {
+                        log.error("Failed to complete run loop", e);
                     }
-                };
+                }
+            };
             tAcceptor.start();
             Thread.sleep(50);
-    
-            byte[]  buf = new byte[8192];
-            byte[]  bytes = PAYLOAD.getBytes(StandardCharsets.UTF_8);
+
+            byte[] buf = new byte[8192];
+            byte[] bytes = PAYLOAD.getBytes(StandardCharsets.UTF_8);
             for (int i = 0; i < NUM_ITERATIONS; i++) {
                 log.info("Iteration {}", Integer.valueOf(i));
-                try(Socket s = new Socket("localhost", sinkPort);
-                    OutputStream sockOut = s.getOutputStream()) {
+                try (Socket s = new Socket("localhost", sinkPort);
+                     OutputStream sockOut = s.getOutputStream()) {
 
                     s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(10L));
 
                     sockOut.write(bytes);
                     sockOut.flush();
-    
-                    try(InputStream sockIn = s.getInputStream();
-                        ByteArrayOutputStream baos = new ByteArrayOutputStream(bytes.length)) {
+
+                    try (InputStream sockIn = s.getInputStream();
+                         ByteArrayOutputStream baos = new ByteArrayOutputStream(bytes.length)) {
                         int l;
                         while ((baos.size() < PAYLOAD.length()) && ((l = sockIn.read(buf)) > 0)) {
                             baos.write(buf, 0, l);
@@ -208,7 +207,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
                 }
             }
             session.delPortForwardingL(sinkPort);
-            
+
             ss.close();
             tAcceptor.join(TimeUnit.SECONDS.toMillis(5L));
         } finally {
@@ -219,11 +218,11 @@ public class PortForwardingLoadTest extends BaseTestSupport {
     @Test
     public void testRemoteForwardingPayload() throws Exception {
         final int NUM_ITERATIONS = 100;
-        final String PAYLOAD = "This is significantly longer Test Data. This is significantly "+
-                "longer Test Data. This is significantly longer Test Data. This is significantly "+
-                "longer Test Data. This is significantly longer Test Data. This is significantly "+
-                "longer Test Data. This is significantly longer Test Data. This is significantly "+
-                "longer Test Data. This is significantly longer Test Data. This is significantly "+
+        final String PAYLOAD = "This is significantly longer Test Data. This is significantly " +
+                "longer Test Data. This is significantly longer Test Data. This is significantly " +
+                "longer Test Data. This is significantly longer Test Data. This is significantly " +
+                "longer Test Data. This is significantly longer Test Data. This is significantly " +
+                "longer Test Data. This is significantly longer Test Data. This is significantly " +
                 "longer Test Data. ";
         Session session = createSession();
         try (final ServerSocket ss = new ServerSocket()) {
@@ -235,33 +234,33 @@ public class PortForwardingLoadTest extends BaseTestSupport {
             final boolean started[] = new boolean[1];
             started[0] = false;
             final AtomicInteger conCount = new AtomicInteger(0);
-    
+
             Thread tWriter = new Thread(getCurrentTestName() + "Writer") {
-                    @SuppressWarnings("synthetic-access")
-                    @Override
-                    public void run() {
-                        started[0] = true;
-                        try {
-                            byte[]  bytes=PAYLOAD.getBytes(StandardCharsets.UTF_8);
-                            for (int i = 0; i < NUM_ITERATIONS; ++i) {
-                                try(Socket s = ss.accept()) {
-                                    conCount.incrementAndGet();
-                                    
-                                    try(OutputStream sockOut=s.getOutputStream()) {
-                                        sockOut.write(bytes);
-                                        sockOut.flush();
-                                    }
+                @SuppressWarnings("synthetic-access")
+                @Override
+                public void run() {
+                    started[0] = true;
+                    try {
+                        byte[] bytes = PAYLOAD.getBytes(StandardCharsets.UTF_8);
+                        for (int i = 0; i < NUM_ITERATIONS; ++i) {
+                            try (Socket s = ss.accept()) {
+                                conCount.incrementAndGet();
+
+                                try (OutputStream sockOut = s.getOutputStream()) {
+                                    sockOut.write(bytes);
+                                    sockOut.flush();
                                 }
                             }
-                        } catch (Exception e) {
-                            log.error("Failed to complete run loop", e);
                         }
+                    } catch (Exception e) {
+                        log.error("Failed to complete run loop", e);
                     }
-                };
+                }
+            };
             tWriter.start();
             Thread.sleep(50);
             assertTrue("Server not started", started[0]);
-    
+
             final boolean lenOK[] = new boolean[NUM_ITERATIONS];
             final boolean dataOK[] = new boolean[NUM_ITERATIONS];
             byte b2[] = new byte[PAYLOAD.length()];
@@ -269,8 +268,8 @@ public class PortForwardingLoadTest extends BaseTestSupport {
 
             for (int i = 0; i < NUM_ITERATIONS; i++) {
                 final int ii = i;
-                try(Socket s = new Socket("localhost", sinkPort);
-                    InputStream sockIn = s.getInputStream()) {
+                try (Socket s = new Socket("localhost", sinkPort);
+                     InputStream sockIn = s.getInputStream()) {
 
                     s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(10L));
 
@@ -288,7 +287,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
                     if (!lenOK[ii]) {
                         throw new IndexOutOfBoundsException("Mismatched length: expected=" + PAYLOAD.length() + ", actual=" + totalRead);
                     }
-                    
+
                     if (!dataOK[ii]) {
                         throw new IllegalStateException("Mismatched content");
                     }
@@ -354,7 +353,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
             final int forwardedPort2 = getFreePort();
             session.setPortForwardingR(forwardedPort2, "localhost", forwardedPort1);
             System.err.println("URL: http://localhost:" + forwardedPort2);
-    
+
             final CountDownLatch latch = new CountDownLatch(nbThread * nbDownloads * nbLoops);
             final Thread[] threads = new Thread[nbThread];
             final List<Throwable> errors = new CopyOnWriteArrayList<Throwable>();
@@ -362,7 +361,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
                 threads[i] = new Thread(getCurrentTestName() + "[" + i + "]") {
                     @Override
                     public void run() {
-                        for (int j = 0; j < nbLoops; j++)  {
+                        for (int j = 0; j < nbLoops; j++) {
                             final MultiThreadedHttpConnectionManager mgr = new MultiThreadedHttpConnectionManager();
                             final HttpClient client = new HttpClient(mgr);
                             client.getHttpConnectionManager().getParams().setDefaultMaxConnectionsPerHost(100);

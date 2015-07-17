@@ -39,7 +39,7 @@ public class DefaultIoServiceFactoryFactory extends AbstractIoServiceFactoryFact
     public DefaultIoServiceFactoryFactory() {
         this(null, true);
     }
-    
+
     protected DefaultIoServiceFactoryFactory(ExecutorService executors, boolean shutdownOnExit) {
         super(executors, shutdownOnExit);
     }
@@ -54,7 +54,7 @@ public class DefaultIoServiceFactoryFactory extends AbstractIoServiceFactoryFact
             if (factory == null) {
                 factory = newInstance(IoServiceFactoryFactory.class);
                 if (factory instanceof ExecutorServiceConfigurer) {
-                    ExecutorServiceConfigurer   configurer=(ExecutorServiceConfigurer) factory;
+                    ExecutorServiceConfigurer configurer = (ExecutorServiceConfigurer) factory;
                     configurer.setExecutorService(getExecutorService());
                     configurer.setShutdownOnExit(isShutdownOnExit());
                 }
@@ -102,7 +102,7 @@ public class DefaultIoServiceFactoryFactory extends AbstractIoServiceFactoryFact
     }
 
     public static <T extends IoServiceFactoryFactory> T newInstance(Class<T> clazz, String factory) {
-        BuiltinIoServiceFactoryFactories    builtin = BuiltinIoServiceFactoryFactories.fromFactoryName(factory);
+        BuiltinIoServiceFactoryFactories builtin = BuiltinIoServiceFactoryFactories.fromFactoryName(factory);
         if (builtin != null) {
             return clazz.cast(builtin.create());
         }

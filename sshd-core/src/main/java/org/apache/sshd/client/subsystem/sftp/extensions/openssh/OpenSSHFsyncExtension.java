@@ -26,6 +26,7 @@ import org.apache.sshd.client.subsystem.sftp.extensions.SftpClientExtension;
 
 /**
  * Implements the &quot;fsync@openssh.com&quot; extension
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @see <A HREF="https://github.com/openssh/openssh-portable/blob/master/PROTOCOL">OpenSSH</A> section 10
  */

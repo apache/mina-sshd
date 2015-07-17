@@ -34,34 +34,34 @@ public class AbstractDHTest extends BaseTestSupport {
 
     @Test
     public void testStripLeadingZeroes() {
-        byte[] data = { 3, 7, 7, 3, 4, 7 };
+        byte[] data = {3, 7, 7, 3, 4, 7};
         for (int index = 1; index <= data.length; index++) {
             assertSame("Unexpected sub-array generation for " + Arrays.toString(data), data, AbstractDH.stripLeadingZeroes(data));
             if (index < data.length) {
                 data[index] = 0;
             }
         }
-        
+
         Arrays.fill(data, (byte) 0);
         try {
             byte[] stripped = AbstractDH.stripLeadingZeroes(data);
             fail("Unexpected success for all zeroes data: " + Arrays.toString(stripped));
-        } catch(IllegalArgumentException expected) {
+        } catch (IllegalArgumentException expected) {
             // ignored
         }
 
         for (int index = data.length - 1; index > 0; index--) {
             data[index] = (byte) index;
-            
+
             byte[] stripped = AbstractDH.stripLeadingZeroes(data);
-            String ds = Arrays.toString(data), ss = Arrays.toString(stripped); 
+            String ds = Arrays.toString(data), ss = Arrays.toString(stripped);
             assertEquals("Mismatched stripped (" + ss + ") length for " + ds, data.length - index, stripped.length);
-            for (int i=index, j=0; j < stripped.length; i++, j++) {
+            for (int i = index, j = 0; j < stripped.length; i++, j++) {
                 if (data[i] != stripped[j]) {
                     fail("Mismatched values at stripped index = " + j + ": data=" + ds + ", stripped=" + ss);
                 }
             }
         }
-        
+
     }
 }

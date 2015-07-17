@@ -85,7 +85,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
     public SftpFileSystemTest() throws IOException {
         Path targetPath = detectTargetFolder().toPath();
         Path parentPath = targetPath.getParent();
-        final FileSystem fileSystem = new RootedFileSystemProvider().newFileSystem(parentPath, Collections.<String,Object>emptyMap());
+        final FileSystem fileSystem = new RootedFileSystemProvider().newFileSystem(parentPath, Collections.<String, Object>emptyMap());
         fileSystemFactory = new FileSystemFactory() {
             @Override
             public FileSystem createFileSystem(Session session) throws IOException {
@@ -116,15 +116,15 @@ public class SftpFileSystemTest extends BaseTestSupport {
 
     @Test
     public void testFileSystem() throws Exception {
-        try(FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(),
-                new TreeMap<String,Object>() {
+        try (FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(),
+                new TreeMap<String, Object>() {
                     private static final long serialVersionUID = 1L;    // we're not serializing it
-                
+
                     {
                         put(SftpFileSystemProvider.READ_BUFFER_PROP_NAME, Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE));
                         put(SftpFileSystemProvider.WRITE_BUFFER_PROP_NAME, Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE));
                     }
-            })) {
+                })) {
             testFileSystem(fs);
         }
     }
@@ -135,15 +135,15 @@ public class SftpFileSystemTest extends BaseTestSupport {
         Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         Utils.deleteRecursive(lclSftp);
 
-        try(FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(),
-                new TreeMap<String,Object>() {
+        try (FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(),
+                new TreeMap<String, Object>() {
                     private static final long serialVersionUID = 1L;    // we're not serializing it
-                
+
                     {
                         put(SftpFileSystemProvider.READ_BUFFER_PROP_NAME, Integer.valueOf(SftpClient.MIN_READ_BUFFER_SIZE));
                         put(SftpFileSystemProvider.WRITE_BUFFER_PROP_NAME, Integer.valueOf(SftpClient.MIN_WRITE_BUFFER_SIZE));
                     }
-            })) {
+                })) {
 
             Path parentPath = targetPath.getParent();
             Path clientFolder = lclSftp.resolve("client");
@@ -151,10 +151,10 @@ public class SftpFileSystemTest extends BaseTestSupport {
             Path file = fs.getPath(remFilePath);
             assertHierarchyTargetFolderExists(file.getParent());
             Files.write(file, (getCurrentTestName() + "\n").getBytes(StandardCharsets.UTF_8));
-    
+
             Map<String, Object> attrs = Files.readAttributes(file, "posix:*");
             assertNotNull("NO attributes read for " + file, attrs);
-    
+
             Files.setAttribute(file, "basic:size", Long.valueOf(2L));
             Files.setAttribute(file, "posix:permissions", PosixFilePermissions.fromString("rwxr-----"));
             Files.setAttribute(file, "basic:lastModifiedTime", FileTime.fromMillis(100000L));
@@ -185,7 +185,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
         Utils.deleteRecursive(rootNative);
         assertHierarchyTargetFolderExists(rootNative);
 
-        try(FileSystem fs = FileSystems.newFileSystem(URI.create("root:" + rootNative.toUri().toString() + "!/"), null)) {
+        try (FileSystem fs = FileSystems.newFileSystem(URI.create("root:" + rootNative.toUri().toString() + "!/"), null)) {
             Path dir = assertHierarchyTargetFolderExists(fs.getPath("test/foo"));
             System.out.println("Created " + dir);
         }
@@ -193,21 +193,21 @@ public class SftpFileSystemTest extends BaseTestSupport {
 
     @Test
     public void testFileStore() throws IOException {
-        try(FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(), Collections.<String,Object>emptyMap())) {
+        try (FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(), Collections.<String, Object>emptyMap())) {
             Iterable<FileStore> iter = fs.getFileStores();
             assertTrue("Not a list", iter instanceof List<?>);
-            
+
             List<FileStore> list = (List<FileStore>) iter;
             assertEquals("Mismatched stores count", 1, list.size());
-            
+
             FileStore store = list.get(0);
             assertEquals("Mismatched type", SftpConstants.SFTP_SUBSYSTEM_NAME, store.type());
             assertFalse("Read-only ?", store.isReadOnly());
-            
+
             for (String name : SftpFileSystem.SUPPORTED_VIEWS) {
                 assertTrue("Unsupported view name: " + name, store.supportsFileAttributeView(name));
             }
-            
+
             for (Class<? extends FileAttributeView> type : SftpFileSystemProvider.SUPPORTED_VIEWS) {
                 assertTrue("Unsupported view type: " + type.getSimpleName(), store.supportsFileAttributeView(type));
             }
@@ -216,26 +216,26 @@ public class SftpFileSystemTest extends BaseTestSupport {
 
     @Test
     public void testMultipleFileStoresOnSameProvider() throws IOException {
-        try(SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = SshClient.setUpDefaultClient()) {
             client.start();
 
             SftpFileSystemProvider provider = new SftpFileSystemProvider(client);
             Collection<SftpFileSystem> fsList = new LinkedList<>();
             try {
                 Collection<String> idSet = new HashSet<>();
-                for (int index=0; index < 4; index++) {
+                for (int index = 0; index < 4; index++) {
                     String credentials = getCurrentTestName() + "-user-" + index;
-                    SftpFileSystem expected = provider.newFileSystem(createFileSystemURI(credentials), Collections.<String,Object>emptyMap());
+                    SftpFileSystem expected = provider.newFileSystem(createFileSystemURI(credentials), Collections.<String, Object>emptyMap());
                     fsList.add(expected);
 
                     String id = expected.getId();
                     assertTrue("Non unique file system id: " + id, idSet.add(id));
-                    
+
                     SftpFileSystem actual = provider.getFileSystem(id);
                     assertSame("Mismatched cached instances for " + id, expected, actual);
                     System.out.println("Created file system id: " + id);
                 }
-                
+
                 for (SftpFileSystem fs : fsList) {
                     String id = fs.getId();
                     fs.close();
@@ -246,7 +246,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
                 for (FileSystem fs : fsList) {
                     try {
                         fs.close();
-                    } catch(IOException e) {
+                    } catch (IOException e) {
                         err = GenericUtils.accumulateException(err, e);
                     }
                 }
@@ -257,46 +257,46 @@ public class SftpFileSystemTest extends BaseTestSupport {
                     throw err;
                 }
             }
-        }        
+        }
     }
 
     @Test
     public void testSftpVersionSelector() throws Exception {
         final AtomicInteger selected = new AtomicInteger(-1);
         SftpVersionSelector selector = new SftpVersionSelector() {
-                @Override
-                public int selectVersion(int current, List<Integer> available) {
-                    int numAvailable = GenericUtils.size(available);
-                    Integer maxValue = null;
-                    if (numAvailable == 1) {
-                        maxValue = available.get(0);
-                    } else {
-                        for (Integer v : available) {
-                            if (v.intValue() == current) {
-                                continue;
-                            }
-                            
-                            if ((maxValue == null) || (maxValue.intValue() < v.intValue())) {
-                                maxValue = v;
-                            }
+            @Override
+            public int selectVersion(int current, List<Integer> available) {
+                int numAvailable = GenericUtils.size(available);
+                Integer maxValue = null;
+                if (numAvailable == 1) {
+                    maxValue = available.get(0);
+                } else {
+                    for (Integer v : available) {
+                        if (v.intValue() == current) {
+                            continue;
+                        }
+
+                        if ((maxValue == null) || (maxValue.intValue() < v.intValue())) {
+                            maxValue = v;
                         }
                     }
-
-                    selected.set(maxValue.intValue());
-                    return selected.get();
                 }
-            };
-        try(SshClient client = SshClient.setUpDefaultClient()) {
+
+                selected.set(maxValue.intValue());
+                return selected.get();
+            }
+        };
+        try (SshClient client = SshClient.setUpDefaultClient()) {
             client.start();
-            
+
             try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
                 session.addPasswordIdentity(getCurrentTestName());
                 session.auth().verify(5L, TimeUnit.SECONDS);
 
-                try(FileSystem fs = session.createSftpFileSystem(selector)) {
+                try (FileSystem fs = session.createSftpFileSystem(selector)) {
                     assertTrue("Not an SftpFileSystem", fs instanceof SftpFileSystem);
-                    
-                    try(SftpClient sftp = ((SftpFileSystem) fs).getClient()) {
+
+                    try (SftpClient sftp = ((SftpFileSystem) fs).getClient()) {
                         assertEquals("Mismatched negotiated version", selected.get(), sftp.getVersion());
                     }
 
@@ -308,11 +308,11 @@ public class SftpFileSystemTest extends BaseTestSupport {
         }
 
     }
-    
+
     private void testFileSystem(FileSystem fs) throws Exception {
         Iterable<Path> rootDirs = fs.getRootDirectories();
         for (Path root : rootDirs) {
-            String  rootName = root.toString();
+            String rootName = root.toString();
             try (DirectoryStream<Path> ds = Files.newDirectoryStream(root)) {
                 for (Path child : ds) {
                     String name = child.getFileName().toString();
@@ -320,7 +320,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
                     assertNotEquals("Unexpected dotdot name", "..", name);
                     System.out.append('\t').append('[').append(rootName).append("] ").println(child);
                 }
-            } catch(IOException | RuntimeException e) {
+            } catch (IOException | RuntimeException e) {
                 // TODO on Windows one might get share problems for *.sys files
                 // e.g. "C:\hiberfil.sys: The process cannot access the file because it is being used by another process"
                 // for now, Windows is less of a target so we are lenient with it
@@ -345,7 +345,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
         Path file1 = fs.getPath(remFile1Path);
         assertHierarchyTargetFolderExists(file1.getParent());
 
-        String  expected="Hello world: " + getCurrentTestName();
+        String expected = "Hello world: " + getCurrentTestName();
         {
             Files.write(file1, expected.getBytes(StandardCharsets.UTF_8));
             String buf = new String(Files.readAllBytes(file1), StandardCharsets.UTF_8);

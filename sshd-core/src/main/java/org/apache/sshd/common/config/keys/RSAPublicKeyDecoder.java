@@ -36,14 +36,13 @@ import java.security.spec.RSAPublicKeySpec;
 import java.util.Collections;
 
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
-import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class RSAPublicKeyDecoder extends AbstractPublicKeyEntryDecoder<RSAPublicKey,RSAPrivateKey> {
+public class RSAPublicKeyDecoder extends AbstractPublicKeyEntryDecoder<RSAPublicKey, RSAPrivateKey> {
     public static final RSAPublicKeyDecoder INSTANCE = new RSAPublicKeyDecoder();
 
     public RSAPublicKeyDecoder() {
@@ -56,19 +55,19 @@ public class RSAPublicKeyDecoder extends AbstractPublicKeyEntryDecoder<RSAPublic
             throw new InvalidKeySpecException("Unepected key type: " + keyType);
         }
 
-        BigInteger  e=decodeBigInt(keyData);
-        BigInteger  n=decodeBigInt(keyData);
+        BigInteger e = decodeBigInt(keyData);
+        BigInteger n = decodeBigInt(keyData);
 
         return generatePublicKey(new RSAPublicKeySpec(n, e));
     }
-    
+
     @Override
     public String encodePublicKey(OutputStream s, RSAPublicKey key) throws IOException {
         ValidateUtils.checkNotNull(key, "No public key provided");
         encodeString(s, KeyPairProvider.SSH_RSA);
         encodeBigInt(s, key.getPublicExponent());
         encodeBigInt(s, key.getModulus());
-        
+
         return KeyPairProvider.SSH_RSA;
     }
 
@@ -86,7 +85,7 @@ public class RSAPublicKeyDecoder extends AbstractPublicKeyEntryDecoder<RSAPublic
         if (key == null) {
             return null;
         }
-        
+
         if (!(key instanceof RSAPrivateCrtKey)) {
             throw new InvalidKeyException("Cannot clone a non-RSAPrivateCrtKey: " + key.getClass().getSimpleName());
         }

@@ -74,30 +74,30 @@ public class CopyFileExtensionImplTest extends AbstractSftpClientTestSupport {
         String srcPath = Utils.resolveRelativeRemotePath(parentPath, srcFile);
         Path dstFile = lclSftp.resolve("dst.txt");
         String dstPath = Utils.resolveRelativeRemotePath(parentPath, dstFile);
-        
+
         LinkOption[] options = IoUtils.getLinkOptions(false);
         assertFalse("Destination file unexpectedly exists", Files.exists(dstFile, options));
 
-        try(SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = SshClient.setUpDefaultClient()) {
             client.start();
-            
+
             try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
                 session.addPasswordIdentity(getCurrentTestName());
                 session.auth().verify(5L, TimeUnit.SECONDS);
-                
-                try(SftpClient sftp = session.createSftpClient()) {
+
+                try (SftpClient sftp = session.createSftpClient()) {
                     CopyFileExtension ext = assertExtensionCreated(sftp, CopyFileExtension.class);
                     ext.copyFile(srcPath, dstPath, false);
                     assertTrue("Source file not preserved", Files.exists(srcFile, options));
                     assertTrue("Destination file not created", Files.exists(dstFile, options));
-                    
+
                     byte[] actual = Files.readAllBytes(dstFile);
                     assertArrayEquals("Mismatched copied data", data, actual);
-                    
+
                     try {
                         ext.copyFile(srcPath, dstPath, false);
                         fail("Unexpected success to overwrite existing destination: " + dstFile);
-                    } catch(IOException e) {
+                    } catch (IOException e) {
                         assertTrue("Not an SftpException", e instanceof SftpException);
                     }
                 }

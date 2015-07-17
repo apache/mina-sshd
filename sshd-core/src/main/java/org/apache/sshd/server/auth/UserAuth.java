@@ -35,11 +35,11 @@ public interface UserAuth {
      * throw an exception.  If the authentication is still ongoing, a null value should
      * be returned.
      *
-     * @param session the current ssh session
+     * @param session  the current ssh session
      * @param username the user trying to log in
-     * @param buffer the request buffer containing parameters specific to this request
+     * @param buffer   the request buffer containing parameters specific to this request
      * @return <code>true</code> if the authentication succeeded, <code>false</code> if the authentication
-     *          failed and {@code null} if not finished yet
+     * failed and {@code null} if not finished yet
      * @throws Exception if the authentication fails
      */
     Boolean auth(ServerSession session, String username, String service, Buffer buffer) throws Exception;
@@ -47,9 +47,9 @@ public interface UserAuth {
     /**
      * Handle another step in the authentication process.
      *
-     * @param buffer  the request buffer containing parameters specific to this request
+     * @param buffer the request buffer containing parameters specific to this request
      * @return <code>true</code> if the authentication succeeded, <code>false</code> if the authentication
-     *          failed and {@code null} if not finished yet
+     * failed and {@code null} if not finished yet
      * @throws Exception if the authentication fails
      */
     Boolean next(Buffer buffer) throws Exception;

@@ -40,7 +40,7 @@ import org.apache.sshd.common.io.IoHandler;
 /**
  */
 public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
-    public static final int DEFAULT_BACKLOG=0;
+    public static final int DEFAULT_BACKLOG = 0;
 
     private final Map<SocketAddress, AsynchronousServerSocketChannel> channels;
     private int backlog = DEFAULT_BACKLOG;
@@ -127,9 +127,11 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
 
     class AcceptCompletionHandler extends Nio2CompletionHandler<AsynchronousSocketChannel, SocketAddress> {
         private final AsynchronousServerSocketChannel socket;
+
         AcceptCompletionHandler(AsynchronousServerSocketChannel socket) {
             this.socket = socket;
         }
+
         @SuppressWarnings("synthetic-access")
         @Override
         protected void onCompleted(AsynchronousSocketChannel result, SocketAddress address) {
@@ -138,7 +140,7 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
                 return;
             }
 
-            Nio2Session session=null;
+            Nio2Session session = null;
             try {
                 // Create a session
                 session = new Nio2Session(Nio2Acceptor.this, manager, handler, result);
@@ -152,15 +154,15 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
                 if (session != null) {
                     try {
                         session.close();
-                    } catch(Throwable t) {
+                    } catch (Throwable t) {
                         log.warn("Failed (" + t.getClass().getSimpleName() + ")"
-                                + " to close accepted connection from " + address
-                                + ": " + t.getMessage(),
-                                 t);
+                                        + " to close accepted connection from " + address
+                                        + ": " + t.getMessage(),
+                                t);
                     }
                 }
             }
-            
+
             try {
                 // Accept new connections
                 socket.accept(address, this);
@@ -174,9 +176,9 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
         protected void onFailed(final Throwable exc, final SocketAddress address) {
             if (channels.containsKey(address) && !disposing.get()) {
                 log.warn("Caught " + exc.getClass().getSimpleName()
-                       + " while accepting incoming connection from " + address
-                       + ": " + exc.getMessage(),
-                         exc);
+                                + " while accepting incoming connection from " + address
+                                + ": " + exc.getMessage(),
+                        exc);
             }
         }
     }

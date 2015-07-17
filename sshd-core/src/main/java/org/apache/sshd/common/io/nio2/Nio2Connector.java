@@ -69,6 +69,7 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
                         future.setException(e);
                     }
                 }
+
                 @Override
                 protected void onFailed(final Throwable exc, final Object attachment) {
                     future.setException(exc);
@@ -84,24 +85,29 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
         DefaultIoConnectFuture(Object lock) {
             super(lock);
         }
+
         @Override
         public IoSession getSession() {
             Object v = getValue();
             return v instanceof IoSession ? (IoSession) v : null;
         }
+
         @Override
         public Throwable getException() {
             Object v = getValue();
             return v instanceof Throwable ? (Throwable) v : null;
         }
+
         @Override
         public boolean isConnected() {
             return getValue() instanceof IoSession;
         }
+
         @Override
         public void setSession(IoSession session) {
             setValue(session);
         }
+
         @Override
         public void setException(Throwable exception) {
             setValue(exception);

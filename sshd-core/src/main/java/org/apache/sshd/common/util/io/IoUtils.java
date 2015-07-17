@@ -47,10 +47,23 @@ import org.apache.sshd.common.util.OsUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public final class IoUtils {
+
     public static final OpenOption[] EMPTY_OPEN_OPTIONS = new OpenOption[0];
     public static final CopyOption[] EMPTY_COPY_OPTIONS = new CopyOption[0];
     public static final LinkOption[] EMPTY_LINK_OPTIONS = new LinkOption[0];
-    private static final LinkOption[] NO_FOLLOW_OPTIONS = new LinkOption[] { LinkOption.NOFOLLOW_LINKS };
+
+    public static final List<String> WINDOWS_EXECUTABLE_EXTENSIONS = Collections.unmodifiableList(Arrays.asList(".bat", ".exe", ".cmd"));
+
+    public static final int DEFAULT_COPY_SIZE = 8192;
+
+    private static final LinkOption[] NO_FOLLOW_OPTIONS = new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
+
+    /**
+     * Private Constructor
+     */
+    private IoUtils() {
+        throw new UnsupportedOperationException("No instance allowed");
+    }
 
     public static LinkOption[] getLinkOptions(boolean followLinks) {
         if (followLinks) {
@@ -59,8 +72,6 @@ public final class IoUtils {
             return NO_FOLLOW_OPTIONS.clone();
         }
     }
-
-    public static final int DEFAULT_COPY_SIZE=8192;
 
     public static long copy(InputStream source, OutputStream sink) throws IOException {
         return copy(source, sink, DEFAULT_COPY_SIZE);
@@ -89,8 +100,6 @@ public final class IoUtils {
         }
     }
 
-    public static final List<String> WINDOWS_EXECUTABLE_EXTENSIONS = Collections.unmodifiableList(Arrays.asList(".bat", ".exe", ".cmd"));
-
     /**
      * @param fileName The file name to be evaluated - ignored if {@code null}/empty
      * @return {@code true} if the file ends in one of the {@link #WINDOWS_EXECUTABLE_EXTENSIONS}
@@ -111,14 +120,15 @@ public final class IoUtils {
      * If the &quot;posix&quot; view is supported, then it returns
      * {@link Files#getPosixFilePermissions(Path, LinkOption...)}, otherwise
      * uses the {@link #getPermissionsFromFile(File)} method
+     *
      * @param path The {@link Path}
      * @return A {@link Set} of {@link PosixFilePermission}
      * @throws IOException If failed to access the file system in order to
-     * retrieve the permissions
+     *                     retrieve the permissions
      */
-    public static Set<PosixFilePermission> getPermissions(Path path, LinkOption ... options) throws IOException {
-        FileSystem          fs = path.getFileSystem();
-        Collection<String>  views = fs.supportedFileAttributeViews();
+    public static Set<PosixFilePermission> getPermissions(Path path, LinkOption... options) throws IOException {
+        FileSystem fs = path.getFileSystem();
+        Collection<String> views = fs.supportedFileAttributeViews();
         if (views.contains("posix")) {
             return Files.getPosixFilePermissions(path, options);
         } else {
@@ -159,13 +169,14 @@ public final class IoUtils {
      * If the &quot;posix&quot; view is supported, then it invokes
      * {@link Files#setPosixFilePermissions(Path, Set)}, otherwise
      * uses the {@link #setPermissionsToFile(File, Collection)} method
-     * @param path The {@link Path}
+     *
+     * @param path  The {@link Path}
      * @param perms The {@link Set} of {@link PosixFilePermission}s
      * @throws IOException If failed to access the file system
      */
     public static void setPermissions(Path path, Set<PosixFilePermission> perms) throws IOException {
-        FileSystem          fs = path.getFileSystem();
-        Collection<String>  views = fs.supportedFileAttributeViews();
+        FileSystem fs = path.getFileSystem();
+        Collection<String> views = fs.supportedFileAttributeViews();
         if (views.contains("posix")) {
             Files.setPosixFilePermissions(path, perms);
         } else {
@@ -174,28 +185,28 @@ public final class IoUtils {
     }
 
     /**
-     * @param f The {@link File}
+     * @param f     The {@link File}
      * @param perms A {@link Collection} of {@link PosixFilePermission}s to set on it.
-     * <B>Note:</B> the file is set to readable/writable/executable not only by the
-     * owner if <U>any</U> of relevant the owner/group/others permission is set
+     *              <B>Note:</B> the file is set to readable/writable/executable not only by the
+     *              owner if <U>any</U> of relevant the owner/group/others permission is set
      */
     public static void setPermissionsToFile(File f, Collection<PosixFilePermission> perms) {
-        boolean readable = perms != null &&
-                  (perms.contains(PosixFilePermission.OWNER_READ)
-                || perms.contains(PosixFilePermission.GROUP_READ)
-                || perms.contains(PosixFilePermission.OTHERS_READ));
+        boolean readable = perms != null
+                && (perms.contains(PosixFilePermission.OWNER_READ)
+                        || perms.contains(PosixFilePermission.GROUP_READ)
+                        || perms.contains(PosixFilePermission.OTHERS_READ));
         f.setReadable(readable, false);
 
-        boolean writable = perms != null &&
-                  (perms.contains(PosixFilePermission.OWNER_WRITE)
-                || perms.contains(PosixFilePermission.GROUP_WRITE)
-                || perms.contains(PosixFilePermission.OTHERS_WRITE));
+        boolean writable = perms != null
+                && (perms.contains(PosixFilePermission.OWNER_WRITE)
+                        || perms.contains(PosixFilePermission.GROUP_WRITE)
+                        || perms.contains(PosixFilePermission.OTHERS_WRITE));
         f.setWritable(writable, false);
 
-        boolean executable = perms != null &&
-                  (perms.contains(PosixFilePermission.OWNER_EXECUTE)
-                || perms.contains(PosixFilePermission.GROUP_EXECUTE)
-                || perms.contains(PosixFilePermission.OTHERS_EXECUTE));
+        boolean executable = perms != null
+                && (perms.contains(PosixFilePermission.OWNER_EXECUTE)
+                        || perms.contains(PosixFilePermission.GROUP_EXECUTE)
+                        || perms.contains(PosixFilePermission.OTHERS_EXECUTE));
         f.setExecutable(executable, false);
     }
 
@@ -204,27 +215,28 @@ public final class IoUtils {
      * <A HREF="http://docs.oracle.com/javase/tutorial/essential/io/check.html">Java tutorial - Checking a File or Directory</A>:
      * </P></BR>
      * <PRE>
-     *      The methods in the Path class are syntactic, meaning that they operate
-     *      on the Path instance. But eventually you must access the file system
-     *      to verify that a particular Path exists, or does not exist. You can do
-     *      so with the exists(Path, LinkOption...) and the notExists(Path, LinkOption...)
-     *      methods. Note that !Files.exists(path) is not equivalent to Files.notExists(path).
-     *      When you are testing a file's existence, three results are possible:
-     *
-     *      - The file is verified to exist.
-     *      - The file is verified to not exist.
-     *      - The file's status is unknown.
-     *      
-     *      This result can occur when the program does not have access to the file.
-     *      If both exists and notExists return false, the existence of the file cannot
-     *      be verified.
+     * The methods in the Path class are syntactic, meaning that they operate
+     * on the Path instance. But eventually you must access the file system
+     * to verify that a particular Path exists, or does not exist. You can do
+     * so with the exists(Path, LinkOption...) and the notExists(Path, LinkOption...)
+     * methods. Note that !Files.exists(path) is not equivalent to Files.notExists(path).
+     * When you are testing a file's existence, three results are possible:
+     * <p/>
+     * - The file is verified to exist.
+     * - The file is verified to not exist.
+     * - The file's status is unknown.
+     * <p/>
+     * This result can occur when the program does not have access to the file.
+     * If both exists and notExists return false, the existence of the file cannot
+     * be verified.
      * </PRE>
-     * @param path The {@link Path} to be tested
+     *
+     * @param path    The {@link Path} to be tested
      * @param options The {@link LinkOption}s to use
      * @return {@link Boolean#TRUE}/{@link Boolean#FALSE} or {@code null}
      * according to the file status as explained above
      */
-    public static Boolean checkFileExists(Path path, LinkOption ... options) {
+    public static Boolean checkFileExists(Path path, LinkOption... options) {
         if (Files.exists(path, options)) {
             return Boolean.TRUE;
         } else if (Files.notExists(path, options)) {
@@ -236,9 +248,10 @@ public final class IoUtils {
 
     /**
      * Read the requested number of bytes or fail if there are not enough left.
-     * @param input where to read input from
+     *
+     * @param input  where to read input from
      * @param buffer destination
-     * @throws IOException if there is a problem reading the file
+     * @throws IOException  if there is a problem reading the file
      * @throws EOFException if the number of bytes read was incorrect
      */
     public static void readFully(InputStream input, byte[] buffer) throws IOException {
@@ -247,11 +260,12 @@ public final class IoUtils {
 
     /**
      * Read the requested number of bytes or fail if there are not enough left.
-     * @param input where to read input from
+     *
+     * @param input  where to read input from
      * @param buffer destination
      * @param offset initial offset into buffer
      * @param length length to read, must be >= 0
-     * @throws IOException if there is a problem reading the file
+     * @throws IOException  if there is a problem reading the file
      * @throws EOFException if the number of bytes read was incorrect
      */
     public static void readFully(InputStream input, byte[] buffer, int offset, int length) throws IOException {
@@ -263,7 +277,8 @@ public final class IoUtils {
 
     /**
      * Read as many bytes as possible until EOF or achieved required length
-     * @param input where to read input from
+     *
+     * @param input  where to read input from
      * @param buffer destination
      * @return actual length read; may be less than requested if EOF was reached
      * @throws IOException if a read error occurs
@@ -274,7 +289,8 @@ public final class IoUtils {
 
     /**
      * Read as many bytes as possible until EOF or achieved required length
-     * @param input where to read input from
+     *
+     * @param input  where to read input from
      * @param buffer destination
      * @param offset initial offset into buffer
      * @param length length to read - ignored if non-positive
@@ -282,7 +298,7 @@ public final class IoUtils {
      * @throws IOException if a read error occurs
      */
     public static int read(InputStream input, byte[] buffer, int offset, int length) throws IOException {
-        for (int remaining = length, curOffset = offset; remaining > 0; ) {
+        for (int remaining = length, curOffset = offset; remaining > 0;) {
             int count = input.read(buffer, curOffset, remaining);
             if (count == (-1)) { // EOF before achieved required length
                 return curOffset - offset;
@@ -296,7 +312,7 @@ public final class IoUtils {
     }
 
     /**
-     * @param perms The current {@link PosixFilePermission}s - ignored if {@code null}/empty
+     * @param perms    The current {@link PosixFilePermission}s - ignored if {@code null}/empty
      * @param excluded The permissions <U>not</U> allowed to exist - ignored if {@code null)/empty
      * @return The violating {@link PosixFilePermission} - {@code null}
      * if no violating permission found
@@ -311,17 +327,17 @@ public final class IoUtils {
                 return p;
             }
         }
-        
+
         return null;
     }
 
     /**
-     * @param path The {@link Path} to check
+     * @param path    The {@link Path} to check
      * @param options The {@link LinkOption}s to use when checking if path is a directory
      * @return The same input path if it is a directory
      * @throws UnsupportedOperationException if input path not a directory
      */
-    public static Path ensureDirectory(Path path, LinkOption ... options) {
+    public static Path ensureDirectory(Path path, LinkOption... options) {
         if (!Files.isDirectory(path, options)) {
             throw new UnsupportedOperationException("Not a directory: " + path);
         }
@@ -346,8 +362,5 @@ public final class IoUtils {
         }
         return true;
     }
-    
-    private IoUtils() {
-        throw new UnsupportedOperationException("No instance");
-    }
+
 }

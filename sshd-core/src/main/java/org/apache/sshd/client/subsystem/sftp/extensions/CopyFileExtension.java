@@ -27,8 +27,8 @@ import java.io.IOException;
  */
 public interface CopyFileExtension extends SftpClientExtension {
     /**
-     * @param src The (<U>remote</U>) file source path
-     * @param dst The (<U>remote</U>) file destination path
+     * @param src                  The (<U>remote</U>) file source path
+     * @param dst                  The (<U>remote</U>) file destination path
      * @param overwriteDestination If {@code true} then OK to override destination if exists
      * @throws IOException If failed to execute the command or extension not supported
      */

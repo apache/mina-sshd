@@ -36,13 +36,15 @@ import org.apache.sshd.server.session.ServerSession;
  * as a {@link Command}.  This is useful when using external
  * processes.
  * When starting the shell, this wrapper will also create a thread used
- * to pump the streams and also to check if the shell is alive. 
+ * to pump the streams and also to check if the shell is alive.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class InvertedShellWrapper implements Command, SessionAware {
 
-    /** default buffer size for the IO pumps. */
+    /**
+     * default buffer size for the IO pumps.
+     */
     public static final int DEFAULT_BUFFER_SIZE = 8192;
 
     private final InvertedShell shell;
@@ -67,9 +69,9 @@ public class InvertedShellWrapper implements Command, SessionAware {
 
     public InvertedShellWrapper(InvertedShell shell, int bufferSize) {
         this(shell,
-             ThreadUtils.newSingleThreadExecutor("shell[" + Integer.toHexString(shell.hashCode()) + "]"),
-             true,
-             bufferSize);
+                ThreadUtils.newSingleThreadExecutor("shell[" + Integer.toHexString(shell.hashCode()) + "]"),
+                true,
+                bufferSize);
     }
 
     public InvertedShellWrapper(InvertedShell shell, Executor executor, int bufferSize) {

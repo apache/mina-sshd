@@ -25,6 +25,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
 /**
  * Response for the &quot;statvfs@openssh.com&quot; and &quot;fstatvfs@openssh.com&quot;
  * extension commands.
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @see <A HREF="http://cvsweb.openbsd.org/cgi-bin/cvsweb/~checkout~/src/usr.bin/ssh/PROTOCOL?rev=1.28&content-type=text/plain">OpenSSH section 3.4</A>
  */
@@ -33,6 +34,7 @@ public class OpenSSHStatExtensionInfo implements Cloneable {
     public static final long SSH_FXE_STATVFS_ST_RDONLY = 0x1; /* read-only */
     public static final long SSH_FXE_STATVFS_ST_NOSUID = 0x2; /* no setuid */
 
+    // CHECKSTYLE:OFF
     public long f_bsize;     /* file system block size */
     public long f_frsize;    /* fundamental fs block size */
     public long f_blocks;    /* number of blocks (unit f_frsize) */
@@ -44,7 +46,8 @@ public class OpenSSHStatExtensionInfo implements Cloneable {
     public long f_fsid;      /* file system id */
     public long f_flag;      /* bit mask of f_flag values */
     public long f_namemax;   /* maximum filename length */
-    
+    // CHECKSTYLE:ON
+
     public OpenSSHStatExtensionInfo() {
         super();
     }
@@ -55,18 +58,18 @@ public class OpenSSHStatExtensionInfo implements Cloneable {
 
     @Override
     public int hashCode() {
-        return GenericUtils.hashCode(this.f_bsize)
-             + GenericUtils.hashCode(this.f_frsize)
-             + GenericUtils.hashCode(this.f_blocks)
-             + GenericUtils.hashCode(this.f_bfree)
-             + GenericUtils.hashCode(this.f_bavail)
-             + GenericUtils.hashCode(this.f_files)
-             + GenericUtils.hashCode(this.f_ffree)
-             + GenericUtils.hashCode(this.f_favail)
-             + GenericUtils.hashCode(this.f_fsid)
-             + GenericUtils.hashCode(this.f_flag)
-             + GenericUtils.hashCode(this.f_namemax)
-             ;
+        int result =  GenericUtils.hashCode(this.f_bsize);
+        result = 31 * result + GenericUtils.hashCode(this.f_frsize);
+        result = 31 * result + GenericUtils.hashCode(this.f_blocks);
+        result = 31 * result + GenericUtils.hashCode(this.f_bfree);
+        result = 31 * result + GenericUtils.hashCode(this.f_bavail);
+        result = 31 * result + GenericUtils.hashCode(this.f_files);
+        result = 31 * result + GenericUtils.hashCode(this.f_ffree);
+        result = 31 * result + GenericUtils.hashCode(this.f_favail);
+        result = 31 * result + GenericUtils.hashCode(this.f_fsid);
+        result = 31 * result + GenericUtils.hashCode(this.f_flag);
+        result = 31 * result + GenericUtils.hashCode(this.f_namemax);
+        return result;
     }
 
     @Override
@@ -82,28 +85,25 @@ public class OpenSSHStatExtensionInfo implements Cloneable {
         }
 
         OpenSSHStatExtensionInfo other = (OpenSSHStatExtensionInfo) obj;
-        if ((this.f_bsize == other.f_bsize)
-         && (this.f_frsize == other.f_frsize)
-         && (this.f_blocks == other.f_blocks)
-         && (this.f_bfree == other.f_bfree)
-         && (this.f_bavail == other.f_bavail)
-         && (this.f_files == other.f_files)
-         && (this.f_ffree == other.f_ffree)
-         && (this.f_favail == other.f_favail)
-         && (this.f_fsid == other.f_fsid)
-         && (this.f_flag == other.f_flag)
-         && (this.f_namemax == other.f_namemax)) {
-            return true;
-        } else {
-            return false;   // debug breakpoint
-        }
+        // debug breakpoint
+        return this.f_bsize == other.f_bsize
+                && this.f_frsize == other.f_frsize
+                && this.f_blocks == other.f_blocks
+                && this.f_bfree == other.f_bfree
+                && this.f_bavail == other.f_bavail
+                && this.f_files == other.f_files
+                && this.f_ffree == other.f_ffree
+                && this.f_favail == other.f_favail
+                && this.f_fsid == other.f_fsid
+                && this.f_flag == other.f_flag
+                && this.f_namemax == other.f_namemax;
     }
 
     @Override
     public OpenSSHStatExtensionInfo clone() {
         try {
             return getClass().cast(super.clone());
-        } catch(CloneNotSupportedException e) {
+        } catch (CloneNotSupportedException e) {
             throw new RuntimeException("Failed to close " + toString() + ": " + e.getMessage());
         }
     }
@@ -111,17 +111,16 @@ public class OpenSSHStatExtensionInfo implements Cloneable {
     @Override
     public String toString() {
         return "f_bsize=" + f_bsize
-            + ",f_frsize=" + f_frsize
-            + ",f_blocks=" + f_blocks
-            + ",f_bfree=" + f_bfree
-            + ",f_bavail=" + f_bavail
-            + ",f_files=" + f_files
-            + ",f_ffree=" + f_ffree
-            + ",f_favail=" + f_favail
-            + ",f_fsid=" + f_fsid
-            + ",f_flag=0x" + Long.toHexString(f_flag)
-            + ",f_namemax=" + f_namemax
-            ;
+                + ",f_frsize=" + f_frsize
+                + ",f_blocks=" + f_blocks
+                + ",f_bfree=" + f_bfree
+                + ",f_bavail=" + f_bavail
+                + ",f_files=" + f_files
+                + ",f_ffree=" + f_ffree
+                + ",f_favail=" + f_favail
+                + ",f_fsid=" + f_fsid
+                + ",f_flag=0x" + Long.toHexString(f_flag)
+                + ",f_namemax=" + f_namemax;
     }
 
     public static void encode(Buffer buffer, OpenSSHStatExtensionInfo info) {
@@ -143,7 +142,7 @@ public class OpenSSHStatExtensionInfo implements Cloneable {
         decode(buffer, info);
         return info;
     }
-    
+
     public static void decode(Buffer buffer, OpenSSHStatExtensionInfo info) {
         info.f_bsize = buffer.getLong();
         info.f_frsize = buffer.getLong();

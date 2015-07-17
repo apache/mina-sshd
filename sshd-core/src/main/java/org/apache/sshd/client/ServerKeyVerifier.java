@@ -35,8 +35,8 @@ public interface ServerKeyVerifier {
      * Verify that the server key provided is really the one of the host.
      *
      * @param sshClientSession the current session
-     * @param remoteAddress the host
-     * @param serverKey the presented key
+     * @param remoteAddress    the host
+     * @param serverKey        the presented key
      * @return <code>true</code> if the key is accepted for the host
      */
     boolean verifyServerKey(ClientSession sshClientSession, SocketAddress remoteAddress, PublicKey serverKey);

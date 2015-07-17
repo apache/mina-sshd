@@ -25,6 +25,7 @@ import java.util.Set;
 
 /**
  * Used to track the key-exchange (KEX) protocol progression
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public enum KexState {
@@ -33,6 +34,6 @@ public enum KexState {
     RUN,
     KEYS,
     DONE;
-    
+
     public static final Set<KexState> VALUES = Collections.unmodifiableSet(EnumSet.allOf(KexState.class));
 }

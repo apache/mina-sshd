@@ -19,19 +19,12 @@
 
 package org.apache.sshd.common.random;
 
-import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.OptionalFeature;
-import org.apache.sshd.common.util.Transformer;
+import org.apache.sshd.common.BuiltinFactory;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface RandomFactory extends NamedFactory<Random>, OptionalFeature {
-    // required because of generics issues
-    Transformer<RandomFactory,NamedFactory<Random>> FAC2NAMED=new Transformer<RandomFactory,NamedFactory<Random>>() {
-        @Override
-        public NamedFactory<Random> transform(RandomFactory input) {
-            return input;
-        }
-    };
+// CHECKSTYLE:OFF
+public interface RandomFactory extends BuiltinFactory<Random> {
+
 }

@@ -28,7 +28,6 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.util.Collection;
 
 import org.apache.sshd.common.config.keys.KeyUtils;
-import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.session.ServerSession;
@@ -38,6 +37,7 @@ import org.apache.sshd.server.session.ServerSession;
  * the server, re-loading it if necessary. It also (optionally) enforces the same
  * permissions regime as {@code OpenSSH} does for the file permissions. By default
  * also compares the current username with the authenticated one.
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class DefaultAuthorizedKeysAuthenticator extends AuthorizedKeysAuthenticator {
@@ -52,8 +52,8 @@ public class DefaultAuthorizedKeysAuthenticator extends AuthorizedKeysAuthentica
 
     /**
      * @param strict If {@code true} then makes sure that the containing folder
-     * has 0700 access and the file 0600. <B>Note:</B> for <I>Windows</I> it
-     * does not check these permissions 
+     *               has 0700 access and the file 0600. <B>Note:</B> for <I>Windows</I> it
+     *               does not check these permissions
      */
     public DefaultAuthorizedKeysAuthenticator(boolean strict) {
         this(System.getProperty("user.name"), strict);
@@ -71,11 +71,11 @@ public class DefaultAuthorizedKeysAuthenticator extends AuthorizedKeysAuthentica
         this(user, ValidateUtils.checkNotNull(file, "No file provided").toPath(), strict, IoUtils.getLinkOptions(false));
     }
 
-    public DefaultAuthorizedKeysAuthenticator(Path path, boolean strict, LinkOption ... options) {
+    public DefaultAuthorizedKeysAuthenticator(Path path, boolean strict, LinkOption... options) {
         this(System.getProperty("user.name"), path, strict, options);
     }
 
-    public DefaultAuthorizedKeysAuthenticator(String user, Path path, boolean strict, LinkOption ... options) {
+    public DefaultAuthorizedKeysAuthenticator(String user, Path path, boolean strict, LinkOption... options) {
         super(path, options);
         this.user = ValidateUtils.checkNotNullAndNotEmpty(user, "No username provided");
         this.strict = strict;
@@ -94,13 +94,9 @@ public class DefaultAuthorizedKeysAuthenticator extends AuthorizedKeysAuthentica
         if (!super.isValidUsername(username, session)) {
             return false;
         }
-        
+
         String expected = getUsername();
-        if (username.equals(expected)) {
-            return true;
-        } else {
-            return false;   // debug breakpoint
-        }
+        return username.equals(expected);
     }
 
     @Override
@@ -115,10 +111,10 @@ public class DefaultAuthorizedKeysAuthenticator extends AuthorizedKeysAuthentica
 
         return super.reloadAuthorizedKeys(path, username, session);
     }
-    
+
     /**
-     * @param path The {@link Path} to be validated
-     * @param perms The current {@link PosixFilePermission}s
+     * @param path     The {@link Path} to be validated
+     * @param perms    The current {@link PosixFilePermission}s
      * @param excluded The permissions <U>not</U> allowed to exist
      * @return The original path
      * @throws IOException If an excluded permission appears in the current ones
@@ -129,7 +125,7 @@ public class DefaultAuthorizedKeysAuthenticator extends AuthorizedKeysAuthentica
             String filePath = path.toString();
             throw new FileSystemException(filePath, filePath, "File not allowed to have " + p + " permission: " + filePath);
         }
-        
+
         return path;
     }
 }

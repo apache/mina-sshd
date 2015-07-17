@@ -67,24 +67,24 @@ public enum Signal {
      */
     public static final Set<Signal> SIGNALS = Collections.unmodifiableSet(EnumSet.allOf(Signal.class));
 
-    private static final Map<String, Signal> lookupTable = new HashMap<String, Signal>(40);
-
-    static {
-        // registering the signals in the lookup table to allow faster
-        // string based signal lookups
-        for (Signal s : Signal.values()) {
-            lookupTable.put(s.name(), s);
-        }
-    }
-
-    public static Signal get(String name) {
-        return lookupTable.get(name);
-    }
+    private static final Map<String, Signal> LOOKUP_TABLE = new HashMap<String, Signal>(40);
 
     private final int numeric;
 
     Signal(int numeric) {
         this.numeric = numeric;
+    }
+
+    static {
+        // registering the signals in the lookup table to allow faster
+        // string based signal lookups
+        for (Signal s : Signal.values()) {
+            LOOKUP_TABLE.put(s.name(), s);
+        }
+    }
+
+    public static Signal get(String name) {
+        return LOOKUP_TABLE.get(name);
     }
 
     public int getNumeric() {

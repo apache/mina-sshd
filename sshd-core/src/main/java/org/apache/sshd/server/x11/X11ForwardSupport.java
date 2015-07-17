@@ -40,7 +40,6 @@ import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.CloseableUtils;
-import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Readable;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -51,14 +50,13 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
  */
 public class X11ForwardSupport extends CloseableUtils.AbstractInnerCloseable implements IoHandler {
 
-    private static String xauthCommand = System.getProperty("sshd.xauthCommand", "xauth");
     /**
      * Configuration value on the {@link FactoryManager} to control the
      * channel open timeout. If not specified then {@link #DEFAULT_CHANNEL_OPEN_TIMEOUT}
      * value is used
      */
     public static final String CHANNEL_OPEN_TIMEOUT_PROP = "x11-fwd-open-timeout";
-        public static final long DEFAULT_CHANNEL_OPEN_TIMEOUT = TimeUnit.SECONDS.toMillis(30L);
+    public static final long DEFAULT_CHANNEL_OPEN_TIMEOUT = TimeUnit.SECONDS.toMillis(30L);
 
     public static final int X11_DISPLAY_OFFSET = 10;
     public static final int MAX_DISPLAYS = 1000;
@@ -67,6 +65,8 @@ public class X11ForwardSupport extends CloseableUtils.AbstractInnerCloseable imp
      * Key for the user DISPLAY variable
      */
     public static final String ENV_DISPLAY = "DISPLAY";
+
+    private static final String XAUTH_COMMAND = System.getProperty("sshd.XAUTH_COMMAND", "xauth");
 
     private final ConnectionService service;
     private IoAcceptor acceptor;
@@ -103,7 +103,8 @@ public class X11ForwardSupport extends CloseableUtils.AbstractInnerCloseable imp
             acceptor = factory.createAcceptor(this);
         }
 
-        int displayNumber, port;
+        int displayNumber;
+        int port;
         InetSocketAddress addr;
 
         for (displayNumber = X11_DISPLAY_OFFSET; displayNumber < MAX_DISPLAYS; displayNumber++) {
@@ -130,10 +131,10 @@ public class X11ForwardSupport extends CloseableUtils.AbstractInnerCloseable imp
         if (!os.contains("windows")) {
             try {
                 String authDisplay = "unix:" + displayNumber + "." + screen;
-                Process p = new ProcessBuilder(xauthCommand, "remove", authDisplay).start();
+                Process p = new ProcessBuilder(XAUTH_COMMAND, "remove", authDisplay).start();
                 int result = p.waitFor();
                 if (result == 0) {
-                    p = new ProcessBuilder(xauthCommand, "add", authDisplay, authenticationProtocol, authenticationCookie).start();
+                    p = new ProcessBuilder(XAUTH_COMMAND, "add", authDisplay, authenticationProtocol, authenticationCookie).start();
                     result = p.waitFor();
                 }
             } catch (Exception e) {
@@ -157,8 +158,8 @@ public class X11ForwardSupport extends CloseableUtils.AbstractInnerCloseable imp
     @Override
     public void sessionClosed(IoSession session) throws Exception {
         ChannelForwardedX11 channel = (ChannelForwardedX11) session.getAttribute(ChannelForwardedX11.class);
-        if ( channel != null ){
-        	channel.close(false);
+        if (channel != null) {
+            channel.close(false);
         }
     }
 
@@ -213,7 +214,8 @@ public class X11ForwardSupport extends CloseableUtils.AbstractInnerCloseable imp
             if (streaming == Streaming.Async) {
                 throw new IllegalArgumentException("Asynchronous streaming isn't supported yet on this channel");
             }
-            invertedIn = out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA);
+            out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA);
+            invertedIn = out;
         }
 
         @Override

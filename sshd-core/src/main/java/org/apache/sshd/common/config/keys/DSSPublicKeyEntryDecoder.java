@@ -36,14 +36,13 @@ import java.security.spec.InvalidKeySpecException;
 import java.util.Collections;
 
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
-import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class DSSPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<DSAPublicKey,DSAPrivateKey> {
+public class DSSPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<DSAPublicKey, DSAPrivateKey> {
     public static final DSSPublicKeyEntryDecoder INSTANCE = new DSSPublicKeyEntryDecoder();
 
     public DSSPublicKeyEntryDecoder() {
@@ -56,10 +55,10 @@ public class DSSPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<DSAP
             throw new InvalidKeySpecException("Unepected key type: " + keyType);
         }
 
-        BigInteger  p=decodeBigInt(keyData);
-        BigInteger  q=decodeBigInt(keyData);
-        BigInteger  g=decodeBigInt(keyData);
-        BigInteger  y=decodeBigInt(keyData);
+        BigInteger p = decodeBigInt(keyData);
+        BigInteger q = decodeBigInt(keyData);
+        BigInteger g = decodeBigInt(keyData);
+        BigInteger y = decodeBigInt(keyData);
 
         return generatePublicKey(new DSAPublicKeySpec(y, p, q, g));
     }
@@ -74,7 +73,7 @@ public class DSSPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<DSAP
         encodeBigInt(s, keyParams.getQ());
         encodeBigInt(s, keyParams.getG());
         encodeBigInt(s, key.getY());
-        
+
         return KeyPairProvider.SSH_DSS;
     }
 
@@ -83,10 +82,10 @@ public class DSSPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<DSAP
         if (key == null) {
             return null;
         }
-        
+
         DSAParams params = key.getParams();
         if (params == null) {
-            throw new InvalidKeyException("Missing parameters in key"); 
+            throw new InvalidKeyException("Missing parameters in key");
         }
 
         return generatePublicKey(new DSAPublicKeySpec(key.getY(), params.getP(), params.getQ(), params.getG()));
@@ -97,10 +96,10 @@ public class DSSPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<DSAP
         if (key == null) {
             return null;
         }
-        
+
         DSAParams params = key.getParams();
         if (params == null) {
-            throw new InvalidKeyException("Missing parameters in key"); 
+            throw new InvalidKeyException("Missing parameters in key");
         }
 
         return generatePrivateKey(new DSAPrivateKeySpec(key.getX(), params.getP(), params.getQ(), params.getG()));

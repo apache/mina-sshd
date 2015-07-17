@@ -28,36 +28,38 @@ import org.slf4j.Logger;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public final class LoggingUtils {
+
     private LoggingUtils() {
         throw new UnsupportedOperationException("No instance");
     }
 
     /**
      * Verifies if the given level is above the required threshold for logging.
-     * @param level The {@link Level} to evaluate
+     *
+     * @param level     The {@link Level} to evaluate
      * @param threshold The threshold {@link Level}
      * @return {@code true} if the evaluated level is above the required
      * threshold.</BR>
      * <P><B>Note(s):</B></BR></P>
      * <P><UL>
-     *      <LI>
-     *      If either argument is {@code null} then result is {@code false}.
-     *      </LI>
-     *
-     *      <LI>
-     *      If the evaluated level is {@link Level#OFF} then result is {@code false}
-     *      regardless of the threshold.
-     *      </LI>
-     *
-     *      <LI>
-     *      If the threshold is {@link Level#ALL} and the evaluated level is
-     *      <U>not</U> {@link Level#OFF} the result is {@code true}.
-     *      </LI>
-     *
-     *      <LI>
-     *      Otherwise, the evaluated level {@link Level#intValue()} must be
-     *      greater or equal to the threshold.
-     *      </LI>
+     * <LI>
+     * If either argument is {@code null} then result is {@code false}.
+     * </LI>
+     * <p/>
+     * <LI>
+     * If the evaluated level is {@link Level#OFF} then result is {@code false}
+     * regardless of the threshold.
+     * </LI>
+     * <p/>
+     * <LI>
+     * If the threshold is {@link Level#ALL} and the evaluated level is
+     * <U>not</U> {@link Level#OFF} the result is {@code true}.
+     * </LI>
+     * <p/>
+     * <LI>
+     * Otherwise, the evaluated level {@link Level#intValue()} must be
+     * greater or equal to the threshold.
+     * </LI>
      * </UL></P>
      */
     public static boolean isLoggable(Level level, Level threshold) {
@@ -67,10 +69,8 @@ public final class LoggingUtils {
             return false;
         } else if (Level.ALL.equals(threshold)) {
             return true;
-        } else if (level.intValue() < threshold.intValue()) {
-            return false;
         } else {
-            return true;
+            return level.intValue() >= threshold.intValue();
         }
     }
 
@@ -84,9 +84,9 @@ public final class LoggingUtils {
                     if (isEnabled(level)) {
                         logMessage(logger, level, message, t);
                     }
-                    
+
                 }
-                
+
                 @Override
                 public boolean isEnabled(Level level) {
                     return isLoggable(logger, level);
@@ -114,16 +114,16 @@ public final class LoggingUtils {
 
     /**
      * @param logger The {@link Logger} instance - ignored if {@code null}
-     * @param level The validate log {@link Level} - ignored if {@code null}
+     * @param level  The validate log {@link Level} - ignored if {@code null}
      * @return <P>{@code true} if the level is enabled for the logger. The
      * mapping of the level to the logger is as follows:</P></BR>
      * <UL>
-     *      <LI>{@link Level#OFF} always returns {@code false}</LI>
-     *      <LI>{@link Level#SEVERE} returns {@link Logger#isErrorEnabled()}</LI>
-     *      <LI>{@link Level#WARNING} returns {@link Logger#isWarnEnabled()}</LI>
-     *      <LI>{@link Level#INFO} and {@link Level#ALL} returns {@link Logger#isInfoEnabled()}</LI>
-     *      <LI>{@link Level#CONFIG} and {@link Level#FINE} returns {@link Logger#isDebugEnabled()}</LI>
-     *      <LI>All other levels return {@link Logger#isTraceEnabled()}</LI>
+     * <LI>{@link Level#OFF} always returns {@code false}</LI>
+     * <LI>{@link Level#SEVERE} returns {@link Logger#isErrorEnabled()}</LI>
+     * <LI>{@link Level#WARNING} returns {@link Logger#isWarnEnabled()}</LI>
+     * <LI>{@link Level#INFO} and {@link Level#ALL} returns {@link Logger#isInfoEnabled()}</LI>
+     * <LI>{@link Level#CONFIG} and {@link Level#FINE} returns {@link Logger#isDebugEnabled()}</LI>
+     * <LI>All other levels return {@link Logger#isTraceEnabled()}</LI>
      * </UL>
      */
     public static boolean isLoggable(Logger logger, Level level) {

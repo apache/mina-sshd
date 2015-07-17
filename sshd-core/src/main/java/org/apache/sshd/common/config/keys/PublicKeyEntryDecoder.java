@@ -32,15 +32,16 @@ import java.util.Collection;
 
 /**
  * Represents a decoder of an {@code OpenSSH} encoded key data
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface PublicKeyEntryDecoder<PUB extends PublicKey,PRV extends PrivateKey> {
+public interface PublicKeyEntryDecoder<PUB extends PublicKey, PRV extends PrivateKey> {
     /**
      * @return The {@link Class} of the {@link PublicKey} that is the result
      * of decoding
      */
     Class<PUB> getPublicKeyType();
-    
+
     /**
      * @return The {@link Class} of the {@link PrivateKey} that matches the
      * public one
@@ -65,9 +66,9 @@ public interface PublicKeyEntryDecoder<PUB extends PublicKey,PRV extends Private
      * @param kp The {@link KeyPair} to be cloned - ignored if {@code null}
      * @return A cloned pair (or {@code null} if no original pair)
      * @throws GeneralSecurityException If failed to clone - e.g., provided key
-     * pair does not contain keys of the expected type
+     *                                  pair does not contain keys of the expected type
      * @see #getPublicKeyType()
-     * @see #getPrivateKeyType() 
+     * @see #getPrivateKeyType()
      */
     KeyPair cloneKeyPair(KeyPair kp) throws GeneralSecurityException;
 
@@ -93,19 +94,22 @@ public interface PublicKeyEntryDecoder<PUB extends PublicKey,PRV extends Private
 
     /**
      * @param keyData The key data bytes in {@code OpenSSH} format (after
-     * BASE64 decoding) - ignored if {@code null}/empty
+     *                BASE64 decoding) - ignored if {@code null}/empty
      * @return The decoded {@link PublicKey} - or {@code null} if no data
-     * @throws IOException If failed to decode the key
+     * @throws IOException              If failed to decode the key
      * @throws GeneralSecurityException If failed to generate the key
      */
-    PUB decodePublicKey(byte ... keyData) throws IOException, GeneralSecurityException;
+    PUB decodePublicKey(byte... keyData) throws IOException, GeneralSecurityException;
+
     PUB decodePublicKey(byte[] keyData, int offset, int length) throws IOException, GeneralSecurityException;
+
     PUB decodePublicKey(InputStream keyData) throws IOException, GeneralSecurityException;
-    
+
     /**
      * Encodes the {@link PublicKey} using the {@code OpenSSH} format - same
      * one used by the {@code decodePublicKey} method(s)
-     * @param s The {@link OutputStream} to write the data to
+     *
+     * @param s   The {@link OutputStream} to write the data to
      * @param key The {@link PublicKey} - may not be {@code null}
      * @return The key type value - one of the {@link #getSupportedTypeNames()}
      * @throws IOException If failed to generate the encoding

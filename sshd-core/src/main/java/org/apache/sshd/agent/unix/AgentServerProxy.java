@@ -51,7 +51,10 @@ public class AgentServerProxy extends AbstractLoggingBean implements SshAgentSer
      * {@link #DEFAULT_AUTH_SOCKET_TIMEOUT} is used
      */
     public static final String AUTH_SOCKET_TIMEOUT = "ssh-agent-server-proxy-auth-socket-timeout";
-        public static final int DEFAULT_AUTH_SOCKET_TIMEOUT = 10000000;
+    public static final int DEFAULT_AUTH_SOCKET_TIMEOUT = 10000000;
+
+    //used to wake the Local.listen() JNI call
+    private static final byte[] END_OF_STREAM_MESSAGE = new byte[]{"END_OF_STREAM".getBytes(StandardCharsets.UTF_8)[0]};
 
     private final ConnectionService service;
     private final String authSocket;
@@ -62,9 +65,6 @@ public class AgentServerProxy extends AbstractLoggingBean implements SshAgentSer
     private final boolean pipeCloseOnExit;
     private final AtomicBoolean open = new AtomicBoolean(true);
     private final AtomicBoolean innerFinished = new AtomicBoolean(false);
-
-    //used to wake the Local.listen() JNI call
-    private static final byte[] END_OF_STREAM_MESSAGE = new byte[] { "END_OF_STREAM".getBytes(StandardCharsets.UTF_8)[0] };
 
     public AgentServerProxy(ConnectionService service) throws IOException {
         this(service, null, false);
@@ -89,37 +89,37 @@ public class AgentServerProxy extends AbstractLoggingBean implements SshAgentSer
             if (result != Status.APR_SUCCESS) {
                 throwException(result);
             }
-            
+
             pipeService = (executor == null) ? ThreadUtils.newSingleThreadExecutor("sshd-AgentServerProxy-PIPE-" + authSocket) : executor;
             pipeCloseOnExit = (executor == pipeService) ? shutdownOnExit : true;
             piper = pipeService.submit(new Runnable() {
-                    @SuppressWarnings("synthetic-access")
-                    @Override
-                    public void run() {
-                        try {
-                            while (isOpen()) {
-                                try {
-                                    long clientSock = Local.accept(handle);
-                                    if (!isOpen()) {
-                                        break;
-                                    }
+                @SuppressWarnings("synthetic-access")
+                @Override
+                public void run() {
+                    try {
+                        while (isOpen()) {
+                            try {
+                                long clientSock = Local.accept(handle);
+                                if (!isOpen()) {
+                                    break;
+                                }
 
-                                    Session session = AgentServerProxy.this.service.getSession();
-                                    Socket.timeoutSet(clientSock, FactoryManagerUtils.getIntProperty(session, AUTH_SOCKET_TIMEOUT, DEFAULT_AUTH_SOCKET_TIMEOUT));
-                                    AgentForwardedChannel channel = new AgentForwardedChannel(clientSock);
-                                    AgentServerProxy.this.service.registerChannel(channel);
-                                    channel.open().verify(FactoryManagerUtils.getLongProperty(session, CHANNEL_OPEN_TIMEOUT_PROP, DEFAULT_CHANNEL_OPEN_TIMEOUT));
-                                } catch (Exception e) {
-                                    if (isOpen()) {
-                                        log.info(e.getClass().getSimpleName() + " while authentication forwarding: " + e.getMessage(), e);
-                                    }
+                                Session session = AgentServerProxy.this.service.getSession();
+                                Socket.timeoutSet(clientSock, FactoryManagerUtils.getIntProperty(session, AUTH_SOCKET_TIMEOUT, DEFAULT_AUTH_SOCKET_TIMEOUT));
+                                AgentForwardedChannel channel = new AgentForwardedChannel(clientSock);
+                                AgentServerProxy.this.service.registerChannel(channel);
+                                channel.open().verify(FactoryManagerUtils.getLongProperty(session, CHANNEL_OPEN_TIMEOUT_PROP, DEFAULT_CHANNEL_OPEN_TIMEOUT));
+                            } catch (Exception e) {
+                                if (isOpen()) {
+                                    log.info(e.getClass().getSimpleName() + " while authentication forwarding: " + e.getMessage(), e);
                                 }
                             }
-                        } finally {
-                            innerFinished.set(true);
                         }
+                    } finally {
+                        innerFinished.set(true);
                     }
-                });
+                }
+            });
         } catch (IOException e) {
             throw e;
         } catch (Exception e) {
@@ -194,19 +194,10 @@ public class AgentServerProxy extends AbstractLoggingBean implements SshAgentSer
             if (authSocket != null) {
                 final File socketFile = new File(authSocket);
                 if (socketFile.exists()) {
-                    if (socketFile.delete()) {
-                        if (isDebug) {
-                            log.debug("Deleted PIPE socket {}", socketFile);
-                        }
-                    }
+                    deleteFile(socketFile, "Deleted PIPE socket {}");
 
                     if (OsUtils.isUNIX()) {
-                        final File parentFile = socketFile.getParentFile();
-                        if (parentFile.delete()) {
-                            if (isDebug) {
-                                log.debug("Deleted parent PIPE socket {}", parentFile);
-                            }
-                        }
+                        deleteFile(socketFile.getParentFile(), "Deleted parent PIPE socket {}");
                     }
                 }
             }
@@ -216,7 +207,7 @@ public class AgentServerProxy extends AbstractLoggingBean implements SshAgentSer
                 log.debug("Exception deleting the PIPE socket: " + authSocket, e);
             }
         }
-        
+
         try {
             if ((piper != null) && (!piper.isDone())) {
                 piper.cancel(true);
@@ -224,18 +215,27 @@ public class AgentServerProxy extends AbstractLoggingBean implements SshAgentSer
         } finally {
             piper = null;
         }
-        
+
         ExecutorService executor = getExecutorService();
         if ((executor != null) && isShutdownOnExit() && (!executor.isShutdown())) {
-            Collection<?>   runners = executor.shutdownNow();
+            Collection<?> runners = executor.shutdownNow();
             if (log.isDebugEnabled()) {
                 log.debug("Shut down runners count=" + GenericUtils.size(runners));
             }
         }
     }
 
+    private void deleteFile(File file, String msg) {
+        if (file.delete()) {
+            if (log.isDebugEnabled()) {
+                log.debug(msg, file);
+            }
+        }
+    }
+
     /**
      * transform an APR error number in a more fancy exception
+     *
      * @param code APR error code
      * @throws java.io.IOException the produced exception for the given APR error number
      */

@@ -49,6 +49,7 @@ import org.junit.runners.MethodSorters;
 
 /**
  * Test client key exchange algorithms.
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
@@ -68,7 +69,7 @@ public class KexTest extends BaseTestSupport {
         sshd.setShellFactory(new EchoShellFactory());
         sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
         sshd.start();
-        port  = sshd.getPort();
+        port = sshd.getPort();
     }
 
     @After
@@ -80,22 +81,22 @@ public class KexTest extends BaseTestSupport {
 
     @Test
     public void testClientKeyExchanges() throws Exception {
-        Exception   err=null;
+        Exception err = null;
 
         for (BuiltinDHFactories f : BuiltinDHFactories.VALUES) {
             if (!f.isSupported()) {
                 System.out.println("Skip KEX=" + f.getName() + " - unsupported");
                 continue;
             }
-            
+
             try {
                 testClient(f);
-            } catch(Exception e) {
+            } catch (Exception e) {
                 System.err.println(e.getClass().getSimpleName() + " while test KEX=" + f.getName() + ": " + e.getMessage());
                 err = e;
             }
         }
-        
+
         if (err != null) {
             throw err;
         }
@@ -108,48 +109,48 @@ public class KexTest extends BaseTestSupport {
     private void testClient(NamedFactory<KeyExchange> kex) throws Exception {
         System.out.println("testClient - KEX=" + kex.getName());
 
-        try(ByteArrayOutputStream sent = new ByteArrayOutputStream();
-            ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+        try (ByteArrayOutputStream sent = new ByteArrayOutputStream();
+             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
 
-            try(SshClient client = SshClient.setUpDefaultClient()) {
+            try (SshClient client = SshClient.setUpDefaultClient()) {
                 client.setKeyExchangeFactories(Collections.singletonList(kex));
                 client.start();
-                
-                try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+
+                try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
                     session.addPasswordIdentity(getCurrentTestName());
                     session.auth().verify(5L, TimeUnit.SECONDS);
-                    
-                    try(ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
-                        PipedOutputStream pipedIn = new PipedOutputStream();
-                        InputStream inPipe = new PipedInputStream(pipedIn);
-                        ByteArrayOutputStream err = new ByteArrayOutputStream();
-                        OutputStream teeOut = new TeeOutputStream(sent, pipedIn)) {
-    
+
+                    try (ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
+                         PipedOutputStream pipedIn = new PipedOutputStream();
+                         InputStream inPipe = new PipedInputStream(pipedIn);
+                         ByteArrayOutputStream err = new ByteArrayOutputStream();
+                         OutputStream teeOut = new TeeOutputStream(sent, pipedIn)) {
+
                         channel.setIn(inPipe);
                         channel.setOut(out);
                         channel.setErr(err);
                         channel.open().verify(9L, TimeUnit.SECONDS);
-            
+
                         teeOut.write("this is my command\n".getBytes(StandardCharsets.UTF_8));
                         teeOut.flush();
-            
+
                         StringBuilder sb = new StringBuilder();
                         for (int i = 0; i < 10; i++) {
                             sb.append("0123456789");
                         }
                         sb.append("\n");
                         teeOut.write(sb.toString().getBytes(StandardCharsets.UTF_8));
-            
+
                         teeOut.write("exit\n".getBytes(StandardCharsets.UTF_8));
                         teeOut.flush();
-            
+
                         channel.waitFor(ClientChannel.CLOSED, 0);
                     }
                 } finally {
                     client.stop();
                 }
             }
-    
+
             assertArrayEquals(kex.getName(), sent.toByteArray(), out.toByteArray());
         }
     }

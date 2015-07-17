@@ -98,7 +98,8 @@ public class UserAuthAgent extends AbstractUserAuth {
                 log.info("Received SSH_MSG_USERAUTH_SUCCESS");
                 agent.close();
                 return Result.Success;
-            } if (cmd == SshConstants.SSH_MSG_USERAUTH_FAILURE) {
+            }
+            if (cmd == SshConstants.SSH_MSG_USERAUTH_FAILURE) {
                 log.info("Received SSH_MSG_USERAUTH_FAILURE");
                 if (keys.hasNext()) {
                     sendNextKey(keys.next().getFirst());

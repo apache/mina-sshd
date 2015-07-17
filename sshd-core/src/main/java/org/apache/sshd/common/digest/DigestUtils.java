@@ -37,7 +37,7 @@ public final class DigestUtils {
     /**
      * @param f The {@link Factory} to create the {@link Digest} to use
      * @param s The {@link String} to digest - ignored if {@code null}/empty,
-     * otherwise its UTF-8 representation is used as input for the fingerprint
+     *          otherwise its UTF-8 representation is used as input for the fingerprint
      * @return The fingerprint - {@code null} if {@code null}/empty input
      * @throws Exception If failed to calculate the digest
      * @see #getFingerPrint(Digest, String, Charset)
@@ -47,10 +47,10 @@ public final class DigestUtils {
     }
 
     /**
-     * @param f The {@link Factory} to create the {@link Digest} to use
-     * @param s The {@link String} to digest - ignored if {@code null}/empty
+     * @param f       The {@link Factory} to create the {@link Digest} to use
+     * @param s       The {@link String} to digest - ignored if {@code null}/empty
      * @param charset The {@link Charset} to use in order to convert the
-     * string to its byte representation to use as input for the fingerprint
+     *                string to its byte representation to use as input for the fingerprint
      * @return The fingerprint - {@code null} if {@code null}/empty input
      * @throws Exception If failed to calculate the digest
      */
@@ -61,7 +61,7 @@ public final class DigestUtils {
     /**
      * @param d The {@link Digest} to use
      * @param s The {@link String} to digest - ignored if {@code null}/empty,
-     * otherwise its UTF-8 representation is used as input for the fingerprint
+     *          otherwise its UTF-8 representation is used as input for the fingerprint
      * @return The fingerprint - {@code null} if {@code null}/empty input
      * @throws Exception If failed to calculate the digest
      * @see #getFingerPrint(Digest, String, Charset)
@@ -71,10 +71,10 @@ public final class DigestUtils {
     }
 
     /**
-     * @param d The {@link Digest} to use
-     * @param s The {@link String} to digest - ignored if {@code null}/empty
+     * @param d       The {@link Digest} to use
+     * @param s       The {@link String} to digest - ignored if {@code null}/empty
      * @param charset The {@link Charset} to use in order to convert the
-     * string to its byte representation to use as input for the fingerprint
+     *                string to its byte representation to use as input for the fingerprint
      * @return The fingerprint - {@code null} if {@code null}/empty input
      * @throws Exception If failed to calculate the digest
      */
@@ -87,21 +87,21 @@ public final class DigestUtils {
     }
 
     /**
-     * @param f The {@link Factory} to create the {@link Digest} to use
+     * @param f   The {@link Factory} to create the {@link Digest} to use
      * @param buf The data buffer to be fingerprint-ed
      * @return The fingerprint - {@code null} if empty data buffer
      * @throws Exception If failed to calculate the fingerprint
      * @see #getFingerPrint(Factory, byte[], int, int)
      */
-    public static String getFingerPrint(Factory<? extends Digest> f, byte ... buf) throws Exception {
+    public static String getFingerPrint(Factory<? extends Digest> f, byte... buf) throws Exception {
         return getFingerPrint(f, buf, 0, GenericUtils.length(buf));
     }
 
     /**
-     * @param f The {@link Factory} to create the {@link Digest} to use
-     * @param buf The data buffer to be fingerprint-ed
+     * @param f      The {@link Factory} to create the {@link Digest} to use
+     * @param buf    The data buffer to be fingerprint-ed
      * @param offset The offset of the data in the buffer
-     * @param len The length of data - ignored if non-positive
+     * @param len    The length of data - ignored if non-positive
      * @return The fingerprint - {@code null} if non-positive length
      * @throws Exception If failed to calculate the fingerprint
      */
@@ -110,21 +110,21 @@ public final class DigestUtils {
     }
 
     /**
-     * @param d The {@link Digest} to use
+     * @param d   The {@link Digest} to use
      * @param buf The data buffer to be fingerprint-ed
      * @return The fingerprint - {@code null} if empty data buffer
      * @throws Exception If failed to calculate the fingerprint
      * @see #getFingerPrint(Digest, byte[], int, int)
      */
-    public static String getFingerPrint(Digest d, byte ... buf) throws Exception {
+    public static String getFingerPrint(Digest d, byte... buf) throws Exception {
         return getFingerPrint(d, buf, 0, GenericUtils.length(buf));
     }
-    
+
     /**
-     * @param d The {@link Digest} to use
-     * @param buf The data buffer to be fingerprint-ed
+     * @param d      The {@link Digest} to use
+     * @param buf    The data buffer to be fingerprint-ed
      * @param offset The offset of the data in the buffer
-     * @param len The length of data - ignored if non-positive
+     * @param len    The length of data - ignored if non-positive
      * @return The fingerprint - {@code null} if non-positive length
      * @throws Exception If failed to calculate the fingerprint
      */

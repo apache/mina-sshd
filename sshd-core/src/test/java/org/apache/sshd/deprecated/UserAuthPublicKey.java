@@ -94,7 +94,8 @@ public class UserAuthPublicKey extends AbstractUserAuth {
             if (cmd == SshConstants.SSH_MSG_USERAUTH_SUCCESS) {
                 log.debug("Received SSH_MSG_USERAUTH_SUCCESS");
                 return Result.Success;
-            } if (cmd == SshConstants.SSH_MSG_USERAUTH_FAILURE) {
+            }
+            if (cmd == SshConstants.SSH_MSG_USERAUTH_FAILURE) {
                 log.debug("Received SSH_MSG_USERAUTH_FAILURE");
                 return Result.Failure;
             } else {

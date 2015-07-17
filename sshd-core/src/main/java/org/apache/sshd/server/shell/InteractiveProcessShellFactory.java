@@ -23,12 +23,25 @@ import org.apache.sshd.common.util.OsUtils;
 
 /**
  * A simplistic interactive shell factory
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class InteractiveProcessShellFactory extends ProcessShellFactory {
-    // must come first due to class loading issues
-    private static final String[] LINUX_COMMAND = { "/bin/sh", "-i", "-l" };
-    private static final String[] WINDOWS_COMMAND = { "cmd.exe" };
+
+    public static final InteractiveProcessShellFactory INSTANCE;
+
+    private static final String[] LINUX_COMMAND;
+    private static final String[] WINDOWS_COMMAND;
+
+    static {
+        LINUX_COMMAND = new String[] {"/bin/sh", "-i", "-l"};
+        WINDOWS_COMMAND = new String[] {"cmd.exe"};
+        INSTANCE = new InteractiveProcessShellFactory();
+    }
+
+    public InteractiveProcessShellFactory() {
+        super(resolveDefaultInteractiveCommand(), TtyOptions.resolveDefaultTtyOptions());
+    }
 
     public static String[] resolveDefaultInteractiveCommand() {
         return resolveInteractiveCommand(OsUtils.isWin32());
@@ -43,9 +56,4 @@ public class InteractiveProcessShellFactory extends ProcessShellFactory {
         }
     }
 
-    public static final InteractiveProcessShellFactory INSTANCE = new InteractiveProcessShellFactory();
-
-    public InteractiveProcessShellFactory() {
-        super(resolveDefaultInteractiveCommand(), TtyOptions.resolveDefaultTtyOptions());
-    }
 }

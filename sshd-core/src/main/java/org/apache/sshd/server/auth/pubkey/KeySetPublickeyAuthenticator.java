@@ -45,18 +45,18 @@ public class KeySetPublickeyAuthenticator extends AbstractLoggingBean implements
     public boolean authenticate(String username, PublicKey key, ServerSession session) {
         return authenticate(username, key, session, getKeySet());
     }
-    
+
     public boolean authenticate(String username, PublicKey key, ServerSession session, Collection<? extends PublicKey> keys) {
         if (GenericUtils.isEmpty(keys)) {
             if (log.isDebugEnabled()) {
                 log.debug("authenticate(" + username + ")[" + session + "] no keys");
             }
-            
+
             return false;
         }
-        
+
         PublicKey matchKey = KeyUtils.findMatchingKey(key, keys);
-        boolean matchFound = (matchKey != null);
+        boolean matchFound = matchKey != null;
         if (log.isDebugEnabled()) {
             log.debug("authenticate(" + username + ")[" + session + "] match found=" + matchFound);
         }

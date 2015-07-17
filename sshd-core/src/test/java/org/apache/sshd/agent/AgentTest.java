@@ -18,8 +18,6 @@
  */
 package org.apache.sshd.agent;
 
-import static org.apache.sshd.util.Utils.createTestKeyPairProvider;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -53,6 +51,8 @@ import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
+import static org.apache.sshd.util.Utils.createTestKeyPairProvider;
+
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class AgentTest extends BaseTestSupport {
     public AgentTest() {
@@ -64,7 +64,7 @@ public class AgentTest extends BaseTestSupport {
         // TODO: revisit this test to work without BC
         Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
 
-        try(AgentServer agent = new AgentServer()) {
+        try (AgentServer agent = new AgentServer()) {
             String authSocket;
             try {
                 authSocket = agent.start();
@@ -73,25 +73,25 @@ public class AgentTest extends BaseTestSupport {
                 authSocket = null;
             }
             Assume.assumeTrue("Native library N/A", authSocket != null);
-    
-            try(SshAgent client = new AgentClient(authSocket)) {
+
+            try (SshAgent client = new AgentClient(authSocket)) {
                 List<Pair<PublicKey, String>> keys = client.getIdentities();
                 assertNotNull("No initial identities", keys);
                 assertEquals("Unexpected initial identities size", 0, keys.size());
-        
+
                 KeyPair k = Utils.createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
                 client.addIdentity(k, "");
                 keys = client.getIdentities();
                 assertNotNull("No registered identities after add", keys);
                 assertEquals("Mismatched registered keys size", 1, keys.size());
-        
+
                 client.removeIdentity(k.getPublic());
                 keys = client.getIdentities();
                 assertNotNull("No registered identities after remove", keys);
                 assertEquals("Registered keys size not empty", 0, keys.size());
-        
+
                 client.removeAllIdentities();
-            }    
+            }
         }
     }
 
@@ -107,7 +107,7 @@ public class AgentTest extends BaseTestSupport {
         KeyPair pair = createTestKeyPairProvider("dsaprivkey.pem").loadKey(KeyPairProvider.SSH_DSS);
         localAgentFactory.getAgent().addIdentity(pair, username);
 
-        try(SshServer sshd1 = SshServer.setUpDefaultServer()) {
+        try (SshServer sshd1 = SshServer.setUpDefaultServer()) {
             sshd1.setKeyPairProvider(Utils.createTestHostKeyProvider());
             sshd1.setShellFactory(shellFactory);
             sshd1.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
@@ -115,9 +115,9 @@ public class AgentTest extends BaseTestSupport {
             sshd1.setAgentFactory(agentFactory);
             sshd1.setTcpipForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
             sshd1.start();
-            
+
             final int port1 = sshd1.getPort();
-            try(SshServer sshd2 = SshServer.setUpDefaultServer()) {
+            try (SshServer sshd2 = SshServer.setUpDefaultServer()) {
                 sshd2.setKeyPairProvider(Utils.createTestHostKeyProvider());
                 sshd2.setShellFactory(new TestEchoShellFactory());
                 sshd2.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
@@ -125,56 +125,56 @@ public class AgentTest extends BaseTestSupport {
                 sshd1.setTcpipForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
                 sshd2.setAgentFactory(new ProxyAgentFactory());
                 sshd2.start();
-    
+
                 final int port2 = sshd2.getPort();
-                try(SshClient client1 = SshClient.setUpDefaultClient()) {
+                try (SshClient client1 = SshClient.setUpDefaultClient()) {
                     client1.setAgentFactory(localAgentFactory);
                     client1.start();
-                    
-                    try(ClientSession session1 = client1.connect(username, "localhost", port1).verify(7L, TimeUnit.SECONDS).getSession()) {
+
+                    try (ClientSession session1 = client1.connect(username, "localhost", port1).verify(7L, TimeUnit.SECONDS).getSession()) {
                         session1.auth().verify(15L, TimeUnit.SECONDS);
 
-                        try(ChannelShell channel1 = session1.createShellChannel();
-                            ByteArrayOutputStream out = new ByteArrayOutputStream();
-                            ByteArrayOutputStream err = new ByteArrayOutputStream()) {
+                        try (ChannelShell channel1 = session1.createShellChannel();
+                             ByteArrayOutputStream out = new ByteArrayOutputStream();
+                             ByteArrayOutputStream err = new ByteArrayOutputStream()) {
 
                             channel1.setOut(out);
                             channel1.setErr(err);
                             channel1.setAgentForwarding(true);
                             channel1.open().verify(9L, TimeUnit.SECONDS);
-                            
-                            try(OutputStream pipedIn = channel1.getInvertedIn()) {
+
+                            try (OutputStream pipedIn = channel1.getInvertedIn()) {
                                 synchronized (shellFactory.shell) {
                                     System.out.println("Possibly waiting for remote shell to start");
                                     if (!shellFactory.shell.started) {
                                         shellFactory.shell.wait();
                                     }
                                 }
-                        
-                                try(SshClient client2 = SshClient.setUpDefaultClient()) {
+
+                                try (SshClient client2 = SshClient.setUpDefaultClient()) {
                                     client2.setAgentFactory(agentFactory);
                                     client2.getProperties().putAll(shellFactory.shell.getEnvironment().getEnv());
                                     client2.start();
-                                    
-                                    try(ClientSession session2 = client2.connect(username, "localhost", port2).verify(7L, TimeUnit.SECONDS).getSession()) {
+
+                                    try (ClientSession session2 = client2.connect(username, "localhost", port2).verify(7L, TimeUnit.SECONDS).getSession()) {
                                         session2.auth().verify(15L, TimeUnit.SECONDS);
 
-                                        try(ChannelShell channel2 = session2.createShellChannel()) {
+                                        try (ChannelShell channel2 = session2.createShellChannel()) {
                                             channel2.setIn(shellFactory.shell.getIn());
                                             channel2.setOut(shellFactory.shell.getOut());
                                             channel2.setErr(shellFactory.shell.getErr());
                                             channel2.setAgentForwarding(true);
                                             channel2.open().verify(9L, TimeUnit.SECONDS);
-                                    
+
                                             pipedIn.write("foo\n".getBytes(StandardCharsets.UTF_8));
                                             pipedIn.flush();
                                         }
-                                
+
                                         Thread.sleep(1000);
-                                
+
                                         System.out.println(out.toString());
                                         System.err.println(err.toString());
-                            
+
                                         sshd1.stop(true);
                                         sshd2.stop(true);
                                         client1.stop();

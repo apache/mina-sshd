@@ -18,10 +18,9 @@
  */
 package org.apache.sshd.util;
 
-import org.slf4j.LoggerFactory;
-
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -41,24 +40,41 @@ public class JSchLogger implements Logger {
     @Override
     public boolean isEnabled(int level) {
         switch (level) {
-            case DEBUG: return log.isDebugEnabled();
-            case INFO:  return log.isInfoEnabled();
-            case WARN:  return log.isWarnEnabled();
-            case ERROR: return log.isErrorEnabled();
-            case FATAL: return log.isErrorEnabled();
-            default   : return false;
+            case DEBUG:
+                return log.isDebugEnabled();
+            case INFO:
+                return log.isInfoEnabled();
+            case WARN:
+                return log.isWarnEnabled();
+            case ERROR:
+                return log.isErrorEnabled();
+            case FATAL:
+                return log.isErrorEnabled();
+            default:
+                return false;
         }
     }
 
     @Override
     public void log(int level, String message) {
         switch (level) {
-            case DEBUG: log.debug(message); break;
-            case INFO:  log.info(message); break;
-            case WARN:  log.warn(message); break;
-            case ERROR: log.error(message); break;
-            case FATAL: log.error(message); break;
-            default:    log.error("[LEVEL=" + level + "]: " + message);
+            case DEBUG:
+                log.debug(message);
+                break;
+            case INFO:
+                log.info(message);
+                break;
+            case WARN:
+                log.warn(message);
+                break;
+            case ERROR:
+                log.error(message);
+                break;
+            case FATAL:
+                log.error(message);
+                break;
+            default:
+                log.error("[LEVEL=" + level + "]: " + message);
         }
     }
 }

@@ -50,8 +50,8 @@ public class CancelTcpipForwardHandler extends AbstractLoggingBean implements Co
             if (log.isDebugEnabled()) {
                 log.debug("process(" + connectionService + ")[" + request + "] " + socketAddress + " reply=" + wantReply);
             }
-            
-            TcpipForwarder forwarder = connectionService.getTcpipForwarder(); 
+
+            TcpipForwarder forwarder = connectionService.getTcpipForwarder();
             forwarder.localPortForwardingCancelled(socketAddress);
 
             if (wantReply) {

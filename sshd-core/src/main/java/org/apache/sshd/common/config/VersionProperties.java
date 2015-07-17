@@ -36,34 +36,34 @@ import org.slf4j.LoggerFactory;
  */
 public final class VersionProperties {
     private static class LazyHolder {
-        private static final Map<String,String> properties =
+        private static final Map<String, String> PROPERTIES =
                 Collections.unmodifiableMap(loadVersionProperties(LazyHolder.class));
-        
-        private static Map<String,String> loadVersionProperties(Class<?> anchor) {
+
+        private static Map<String, String> loadVersionProperties(Class<?> anchor) {
             return loadVersionProperties(anchor, ThreadUtils.resolveDefaultClassLoader(anchor));
         }
 
-        private static Map<String,String> loadVersionProperties(Class<?> anchor, ClassLoader loader) {
-            Map<String,String> result = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        private static Map<String, String> loadVersionProperties(Class<?> anchor, ClassLoader loader) {
+            Map<String, String> result = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
             try {
                 InputStream input = loader.getResourceAsStream("org/apache/sshd/sshd-version.properties");
                 if (input == null) {
                     throw new FileNotFoundException("Resource does not exists");
                 }
-                
+
                 Properties props = new Properties();
                 try {
                     props.load(input);
                 } finally {
                     input.close();
                 }
-                
+
                 for (String key : props.stringPropertyNames()) {
                     String value = GenericUtils.trimToEmpty(props.getProperty(key));
                     if (GenericUtils.isEmpty(value)) {
                         continue;   // we have no need for empty value
                     }
-                    
+
                     String prev = result.put(key, value);
                     if (prev != null) {
                         Logger log = LoggerFactory.getLogger(anchor);
@@ -74,17 +74,18 @@ public final class VersionProperties {
                 Logger log = LoggerFactory.getLogger(anchor);
                 log.warn("Failed (" + e.getClass().getSimpleName() + ") to load version properties: " + e.getMessage());
             }
-            
+
             return result;
         }
     }
-    
-    @SuppressWarnings("synthetic-access")
-    public static Map<String,String> getVersionProperties() {
-        return LazyHolder.properties;
-    }
-    
+
     private VersionProperties() {
         throw new UnsupportedOperationException("No instance");
     }
+
+    @SuppressWarnings("synthetic-access")
+    public static Map<String, String> getVersionProperties() {
+        return LazyHolder.PROPERTIES;
+    }
+
 }

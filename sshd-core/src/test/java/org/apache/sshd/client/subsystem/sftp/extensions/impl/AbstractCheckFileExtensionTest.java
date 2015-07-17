@@ -71,7 +71,7 @@ public class AbstractCheckFileExtensionTest extends AbstractSftpClientTestSuppor
                             Integer.valueOf(Byte.MAX_VALUE),
                             Integer.valueOf(SftpConstants.MIN_CHKFILE_BLOCKSIZE),
                             Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE),
-                            Integer.valueOf(Byte.SIZE *IoUtils.DEFAULT_COPY_SIZE)
+                            Integer.valueOf(Byte.SIZE * IoUtils.DEFAULT_COPY_SIZE)
                     ));
     private static final Collection<Integer> BLOCK_SIZES =
             Collections.unmodifiableList(
@@ -80,18 +80,18 @@ public class AbstractCheckFileExtensionTest extends AbstractSftpClientTestSuppor
                             Integer.valueOf(SftpConstants.MIN_CHKFILE_BLOCKSIZE),
                             Integer.valueOf(1024),
                             Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE)
-                        ));
+                    ));
     @SuppressWarnings("synthetic-access")
     private static final Collection<Object[]> PARAMETERS =
             Collections.unmodifiableCollection(new LinkedList<Object[]>() {
                 private static final long serialVersionUID = 1L;    // we're not serializing it
-                
+
                 {
                     for (NamedFactory<?> factory : BuiltinDigests.VALUES) {
                         String algorithm = factory.getName();
                         for (Number dataSize : DATA_SIZES) {
                             for (Number blockSize : BLOCK_SIZES) {
-                                add(new Object[] { algorithm, dataSize, blockSize });
+                                add(new Object[]{algorithm, dataSize, blockSize});
                             }
                         }
                     }
@@ -136,16 +136,15 @@ public class AbstractCheckFileExtensionTest extends AbstractSftpClientTestSuppor
         }
 
         byte[] seed = (getClass().getName() + "#" + getCurrentTestName()
-                     + "-" + expectedAlgorithm
-                     + "-" + inputDataSize + "/" + hashBlockSize
-                     + System.getProperty("line.separator"))
-                .getBytes(StandardCharsets.UTF_8)
-                ;
+                + "-" + expectedAlgorithm
+                + "-" + inputDataSize + "/" + hashBlockSize
+                + System.getProperty("line.separator"))
+                .getBytes(StandardCharsets.UTF_8);
 
-        try(ByteArrayOutputStream baos=new ByteArrayOutputStream(inputDataSize + seed.length)) {
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream(inputDataSize + seed.length)) {
             while (baos.size() < inputDataSize) {
                 baos.write(seed);
-                
+
                 if (digest != null) {
                     digest.update(seed);
                 }
@@ -168,7 +167,7 @@ public class AbstractCheckFileExtensionTest extends AbstractSftpClientTestSuppor
             if (f == factory) {
                 continue;
             }
-            
+
             algorithms.add(f.getName());
         }
 
@@ -176,34 +175,34 @@ public class AbstractCheckFileExtensionTest extends AbstractSftpClientTestSuppor
         String srcPath = Utils.resolveRelativeRemotePath(parentPath, srcFile);
         String srcFolder = Utils.resolveRelativeRemotePath(parentPath, srcFile.getParent());
 
-        try(SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = SshClient.setUpDefaultClient()) {
             client.start();
-            
+
             try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
                 session.addPasswordIdentity(getCurrentTestName());
                 session.auth().verify(5L, TimeUnit.SECONDS);
-                
-                try(SftpClient sftp = session.createSftpClient()) {
+
+                try (SftpClient sftp = session.createSftpClient()) {
                     CheckFileNameExtension file = assertExtensionCreated(sftp, CheckFileNameExtension.class);
                     try {
-                        Pair<String,?> result = file.checkFileName(srcFolder, algorithms, 0L, 0L, hashBlockSize);
+                        Pair<String, ?> result = file.checkFileName(srcFolder, algorithms, 0L, 0L, hashBlockSize);
                         fail("Unexpected success to hash folder=" + srcFolder + ": " + result.getFirst());
-                    } catch(IOException e) {    // expected - not allowed to hash a folder
+                    } catch (IOException e) {    // expected - not allowed to hash a folder
                         assertTrue("Not an SftpException", e instanceof SftpException);
                     }
 
                     CheckFileHandleExtension hndl = assertExtensionCreated(sftp, CheckFileHandleExtension.class);
-                    try(CloseableHandle dirHandle = sftp.openDir(srcFolder)) {
+                    try (CloseableHandle dirHandle = sftp.openDir(srcFolder)) {
                         try {
-                            Pair<String,?> result = hndl.checkFileHandle(dirHandle, algorithms, 0L, 0L, hashBlockSize);
+                            Pair<String, ?> result = hndl.checkFileHandle(dirHandle, algorithms, 0L, 0L, hashBlockSize);
                             fail("Unexpected handle success on folder=" + srcFolder + ": " + result.getFirst());
-                        } catch(IOException e) {    // expected - not allowed to hash a folder
+                        } catch (IOException e) {    // expected - not allowed to hash a folder
                             assertTrue("Not an SftpException", e instanceof SftpException);
                         }
                     }
-                    
+
                     validateHashResult(file, file.checkFileName(srcPath, algorithms, 0L, 0L, hashBlockSize), algorithms.get(0), expectedHash);
-                    try(CloseableHandle fileHandle = sftp.open(srcPath, SftpClient.OpenMode.Read)) {
+                    try (CloseableHandle fileHandle = sftp.open(srcPath, SftpClient.OpenMode.Read)) {
                         validateHashResult(hndl, hndl.checkFileHandle(fileHandle, algorithms, 0L, 0L, hashBlockSize), algorithms.get(0), expectedHash);
                     }
                 }
@@ -212,21 +211,21 @@ public class AbstractCheckFileExtensionTest extends AbstractSftpClientTestSuppor
             }
         }
     }
-    
-    private void validateHashResult(NamedResource hasher, Pair<String,Collection<byte[]>> result, String expectedAlgorithm, byte[] expectedHash) {
+
+    private void validateHashResult(NamedResource hasher, Pair<String, Collection<byte[]>> result, String expectedAlgorithm, byte[] expectedHash) {
         String name = hasher.getName();
         assertNotNull("No result for hash=" + name, result);
         assertEquals("Mismatched hash algorithms for " + name, expectedAlgorithm, result.getFirst());
-        
+
         if (GenericUtils.length(expectedHash) > 0) {
             Collection<byte[]> values = result.getSecond();
             assertEquals("Mismatched hash values count for " + name, 1, GenericUtils.size(values));
-            
+
             byte[] actualHash = values.iterator().next();
             if (!Arrays.equals(expectedHash, actualHash)) {
                 fail("Mismatched hashes for " + name
-                   + ": expected=" + BufferUtils.printHex(':', expectedHash)
-                   + ", actual=" + BufferUtils.printHex(':', expectedHash));
+                        + ": expected=" + BufferUtils.printHex(':', expectedHash)
+                        + ", actual=" + BufferUtils.printHex(':', expectedHash));
             }
         }
     }

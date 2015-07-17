@@ -40,7 +40,7 @@ public final class ValidateUtils {
         return t;
     }
 
-    public static <T> T checkNotNull(T t, String message, Object ... args) {
+    public static <T> T checkNotNull(T t, String message, Object... args) {
         checkTrue(t != null, message, args);
         return t;
     }
@@ -57,31 +57,31 @@ public final class ValidateUtils {
         return t;
     }
 
-    public static String checkNotNullAndNotEmpty(String t, String message, Object ... args) {
+    public static String checkNotNullAndNotEmpty(String t, String message, Object... args) {
         t = checkNotNull(t, message, args).trim();
         checkTrue(GenericUtils.length(t) > 0, message, args);
         return t;
     }
 
-    public static <K,V,M extends Map<K,V>> M checkNotNullAndNotEmpty(M t, String message, Object ... args) {
+    public static <K, V, M extends Map<K, V>> M checkNotNullAndNotEmpty(M t, String message, Object... args) {
         t = checkNotNull(t, message, args);
         checkTrue(GenericUtils.size(t) > 0, message, args);
         return t;
     }
 
-    public static <T,C extends Collection<T>> C checkNotNullAndNotEmpty(C t, String message, Object ... args) {
+    public static <T, C extends Collection<T>> C checkNotNullAndNotEmpty(C t, String message, Object... args) {
         t = checkNotNull(t, message, args);
         checkTrue(GenericUtils.size(t) > 0, message, args);
         return t;
     }
 
-    public static byte[] checkNotNullAndNotEmpty(byte[] t, String message, Object ... args) {
+    public static byte[] checkNotNullAndNotEmpty(byte[] t, String message, Object... args) {
         t = checkNotNull(t, message, args);
         checkTrue(GenericUtils.length(t) > 0, message, args);
         return t;
     }
 
-    public static <T> T[] checkNotNullAndNotEmpty(T[] t, String message, Object ... args) {
+    public static <T> T[] checkNotNullAndNotEmpty(T[] t, String message, Object... args) {
         t = checkNotNull(t, message, args);
         checkTrue(GenericUtils.length(t) > 0, message, args);
         return t;
@@ -99,13 +99,13 @@ public final class ValidateUtils {
         }
     }
 
-    public static void checkTrue(boolean flag, String message, Object ... args) {
+    public static void checkTrue(boolean flag, String message, Object... args) {
         if (!flag) {
             throwIllegalArgumentException(message, args);
         }
     }
-    
-    public static void throwIllegalArgumentException(String message, Object ... args) {
+
+    public static void throwIllegalArgumentException(String message, Object... args) {
         throw new IllegalArgumentException(String.format(message, args));
     }
 }

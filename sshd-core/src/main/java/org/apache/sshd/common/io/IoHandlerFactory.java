@@ -20,18 +20,11 @@
 package org.apache.sshd.common.io;
 
 import org.apache.sshd.common.Factory;
-import org.apache.sshd.common.util.Transformer;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+// CHECKSTYLE:OFF
 public interface IoHandlerFactory extends Factory<IoHandler> {
-    // may be required due to generics reasons
-    Transformer<IoHandlerFactory,Factory<IoHandler>> FAC2FAC =
-            new Transformer<IoHandlerFactory, Factory<IoHandler>>() {
-                @Override
-                public Factory<IoHandler> transform(IoHandlerFactory input) {
-                    return input;
-                }
-            };
+
 }

@@ -52,14 +52,14 @@ public interface ScpSourceStreamResolver {
      * @throws IOException If failed to generate the required data
      */
     ScpTimestamp getTimestamp() throws IOException;
-    
+
     /**
      * @return An estimated size of the expected number of bytes to be uploaded.
      * If non-positive then assumed to be unknown.
      * @throws IOException If failed to generate an estimate
      */
     long getSize() throws IOException;
-    
+
     /**
      * @return The {@link InputStream} containing the data to be uploaded
      * @throws IOException If failed to create the stream

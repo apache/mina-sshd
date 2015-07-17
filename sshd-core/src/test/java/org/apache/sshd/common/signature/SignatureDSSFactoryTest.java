@@ -50,7 +50,7 @@ public class SignatureDSSFactoryTest extends AbstractSignatureFactoryTestSupport
     public SignatureDSSFactoryTest(int keySize) {
         super(KeyPairProvider.SSH_DSS, keySize);
     }
-    
+
     @Test
     public void testDSSPublicKeyAuth() throws Exception {
         testKeyPairProvider(DSSPublicKeyEntryDecoder.INSTANCE, FACTORIES);

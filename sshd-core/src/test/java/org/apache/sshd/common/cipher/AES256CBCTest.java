@@ -28,14 +28,14 @@ import org.junit.runners.MethodSorters;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class AES256CBCTest extends BaseCipherTest {
-	public AES256CBCTest() {
-		super();
-	}
+    public AES256CBCTest() {
+        super();
+    }
 
-	@Test
-	public void testEncryptDecrypt() throws Exception {
-		// for AES 256 bits we need the JCE unlimited strength policy
-		ensureKeySizeSupported(16, 32, "AES", "AES/CBC/NoPadding");
-		testEncryptDecrypt(BuiltinCiphers.aes256cbc);
-	}
+    @Test
+    public void testEncryptDecrypt() throws Exception {
+        // for AES 256 bits we need the JCE unlimited strength policy
+        ensureKeySizeSupported(16, 32, "AES", "AES/CBC/NoPadding");
+        testEncryptDecrypt(BuiltinCiphers.aes256cbc);
+    }
 }

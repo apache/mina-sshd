@@ -22,6 +22,7 @@ package org.apache.sshd.server;
 /**
  * An activator for the {@link SshServer#main(String[])} - the reason it is
  * here is because the logging configuration is available only for test scope
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ServerMain {

@@ -127,7 +127,7 @@ public interface ServerFactoryManager extends FactoryManager {
     /**
      * Retrieve the <code>GSSAuthenticator</code> to be used by the SSH server.
      * If no authenticator has been configured (i.e. this method returns
-     * {@code null}), then client authentication requests based on gssapi 
+     * {@code null}), then client authentication requests based on gssapi
      * will be rejected.
      *
      * @return the <code>GSSAuthenticator</code> or {@code null}
@@ -138,7 +138,7 @@ public interface ServerFactoryManager extends FactoryManager {
      * Retrieve the <code>ShellFactory</code> object to be used to create shells.
      *
      * @return a valid <code>ShellFactory</code> object or {@code null} if shells
-     *         are not supported on this server
+     * are not supported on this server
      */
     Factory<Command> getShellFactory();
 
@@ -146,7 +146,7 @@ public interface ServerFactoryManager extends FactoryManager {
      * Retrieve the <code>CommandFactory</code> to be used to process commands requests.
      *
      * @return a valid <code>CommandFactory</code> object or {@code null} if commands
-     *         are not supported on this server
+     * are not supported on this server
      */
     CommandFactory getCommandFactory();
 
@@ -155,7 +155,7 @@ public interface ServerFactoryManager extends FactoryManager {
      * be used to create subsystems.
      *
      * @return a list of named <code>CommandFactory.Command</code> factories
-     *         or {@code null} if subsystems are not supported on this server
+     * or {@code null} if subsystems are not supported on this server
      */
     List<NamedFactory<Command>> getSubsystemFactories();
 

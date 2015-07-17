@@ -29,7 +29,7 @@ import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
  */
 public class ChannelAgentForwardingFactory implements ChannelFactory, ExecutorServiceCarrier {
     public static final ChannelAgentForwardingFactory INSTANCE = new ChannelAgentForwardingFactory();
-    
+
     public ChannelAgentForwardingFactory() {
         super();
     }
@@ -51,7 +51,7 @@ public class ChannelAgentForwardingFactory implements ChannelFactory, ExecutorSe
 
     @Override
     public Channel create() {
-        ChannelAgentForwarding  channel = new ChannelAgentForwarding();
+        ChannelAgentForwarding channel = new ChannelAgentForwarding();
         channel.setExecutorService(getExecutorService());
         channel.setShutdownOnExit(isShutdownOnExit());
         return channel;

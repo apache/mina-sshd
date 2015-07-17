@@ -39,7 +39,7 @@ public class PuttyRequestHandler extends AbstractLoggingBean implements ChannelR
     public Result process(Channel channel, String request, boolean wantReply, Buffer buffer) throws Exception {
         // make sure proper suffix
         if ((GenericUtils.length(request) <= REQUEST_SUFFIX.length())
-         || (!request.endsWith(REQUEST_SUFFIX))) {
+                || (!request.endsWith(REQUEST_SUFFIX))) {
             return Result.Unsupported;
         }
 

@@ -20,7 +20,6 @@
 package org.apache.sshd.common.channel;
 
 import org.apache.sshd.common.io.AbstractIoWriteFuture;
-import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 

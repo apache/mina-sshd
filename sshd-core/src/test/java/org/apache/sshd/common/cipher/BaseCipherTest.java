@@ -19,12 +19,11 @@
 
 package org.apache.sshd.common.cipher;
 
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
-
-import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
 
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.cipher.Cipher.Mode;
@@ -36,55 +35,55 @@ import org.junit.Assume;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class BaseCipherTest extends BaseTestSupport {
-	protected BaseCipherTest() {
-		super();
-	}
+    protected BaseCipherTest() {
+        super();
+    }
 
     protected void ensureKeySizeSupported(int bsize, String algorithm, String transformation) throws GeneralSecurityException {
-		try {
-	        javax.crypto.Cipher	cipher=SecurityUtils.getCipher(transformation);
-	        byte[]				key=new byte[bsize];
-	        cipher.init(javax.crypto.Cipher.ENCRYPT_MODE, new SecretKeySpec(key, algorithm));
-		} catch(GeneralSecurityException e) {
-			if (e instanceof InvalidKeyException) {	// NOTE: assumption violations are NOT test failures...
-			    Assume.assumeTrue(algorithm + "/" + transformation + "[" + bsize + "] N/A", false);
-			}
+        try {
+            javax.crypto.Cipher cipher = SecurityUtils.getCipher(transformation);
+            byte[] key = new byte[bsize];
+            cipher.init(javax.crypto.Cipher.ENCRYPT_MODE, new SecretKeySpec(key, algorithm));
+        } catch (GeneralSecurityException e) {
+            if (e instanceof InvalidKeyException) {    // NOTE: assumption violations are NOT test failures...
+                Assume.assumeTrue(algorithm + "/" + transformation + "[" + bsize + "] N/A", false);
+            }
 
-			throw e;
-		}
-	}
+            throw e;
+        }
+    }
 
-	protected void ensureKeySizeSupported(int ivsize, int bsize, String algorithm, String transformation) throws GeneralSecurityException {
-		try {
-	        javax.crypto.Cipher	cipher=SecurityUtils.getCipher(transformation);
-	        byte[]				key=new byte[bsize];
-	        byte[]				iv=new byte[ivsize];
-	        cipher.init(javax.crypto.Cipher.ENCRYPT_MODE, new SecretKeySpec(key, algorithm), new IvParameterSpec(iv));
-		} catch(GeneralSecurityException e) {
-			if (e instanceof InvalidKeyException) {
-				Assume.assumeTrue(algorithm + "/" + transformation + "[" + bsize + "/" + ivsize + "]", false /* force exception */);
-			}
+    protected void ensureKeySizeSupported(int ivsize, int bsize, String algorithm, String transformation) throws GeneralSecurityException {
+        try {
+            javax.crypto.Cipher cipher = SecurityUtils.getCipher(transformation);
+            byte[] key = new byte[bsize];
+            byte[] iv = new byte[ivsize];
+            cipher.init(javax.crypto.Cipher.ENCRYPT_MODE, new SecretKeySpec(key, algorithm), new IvParameterSpec(iv));
+        } catch (GeneralSecurityException e) {
+            if (e instanceof InvalidKeyException) {
+                Assume.assumeTrue(algorithm + "/" + transformation + "[" + bsize + "/" + ivsize + "]", false /* force exception */);
+            }
 
-			throw e;
-		}
-	}
+            throw e;
+        }
+    }
 
-	protected void testEncryptDecrypt(NamedFactory<Cipher> factory) throws Exception {
-		String	facName=factory.getName();
-		Cipher	enc=factory.create();
-		int		keySize=enc.getBlockSize(), ivSize=enc.getIVSize();
-		byte[]	key=new byte[keySize], iv=new byte[ivSize];
-		enc.init(Mode.Encrypt, key, iv);
+    protected void testEncryptDecrypt(NamedFactory<Cipher> factory) throws Exception {
+        String facName = factory.getName();
+        Cipher enc = factory.create();
+        int keySize = enc.getBlockSize(), ivSize = enc.getIVSize();
+        byte[] key = new byte[keySize], iv = new byte[ivSize];
+        enc.init(Mode.Encrypt, key, iv);
 
-		byte[]	expected=facName.getBytes(StandardCharsets.UTF_8);
-		byte[]	workBuf=expected.clone();	// need to clone since the cipher works in-line
-		enc.update(workBuf, 0, workBuf.length);
+        byte[] expected = facName.getBytes(StandardCharsets.UTF_8);
+        byte[] workBuf = expected.clone();    // need to clone since the cipher works in-line
+        enc.update(workBuf, 0, workBuf.length);
 
-		Cipher	dec=factory.create();
-		dec.init(Mode.Decrypt, key, iv);
-		byte[]	actual=workBuf.clone();
-		dec.update(actual, 0, actual.length);
+        Cipher dec = factory.create();
+        dec.init(Mode.Decrypt, key, iv);
+        byte[] actual = workBuf.clone();
+        dec.update(actual, 0, actual.length);
 
-		assertArrayEquals(facName, expected, actual);
-	}
+        assertArrayEquals(facName, expected, actual);
+    }
 }

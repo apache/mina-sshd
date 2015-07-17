@@ -35,15 +35,16 @@ import org.apache.sshd.common.util.buffer.Buffer;
  */
 public class CopyDataExtensionImpl extends AbstractSftpClientExtension implements CopyDataExtension {
     public CopyDataExtensionImpl(SftpClient client, RawSftpClient raw, Collection<String> extra) {
-        super(SftpConstants.EXT_COPYDATA, client, raw, extra);
+        super(SftpConstants.EXT_COPY_DATA, client, raw, extra);
     }
 
     @Override
     public void copyData(Handle readHandle, long readOffset, long readLength, Handle writeHandle, long writeOffset) throws IOException {
-        byte[] srcId = readHandle.getIdentifier(), dstId = writeHandle.getIdentifier();
+        byte[] srcId = readHandle.getIdentifier();
+        byte[] dstId = writeHandle.getIdentifier();
         Buffer buffer = getCommandBuffer((Integer.SIZE / Byte.SIZE) + GenericUtils.length(srcId)
-                                       + (Integer.SIZE / Byte.SIZE) + GenericUtils.length(dstId)
-                                       + (3 * (Long.SIZE + (Integer.SIZE / Byte.SIZE))));
+                + (Integer.SIZE / Byte.SIZE) + GenericUtils.length(dstId)
+                + (3 * (Long.SIZE + (Integer.SIZE / Byte.SIZE))));
         buffer.putBytes(srcId);
         buffer.putLong(readOffset);
         buffer.putLong(readLength);

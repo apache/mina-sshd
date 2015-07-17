@@ -22,7 +22,7 @@ import org.apache.sshd.common.SshException;
 
 /**
  * Indicates a {@link Window} has been closed.
- * 
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class WindowClosedException extends SshException {

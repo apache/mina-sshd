@@ -112,11 +112,12 @@ public class ServerTest extends BaseTestSupport {
 
     /**
      * Send bad password.  The server should disconnect after a few attempts
+     *
      * @throws Exception
      */
     @Test
     public void testFailAuthenticationWithWaitFor() throws Exception {
-        final int   MAX_AUTH_REQUESTS=10;
+        final int MAX_AUTH_REQUESTS = 10;
         FactoryManagerUtils.updateProperty(sshd, ServerFactoryManager.MAX_AUTH_REQUESTS, MAX_AUTH_REQUESTS);
 
         client = SshClient.setUpDefaultClient();
@@ -125,15 +126,15 @@ public class ServerTest extends BaseTestSupport {
                 ClientConnectionServiceFactory.INSTANCE
         ));
         client.start();
-        
-        try(ClientSession s = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+
+        try (ClientSession s = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             int nbTrials = 0;
             int res = 0;
             while ((res & ClientSession.CLOSED) == 0) {
-                nbTrials ++;
+                nbTrials++;
                 s.getService(ClientUserAuthServiceOld.class)
-                 .auth(new org.apache.sshd.deprecated.UserAuthPassword(s, "ssh-connection", "buggy"))
-                 ;
+                        .auth(new org.apache.sshd.deprecated.UserAuthPassword(s, "ssh-connection", "buggy"))
+                ;
                 res = s.waitFor(ClientSession.CLOSED | ClientSession.WAIT_AUTH, 5000);
                 if (res == ClientSession.TIMEOUT) {
                     throw new TimeoutException();
@@ -147,7 +148,7 @@ public class ServerTest extends BaseTestSupport {
 
     @Test
     public void testFailAuthenticationWithFuture() throws Exception {
-        final int   MAX_AUTH_REQUESTS=10;
+        final int MAX_AUTH_REQUESTS = 10;
         FactoryManagerUtils.updateProperty(sshd, ServerFactoryManager.MAX_AUTH_REQUESTS, MAX_AUTH_REQUESTS);
 
         client = SshClient.setUpDefaultClient();
@@ -156,15 +157,15 @@ public class ServerTest extends BaseTestSupport {
                 ClientConnectionServiceFactory.INSTANCE
         ));
         client.start();
-        try(ClientSession s = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession s = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             int nbTrials = 0;
             AuthFuture authFuture;
             do {
                 nbTrials++;
                 assertTrue(nbTrials < 100);
                 authFuture = s.getService(ClientUserAuthServiceOld.class)
-                              .auth(new org.apache.sshd.deprecated.UserAuthPassword(s, "ssh-connection", "buggy"))
-                              ;
+                        .auth(new org.apache.sshd.deprecated.UserAuthPassword(s, "ssh-connection", "buggy"))
+                ;
                 assertTrue("Authentication wait failed", authFuture.await(5000));
                 assertTrue("Authentication not done", authFuture.isDone());
                 assertFalse("Authentication unexpectedly successful", authFuture.isSuccess());
@@ -179,12 +180,12 @@ public class ServerTest extends BaseTestSupport {
 
     @Test
     public void testAuthenticationTimeout() throws Exception {
-        final int   AUTH_TIMEOUT=5000;
+        final int AUTH_TIMEOUT = 5000;
         FactoryManagerUtils.updateProperty(sshd, FactoryManager.AUTH_TIMEOUT, AUTH_TIMEOUT);
 
         client = SshClient.setUpDefaultClient();
         client.start();
-        try(ClientSession s = client.connect("test", "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession s = client.connect("test", "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             int res = s.waitFor(ClientSession.CLOSED, 2 * AUTH_TIMEOUT);
             assertEquals("Session should be closed", ClientSession.CLOSED | ClientSession.WAIT_AUTH, res);
         } finally {
@@ -196,7 +197,7 @@ public class ServerTest extends BaseTestSupport {
     public void testIdleTimeout() throws Exception {
         final CountDownLatch latch = new CountDownLatch(1);
         TestEchoShellFactory.TestEchoShell.latch = new CountDownLatch(1);
-        final int   IDLE_TIMEOUT=2500;
+        final int IDLE_TIMEOUT = 2500;
         FactoryManagerUtils.updateProperty(sshd, FactoryManager.IDLE_TIMEOUT, IDLE_TIMEOUT);
 
         sshd.getSessionFactory().addListener(new SessionListener() {
@@ -204,10 +205,12 @@ public class ServerTest extends BaseTestSupport {
             public void sessionCreated(Session session) {
                 System.out.println("Session created");
             }
+
             @Override
             public void sessionEvent(Session session, Event event) {
                 System.out.println("Session event: " + event);
             }
+
             @Override
             public void sessionClosed(Session session) {
                 System.out.println("Session closed");
@@ -217,13 +220,13 @@ public class ServerTest extends BaseTestSupport {
 
         client = SshClient.setUpDefaultClient();
         client.start();
-        try(ClientSession s = client.connect("test", "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession s = client.connect("test", "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             s.addPasswordIdentity("test");
             s.auth().verify(5L, TimeUnit.SECONDS);
 
-            try(ChannelShell shell = s.createShellChannel();
-                ByteArrayOutputStream out = new ByteArrayOutputStream();
-                ByteArrayOutputStream err = new ByteArrayOutputStream()) {
+            try (ChannelShell shell = s.createShellChannel();
+                 ByteArrayOutputStream out = new ByteArrayOutputStream();
+                 ByteArrayOutputStream err = new ByteArrayOutputStream()) {
                 shell.setOut(out);
                 shell.setErr(err);
                 shell.open().verify(9L, TimeUnit.SECONDS);
@@ -240,17 +243,17 @@ public class ServerTest extends BaseTestSupport {
 
     /**
      * The scenario is the following:
-     *  - create a command that sends continuous data to the client
-     *  - the client does not read the data, filling the ssh window and the tcp socket
-     *  - the server session becomes idle, but the ssh disconnect message can't be written
-     *  - the server session is forcibly closed
+     * - create a command that sends continuous data to the client
+     * - the client does not read the data, filling the ssh window and the tcp socket
+     * - the server session becomes idle, but the ssh disconnect message can't be written
+     * - the server session is forcibly closed
      */
     @Test
     public void testServerIdleTimeoutWithForce() throws Exception {
         final CountDownLatch latch = new CountDownLatch(1);
 
         sshd.setCommandFactory(new StreamCommand.Factory());
-        
+
         FactoryManagerUtils.updateProperty(sshd, FactoryManager.IDLE_TIMEOUT, 5000);
         FactoryManagerUtils.updateProperty(sshd, FactoryManager.DISCONNECT_TIMEOUT, 2000);
         sshd.getSessionFactory().addListener(new SessionListener() {
@@ -274,27 +277,27 @@ public class ServerTest extends BaseTestSupport {
         client = SshClient.setUpDefaultClient();
         client.start();
 
-        try(ClientSession s = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession s = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             s.addPasswordIdentity(getCurrentTestName());
             s.auth().verify(5L, TimeUnit.SECONDS);
 
-            try(ChannelExec shell = s.createExecChannel("normal");
-                // Create a pipe that will block reading when the buffer is full
-                PipedInputStream pis = new PipedInputStream();
-                PipedOutputStream pos = new PipedOutputStream(pis)) {
+            try (ChannelExec shell = s.createExecChannel("normal");
+                 // Create a pipe that will block reading when the buffer is full
+                 PipedInputStream pis = new PipedInputStream();
+                 PipedOutputStream pos = new PipedOutputStream(pis)) {
 
                 shell.setOut(pos);
                 shell.open().verify(5L, TimeUnit.SECONDS);
-        
-                try(AbstractSession serverSession = sshd.getActiveSessions().iterator().next();
-                    Channel channel = serverSession.getService(AbstractConnectionService.class).getChannels().iterator().next()) {
+
+                try (AbstractSession serverSession = sshd.getActiveSessions().iterator().next();
+                     Channel channel = serverSession.getService(AbstractConnectionService.class).getChannels().iterator().next()) {
 
                     while (channel.getRemoteWindow().getSize() > 0) {
                         Thread.sleep(1);
                     }
-        
+
                     LoggerFactory.getLogger(getClass()).info("Waiting for session idle timeouts");
-            
+
                     long t0 = System.currentTimeMillis();
                     latch.await(1, TimeUnit.MINUTES);
                     long t1 = System.currentTimeMillis(), diff = t1 - t0;
@@ -315,8 +318,8 @@ public class ServerTest extends BaseTestSupport {
             protected AbstractSession createSession(IoSession ioSession) throws Exception {
                 return new ClientSessionImpl(client, ioSession) {
                     @Override
-                    protected Map<KexProposalOption,String> createProposal(String hostKeyTypes) {
-                        Map<KexProposalOption,String> proposal = super.createProposal(hostKeyTypes);
+                    protected Map<KexProposalOption, String> createProposal(String hostKeyTypes) {
+                        Map<KexProposalOption, String> proposal = super.createProposal(hostKeyTypes);
                         proposal.put(KexProposalOption.S2CLANG, "en-US");
                         proposal.put(KexProposalOption.C2SLANG, "en-US");
                         return proposal;
@@ -325,7 +328,7 @@ public class ServerTest extends BaseTestSupport {
             }
         });
         client.start();
-        try(ClientSession s = client.connect("test", "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession s = client.connect("test", "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             s.close(false);
         } finally {
             client.stop();
@@ -334,49 +337,49 @@ public class ServerTest extends BaseTestSupport {
 
     @Test
     public void testKexCompletedEvent() throws Exception {
-    	final AtomicInteger	serverEventCount=new AtomicInteger(0);
+        final AtomicInteger serverEventCount = new AtomicInteger(0);
         sshd.getSessionFactory().addListener(new SessionListener() {
-	            @Override
-                public void sessionCreated(Session session) {
-	            	// ignored
-	            }
-	
-	            @Override
-                public void sessionEvent(Session session, Event event) {
-	            	if (event == Event.KexCompleted) {
-	            		serverEventCount.incrementAndGet();
-	            	}
-	            }
-	
-	            @Override
-                public void sessionClosed(Session session) {
-	            	// ignored
-	            }
-	        });
+            @Override
+            public void sessionCreated(Session session) {
+                // ignored
+            }
+
+            @Override
+            public void sessionEvent(Session session, Event event) {
+                if (event == Event.KexCompleted) {
+                    serverEventCount.incrementAndGet();
+                }
+            }
+
+            @Override
+            public void sessionClosed(Session session) {
+                // ignored
+            }
+        });
 
         client = SshClient.setUpDefaultClient();
         client.start();
-    	final AtomicInteger	clientEventCount=new AtomicInteger(0);
+        final AtomicInteger clientEventCount = new AtomicInteger(0);
         client.getSessionFactory().addListener(new SessionListener() {
-	            @Override
-                public void sessionCreated(Session session) {
-	            	// ignored
-	            }
-	
-	            @Override
-                public void sessionEvent(Session session, Event event) {
-	            	if (event == Event.KexCompleted) {
-	            		clientEventCount.incrementAndGet();
-	            	}
-	            }
-	
-	            @Override
-                public void sessionClosed(Session session) {
-	            	// ignored
-	            }
-	        });
+            @Override
+            public void sessionCreated(Session session) {
+                // ignored
+            }
 
-        try(ClientSession s = client.connect("test", "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+            @Override
+            public void sessionEvent(Session session, Event event) {
+                if (event == Event.KexCompleted) {
+                    clientEventCount.incrementAndGet();
+                }
+            }
+
+            @Override
+            public void sessionClosed(Session session) {
+                // ignored
+            }
+        });
+
+        try (ClientSession s = client.connect("test", "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             s.addPasswordIdentity("test");
             s.auth().verify(5L, TimeUnit.SECONDS);
             assertEquals("Mismatched client events count", 1, clientEventCount.get());
@@ -389,9 +392,10 @@ public class ServerTest extends BaseTestSupport {
 
     @Test   // see https://issues.apache.org/jira/browse/SSHD-456
     public void testServerStillListensIfSessionListenerThrowsException() throws InterruptedException {
-        final Map<String,SocketAddress> eventsMap = new TreeMap<String, SocketAddress>(String.CASE_INSENSITIVE_ORDER);
+        final Map<String, SocketAddress> eventsMap = new TreeMap<String, SocketAddress>(String.CASE_INSENSITIVE_ORDER);
         sshd.getSessionFactory().addListener(new SessionListener() {
-            private final Logger log=LoggerFactory.getLogger(getClass());
+            private final Logger log = LoggerFactory.getLogger(getClass());
+
             @Override
             public void sessionCreated(Session session) {
                 throwException("SessionCreated", session);
@@ -406,51 +410,51 @@ public class ServerTest extends BaseTestSupport {
             public void sessionClosed(Session session) {
                 throwException("SessionClosed", session);
             }
-            
+
             private void throwException(String phase, Session session) {
-                IoSession       ioSession = session.getIoSession();
-                SocketAddress   addr = ioSession.getRemoteAddress();
+                IoSession ioSession = session.getIoSession();
+                SocketAddress addr = ioSession.getRemoteAddress();
                 synchronized (eventsMap) {
                     if (eventsMap.put(phase, addr) != null) {
                         return; // already generated an event for this phase
                     }
                 }
-                
+
                 RuntimeException e = new RuntimeException("Synthetic exception at phase=" + phase + ": " + addr);
                 log.info(e.getMessage());
                 throw e;
             }
         });
-        
+
         client = SshClient.setUpDefaultClient();
         client.start();
-        
-        int curCount=0;
-        for (int retryCount=0; retryCount < Byte.SIZE; retryCount++){
-            synchronized(eventsMap) {
-                if ((curCount=eventsMap.size()) >= 3) {
+
+        int curCount = 0;
+        for (int retryCount = 0; retryCount < Byte.SIZE; retryCount++) {
+            synchronized (eventsMap) {
+                if ((curCount = eventsMap.size()) >= 3) {
                     return;
                 }
             }
-            
+
             try {
-                try(ClientSession s = client.connect("test", "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+                try (ClientSession s = client.connect("test", "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
                     s.addPasswordIdentity("test");
                     s.auth().verify(5L, TimeUnit.SECONDS);
                 }
-                
-                synchronized(eventsMap) {
+
+                synchronized (eventsMap) {
                     assertTrue("Unexpected premature success: " + eventsMap, eventsMap.size() >= 3);
                 }
-            } catch(IOException e) {
+            } catch (IOException e) {
                 // expected - ignored
-                synchronized(eventsMap) {
-                    int nextCount=eventsMap.size();
+                synchronized (eventsMap) {
+                    int nextCount = eventsMap.size();
                     assertTrue("No session event generated", nextCount > curCount);
                 }
             }
         }
-        
+
         fail("No success to authenticate");
     }
 
@@ -458,55 +462,55 @@ public class ServerTest extends BaseTestSupport {
     public void testEnvironmentVariablesPropagationToServer() throws Exception {
         final AtomicReference<Environment> envHolder = new AtomicReference<Environment>(null);
         sshd.setCommandFactory(new CommandFactory() {
-                @Override
-                public Command createCommand(final String command) {
-                        ValidateUtils.checkTrue(String.CASE_INSENSITIVE_ORDER.compare(command, getCurrentTestName()) == 0, "Unexpected command: %s", command);
+            @Override
+            public Command createCommand(final String command) {
+                ValidateUtils.checkTrue(String.CASE_INSENSITIVE_ORDER.compare(command, getCurrentTestName()) == 0, "Unexpected command: %s", command);
 
-                        return new Command() {
-                            private ExitCallback cb;
-    
-                            @Override
-                            public void setOutputStream(OutputStream out) {
-                                // ignored
-                            }
-                            
-                            @Override
-                            public void setInputStream(InputStream in) {
-                                // ignored
-                            }
-                            
-                            @Override
-                            public void setExitCallback(ExitCallback callback) {
-                                cb = callback;
-                            }
-                            
-                            @Override
-                            public void setErrorStream(OutputStream err) {
-                                // ignored
-                            }
-                            
-                            @Override
-                            public void destroy() {
-                                // ignored
-                            }
-    
-                            @Override
-                            public void start(Environment env) throws IOException {
-                                if (envHolder.getAndSet(env) != null) {
-                                    throw new StreamCorruptedException("Multiple starts for command=" + command);
-                                }
-                                
-                                cb.onExit(0, command);
-                            }
-                        };
+                return new Command() {
+                    private ExitCallback cb;
+
+                    @Override
+                    public void setOutputStream(OutputStream out) {
+                        // ignored
                     }
-                });
+
+                    @Override
+                    public void setInputStream(InputStream in) {
+                        // ignored
+                    }
+
+                    @Override
+                    public void setExitCallback(ExitCallback callback) {
+                        cb = callback;
+                    }
+
+                    @Override
+                    public void setErrorStream(OutputStream err) {
+                        // ignored
+                    }
+
+                    @Override
+                    public void destroy() {
+                        // ignored
+                    }
+
+                    @Override
+                    public void start(Environment env) throws IOException {
+                        if (envHolder.getAndSet(env) != null) {
+                            throw new StreamCorruptedException("Multiple starts for command=" + command);
+                        }
+
+                        cb.onExit(0, command);
+                    }
+                };
+            }
+        });
 
 
         @SuppressWarnings("synthetic-access")
-        Map<String,String> expected = new TreeMap<String,String>(String.CASE_INSENSITIVE_ORDER) {
+        Map<String, String> expected = new TreeMap<String, String>(String.CASE_INSENSITIVE_ORDER) {
             private static final long serialVersionUID = 1L;    // we're not serializing it
-            
+
             {
                 put("test", getCurrentTestName());
                 put("port", Integer.toString(port));
@@ -516,17 +520,17 @@ public class ServerTest extends BaseTestSupport {
 
         client = SshClient.setUpDefaultClient();
         client.start();
-        try(ClientSession s = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession s = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             s.addPasswordIdentity(getCurrentTestName());
             s.auth().verify(5L, TimeUnit.SECONDS);
 
-            try(ChannelExec shell = s.createExecChannel(getCurrentTestName())) {
-                for (Map.Entry<String,String> ee : expected.entrySet()) {
+            try (ChannelExec shell = s.createExecChannel(getCurrentTestName())) {
+                for (Map.Entry<String, String> ee : expected.entrySet()) {
                     shell.setEnv(ee.getKey(), ee.getValue());
                 }
                 shell.open().verify(5L, TimeUnit.SECONDS);
                 shell.waitFor(ClientChannel.CLOSED, TimeUnit.SECONDS.toMillis(17L));
-                
+
                 Integer status = shell.getExitStatus();
                 assertNotNull("No exit status", status);
                 assertEquals("Bad exit status", 0, status.intValue());
@@ -534,10 +538,10 @@ public class ServerTest extends BaseTestSupport {
 
             Environment cmdEnv = envHolder.get();
             assertNotNull("No environment set", cmdEnv);
-            
-            Map<String,String> vars = cmdEnv.getEnv();
+
+            Map<String, String> vars = cmdEnv.getEnv();
             assertTrue("Mismatched vars count", GenericUtils.size(vars) >= GenericUtils.size(expected));
-            for (Map.Entry<String,String> ee : expected.entrySet()) {
+            for (Map.Entry<String, String> ee : expected.entrySet()) {
                 String key = ee.getKey(), expValue = ee.getValue(), actValue = vars.get(key);
                 assertEquals("Mismatched value for " + key, expValue, actValue);
             }

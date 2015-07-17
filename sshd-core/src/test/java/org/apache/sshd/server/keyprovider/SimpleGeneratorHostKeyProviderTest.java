@@ -54,7 +54,7 @@ public class SimpleGeneratorHostKeyProviderTest extends BaseTestSupport {
         Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
         testSimpleGeneratorHostKeyProvider("EC", KeyPairProvider.ECDSA_SHA2_NISTP256, -1, new ECGenParameterSpec("prime256v1"));
     }
-    
+
     @Test
     public void testEC_NISTP384() {
         Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
@@ -68,7 +68,7 @@ public class SimpleGeneratorHostKeyProviderTest extends BaseTestSupport {
     }
 
     private File testSimpleGeneratorHostKeyProvider(String algorithm, String keyType, int keySize, AlgorithmParameterSpec keySpec) {
-        File    path = initKeyFileLocation(algorithm);
+        File path = initKeyFileLocation(algorithm);
         KeyPair kpWrite = invokeSimpleGeneratorHostKeyProvider(path, algorithm, keyType, keySize, keySpec);
         assertTrue("Key file not generated: " + path.getAbsolutePath(), path.exists());
 
@@ -88,13 +88,13 @@ public class SimpleGeneratorHostKeyProviderTest extends BaseTestSupport {
         if (keySpec != null) {
             provider.setKeySpec(keySpec);
         }
-        
+
         return validateKeyPairProvider(provider, keyType);
     }
 
     private static KeyPair validateKeyPairProvider(KeyPairProvider provider, String keyType) {
-        Iterable<String>    types=provider.getKeyTypes();
-        KeyPair             kp=null;
+        Iterable<String> types = provider.getKeyTypes();
+        KeyPair kp = null;
         for (String type : types) {
             if (keyType.equals(type)) {
                 kp = provider.loadKey(keyType);
@@ -102,7 +102,7 @@ public class SimpleGeneratorHostKeyProviderTest extends BaseTestSupport {
                 break;
             }
         }
-        
+
         assertNotNull("Expected key type not found: " + keyType, kp);
         return kp;
     }
@@ -117,7 +117,7 @@ public class SimpleGeneratorHostKeyProviderTest extends BaseTestSupport {
         if (path.exists()) {
             assertTrue("Failed to delete test key file: " + path.getAbsolutePath(), path.delete());
         }
-        
+
         return path;
     }
 }

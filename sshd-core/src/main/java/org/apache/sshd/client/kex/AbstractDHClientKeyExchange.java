@@ -24,7 +24,6 @@ import java.security.PublicKey;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.kex.dh.AbstractDHKeyExchange;
 import org.apache.sshd.common.session.AbstractSession;
-import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
@@ -38,8 +37,8 @@ public abstract class AbstractDHClientKeyExchange extends AbstractDHKeyExchange 
     }
 
     @Override
-    public void init(AbstractSession s, byte[] V_S, byte[] V_C, byte[] I_S, byte[] I_C) throws Exception {
-        super.init(s, V_S, V_C, I_S, I_C);
+    public void init(AbstractSession s, byte[] v_s, byte[] v_c, byte[] i_s, byte[] i_c) throws Exception {
+        super.init(s, v_s, v_c, i_s, i_c);
         ValidateUtils.checkTrue(s instanceof ClientSession, "Using a client side KeyExchange on a server");
     }
 

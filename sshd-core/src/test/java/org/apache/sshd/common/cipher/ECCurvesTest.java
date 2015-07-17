@@ -40,7 +40,7 @@ public class ECCurvesTest extends BaseTestSupport {
     public void testFromName() {
         for (ECCurves expected : ECCurves.VALUES) {
             String name = expected.getName();
-            for (int index=0; index < name.length(); index++) {
+            for (int index = 0; index < name.length(); index++) {
                 ECCurves actual = ECCurves.fromCurveName(name);
                 assertSame(name, expected, actual);
                 name = shuffleCase(name);
@@ -56,7 +56,7 @@ public class ECCurvesTest extends BaseTestSupport {
             assertNotNull("No curve for listed name=" + name, c);
             assertTrue("Duplicated listed name: " + name, listed.add(c));
         }
-        
+
         assertEquals("Mismatched listed vs. values", ECCurves.VALUES, listed);
     }
 
@@ -82,14 +82,14 @@ public class ECCurvesTest extends BaseTestSupport {
     public void testFromKeyType() {
         for (ECCurves expected : ECCurves.VALUES) {
             String keyType = expected.getKeyType();
-            for (int index=0; index < keyType.length(); index++) {
+            for (int index = 0; index < keyType.length(); index++) {
                 ECCurves actual = ECCurves.fromKeyType(keyType);
                 assertSame(keyType, expected, actual);
                 keyType = shuffleCase(keyType);
             }
         }
     }
-    
+
     @Test
     public void testAllKeyTypesListed() {
         Set<ECCurves> listed = EnumSet.noneOf(ECCurves.class);
@@ -98,7 +98,7 @@ public class ECCurvesTest extends BaseTestSupport {
             assertNotNull("No curve for listed key type=" + name, c);
             assertTrue("Duplicated listed key type: " + name, listed.add(c));
         }
-        
+
         assertEquals("Mismatched listed vs. values", ECCurves.VALUES, listed);
     }
 }

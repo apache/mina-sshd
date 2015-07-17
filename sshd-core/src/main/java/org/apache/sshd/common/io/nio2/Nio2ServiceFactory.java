@@ -39,11 +39,11 @@ public class Nio2ServiceFactory extends AbstractIoServiceFactory {
 
     public Nio2ServiceFactory(FactoryManager factoryManager, ExecutorService service, boolean shutdownOnExit) {
         super(factoryManager,
-              service == null ? ThreadUtils.newFixedThreadPool(factoryManager.toString() + "-nio2", getNioWorkers(factoryManager)) : service,
-              service == null || shutdownOnExit);
+                service == null ? ThreadUtils.newFixedThreadPool(factoryManager.toString() + "-nio2", getNioWorkers(factoryManager)) : service,
+                service == null || shutdownOnExit);
         try {
             group = AsynchronousChannelGroup.withThreadPool(ThreadUtils.protectExecutorServiceShutdown(getExecutorService(), isShutdownOnExit()));
-        } catch(IOException e) {
+        } catch (IOException e) {
             log.warn("Failed (" + e.getClass().getSimpleName() + " to start async. channel group: " + e.getMessage(), e);
             throw new RuntimeSshException(e);
         }
@@ -65,7 +65,7 @@ public class Nio2ServiceFactory extends AbstractIoServiceFactory {
             if (!group.isShutdown()) {
                 log.debug("Shutdown group");
                 group.shutdownNow();
-            
+
                 // if we protect the executor then the await will fail since we didn't really shut it down...
                 if (isShutdownOnExit()) {
                     if (group.awaitTermination(5, TimeUnit.SECONDS)) {

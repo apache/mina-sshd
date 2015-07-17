@@ -28,13 +28,13 @@ import org.apache.sshd.common.util.buffer.Buffer;
  */
 public interface RawSftpClient {
     /**
-     * @param cmd Command to send - <B>Note:</B> only lower 8-bits are used
+     * @param cmd    Command to send - <B>Note:</B> only lower 8-bits are used
      * @param buffer The {@link Buffer} containing the command data
      * @return The assigned request id
      * @throws IOException if failed to send command
      */
     int send(int cmd, Buffer buffer) throws IOException;
-    
+
     /**
      * @param id The expected request id
      * @return The received response {@link Buffer} containing the request id

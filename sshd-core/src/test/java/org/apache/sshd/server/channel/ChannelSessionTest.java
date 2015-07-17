@@ -45,7 +45,7 @@ public class ChannelSessionTest extends BaseTestSupport {
         final Buffer buffer = new ByteArrayBuffer();
         buffer.putInt(1234);
 
-        try(ChannelSession channelSession = new ChannelSession()) {
+        try (ChannelSession channelSession = new ChannelSession()) {
             channelSession.asyncOut = new ChannelAsyncOutputStream(new BogusChannel(), (byte) 0) {
                 @SuppressWarnings("synthetic-access")
                 @Override

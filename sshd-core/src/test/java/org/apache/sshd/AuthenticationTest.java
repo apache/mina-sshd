@@ -89,9 +89,9 @@ public class AuthenticationTest extends BaseTestSupport {
 
     @Test
     public void testWrongPassword() throws Exception {
-        try(SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = SshClient.setUpDefaultClient()) {
             client.start();
-            try(ClientSession s = client.connect("user", "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+            try (ClientSession s = client.connect("user", "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
                 s.addPasswordIdentity("bad password");
                 assertTrue(s.auth().await().isFailure());
 
@@ -101,20 +101,20 @@ public class AuthenticationTest extends BaseTestSupport {
 
     @Test
     public void testChangeUser() throws Exception {
-        try(SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = SshClient.setUpDefaultClient()) {
             client.setServiceFactories(Arrays.asList(
                     new ClientUserAuthServiceOld.Factory(),
                     ClientConnectionServiceFactory.INSTANCE
             ));
 
             client.start();
-                
-            try(ClientSession s = client.connect(null, "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+
+            try (ClientSession s = client.connect(null, "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
                 s.waitFor(ClientSession.CLOSED | ClientSession.WAIT_AUTH, 0);
-        
+
                 assertFalse("Unexpected user1 password auth success", authPassword(s, "user1", "the-password").await().isSuccess());
                 assertFalse("Unexpected user2 password auth success", authPassword(s, "user2", "the-password").await().isSuccess());
-        
+
                 // Note that WAIT_AUTH flag should be false, but since the internal
                 // authentication future is not updated, it's still returned
                 assertEquals("Mismatched client session close mask", ClientSession.CLOSED | ClientSession.WAIT_AUTH, s.waitFor(ClientSession.CLOSED, 1000));
@@ -126,18 +126,18 @@ public class AuthenticationTest extends BaseTestSupport {
 
     @Test
     public void testAuthPasswordOnly() throws Exception {
-        try(SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = SshClient.setUpDefaultClient()) {
             client.setServiceFactories(Arrays.asList(
                     new ClientUserAuthServiceOld.Factory(),
                     ClientConnectionServiceFactory.INSTANCE
             ));
             client.start();
-            
-            try(ClientSession s = client.connect(null, "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+
+            try (ClientSession s = client.connect(null, "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
                 s.waitFor(ClientSession.CLOSED | ClientSession.WAIT_AUTH, 0);
-        
+
                 assertFalse("Unexpected password auth sucess", authPassword(s, getCurrentTestName(), getCurrentTestName()).await().isSuccess());
-        
+
                 s.close(true);
             } finally {
                 client.stop();
@@ -147,16 +147,16 @@ public class AuthenticationTest extends BaseTestSupport {
 
     @Test
     public void testAuthKeyPassword() throws Exception {
-        try(SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = SshClient.setUpDefaultClient()) {
             client.setServiceFactories(Arrays.asList(
                     new ClientUserAuthServiceOld.Factory(),
                     ClientConnectionServiceFactory.INSTANCE
             ));
             client.start();
-            
-            try(ClientSession s = client.connect(null, "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+
+            try (ClientSession s = client.connect(null, "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
                 s.waitFor(ClientSession.CLOSED | ClientSession.WAIT_AUTH, 0);
-        
+
                 KeyPair pair = Utils.createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
                 assertFalse("Unexpected pubkey auth success", authPublicKey(s, getCurrentTestName(), pair).await().isSuccess());
                 assertTrue("Failed password auth", authPassword(s, getCurrentTestName(), getCurrentTestName()).await().isSuccess());
@@ -169,20 +169,20 @@ public class AuthenticationTest extends BaseTestSupport {
 
     @Test
     public void testAuthKeyInteractive() throws Exception {
-        try(SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = SshClient.setUpDefaultClient()) {
             client.setServiceFactories(Arrays.asList(
                     new ClientUserAuthServiceOld.Factory(),
                     ClientConnectionServiceFactory.INSTANCE
             ));
             client.start();
-            
-            try(ClientSession s = client.connect(null, "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+
+            try (ClientSession s = client.connect(null, "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
                 s.waitFor(ClientSession.CLOSED | ClientSession.WAIT_AUTH, 0);
-        
+
                 KeyPair pair = Utils.createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
                 assertFalse("Unexpected pubkey auth success", authPublicKey(s, getCurrentTestName(), pair).await().isSuccess());
                 assertTrue("Failed password auth", authInteractive(s, getCurrentTestName(), getCurrentTestName()).await().isSuccess());
-        
+
                 s.close(true);
             } finally {
                 client.stop();
@@ -212,6 +212,7 @@ public class AuthenticationTest extends BaseTestSupport {
         public TestSession(ServerFactoryManager server, IoSession ioSession) throws Exception {
             super(server, ioSession);
         }
+
         @Override
         public void handleMessage(Buffer buffer) throws Exception {
             super.handleMessage(buffer);    // debug breakpoint

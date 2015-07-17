@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Reads from another {@link InputStream} up to specified max. length
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class LimitInputStream extends FilterInputStream implements Channel {

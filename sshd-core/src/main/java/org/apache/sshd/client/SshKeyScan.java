@@ -79,14 +79,15 @@ import org.apache.sshd.common.util.logging.LoggingUtils;
 
 /**
  * A naive implementation of <A HREF="https://www.freebsd.org/cgi/man.cgi?query=ssh-keyscan&sektion=1">ssh-keyscan(1)</A>
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class SshKeyScan extends AbstractSimplifiedLog
-                        implements Channel, Callable<Void>, ServerKeyVerifier, SessionListener {
+        implements Channel, Callable<Void>, ServerKeyVerifier, SessionListener {
     /**
      * Default key types if not overridden from the command line
      */
-    public static final List<String> DEFAULT_KEY_TYPES = 
+    public static final List<String> DEFAULT_KEY_TYPES =
             Collections.unmodifiableList(Arrays.asList(BuiltinIdentities.Constants.RSA, BuiltinIdentities.Constants.ECDSA));
     public static final long DEFAULT_TIMEOUT = TimeUnit.SECONDS.toMillis(5L);
     public static final Level DEFAULT_LEVEL = Level.INFO;
@@ -98,7 +99,7 @@ public class SshKeyScan extends AbstractSimplifiedLog
     private List<String> keyTypes;
     private InputStream input;
     private Level level;
-    private final Map<String,String> currentHostFingerprints = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    private final Map<String, String> currentHostFingerprints = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
     public SshKeyScan() {
         super();
@@ -107,7 +108,7 @@ public class SshKeyScan extends AbstractSimplifiedLog
     public int getPort() {
         return port;
     }
-    
+
     public void setPort(int port) {
         this.port = port;
     }
@@ -123,7 +124,7 @@ public class SshKeyScan extends AbstractSimplifiedLog
     public List<String> getKeyTypes() {
         return keyTypes;
     }
-    
+
     public void setKeyTypes(List<String> keyTypes) {
         this.keyTypes = keyTypes;
     }
@@ -151,14 +152,14 @@ public class SshKeyScan extends AbstractSimplifiedLog
             if ((t != null) || Level.SEVERE.equals(level) || Level.WARNING.equals(level)) {
                 ps = System.err;
             }
-            
+
             ps.append('\t').println(message);
             if (t != null) {
                 ps.append("\t\t").append(t.getClass().getSimpleName()).append(": ").println(t.getMessage());
             }
         }
     }
-            
+
     @Override
     public boolean isEnabled(Level level) {
         return LoggingUtils.isLoggable(level, getLogLevel());
@@ -169,14 +170,14 @@ public class SshKeyScan extends AbstractSimplifiedLog
         ValidateUtils.checkTrue(isOpen(), "Scanner is closed");
 
         Collection<String> typeNames = getKeyTypes();
-        Map<String,List<KeyPair>> pairsMap = createKeyPairs(typeNames);
+        Map<String, List<KeyPair>> pairsMap = createKeyPairs(typeNames);
         /*
          * We will need to switch signature factories for each specific
          * key type in order to force the server to send ONLY that specific
          * key, so pre-create the factories map according to the selected
          * key types
          */
-        Map<String,List<NamedFactory<Signature>>> sigFactories = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        Map<String, List<NamedFactory<Signature>>> sigFactories = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         for (String kt : new TreeSet<>(pairsMap.keySet())) {
             List<NamedFactory<Signature>> factories = resolveSignatureFactories(kt);
             if (GenericUtils.isEmpty(factories)) {
@@ -232,11 +233,11 @@ public class SshKeyScan extends AbstractSimplifiedLog
         } finally {
             try {
                 close();
-            } catch(IOException e) {
+            } catch (IOException e) {
                 err = GenericUtils.accumulateException(err, e);
             }
         }
-        
+
         if (err != null) {
             throw err;
         }
@@ -244,8 +245,10 @@ public class SshKeyScan extends AbstractSimplifiedLog
         return null;
     }
 
-    protected void resolveServerKeys(SshClient client, String host, Map<String,List<KeyPair>> pairsMap, Map<String,List<NamedFactory<Signature>>> sigFactories) throws IOException {
-        for (Map.Entry<String,List<KeyPair>> pe : pairsMap.entrySet()) {
+    protected void resolveServerKeys(SshClient client, String host,
+                                     Map<String, List<KeyPair>> pairsMap,
+                                     Map<String, List<NamedFactory<Signature>>> sigFactories) throws IOException {
+        for (Map.Entry<String, List<KeyPair>> pe : pairsMap.entrySet()) {
             String kt = pe.getKey();
             if (!isOpen()) {
                 throw new InterruptedIOException("Closed while attempting to retrieve key type=" + kt + " from " + host);
@@ -258,14 +261,14 @@ public class SshKeyScan extends AbstractSimplifiedLog
                  * specific one for the key in order to extract only the
                  * specific host key type
                  */
-                List<NamedFactory<Signature>>   forced = sigFactories.get(kt);
+                List<NamedFactory<Signature>> forced = sigFactories.get(kt);
                 client.setSignatureFactories(forced);
                 resolveServerKeys(client, host, kt, pe.getValue());
-            } catch(Exception e) {
+            } catch (Exception e) {
                 if (isEnabled(Level.FINE)) {
                     log(Level.FINE, "Failed to resolve key=" + kt + " for " + host);
                 }
-                
+
                 if (e instanceof ConnectException) {
                     return; // makes no sense to try again with another key type...
                 }
@@ -274,7 +277,7 @@ public class SshKeyScan extends AbstractSimplifiedLog
             }
         }
     }
-    
+
     protected void resolveServerKeys(SshClient client, String host, String kt, List<KeyPair> ids) throws Exception {
         int connectPort = getPort();
         if (isEnabled(Level.FINE)) {
@@ -285,11 +288,11 @@ public class SshKeyScan extends AbstractSimplifiedLog
         long waitTime = getTimeout();
         if (!future.await(waitTime)) {
             throw new ConnectException("Failed to connect to " + host + ":" + connectPort
-                                     + " within " + waitTime + " msec."
-                                     + " to retrieve key type=" + kt);
+                    + " within " + waitTime + " msec."
+                    + " to retrieve key type=" + kt);
         }
 
-        try(ClientSession session = future.getSession()) {
+        try (ClientSession session = future.getSession()) {
             IoSession ioSession = session.getIoSession();
             SocketAddress remoteAddress = ioSession.getRemoteAddress();
             String remoteLocation = toString(remoteAddress);
@@ -311,7 +314,7 @@ public class SshKeyScan extends AbstractSimplifiedLog
                     // shouldn't really succeed, but do it since key exchange occurs only on auth attempt
                     session.auth().verify(waitTime);
                     log(Level.WARNING, "Unexpected authentication success using key type=" + kt + " with " + remoteLocation);
-                } catch(Exception e) {
+                } catch (Exception e) {
                     if (isEnabled(Level.FINER)) {
                         log(Level.FINER, "Failed to authenticate using key type=" + kt + " with " + remoteLocation);
                     }
@@ -380,7 +383,7 @@ public class SshKeyScan extends AbstractSimplifiedLog
                     currentHostFingerprints.put(keyType, extra);
                 }
             }
-        } catch(Exception e) {
+        } catch (Exception e) {
             log(Level.SEVERE, "Failed to output the public key " + extra + " from " + remoteLocation, e);
         }
 
@@ -422,7 +425,7 @@ public class SshKeyScan extends AbstractSimplifiedLog
                 }
 
                 NamedFactory<Signature> f =
-                    ValidateUtils.checkNotNull(BuiltinSignatures.fromString(n), "Unknown curve signature: %s", n);
+                        ValidateUtils.checkNotNull(BuiltinSignatures.fromString(n), "Unknown curve signature: %s", n);
                 factories.add(f);
             }
 
@@ -432,12 +435,12 @@ public class SshKeyScan extends AbstractSimplifiedLog
         }
     }
 
-    protected Map<String,List<KeyPair>> createKeyPairs(Collection<String> typeNames) throws GeneralSecurityException {
+    protected Map<String, List<KeyPair>> createKeyPairs(Collection<String> typeNames) throws GeneralSecurityException {
         if (GenericUtils.isEmpty(typeNames)) {
             return Collections.emptyMap();
         }
 
-        Map<String,List<KeyPair>> pairsMap = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        Map<String, List<KeyPair>> pairsMap = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         for (String kt : typeNames) {
             if (pairsMap.containsKey(kt)) {
                 log(Level.WARNING, "Key type " + kt + " re-specified");
@@ -449,10 +452,10 @@ public class SshKeyScan extends AbstractSimplifiedLog
                 log(Level.WARNING, "No key-pairs generated for key type " + kt);
                 continue;
             }
-            
+
             pairsMap.put(kt, kps);
         }
-        
+
         return pairsMap;
     }
 
@@ -479,7 +482,7 @@ public class SshKeyScan extends AbstractSimplifiedLog
 
                 kps.add(KeyUtils.generateKeyPair(curve.getKeyType(), curve.getKeySize()));
             }
-            
+
             return kps;
         } else {
             throw new InvalidKeySpecException("Unknown key type: " + keyType);
@@ -501,7 +504,7 @@ public class SshKeyScan extends AbstractSimplifiedLog
         if (input != null) {
             try {
                 input.close();
-            } catch(IOException e) {
+            } catch (IOException e) {
                 err = GenericUtils.accumulateException(err, e);
             } finally {
                 input = null;
@@ -511,7 +514,7 @@ public class SshKeyScan extends AbstractSimplifiedLog
         if (client != null) {
             try {
                 client.close();
-            } catch(IOException e) {
+            } catch (IOException e) {
                 err = GenericUtils.accumulateException(err, e);
             } finally {
                 try {
@@ -529,9 +532,9 @@ public class SshKeyScan extends AbstractSimplifiedLog
     //////////////////////////////////////////////////////////////////////////
 
     // returns a List of the hosts to be contacted
-    public static List<String> parseCommandLineArguments(SshKeyScan scanner, String ... args) throws IOException {
+    public static List<String> parseCommandLineArguments(SshKeyScan scanner, String... args) throws IOException {
         int numArgs = GenericUtils.length(args);
-        for (int index=0; index < numArgs; index++) {
+        for (int index = 0; index < numArgs; index++) {
             String optName = args[index];
             if ("-f".equals(optName)) {
                 index++;
@@ -548,7 +551,7 @@ public class SshKeyScan extends AbstractSimplifiedLog
                 index++;
                 ValidateUtils.checkTrue(index < numArgs, "Missing %s option argument", optName);
                 ValidateUtils.checkTrue(GenericUtils.isEmpty(scanner.getKeyTypes()), "%s option re-specified", optName);
-                
+
                 String typeList = args[index];
                 String[] types = GenericUtils.split(typeList, ',');
                 ValidateUtils.checkTrue(GenericUtils.length(types) > 0, "No types specified for %s", optName);
@@ -557,7 +560,7 @@ public class SshKeyScan extends AbstractSimplifiedLog
                 index++;
                 ValidateUtils.checkTrue(index < numArgs, "Missing %s option argument", optName);
                 ValidateUtils.checkTrue(scanner.getPort() <= 0, "%s option re-specified", optName);
-                
+
                 String portValue = args[index];
                 int port = Integer.parseInt(portValue);
                 ValidateUtils.checkTrue((port > 0) && (port <= 0xFFFF), "Bad port: %s", portValue);
@@ -566,7 +569,7 @@ public class SshKeyScan extends AbstractSimplifiedLog
                 index++;
                 ValidateUtils.checkTrue(index < numArgs, "Missing %s option argument", optName);
                 ValidateUtils.checkTrue(scanner.getTimeout() <= 0, "%s option re-specified", optName);
-                
+
                 String timeoutValue = args[index];
                 long timeout = Long.parseLong(timeoutValue);
                 ValidateUtils.checkTrue(timeout > 0L, "Bad timeout: %s", timeoutValue);
@@ -575,22 +578,22 @@ public class SshKeyScan extends AbstractSimplifiedLog
                 ValidateUtils.checkTrue(scanner.getLogLevel() == null, "%s option re-specified", optName);
                 scanner.setLogLevel(Level.FINEST);
             } else {    // stop at first non-option - assume the rest are host names/addresses
-                ValidateUtils.checkTrue((optName.charAt(0) != '-'), "Unknown option: %s", optName);
-                
+                ValidateUtils.checkTrue(optName.charAt(0) != '-', "Unknown option: %s", optName);
+
                 int remaining = numArgs - index;
                 if (remaining == 1) {
                     return Collections.singletonList(optName);
                 }
-                
+
                 List<String> hosts = new ArrayList<>(remaining);
-                for ( ; index < numArgs; index++) {
+                for (; index < numArgs; index++) {
                     hosts.add(args[index]);
                 }
-                
+
                 return hosts;
             }
         }
-        
+
         return Collections.emptyList();
     }
 
@@ -601,21 +604,21 @@ public class SshKeyScan extends AbstractSimplifiedLog
             ValidateUtils.checkNotNull(scanner.getInputStream(), "No hosts or file specified");
         } else {
             ValidateUtils.checkTrue(scanner.getInputStream() == null, "Both hosts and file specified");
-            
+
             // convert the hosts from the arguments into a "file" - one host per line
-            try(ByteArrayOutputStream baos = new ByteArrayOutputStream(hosts.size() * 32)) {
-                try(Writer w = new OutputStreamWriter(baos, StandardCharsets.UTF_8)) {
-                    String EOL = System.getProperty("line.separator");
+            try (ByteArrayOutputStream baos = new ByteArrayOutputStream(hosts.size() * 32)) {
+                try (Writer w = new OutputStreamWriter(baos, StandardCharsets.UTF_8)) {
+                    String eol = System.getProperty("line.separator");
                     for (String h : hosts) {
-                        w.append(h).append(EOL);
+                        w.append(h).append(eol);
                     }
                 }
-                
+
                 byte[] data = baos.toByteArray();
                 scanner.setInputStream(new ByteArrayInputStream(data));
             }
         }
-        
+
         return scanner;
     }
 
@@ -624,11 +627,11 @@ public class SshKeyScan extends AbstractSimplifiedLog
         if (scanner.getPort() <= 0) {
             scanner.setPort(SshConfigFileReader.DEFAULT_PORT);
         }
-        
+
         if (scanner.getTimeout() <= 0L) {
             scanner.setTimeout(DEFAULT_TIMEOUT);
         }
-        
+
         if (GenericUtils.isEmpty(scanner.getKeyTypes())) {
             scanner.setKeyTypes(DEFAULT_KEY_TYPES);
         }
@@ -643,7 +646,7 @@ public class SshKeyScan extends AbstractSimplifiedLog
     /* -------------------------------------------------------------------- */
 
     public static void main(String[] args) throws Exception {
-        try(SshKeyScan scanner = new SshKeyScan()) {
+        try (SshKeyScan scanner = new SshKeyScan()) {
             Collection<String> hosts = parseCommandLineArguments(scanner, args);
             initializeScanner(scanner, hosts);
             scanner.call();

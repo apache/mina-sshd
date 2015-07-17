@@ -32,6 +32,7 @@ public class UserAuthNoneFactory implements UserAuthFactory {
     public String getName() {
         return "none";
     }
+
     @Override
     public UserAuth create() {
         return new UserAuthNone();

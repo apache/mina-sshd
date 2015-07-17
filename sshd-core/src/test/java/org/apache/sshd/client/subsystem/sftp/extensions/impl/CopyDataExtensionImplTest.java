@@ -63,31 +63,31 @@ public class CopyDataExtensionImplTest extends AbstractSftpClientTestSupport {
     private static final List<Object[]> PARAMETERS =
             Collections.unmodifiableList(
                     Arrays.<Object[]>asList(
-                                new Object[] {
-                                        Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE),
-                                        Integer.valueOf(0),
-                                        Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE),
-                                        Long.valueOf(0L)
-                                    },
-                                new Object[] {
-                                        Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE),
-                                        Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE / 2),
-                                        Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE / 4),
-                                        Long.valueOf(0L)
-                                    },
-                                new Object[] {
-                                        Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE),
-                                        Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE / 2),
-                                        Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE / 4),
-                                        Long.valueOf(IoUtils.DEFAULT_COPY_SIZE / 2)
-                                    },
-                                new Object[] {
-                                        Integer.valueOf(Byte.MAX_VALUE),
-                                        Integer.valueOf(Byte.MAX_VALUE / 2),
-                                        Integer.valueOf(Byte.MAX_VALUE),    // attempt to read more than available
-                                        Long.valueOf(0L)
-                                    }
-                            ));
+                            new Object[]{
+                                    Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE),
+                                    Integer.valueOf(0),
+                                    Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE),
+                                    Long.valueOf(0L)
+                            },
+                            new Object[]{
+                                    Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE),
+                                    Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE / 2),
+                                    Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE / 4),
+                                    Long.valueOf(0L)
+                            },
+                            new Object[]{
+                                    Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE),
+                                    Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE / 2),
+                                    Integer.valueOf(IoUtils.DEFAULT_COPY_SIZE / 4),
+                                    Long.valueOf(IoUtils.DEFAULT_COPY_SIZE / 2)
+                            },
+                            new Object[]{
+                                    Integer.valueOf(Byte.MAX_VALUE),
+                                    Integer.valueOf(Byte.MAX_VALUE / 2),
+                                    Integer.valueOf(Byte.MAX_VALUE),    // attempt to read more than available
+                                    Long.valueOf(0L)
+                            }
+                    ));
 
     @Parameters(name = "size={0}, readOffset={1}, readLength={2}, writeOffset={3}")
     public static Collection<Object[]> parameters() {
@@ -121,16 +121,15 @@ public class CopyDataExtensionImplTest extends AbstractSftpClientTestSupport {
 
     private void testCopyDataExtension(int dataSize, int readOffset, int readLength, long writeOffset) throws Exception {
         byte[] seed = (getClass().getName() + "#" + getCurrentTestName()
-                     + "-" + dataSize
-                     + "-" + readOffset + "/" + readLength + "/" + writeOffset
-                     + System.getProperty("line.separator"))
-                .getBytes(StandardCharsets.UTF_8)
-                ;
-        try(ByteArrayOutputStream baos=new ByteArrayOutputStream(dataSize + seed.length)) {
+                + "-" + dataSize
+                + "-" + readOffset + "/" + readLength + "/" + writeOffset
+                + System.getProperty("line.separator"))
+                .getBytes(StandardCharsets.UTF_8);
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream(dataSize + seed.length)) {
             while (baos.size() < dataSize) {
                 baos.write(seed);
             }
-            
+
             testCopyDataExtension(baos.toByteArray(), readOffset, readLength, writeOffset);
         }
     }
@@ -151,7 +150,7 @@ public class CopyDataExtensionImplTest extends AbstractSftpClientTestSupport {
         }
         String dstPath = Utils.resolveRelativeRemotePath(parentPath, dstFile);
 
-        try(SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = SshClient.setUpDefaultClient()) {
             client.start();
 
             if (writeOffset > 0L) {
@@ -159,8 +158,8 @@ public class CopyDataExtensionImplTest extends AbstractSftpClientTestSupport {
                 Random randomizer = factory.create();
                 long totalLength = writeOffset + readLength;
                 byte[] workBuf = new byte[(int) Math.min(totalLength, IoUtils.DEFAULT_COPY_SIZE)];
-                try(OutputStream output = Files.newOutputStream(dstFile, IoUtils.EMPTY_OPEN_OPTIONS)) {
-                    while(totalLength > 0L) {
+                try (OutputStream output = Files.newOutputStream(dstFile, IoUtils.EMPTY_OPEN_OPTIONS)) {
+                    while (totalLength > 0L) {
                         randomizer.fill(workBuf);
                         output.write(workBuf);
                         totalLength -= workBuf.length;
@@ -171,11 +170,11 @@ public class CopyDataExtensionImplTest extends AbstractSftpClientTestSupport {
             try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
                 session.addPasswordIdentity(getCurrentTestName());
                 session.auth().verify(5L, TimeUnit.SECONDS);
-                
-                try(SftpClient sftp = session.createSftpClient()) {
+
+                try (SftpClient sftp = session.createSftpClient()) {
                     CopyDataExtension ext = assertExtensionCreated(sftp, CopyDataExtension.class);
-                    try(CloseableHandle readHandle = sftp.open(srcPath, SftpClient.OpenMode.Read);
-                        CloseableHandle writeHandle = sftp.open(dstPath, SftpClient.OpenMode.Write, SftpClient.OpenMode.Create)) {
+                    try (CloseableHandle readHandle = sftp.open(srcPath, SftpClient.OpenMode.Read);
+                         CloseableHandle writeHandle = sftp.open(dstPath, SftpClient.OpenMode.Write, SftpClient.OpenMode.Create)) {
                         ext.copyData(readHandle, readOffset, readLength, writeHandle, writeOffset);
                     }
                 }
@@ -183,16 +182,16 @@ public class CopyDataExtensionImplTest extends AbstractSftpClientTestSupport {
                 client.stop();
             }
         }
-        
+
         int available = data.length, required = readOffset + readLength;
         if (required > available) {
-            required = available; 
+            required = available;
         }
         byte[] expected = new byte[required - readOffset];
         System.arraycopy(data, readOffset, expected, 0, expected.length);
-        
+
         byte[] actual = new byte[expected.length];
-        try(FileChannel channel = FileChannel.open(dstFile, IoUtils.EMPTY_OPEN_OPTIONS)) {
+        try (FileChannel channel = FileChannel.open(dstFile, IoUtils.EMPTY_OPEN_OPTIONS)) {
             int readLen = channel.read(ByteBuffer.wrap(actual), writeOffset);
             assertEquals("Mismatched read data size", expected.length, readLen);
         }

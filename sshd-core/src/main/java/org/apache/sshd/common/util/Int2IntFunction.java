@@ -23,25 +23,27 @@ package org.apache.sshd.common.util;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface Int2IntFunction {
+
+    /**
+     * An {@link Int2IntFunction} that returns same value as input
+     */
+    Int2IntFunction IDENTITY = new Int2IntFunction() {
+        @Override
+        public int apply(int value) {
+            return value;
+        }
+    };
+
     /**
      * @param value Argument
      * @return Function result
      */
     int apply(int value);
 
-    /**
-     * An {@link Int2IntFunction} that returns same value as input
-     */
-    Int2IntFunction IDENTITY = new Int2IntFunction() {
-            @Override
-            public int apply(int value) {
-                return value;
-            }
-        };
+    final class Utils {
 
-    public static final class Utils {
         private Utils() {
-            throw new UnsupportedOperationException("No instance");
+            throw new UnsupportedOperationException("No instance allowed");
         }
 
         public static Int2IntFunction sub(int delta) {
@@ -60,7 +62,7 @@ public interface Int2IntFunction {
                 };
             }
         }
-        
+
         public static Int2IntFunction mul(final int factor) {
             if (factor == 1) {
                 return IDENTITY;

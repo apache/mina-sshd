@@ -35,12 +35,18 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class DefaultSshFuture<T extends SshFuture> extends AbstractLoggingBean implements SshFuture<T> {
-    /** A default value to indicate the future has been canceled */
+    /**
+     * A default value to indicate the future has been canceled
+     */
     private static final Object CANCELED = new Object();
-    /** A value indicating a null */
+    /**
+     * A value indicating a null
+     */
     private static final Object NULL = new Object();
 
-    /** A lock used by the wait() method */
+    /**
+     * A lock used by the wait() method
+     */
     private final Object lock;
     private Object listeners;
     private Object result;
@@ -100,31 +106,32 @@ public class DefaultSshFuture<T extends SshFuture> extends AbstractLoggingBean i
      * <P>Waits (interruptible) for the specified timeout (msec.) and then checks
      * the result:</P><BR/>
      * <UL>
-     *      <LI>
-     *      If result is {@code null} then timeout is assumed to have expired - throw
-     *      an appropriate {@link IOException}
-     *      </LI>
-     *      
-     *      <LI>
-     *      If the result is of the expected type, then cast and return it
-     *      </LI>
-     *      
-     *      <LI>
-     *      If the result is an {@link IOException} then re-throw it
-     *      </LI>
-     *      
-     *      <LI>
-     *      If the result is a {@link Throwable} then throw an {@link IOException}
-     *      whose cause is the original exception
-     *      </LI>
-     *      
-     *      <LI>
-     *      Otherwise (should never happen), throw a {@link StreamCorruptedException}
-     *      with the name of the result type
-     *      </LI>
+     * <LI>
+     * If result is {@code null} then timeout is assumed to have expired - throw
+     * an appropriate {@link IOException}
+     * </LI>
+     * <p/>
+     * <LI>
+     * If the result is of the expected type, then cast and return it
+     * </LI>
+     * <p/>
+     * <LI>
+     * If the result is an {@link IOException} then re-throw it
+     * </LI>
+     * <p/>
+     * <LI>
+     * If the result is a {@link Throwable} then throw an {@link IOException}
+     * whose cause is the original exception
+     * </LI>
+     * <p/>
+     * <LI>
+     * Otherwise (should never happen), throw a {@link StreamCorruptedException}
+     * with the name of the result type
+     * </LI>
      * </UL>
+     *
      * @param expectedType The expected result type
-     * @param timeout The timeout (millis) to wait for a result
+     * @param timeout      The timeout (millis) to wait for a result
      * @return The (never {@code null}) result
      * @throws IOException If failed to retrieve the expected result on time
      */
@@ -133,7 +140,7 @@ public class DefaultSshFuture<T extends SshFuture> extends AbstractLoggingBean i
         if (value == null) {
             throw new SshException("Failed to get operation result within specified timeout: " + timeout);
         }
-        
+
         Class<?> actualType = value.getClass();
         if (expectedType.isAssignableFrom(actualType)) {
             return expectedType.cast(value);
@@ -150,18 +157,20 @@ public class DefaultSshFuture<T extends SshFuture> extends AbstractLoggingBean i
     /**
      * Wait for the Future to be ready. If the requested delay is 0 or
      * negative, this method immediately returns.
+     *
      * @param timeoutMillis The delay we will wait for the Future to be ready
      * @param interruptable Tells if the wait can be interrupted or not.
-     * If {@code true} and the thread is interrupted then an {@link InterruptedIOException}
-     * is thrown.
+     *                      If {@code true} and the thread is interrupted then an {@link InterruptedIOException}
+     *                      is thrown.
      * @return The non-{@code null} result object if the Future is ready,
      * {@code null} if the timeout expired and no result was received
      * @throws InterruptedIOException If the thread has been interrupted
-     * when it's not allowed.
+     *                                when it's not allowed.
      */
     protected Object await0(long timeoutMillis, boolean interruptable) throws InterruptedIOException {
         ValidateUtils.checkTrue(timeoutMillis >= 0L, "Negative timeout N/A: %d", timeoutMillis);
-        long startTime = System.currentTimeMillis(), curTime = startTime;
+        long startTime = System.currentTimeMillis();
+        long curTime = startTime;
         long endTime = ((Long.MAX_VALUE - timeoutMillis) < curTime) ? Long.MAX_VALUE : (curTime + timeoutMillis);
 
         synchronized (lock) {
@@ -231,7 +240,7 @@ public class DefaultSshFuture<T extends SshFuture> extends AbstractLoggingBean i
                 if (listeners == null) {
                     listeners = listener;
                 } else if (listeners instanceof SshFutureListener) {
-                    listeners = new Object[] { listeners, listener };
+                    listeners = new Object[]{listeners, listener};
                 } else {
                     Object[] ol = (Object[]) listeners;
                     int l = ol.length;

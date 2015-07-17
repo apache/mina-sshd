@@ -32,7 +32,7 @@ import org.apache.sshd.common.util.GenericUtils;
 public enum SyslogFacilityValue {
     DAEMON, USER, AUTH, LOCAL0, LOCAL1, LOCAL2, LOCAL3, LOCAL4, LOCAL5, LOCAL6, LOCAL7;
 
-    public static final Set<SyslogFacilityValue> VALUES=
+    public static final Set<SyslogFacilityValue> VALUES =
             Collections.unmodifiableSet(EnumSet.allOf(SyslogFacilityValue.class));
 
     public static SyslogFacilityValue fromName(String n) {

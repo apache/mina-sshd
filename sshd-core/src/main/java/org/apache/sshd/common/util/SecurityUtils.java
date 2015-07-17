@@ -34,7 +34,6 @@ import java.security.NoSuchProviderException;
 import java.security.SecureRandom;
 import java.security.Signature;
 import java.util.concurrent.Callable;
-
 import javax.crypto.Cipher;
 import javax.crypto.KeyAgreement;
 import javax.crypto.Mac;
@@ -64,12 +63,12 @@ import org.slf4j.LoggerFactory;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SecurityUtils {
+public final class SecurityUtils {
     public static final String BOUNCY_CASTLE = "BC";
 
     private static final Logger LOG = LoggerFactory.getLogger(SecurityUtils.class);
 
-    private static String securityProvider = null;
+    private static String securityProvider;
     private static Boolean registerBouncyCastle;
     private static boolean registrationDone;
     private static Boolean hasEcc;
@@ -157,12 +156,12 @@ public class SecurityUtils {
     }
 
     /* -------------------------------------------------------------------- */
-    
+
     // TODO in JDK-8 make this an interface...
     private static class BouncyCastleInputStreamLoader {
         public static KeyPair loadKeyPair(String resourceKey, InputStream inputStream, FilePasswordProvider provider)
                 throws IOException, GeneralSecurityException {
-            try(PEMParser r = new PEMParser(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
+            try (PEMParser r = new PEMParser(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
                 Object o = r.readObject();
 
                 JcaPEMKeyConverter pemConverter = new JcaPEMKeyConverter();
@@ -170,14 +169,14 @@ public class SecurityUtils {
                 if (o instanceof PEMEncryptedKeyPair) {
                     ValidateUtils.checkNotNull(provider, "No password provider for resource=%s", resourceKey);
 
-                    String  password = ValidateUtils.checkNotNullAndNotEmpty(provider.getPassword(resourceKey), "No password provided for resource=%s", resourceKey);
+                    String password = ValidateUtils.checkNotNullAndNotEmpty(provider.getPassword(resourceKey), "No password provided for resource=%s", resourceKey);
                     JcePEMDecryptorProviderBuilder decryptorBuilder = new JcePEMDecryptorProviderBuilder();
                     PEMDecryptorProvider pemDecryptor = decryptorBuilder.build(password.toCharArray());
                     o = ((PEMEncryptedKeyPair) o).decryptKeyPair(pemDecryptor);
                 }
 
                 if (o instanceof PEMKeyPair) {
-                    return pemConverter.getKeyPair((PEMKeyPair)o);
+                    return pemConverter.getKeyPair((PEMKeyPair) o);
                 } else if (o instanceof KeyPair) {
                     return (KeyPair) o;
                 } else {
@@ -189,34 +188,34 @@ public class SecurityUtils {
 
     /**
      * @param resourceKey An identifier of the key being loaded - used as
-     * argument to the {@link FilePasswordProvider#getPassword(String)}
-     * invocation
+     *                    argument to the {@link FilePasswordProvider#getPassword(String)}
+     *                    invocation
      * @param inputStream The {@link InputStream} for the <U>private</U> key
-     * @param provider A {@link FilePasswordProvider} - may be {@code null}
-     * if the loaded key is <U>guaranteed</U> not to be encrypted
+     * @param provider    A {@link FilePasswordProvider} - may be {@code null}
+     *                    if the loaded key is <U>guaranteed</U> not to be encrypted
      * @return The loaded {@link KeyPair}
-     * @throws IOException If failed to read/parse the input stream
+     * @throws IOException              If failed to read/parse the input stream
      * @throws GeneralSecurityException If failed to generate the keys - specifically,
-     * {@link NoSuchProviderException} is thrown also if {@link #isBouncyCastleRegistered()}
-     * is {@code false}
+     *                                  {@link NoSuchProviderException} is thrown also if {@link #isBouncyCastleRegistered()}
+     *                                  is {@code false}
      */
     public static KeyPair loadKeyPairIdentity(String resourceKey, InputStream inputStream, FilePasswordProvider provider)
             throws IOException, GeneralSecurityException {
         if (!isBouncyCastleRegistered()) {
             throw new NoSuchProviderException("BouncyCastle not registered");
         }
-        
+
         return BouncyCastleInputStreamLoader.loadKeyPair(resourceKey, inputStream, provider);
     }
 
     /* -------------------------------------------------------------------- */
 
     // use a separate class in order to avoid direct dependency
-    private static class BouncyCastleFileKeyPairProvider extends AbstractFileKeyPairProvider {
+    private static final class BouncyCastleFileKeyPairProvider extends AbstractFileKeyPairProvider {
         private BouncyCastleFileKeyPairProvider() {
             ValidateUtils.checkTrue(isBouncyCastleRegistered(), "BouncyCastle not registered");
         }
-        
+
         @Override
         protected KeyPair doLoadKey(String resourceKey, InputStream inputStream, FilePasswordProvider provider)
                 throws IOException, GeneralSecurityException {
@@ -231,7 +230,7 @@ public class SecurityUtils {
 
     /* -------------------------------------------------------------------- */
 
-    private static class BouncyCastleClassLoadableResourceKeyPairProvider extends AbstractClassLoadableResourceKeyPairProvider {
+    private static final class BouncyCastleClassLoadableResourceKeyPairProvider extends AbstractClassLoadableResourceKeyPairProvider {
         private BouncyCastleClassLoadableResourceKeyPairProvider() {
             ValidateUtils.checkTrue(isBouncyCastleRegistered(), "BouncyCastle not registered");
         }
@@ -250,7 +249,7 @@ public class SecurityUtils {
 
     /* -------------------------------------------------------------------- */
 
-    private static class BouncyCastleGeneratorHostKeyProvider extends AbstractGeneratorHostKeyProvider {
+    private static final class BouncyCastleGeneratorHostKeyProvider extends AbstractGeneratorHostKeyProvider {
         private BouncyCastleGeneratorHostKeyProvider(Path path) {
             ValidateUtils.checkTrue(isBouncyCastleRegistered(), "BouncyCastle not registered");
             setPath(path);
@@ -264,25 +263,25 @@ public class SecurityUtils {
         @SuppressWarnings("deprecation")
         @Override
         protected void doWriteKeyPair(String resourceKey, KeyPair kp, OutputStream outputStream) throws IOException, GeneralSecurityException {
-            try(org.bouncycastle.openssl.PEMWriter w =
-                    new org.bouncycastle.openssl.PEMWriter(new OutputStreamWriter(outputStream, StandardCharsets.UTF_8))) {
+            try (org.bouncycastle.openssl.PEMWriter w =
+                         new org.bouncycastle.openssl.PEMWriter(new OutputStreamWriter(outputStream, StandardCharsets.UTF_8))) {
                 w.writeObject(kp);
                 w.flush();
             }
         }
     }
-    
+
     @SuppressWarnings("synthetic-access")
     public static AbstractGeneratorHostKeyProvider createGeneratorHostKeyProvider(Path path) {
-        return new BouncyCastleGeneratorHostKeyProvider(path );
+        return new BouncyCastleGeneratorHostKeyProvider(path);
     }
 
     /* -------------------------------------------------------------------- */
-    
+
     /**
      * Named factory for the BouncyCastle <code>Random</code>
      */
-    private static class BouncyCastleRandomFactory implements RandomFactory {
+    private static final class BouncyCastleRandomFactory implements RandomFactory {
         private static final BouncyCastleRandomFactory INSTANCE = new BouncyCastleRandomFactory();
 
         private BouncyCastleRandomFactory() {
@@ -313,7 +312,7 @@ public class SecurityUtils {
      *
      * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
      */
-    private static class BouncyCastleRandom extends AbstractRandom {
+    private static final class BouncyCastleRandom extends AbstractRandom {
 
         private final RandomGenerator random;
 
@@ -337,27 +336,28 @@ public class SecurityUtils {
         public int random(int n) {
             if (n > 0) {
                 if ((n & -n) == n) {
-                    return (int)((n * (long) next(31)) >> 31);
+                    return (int) ((n * (long) next(31)) >> 31);
                 }
-                int bits, val;
+                int bits;
+                int val;
                 do {
                     bits = next(31);
                     val = bits % n;
-                } while (bits - val + (n-1) < 0);
+                } while (bits - val + (n - 1) < 0);
                 return val;
             }
             throw new IllegalArgumentException("Limit must be positive: " + n);
         }
 
-        final protected int next(int numBits) {
-            int bytes = (numBits+7)/8;
+        private int next(int numBits) {
+            int bytes = (numBits + 7) / 8;
             byte next[] = new byte[bytes];
             int ret = 0;
             random.nextBytes(next);
             for (int i = 0; i < bytes; i++) {
                 ret = (next[i] & 0xFF) | (ret << 8);
             }
-            return ret >>> (bytes*8 - numBits);
+            return ret >>> (bytes * 8 - numBits);
         }
     }
 
@@ -400,7 +400,7 @@ public class SecurityUtils {
 
     public static synchronized MessageDigest getMessageDigest(String algorithm) throws GeneralSecurityException {
         register();
-        
+
         String providerName = getSecurityProvider();
         if (GenericUtils.isEmpty(providerName)) {
             return MessageDigest.getInstance(algorithm);

@@ -28,8 +28,7 @@ public interface ChannelSessionAware {
     /**
      * Receives the channel in which the command is being executed.
      *
-     * @param session
-     *      never null
+     * @param session never null
      */
     void setChannelSession(ChannelSession session);
 }

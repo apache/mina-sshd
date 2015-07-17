@@ -62,6 +62,10 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
     protected byte expected;
     protected boolean oldRequest;
 
+    protected DHGEXServer(DHFactory factory) {
+        this.factory = ValidateUtils.checkNotNull(factory, "No factory");
+    }
+
     public static KeyExchangeFactory newFactory(final DHFactory factory) {
         return new KeyExchangeFactory() {
             @Override
@@ -83,13 +87,9 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
         };
     }
 
-    protected DHGEXServer(DHFactory factory) {
-        this.factory = ValidateUtils.checkNotNull(factory, "No factory");
-    }
-
     @Override
-    public void init(AbstractSession s, byte[] V_S, byte[] V_C, byte[] I_S, byte[] I_C) throws Exception {
-        super.init(s, V_S, V_C, I_S, I_C);
+    public void init(AbstractSession s, byte[] v_s, byte[] v_c, byte[] i_s, byte[] i_c) throws Exception {
+        super.init(s, v_s, v_c, i_s, i_c);
         expected = SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST;
     }
 
@@ -154,10 +154,10 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
             log.debug("Received SSH_MSG_KEX_DH_GEX_INIT");
             e = buffer.getMPIntAsBytes();
             dh.setF(e);
-            K = dh.getK();
+            k = dh.getK();
 
 
-            byte[] K_S;
+            byte[] k_s;
             KeyPair kp = ValidateUtils.checkNotNull(session.getHostKey(), "No server key pair available");
             String algo = session.getNegotiatedKexParameter(KexProposalOption.SERVERKEYS);
             FactoryManager manager = session.getFactoryManager();
@@ -169,14 +169,14 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
 
             buffer = new ByteArrayBuffer();
             buffer.putRawPublicKey(kp.getPublic());
-            K_S = buffer.getCompactData();
+            k_s = buffer.getCompactData();
 
             buffer.clear();
-            buffer.putBytes(V_C);
-            buffer.putBytes(V_S);
-            buffer.putBytes(I_C);
-            buffer.putBytes(I_S);
-            buffer.putBytes(K_S);
+            buffer.putBytes(v_c);
+            buffer.putBytes(v_s);
+            buffer.putBytes(i_c);
+            buffer.putBytes(i_s);
+            buffer.putBytes(k_s);
             if (oldRequest) {
                 buffer.putInt(prf);
             } else {
@@ -188,19 +188,19 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
             buffer.putMPInt(dh.getG());
             buffer.putMPInt(e);
             buffer.putMPInt(f);
-            buffer.putMPInt(K);
+            buffer.putMPInt(k);
             hash.update(buffer.array(), 0, buffer.available());
-            H = hash.digest();
+            h = hash.digest();
 
             byte[] sigH;
             buffer.clear();
-            sig.update(H, 0, H.length);
+            sig.update(h, 0, h.length);
             buffer.putString(algo);
             buffer.putBytes(sig.sign());
             sigH = buffer.getCompactData();
 
             if (log.isDebugEnabled()) {
-                log.debug("K_S:  {}", BufferUtils.printHex(K_S));
+                log.debug("K_S:  {}", BufferUtils.printHex(k_s));
                 log.debug("f:    {}", BufferUtils.printHex(f));
                 log.debug("sigH: {}", BufferUtils.printHex(sigH));
             }
@@ -211,7 +211,7 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
             buffer.rpos(5);
             buffer.wpos(5);
             buffer.putByte(SshConstants.SSH_MSG_KEX_DH_GEX_REPLY);
-            buffer.putBytes(K_S);
+            buffer.putBytes(k_s);
             buffer.putBytes(f);
             buffer.putBytes(sigH);
             session.writePacket(buffer);
@@ -270,7 +270,8 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
         if (groups == null) {
             moduliStr = "/org/apache/sshd/moduli";
             try {
-                if ((moduli = getClass().getResource(moduliStr)) == null) {
+                moduli = getClass().getResource(moduliStr);
+                if (moduli == null) {
                     throw new FileNotFoundException("Missing internal moduli file");
                 }
 

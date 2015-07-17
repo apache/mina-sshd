@@ -26,6 +26,7 @@ package org.apache.sshd.common.random;
 public interface Random {
     /**
      * Fill the buffer with random values
+     *
      * @param bytes The bytes to fill
      * @see #fill(byte[], int, int)
      */
@@ -33,9 +34,10 @@ public interface Random {
 
     /**
      * Fill part of bytes with random values.
+     *
      * @param bytes byte array to be filled.
      * @param start index to start filling at.
-     * @param len length of segment to fill.
+     * @param len   length of segment to fill.
      */
     void fill(byte[] bytes, int start, int len);
 

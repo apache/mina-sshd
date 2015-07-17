@@ -24,7 +24,7 @@ package org.apache.sshd.common.cipher;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface Cipher  {
+public interface Cipher {
 
     enum Mode {
         Encrypt, Decrypt
@@ -43,15 +43,17 @@ public interface Cipher  {
     /**
      * Initialize the cipher for encryption or decryption with
      * the given key and initialization vector
+     *
      * @param mode Encrypt/Decrypt initialization
-     * @param key Key bytes
-     * @param iv Initialization vector bytes
+     * @param key  Key bytes
+     * @param iv   Initialization vector bytes
      * @throws Exception If failed to initialize
      */
     void init(Mode mode, byte[] key, byte[] iv) throws Exception;
 
     /**
      * Performs in-place encryption or decryption on the given data.
+     *
      * @param input The input/output bytes
      * @throws Exception If failed to execute
      * @see #update(byte[], int, int)
@@ -60,9 +62,10 @@ public interface Cipher  {
 
     /**
      * Performs in-place encryption or decryption on the given data.
-     * @param input The input/output bytes
+     *
+     * @param input       The input/output bytes
      * @param inputOffset The offset of the data in the data buffer
-     * @param inputLen The number of bytes to update - starting at the given offset
+     * @param inputLen    The number of bytes to update - starting at the given offset
      * @throws Exception If failed to execute
      */
     void update(byte[] input, int inputOffset, int inputLen) throws Exception;

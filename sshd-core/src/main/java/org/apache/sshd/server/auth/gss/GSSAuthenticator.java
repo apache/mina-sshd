@@ -20,7 +20,6 @@ package org.apache.sshd.server.auth.gss;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-
 import javax.security.auth.login.LoginException;
 
 import org.apache.sshd.server.session.ServerSession;

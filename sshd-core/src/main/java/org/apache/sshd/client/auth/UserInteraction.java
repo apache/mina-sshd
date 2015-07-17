@@ -20,6 +20,7 @@ package org.apache.sshd.client.auth;
 
 /**
  * Interface used by the ssh client to communicate with the end user.
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @see <a href="https://www.ietf.org/rfc/rfc4256.txt">RFC 4256</A>
  */
@@ -27,17 +28,18 @@ public interface UserInteraction {
 
     /**
      * Displays the welcome banner to the user.
+     *
      * @param banner The welcome banner
      */
     void welcome(String banner);
 
     /**
      * @param destination The session identifier
-     * @param name The interaction name (may be empty)
+     * @param name        The interaction name (may be empty)
      * @param instruction The instruction (may be empty)
-     * @param lang The language for the data (may be empty)
-     * @param prompt The prompts to be displayed (may be empty)
-     * @param echo For each prompt whether to echo the user's response
+     * @param lang        The language for the data (may be empty)
+     * @param prompt      The prompts to be displayed (may be empty)
+     * @param echo        For each prompt whether to echo the user's response
      * @return The replies - <B>Note:</B> the protocol states that the number
      * of replies should be <U>exactly</U> the same as the number of prompts,
      * however we do not enforce it since it is defined as the <U>server's</U>

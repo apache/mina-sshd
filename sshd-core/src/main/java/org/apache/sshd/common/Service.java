@@ -18,7 +18,6 @@
  */
 package org.apache.sshd.common;
 
-import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.buffer.Buffer;
 
@@ -37,7 +36,8 @@ public interface Service extends Closeable {
 
     /**
      * Service the request.
-     * @param cmd The incoming command type
+     *
+     * @param cmd    The incoming command type
      * @param buffer The {@link Buffer} containing optional command parameters
      * @throws Exception If failed to process the command
      */

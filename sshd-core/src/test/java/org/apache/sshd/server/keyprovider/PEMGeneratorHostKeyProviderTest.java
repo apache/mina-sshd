@@ -75,12 +75,12 @@ public class PEMGeneratorHostKeyProviderTest extends BaseTestSupport {
     }
 
     private File testPEMGeneratorHostKeyProvider(String algorithm, String keyType, int keySize, AlgorithmParameterSpec keySpec) {
-        File    path = initKeyFileLocation(algorithm);
+        File path = initKeyFileLocation(algorithm);
         KeyPair kpWrite = invokePEMGeneratorHostKeyProvider(path, algorithm, keyType, keySize, keySpec);
         assertTrue("Key file not generated: " + path.getAbsolutePath(), path.exists());
 
-        KeyPair     kpRead = invokePEMGeneratorHostKeyProvider(path, algorithm, keyType, keySize, keySpec);
-        PublicKey   pubWrite = kpWrite.getPublic(), pubRead = kpRead.getPublic();
+        KeyPair kpRead = invokePEMGeneratorHostKeyProvider(path, algorithm, keyType, keySize, keySpec);
+        PublicKey pubWrite = kpWrite.getPublic(), pubRead = kpRead.getPublic();
         if (pubWrite instanceof ECPublicKey) {
             // The algorithm is reported as ECDSA instead of EC
             assertECPublicKeyEquals("Mismatched EC public key", ECPublicKey.class.cast(pubWrite), ECPublicKey.class.cast(pubRead));
@@ -105,8 +105,8 @@ public class PEMGeneratorHostKeyProviderTest extends BaseTestSupport {
     }
 
     private static KeyPair validateKeyPairProvider(KeyPairProvider provider, String keyType) {
-        Iterable<String>    types=provider.getKeyTypes();
-        KeyPair             kp=null;
+        Iterable<String> types = provider.getKeyTypes();
+        KeyPair kp = null;
         for (String type : types) {
             if (keyType.equals(type)) {
                 kp = provider.loadKey(keyType);
@@ -114,7 +114,7 @@ public class PEMGeneratorHostKeyProviderTest extends BaseTestSupport {
                 break;
             }
         }
-        
+
         assertNotNull("Expected key type not found: " + keyType, kp);
         return kp;
     }
@@ -129,7 +129,7 @@ public class PEMGeneratorHostKeyProviderTest extends BaseTestSupport {
         if (path.exists()) {
             assertTrue("Failed to delete test key file: " + path.getAbsolutePath(), path.delete());
         }
-        
+
         return path;
     }
 }

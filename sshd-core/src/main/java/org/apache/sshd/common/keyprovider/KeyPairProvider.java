@@ -57,27 +57,6 @@ public interface KeyPairProvider {
     String ECDSA_SHA2_NISTP521 = ECCurves.nistp521.getKeyType();
 
     /**
-     * Load available keys.
-     * @return an {@link Iterable} instance of available keys, never {@code null}
-     */
-    Iterable<KeyPair> loadKeys();
-
-    /**
-     * Load a key of the specified type which can be "ssh-rsa", "ssh-dss", or
-     * "ecdsa-sha2-nistp{256,384,521}". If there is no key of this type, return
-     * {@code null}
-     *
-     * @param type the type of key to load
-     * @return a valid key pair or {@code null}
-     */
-    KeyPair loadKey(String type);
-
-    /**
-     * @return The available {@link Iterable} key types in preferred order - never {@code null}
-     */
-    Iterable<String> getKeyTypes();
-    
-    /**
      * A {@link KeyPairProvider} that has no keys
      */
     KeyPairProvider EMPTY_KEYPAIR_PROVIDER =
@@ -102,4 +81,27 @@ public interface KeyPairProvider {
                 return "EMPTY_KEYPAIR_PROVIDER";
             }
         };
+
+    /**
+     * Load available keys.
+     *
+     * @return an {@link Iterable} instance of available keys, never {@code null}
+     */
+    Iterable<KeyPair> loadKeys();
+
+    /**
+     * Load a key of the specified type which can be "ssh-rsa", "ssh-dss", or
+     * "ecdsa-sha2-nistp{256,384,521}". If there is no key of this type, return
+     * {@code null}
+     *
+     * @param type the type of key to load
+     * @return a valid key pair or {@code null}
+     */
+    KeyPair loadKey(String type);
+
+    /**
+     * @return The available {@link Iterable} key types in preferred order - never {@code null}
+     */
+    Iterable<String> getKeyTypes();
+
 }

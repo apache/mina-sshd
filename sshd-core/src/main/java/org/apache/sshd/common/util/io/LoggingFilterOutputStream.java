@@ -43,7 +43,7 @@ public class LoggingFilterOutputStream extends FilterOutputStream {
 
     @Override
     public void write(int b) throws IOException {
-	    byte[] d = new byte[1];
+        byte[] d = new byte[1];
         d[0] = (byte) b;
         write(d, 0, 1);
     }

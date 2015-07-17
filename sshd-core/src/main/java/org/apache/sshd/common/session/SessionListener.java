@@ -33,12 +33,14 @@ public interface SessionListener extends EventListener {
 
     /**
      * A new session just been created
+     *
      * @param session
      */
     void sessionCreated(Session session);
 
     /**
      * An event has been triggered
+     *
      * @param session
      * @param event
      */
@@ -46,6 +48,7 @@ public interface SessionListener extends EventListener {
 
     /**
      * A session has been closed
+     *
      * @param session
      */
     void sessionClosed(Session session);

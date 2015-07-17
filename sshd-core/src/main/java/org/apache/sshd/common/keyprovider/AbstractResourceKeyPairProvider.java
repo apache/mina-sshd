@@ -39,13 +39,14 @@ import org.apache.sshd.common.util.GenericUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractResourceKeyPairProvider<R> extends AbstractKeyPairProvider {
+
     private FilePasswordProvider passwordFinder;
     /* 
      * NOTE: the map is case insensitive even for Linux, as it is (very) bad
      * practice to have 2 key files that differ from one another only in their
      * case... 
      */
-    private final Map<String,KeyPair>   cacheMap=new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    private final Map<String, KeyPair> cacheMap = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
     protected AbstractResourceKeyPairProvider() {
         super();
@@ -61,8 +62,8 @@ public abstract class AbstractResourceKeyPairProvider<R> extends AbstractKeyPair
 
     protected void resetCacheMap(Collection<?> resources) {
         // if have any cached pairs then see what we can keep from previous load
-        Collection<String>  toDelete=Collections.emptySet();
-        synchronized(cacheMap) {
+        Collection<String> toDelete = Collections.emptySet();
+        synchronized (cacheMap) {
             if (cacheMap.size() <= 0) {
                 return; // already empty - nothing to keep
             }
@@ -77,11 +78,11 @@ public abstract class AbstractResourceKeyPairProvider<R> extends AbstractKeyPair
                 if (cacheMap.containsKey(resourceKey)) {
                     continue;
                 }
-                
+
                 if (toDelete.isEmpty()) {
-                    toDelete = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
+                    toDelete = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
                 }
-                
+
                 if (!toDelete.add(resourceKey)) {
                     continue;   // debug breakpoint
                 }
@@ -93,12 +94,12 @@ public abstract class AbstractResourceKeyPairProvider<R> extends AbstractKeyPair
                 }
             }
         }
-        
+
         if (log.isDebugEnabled()) {
             log.debug("resetCacheMap(" + resources + ") removed previous cached keys for " + toDelete);
         }
     }
-    
+
     protected Iterable<KeyPair> loadKeys(final Collection<? extends R> resources) {
         if (GenericUtils.isEmpty(resources)) {
             return Collections.emptyList();
@@ -106,54 +107,7 @@ public abstract class AbstractResourceKeyPairProvider<R> extends AbstractKeyPair
             return new Iterable<KeyPair>() {
                 @Override
                 public Iterator<KeyPair> iterator() {
-                    return new Iterator<KeyPair>() {
-                        private final Iterator<? extends R> iterator = resources.iterator();
-                        private KeyPair nextKeyPair;
-                        private boolean nextKeyPairSet = false;
-    
-                        @Override
-                        public boolean hasNext() {
-                            return nextKeyPairSet || setNextObject();
-                        }
-    
-                        @Override
-                        public KeyPair next() {
-                            if (!nextKeyPairSet) {
-                                if (!setNextObject()) {
-                                    throw new NoSuchElementException("Out of files to try");
-                                }
-                            }
-                            nextKeyPairSet = false;
-                            return nextKeyPair;
-                        }
-    
-                        @Override
-                        public void remove() {
-                            throw new UnsupportedOperationException("loadKeys(files) Iterator#remove() N/A");
-                        }
-    
-                        @SuppressWarnings("synthetic-access")
-                        private boolean setNextObject() {
-                            while (iterator.hasNext()) {
-                                R r = iterator.next();
-                                try {
-                                    nextKeyPair = doLoadKey(r);
-                                } catch(Exception e) {
-                                    log.warn("Failed (" + e.getClass().getSimpleName() + ")"
-                                            + " to load key resource=" + r + ": " + e.getMessage());
-                                    nextKeyPair = null;
-                                    continue;
-                                }
-    
-                                if (nextKeyPair != null) {
-                                    nextKeyPairSet = true;
-                                    return true;
-                                }
-                            }
-    
-                            return false;
-                        }
-                    };
+                    return new KeyPairIterator(resources);
                 }
             };
         }
@@ -162,15 +116,17 @@ public abstract class AbstractResourceKeyPairProvider<R> extends AbstractKeyPair
     protected KeyPair doLoadKey(R resource) throws IOException, GeneralSecurityException {
         String resourceKey = Objects.toString(resource);
         KeyPair kp;
-        synchronized(cacheMap) {
+        synchronized (cacheMap) {
             // check if lucky enough to have already loaded this file
-            if ((kp=cacheMap.get(resourceKey)) != null) {
+            kp = cacheMap.get(resourceKey);
+            if (kp != null) {
                 return kp;
             }
         }
 
-        if ((kp=doLoadKey(resourceKey, resource, getPasswordFinder())) != null) {
-            synchronized(cacheMap) {
+        kp = doLoadKey(resourceKey, resource, getPasswordFinder());
+        if (kp != null) {
+            synchronized (cacheMap) {
                 // if somebody else beat us to it, use the cached key
                 if (cacheMap.containsKey(resourceKey)) {
                     kp = cacheMap.get(resourceKey);
@@ -178,22 +134,75 @@ public abstract class AbstractResourceKeyPairProvider<R> extends AbstractKeyPair
                     cacheMap.put(resourceKey, kp);
                 }
             }
-            
+
             if (log.isDebugEnabled()) {
                 log.debug("doLoadKey(" + resourceKey + ") loaded " + kp.getPublic() + " / " + kp.getPrivate());
             }
         }
-        
+
         return kp;
     }
 
     protected KeyPair doLoadKey(String resourceKey, R resource, FilePasswordProvider provider) throws IOException, GeneralSecurityException {
-        try(InputStream inputStream = openKeyPairResource(resourceKey, resource)) {
+        try (InputStream inputStream = openKeyPairResource(resourceKey, resource)) {
             return doLoadKey(resourceKey, inputStream, provider);
         }
     }
-    
+
     protected abstract InputStream openKeyPairResource(String resourceKey, R resource) throws IOException;
-    
+
     protected abstract KeyPair doLoadKey(String resourceKey, InputStream inputStream, FilePasswordProvider provider) throws IOException, GeneralSecurityException;
+
+    private class KeyPairIterator implements Iterator<KeyPair> {
+        private final Iterator<? extends R> iterator;
+        private KeyPair nextKeyPair;
+        private boolean nextKeyPairSet;
+
+        public KeyPairIterator(Collection<? extends R> resources) {
+            iterator = resources.iterator();
+        }
+
+        @Override
+        public boolean hasNext() {
+            return nextKeyPairSet || setNextObject();
+        }
+
+        @Override
+        public KeyPair next() {
+            if (!nextKeyPairSet) {
+                if (!setNextObject()) {
+                    throw new NoSuchElementException("Out of files to try");
+                }
+            }
+            nextKeyPairSet = false;
+            return nextKeyPair;
+        }
+
+        @Override
+        public void remove() {
+            throw new UnsupportedOperationException("loadKeys(files) Iterator#remove() N/A");
+        }
+
+        @SuppressWarnings("synthetic-access")
+        private boolean setNextObject() {
+            while (iterator.hasNext()) {
+                R r = iterator.next();
+                try {
+                    nextKeyPair = doLoadKey(r);
+                } catch (Exception e) {
+                    log.warn("Failed (" + e.getClass().getSimpleName() + ")"
+                            + " to load key resource=" + r + ": " + e.getMessage());
+                    nextKeyPair = null;
+                    continue;
+                }
+
+                if (nextKeyPair != null) {
+                    nextKeyPairSet = true;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+    }
 }

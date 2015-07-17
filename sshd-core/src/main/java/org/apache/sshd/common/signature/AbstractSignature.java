@@ -46,7 +46,7 @@ public abstract class AbstractSignature implements Signature {
     public final String getAlgorithm() {
         return algorithm;
     }
-    
+
 
     @Override
     public void initVerifier(PublicKey key) throws Exception {
@@ -71,24 +71,25 @@ public abstract class AbstractSignature implements Signature {
     }
 
     /**
-     *  Makes an attempt to detect if the signature is encoded or pure data
+     * Makes an attempt to detect if the signature is encoded or pure data
+     *
      * @param sig The original signature
      * @return A {@link Pair} where first value is the key type and second
      * value is the data - {@code null} if not encoded
      */
-    protected Pair<String,byte[]> extractEncodedSignature(byte[] sig) {
+    protected Pair<String, byte[]> extractEncodedSignature(byte[] sig) {
         final int dataLen = GenericUtils.length(sig);
         // if it is encoded then we must have at least 2 UINT32 values
         if (dataLen < (2 * (Integer.SIZE / Byte.SIZE))) {
             return null;
         }
-        
+
         long keyTypeLen = BufferUtils.getUInt(sig, 0, dataLen);
         // after the key type we MUST have data bytes
         if (keyTypeLen >= (dataLen - (Integer.SIZE / Byte.SIZE))) {
             return null;
         }
-        
+
         int keyTypeStartPos = Integer.SIZE / Byte.SIZE;
         int keyTypeEndPos = keyTypeStartPos + (int) keyTypeLen;
         int remainLen = dataLen - keyTypeEndPos;
@@ -96,7 +97,7 @@ public abstract class AbstractSignature implements Signature {
         if (remainLen < (Integer.SIZE / Byte.SIZE)) {
             return null;
         }
-        
+
         long dataBytesLen = BufferUtils.getUInt(sig, keyTypeEndPos, remainLen);
         // make sure reported number of bytes does not exceed available
         if (dataBytesLen > (remainLen - (Integer.SIZE / Byte.SIZE))) {

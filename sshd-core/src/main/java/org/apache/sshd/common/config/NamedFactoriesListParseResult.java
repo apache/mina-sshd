@@ -27,10 +27,11 @@ import org.apache.sshd.common.util.GenericUtils;
 
 /**
  * Holds the result of parsing a list of {@link NamedFactory}ies
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class NamedFactoriesListParseResult<T,F extends NamedFactory<T>>
-                       extends FactoriesListParseResult<T,F> {
+public abstract class NamedFactoriesListParseResult<T, F extends NamedFactory<T>>
+        extends FactoriesListParseResult<T, F> {
 
     protected NamedFactoriesListParseResult(List<F> parsed, List<String> unsupported) {
         super(parsed, unsupported);
@@ -39,7 +40,6 @@ public abstract class NamedFactoriesListParseResult<T,F extends NamedFactory<T>>
     @Override
     public String toString() {
         return "parsed=" + NamedResource.Utils.getNames(getParsedFactories())
-             + ";unknown=" + GenericUtils.join(getUnsupportedFactories(), ',')
-              ;
+                + ";unknown=" + GenericUtils.join(getUnsupportedFactories(), ',');
     }
 }

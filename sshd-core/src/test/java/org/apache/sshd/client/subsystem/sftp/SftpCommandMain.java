@@ -22,6 +22,7 @@ package org.apache.sshd.client.subsystem.sftp;
 /**
  * Just a test class used to invoke {@link SftpCommand#main(String[])} in
  * order to have logging - which is in {@code test} scope
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class SftpCommandMain {

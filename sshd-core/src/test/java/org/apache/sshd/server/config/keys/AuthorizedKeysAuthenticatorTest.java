@@ -56,27 +56,27 @@ public class AuthorizedKeysAuthenticatorTest extends BaseTestSupport {
 
     @Test
     public void testAutomaticReload() throws Exception {
-        final Path file=new File(new File(detectTargetFolder(), TEMP_SUBFOLDER_NAME), getCurrentTestName()).toPath();
+        final Path file = new File(new File(detectTargetFolder(), TEMP_SUBFOLDER_NAME), getCurrentTestName()).toPath();
         if (Files.exists(file)) {
             Files.delete(file);
         }
 
         final AtomicInteger reloadCount = new AtomicInteger(0);
-        PublickeyAuthenticator  auth = new AuthorizedKeysAuthenticator(file) {
-                @Override
-                protected Collection<AuthorizedKeyEntry> reloadAuthorizedKeys(Path path, String username, ServerSession session) throws IOException {
-                    assertSame("Mismatched reload path", file, path);
-                    reloadCount.incrementAndGet();
-                    return super.reloadAuthorizedKeys(path, username, session);
-                }
-            };
+        PublickeyAuthenticator auth = new AuthorizedKeysAuthenticator(file) {
+            @Override
+            protected Collection<AuthorizedKeyEntry> reloadAuthorizedKeys(Path path, String username, ServerSession session) throws IOException {
+                assertSame("Mismatched reload path", file, path);
+                reloadCount.incrementAndGet();
+                return super.reloadAuthorizedKeys(path, username, session);
+            }
+        };
         assertFalse("Unexpected authentication success for missing file " + file, auth.authenticate(getCurrentTestName(), Mockito.mock(PublicKey.class), null));
 
         URL url = getClass().getResource(AuthorizedKeyEntry.STD_AUTHORIZED_KEYS_FILENAME);
         assertNotNull("Missing " + AuthorizedKeyEntry.STD_AUTHORIZED_KEYS_FILENAME + " resource", url);
 
         List<String> lines = new ArrayList<String>();
-        try(BufferedReader rdr = new BufferedReader(new InputStreamReader(url.openStream(), StandardCharsets.UTF_8))) {
+        try (BufferedReader rdr = new BufferedReader(new InputStreamReader(url.openStream(), StandardCharsets.UTF_8))) {
             for (String l = rdr.readLine(); l != null; l = rdr.readLine()) {
                 l = GenericUtils.trimToEmpty(l);
                 // filter out empty and comment lines
@@ -89,19 +89,19 @@ public class AuthorizedKeysAuthenticatorTest extends BaseTestSupport {
         }
 
         assertHierarchyTargetFolderExists(file.getParent());
-        
+
         final String EOL = System.getProperty("line.separator");
         Random rnd = new Random(System.nanoTime());
         List<String> removed = new ArrayList<String>(lines.size());
-        for ( ; ; ) {
-            try(Writer w = Files.newBufferedWriter(file)) {
+        for (; ; ) {
+            try (Writer w = Files.newBufferedWriter(file)) {
                 for (String l : lines) {
                     w.append(l).append(EOL);
                 }
             }
 
             Collection<AuthorizedKeyEntry> entries = AuthorizedKeyEntry.readAuthorizedKeys(file);
-            Collection<PublicKey>  keySet = AuthorizedKeyEntry.resolveAuthorizedKeys(entries);
+            Collection<PublicKey> keySet = AuthorizedKeyEntry.resolveAuthorizedKeys(entries);
 
             reloadCount.set(0);
             for (PublicKey k : keySet) {

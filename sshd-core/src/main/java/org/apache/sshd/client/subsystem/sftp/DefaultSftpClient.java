@@ -18,12 +18,6 @@
  */
 package org.apache.sshd.client.subsystem.sftp;
 
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SFTP_V3;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SFTP_V6;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_INIT;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_STATUS;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_VERSION;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -52,6 +46,12 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SFTP_V3;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SFTP_V6;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_INIT;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_STATUS;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_VERSION;
+
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -64,8 +64,8 @@ public class DefaultSftpClient extends AbstractSftpClient {
     private final byte[] workBuf = new byte[Integer.SIZE / Byte.SIZE];  // TODO in JDK-8 use Integer.BYTES
     private boolean closing;
     private int version;
-    private final Map<String,byte[]> extensions = new TreeMap<String,byte[]>(String.CASE_INSENSITIVE_ORDER);
-    private final Map<String,byte[]> exposedExtensions = Collections.unmodifiableMap(extensions);
+    private final Map<String, byte[]> extensions = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    private final Map<String, byte[]> exposedExtensions = Collections.unmodifiableMap(extensions);
 
     public DefaultSftpClient(ClientSession clientSession) throws IOException {
         this.clientSession = ValidateUtils.checkNotNull(clientSession, "No client session", GenericUtils.EMPTY_OBJECT_ARRAY);
@@ -73,8 +73,9 @@ public class DefaultSftpClient extends AbstractSftpClient {
         this.channel.setOut(new OutputStream() {
             @Override
             public void write(int b) throws IOException {
-                write(new byte[] { (byte) b }, 0, 1);
+                write(new byte[]{(byte) b}, 0, 1);
             }
+
             @Override
             public void write(byte[] b, int off, int len) throws IOException {
                 data(b, off, len);
@@ -131,7 +132,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
      * Receive binary data
      */
     protected int data(byte[] buf, int start, int len) throws IOException {
-        Buffer incoming = new ByteArrayBuffer(buf,  start, len);
+        Buffer incoming = new ByteArrayBuffer(buf, start, len);
         // If we already have partial data, we need to append it to the buffer and use it
         if (receiveBuffer.available() > 0) {
             receiveBuffer.putBuffer(incoming);
@@ -139,7 +140,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
         }
         // Process commands
         int rpos = incoming.rpos();
-        for (int count=0; receive(incoming); count++) {
+        for (int count = 0; receive(incoming); count++) {
             if (log.isTraceEnabled()) {
                 log.trace("Processed " + count + " data messages");
             }
@@ -189,17 +190,18 @@ public class DefaultSftpClient extends AbstractSftpClient {
         int id = buffer.getInt();
         buffer.rpos(0);
         synchronized (messages) {
-            messages.put(Integer.valueOf(id), buffer);
+            messages.put(id, buffer);
             messages.notifyAll();
         }
     }
 
     @Override
     public int send(int cmd, Buffer buffer) throws IOException {
-        int id = cmdId.incrementAndGet(), len = buffer.available();
+        int id = cmdId.incrementAndGet();
+        int len = buffer.available();
         if (log.isTraceEnabled()) {
             log.trace("send(cmd={}, len={}) id = {}",
-                      Integer.valueOf(cmd), Integer.valueOf(len), Integer.valueOf(id));
+                    cmd, len, id);
         }
 
         OutputStream dos = channel.getInvertedIn();
@@ -213,9 +215,9 @@ public class DefaultSftpClient extends AbstractSftpClient {
 
     @Override
     public Buffer receive(int id) throws IOException {
-        Integer reqId = Integer.valueOf(id);
+        Integer reqId = id;
         synchronized (messages) {
-            for (int count=1; ; count++) {
+            for (int count = 1;; count++) {
                 if (closing) {
                     throw new SshException("Channel has been closed");
                 }
@@ -313,10 +315,10 @@ public class DefaultSftpClient extends AbstractSftpClient {
      */
     public int negotiateVersion(SftpVersionSelector selector) throws IOException {
         int current = getVersion();
-        Set<Integer> available = GenericUtils.asSortedSet(Collections.singleton(Integer.valueOf(current)));
-        Map<String,?> parsed = getParsedServerExtensions();
+        Set<Integer> available = GenericUtils.asSortedSet(Collections.singleton(current));
+        Map<String, ?> parsed = getParsedServerExtensions();
         Collection<String> extensions = ParserUtils.supportedExtensions(parsed);
-        if ((GenericUtils.size(extensions) > 0) && extensions.contains(SftpConstants.EXT_VERSELECT)) {
+        if ((GenericUtils.size(extensions) > 0) && extensions.contains(SftpConstants.EXT_VERSION_SELECT)) {
             Versions vers = GenericUtils.isEmpty(parsed) ? null : (Versions) parsed.get(SftpConstants.EXT_VERSIONS);
             Collection<String> reported = (vers == null) ? null : vers.versions;
             if (GenericUtils.size(reported) > 0) {
@@ -328,9 +330,9 @@ public class DefaultSftpClient extends AbstractSftpClient {
             }
         }
 
-        int selected = selector.selectVersion(current, new ArrayList<Integer>(available));
+        int selected = selector.selectVersion(current, new ArrayList<>(available));
         if (log.isDebugEnabled()) {
-            log.debug("negotiateVersion({}) {} -> {}", Integer.valueOf(current), available, Integer.valueOf(selected));
+            log.debug("negotiateVersion({}) {} -> {}", current, available, selected);
         }
 
         if (selected == current) {
@@ -342,9 +344,9 @@ public class DefaultSftpClient extends AbstractSftpClient {
         }
 
         String verVal = String.valueOf(selected);
-        Buffer buffer = new ByteArrayBuffer((Integer.SIZE / Byte.SIZE) + SftpConstants.EXT_VERSELECT.length()     // extension name
-                                         + (Integer.SIZE / Byte.SIZE) + verVal.length());
-        buffer.putString(SftpConstants.EXT_VERSELECT);
+        Buffer buffer = new ByteArrayBuffer((Integer.SIZE / Byte.SIZE) + SftpConstants.EXT_VERSION_SELECT.length()     // extension name
+                + (Integer.SIZE / Byte.SIZE) + verVal.length());
+        buffer.putString(SftpConstants.EXT_VERSION_SELECT);
         buffer.putString(verVal);
         checkStatus(SftpConstants.SSH_FXP_EXTENDED, buffer);
         version = selected;

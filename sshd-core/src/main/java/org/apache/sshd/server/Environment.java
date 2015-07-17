@@ -54,38 +54,44 @@ public interface Environment {
 
     /**
      * Retrieve the environment map
+     *
      * @return the environment map
      */
     Map<String, String> getEnv();
 
     /**
      * Retrieve the pty modes
+     *
      * @return the map of pty modes
      */
     Map<PtyMode, Integer> getPtyModes();
 
     /**
      * Add a qualified listener for the specific signal
+     *
      * @param listener the listener to register
-     * @param signal the signal the listener is interested in
+     * @param signal   the signal the listener is interested in
      */
     void addSignalListener(SignalListener listener, Signal... signal);
 
     /**
      * Add a qualified listener for the specific set of signal
+     *
      * @param listener the listener to register
-     * @param signals the signals the listener is interested in
+     * @param signals  the signals the listener is interested in
      */
     void addSignalListener(SignalListener listener, Collection<Signal> signals);
 
     /**
      * Add a global listener for all signals
+     *
      * @param listener the listener to register
      */
     void addSignalListener(SignalListener listener);
 
     /**
      * Remove a previously registered listener for all the signals it was registered
+     *
      * @param listener the listener to remove
      */
     void removeSignalListener(SignalListener listener);

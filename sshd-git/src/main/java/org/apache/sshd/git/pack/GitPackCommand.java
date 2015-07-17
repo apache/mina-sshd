@@ -42,6 +42,11 @@ import org.eclipse.jgit.util.FS;
  */
 public class GitPackCommand implements Command, Runnable {
 
+    private static final int CHAR = 1;
+    private static final int DELIMITER = 2;
+    private static final int STARTQUOTE = 4;
+    private static final int ENDQUOTE = 8;
+
     private String rootDir;
     private String command;
     private InputStream in;
@@ -82,7 +87,7 @@ public class GitPackCommand implements Command, Runnable {
 
     @Override
     public void start(Environment env) throws IOException {
-        Thread  thread=new Thread(this);
+        Thread  thread = new Thread(this);
         thread.setDaemon(true);
         thread.start();
     }
@@ -144,42 +149,37 @@ public class GitPackCommand implements Command, Runnable {
 
         List<String> list = new ArrayList<String>();
 
-        int CHAR = 1;
-        int DELIMITER = 2;
-        int STARTQUOTE = 4;
-        int ENDQUOTE = 8;
-
         StringBuilder sb = new StringBuilder();
 
-        int expecting = (CHAR | DELIMITER | STARTQUOTE);
+        int expecting = CHAR | DELIMITER | STARTQUOTE;
 
         boolean isEscaped = false;
         for (int i = 0; i < value.length(); i++) {
             char c = value.charAt(i);
 
-            boolean isDelimiter = (delim.indexOf(c) >= 0);
+            boolean isDelimiter = delim.indexOf(c) >= 0;
 
-            if (!isEscaped && (c == '\\')) {
+            if (!isEscaped && c == '\\') {
                 isEscaped = true;
                 continue;
             }
 
             if (isEscaped) {
                 sb.append(c);
-            } else if (isDelimiter && ((expecting & DELIMITER) > 0)) {
+            } else if (isDelimiter && (expecting & DELIMITER) > 0) {
                 if (trim) {
                     list.add(sb.toString().trim());
                 } else {
                     list.add(sb.toString());
                 }
                 sb.delete(0, sb.length());
-                expecting = (CHAR | DELIMITER | STARTQUOTE);
-            } else if ((c == '"') && ((expecting & STARTQUOTE) > 0)) {
+                expecting = CHAR | DELIMITER | STARTQUOTE;
+            } else if ((c == '"') && (expecting & STARTQUOTE) > 0) {
                 sb.append(c);
                 expecting = CHAR | ENDQUOTE;
-            } else if ((c == '"') && ((expecting & ENDQUOTE) > 0)) {
+            } else if ((c == '"') && (expecting & ENDQUOTE) > 0) {
                 sb.append(c);
-                expecting = (CHAR | STARTQUOTE | DELIMITER);
+                expecting = CHAR | STARTQUOTE | DELIMITER;
             } else if ((expecting & CHAR) > 0) {
                 sb.append(c);
             } else {

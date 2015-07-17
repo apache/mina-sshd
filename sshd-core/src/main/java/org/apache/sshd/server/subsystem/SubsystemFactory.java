@@ -20,19 +20,12 @@
 package org.apache.sshd.server.subsystem;
 
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.util.Transformer;
 import org.apache.sshd.server.Command;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+// CHECKSTYLE:OFF
 public interface SubsystemFactory extends NamedFactory<Command> {
-    // required because of generics issues
-    Transformer<SubsystemFactory,NamedFactory<Command>> FAC2NAMED=new Transformer<SubsystemFactory,NamedFactory<Command>>() {
-        @Override
-        public NamedFactory<Command> transform(SubsystemFactory input) {
-            return input;
-        }
-    };
 
 }

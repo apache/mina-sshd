@@ -66,21 +66,22 @@ public class WelcomeBannerTest extends BaseTestSupport {
     @Test
     public void testBanner() throws Exception {
         final AtomicReference<String> welcome = new AtomicReference<String>();
-        
-        try(SshClient client = SshClient.setUpDefaultClient()) {
+
+        try (SshClient client = SshClient.setUpDefaultClient()) {
             client.setUserInteraction(new UserInteraction() {
                 @Override
                 public void welcome(String banner) {
                     welcome.set(banner);
                 }
+
                 @Override
                 public String[] interactive(String destination, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
                     return null;
                 }
             });
             client.start();
-            
-            try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+
+            try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
                 session.addPasswordIdentity(getCurrentTestName());
                 session.auth().verify(5L, TimeUnit.SECONDS);
                 assertEquals(WELCOME, welcome.get());

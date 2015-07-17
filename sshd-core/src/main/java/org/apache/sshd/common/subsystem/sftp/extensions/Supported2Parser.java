@@ -27,8 +27,9 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
 /**
- * Parses the &quot;supported2&quot; extension as defined in 
+ * Parses the &quot;supported2&quot; extension as defined in
  * <A HREF="https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#page-10">DRAFT 13 section 5.4</A>
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class Supported2Parser extends AbstractParser<Supported2> {
@@ -37,6 +38,7 @@ public class Supported2Parser extends AbstractParser<Supported2> {
      * @see <A HREF="https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#page-10">DRAFT 13 section 5.4</A>
      */
     public static class Supported2 {
+        // CHECKSTYLE:OFF
         public int supportedAttributeMask;
         public int supportedAttributeBits;
         public int supportedOpenFlags;
@@ -44,26 +46,26 @@ public class Supported2Parser extends AbstractParser<Supported2> {
         public int maxReadSize;
         public short supportedOpenBlockVector;
         public short supportedBlock;
-//        uint32 attrib-extension-count
+        //        uint32 attrib-extension-count
         public Collection<String> attribExtensionNames;
-//        uint32 extension-count
+        //        uint32 extension-count
         public Collection<String> extensionNames;
-        
+        // CHECKSTYLE:ON
+
         @Override
         public String toString() {
             return "attrsMask=0x" + Integer.toHexString(supportedAttributeMask)
-                 + ",attrsBits=0x" + Integer.toHexString(supportedAttributeBits)
-                 + ",openFlags=0x" + Integer.toHexString(supportedOpenFlags)
-                 + ",accessMask=0x" + Integer.toHexString(supportedAccessMask)
-                 + ",maxRead=" + maxReadSize
-                 + ",openBlock=0x" + Integer.toHexString(supportedOpenBlockVector & 0xFFFF)
-                 + ",block=" + Integer.toHexString(supportedBlock & 0xFFFF)
-                 + ",attribs=" + attribExtensionNames
-                 + ",exts=" + extensionNames
-                 ;
+                    + ",attrsBits=0x" + Integer.toHexString(supportedAttributeBits)
+                    + ",openFlags=0x" + Integer.toHexString(supportedOpenFlags)
+                    + ",accessMask=0x" + Integer.toHexString(supportedAccessMask)
+                    + ",maxRead=" + maxReadSize
+                    + ",openBlock=0x" + Integer.toHexString(supportedOpenBlockVector & 0xFFFF)
+                    + ",block=" + Integer.toHexString(supportedBlock & 0xFFFF)
+                    + ",attribs=" + attribExtensionNames
+                    + ",exts=" + extensionNames;
         }
     }
-    
+
     public static final Supported2Parser INSTANCE = new Supported2Parser();
 
     public Supported2Parser() {
@@ -74,7 +76,7 @@ public class Supported2Parser extends AbstractParser<Supported2> {
     public Supported2 parse(byte[] input, int offset, int len) {
         return parse(new ByteArrayBuffer(input, offset, len));
     }
-    
+
     public Supported2 parse(Buffer buffer) {
         Supported2 sup2 = new Supported2();
         sup2.supportedAttributeMask = buffer.getInt();

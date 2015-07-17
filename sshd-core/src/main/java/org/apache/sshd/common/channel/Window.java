@@ -25,7 +25,6 @@ import java.util.Map;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.session.Session;
-import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
@@ -34,7 +33,7 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  * Windows are used to not overflow the client or server when sending datas.
  * Both clients and servers have a local and remote window and won't send
  * anymore data until the window has been expanded.  When the local window
- * is 
+ * is
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -48,7 +47,7 @@ public class Window extends AbstractLoggingBean {
     private int packetSize;
     private boolean waiting;
     private boolean closed;
-    private Map<String,?> props = Collections.<String,Object>emptyMap();
+    private Map<String, ?> props = Collections.<String, Object>emptyMap();
 
     public Window(AbstractChannel channel, Object lock, boolean client, boolean local) {
         this.channel = ValidateUtils.checkNotNull(channel, "No channel provided");
@@ -56,7 +55,7 @@ public class Window extends AbstractLoggingBean {
         this.name = String.valueOf(channel) + ": " + (client ? "client" : "server") + " " + (local ? "local " : "remote") + " window";
     }
 
-    public Map<String,?> getProperties() {
+    public Map<String, ?> getProperties() {
         return props;
     }
 
@@ -77,18 +76,18 @@ public class Window extends AbstractLoggingBean {
     public void init(Session session) {
         init(session.getFactoryManager());
     }
-    
+
     public void init(FactoryManager manager) {
         init(manager.getProperties());
     }
 
-    public void init(Map<String,?> props) {
+    public void init(Map<String, ?> props) {
         init(FactoryManagerUtils.getIntProperty(props, FactoryManager.WINDOW_SIZE, AbstractChannel.DEFAULT_WINDOW_SIZE),
-             FactoryManagerUtils.getIntProperty(props, FactoryManager.MAX_PACKET_SIZE, AbstractChannel.DEFAULT_PACKET_SIZE),
-             props);
+                FactoryManagerUtils.getIntProperty(props, FactoryManager.MAX_PACKET_SIZE, AbstractChannel.DEFAULT_PACKET_SIZE),
+                props);
     }
 
-    public void init(int size, int packetSize, Map<String,?> props) {
+    public void init(int size, int packetSize, Map<String, ?> props) {
         synchronized (lock) {
             this.size = size;
             this.maxSize = size;

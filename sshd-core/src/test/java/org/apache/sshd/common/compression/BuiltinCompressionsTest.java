@@ -50,41 +50,42 @@ public class BuiltinCompressionsTest extends BaseTestSupport {
     @Test
     public void testFromFactoryName() {
         for (BuiltinCompressions expected : BuiltinCompressions.VALUES) {
-            String  name=expected.getName();
+            String name = expected.getName();
 
-            for (int index=0; index < name.length(); index++) {
-                BuiltinCompressions actual=BuiltinCompressions.fromFactoryName(name);
+            for (int index = 0; index < name.length(); index++) {
+                BuiltinCompressions actual = BuiltinCompressions.fromFactoryName(name);
                 assertSame(name, expected, actual);
                 name = shuffleCase(name);
             }
         }
     }
+
     @Test
     public void testAllConstantsCovered() throws Exception {
-        Set<BuiltinCompressions>    avail=EnumSet.noneOf(BuiltinCompressions.class);
-        Field[]                     fields=BuiltinCompressions.Constants.class.getFields();
+        Set<BuiltinCompressions> avail = EnumSet.noneOf(BuiltinCompressions.class);
+        Field[] fields = BuiltinCompressions.Constants.class.getFields();
         for (Field f : fields) {
-            String              name=(String) f.get(null);
-            BuiltinCompressions value=BuiltinCompressions.fromFactoryName(name);
+            String name = (String) f.get(null);
+            BuiltinCompressions value = BuiltinCompressions.fromFactoryName(name);
             assertNotNull("No match found for " + name, value);
             assertTrue(name + " re-specified", avail.add(value));
         }
-        
+
         assertEquals("Incomplete coverage", BuiltinCompressions.VALUES, avail);
     }
 
     @Test
     public void testParseCompressionsList() {
-        List<String>    builtin=NamedResource.Utils.getNameList(BuiltinCompressions.VALUES);
-        List<String>    unknown=Arrays.asList(getClass().getPackage().getName(), getClass().getSimpleName(), getCurrentTestName());
-        Random          rnd=new Random();
-        for (int index=0; index < (builtin.size() + unknown.size()); index++) {
+        List<String> builtin = NamedResource.Utils.getNameList(BuiltinCompressions.VALUES);
+        List<String> unknown = Arrays.asList(getClass().getPackage().getName(), getClass().getSimpleName(), getCurrentTestName());
+        Random rnd = new Random();
+        for (int index = 0; index < (builtin.size() + unknown.size()); index++) {
             Collections.shuffle(builtin, rnd);
             Collections.shuffle(unknown, rnd);
-            
-            List<String>    weavedList=new ArrayList<String>(builtin.size() + unknown.size());
-            for (int bIndex=0, uIndex=0; (bIndex < builtin.size()) || (uIndex < unknown.size()); ) {
-                boolean useBuiltin=false;
+
+            List<String> weavedList = new ArrayList<String>(builtin.size() + unknown.size());
+            for (int bIndex = 0, uIndex = 0; (bIndex < builtin.size()) || (uIndex < unknown.size()); ) {
+                boolean useBuiltin = false;
                 if (bIndex < builtin.size()) {
                     useBuiltin = (uIndex < unknown.size()) ? rnd.nextBoolean() : true;
                 }
@@ -92,17 +93,17 @@ public class BuiltinCompressionsTest extends BaseTestSupport {
                 if (useBuiltin) {
                     weavedList.add(builtin.get(bIndex));
                     bIndex++;
-                } else if (uIndex < unknown.size()){
+                } else if (uIndex < unknown.size()) {
                     weavedList.add(unknown.get(uIndex));
                     uIndex++;
                 }
             }
 
-            String          fullList=GenericUtils.join(weavedList, ',');
-            ParseResult     result=BuiltinCompressions.parseCompressionsList(fullList);
-            List<String>    parsed=NamedResource.Utils.getNameList(result.getParsedFactories());
-            List<String>    missing=result.getUnsupportedFactories();
-            
+            String fullList = GenericUtils.join(weavedList, ',');
+            ParseResult result = BuiltinCompressions.parseCompressionsList(fullList);
+            List<String> parsed = NamedResource.Utils.getNameList(result.getParsedFactories());
+            List<String> missing = result.getUnsupportedFactories();
+
             // makes sure not only that the contents are the same but also the order
             assertListEquals(fullList + "[parsed]", builtin, parsed);
             assertListEquals(fullList + "[unsupported]", unknown, missing);
@@ -112,8 +113,8 @@ public class BuiltinCompressionsTest extends BaseTestSupport {
     @Test
     public void testResolveFactoryOnBuiltinValues() {
         for (NamedFactory<Compression> expected : BuiltinCompressions.VALUES) {
-            String                  name=expected.getName();
-            NamedFactory<Compression>    actual=BuiltinCompressions.resolveFactory(name);
+            String name = expected.getName();
+            NamedFactory<Compression> actual = BuiltinCompressions.resolveFactory(name);
             assertSame(name, expected, actual);
         }
     }
@@ -124,20 +125,20 @@ public class BuiltinCompressionsTest extends BaseTestSupport {
             try {
                 BuiltinCompressions.registerExtension(expected);
                 fail("Unexpected sucess for " + expected.getName());
-            } catch(IllegalArgumentException e) {
+            } catch (IllegalArgumentException e) {
                 // expected - ignored
             }
         }
     }
 
-    @Test(expected=IllegalArgumentException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testNotAllowedToOverrideRegisteredFactories() {
-        CompressionFactory    expected=Mockito.mock(CompressionFactory.class);
+        CompressionFactory expected = Mockito.mock(CompressionFactory.class);
         Mockito.when(expected.getName()).thenReturn(getCurrentTestName());
 
-        String  name=expected.getName();
+        String name = expected.getName();
         try {
-            for (int index=1; index <= Byte.SIZE; index++) {
+            for (int index = 1; index <= Byte.SIZE; index++) {
                 BuiltinCompressions.registerExtension(expected);
                 assertEquals("Unexpected success at attempt #" + index, 1, index);
             }
@@ -148,32 +149,21 @@ public class BuiltinCompressionsTest extends BaseTestSupport {
 
     @Test
     public void testResolveFactoryOnRegisteredExtension() {
-        CompressionFactory    expected=Mockito.mock(CompressionFactory.class);
+        CompressionFactory expected = Mockito.mock(CompressionFactory.class);
         Mockito.when(expected.getName()).thenReturn(getCurrentTestName());
 
-        String  name=expected.getName();
+        String name = expected.getName();
         try {
             assertNull("Extension already registered", BuiltinCompressions.resolveFactory(name));
             BuiltinCompressions.registerExtension(expected);
 
-            NamedFactory<Compression>    actual=BuiltinCompressions.resolveFactory(name);
+            NamedFactory<Compression> actual = BuiltinCompressions.resolveFactory(name);
             assertSame("Mismatched resolved instance", expected, actual);
         } finally {
-            NamedFactory<Compression>    actual=BuiltinCompressions.unregisterExtension(name);
+            NamedFactory<Compression> actual = BuiltinCompressions.unregisterExtension(name);
             assertSame("Mismatched unregistered instance", expected, actual);
             assertNull("Extension not un-registered", BuiltinCompressions.resolveFactory(name));
         }
     }
 
-    @Test
-    public void testFac2NamedTransformer() {
-        assertNull("Invalid null transformation", CompressionFactory.FAC2NAMED.transform(null));
-        for (CompressionFactory expected : BuiltinCompressions.VALUES) {
-            NamedFactory<Compression>   actual=CompressionFactory.FAC2NAMED.transform(expected);
-            assertSame("Mismatched transformed instance for " + expected.getName(), expected, actual);
-        }
-        
-        CompressionFactory   mock=Mockito.mock(CompressionFactory.class);
-        assertSame("Mismatched transformed mocked instance", mock, CompressionFactory.FAC2NAMED.transform(mock));
-    }
 }

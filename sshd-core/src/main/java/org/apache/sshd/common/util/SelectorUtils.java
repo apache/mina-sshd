@@ -59,7 +59,7 @@ public final class SelectorUtils {
     /**
      * <p>Tests whether or not a given path matches the start of a given
      * pattern up to the first "**".</p>
-     *
+     * <p/>
      * <p>This is not a general purpose test and should only be used if you
      * can live with false positives. For example, <code>pattern=**\a</code>
      * and <code>str=b</code> will yield <code>true</code>.</p>
@@ -69,7 +69,7 @@ public final class SelectorUtils {
      * @param str     The path to match, as a String. Must not be
      *                {@code null}.
      * @return whether or not a given path matches the start of a given
-     *         pattern up to the first "**".
+     * pattern up to the first "**".
      */
     public static boolean matchPatternStart(String pattern, String str) {
         return matchPatternStart(pattern, str, true);
@@ -78,7 +78,7 @@ public final class SelectorUtils {
     /**
      * <p>Tests whether or not a given path matches the start of a given
      * pattern up to the first "**".</p>
-     *
+     * <p/>
      * <p>This is not a general purpose test and should only be used if you
      * can live with false positives. For example, <code>pattern=**\a</code>
      * and <code>str=b</code> will yield <code>true</code>.</p>
@@ -90,7 +90,7 @@ public final class SelectorUtils {
      * @param isCaseSensitive Whether or not matching should be performed
      *                        case sensitively.
      * @return whether or not a given path matches the start of a given
-     *         pattern up to the first "**".
+     * pattern up to the first "**".
      */
     public static boolean matchPatternStart(String pattern, String str,
                                             boolean isCaseSensitive) {
@@ -118,8 +118,7 @@ public final class SelectorUtils {
         // File.separator.
         // When pattern starts with a File.separator, str has to start with a
         // File.separator.
-        if (str.startsWith(separator) !=
-                pattern.startsWith(separator)) {
+        if (str.startsWith(separator) != pattern.startsWith(separator)) {
             return false;
         }
 
@@ -145,6 +144,7 @@ public final class SelectorUtils {
             strIdxStart++;
         }
 
+        // CHECKSTYLE:OFF
         if (strIdxStart > strIdxEnd) {
             // String is exhausted
             return true;
@@ -156,6 +156,7 @@ public final class SelectorUtils {
             // this will generate false positives but we can live with that.
             return true;
         }
+        // CHECKSTYLE:ON
     }
 
     /**
@@ -166,7 +167,7 @@ public final class SelectorUtils {
      * @param str     The path to match, as a String. Must not be
      *                {@code null}.
      * @return <code>true</code> if the pattern matches against the string,
-     *         or <code>false</code> otherwise.
+     * or <code>false</code> otherwise.
      */
     public static boolean matchPath(String pattern, String str) {
         return matchPath(pattern, str, true);
@@ -182,7 +183,7 @@ public final class SelectorUtils {
      * @param isCaseSensitive Whether or not matching should be performed
      *                        case sensitively.
      * @return <code>true</code> if the pattern matches against the string,
-     *         or <code>false</code> otherwise.
+     * or <code>false</code> otherwise.
      */
     public static boolean matchPath(String pattern, String str,
                                     boolean isCaseSensitive) {
@@ -208,8 +209,7 @@ public final class SelectorUtils {
         // File.separator.
         // When pattern starts with a File.separator, str has to start with a
         // File.separator.
-        if (str.startsWith(File.separator) !=
-                pattern.startsWith(File.separator)) {
+        if (str.startsWith(File.separator) != pattern.startsWith(File.separator)) {
             return false;
         }
 
@@ -297,8 +297,8 @@ public final class SelectorUtils {
             }
             // Find the pattern between padIdxStart & padIdxTmp in str between
             // strIdxStart & strIdxEnd
-            int patLength = (patIdxTmp - patIdxStart - 1);
-            int strLength = (strIdxEnd - strIdxStart + 1);
+            int patLength = patIdxTmp - patIdxStart - 1;
+            int strLength = strIdxEnd - strIdxStart + 1;
             int foundIdx = -1;
             strLoop:
             for (int i = 0; i <= strLength - patLength; i++) {
@@ -346,7 +346,7 @@ public final class SelectorUtils {
      * @param str     The string which must be matched against the pattern.
      *                Must not be {@code null}.
      * @return <code>true</code> if the string matches against the pattern,
-     *         or <code>false</code> otherwise.
+     * or <code>false</code> otherwise.
      */
     public static boolean match(String pattern, String str) {
         return match(pattern, str, true);
@@ -365,7 +365,7 @@ public final class SelectorUtils {
      * @param isCaseSensitive Whether or not matching should be performed
      *                        case sensitively.
      * @return <code>true</code> if the string matches against the pattern,
-     *         or <code>false</code> otherwise.
+     * or <code>false</code> otherwise.
      */
     public static boolean match(String pattern, String str,
                                 boolean isCaseSensitive) {
@@ -404,6 +404,7 @@ public final class SelectorUtils {
         }
 
         // Process characters before first star
+        // CHECKSTYLE:OFF
         while ((ch = patArr[patIdxStart]) != '*' && strIdxStart <= strIdxEnd) {
             if (ch != '?' && !equals(ch, strArr[strIdxStart], isCaseSensitive)) {
                 return false; // Character mismatch
@@ -411,6 +412,7 @@ public final class SelectorUtils {
             patIdxStart++;
             strIdxStart++;
         }
+        // CHECKSTYLE:ON
         if (strIdxStart > strIdxEnd) {
             // All characters in the string are used. Check if only '*'s are
             // left in the pattern. If so, we succeeded. Otherwise failure.
@@ -423,6 +425,7 @@ public final class SelectorUtils {
         }
 
         // Process characters after last star
+        // CHECKSTYLE:OFF
         while ((ch = patArr[patIdxEnd]) != '*' && strIdxStart <= strIdxEnd) {
             if (ch != '?' && !equals(ch, strArr[strIdxEnd], isCaseSensitive)) {
                 return false; // Character mismatch
@@ -430,6 +433,7 @@ public final class SelectorUtils {
             patIdxEnd--;
             strIdxEnd--;
         }
+        // CHECKSTYLE:ON
         if (strIdxStart > strIdxEnd) {
             // All characters in the string are used. Check if only '*'s are
             // left in the pattern. If so, we succeeded. Otherwise failure.
@@ -458,8 +462,8 @@ public final class SelectorUtils {
             }
             // Find the pattern between padIdxStart & padIdxTmp in str between
             // strIdxStart & strIdxEnd
-            int patLength = (patIdxTmp - patIdxStart - 1);
-            int strLength = (strIdxEnd - strIdxStart + 1);
+            int patLength = patIdxTmp - patIdxStart - 1;
+            int strLength = strIdxEnd - strIdxStart + 1;
             int foundIdx = -1;
             strLoop:
             for (int i = 0; i <= strLength - patLength; i++) {
@@ -501,8 +505,8 @@ public final class SelectorUtils {
         }
         if (!isCaseSensitive) {
             // NOTE: Try both upper case and lower case as done by String.equalsIgnoreCase()
-            if (Character.toUpperCase(c1) == Character.toUpperCase(c2) ||
-                    Character.toLowerCase(c1) == Character.toLowerCase(c2)) {
+            if (Character.toUpperCase(c1) == Character.toUpperCase(c2)
+                    || Character.toLowerCase(c1) == Character.toLowerCase(c2)) {
                 return true;
             }
         }
@@ -529,11 +533,12 @@ public final class SelectorUtils {
         return ret;
     }
 
-    
+
     /**
      * Normalizes the path by removing '.', '..' and double separators (e.g. '//')
-     * @param path Original path - ignored if {@code null}/empty
-     * @param separator The separator used for the path components 
+     *
+     * @param path      Original path - ignored if {@code null}/empty
+     * @param separator The separator used for the path components
      * @return normalized path
      * @throws IOException when the path is invalid (e.g. '/first/../..')
      */
@@ -592,6 +597,7 @@ public final class SelectorUtils {
      * Converts a possibly '/' separated path to a local path. <B>Note:</B>
      * takes special care of Windows drive paths - e.g., {@code C:}
      * by converting them to &quot;C:\&quot;
+     *
      * @param path The original path - ignored if {@code null}/empty
      * @return The local path
      */
@@ -599,9 +605,9 @@ public final class SelectorUtils {
         if (GenericUtils.isEmpty(path) || (File.separatorChar == '/')) {
             return path;
         }
-        
+
         // This code is reached if we are running on Windows
-        String  localPath=path.replace('/', File.separatorChar);
+        String localPath = path.replace('/', File.separatorChar);
         if ((localPath.length() < 2) || (localPath.charAt(1) != ':')) {
             return localPath;   // assume a relative path
         }
@@ -626,14 +632,10 @@ public final class SelectorUtils {
         if ((GenericUtils.length(cs) < 2) || (cs.charAt(1) != ':')) {
             return false;
         }
-        
-        char    drive=cs.charAt(0);
-        if (((drive >= 'a') && (drive <= 'z'))
-         || ((drive >= 'A') && (drive <= 'Z'))) {
-            return true;
-        } else {
-            return false;
-        }
+
+        char drive = cs.charAt(0);
+        return ((drive >= 'a') && (drive <= 'z'))
+                || ((drive >= 'A') && (drive <= 'Z'));
     }
 
     /**

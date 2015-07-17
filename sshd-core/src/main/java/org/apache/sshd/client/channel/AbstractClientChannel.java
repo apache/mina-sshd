@@ -46,7 +46,7 @@ import org.apache.sshd.common.util.io.IoUtils;
  */
 public abstract class AbstractClientChannel extends AbstractChannel implements ClientChannel {
 
-    protected final AtomicBoolean opened=new AtomicBoolean();
+    protected final AtomicBoolean opened = new AtomicBoolean();
     protected final String type;
 
     protected Streaming streaming;
@@ -193,7 +193,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
                 if ((cond & mask) != 0) {
                     if (log.isTraceEnabled()) {
                         log.trace("WaitFor call returning on channel {}, mask={}, cond={}",
-                                  this, mask, cond);
+                                this, mask, cond);
                     }
                     return cond;
                 }

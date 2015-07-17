@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
 
     <!--
@@ -125,7 +126,8 @@
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
                     <reportsDirectory>${project.build.directory}/surefire-reports-nio2</reportsDirectory>
                     <systemProperties>
-                        <org.apache.sshd.common.io.IoServiceFactory>org.apache.sshd.common.io.nio2.Nio2ServiceFactory</org.apache.sshd.common.io.IoServiceFactory>
+                        <org.apache.sshd.common.io.IoServiceFactory>org.apache.sshd.common.io.nio2.Nio2ServiceFactory
+                        </org.apache.sshd.common.io.IoServiceFactory>
                     </systemProperties>
                     <excludes>
                         <exclude>**/*LoadTest.java</exclude>
@@ -140,7 +142,9 @@
                         <configuration>
                             <reportsDirectory>${project.build.directory}/surefire-reports-mina</reportsDirectory>
                             <systemProperties>
-		                        <org.apache.sshd.common.io.IoServiceFactory>org.apache.sshd.common.io.mina.MinaServiceFactory</org.apache.sshd.common.io.IoServiceFactory>
+                                <org.apache.sshd.common.io.IoServiceFactory>
+                                    org.apache.sshd.common.io.mina.MinaServiceFactory
+                                </org.apache.sshd.common.io.IoServiceFactory>
                             </systemProperties>
                         </configuration>
                     </execution>

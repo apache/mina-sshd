@@ -29,6 +29,7 @@ import org.apache.sshd.common.util.GenericUtils;
  * and {@link #getUnsupportedValues()} methods. <B>Note:</B> the returned {@link List}s may
  * be un-modifiable, so it is recommended to avoid attempting changing the, returned
  * list(s)
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class ListParseResult<E> {
@@ -55,11 +56,10 @@ public abstract class ListParseResult<E> {
     public List<String> getUnsupportedValues() {
         return unsupported;
     }
-    
+
     @Override
     public String toString() {
         return "parsed=" + GenericUtils.join(getParsedValues(), ',')
-             + ";unsupported=" + GenericUtils.join(getUnsupportedValues(), ',')
-               ;
+                + ";unsupported=" + GenericUtils.join(getUnsupportedValues(), ',');
     }
 }

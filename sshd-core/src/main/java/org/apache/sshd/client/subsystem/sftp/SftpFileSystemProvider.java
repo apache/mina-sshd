@@ -83,13 +83,13 @@ import org.slf4j.LoggerFactory;
 
 public class SftpFileSystemProvider extends FileSystemProvider {
     public static final String READ_BUFFER_PROP_NAME = "sftp-fs-read-buffer-size";
-        public static final int DEFAULT_READ_BUFFER_SIZE = SftpClient.DEFAULT_READ_BUFFER_SIZE;
+    public static final int DEFAULT_READ_BUFFER_SIZE = SftpClient.DEFAULT_READ_BUFFER_SIZE;
     public static final String WRITE_BUFFER_PROP_NAME = "sftp-fs-write-buffer-size";
-        public static final int DEFAULT_WRITE_BUFFER_SIZE = SftpClient.DEFAULT_WRITE_BUFFER_SIZE;
+    public static final int DEFAULT_WRITE_BUFFER_SIZE = SftpClient.DEFAULT_WRITE_BUFFER_SIZE;
     public static final String CONNECT_TIME_PROP_NAME = "sftp-fs-connect-time";
-        public static final long DEFAULT_CONNECT_TIME = SftpClient.DEFAULT_WAIT_TIMEOUT;
+    public static final long DEFAULT_CONNECT_TIME = SftpClient.DEFAULT_WAIT_TIMEOUT;
     public static final String AUTH_TIME_PROP_NAME = "sftp-fs-auth-time";
-        public static final long DEFAULT_AUTH_TIME = SftpClient.DEFAULT_WAIT_TIMEOUT;
+    public static final long DEFAULT_AUTH_TIME = SftpClient.DEFAULT_WAIT_TIMEOUT;
 
     public static final Set<Class<? extends FileAttributeView>> SUPPORTED_VIEWS =
             Collections.unmodifiableSet(
@@ -98,10 +98,11 @@ public class SftpFileSystemProvider extends FileSystemProvider {
                                     BasicFileAttributeView.class, PosixFileAttributeView.class
                             )));
 
+    protected final Logger log;
+
     private final SshClient client;
     private final SftpVersionSelector selector;
     private final Map<String, SftpFileSystem> fileSystems = new HashMap<String, SftpFileSystem>();
-    protected final Logger log;
 
     public SftpFileSystemProvider() {
         this((SshClient) null);
@@ -113,8 +114,8 @@ public class SftpFileSystemProvider extends FileSystemProvider {
 
     /**
      * @param client The {@link SshClient} to use - if {@code null} then a
-     * default one will be setup and started. Otherwise, it is assumed that
-     * the client has already been started
+     *               default one will be setup and started. Otherwise, it is assumed that
+     *               the client has already been started
      * @see SshClient#setUpDefaultClient()
      */
     public SftpFileSystemProvider(SshClient client) {
@@ -152,32 +153,32 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         String userInfo = ValidateUtils.checkNotNullAndNotEmpty(uri.getUserInfo(), "UserInfo not provided");
         String[] ui = GenericUtils.split(userInfo, ':');
         ValidateUtils.checkTrue(GenericUtils.length(ui) == 2, "Invalid user info: %s", userInfo);
-        String username = ui[0], password = ui[1];
+        String username = ui[0];
+        String password = ui[1];
         String id = getFileSystemIdentifier(host, port, username);
 
         SftpFileSystem fileSystem;
         synchronized (fileSystems) {
-            if ((fileSystem = fileSystems.get(id)) != null) {
+            if (fileSystems.containsKey(id)) {
                 throw new FileSystemAlreadyExistsException(id);
             }
 
             // TODO try and find a way to avoid doing this while locking the file systems cache
-            ClientSession session=null;
+            ClientSession session = null;
             try {
                 session = client.connect(username, host, port)
-                                .verify(FactoryManagerUtils.getLongProperty(env, CONNECT_TIME_PROP_NAME, DEFAULT_CONNECT_TIME))
-                                .getSession()
-                                ;
+                        .verify(FactoryManagerUtils.getLongProperty(env, CONNECT_TIME_PROP_NAME, DEFAULT_CONNECT_TIME))
+                        .getSession();
                 session.addPasswordIdentity(password);
                 session.auth().verify(FactoryManagerUtils.getLongProperty(env, AUTH_TIME_PROP_NAME, DEFAULT_AUTH_TIME));
 
                 fileSystem = new SftpFileSystem(this, id, session, getSftpVersionSelector());
                 fileSystems.put(id, fileSystem);
-            } catch(Exception e) {
+            } catch (Exception e) {
                 if (session != null) {
                     try {
                         session.close();
-                    } catch(IOException t) {
+                    } catch (IOException t) {
                         if (log.isDebugEnabled()) {
                             log.debug("Failed (" + t.getClass().getSimpleName() + ")"
                                     + " to close session for new file system on " + host + ":" + port
@@ -186,7 +187,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
                         }
                     }
                 }
-                
+
                 if (e instanceof IOException) {
                     throw (IOException) e;
                 } else if (e instanceof RuntimeException) {
@@ -196,7 +197,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
                 }
             }
         }
-        
+
         fileSystem.setReadBufferSize(FactoryManagerUtils.getIntProperty(env, READ_BUFFER_PROP_NAME, DEFAULT_READ_BUFFER_SIZE));
         fileSystem.setWriteBufferSize(FactoryManagerUtils.getIntProperty(env, WRITE_BUFFER_PROP_NAME, DEFAULT_WRITE_BUFFER_SIZE));
         return fileSystem;
@@ -206,14 +207,13 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         String id = getFileSystemIdentifier(session);
         SftpFileSystem fileSystem;
         synchronized (fileSystems) {
-            if ((fileSystem=fileSystems.get(id)) != null) {
+            if (fileSystems.containsKey(id)) {
                 throw new FileSystemAlreadyExistsException(id);
             }
-
             fileSystem = new SftpFileSystem(this, id, session, getSftpVersionSelector());
             fileSystems.put(id, fileSystem);
         }
-        
+
         FactoryManager manager = session.getFactoryManager();
         fileSystem.setReadBufferSize(FactoryManagerUtils.getIntProperty(manager, READ_BUFFER_PROP_NAME, DEFAULT_READ_BUFFER_SIZE));
         fileSystem.setWriteBufferSize(FactoryManagerUtils.getIntProperty(manager, WRITE_BUFFER_PROP_NAME, DEFAULT_WRITE_BUFFER_SIZE));
@@ -309,63 +309,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
     @Override
     public DirectoryStream<Path> newDirectoryStream(Path dir, DirectoryStream.Filter<? super Path> filter) throws IOException {
         final SftpPath p = toSftpPath(dir);
-        return new DirectoryStream<Path>() {
-            private final SftpFileSystem fs = p.getFileSystem();
-            private final SftpClient sftp = fs.getClient();
-            private final Iterable<SftpClient.DirEntry> iter = sftp.readDir(p.toString());
-
-            @Override
-            public Iterator<Path> iterator() {
-                return new Iterator<Path>() {
-                    @SuppressWarnings("synthetic-access")
-                    private final Iterator<SftpClient.DirEntry> it = (iter == null) ? null : iter.iterator();
-                    private boolean dotIgnored, dotdotIgnored;
-                    private SftpClient.DirEntry curEntry = nextEntry();
-
-                    @Override
-                    public boolean hasNext() {
-                        return (curEntry != null);
-                    }
-
-                    @Override
-                    public Path next() {
-                        if (curEntry == null) {
-                            throw new NoSuchElementException("No next entry");
-                        }
-
-                        SftpClient.DirEntry entry = curEntry;
-                        curEntry = nextEntry();
-                        return p.resolve(entry.filename);
-                    }
-
-                    private SftpClient.DirEntry nextEntry() {
-                        while((it != null) && it.hasNext()) {
-                            SftpClient.DirEntry entry = it.next();
-                            String name = entry.filename;
-                            if (".".equals(name) && (!dotIgnored)) {
-                                dotIgnored = true;
-                            } else if ("..".equals(name) && (!dotdotIgnored)) {
-                                dotdotIgnored = true;
-                            } else {
-                                return entry;
-                            }
-                        }
-                        
-                        return null;
-                    }
-
-                    @Override
-                    public void remove() {
-                        throw new UnsupportedOperationException("newDirectoryStream(" + p + ") Iterator#remove() N/A");
-                    }
-                };
-            }
-
-            @Override
-            public void close() throws IOException {
-                sftp.close();
-            }
-        };
+        return new PathDirectoryStream(p);
     }
 
     @Override
@@ -376,7 +320,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             try {
                 sftp.mkdir(dir.toString());
             } catch (SftpException e) {
-                int sftpStatus=e.getStatus();
+                int sftpStatus = e.getStatus();
                 if ((sftp.getVersion() == SftpConstants.SFTP_V3) && (sftpStatus == SftpConstants.SSH_FX_FAILURE)) {
                     try {
                         Attributes attributes = sftp.stat(dir.toString());
@@ -402,7 +346,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
     public void delete(Path path) throws IOException {
         SftpPath p = toSftpPath(path);
         checkAccess(p, AccessMode.WRITE);
-        
+
         SftpFileSystem fs = p.getFileSystem();
         try (SftpClient sftp = fs.getClient()) {
             BasicFileAttributes attributes = readAttributes(path, BasicFileAttributes.class);
@@ -435,11 +379,12 @@ public class SftpFileSystemProvider extends FileSystemProvider {
 
         // attributes of source file
         BasicFileAttributes attrs = readAttributes(source, BasicFileAttributes.class, linkOptions);
-        if (attrs.isSymbolicLink())
+        if (attrs.isSymbolicLink()) {
             throw new IOException("Copying of symbolic links not supported");
+        }
 
         // delete target if it exists and REPLACE_EXISTING is specified
-        Boolean status=IoUtils.checkFileExists(target, linkOptions);
+        Boolean status = IoUtils.checkFileExists(target, linkOptions);
         if (status == null) {
             throw new AccessDeniedException("Existence cannot be determined for copy target: " + target);
         }
@@ -482,9 +427,9 @@ public class SftpFileSystemProvider extends FileSystemProvider {
     @Override
     public void move(Path source, Path target, CopyOption... options) throws IOException {
         SftpPath src = toSftpPath(source);
-        SftpFileSystem fsSrc = src.getFileSystem(); 
+        SftpFileSystem fsSrc = src.getFileSystem();
         SftpPath dst = toSftpPath(target);
-        
+
         if (src.getFileSystem() != dst.getFileSystem()) {
             throw new ProviderMismatchException("Mismatched file system providers for " + src + " vs. " + dst);
         }
@@ -507,7 +452,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         }
 
         // delete target if it exists and REPLACE_EXISTING is specified
-        Boolean status=IoUtils.checkFileExists(target, linkOptions);
+        Boolean status = IoUtils.checkFileExists(target, linkOptions);
         if (status == null) {
             throw new AccessDeniedException("Existence cannot be determined for move target " + target);
         }
@@ -562,14 +507,14 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         if (!(fs instanceof SftpFileSystem)) {
             throw new FileSystemException(path.toString(), path.toString(), "getFileStore(" + path + ") path not attached to an SFTP file system");
         }
-        
+
         SftpFileSystem sftpFs = (SftpFileSystem) fs;
         String id = sftpFs.getId();
         SftpFileSystem cached = getFileSystem(id);
         if (cached != sftpFs) {
             throw new FileSystemException(path.toString(), path.toString(), "Mismatched file system instance for id=" + id);
         }
-        
+
         return sftpFs.getFileStores().get(0);
     }
 
@@ -621,7 +566,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         if ((attrs == null) && !(p.isAbsolute() && p.getNameCount() == 0)) {
             throw new NoSuchFileException(path.toString());
         }
-        
+
         SftpFileSystem fs = p.getFileSystem();
         if (x || (w && fs.isReadOnly())) {
             throw new AccessDeniedException("Filesystem is read-only: " + path.toString());
@@ -631,140 +576,14 @@ public class SftpFileSystemProvider extends FileSystemProvider {
     @Override
     public <V extends FileAttributeView> V getFileAttributeView(final Path path, Class<V> type, final LinkOption... options) {
         if (isSupportedFileAttributeView(type)) {
-            return type.cast(new PosixFileAttributeView() {
-                @Override
-                public String name() {
-                    return "view";
-                }
-
-                @SuppressWarnings("synthetic-access")
-                @Override
-                public PosixFileAttributes readAttributes() throws IOException {
-                    SftpPath p = toSftpPath(path);
-                    SftpFileSystem fs = p.getFileSystem();
-                    final SftpClient.Attributes attributes;
-                    try (SftpClient client =fs.getClient()) {
-                        try {
-                            if (IoUtils.followLinks(options)) {
-                                attributes = client.stat(p.toString());
-                            } else {
-                                attributes = client.lstat(p.toString());
-                            }
-                        } catch (SftpException e) {
-                            if (e.getStatus() == SftpConstants.SSH_FX_NO_SUCH_FILE) {
-                                throw new NoSuchFileException(p.toString());
-                            }
-                            throw e;
-                        }
-                    }
-                    return new PosixFileAttributes() {
-                        @Override
-                        public UserPrincipal owner() {
-                            return attributes.owner != null ? new SftpFileSystem.DefaultGroupPrincipal(attributes.owner) : null;
-                        }
-
-                        @Override
-                        public GroupPrincipal group() {
-                            return attributes.group != null ? new SftpFileSystem.DefaultGroupPrincipal(attributes.group) : null;
-                        }
-
-                        @Override
-                        public Set<PosixFilePermission> permissions() {
-                            return permissionsToAttributes(attributes.perms);
-                        }
-
-                        @Override
-                        public FileTime lastModifiedTime() {
-                            return FileTime.from(attributes.mtime, TimeUnit.SECONDS);
-                        }
-
-                        @Override
-                        public FileTime lastAccessTime() {
-                            return FileTime.from(attributes.atime, TimeUnit.SECONDS);
-                        }
-
-                        @Override
-                        public FileTime creationTime() {
-                            return FileTime.from(attributes.ctime, TimeUnit.SECONDS);
-                        }
-
-                        @Override
-                        public boolean isRegularFile() {
-                            return attributes.isRegularFile();
-                        }
-
-                        @Override
-                        public boolean isDirectory() {
-                            return attributes.isDirectory();
-                        }
-
-                        @Override
-                        public boolean isSymbolicLink() {
-                            return attributes.isSymbolicLink();
-                        }
-
-                        @Override
-                        public boolean isOther() {
-                            return attributes.isOther();
-                        }
-
-                        @Override
-                        public long size() {
-                            return attributes.size;
-                        }
-
-                        @Override
-                        public Object fileKey() {
-                            // TODO
-                            return null;
-                        }
-                    };
-                }
-
-                @Override
-                public void setTimes(FileTime lastModifiedTime, FileTime lastAccessTime, FileTime createTime) throws IOException {
-                    if (lastModifiedTime != null) {
-                        setAttribute(path, "lastModifiedTime", lastModifiedTime, options);
-                    }
-                    if (lastAccessTime != null) {
-                        setAttribute(path, "lastAccessTime", lastAccessTime, options);
-                    }
-                    if (createTime != null) {
-                        setAttribute(path, "createTime", createTime, options);
-                    }
-                }
-
-                @Override
-                public void setPermissions(Set<PosixFilePermission> perms) throws IOException {
-                    setAttribute(path, "permissions", perms, options);
-                }
-
-                @Override
-                public void setGroup(GroupPrincipal group) throws IOException {
-                    setAttribute(path, "group", group, options);
-                }
-
-                @Override
-                public UserPrincipal getOwner() throws IOException {
-                    return readAttributes().owner();
-                }
-
-                @Override
-                public void setOwner(UserPrincipal owner) throws IOException {
-                    setAttribute(path, "owner", owner, options);
-                }
-            });
+            return type.cast(new SftpPosixFileAttributeView(path, options));
         } else {
             throw new UnsupportedOperationException("getFileAttributeView(" + path + ") view not supported: " + type.getSimpleName());
         }
     }
 
     public boolean isSupportedFileAttributeView(Class<? extends FileAttributeView> type) {
-        if ((type != null) && SUPPORTED_VIEWS.contains(type)) {
-            return true;
-        } else {
-            return false;   // debug breakpoint 
-        }
+        return (type != null) && SUPPORTED_VIEWS.contains(type);
     }
 
     @Override
@@ -880,11 +699,10 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             case "size":
                 attributes.size(((Number) value).longValue());
                 break;
-            case "permissions": {
+            case "permissions":
                 @SuppressWarnings("unchecked")
-                Set<PosixFilePermission>    attrSet = (Set<PosixFilePermission>) value;
+                Set<PosixFilePermission> attrSet = (Set<PosixFilePermission>) value;
                 attributes.perms(attributesToPermissions(path, attrSet));
-                }
                 break;
             case "owner":
                 attributes.owner(((UserPrincipal) value).getName());
@@ -898,7 +716,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             case "isOther":
             case "fileKey":
                 throw new UnsupportedOperationException("setAttribute(" + path + ")[" + attribute + "=" + value + "]"
-                                                       + " unknown view=" + view + " attribute: " + attr);
+                        + " unknown view=" + view + " attribute: " + attr);
             default:
                 if (log.isTraceEnabled()) {
                     log.trace("setAttribute({})[{}] ignore {}={}", path, attribute, attr, value);
@@ -964,7 +782,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
     }
 
     public static String getRWXPermissions(int perms) {
-        StringBuilder sb=new StringBuilder(10 /* 3 * rwx + (d)irectory */);
+        StringBuilder sb = new StringBuilder(10 /* 3 * rwx + (d)irectory */);
         if ((perms & SftpConstants.S_IFLNK) == SftpConstants.S_IFLNK) {
             sb.append('l');
         } else if ((perms & SftpConstants.S_IFDIR) == SftpConstants.S_IFDIR) {
@@ -1020,7 +838,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         } else {
             sb.append('-');
         }
-        
+
         return sb.toString();
     }
 
@@ -1101,8 +919,9 @@ public class SftpFileSystemProvider extends FileSystemProvider {
 
     /**
      * Uses the host, port and username to create a unique identifier
+     *
      * @param uri The {@link URI} - <B>Note:</B> not checked to make sure
-     * that the scheme is {@code sftp://}
+     *            that the scheme is {@code sftp://}
      * @return The unique identifier
      * @see #getFileSystemIdentifier(String, int, String)
      */
@@ -1112,9 +931,10 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         ValidateUtils.checkTrue(GenericUtils.length(ui) == 2, "Invalid user info: %s", userInfo);
         return getFileSystemIdentifier(uri.getHost(), uri.getPort(), ui[0]);
     }
-    
+
     /**
      * Uses the remote host address, port and current username to create a unique identifier
+     *
      * @param session The {@link ClientSession}
      * @return The unique identifier
      * @see #getFileSystemIdentifier(String, int, String)
@@ -1139,5 +959,214 @@ public class SftpFileSystemProvider extends FileSystemProvider {
 
     public static URI createFileSystemURI(String host, int port, String username, String password) {
         return URI.create(SftpConstants.SFTP_SUBSYSTEM_NAME + "://" + username + ":" + password + "@" + host + ":" + port + "/");
+    }
+
+    private static class PathDirectoryStream implements DirectoryStream<Path> {
+        private final SftpFileSystem fs;
+        private final SftpClient sftp;
+        private final Iterable<SftpClient.DirEntry> iter;
+        private final SftpPath p;
+
+        public PathDirectoryStream(SftpPath p) throws IOException {
+            this.p = p;
+            fs = p.getFileSystem();
+            sftp = fs.getClient();
+            iter = sftp.readDir(p.toString());
+        }
+
+        @Override
+        public Iterator<Path> iterator() {
+            return new PathIterator();
+        }
+
+        @Override
+        public void close() throws IOException {
+            sftp.close();
+        }
+
+        private class PathIterator implements Iterator<Path> {
+            @SuppressWarnings("synthetic-access")
+            private final Iterator<SftpClient.DirEntry> it = (iter == null) ? null : iter.iterator();
+            private boolean dotIgnored;
+            private boolean dotdotIgnored;
+            private SftpClient.DirEntry curEntry = nextEntry();
+
+            @Override
+            public boolean hasNext() {
+                return curEntry != null;
+            }
+
+            @Override
+            public Path next() {
+                if (curEntry == null) {
+                    throw new NoSuchElementException("No next entry");
+                }
+
+                SftpClient.DirEntry entry = curEntry;
+                curEntry = nextEntry();
+                return p.resolve(entry.filename);
+            }
+
+            private SftpClient.DirEntry nextEntry() {
+                while ((it != null) && it.hasNext()) {
+                    SftpClient.DirEntry entry = it.next();
+                    String name = entry.filename;
+                    if (".".equals(name) && (!dotIgnored)) {
+                        dotIgnored = true;
+                    } else if ("..".equals(name) && (!dotdotIgnored)) {
+                        dotdotIgnored = true;
+                    } else {
+                        return entry;
+                    }
+                }
+
+                return null;
+            }
+
+            @Override
+            public void remove() {
+                throw new UnsupportedOperationException("newDirectoryStream(" + p + ") Iterator#remove() N/A");
+            }
+        }
+    }
+
+    private class SftpPosixFileAttributeView implements PosixFileAttributeView {
+        private final Path path;
+        private final LinkOption[] options;
+
+        public SftpPosixFileAttributeView(Path path, LinkOption... options) {
+            this.path = path;
+            this.options = options;
+        }
+
+        @Override
+        public String name() {
+            return "view";
+        }
+
+        @SuppressWarnings("synthetic-access")
+        @Override
+        public PosixFileAttributes readAttributes() throws IOException {
+            SftpPath p = toSftpPath(path);
+            SftpFileSystem fs = p.getFileSystem();
+            final Attributes attributes;
+            try (SftpClient client = fs.getClient()) {
+                try {
+                    if (IoUtils.followLinks(options)) {
+                        attributes = client.stat(p.toString());
+                    } else {
+                        attributes = client.lstat(p.toString());
+                    }
+                } catch (SftpException e) {
+                    if (e.getStatus() == SftpConstants.SSH_FX_NO_SUCH_FILE) {
+                        throw new NoSuchFileException(p.toString());
+                    }
+                    throw e;
+                }
+            }
+            return new SftpPosixFileAttributes(attributes);
+        }
+
+        @Override
+        public void setTimes(FileTime lastModifiedTime, FileTime lastAccessTime, FileTime createTime) throws IOException {
+            if (lastModifiedTime != null) {
+                setAttribute(path, "lastModifiedTime", lastModifiedTime, options);
+            }
+            if (lastAccessTime != null) {
+                setAttribute(path, "lastAccessTime", lastAccessTime, options);
+            }
+            if (createTime != null) {
+                setAttribute(path, "createTime", createTime, options);
+            }
+        }
+
+        @Override
+        public void setPermissions(Set<PosixFilePermission> perms) throws IOException {
+            setAttribute(path, "permissions", perms, options);
+        }
+
+        @Override
+        public void setGroup(GroupPrincipal group) throws IOException {
+            setAttribute(path, "group", group, options);
+        }
+
+        @Override
+        public UserPrincipal getOwner() throws IOException {
+            return readAttributes().owner();
+        }
+
+        @Override
+        public void setOwner(UserPrincipal owner) throws IOException {
+            setAttribute(path, "owner", owner, options);
+        }
+
+        private class SftpPosixFileAttributes implements PosixFileAttributes {
+            private final Attributes attributes;
+
+            public SftpPosixFileAttributes(Attributes attributes) {
+                this.attributes = attributes;
+            }
+
+            @Override
+            public UserPrincipal owner() {
+                return attributes.owner != null ? new SftpFileSystem.DefaultGroupPrincipal(attributes.owner) : null;
+            }
+
+            @Override
+            public GroupPrincipal group() {
+                return attributes.group != null ? new SftpFileSystem.DefaultGroupPrincipal(attributes.group) : null;
+            }
+
+            @Override
+            public Set<PosixFilePermission> permissions() {
+                return permissionsToAttributes(attributes.perms);
+            }
+
+            @Override
+            public FileTime lastModifiedTime() {
+                return FileTime.from(attributes.mtime, TimeUnit.SECONDS);
+            }
+
+            @Override
+            public FileTime lastAccessTime() {
+                return FileTime.from(attributes.atime, TimeUnit.SECONDS);
+            }
+
+            @Override
+            public FileTime creationTime() {
+                return FileTime.from(attributes.ctime, TimeUnit.SECONDS);
+            }
+
+            @Override
+            public boolean isRegularFile() {
+                return attributes.isRegularFile();
+            }
+
+            @Override
+            public boolean isDirectory() {
+                return attributes.isDirectory();
+            }
+
+            @Override
+            public boolean isSymbolicLink() {
+                return attributes.isSymbolicLink();
+            }
+
+            @Override
+            public boolean isOther() {
+                return attributes.isOther();
+            }
+
+            @Override
+            public long size() {
+                return attributes.size;
+            }
+
+            @Override
+            public Object fileKey() {
+                // TODO
+                return null;
+            }
+        }
     }
 }

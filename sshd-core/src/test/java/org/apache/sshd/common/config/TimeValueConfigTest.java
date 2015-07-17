@@ -37,17 +37,17 @@ public class TimeValueConfigTest extends BaseTestSupport {
 
     @Test
     public void testDurationOf() {
-        Object[]    values={
+        Object[] values = {
                 "600", Long.valueOf(TimeUnit.SECONDS.toMillis(600L)),
                 "10m", Long.valueOf(TimeUnit.MINUTES.toMillis(10L)),
                 "1h30m", Long.valueOf(TimeUnit.MINUTES.toMillis(90L)),
                 "2d", Long.valueOf(TimeUnit.DAYS.toMillis(2L)),
                 "3w", Long.valueOf(TimeUnit.DAYS.toMillis(3L * 7L))
-            };
-        for (int    index=0; index < values.length; index += 2) {
-            String  s=(String) values[index];
-            Number  expected=(Number) values[index + 1];
-            long    actual=TimeValueConfig.durationOf(s);
+        };
+        for (int index = 0; index < values.length; index += 2) {
+            String s = (String) values[index];
+            Number expected = (Number) values[index + 1];
+            long actual = TimeValueConfig.durationOf(s);
             assertEquals(s, expected.longValue(), actual);
         }
     }

@@ -46,8 +46,8 @@ public class KeyPairProviderTest extends BaseTestSupport {
         KeyPairProvider provider = KeyPairProvider.EMPTY_KEYPAIR_PROVIDER;
         assertTrue("Non empty loaded keys", GenericUtils.isEmpty(provider.loadKeys()));
         assertTrue("Non empty key type", GenericUtils.isEmpty(provider.getKeyTypes()));
-        
-        for (String keyType : new String[] { null, "", getCurrentTestName() }) {
+
+        for (String keyType : new String[]{null, "", getCurrentTestName()}) {
             assertNull("Unexpected key-pair loaded for type='" + keyType + "'", provider.loadKey(keyType));
         }
     }
@@ -56,22 +56,22 @@ public class KeyPairProviderTest extends BaseTestSupport {
     public void testMapToKeyPairProvider() {
         final PublicKey pubKey = Mockito.mock(PublicKey.class);
         final PrivateKey prvKey = Mockito.mock(PrivateKey.class);
-        final String[] testKeys = { getCurrentTestName(), getClass().getSimpleName() };
-        Map<String,KeyPair> pairsMap=new TreeMap<String,KeyPair>(String.CASE_INSENSITIVE_ORDER) {
-                private static final long serialVersionUID = 1L;    // we're not serializing it
-                
-                {
-                    for (String keyType : testKeys) {
-                        put(keyType, new KeyPair(pubKey, prvKey));
-                    }
+        final String[] testKeys = {getCurrentTestName(), getClass().getSimpleName()};
+        Map<String, KeyPair> pairsMap = new TreeMap<String, KeyPair>(String.CASE_INSENSITIVE_ORDER) {
+            private static final long serialVersionUID = 1L;    // we're not serializing it
+
+            {
+                for (String keyType : testKeys) {
+                    put(keyType, new KeyPair(pubKey, prvKey));
                 }
-            };
+            }
+        };
         KeyPairProvider provider = MappedKeyPairProvider.MAP_TO_KEY_PAIR_PROVIDER.transform(pairsMap);
         assertEquals("Key types", pairsMap.keySet(), provider.getKeyTypes());
         assertEquals("Key pairs", pairsMap.values(), provider.loadKeys());
-        
-        for (Map.Entry<String,KeyPair> pairEntry : pairsMap.entrySet()) {
-            String  keyType = pairEntry.getKey();
+
+        for (Map.Entry<String, KeyPair> pairEntry : pairsMap.entrySet()) {
+            String keyType = pairEntry.getKey();
             KeyPair expected = pairEntry.getValue(), actual = provider.loadKey(keyType);
             assertSame(keyType, expected, actual);
         }

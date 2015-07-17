@@ -156,7 +156,7 @@ public class ClientTest extends BaseTestSupport {
                     }
                 },
                 ServerConnectionServiceFactory.INSTANCE
-            ));
+        ));
         sshd.setChannelFactories(Arrays.<NamedFactory<Channel>>asList(
                 new ChannelSessionFactory() {
                     @Override
@@ -205,21 +205,21 @@ public class ClientTest extends BaseTestSupport {
         FactoryManagerUtils.updateProperty(client, FactoryManager.WINDOW_SIZE, 1024);
         client.start();
 
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
 
-            try(final ChannelShell channel = session.createShellChannel()) {
+            try (final ChannelShell channel = session.createShellChannel()) {
                 channel.setStreaming(ClientChannel.Streaming.Async);
                 channel.open().verify(5L, TimeUnit.SECONDS);
-        
+
                 final byte[] message = "0123456789\n".getBytes(StandardCharsets.UTF_8);
                 final int nbMessages = 1000;
-        
-                try(final ByteArrayOutputStream baosOut = new ByteArrayOutputStream();
-                    final ByteArrayOutputStream baosErr = new ByteArrayOutputStream()) {
+
+                try (final ByteArrayOutputStream baosOut = new ByteArrayOutputStream();
+                     final ByteArrayOutputStream baosErr = new ByteArrayOutputStream()) {
                     final AtomicInteger writes = new AtomicInteger(nbMessages);
-            
+
                     channel.getAsyncIn().write(new ByteArrayBuffer(message))
                             .addListener(new SshFutureListener<IoWriteFuture>() {
                                 @Override
@@ -280,12 +280,12 @@ public class ClientTest extends BaseTestSupport {
                                     }
                                 }
                             });
-        
+
                     channel.waitFor(ClientChannel.CLOSED, 0);
-        
+
                     assertEquals(nbMessages * message.length, baosOut.size());
                 }
-            }    
+            }
 
             client.close(true);
         } finally {
@@ -297,13 +297,13 @@ public class ClientTest extends BaseTestSupport {
     public void testCommandDeadlock() throws Exception {
         client.start();
 
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
-            
-            try(ChannelExec channel = session.createExecChannel(getCurrentTestName());
-                OutputStream stdout = new NoCloseOutputStream(System.out);
-                OutputStream stderr = new NoCloseOutputStream(System.err)) {
+
+            try (ChannelExec channel = session.createExecChannel(getCurrentTestName());
+                 OutputStream stdout = new NoCloseOutputStream(System.out);
+                 OutputStream stderr = new NoCloseOutputStream(System.err)) {
 
                 channel.setOut(stdout);
                 channel.setErr(stderr);
@@ -330,43 +330,43 @@ public class ClientTest extends BaseTestSupport {
     public void testClient() throws Exception {
         client.start();
 
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
-            
-            try(ClientChannel channel = session.createShellChannel();
-                ByteArrayOutputStream sent = new ByteArrayOutputStream();
-                PipedOutputStream pipedIn = new PipedOutputStream();
-                PipedInputStream pipedOut = new PipedInputStream(pipedIn)) {
+
+            try (ClientChannel channel = session.createShellChannel();
+                 ByteArrayOutputStream sent = new ByteArrayOutputStream();
+                 PipedOutputStream pipedIn = new PipedOutputStream();
+                 PipedInputStream pipedOut = new PipedInputStream(pipedIn)) {
 
                 channel.setIn(pipedOut);
 
-                try(OutputStream teeOut = new TeeOutputStream(sent, pipedIn);
-                    ByteArrayOutputStream out = new ByteArrayOutputStream();
-                    ByteArrayOutputStream err = new ByteArrayOutputStream()) {
+                try (OutputStream teeOut = new TeeOutputStream(sent, pipedIn);
+                     ByteArrayOutputStream out = new ByteArrayOutputStream();
+                     ByteArrayOutputStream err = new ByteArrayOutputStream()) {
 
                     channel.setOut(out);
                     channel.setErr(err);
                     channel.open();
-            
+
                     teeOut.write("this is my command\n".getBytes(StandardCharsets.UTF_8));
                     teeOut.flush();
-            
+
                     StringBuilder sb = new StringBuilder();
                     for (int i = 0; i < 1000; i++) {
                         sb.append("0123456789");
                     }
                     sb.append("\n");
                     teeOut.write(sb.toString().getBytes(StandardCharsets.UTF_8));
-            
+
                     teeOut.write("exit\n".getBytes(StandardCharsets.UTF_8));
                     teeOut.flush();
-            
+
                     channel.waitFor(ClientChannel.CLOSED, 0);
-            
+
                     channel.close(false);
                     client.stop();
-            
+
                     assertArrayEquals(sent.toByteArray(), out.toByteArray());
                 }
             }
@@ -378,40 +378,40 @@ public class ClientTest extends BaseTestSupport {
     @Test
     public void testClientInverted() throws Exception {
         client.start();
-        
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+
+        try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
-            
-            try(ClientChannel channel = session.createShellChannel();
-                ByteArrayOutputStream sent = new ByteArrayOutputStream();
-                ByteArrayOutputStream out = new ByteArrayOutputStream();
-                ByteArrayOutputStream err = new ByteArrayOutputStream()) {
+
+            try (ClientChannel channel = session.createShellChannel();
+                 ByteArrayOutputStream sent = new ByteArrayOutputStream();
+                 ByteArrayOutputStream out = new ByteArrayOutputStream();
+                 ByteArrayOutputStream err = new ByteArrayOutputStream()) {
 
                 channel.setOut(out);
                 channel.setErr(err);
                 channel.open().verify(9L, TimeUnit.SECONDS);
-        
-                try(OutputStream pipedIn = new TeeOutputStream(sent, channel.getInvertedIn())) {
+
+                try (OutputStream pipedIn = new TeeOutputStream(sent, channel.getInvertedIn())) {
                     pipedIn.write("this is my command\n".getBytes(StandardCharsets.UTF_8));
                     pipedIn.flush();
-            
+
                     StringBuilder sb = new StringBuilder();
                     for (int i = 0; i < 1000; i++) {
                         sb.append("0123456789");
                     }
                     sb.append("\n");
                     pipedIn.write(sb.toString().getBytes(StandardCharsets.UTF_8));
-            
+
                     pipedIn.write("exit\n".getBytes(StandardCharsets.UTF_8));
                     pipedIn.flush();
                 }
-        
+
                 channel.waitFor(ClientChannel.CLOSED, 0);
-        
+
                 channel.close(false);
                 client.stop();
-        
+
                 assertArrayEquals(sent.toByteArray(), out.toByteArray());
             }
         } finally {
@@ -422,15 +422,15 @@ public class ClientTest extends BaseTestSupport {
     @Test
     public void testClientWithCustomChannel() throws Exception {
         client.start();
-        
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+
+        try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
-    
-            try(ChannelShell channel = new ChannelShell();
-                ByteArrayOutputStream sent = new ByteArrayOutputStream();
-                ByteArrayOutputStream out = new ByteArrayOutputStream();
-                ByteArrayOutputStream err = new ByteArrayOutputStream()) {
+
+            try (ChannelShell channel = new ChannelShell();
+                 ByteArrayOutputStream sent = new ByteArrayOutputStream();
+                 ByteArrayOutputStream out = new ByteArrayOutputStream();
+                 ByteArrayOutputStream err = new ByteArrayOutputStream()) {
 
                 session.getService(ConnectionService.class).registerChannel(channel);
                 channel.setOut(out);
@@ -446,40 +446,40 @@ public class ClientTest extends BaseTestSupport {
     @Test
     public void testClientClosingStream() throws Exception {
         client.start();
-        
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+
+        try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
-    
-            try(ClientChannel channel = session.createShellChannel();
-                ByteArrayOutputStream sent = new ByteArrayOutputStream();
-                PipedOutputStream pipedIn = new PipedOutputStream();
-                InputStream inPipe = new PipedInputStream(pipedIn);
-                ByteArrayOutputStream out = new ByteArrayOutputStream();
-                ByteArrayOutputStream err = new ByteArrayOutputStream()) {
+
+            try (ClientChannel channel = session.createShellChannel();
+                 ByteArrayOutputStream sent = new ByteArrayOutputStream();
+                 PipedOutputStream pipedIn = new PipedOutputStream();
+                 InputStream inPipe = new PipedInputStream(pipedIn);
+                 ByteArrayOutputStream out = new ByteArrayOutputStream();
+                 ByteArrayOutputStream err = new ByteArrayOutputStream()) {
 
                 channel.setIn(inPipe);
                 channel.setOut(out);
                 channel.setErr(err);
                 channel.open();
 
-                try(OutputStream teeOut = new TeeOutputStream(sent, pipedIn)) {
+                try (OutputStream teeOut = new TeeOutputStream(sent, pipedIn)) {
                     teeOut.write("this is my command\n".getBytes(StandardCharsets.UTF_8));
                     teeOut.flush();
-        
+
                     StringBuilder sb = new StringBuilder();
                     for (int i = 0; i < 1000; i++) {
                         sb.append("0123456789");
                     }
                     sb.append("\n");
                     teeOut.write(sb.toString().getBytes(StandardCharsets.UTF_8));
-                }    
-    
+                }
+
                 channel.waitFor(ClientChannel.CLOSED, 0);
-        
+
                 channel.close(false);
                 client.stop();
-        
+
                 assertArrayEquals(sent.toByteArray(), out.toByteArray());
             }
         } finally {
@@ -495,28 +495,28 @@ public class ClientTest extends BaseTestSupport {
 //        FactoryManagerUtils.updateProperty(sshd, SshServer.WINDOW_SIZE, 0x20000);
 //        FactoryManagerUtils.updateProperty(sshd, SshServer.MAX_PACKET_SIZE, 0x1000);
         client.start();
-        
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+
+        try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
 
-            try(ClientChannel channel = session.createShellChannel();
-                ByteArrayOutputStream sent = new ByteArrayOutputStream();
-                PipedOutputStream pipedIn = new PipedOutputStream();
-                InputStream inPipe = new PipedInputStream(pipedIn); 
-                ByteArrayOutputStream out = new ByteArrayOutputStream();
-                ByteArrayOutputStream err = new ByteArrayOutputStream()) {
+            try (ClientChannel channel = session.createShellChannel();
+                 ByteArrayOutputStream sent = new ByteArrayOutputStream();
+                 PipedOutputStream pipedIn = new PipedOutputStream();
+                 InputStream inPipe = new PipedInputStream(pipedIn);
+                 ByteArrayOutputStream out = new ByteArrayOutputStream();
+                 ByteArrayOutputStream err = new ByteArrayOutputStream()) {
 
                 channel.setIn(inPipe);
                 channel.setOut(out);
                 channel.setErr(err);
                 channel.open().verify(9L, TimeUnit.SECONDS);
-        
-        
+
+
                 int bytes = 0;
                 byte[] data = "01234567890123456789012345678901234567890123456789\n".getBytes(StandardCharsets.UTF_8);
                 long t0 = System.currentTimeMillis();
-                try(OutputStream teeOut = new TeeOutputStream(sent, pipedIn)) {
+                try (OutputStream teeOut = new TeeOutputStream(sent, pipedIn)) {
                     for (int i = 0; i < 10000; i++) {
                         teeOut.write(data);
                         teeOut.flush();
@@ -527,18 +527,18 @@ public class ClientTest extends BaseTestSupport {
                     }
                     teeOut.write("exit\n".getBytes(StandardCharsets.UTF_8));
                     teeOut.flush();
-                }        
+                }
                 long t1 = System.currentTimeMillis();
-        
+
                 System.out.println("Sent " + (bytes / 1024) + " Kb in " + (t1 - t0) + " ms");
-        
+
                 System.out.println("Waiting for channel to be closed");
-        
+
                 channel.waitFor(ClientChannel.CLOSED, 0);
-        
+
                 channel.close(false);
                 client.stop();
-        
+
                 assertArrayEquals(sent.toByteArray(), out.toByteArray());
                 //assertArrayEquals(sent.toByteArray(), out.toByteArray());
             }
@@ -550,18 +550,18 @@ public class ClientTest extends BaseTestSupport {
     @Test(expected = SshException.class)
     public void testOpenChannelOnClosedSession() throws Exception {
         client.start();
-        
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+
+        try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
-            
-            try(ClientChannel channel = session.createShellChannel()) {
+
+            try (ClientChannel channel = session.createShellChannel()) {
                 session.close(false);
-        
-                try(PipedOutputStream pipedIn = new PipedOutputStream();
-                    InputStream inPipe = new PipedInputStream(pipedIn);
-                    ByteArrayOutputStream out = new ByteArrayOutputStream();
-                    ByteArrayOutputStream err = new ByteArrayOutputStream()) {
+
+                try (PipedOutputStream pipedIn = new PipedOutputStream();
+                     InputStream inPipe = new PipedInputStream(pipedIn);
+                     ByteArrayOutputStream out = new ByteArrayOutputStream();
+                     ByteArrayOutputStream err = new ByteArrayOutputStream()) {
 
                     channel.setIn(inPipe);
                     channel.setOut(out);
@@ -576,8 +576,8 @@ public class ClientTest extends BaseTestSupport {
     public void testCloseBeforeAuthSucceed() throws Exception {
         authLatch = new CountDownLatch(1);
         client.start();
-        
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+
+        try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
 
             AuthFuture authFuture = session.auth();
@@ -595,15 +595,15 @@ public class ClientTest extends BaseTestSupport {
     @Test
     public void testCloseCleanBeforeChannelOpened() throws Exception {
         client.start();
-        
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+
+        try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
 
-            try(ClientChannel channel = session.createShellChannel();
-                InputStream inp = new ByteArrayInputStream(GenericUtils.EMPTY_BYTE_ARRAY);
-                OutputStream out = new ByteArrayOutputStream();
-                OutputStream err = new ByteArrayOutputStream()) { 
+            try (ClientChannel channel = session.createShellChannel();
+                 InputStream inp = new ByteArrayInputStream(GenericUtils.EMPTY_BYTE_ARRAY);
+                 OutputStream out = new ByteArrayOutputStream();
+                 OutputStream err = new ByteArrayOutputStream()) {
 
                 channel.setIn(inp);
                 channel.setOut(out);
@@ -626,14 +626,14 @@ public class ClientTest extends BaseTestSupport {
         channelLatch = new CountDownLatch(1);
         client.start();
 
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
 
-            try(ClientChannel channel = session.createShellChannel();
-                InputStream inp = new ByteArrayInputStream(GenericUtils.EMPTY_BYTE_ARRAY);
-                OutputStream out = new ByteArrayOutputStream();
-                OutputStream err = new ByteArrayOutputStream()) { 
+            try (ClientChannel channel = session.createShellChannel();
+                 InputStream inp = new ByteArrayInputStream(GenericUtils.EMPTY_BYTE_ARRAY);
+                 OutputStream out = new ByteArrayOutputStream();
+                 OutputStream err = new ByteArrayOutputStream()) {
 
                 channel.setIn(inp);
                 channel.setOut(out);
@@ -655,8 +655,8 @@ public class ClientTest extends BaseTestSupport {
     @Test
     public void testPublicKeyAuth() throws Exception {
         client.start();
-        
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+
+        try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             KeyPair pair = Utils.createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
             session.addPublicKeyIdentity(pair);
             session.auth().verify(5L, TimeUnit.SECONDS);
@@ -669,8 +669,8 @@ public class ClientTest extends BaseTestSupport {
     public void testPublicKeyAuthNew() throws Exception {
         client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(UserAuthPublicKeyFactory.INSTANCE));
         client.start();
-        
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+
+        try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPublicKeyIdentity(Utils.createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA));
             session.auth().verify(5L, TimeUnit.SECONDS);
         } finally {
@@ -693,7 +693,7 @@ public class ClientTest extends BaseTestSupport {
         SimpleGeneratorHostKeyProvider provider = new SimpleGeneratorHostKeyProvider();
         provider.setAlgorithm("RSA");
 
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPublicKeyIdentity(provider.loadKey(KeyPairProvider.SSH_RSA));
             session.addPublicKeyIdentity(pair);
             session.auth().verify(5L, TimeUnit.SECONDS);
@@ -706,8 +706,8 @@ public class ClientTest extends BaseTestSupport {
     public void testPasswordAuthNew() throws Exception {
         client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthPasswordFactory()));
         client.start();
-        
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+
+        try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
         } finally {
@@ -719,8 +719,8 @@ public class ClientTest extends BaseTestSupport {
     public void testPasswordAuthNewWithFailureOnFirstIdentity() throws Exception {
         client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthPasswordFactory()));
         client.start();
-        
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+
+        try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getClass().getSimpleName());
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
@@ -733,8 +733,8 @@ public class ClientTest extends BaseTestSupport {
     public void testKeyboardInteractiveAuthNew() throws Exception {
         client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(UserAuthKeyboardInteractiveFactory.INSTANCE));
         client.start();
-        
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+
+        try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
         } finally {
@@ -746,8 +746,8 @@ public class ClientTest extends BaseTestSupport {
     public void testKeyboardInteractiveAuthNewWithFailureOnFirstIdentity() throws Exception {
         client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(UserAuthKeyboardInteractiveFactory.INSTANCE));
         client.start();
-        
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+
+        try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getClass().getSimpleName());
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
@@ -760,56 +760,56 @@ public class ClientTest extends BaseTestSupport {
     public void testKeyboardInteractivePasswordPromptLocationIndependence() throws Exception {
         final Collection<String> mismatchedPrompts = new LinkedList<String>();
         client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthKeyboardInteractiveFactory() {
-                @Override
-                public UserAuth create() {
-                    return new UserAuthKeyboardInteractive() {
-                        @Override
-                        protected boolean useCurrentPassword(String password, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
-                            boolean expected = GenericUtils.length(password) > 0;
-                            boolean actual = super.useCurrentPassword(password, name, instruction, lang, prompt, echo);
-                            if (expected != actual) {
-                                System.err.println("Mismatched usage result for prompt=" + prompt[0] + ": expected=" + expected + ", actual=actual");
-                                mismatchedPrompts.add(prompt[0]);
-                            }
-                            return actual;
+            @Override
+            public UserAuth create() {
+                return new UserAuthKeyboardInteractive() {
+                    @Override
+                    protected boolean useCurrentPassword(String password, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
+                        boolean expected = GenericUtils.length(password) > 0;
+                        boolean actual = super.useCurrentPassword(password, name, instruction, lang, prompt, echo);
+                        if (expected != actual) {
+                            System.err.println("Mismatched usage result for prompt=" + prompt[0] + ": expected=" + expected + ", actual=actual");
+                            mismatchedPrompts.add(prompt[0]);
                         }
-                    };
-                }
-            }));
+                        return actual;
+                    }
+                };
+            }
+        }));
         client.start();
 
-        final Transformer<String,String> stripper = new Transformer<String,String>() {
-                @Override
-                public String transform(String input) {
-                    int pos = GenericUtils.isEmpty(input) ? (-1) : input.lastIndexOf(':');
-                    if (pos < 0) {
-                        return input;
-                    } else {
-                        return input.substring(0, pos);
-                    }
+        final Transformer<String, String> stripper = new Transformer<String, String>() {
+            @Override
+            public String transform(String input) {
+                int pos = GenericUtils.isEmpty(input) ? (-1) : input.lastIndexOf(':');
+                if (pos < 0) {
+                    return input;
+                } else {
+                    return input.substring(0, pos);
                 }
-            };
-        final List<Transformer<String,String>> xformers = 
-                Collections.unmodifiableList(Arrays.<Transformer<String,String>>asList(
-                            new Transformer<String,String>() {  // prefixed
-                                    @Override
-                                    public String transform(String input) {
-                                        return getCurrentTestName() + " " + input;
-                                    }
-                                },
-                            new Transformer<String,String>() {  // suffixed
-                                    @Override
-                                    public String transform(String input) {
-                                        return stripper.transform(input) + " " + getCurrentTestName() + ":";
-                                    }
-                                },
-                            new Transformer<String,String>() {  // infix
-                                    @Override
-                                    public String transform(String input) {
-                                        return getCurrentTestName() + " " + stripper.transform(input) + " " + getCurrentTestName() + ":";
-                                    }
-                                }
-                        ));
+            }
+        };
+        final List<Transformer<String, String>> xformers =
+                Collections.unmodifiableList(Arrays.<Transformer<String, String>>asList(
+                        new Transformer<String, String>() {  // prefixed
+                            @Override
+                            public String transform(String input) {
+                                return getCurrentTestName() + " " + input;
+                            }
+                        },
+                        new Transformer<String, String>() {  // suffixed
+                            @Override
+                            public String transform(String input) {
+                                return stripper.transform(input) + " " + getCurrentTestName() + ":";
+                            }
+                        },
+                        new Transformer<String, String>() {  // infix
+                            @Override
+                            public String transform(String input) {
+                                return getCurrentTestName() + " " + stripper.transform(input) + " " + getCurrentTestName() + ":";
+                            }
+                        }
+                ));
         sshd.setUserAuthFactories(Arrays.<NamedFactory<org.apache.sshd.server.auth.UserAuth>>asList(
                 new org.apache.sshd.server.auth.UserAuthKeyboardInteractiveFactory() {
                     private int xformerIndex;
@@ -817,13 +817,13 @@ public class ClientTest extends BaseTestSupport {
                     @Override
                     public org.apache.sshd.server.auth.UserAuth create() {
                         return new org.apache.sshd.server.auth.UserAuthKeyboardInteractive() {
-    
+
                             @SuppressWarnings("synthetic-access")
                             @Override
                             protected String getInteractionPrompt() {
                                 String original = super.getInteractionPrompt();
                                 if (xformerIndex < xformers.size()) {
-                                    Transformer<String,String> x = xformers.get(xformerIndex);
+                                    Transformer<String, String> x = xformers.get(xformerIndex);
                                     xformerIndex++;
                                     return x.transform(original);
                                 } else {
@@ -832,14 +832,14 @@ public class ClientTest extends BaseTestSupport {
                             }
                         };
                     }
-            }));
+                }));
 
         try {
             for (int index = 0; index < xformers.size(); index++) {
-                try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7, TimeUnit.SECONDS).getSession()) {
+                try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7, TimeUnit.SECONDS).getSession()) {
                     String password = "bad-" + getCurrentTestName() + "-" + index;
                     session.addPasswordIdentity(password);
-                    
+
                     AuthFuture future = session.auth();
                     assertTrue("Failed to verify password=" + password + " in time", future.await(5L, TimeUnit.SECONDS));
                     assertFalse("Unexpected success for password=" + password, future.isSuccess());
@@ -847,7 +847,7 @@ public class ClientTest extends BaseTestSupport {
                 }
             }
 
-            try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+            try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
                 session.addPasswordIdentity(getCurrentTestName());
                 session.auth().verify(5L, TimeUnit.SECONDS);
                 assertTrue("Mismatched prompts evaluation results", mismatchedPrompts.isEmpty());
@@ -869,15 +869,16 @@ public class ClientTest extends BaseTestSupport {
             public void welcome(String banner) {
                 // ignored
             }
+
             @Override
             public String[] interactive(String destination, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
                 count.incrementAndGet();
-                return new String[] { "bad" };
+                return new String[]{"bad"};
             }
         });
         client.start();
-        
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+
+        try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             AuthFuture future = session.auth();
             future.await();
             assertTrue("Unexpected authentication success", future.isFailure());
@@ -894,23 +895,23 @@ public class ClientTest extends BaseTestSupport {
         FactoryManagerUtils.updateProperty(client, ClientFactoryManager.PASSWORD_PROMPTS, MAX_PROMPTS);
 
         client.setUserAuthFactories(Arrays
-                        .<NamedFactory<UserAuth>> asList(UserAuthKeyboardInteractiveFactory.INSTANCE));
+                .<NamedFactory<UserAuth>>asList(UserAuthKeyboardInteractiveFactory.INSTANCE));
         client.start();
 
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.setUserInteraction(new UserInteraction() {
-                    @Override
-                    public void welcome(String banner) {
-                        // ignored
-                    }
-        
-                    @Override
-                    public String[] interactive(String destination, String name, String instruction, String lang,
-                                                String[] prompt, boolean[] echo) {
-                        count.incrementAndGet();
-                        return new String[] { getCurrentTestName() };
-                    }
-                });
+                @Override
+                public void welcome(String banner) {
+                    // ignored
+                }
+
+                @Override
+                public String[] interactive(String destination, String name, String instruction, String lang,
+                                            String[] prompt, boolean[] echo) {
+                    count.incrementAndGet();
+                    return new String[]{getCurrentTestName()};
+                }
+            });
             AuthFuture future = session.auth();
             future.await();
             assertTrue("Authentication not marked as success", future.isSuccess());
@@ -927,21 +928,21 @@ public class ClientTest extends BaseTestSupport {
         final int MAX_PROMPTS = 3;
         FactoryManagerUtils.updateProperty(client, ClientFactoryManager.PASSWORD_PROMPTS, MAX_PROMPTS);
         client.setUserAuthFactories(Arrays
-                        .<NamedFactory<UserAuth>> asList(new UserAuthKeyboardInteractiveFactory()));
+                .<NamedFactory<UserAuth>>asList(new UserAuthKeyboardInteractiveFactory()));
         client.start();
-        
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+
+        try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.setUserInteraction(new UserInteraction() {
                 @Override
                 public void welcome(String banner) {
                     // ignored
                 }
-    
+
                 @Override
                 public String[] interactive(String destination, String name, String instruction, String lang,
                                             String[] prompt, boolean[] echo) {
                     int attemptId = count.incrementAndGet();
-                    return new String[] { "bad#" + attemptId };
+                    return new String[]{"bad#" + attemptId};
                 }
             });
             AuthFuture future = session.auth();
@@ -958,23 +959,23 @@ public class ClientTest extends BaseTestSupport {
         TestEchoShellFactory.TestEchoShell.latch = new CountDownLatch(1);
         try {
             client.start();
-            
-            try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+
+            try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
                 session.addPasswordIdentity(getCurrentTestName());
                 session.auth().verify(5L, TimeUnit.SECONDS);
-                
-                try(ClientChannel channel = session.createShellChannel();
-                    PipedOutputStream pipedIn = new PipedOutputStream();
-                    InputStream inPipe = new PipedInputStream(pipedIn); 
-                    ByteArrayOutputStream out = new ByteArrayOutputStream();
-                    ByteArrayOutputStream err = new ByteArrayOutputStream()) {
+
+                try (ClientChannel channel = session.createShellChannel();
+                     PipedOutputStream pipedIn = new PipedOutputStream();
+                     InputStream inPipe = new PipedInputStream(pipedIn);
+                     ByteArrayOutputStream out = new ByteArrayOutputStream();
+                     ByteArrayOutputStream err = new ByteArrayOutputStream()) {
 
                     channel.setIn(inPipe);
                     channel.setOut(out);
                     channel.setErr(err);
                     channel.open().verify(9L, TimeUnit.SECONDS);
-        
-        //            ((AbstractSession) session).disconnect(SshConstants.SSH2_DISCONNECT_BY_APPLICATION, "Cancel");
+
+                    //            ((AbstractSession) session).disconnect(SshConstants.SSH2_DISCONNECT_BY_APPLICATION, "Cancel");
                     AbstractSession cs = (AbstractSession) session;
                     Buffer buffer = cs.createBuffer(SshConstants.SSH_MSG_DISCONNECT);
                     buffer.putInt(SshConstants.SSH2_DISCONNECT_BY_APPLICATION);
@@ -983,7 +984,7 @@ public class ClientTest extends BaseTestSupport {
                     IoWriteFuture f = cs.writePacket(buffer);
                     assertTrue("Packet writing not completed in time", f.await(11L, TimeUnit.SECONDS));
                     suspend(cs.getIoSession());
-    
+
                     TestEchoShellFactory.TestEchoShell.latch.await();
                 }
             } finally {
@@ -1012,8 +1013,8 @@ public class ClientTest extends BaseTestSupport {
                 }
         );
         client.start();
-        
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+
+        try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.waitFor(ClientSession.WAIT_AUTH, TimeUnit.SECONDS.toMillis(10L));
             assertTrue(ok.get());
         } finally {
@@ -1026,13 +1027,13 @@ public class ClientTest extends BaseTestSupport {
         sshd.getCipherFactories().add(BuiltinCiphers.none);
         client.getCipherFactories().add(BuiltinCiphers.none);
         client.start();
-        
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+
+        try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
             assertTrue("Failed to switch to NONE cipher on time", session.switchToNoneCipher().await(5L, TimeUnit.SECONDS));
-    
-            try(ClientChannel channel = session.createSubsystemChannel(SftpConstants.SFTP_SUBSYSTEM_NAME)) {
+
+            try (ClientChannel channel = session.createSubsystemChannel(SftpConstants.SFTP_SUBSYSTEM_NAME)) {
                 channel.open().verify(5L, TimeUnit.SECONDS);
             }
         } finally {
@@ -1045,14 +1046,14 @@ public class ClientTest extends BaseTestSupport {
         client.start();
 
         Collection<ClientChannel> channels = new LinkedList<>();
-        try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);
-            
+
             channels.add(session.createChannel(ClientChannel.CHANNEL_SUBSYSTEM, SftpConstants.SFTP_SUBSYSTEM_NAME));
             channels.add(session.createChannel(ClientChannel.CHANNEL_EXEC, getCurrentTestName()));
             channels.add(session.createChannel(ClientChannel.CHANNEL_SHELL, getClass().getSimpleName()));
-            
+
             Set<Integer> ids = new HashSet<Integer>(channels.size());
             for (ClientChannel c : channels) {
                 int id = ((AbstractChannel) c).getId();
@@ -1062,7 +1063,7 @@ public class ClientTest extends BaseTestSupport {
             for (Closeable c : channels) {
                 try {
                     c.close();
-                } catch(IOException e) {
+                } catch (IOException e) {
                     // ignored
                 }
             }
@@ -1083,6 +1084,7 @@ public class ClientTest extends BaseTestSupport {
         public Command create() {
             return new TestEchoShell();
         }
+
         public static class TestEchoShell extends EchoShell {
 
             public static CountDownLatch latch = new CountDownLatch(1);

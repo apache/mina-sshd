@@ -42,15 +42,15 @@ public class KexProposalOptionTest extends BaseTestSupport {
 
     @Test
     public void testFromName() {
-        for (String n : new String[] { null, "", getCurrentTestName() }) {
+        for (String n : new String[]{null, "", getCurrentTestName()}) {
             KexProposalOption o = KexProposalOption.fromName(n);
             assertNull("Unexpected value for name='" + n + "'", o);
         }
 
         for (KexProposalOption expected : KexProposalOption.VALUES) {
             String n = expected.name();
-            
-            for (int index=0; index < n.length(); index++) {
+
+            for (int index = 0; index < n.length(); index++) {
                 KexProposalOption actual = KexProposalOption.fromName(n);
                 assertSame("Mismatched option for name=" + n, expected, actual);
                 n = shuffleCase(n); // prepare for next iteration
@@ -60,11 +60,11 @@ public class KexProposalOptionTest extends BaseTestSupport {
 
     @Test
     public void testFromProposalIndex() {
-        for (int index : new int[] { (-1), KexProposalOption.VALUES.size() }) {
+        for (int index : new int[]{(-1), KexProposalOption.VALUES.size()}) {
             KexProposalOption o = KexProposalOption.fromProposalIndex(index);
             assertNull("Unexpected value for index=" + index, o);
         }
-        
+
         for (KexProposalOption expected : KexProposalOption.VALUES) {
             int index = expected.getProposalIndex();
             KexProposalOption actual = KexProposalOption.fromProposalIndex(index);
@@ -74,14 +74,14 @@ public class KexProposalOptionTest extends BaseTestSupport {
 
     @Test
     public void testByProposalIndexSortOrder() {
-        for (int index=0; index < KexProposalOption.VALUES.size(); index++) {
+        for (int index = 0; index < KexProposalOption.VALUES.size(); index++) {
             if (index < 1) {
                 continue;
             }
-            
+
             KexProposalOption o1 = KexProposalOption.VALUES.get(index - 1);
             KexProposalOption o2 = KexProposalOption.VALUES.get(index);
-            
+
             int i1 = o1.getProposalIndex(), i2 = o2.getProposalIndex();
             assertTrue("Non increasing index for " + o1 + "[" + i1 + "] vs. " + o2 + "[" + i2 + "]", i1 < i2);
         }
@@ -89,26 +89,26 @@ public class KexProposalOptionTest extends BaseTestSupport {
 
     @Test
     public void testAllConstantsCovered() throws Exception {
-        Field[] fields=Constants.class.getFields();
+        Field[] fields = Constants.class.getFields();
 
-        Collection<KexProposalOption> options = EnumSet.allOf(KexProposalOption.class); 
+        Collection<KexProposalOption> options = EnumSet.allOf(KexProposalOption.class);
         for (Field f : fields) {
             int mods = f.getModifiers();
             if (!Modifier.isStatic(mods)) {
                 continue;
             }
-            
+
             Class<?> type = f.getType();
             if (!Integer.TYPE.isAssignableFrom(type)) {
                 continue;
             }
-            
+
             int index = f.getInt(null);
             KexProposalOption o = KexProposalOption.fromProposalIndex(index);
             assertNotNull("No matching option for index=" + index, o);
             assertTrue("Option not in known options: " + o, options.remove(o));
         }
-        
+
         assertTrue("Not all options covered: " + options, GenericUtils.isEmpty(options));
     }
 }

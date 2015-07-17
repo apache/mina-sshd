@@ -61,11 +61,10 @@ public class BaseCipher implements Cipher {
         iv = resize(iv, ivsize);
         try {
             cipher = SecurityUtils.getCipher(transformation);
-            cipher.init((mode == Mode.Encrypt ? javax.crypto.Cipher.ENCRYPT_MODE : javax.crypto.Cipher.DECRYPT_MODE),
-                        new SecretKeySpec(key, algorithm),
-                        new IvParameterSpec(iv));
-        }
-        catch (Exception e) {
+            cipher.init(mode == Mode.Encrypt ? javax.crypto.Cipher.ENCRYPT_MODE : javax.crypto.Cipher.DECRYPT_MODE,
+                    new SecretKeySpec(key, algorithm),
+                    new IvParameterSpec(iv));
+        } catch (Exception e) {
             cipher = null;
             throw new SshException("Unable to initialize cipher " + this, e);
         }

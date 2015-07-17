@@ -28,12 +28,12 @@ import org.junit.runners.MethodSorters;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class ARCFOUR128Test extends BaseCipherTest {
-	public ARCFOUR128Test() {
-		super();
-	}
+    public ARCFOUR128Test() {
+        super();
+    }
 
-	@Test
-	public void testEncryptDecrypt() throws Exception {
-		testEncryptDecrypt(BuiltinCiphers.arcfour128);
-	}
+    @Test
+    public void testEncryptDecrypt() throws Exception {
+        testEncryptDecrypt(BuiltinCiphers.arcfour128);
+    }
 }

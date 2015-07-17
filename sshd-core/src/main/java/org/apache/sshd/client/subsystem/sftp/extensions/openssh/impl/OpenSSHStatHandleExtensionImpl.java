@@ -33,7 +33,7 @@ import org.apache.sshd.common.subsystem.sftp.extensions.openssh.FstatVfsExtensio
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class OpenSSHStatHandleExtensionImpl extends AbstractOpenSSHStatCommandExtension implements OpenSSHStatHandleExtension {
-    public OpenSSHStatHandleExtensionImpl(SftpClient client, RawSftpClient raw, Map<String,byte[]> extensions) {
+    public OpenSSHStatHandleExtensionImpl(SftpClient client, RawSftpClient raw, Map<String, byte[]> extensions) {
         super(FstatVfsExtensionParser.NAME, client, raw, extensions);
     }
 

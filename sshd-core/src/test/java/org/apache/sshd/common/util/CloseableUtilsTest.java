@@ -45,87 +45,87 @@ public class CloseableUtilsTest extends BaseTestSupport {
 
     @Test
     public void testCloseImmediateNotCalledIfAlreadyClosed() throws IOException {
-        Closeable   closeable=new CloseableUtils.IoBaseCloseable() {
-                @Override
-                public CloseFuture close(boolean immediately) {
-                    fail("Unexpected call to close(" + immediately + ")");
-                    return null;
-                }
-    
-                @Override
-                public boolean isClosed() {
-                    return true;
-                }
-    
-                @Override
-                public boolean isClosing() {
-                    return false;
-                }
-            };
-       closeable.close();
+        Closeable closeable = new CloseableUtils.IoBaseCloseable() {
+            @Override
+            public CloseFuture close(boolean immediately) {
+                fail("Unexpected call to close(" + immediately + ")");
+                return null;
+            }
+
+            @Override
+            public boolean isClosed() {
+                return true;
+            }
+
+            @Override
+            public boolean isClosing() {
+                return false;
+            }
+        };
+        closeable.close();
     }
 
     @Test
     public void testCloseImmediateNotCalledIfIsClosing() throws IOException {
-        Closeable   closeable=new CloseableUtils.IoBaseCloseable() {
-                @Override
-                public CloseFuture close(boolean immediately) {
-                    fail("Unexpected call to close(" + immediately + ")");
-                    return null;
-                }
-    
-                @Override
-                public boolean isClosed() {
-                    return false;
-                }
-    
-                @Override
-                public boolean isClosing() {
-                    return true;
-                }
-            };
-       closeable.close();
+        Closeable closeable = new CloseableUtils.IoBaseCloseable() {
+            @Override
+            public CloseFuture close(boolean immediately) {
+                fail("Unexpected call to close(" + immediately + ")");
+                return null;
+            }
+
+            @Override
+            public boolean isClosed() {
+                return false;
+            }
+
+            @Override
+            public boolean isClosing() {
+                return true;
+            }
+        };
+        closeable.close();
     }
-    
+
     @Test
     public void testCloseImmediateCalledAndWait() throws Exception {
-        final DefaultCloseFuture    future=new DefaultCloseFuture(this);
-        final AtomicInteger         callsCount=new AtomicInteger(0);
-        final Closeable   closeable=new CloseableUtils.IoBaseCloseable() {
+        final DefaultCloseFuture future = new DefaultCloseFuture(this);
+        final AtomicInteger callsCount = new AtomicInteger(0);
+        final Closeable closeable = new CloseableUtils.IoBaseCloseable() {
+            @Override
+            public CloseFuture close(boolean immediately) {
+                assertTrue("Closure is not immediate", immediately);
+                assertEquals("Multiple close immediate calls", 1, callsCount.incrementAndGet());
+                return future;
+            }
+
+            @Override
+            public boolean isClosed() {
+                return false;
+            }
+
+            @Override
+            public boolean isClosing() {
+                return false;
+            }
+        };
+        ExecutorService service = ThreadUtils.newSingleThreadExecutor(getCurrentTestName());
+        try {
+            Future<?> task = service.submit(new Runnable() {
                 @Override
-                public CloseFuture close(boolean immediately) {
-                    assertTrue("Closure is not immediate", immediately);
-                    assertEquals("Multiple close immediate calls", 1, callsCount.incrementAndGet());
-                    return future;
-                }
-    
-                @Override
-                public boolean isClosed() {
-                    return false;
-                }
-    
-                @Override
-                public boolean isClosing() {
-                    return false;
-                }
-            };
-       ExecutorService  service=ThreadUtils.newSingleThreadExecutor(getCurrentTestName());
-       try {
-           Future<?>    task=service.submit(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            closeable.close();
-                        } catch(IOException e) {
-                            throw new RuntimeException(e);
-                        }
+                public void run() {
+                    try {
+                        closeable.close();
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
                     }
-               });
-           future.setClosed();  // signal close complete
-           task.get(5L, TimeUnit.SECONDS);  // make sure #await call terminated
-           assertEquals("Close immediate not called", 1, callsCount.get());
-       } finally {
-           service.shutdownNow();
-       }
+                }
+            });
+            future.setClosed();  // signal close complete
+            task.get(5L, TimeUnit.SECONDS);  // make sure #await call terminated
+            assertEquals("Close immediate not called", 1, callsCount.get());
+        } finally {
+            service.shutdownNow();
+        }
     }
 }

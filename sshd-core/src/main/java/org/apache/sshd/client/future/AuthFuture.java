@@ -31,18 +31,21 @@ import org.apache.sshd.common.future.SshFuture;
 public interface AuthFuture extends SshFuture<AuthFuture> {
     /**
      * Wait and verify that the authentication succeeded.
+     *
      * @throws IOException if the authentication failed for any reason
      */
     void verify() throws IOException;
 
     /**
      * Wait and verify that the authentication succeeded within the specified timeout.
+     *
      * @throws IOException if the authentication failed for any reason
      */
     void verify(long timeout, TimeUnit unit) throws IOException;
 
     /**
      * Wait and verify that the authentication succeeded within the specified timeout.
+     *
      * @throws IOException if the authentication failed for any reason
      */
     void verify(long timeoutMillis) throws IOException;
@@ -51,7 +54,7 @@ public interface AuthFuture extends SshFuture<AuthFuture> {
      * Returns the cause of the connection failure.
      *
      * @return <tt>null</tt> if the connect operation is not finished yet,
-     *         or if the connection attempt is successful.
+     * or if the connection attempt is successful.
      */
     Throwable getException();
 

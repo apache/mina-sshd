@@ -19,19 +19,12 @@
 
 package org.apache.sshd.common.mac;
 
-import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.OptionalFeature;
-import org.apache.sshd.common.util.Transformer;
+import org.apache.sshd.common.BuiltinFactory;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface MacFactory extends NamedFactory<Mac>, OptionalFeature {
-    // required because of generics issues
-    Transformer<MacFactory,NamedFactory<Mac>> FAC2NAMED=new Transformer<MacFactory,NamedFactory<Mac>>() {
-        @Override
-        public NamedFactory<Mac> transform(MacFactory input) {
-            return input;
-        }
-    };
+// CHECKSTYLE:OFF
+public interface MacFactory extends BuiltinFactory<Mac> {
+
 }

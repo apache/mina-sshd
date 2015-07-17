@@ -26,8 +26,8 @@ import java.util.Map;
 
 import org.apache.sshd.client.subsystem.sftp.RawSftpClient;
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
-import org.apache.sshd.client.subsystem.sftp.SftpException;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.Handle;
+import org.apache.sshd.client.subsystem.sftp.SftpException;
 import org.apache.sshd.client.subsystem.sftp.extensions.SftpClientExtension;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
@@ -45,12 +45,12 @@ public abstract class AbstractSftpClientExtension extends AbstractLoggingBean im
     private final SftpClient client;
     private final RawSftpClient raw;
     private final boolean supported;
-    
+
     protected AbstractSftpClientExtension(String name, SftpClient client, RawSftpClient raw, Collection<String> extras) {
         this(name, client, raw, GenericUtils.isEmpty(extras) ? false : extras.contains(name));
     }
 
-    protected AbstractSftpClientExtension(String name, SftpClient client, RawSftpClient raw, Map<String,byte[]> extensions) {
+    protected AbstractSftpClientExtension(String name, SftpClient client, RawSftpClient raw, Map<String, byte[]> extensions) {
         this(name, client, raw, GenericUtils.isEmpty(extensions) ? false : extensions.containsKey(name));
     }
 
@@ -107,10 +107,10 @@ public abstract class AbstractSftpClientExtension extends AbstractLoggingBean im
     /**
      * @param buffer The {@link Buffer}
      * @param target A target path {@link String} or {@link Handle} or {@code byte[])
-     * to be encoded in the buffer
+     *               to be encoded in the buffer
      * @return The updated buffer
      * @throws UnsupportedOperationException If target is not one of the above
-     * supported types
+     *                                       supported types
      */
     public Buffer putTarget(Buffer buffer, Object target) {
         if (target instanceof CharSequence) {
@@ -128,7 +128,7 @@ public abstract class AbstractSftpClientExtension extends AbstractLoggingBean im
 
     /**
      * @param target A target path {@link String} or {@link Handle} or {@code byte[])
-     * to be encoded in the buffer
+     *               to be encoded in the buffer
      * @return A {@link Buffer} with the extension name set
      * @see #getCommandBuffer(Object, int)
      */
@@ -137,8 +137,8 @@ public abstract class AbstractSftpClientExtension extends AbstractLoggingBean im
     }
 
     /**
-     * @param target A target path {@link String} or {@link Handle} or {@code byte[])
-     * to be encoded in the buffer
+     * @param target    A target path {@link String} or {@link Handle} or {@code byte[])
+     *                  to be encoded in the buffer
      * @param extraSize Extra size - beyond the path/handle to be allocated
      * @return A {@link Buffer} with the extension name set
      * @see #getCommandBuffer(int)
@@ -172,7 +172,7 @@ public abstract class AbstractSftpClientExtension extends AbstractLoggingBean im
      * or {@code null} if this is a {@link SftpConstants#SSH_FXP_STATUS} carrying
      * an {@link SftpConstants#SSH_FX_OK} result
      * @throws IOException If a non-{@link SftpConstants#SSH_FX_OK} result or
-     * not a {@link SftpConstants#SSH_FXP_EXTENDED_REPLY} buffer
+     *                     not a {@link SftpConstants#SSH_FXP_EXTENDED_REPLY} buffer
      */
     protected Buffer checkExtendedReplyBuffer(Buffer buffer) throws IOException {
         int length = buffer.getInt();
@@ -184,13 +184,13 @@ public abstract class AbstractSftpClientExtension extends AbstractLoggingBean im
             String lang = buffer.getString();
             if (log.isDebugEnabled()) {
                 log.debug("checkStatus({}}[id={}] - status: {} [{}] {}",
-                          getName(), Integer.valueOf(id), Integer.valueOf(substatus), lang, msg);
+                        getName(), id, substatus, lang, msg);
             }
 
             if (substatus != SftpConstants.SSH_FX_OK) {
                 throwStatusException(id, substatus, msg, lang);
             }
-            
+
             return null;
         } else if (type == SftpConstants.SSH_FXP_EXTENDED_REPLY) {
             return buffer;

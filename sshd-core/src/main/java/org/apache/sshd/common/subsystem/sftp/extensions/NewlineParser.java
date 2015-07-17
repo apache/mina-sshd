@@ -33,11 +33,14 @@ public class NewlineParser extends AbstractParser<Newline> {
     /**
      * The &quot;newline&quot; extension information as per
      * <A HREF="http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt">DRAFT 09 Section 4.3</A>
+     *
      * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
      */
     public static class Newline {
+        // CHECKSTYLE:OFF
         public String newline;
-        
+        // CHECKSTYLE:ON
+
         @Override
         public String toString() {
             if (GenericUtils.isEmpty(newline)) {
@@ -47,13 +50,13 @@ public class NewlineParser extends AbstractParser<Newline> {
             }
         }
     }
-    
+
     public static final NewlineParser INSTANCE = new NewlineParser();
 
     public NewlineParser() {
         super(SftpConstants.EXT_NEWLINE);
     }
-    
+
     @Override
     public Newline parse(byte[] input, int offset, int len) {
         return parse(new String(input, offset, len, StandardCharsets.UTF_8));

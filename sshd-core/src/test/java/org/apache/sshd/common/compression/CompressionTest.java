@@ -23,6 +23,7 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
+import com.jcraft.jsch.JSch;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.BaseTestSupport;
@@ -35,8 +36,6 @@ import org.junit.After;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
-
-import com.jcraft.jsch.JSch;
 
 /**
  * Test compression algorithms.
@@ -73,9 +72,9 @@ public class CompressionTest extends BaseTestSupport {
         sshd.setShellFactory(new EchoShellFactory());
         sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
         sshd.start();
-        JSch.setConfig("compression.s2c",  "zlib@openssh.com,zlib,none");
-        JSch.setConfig("compression.c2s",  "zlib@openssh.com,zlib,none");
-        JSch.setConfig("zlib",             com.jcraft.jsch.jcraft.Compression.class.getName());
+        JSch.setConfig("compression.s2c", "zlib@openssh.com,zlib,none");
+        JSch.setConfig("compression.c2s", "zlib@openssh.com,zlib,none");
+        JSch.setConfig("zlib", com.jcraft.jsch.jcraft.Compression.class.getName());
         JSch.setConfig("zlib@openssh.com", com.jcraft.jsch.jcraft.Compression.class.getName());
     }
 
@@ -98,11 +97,11 @@ public class CompressionTest extends BaseTestSupport {
         try {
             com.jcraft.jsch.Channel c = s.openChannel("shell");
             c.connect();
-            try(OutputStream os = c.getOutputStream();
+            try (OutputStream os = c.getOutputStream();
                  InputStream is = c.getInputStream()) {
-                final String    STR="this is my command\n";
-                final byte[]    bytes=STR.getBytes(StandardCharsets.UTF_8);
-                byte[]          data=new byte[bytes.length + Long.SIZE];
+                final String STR = "this is my command\n";
+                final byte[] bytes = STR.getBytes(StandardCharsets.UTF_8);
+                byte[] data = new byte[bytes.length + Long.SIZE];
                 for (int i = 0; i < 10; i++) {
                     os.write(bytes);
                     os.flush();
@@ -113,7 +112,7 @@ public class CompressionTest extends BaseTestSupport {
                 }
             } finally {
                 c.disconnect();
-            } 
+            }
         } finally {
             s.disconnect();
         }

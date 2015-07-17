@@ -35,13 +35,13 @@ public interface KeyExchange {
      * Initialize the key exchange algorithm.
      *
      * @param session the session using this algorithm
-     * @param V_S the server identification string
-     * @param V_C the client identification string
-     * @param I_S the server key init packet
-     * @param I_C the client key init packet
+     * @param v_s     the server identification string
+     * @param v_c     the client identification string
+     * @param i_s     the server key init packet
+     * @param i_c     the client key init packet
      * @throws Exception if an error occurs
      */
-    void init(AbstractSession session, byte[] V_S, byte[] V_C, byte[] I_S, byte[] I_C) throws Exception;
+    void init(AbstractSession session, byte[] v_s, byte[] v_c, byte[] i_s, byte[] i_c) throws Exception;
 
     /**
      * Process the next packet
@@ -60,14 +60,14 @@ public interface KeyExchange {
     Digest getHash();
 
     /**
-     * Retrieves the computed H parameter
+     * Retrieves the computed h parameter
      *
      * @return
      */
     byte[] getH();
 
     /**
-     * Retrieves the computed K parameter
+     * Retrieves the computed k parameter
      *
      * @return
      */

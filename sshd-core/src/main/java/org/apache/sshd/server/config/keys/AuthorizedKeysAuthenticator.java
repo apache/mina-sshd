@@ -42,6 +42,7 @@ import org.apache.sshd.server.session.ServerSession;
  * new authentication request is received. <B>Note:</B> by default, the only
  * validation of the username is that it is not {@code null}/empty - see
  * {@link #isValidUsername(String, ServerSession)}
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class AuthorizedKeysAuthenticator extends ModifiableFileWatcher implements PublickeyAuthenticator {
@@ -76,25 +77,21 @@ public class AuthorizedKeysAuthenticator extends ModifiableFileWatcher implement
             if (log.isDebugEnabled()) {
                 log.debug("authenticate(" + username + ")[" + session + "][" + key.getAlgorithm() + "] accepted " + accepted + " from " + getPath());
             }
-            
+
             return accepted;
-        } catch(Exception e) {
+        } catch (Exception e) {
             if (log.isDebugEnabled()) {
                 log.debug("authenticate(" + username + ")[" + session + "][" + getPath() + "]"
                         + " failed (" + e.getClass().getSimpleName() + ")"
                         + " to resolve delegate: " + e.getMessage());
             }
-            
+
             return false;
         }
     }
 
     protected boolean isValidUsername(String username, ServerSession session) {
-        if (GenericUtils.isEmpty(username)) {
-            return false;
-        } else {
-            return true;
-        }
+        return !GenericUtils.isEmpty(username);
     }
 
     protected PublickeyAuthenticator resolvePublickeyAuthenticator(String username, ServerSession session)
@@ -115,10 +112,10 @@ public class AuthorizedKeysAuthenticator extends ModifiableFileWatcher implement
                 log.info("resolvePublickeyAuthenticator(" + username + ")[" + session + "] no authorized keys file at " + path);
             }
         }
-        
+
         return delegateHolder.get();
     }
-    
+
     protected Collection<AuthorizedKeyEntry> reloadAuthorizedKeys(Path path, String username, ServerSession session) throws IOException {
         Collection<AuthorizedKeyEntry> entries = AuthorizedKeyEntry.readAuthorizedKeys(path, options);
         log.info("reloadAuthorizedKeys(" + username + ")[" + session + "] loaded " + GenericUtils.size(entries) + " keys from " + path);

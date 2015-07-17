@@ -60,15 +60,18 @@ public final class ParserUtils {
                             FsyncExtensionParser.INSTANCE
                     ));
 
-    private static final Map<String,ExtensionParser<?>> parsersMap = new TreeMap<String,ExtensionParser<?>>(String.CASE_INSENSITIVE_ORDER) {
-            private static final long serialVersionUID = 1L;    // we're not serializing it
-            
-            {
-                for (ExtensionParser<?> p : BUILT_IN_PARSERS) {
-                    put(p.getName(), p);
-                }
-            }
-        };
+    private static final Map<String, ExtensionParser<?>> PARSERS_MAP;
+
+    static {
+        PARSERS_MAP = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        for (ExtensionParser<?> p : BUILT_IN_PARSERS) {
+            PARSERS_MAP.put(p.getName(), p);
+        }
+    }
+
+    private ParserUtils() {
+        throw new UnsupportedOperationException("No instance");
+    }
 
     /**
      * @param parser The {@link ExtensionParser} to register
@@ -77,9 +80,9 @@ public final class ParserUtils {
      */
     public static ExtensionParser<?> registerParser(ExtensionParser<?> parser) {
         ValidateUtils.checkNotNull(parser, "No parser instance");
-        
-        synchronized(parsersMap) {
-            return parsersMap.put(parser.getName(), parser);
+
+        synchronized (PARSERS_MAP) {
+            return PARSERS_MAP.put(parser.getName(), parser);
         }
     }
 
@@ -93,8 +96,8 @@ public final class ParserUtils {
             return null;
         }
 
-        synchronized(parsersMap) {
-            return parsersMap.remove(name);
+        synchronized (PARSERS_MAP) {
+            return PARSERS_MAP.remove(name);
         }
     }
 
@@ -108,36 +111,36 @@ public final class ParserUtils {
             return null;
         }
 
-        synchronized(parsersMap) {
-            return parsersMap.get(name);
+        synchronized (PARSERS_MAP) {
+            return PARSERS_MAP.get(name);
         }
     }
 
     public static Set<String> getRegisteredParsersNames() {
-        synchronized(parsersMap) {
-            if (parsersMap.isEmpty()) {
+        synchronized (PARSERS_MAP) {
+            if (PARSERS_MAP.isEmpty()) {
                 return Collections.emptySet();
             } else {    // return a copy in order to avoid concurrent modification issues
-                return GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER, parsersMap.keySet());
+                return GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER, PARSERS_MAP.keySet());
             }
         }
     }
 
     public static List<ExtensionParser<?>> getRegisteredParsers() {
-        synchronized(parsersMap) {
-            if (parsersMap.isEmpty()) {
+        synchronized (PARSERS_MAP) {
+            if (PARSERS_MAP.isEmpty()) {
                 return Collections.emptyList();
             } else { // return a copy in order to avoid concurrent modification issues
-                return new ArrayList<ExtensionParser<?>>(parsersMap.values());
+                return new ArrayList<ExtensionParser<?>>(PARSERS_MAP.values());
             }
         }
     }
 
-    public static Set<String> supportedExtensions(Map<String,?> parsed) {
+    public static Set<String> supportedExtensions(Map<String, ?> parsed) {
         if (GenericUtils.isEmpty(parsed)) {
             return Collections.emptySet();
         }
-        
+
         Supported sup = (Supported) parsed.get(SupportedParser.INSTANCE.getName());
         Collection<String> extra = (sup == null) ? null : sup.extensionNames;
         Supported2 sup2 = (Supported2) parsed.get(Supported2Parser.INSTANCE.getName());
@@ -147,7 +150,7 @@ public final class ParserUtils {
         } else if (GenericUtils.isEmpty(extra2)) {
             return GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER, extra);
         }
-        
+
         Set<String> result = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
         result.addAll(extra);
         result.addAll(extra2);
@@ -163,13 +166,13 @@ public final class ParserUtils {
      * @see #getRegisteredParser(String)
      * @see ExtensionParser#transform(Object)
      */
-    public static Map<String,Object> parse(Map<String,byte[]> extensions) {
+    public static Map<String, Object> parse(Map<String, byte[]> extensions) {
         if (GenericUtils.isEmpty(extensions)) {
             return Collections.emptyMap();
         }
-        
-        Map<String,Object> data = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-        for (Map.Entry<String,byte[]> ee : extensions.entrySet()) {
+
+        Map<String, Object> data = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        for (Map.Entry<String, byte[]> ee : extensions.entrySet()) {
             String name = ee.getKey();
             Object result = parse(name, ee.getValue());
             if (result == null) {
@@ -177,11 +180,11 @@ public final class ParserUtils {
             }
             data.put(name, result);
         }
-        
+
         return data;
     }
 
-    public static Object parse(String name, byte ... encoded) {
+    public static Object parse(String name, byte... encoded) {
         ExtensionParser<?> parser = getRegisteredParser(name);
         if (parser == null) {
             return null;
@@ -189,8 +192,5 @@ public final class ParserUtils {
             return parser.transform(encoded);
         }
     }
-    
-    private ParserUtils() {
-        throw new UnsupportedOperationException("No instance");
-    }
+
 }

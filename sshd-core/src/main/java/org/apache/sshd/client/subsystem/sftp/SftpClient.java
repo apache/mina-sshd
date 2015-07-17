@@ -18,11 +18,6 @@
  */
 package org.apache.sshd.client.subsystem.sftp;
 
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IFDIR;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IFLNK;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IFMT;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IFREG;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
@@ -42,6 +37,11 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.bouncycastle.util.Arrays;
+
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IFDIR;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IFLNK;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IFMT;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IFREG;
 
 /**
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
@@ -103,7 +103,7 @@ public interface SftpClient extends SubsystemClient {
             if (obj == null) {
                 return false;
             }
-            
+
             if (obj == this) {
                 return true;
             }
@@ -112,12 +112,8 @@ public interface SftpClient extends SubsystemClient {
             if (!(obj instanceof Handle)) {
                 return false;
             }
-            
-            if (Arrays.areEqual(id, ((Handle) obj).id)) {
-                return true;
-            } else {
-                return false;
-            }
+
+            return Arrays.areEqual(id, ((Handle) obj).id);
         }
 
         @Override
@@ -133,6 +129,7 @@ public interface SftpClient extends SubsystemClient {
     }
 
     class Attributes {
+        // CHECKSTYLE:OFF
         public final Set<Attribute> flags = EnumSet.noneOf(Attribute.class);
         public long size;
         public int type;
@@ -147,21 +144,21 @@ public interface SftpClient extends SubsystemClient {
         public FileTime accessTime;
         public FileTime createTime;
         public FileTime modifyTime;
+        // CHECKSTYLE:ON
 
         @Override
         public String toString() {
             return "type=" + type
-                 + ";size=" + size
-                 + ";uid=" + uid
-                 + ";gid=" + gid
-                 + ";perms=0x" + Integer.toHexString(perms)
-                 + ";flags=" + flags
-                 + ";owner=" + owner
-                 + ";group=" + group
-                 + ";aTime=(" + atime + ")[" + accessTime + "]"
-                 + ";cTime=(" + ctime + ")[" + createTime + "]"
-                 + ";mTime=(" + mtime + ")[" + modifyTime + "]"
-                 ;
+                    + ";size=" + size
+                    + ";uid=" + uid
+                    + ";gid=" + gid
+                    + ";perms=0x" + Integer.toHexString(perms)
+                    + ";flags=" + flags
+                    + ";owner=" + owner
+                    + ";group=" + group
+                    + ";aTime=(" + atime + ")[" + accessTime + "]"
+                    + ";cTime=(" + ctime + ")[" + createTime + "]"
+                    + ";mTime=(" + mtime + ")[" + modifyTime + "]";
         }
 
         public Attributes size(long size) {
@@ -169,6 +166,7 @@ public interface SftpClient extends SubsystemClient {
             this.size = size;
             return this;
         }
+
         public Attributes owner(String owner) {
             flags.add(Attribute.OwnerGroup);
             this.owner = owner;
@@ -177,6 +175,7 @@ public interface SftpClient extends SubsystemClient {
             }
             return this;
         }
+
         public Attributes group(String group) {
             flags.add(Attribute.OwnerGroup);
             this.group = group;
@@ -185,77 +184,93 @@ public interface SftpClient extends SubsystemClient {
             }
             return this;
         }
+
         public Attributes owner(int uid, int gid) {
             flags.add(Attribute.UidGid);
             this.uid = uid;
             this.gid = gid;
             return this;
         }
+
         public Attributes perms(int perms) {
             flags.add(Attribute.Perms);
             this.perms = perms;
             return this;
         }
+
         public Attributes atime(int atime) {
             flags.add(Attribute.AccessTime);
             this.atime = atime;
             this.accessTime = FileTime.from(atime, TimeUnit.SECONDS);
             return this;
         }
+
         public Attributes ctime(int ctime) {
             flags.add(Attribute.CreateTime);
             this.ctime = ctime;
             this.createTime = FileTime.from(atime, TimeUnit.SECONDS);
             return this;
         }
+
         public Attributes mtime(int mtime) {
             flags.add(Attribute.ModifyTime);
             this.mtime = mtime;
             this.modifyTime = FileTime.from(atime, TimeUnit.SECONDS);
             return this;
         }
+
         public Attributes time(int atime, int mtime) {
             flags.add(Attribute.AcModTime);
             this.atime = atime;
             this.mtime = mtime;
             return this;
         }
+
         public Attributes accessTime(FileTime atime) {
             flags.add(Attribute.AccessTime);
             this.atime = (int) atime.to(TimeUnit.SECONDS);
             this.accessTime = atime;
             return this;
         }
+
         public Attributes createTime(FileTime ctime) {
             flags.add(Attribute.CreateTime);
             this.ctime = (int) ctime.to(TimeUnit.SECONDS);
             this.createTime = ctime;
             return this;
         }
+
         public Attributes modifyTime(FileTime mtime) {
             flags.add(Attribute.ModifyTime);
             this.mtime = (int) mtime.to(TimeUnit.SECONDS);
             this.modifyTime = mtime;
             return this;
         }
+
         public boolean isRegularFile() {
             return (perms & S_IFMT) == S_IFREG;
         }
+
         public boolean isDirectory() {
             return (perms & S_IFMT) == S_IFDIR;
         }
+
         public boolean isSymbolicLink() {
             return (perms & S_IFMT) == S_IFLNK;
         }
+
         public boolean isOther() {
             return !isRegularFile() && !isDirectory() && !isSymbolicLink();
         }
     }
 
     class DirEntry {
+        // CHECKSTYLE:OFF
         public String filename;
         public String longFilename;
         public Attributes attributes;
+        // CHECKSTYLE:ON
+
         public DirEntry(String filename, String longFilename, Attributes attributes) {
             this.filename = filename;
             this.longFilename = longFilename;
@@ -263,12 +278,30 @@ public interface SftpClient extends SubsystemClient {
         }
     }
 
+    // default values used if none specified
+    int MIN_BUFFER_SIZE = Byte.MAX_VALUE;
+    int MIN_READ_BUFFER_SIZE = MIN_BUFFER_SIZE;
+    int MIN_WRITE_BUFFER_SIZE = MIN_BUFFER_SIZE;
+    int IO_BUFFER_SIZE = 32 * 1024;
+    int DEFAULT_READ_BUFFER_SIZE = IO_BUFFER_SIZE;
+    int DEFAULT_WRITE_BUFFER_SIZE = IO_BUFFER_SIZE;
+    long DEFAULT_WAIT_TIMEOUT = TimeUnit.SECONDS.toMillis(30L);
+
+    /**
+     * Property that can be used on the {@link org.apache.sshd.common.FactoryManager}
+     * to control the internal timeout used by the client to open a channel.
+     * If not specified then {@link #DEFAULT_CHANNEL_OPEN_TIMEOUT} value
+     * is used
+     */
+    String SFTP_CHANNEL_OPEN_TIMEOUT = "sftp-channel-open-timeout";
+    long DEFAULT_CHANNEL_OPEN_TIMEOUT = DEFAULT_WAIT_TIMEOUT;
+
     int getVersion();
 
     /**
      * @return An (unmodifiable) {@link Map} of the reported server extensions.
      */
-    Map<String,byte[]> getServerExtensions();
+    Map<String, byte[]> getServerExtensions();
 
     boolean isClosing();
 
@@ -278,6 +311,7 @@ public interface SftpClient extends SubsystemClient {
 
     /**
      * Opens a remote file for read
+     *
      * @param path The remote path
      * @return The file's {@link CloseableHandle}
      * @throws IOException If failed to open the remote file
@@ -286,19 +320,21 @@ public interface SftpClient extends SubsystemClient {
 
     /**
      * Opens a remote file with the specified mode(s)
-     * @param path The remote path
+     *
+     * @param path    The remote path
      * @param options The desired mode - if none specified
-     * then {@link OpenMode#Read} is assumed
+     *                then {@link OpenMode#Read} is assumed
      * @return The file's {@link CloseableHandle}
      * @throws IOException If failed to open the remote file
      */
-    CloseableHandle open(String path, OpenMode ... options) throws IOException;
+    CloseableHandle open(String path, OpenMode... options) throws IOException;
 
     /**
      * Opens a remote file with the specified mode(s)
-     * @param path The remote path
+     *
+     * @param path    The remote path
      * @param options The desired mode - if none specified
-     * then {@link OpenMode#Read} is assumed
+     *                then {@link OpenMode#Read} is assumed
      * @return The file's {@link CloseableHandle}
      * @throws IOException If failed to open the remote file
      */
@@ -309,13 +345,17 @@ public interface SftpClient extends SubsystemClient {
     void remove(String path) throws IOException;
 
     void rename(String oldPath, String newPath) throws IOException;
+
     void rename(String oldPath, String newPath, CopyMode... options) throws IOException;
+
     void rename(String oldPath, String newPath, Collection<CopyMode> options) throws IOException;
 
     int read(Handle handle, long fileOffset, byte[] dst) throws IOException;
+
     int read(Handle handle, long fileOffset, byte[] dst, int dstOffset, int len) throws IOException;
 
     void write(Handle handle, long fileOffset, byte[] src) throws IOException;
+
     void write(Handle handle, long fileOffset, byte[] src, int srcOffset, int len) throws IOException;
 
     void mkdir(String path) throws IOException;
@@ -371,32 +411,28 @@ public interface SftpClient extends SubsystemClient {
      */
     Iterable<DirEntry> readDir(String path) throws IOException;
 
-    // default values used if none specified
-    int MIN_BUFFER_SIZE=Byte.MAX_VALUE, MIN_READ_BUFFER_SIZE=MIN_BUFFER_SIZE, MIN_WRITE_BUFFER_SIZE=MIN_BUFFER_SIZE;
-    int IO_BUFFER_SIZE=32 * 1024, DEFAULT_READ_BUFFER_SIZE=IO_BUFFER_SIZE, DEFAULT_WRITE_BUFFER_SIZE=IO_BUFFER_SIZE;
-    long DEFAULT_WAIT_TIMEOUT=TimeUnit.SECONDS.toMillis(30L);
-
-    /**
-     * Property that can be used on the {@link org.apache.sshd.common.FactoryManager}
-     * to control the internal timeout used by the client to open a channel.
-     * If not specified then {@link #DEFAULT_CHANNEL_OPEN_TIMEOUT} value
-     * is used
-     */
-    String SFTP_CHANNEL_OPEN_TIMEOUT = "sftp-channel-open-timeout";
-        long DEFAULT_CHANNEL_OPEN_TIMEOUT = DEFAULT_WAIT_TIMEOUT;
-
     InputStream read(String path) throws IOException;
+
     InputStream read(String path, int bufferSize) throws IOException;
-    InputStream read(String path, OpenMode ... mode) throws IOException;
-    InputStream read(String path, int bufferSize, OpenMode ... mode) throws IOException;
+
+    InputStream read(String path, OpenMode... mode) throws IOException;
+
+    InputStream read(String path, int bufferSize, OpenMode... mode) throws IOException;
+
     InputStream read(String path, Collection<OpenMode> mode) throws IOException;
+
     InputStream read(String path, int bufferSize, Collection<OpenMode> mode) throws IOException;
 
     OutputStream write(String path) throws IOException;
+
     OutputStream write(String path, int bufferSize) throws IOException;
-    OutputStream write(String path, OpenMode ... mode) throws IOException;
-    OutputStream write(String path, int bufferSize, OpenMode ... mode) throws IOException;
+
+    OutputStream write(String path, OpenMode... mode) throws IOException;
+
+    OutputStream write(String path, int bufferSize, OpenMode... mode) throws IOException;
+
     OutputStream write(String path, Collection<OpenMode> mode) throws IOException;
+
     OutputStream write(String path, int bufferSize, Collection<OpenMode> mode) throws IOException;
 
     /**

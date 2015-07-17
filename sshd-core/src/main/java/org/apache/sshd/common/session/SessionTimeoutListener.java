@@ -54,7 +54,7 @@ public class SessionTimeoutListener extends AbstractLoggingBean implements Sessi
         for (AbstractSession session : sessions) {
             try {
                 session.checkForTimeouts();
-            } catch(Exception e) {
+            } catch (Exception e) {
                 log.warn("An error occurred while checking session=" + session + " timeouts", e);
             }
         }

@@ -24,7 +24,6 @@ package org.apache.sshd.server;
 public interface SignalListener {
 
     /**
-     *
      * @param signal
      */
     void signal(Signal signal);

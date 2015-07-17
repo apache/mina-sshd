@@ -34,17 +34,17 @@ import org.apache.sshd.common.util.buffer.BufferUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractOpenSSHStatCommandExtension extends AbstractSftpClientExtension {
-    protected AbstractOpenSSHStatCommandExtension(String name, SftpClient client, RawSftpClient raw, Map<String,byte[]> extensions) {
+    protected AbstractOpenSSHStatCommandExtension(String name, SftpClient client, RawSftpClient raw, Map<String, byte[]> extensions) {
         super(name, client, raw, extensions);
     }
-    
+
     protected OpenSSHStatExtensionInfo doGetStat(Object target) throws IOException {
         Buffer buffer = getCommandBuffer(target);
         putTarget(buffer, target);
-        
+
         if (log.isDebugEnabled()) {
             log.debug("doGetStat({})[{}]", getName(),
-                      (target instanceof CharSequence) ? target : BufferUtils.printHex(BufferUtils.EMPTY_HEX_SEPARATOR, (byte[]) target));
+                    (target instanceof CharSequence) ? target : BufferUtils.printHex(BufferUtils.EMPTY_HEX_SEPARATOR, (byte[]) target));
         }
 
         buffer = checkExtendedReplyBuffer(receive(sendExtendedCommand(buffer)));

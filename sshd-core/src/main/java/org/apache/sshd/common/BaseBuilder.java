@@ -49,9 +49,89 @@ import org.apache.sshd.server.forward.RejectAllForwardingFilter;
 
 /**
  * Base class for dedicated client/server instance builders
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder<T, S>> implements ObjectBuilder<T> {
+
+    // Compression is not enabled by default
+    public static final List<NamedFactory<Compression>> DEFAULT_COMPRESSION_FACTORIES =
+            Collections.unmodifiableList(Arrays.<NamedFactory<Compression>>asList(BuiltinCompressions.none));
+
+    public static final FileSystemFactory DEFAULT_FILE_SYSTEM_FACTORY = NativeFileSystemFactory.INSTANCE;
+
+    public static final ForwardingFilter DEFAULT_FORWARDING_FILTER = RejectAllForwardingFilter.INSTANCE;
+
+    public static final TcpipForwarderFactory DEFAULT_FORWARDER_FACTORY = DefaultTcpipForwarderFactory.INSTANCE;
+
+    /**
+     * The default {@link BuiltinCiphers} setup in order of preference
+     * as specified by <A HREF="https://www.freebsd.org/cgi/man.cgi?query=ssh_config&sektion=5">
+     * ssh_config(5)</A>
+     */
+    public static final List<BuiltinCiphers> DEFAULT_CIPHERS_PREFERENCE =
+        Collections.unmodifiableList(Arrays.asList(
+            BuiltinCiphers.aes128ctr,
+            BuiltinCiphers.aes192ctr,
+            BuiltinCiphers.aes256ctr,
+            BuiltinCiphers.arcfour256,
+            BuiltinCiphers.arcfour128,
+            BuiltinCiphers.aes128cbc,
+            BuiltinCiphers.tripledescbc,
+            BuiltinCiphers.blowfishcbc,
+            // TODO add support for cast128-cbc cipher
+            BuiltinCiphers.aes192cbc,
+            BuiltinCiphers.aes256cbc
+            // TODO add support for arcfour cipher
+        ));
+
+    /**
+     * The default {@link BuiltinDHFactories} setup in order of preference
+     * as specified by <A HREF="https://www.freebsd.org/cgi/man.cgi?query=ssh_config&sektion=5">
+     * ssh_config(5)</A>
+     */
+    public static final List<BuiltinDHFactories> DEFAULT_KEX_PREFERENCE =
+        Collections.unmodifiableList(Arrays.asList(
+            BuiltinDHFactories.ecdhp521,
+            BuiltinDHFactories.ecdhp384,
+            BuiltinDHFactories.ecdhp256,
+
+            BuiltinDHFactories.dhgex256,
+            BuiltinDHFactories.dhgex,
+
+            BuiltinDHFactories.dhg14,
+            BuiltinDHFactories.dhg1
+        ));
+
+    /**
+     * The default {@link BuiltinMacs} setup in order of preference
+     * as specified by <A HREF="https://www.freebsd.org/cgi/man.cgi?query=ssh_config&sektion=5">
+     * ssh_config(5)</A>
+     */
+    public static final List<BuiltinMacs> DEFAULT_MAC_PREFERENCE =
+        Collections.unmodifiableList(Arrays.asList(
+            BuiltinMacs.hmacmd5,
+            BuiltinMacs.hmacsha1,
+            BuiltinMacs.hmacsha256,
+            BuiltinMacs.hmacsha512,
+            BuiltinMacs.hmacsha196,
+            BuiltinMacs.hmacmd596
+        ));
+
+    /**
+     * Preferred {@link BuiltinSignatures} according to
+     * <A HREF="https://www.freebsd.org/cgi/man.cgi?query=ssh_config&sektion=5>sshd_config(5)</A>
+     * {@code HostKeyAlgorithms} recommendation
+     */
+    public static final List<BuiltinSignatures> DEFAULT_SIGNATURE_PREFERENCE =
+        Collections.unmodifiableList(Arrays.asList(
+            BuiltinSignatures.nistp256,
+            BuiltinSignatures.nistp384,
+            BuiltinSignatures.nistp521,
+            BuiltinSignatures.rsa,
+            BuiltinSignatures.dsa
+        ));
+
     protected Factory<T> factory;
     protected List<NamedFactory<KeyExchange>> keyExchangeFactories;
     protected List<NamedFactory<Cipher>> cipherFactories;
@@ -68,13 +148,6 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
     public BaseBuilder() {
         super();
     }
-
-    // Compression is not enabled by default
-    public static final List<NamedFactory<Compression>> DEFAULT_COMPRESSION_FACTORIES =
-            Collections.unmodifiableList(Arrays.<NamedFactory<Compression>>asList(BuiltinCompressions.none));
-    public static final FileSystemFactory DEFAULT_FILE_SYSTEM_FACTORY = NativeFileSystemFactory.INSTANCE;
-    public static final ForwardingFilter DEFAULT_FORWARDING_FILTER = RejectAllForwardingFilter.INSTANCE;
-    public static final TcpipForwarderFactory DEFAULT_FORWARDER_FACTORY = DefaultTcpipForwarderFactory.INSTANCE;
 
     protected S fillWithDefaultValues() {
         if (signatureFactories == null) {
@@ -204,32 +277,10 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
     }
 
     /**
-     * The default {@link BuiltinCiphers} setup in order of preference
-     * as specified by <A HREF="https://www.freebsd.org/cgi/man.cgi?query=ssh_config&sektion=5">
-     * ssh_config(5)</A> 
-     */
-    public static final List<BuiltinCiphers> DEFAULT_CIPHERS_PREFERENCE =
-            Collections.unmodifiableList(
-                    Arrays.asList(
-                            BuiltinCiphers.aes128ctr,
-                            BuiltinCiphers.aes192ctr,
-                            BuiltinCiphers.aes256ctr,
-                            BuiltinCiphers.arcfour256,
-                            BuiltinCiphers.arcfour128,
-                            BuiltinCiphers.aes128cbc,
-                            BuiltinCiphers.tripledescbc,
-                            BuiltinCiphers.blowfishcbc,
-                            // TODO add support for cast128-cbc cipher
-                            BuiltinCiphers.aes192cbc,
-                            BuiltinCiphers.aes256cbc
-                            // TODO add support for arcfour cipher
-                    ));
-    
-    /**
      * @param ignoreUnsupported If {@code true} then all the default
-     * ciphers are included, regardless of whether they are currently
-     * supported by the JCE. Otherwise, only the supported ones out of the
-     * list are included
+     *                          ciphers are included, regardless of whether they are currently
+     *                          supported by the JCE. Otherwise, only the supported ones out of the
+     *                          list are included
      * @return A {@link List} of the default {@link NamedFactory}
      * instances of the {@link Cipher}s according to the preference
      * order defined by {@link #DEFAULT_CIPHERS_PREFERENCE}.
@@ -240,45 +291,11 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
     public static List<NamedFactory<Cipher>> setUpDefaultCiphers(boolean ignoreUnsupported) {
         return NamedFactory.Utils.setUpBuiltinFactories(ignoreUnsupported, DEFAULT_CIPHERS_PREFERENCE);
     }
-    
-    /**
-     * The default {@link BuiltinDHFactories} setup in order of preference
-     * as specified by <A HREF="https://www.freebsd.org/cgi/man.cgi?query=ssh_config&sektion=5">
-     * ssh_config(5)</A> 
-     */
-    public static final List<BuiltinDHFactories> DEFAULT_KEX_PREFERENCE=
-            Collections.unmodifiableList(
-                    Arrays.asList(
-                            BuiltinDHFactories.ecdhp521,
-                            BuiltinDHFactories.ecdhp384,
-                            BuiltinDHFactories.ecdhp256,
-                            
-                            BuiltinDHFactories.dhgex256,
-                            BuiltinDHFactories.dhgex,
-                            
-                            BuiltinDHFactories.dhg14,
-                            BuiltinDHFactories.dhg1
-                    ));
 
     /**
-     * The default {@link BuiltinMacs} setup in order of preference
-     * as specified by <A HREF="https://www.freebsd.org/cgi/man.cgi?query=ssh_config&sektion=5">
-     * ssh_config(5)</A> 
-     */
-    public static final List<BuiltinMacs>   DEFAULT_MAC_PREFERENCE=
-            Collections.unmodifiableList(
-                    Arrays.asList(
-                            BuiltinMacs.hmacmd5,
-                            BuiltinMacs.hmacsha1,
-                            BuiltinMacs.hmacsha256,
-                            BuiltinMacs.hmacsha512,
-                            BuiltinMacs.hmacsha196,
-                            BuiltinMacs.hmacmd596
-                    ));
-    /**
      * @param ignoreUnsupported If {@code true} all the available built-in
-     * {@link Mac} factories are added, otherwise only those that are supported
-     * by the current JDK setup
+     *                          {@link Mac} factories are added, otherwise only those that are supported
+     *                          by the current JDK setup
      * @return A {@link List} of the default {@link NamedFactory}
      * instances of the {@link Mac}s according to the preference
      * order defined by {@link #DEFAULT_MAC_PREFERENCE}.
@@ -289,26 +306,11 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
     public static List<NamedFactory<Mac>> setUpDefaultMacs(boolean ignoreUnsupported) {
         return NamedFactory.Utils.setUpBuiltinFactories(ignoreUnsupported, DEFAULT_MAC_PREFERENCE);
     }
-    
-    /**
-     * Preferred {@link BuiltinSignatures} according to
-     * <A HREF="https://www.freebsd.org/cgi/man.cgi?query=ssh_config&sektion=5>sshd_config(5)</A>
-     * {@code HostKeyAlgorithms} recommendation
-     */
-    public static final List<BuiltinSignatures> DEFAULT_SIGNATURE_PREFERENCE=
-            Collections.unmodifiableList(
-                    Arrays.asList(
-                            BuiltinSignatures.nistp256,
-                            BuiltinSignatures.nistp384,
-                            BuiltinSignatures.nistp521,
-                            BuiltinSignatures.rsa,
-                            BuiltinSignatures.dsa
-                    ));
 
     /**
      * @param ignoreUnsupported If {@code true} all the available built-in
-     * {@link Signature} factories are added, otherwise only those that are supported
-     * by the current JDK setup
+     *                          {@link Signature} factories are added, otherwise only those that are supported
+     *                          by the current JDK setup
      * @return A {@link List} of the default {@link NamedFactory}
      * instances of the {@link Signature}s according to the preference
      * order defined by {@link #DEFAULT_SIGNATURE_PREFERENCE}.

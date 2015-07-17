@@ -55,16 +55,16 @@ public class BuiltinSignaturesTest extends BaseTestSupport {
 
     @Test
     public void testParseSignaturesList() {
-        List<String>    builtin=NamedResource.Utils.getNameList(BuiltinSignatures.VALUES);
-        List<String>    unknown=Arrays.asList(getClass().getPackage().getName(), getClass().getSimpleName(), getCurrentTestName());
-        Random          rnd=new Random();
-        for (int index=0; index < (builtin.size() + unknown.size()); index++) {
+        List<String> builtin = NamedResource.Utils.getNameList(BuiltinSignatures.VALUES);
+        List<String> unknown = Arrays.asList(getClass().getPackage().getName(), getClass().getSimpleName(), getCurrentTestName());
+        Random rnd = new Random();
+        for (int index = 0; index < (builtin.size() + unknown.size()); index++) {
             Collections.shuffle(builtin, rnd);
             Collections.shuffle(unknown, rnd);
-            
-            List<String>    weavedList=new ArrayList<String>(builtin.size() + unknown.size());
-            for (int bIndex=0, uIndex=0; (bIndex < builtin.size()) || (uIndex < unknown.size()); ) {
-                boolean useBuiltin=false;
+
+            List<String> weavedList = new ArrayList<String>(builtin.size() + unknown.size());
+            for (int bIndex = 0, uIndex = 0; (bIndex < builtin.size()) || (uIndex < unknown.size()); ) {
+                boolean useBuiltin = false;
                 if (bIndex < builtin.size()) {
                     useBuiltin = (uIndex < unknown.size()) ? rnd.nextBoolean() : true;
                 }
@@ -72,17 +72,17 @@ public class BuiltinSignaturesTest extends BaseTestSupport {
                 if (useBuiltin) {
                     weavedList.add(builtin.get(bIndex));
                     bIndex++;
-                } else if (uIndex < unknown.size()){
+                } else if (uIndex < unknown.size()) {
                     weavedList.add(unknown.get(uIndex));
                     uIndex++;
                 }
             }
 
-            String          fullList=GenericUtils.join(weavedList, ',');
-            ParseResult     result=BuiltinSignatures.parseSignatureList(fullList);
-            List<String>    parsed=NamedResource.Utils.getNameList(result.getParsedFactories());
-            List<String>    missing=result.getUnsupportedFactories();
-            
+            String fullList = GenericUtils.join(weavedList, ',');
+            ParseResult result = BuiltinSignatures.parseSignatureList(fullList);
+            List<String> parsed = NamedResource.Utils.getNameList(result.getParsedFactories());
+            List<String> missing = result.getUnsupportedFactories();
+
             // makes sure not only that the contents are the same but also the order
             assertListEquals(fullList + "[parsed]", builtin, parsed);
             assertListEquals(fullList + "[unsupported]", unknown, missing);
@@ -92,8 +92,8 @@ public class BuiltinSignaturesTest extends BaseTestSupport {
     @Test
     public void testResolveFactoryOnBuiltinValues() {
         for (SignatureFactory expected : BuiltinSignatures.VALUES) {
-            String              name=expected.getName();
-            SignatureFactory    actual=BuiltinSignatures.resolveFactory(name);
+            String name = expected.getName();
+            SignatureFactory actual = BuiltinSignatures.resolveFactory(name);
             assertSame(name, expected, actual);
         }
     }
@@ -104,20 +104,20 @@ public class BuiltinSignaturesTest extends BaseTestSupport {
             try {
                 BuiltinSignatures.registerExtension(expected);
                 fail("Unexpected sucess for " + expected.getName());
-            } catch(IllegalArgumentException e) {
+            } catch (IllegalArgumentException e) {
                 // expected - ignored
             }
         }
     }
 
-    @Test(expected=IllegalArgumentException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testNotAllowedToOverrideRegisteredFactories() {
-        SignatureFactory    expected=Mockito.mock(SignatureFactory.class);
+        SignatureFactory expected = Mockito.mock(SignatureFactory.class);
         Mockito.when(expected.getName()).thenReturn(getCurrentTestName());
 
-        String  name=expected.getName();
+        String name = expected.getName();
         try {
-            for (int index=1; index <= Byte.SIZE; index++) {
+            for (int index = 1; index <= Byte.SIZE; index++) {
                 BuiltinSignatures.registerExtension(expected);
                 assertEquals("Unexpected success at attempt #" + index, 1, index);
             }
@@ -128,32 +128,21 @@ public class BuiltinSignaturesTest extends BaseTestSupport {
 
     @Test
     public void testResolveFactoryOnRegisteredExtension() {
-        SignatureFactory    expected=Mockito.mock(SignatureFactory.class);
+        SignatureFactory expected = Mockito.mock(SignatureFactory.class);
         Mockito.when(expected.getName()).thenReturn(getCurrentTestName());
 
-        String  name=expected.getName();
+        String name = expected.getName();
         try {
             assertNull("Extension already registered", BuiltinSignatures.resolveFactory(name));
             BuiltinSignatures.registerExtension(expected);
 
-            SignatureFactory    actual=BuiltinSignatures.resolveFactory(name);
+            SignatureFactory actual = BuiltinSignatures.resolveFactory(name);
             assertSame("Mismatched resolved instance", expected, actual);
         } finally {
-            SignatureFactory    actual=BuiltinSignatures.unregisterExtension(name);
+            SignatureFactory actual = BuiltinSignatures.unregisterExtension(name);
             assertSame("Mismatched unregistered instance", expected, actual);
             assertNull("Extension not un-registered", BuiltinSignatures.resolveFactory(name));
         }
     }
 
-    @Test
-    public void testFac2NamedTransformer() {
-        assertNull("Invalid null transformation", SignatureFactory.FAC2NAMED.transform(null));
-        for (SignatureFactory expected : BuiltinSignatures.VALUES) {
-            NamedFactory<Signature>   actual=SignatureFactory.FAC2NAMED.transform(expected);
-            assertSame("Mismatched transformed instance for " + expected.getName(), expected, actual);
-        }
-        
-        SignatureFactory   mock=Mockito.mock(SignatureFactory.class);
-        assertSame("Mismatched transformed mocked instance", mock, SignatureFactory.FAC2NAMED.transform(mock));
-    }
 }

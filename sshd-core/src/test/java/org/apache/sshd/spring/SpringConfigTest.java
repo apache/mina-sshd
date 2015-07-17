@@ -21,6 +21,8 @@ package org.apache.sshd.spring;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
+import com.jcraft.jsch.Channel;
+import com.jcraft.jsch.JSch;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.BaseTestSupport;
@@ -32,9 +34,6 @@ import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
-
-import com.jcraft.jsch.Channel;
-import com.jcraft.jsch.JSch;
 
 /**
  * Test for spring based configuration.
@@ -74,13 +73,13 @@ public class SpringConfigTest extends BaseTestSupport {
         com.jcraft.jsch.Session s = sch.getSession(getCurrentTestName(), "localhost", port);
         s.setUserInfo(new SimpleUserInfo(getCurrentTestName()));
         s.connect();
-        
+
         try {
             Channel c = s.openChannel("shell");
             c.connect();
-        
+
             String command = OsUtils.isWin32() ? "dir" : "ls";
-            try(OutputStream os = c.getOutputStream()) {
+            try (OutputStream os = c.getOutputStream()) {
                 os.write(command.getBytes(StandardCharsets.UTF_8));
                 os.flush();
                 Thread.sleep(100);

@@ -29,26 +29,30 @@ import org.apache.sshd.common.util.ValidateUtils;
  * <P>A simple socket address holding the host name and port number. The reason
  * it does not extend {@link InetSocketAddress} is twofold:</P></BR>
  * <OL>
- *      <LI><P>
- *      The {@link InetSocketAddress} performs a DNS resolution on the
- *      provided host name - which we don't want do use until we want to
- *      create a connection using this address (thus the {@link #toInetSocketAddress()}
- *      call which executes this query
- *      </P></LI>
- *      
- *      <LI><P>
- *      If empty host name is provided we replace it with the <I>any</I>
- *      address of 0.0.0.0
- *      </P></LI>
+ * <LI><P>
+ * The {@link InetSocketAddress} performs a DNS resolution on the
+ * provided host name - which we don't want do use until we want to
+ * create a connection using this address (thus the {@link #toInetSocketAddress()}
+ * call which executes this query
+ * </P></LI>
+ * <p/>
+ * <LI><P>
+ * If empty host name is provided we replace it with the <I>any</I>
+ * address of 0.0.0.0
+ * </P></LI>
  * </OL>
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class SshdSocketAddress extends SocketAddress {
-    private static final long serialVersionUID = 6461645947151952729L;
+
     /**
-     * A dummy placeholder that can be used instead of {@code null}s 
+     * A dummy placeholder that can be used instead of {@code null}s
      */
     public static final SshdSocketAddress LOCALHOST_ADDRESS = new SshdSocketAddress("localhost", 0);
+
+    private static final long serialVersionUID = 6461645947151952729L;
+
     private final String hostName;
     private final int port;
 
@@ -57,7 +61,7 @@ public class SshdSocketAddress extends SocketAddress {
         this.hostName = GenericUtils.isEmpty(hostName) ? "0.0.0.0" : hostName;
 
         ValidateUtils.checkTrue(port >= 0, "Port must be >= 0", Integer.valueOf(port));
-        this.port = port; 
+        this.port = port;
     }
 
     public String getHostName() {
@@ -82,21 +86,20 @@ public class SshdSocketAddress extends SocketAddress {
             return false;
         } else if (that == this) {
             return true;
-        } else if ((this.getPort() == that.getPort())
-                && Objects.equals(this.getHostName(), that.getHostName())) {
-           return true;
-       } else {
-           return false;   // debug breakpoint
-       }
+        } else {
+            return (this.getPort() == that.getPort())
+                    && Objects.equals(this.getHostName(), that.getHostName());
+        }
     }
 
     @Override
     public boolean equals(Object o) {
-        if (o == null)
+        if (o == null) {
             return false;
-        if (getClass() != o.getClass())
+        }
+        if (getClass() != o.getClass()) {
             return false;
-
+        }
         return isEquivalent((SshdSocketAddress) o);
     }
 

@@ -32,7 +32,7 @@ import org.apache.sshd.common.subsystem.sftp.SftpConstants;
  */
 public class MD5FileExtensionImpl extends AbstractMD5HashExtension implements MD5FileExtension {
     public MD5FileExtensionImpl(SftpClient client, RawSftpClient raw, Collection<String> extra) {
-        super(SftpConstants.EXT_MD5HASH, client, raw, extra);
+        super(SftpConstants.EXT_MD5_HASH, client, raw, extra);
     }
 
     @Override

@@ -52,6 +52,7 @@ public class ClientUserAuthServiceOld extends CloseableUtils.AbstractCloseable i
             return new ClientUserAuthServiceOld(session);
         }
     }
+
     /**
      * When !authFuture.isDone() the current authentication
      */
@@ -113,6 +114,7 @@ public class ClientUserAuthServiceOld extends CloseableUtils.AbstractCloseable i
 
     /**
      * return true if/when ready for auth; false if never ready.
+     *
      * @return server is ready and waiting for auth
      */
     private boolean readyForAuth(UserAuth userAuth) {
@@ -130,7 +132,7 @@ public class ClientUserAuthServiceOld extends CloseableUtils.AbstractCloseable i
             log.debug("already authenticated");
             throw new IllegalStateException("Already authenticated");
         }
-        
+
         Throwable err = this.authFuture.getException();
         if (err != null) {
             log.debug("probably closed", err);
@@ -154,13 +156,14 @@ public class ClientUserAuthServiceOld extends CloseableUtils.AbstractCloseable i
 
     /**
      * execute one step in user authentication.
+     *
      * @param buffer
      * @throws java.io.IOException
      */
     private void processUserAuth(Buffer buffer) throws IOException {
         log.debug("processing {}", userAuth);
-        Result  result = userAuth.next(buffer);
-        switch(result) {
+        Result result = userAuth.next(buffer);
+        switch (result) {
             case Success:
                 log.debug("succeeded with {}", userAuth);
                 session.setAuthenticated();

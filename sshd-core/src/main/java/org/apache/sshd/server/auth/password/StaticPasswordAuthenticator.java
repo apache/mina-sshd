@@ -25,7 +25,7 @@ import org.apache.sshd.server.session.ServerSession;
  * Returns the same constant result {@code true/false} regardless
  */
 public class StaticPasswordAuthenticator extends AbstractLoggingBean implements PasswordAuthenticator {
-    private final boolean   acceptance;
+    private final boolean acceptance;
 
     public StaticPasswordAuthenticator(boolean acceptance) {
         this.acceptance = acceptance;
@@ -41,7 +41,7 @@ public class StaticPasswordAuthenticator extends AbstractLoggingBean implements 
         if (log.isDebugEnabled()) {
             log.debug("authenticate({}[{}]: {}", username, session, accepted);
         }
-        
+
         return accepted;
     }
 }

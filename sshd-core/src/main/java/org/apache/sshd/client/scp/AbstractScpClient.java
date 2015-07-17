@@ -106,7 +106,7 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
         local = ValidateUtils.checkNotNull(local, "Invalid argument local: %s", local);
         remote = ValidateUtils.checkNotNullAndNotEmpty(remote, "Invalid argument remote: %s", remote);
 
-        LinkOption[]    opts = IoUtils.getLinkOptions(false);
+        LinkOption[] opts = IoUtils.getLinkOptions(false);
         if (Files.isDirectory(local, opts)) {
             options = addTargetIsDirectory(options);
         }
@@ -133,7 +133,7 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
 
     @Override
     public byte[] downloadBytes(String remote) throws IOException {
-        try(ByteArrayOutputStream local = new ByteArrayOutputStream()) {
+        try (ByteArrayOutputStream local = new ByteArrayOutputStream()) {
             download(remote, local);
             return local.toByteArray();
         }
@@ -146,7 +146,7 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
 
     @Override
     public void upload(String local, String remote, Collection<Option> options) throws IOException {
-        upload(new String[] { ValidateUtils.checkNotNullAndNotEmpty(local, "Invalid argument local: %s", local) }, remote, options);
+        upload(new String[]{ValidateUtils.checkNotNullAndNotEmpty(local, "Invalid argument local: %s", local)}, remote, options);
     }
 
     @Override
@@ -158,10 +158,11 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
     public void upload(Path local, String remote, Option... options) throws IOException {
         upload(local, remote, GenericUtils.isEmpty(options) ? Collections.<Option>emptySet() : GenericUtils.of(options));
     }
-    
+
     @Override
     public void upload(Path local, String remote, Collection<Option> options) throws IOException {
-        upload(new Path[] { ValidateUtils.checkNotNull(local, "Invalid local argument: %s", local) }, remote, GenericUtils.isEmpty(options) ? Collections.<Option>emptySet() : GenericUtils.of(options));
+        upload(new Path[]{ValidateUtils.checkNotNull(local, "Invalid local argument: %s", local)},
+                remote, GenericUtils.isEmpty(options) ? Collections.<Option>emptySet() : GenericUtils.of(options));
     }
 
     @Override
@@ -176,14 +177,14 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
 
     @Override
     public void upload(byte[] data, int offset, int len, String remote, Collection<PosixFilePermission> perms, ScpTimestamp time) throws IOException {
-        try(InputStream local = new ByteArrayInputStream(data, offset, len)) {
+        try (InputStream local = new ByteArrayInputStream(data, offset, len)) {
             upload(local, remote, len, perms, time);
         }
     }
 
     @Override
     public void upload(String[] local, String remote, Collection<Option> options) throws IOException {
-        final Collection<String>    paths=Arrays.asList(ValidateUtils.checkNotNullAndNotEmpty(local, "Invalid argument local: %s", (Object) local));
+        final Collection<String> paths = Arrays.asList(ValidateUtils.checkNotNullAndNotEmpty(local, "Invalid argument local: %s", (Object) local));
         runUpload(remote, options, paths, new ScpOperationExecutor<String>() {
             @Override
             public void execute(ScpHelper helper, Collection<String> local, Collection<Option> sendOptions) throws IOException {
@@ -194,7 +195,7 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
 
     @Override
     public void upload(Path[] local, String remote, Collection<Option> options) throws IOException {
-        final Collection<Path>    paths=Arrays.asList(ValidateUtils.checkNotNullAndNotEmpty(local, "Invalid argument local: %s", (Object) local));
+        final Collection<Path> paths = Arrays.asList(ValidateUtils.checkNotNullAndNotEmpty(local, "Invalid argument local: %s", (Object) local));
         runUpload(remote, options, paths, new ScpOperationExecutor<Path>() {
             @Override
             public void execute(ScpHelper helper, Collection<Path> local, Collection<Option> sendOptions) throws IOException {
@@ -211,7 +212,7 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
             options = GenericUtils.isEmpty(options) ? EnumSet.noneOf(Option.class) : GenericUtils.of(options);
             options.add(Option.TargetIsDirectory);
         }
-        
+
         return options;
     }
 
@@ -223,7 +224,8 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
         long startTime = System.nanoTime();
         try {
             channel.open().verify(waitTimeout);
-            long endTime = System.nanoTime(), nanosWait = endTime - startTime;
+            long endTime = System.nanoTime();
+            long nanosWait = endTime - startTime;
             if (log.isTraceEnabled()) {
                 log.trace("openCommandChannel(" + session + ")[" + cmd + "]"
                         + " completed after " + nanosWait
@@ -231,8 +233,9 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
             }
 
             return channel;
-        } catch(IOException | RuntimeException e) {
-            long endTime = System.nanoTime(), nanosWait = endTime - startTime; 
+        } catch (IOException | RuntimeException e) {
+            long endTime = System.nanoTime();
+            long nanosWait = endTime - startTime;
             if (log.isTraceEnabled()) {
                 log.trace("openCommandChannel(" + session + ")[" + cmd + "]"
                         + " failed (" + e.getClass().getSimpleName() + ")"
@@ -276,7 +279,7 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
         return sb.toString();
     }
 
-    public static interface ScpOperationExecutor<T> {
+    public interface ScpOperationExecutor<T> {
         void execute(ScpHelper helper, Collection<T> local, Collection<Option> options) throws IOException;
     }
 }

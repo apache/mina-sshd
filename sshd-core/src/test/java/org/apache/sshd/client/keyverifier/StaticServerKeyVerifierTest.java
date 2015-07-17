@@ -55,26 +55,26 @@ public class StaticServerKeyVerifierTest extends BaseTestSupport {
     }
 
     private void testStaticServerKeyVerifier(StaticServerKeyVerifier authenticator) throws Exception {
-        Method      method = ServerKeyVerifier.class.getMethod("verifyServerKey", ClientSession.class, SocketAddress.class, PublicKey.class);
-        PublicKey   key = Mockito.mock(PublicKey.class);
+        Method method = ServerKeyVerifier.class.getMethod("verifyServerKey", ClientSession.class, SocketAddress.class, PublicKey.class);
+        PublicKey key = Mockito.mock(PublicKey.class);
         Mockito.when(key.getAlgorithm()).thenReturn(getCurrentTestName());
         Mockito.when(key.getEncoded()).thenReturn(GenericUtils.EMPTY_BYTE_ARRAY);
         Mockito.when(key.getFormat()).thenReturn(getCurrentTestName());
 
-        Object[]    args = { Mockito.mock(ClientSession.class), new InetSocketAddress("localhost", 7365), key };
-        Object[]    invArgs = new Object[args.length];  
-        Random      rnd = new Random(System.nanoTime());
-        boolean     expected = authenticator.isAccepted();
-        for (int index=0; index < Long.SIZE; index++) {
-            for (int j=0; j < args.length; j++) {
+        Object[] args = {Mockito.mock(ClientSession.class), new InetSocketAddress("localhost", 7365), key};
+        Object[] invArgs = new Object[args.length];
+        Random rnd = new Random(System.nanoTime());
+        boolean expected = authenticator.isAccepted();
+        for (int index = 0; index < Long.SIZE; index++) {
+            for (int j = 0; j < args.length; j++) {
                 if (rnd.nextBoolean()) {
                     invArgs[j] = args[j];
                 } else {
                     invArgs[j] = null;
                 }
             }
-            
-            Object  result = method.invoke(authenticator, invArgs);
+
+            Object result = method.invoke(authenticator, invArgs);
             assertTrue("No boolean result", result instanceof Boolean);
             assertEquals("Mismatched result for " + Arrays.toString(invArgs), expected, ((Boolean) result).booleanValue());
         }

@@ -60,7 +60,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
         protected TcpipFactory(ForwardingFilter.Type type) {
             this.type = type;
         }
-        
+
         public final ForwardingFilter.Type getType() {
             return type;
         }
@@ -82,7 +82,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
 
         @Override
         public Channel create() {
-            TcpipServerChannel  channel = new TcpipServerChannel(getType());
+            TcpipServerChannel channel = new TcpipServerChannel(getType());
             channel.setExecutorService(getExecutorService());
             channel.setShutdownOnExit(isShutdownOnExit());
             return channel;
@@ -112,7 +112,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
         int originatorPort = buffer.getInt();
         if (log.isDebugEnabled()) {
             log.debug("Receiving request for direct tcpip: hostToConnect={}, portToConnect={}, originatorIpAddress={}, originatorPort={}",
-                      hostToConnect, portToConnect, originatorIpAddress, originatorPort);
+                    hostToConnect, portToConnect, originatorIpAddress, originatorPort);
         }
 
         final SshdSocketAddress address;
@@ -156,16 +156,19 @@ public class TcpipServerChannel extends AbstractServerChannel {
                     out.flush();
                 }
             }
+
             @Override
             public void sessionCreated(IoSession session) throws Exception {
                 // ignored
             }
+
             @Override
             public void sessionClosed(IoSession session) throws Exception {
                 close(false);
             }
+
             @Override
-            public void exceptionCaught(IoSession ioSession, Throwable cause) throws Exception {
+            public void exceptionCaught(IoSession session, Throwable cause) throws Exception {
                 close(true);
             }
         };
@@ -182,9 +185,9 @@ public class TcpipServerChannel extends AbstractServerChannel {
                     closeImmediately0();
                     if (future.getException() instanceof ConnectException) {
                         f.setException(new OpenChannelException(
-                            SshConstants.SSH_OPEN_CONNECT_FAILED,
-                            future.getException().getMessage(),
-                            future.getException()));
+                                SshConstants.SSH_OPEN_CONNECT_FAILED,
+                                future.getException().getMessage(),
+                                future.getException()));
                     } else {
                         f.setException(future.getException());
                     }
@@ -211,27 +214,26 @@ public class TcpipServerChannel extends AbstractServerChannel {
         ExecutorService service = getExecutorService();
         // allocate a temporary executor service if none provided
         final ExecutorService executors = (service == null)
-                                        ? ThreadUtils.newSingleThreadExecutor("TcpIpServerChannel-ConnectorCleanup[" + getSession() + "]")
-                                        : service
-                                        ;
+                ? ThreadUtils.newSingleThreadExecutor("TcpIpServerChannel-ConnectorCleanup[" + getSession() + "]")
+                : service;
         // shutdown the temporary executor service if had to create it
         final boolean shutdown = (executors == service) ? isShutdownOnExit() : true;
         executors.submit(new Runnable() {
-                @SuppressWarnings("synthetic-access")
-                @Override
-                public void run() {
-                    try {
-                        connector.close(true);
-                    } finally {
-                        if ((executors != null) && (!executors.isShutdown()) && shutdown) {
-                            Collection<Runnable> runners = executors.shutdownNow();
-                            if (log.isDebugEnabled()) {
-                                log.debug("destroy() - shutdown executor service - runners count=" + runners.size());
-                            }
+            @SuppressWarnings("synthetic-access")
+            @Override
+            public void run() {
+                try {
+                    connector.close(true);
+                } finally {
+                    if ((executors != null) && (!executors.isShutdown()) && shutdown) {
+                        Collection<Runnable> runners = executors.shutdownNow();
+                        if (log.isDebugEnabled()) {
+                            log.debug("destroy() - shutdown executor service - runners count=" + runners.size());
                         }
                     }
                 }
-            });
+            }
+        });
     }
 
     @Override

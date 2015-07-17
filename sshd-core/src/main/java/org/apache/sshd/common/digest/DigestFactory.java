@@ -20,18 +20,11 @@
 package org.apache.sshd.common.digest;
 
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.util.Transformer;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+// CHECKSTYLE:OFF
 public interface DigestFactory extends NamedFactory<Digest> {
-    // required because of generics issues
-    Transformer<DigestFactory,NamedFactory<Digest>> FAC2NAMED=new Transformer<DigestFactory,NamedFactory<Digest>>() {
-        @Override
-        public NamedFactory<Digest> transform(DigestFactory input) {
-            return input;
-        }
-    };
 
 }

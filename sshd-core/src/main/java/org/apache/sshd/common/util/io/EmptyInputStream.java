@@ -24,6 +24,7 @@ import java.io.InputStream;
 
 /**
  * A {@code /dev/null} implementation - always open
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class EmptyInputStream extends InputStream {
@@ -35,12 +36,12 @@ public class EmptyInputStream extends InputStream {
 
     @Override
     public int read() throws IOException {
-        return (-1);
+        return -1;
     }
 
     @Override
     public int read(byte[] b, int off, int len) throws IOException {
-        return (-1);
+        return -1;
     }
 
     @Override
