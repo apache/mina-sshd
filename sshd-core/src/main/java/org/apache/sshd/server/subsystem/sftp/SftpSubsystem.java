@@ -54,6 +54,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -391,7 +392,11 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     public void setFileSystem(FileSystem fileSystem) {
         if (fileSystem != this.fileSystem) {
             this.fileSystem = fileSystem;
-            this.defaultDir = fileSystem.getRootDirectories().iterator().next();
+            
+            Iterable<Path> roots = ValidateUtils.checkNotNull(fileSystem.getRootDirectories(), "No root directories");
+            Iterator<Path> available = ValidateUtils.checkNotNull(roots.iterator(), "No roots iterator");
+            ValidateUtils.checkTrue(available.hasNext(), "No available root");
+            this.defaultDir = available.next();
         }
     }
 
@@ -621,17 +626,14 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     }
 
     protected SpaceAvailableExtensionInfo doSpaceAvailable(int id, String path) throws IOException {
-        Path file = resolveFile(path);
-        Path abs = file.toAbsolutePath();
-        Path nrm = abs.normalize();
+        Path nrm = resolveNormalizedLocation(path);
         if (log.isDebugEnabled()) {
             log.debug("doSpaceAvailable(id={}) path={}[{}]", id, path, nrm);
         }
 
         FileStore store = Files.getFileStore(nrm);
         if (log.isTraceEnabled()) {
-            log.trace("doSpaceAvailable(id={}) path={}[{}] - {}[{}]",
-                    id, path, nrm, store.name(), store.type());
+            log.trace("doSpaceAvailable(id={}) path={}[{}] - {}[{}]", id, path, nrm, store.name(), store.type());
         }
 
         return new SpaceAvailableExtensionInfo(store);
@@ -1182,6 +1184,11 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         boolean symLink = buffer.getBoolean();
 
         try {
+            if (log.isDebugEnabled()) {
+                log.debug("Received SSH_FXP_LINK id={}, linkpath={}, targetpath={}, symlink={}",
+                          id, linkPath, targetPath, symLink);
+            }
+
             doLink(id, targetPath, linkPath, symLink);
         } catch (IOException | RuntimeException e) {
             sendStatus(BufferUtils.clear(buffer), id, e);
@@ -1192,24 +1199,16 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     }
 
     protected void doLink(int id, String targetPath, String linkPath, boolean symLink) throws IOException {
-        if (log.isDebugEnabled()) {
-            log.debug("Received SSH_FXP_LINK (linkpath={}, targetpath={}, symlink={})",
-                    linkPath, targetPath, symLink);
-        }
-
-        Path link = resolveFile(linkPath);
-        Path target = fileSystem.getPath(targetPath);
-        if (symLink) {
-            Files.createSymbolicLink(link, target);
-        } else {
-            Files.createLink(link, target);
-        }
+        createLink(id, targetPath, linkPath, symLink);
     }
 
     protected void doSymLink(Buffer buffer, int id) throws IOException {
         String targetPath = buffer.getString();
         String linkPath = buffer.getString();
         try {
+            if (log.isDebugEnabled()) {
+                log.debug("Received SSH_FXP_SYMLINK id={}, linkpath={}, targetpath={}", id, targetPath, linkPath);
+            }
             doSymLink(id, targetPath, linkPath);
         } catch (IOException | RuntimeException e) {
             sendStatus(BufferUtils.clear(buffer), id, e);
@@ -1220,16 +1219,31 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     }
 
     protected void doSymLink(int id, String targetPath, String linkPath) throws IOException {
-        log.debug("Received SSH_FXP_SYMLINK (linkpath={}, targetpath={})", targetPath, linkPath);
+        createLink(id, targetPath, linkPath, true);
+    }
+
+    protected void createLink(int id, String targetPath, String linkPath, boolean symLink) throws IOException {
         Path link = resolveFile(linkPath);
         Path target = fileSystem.getPath(targetPath);
-        Files.createSymbolicLink(link, target);
+        if (log.isDebugEnabled()) {
+            log.debug("createLink(id={}), linkpath={}[{}], targetpath={}[{}], symlink={})",
+                      id, linkPath, link, targetPath, target, symLink);
+        }
+
+        if (symLink) {
+            Files.createSymbolicLink(link, target);
+        } else {
+            Files.createLink(link, target);
+        }
     }
 
     protected void doReadLink(Buffer buffer, int id) throws IOException {
         String path = buffer.getString();
         String l;
         try {
+            if (log.isDebugEnabled()) {
+                log.debug("Received SSH_FXP_READLINK id={} path={}", id, path);
+            }
             l = doReadLink(id, path);
         } catch (IOException | RuntimeException e) {
             sendStatus(BufferUtils.clear(buffer), id, e);
@@ -1241,9 +1255,10 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
 
     protected String doReadLink(int id, String path) throws IOException {
         Path f = resolveFile(path);
-        log.debug("Received SSH_FXP_READLINK (path={}[{}])", path, f);
-
         Path t = Files.readSymbolicLink(f);
+        if (log.isDebugEnabled()) {
+            log.debug("doReadLink(id={}) path={}[{}]: {}", id, path, f, t);
+        }
         return t.toString();
     }
 
@@ -1546,8 +1561,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
      * @see IoUtils#checkFileExists(Path, LinkOption...)
      */
     protected Pair<Path, Boolean> validateRealPath(int id, String path, Path f, LinkOption... options) throws IOException {
-        Path abs = f.toAbsolutePath();
-        Path p = abs.normalize();
+        Path p = normalize(f);
         Boolean status = IoUtils.checkFileExists(p, options);
         return new Pair<>(p, status);
     }
@@ -1718,9 +1732,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     }
 
     protected String doOpenDir(int id, String path, LinkOption... options) throws IOException {
-        Path f = resolveFile(path);
-        Path abs = f.toAbsolutePath();
-        Path p = abs.normalize();
+        Path p = resolveNormalizedLocation(path);
         log.debug("Received SSH_FXP_OPENDIR (path={})[{}]", path, p);
 
         Boolean status = IoUtils.checkFileExists(p, options);
@@ -2309,13 +2321,24 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     }
 
     protected void sendLink(Buffer buffer, int id, String link) throws IOException {
+        //in case we are running on Windows
+        String unixPath = link.replace(File.separatorChar, '/');
         buffer.putByte((byte) SSH_FXP_NAME);
         buffer.putInt(id);
-        buffer.putInt(1);
-        //normalize the given path, use *nix style separator
-        buffer.putString(link);
-        buffer.putString(link);
-        buffer.putInt(0);
+        buffer.putInt(1);   // one response
+
+        buffer.putString(unixPath);
+        if (version == SFTP_V3) {
+            buffer.putString(unixPath);
+        }
+
+        /*
+         * As per the spec:
+         * 
+         *      The server will respond with a SSH_FXP_NAME packet containing only
+         *      one name and a dummy attributes value. 
+         */
+        SftpHelper.writeAttrs(version, buffer, Collections.<String, Object>emptyMap());
         send(buffer);
     }
 
@@ -2442,8 +2465,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     }
 
     protected String getShortName(Path f) throws IOException {
-        Path abs = f.toAbsolutePath();
-        Path nrm = abs.normalize();
+        Path nrm = normalize(f);
         int  count = nrm.getNameCount();
         /*
          * According to the javadoc:
@@ -2890,13 +2912,30 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         }
     }
 
+    protected Path resolveNormalizedLocation(String remotePath) throws IOException, InvalidPathException {
+        return normalize(resolveFile(remotePath));
+    }
+
+    protected Path normalize(Path f) {
+        if (f == null) {
+            return null;
+        }
+
+        Path abs = f.isAbsolute() ? f : f.toAbsolutePath();
+        return abs.normalize();
+    }
+
     protected Path resolveFile(String remotePath) throws IOException, InvalidPathException {
         // In case double slashes and other patterns are used 
         String path = SelectorUtils.normalizePath(remotePath, "/");
         String localPath = SelectorUtils.translateToLocalPath(path);
 
         // In case we are running on Windows
-        return defaultDir.resolve(localPath);
+        Path p = defaultDir.resolve(localPath);
+        if (log.isTraceEnabled()) {
+            log.trace("resolveFile({}) {}", remotePath, p);
+        }
+        
+        return p;
     }
-
 }

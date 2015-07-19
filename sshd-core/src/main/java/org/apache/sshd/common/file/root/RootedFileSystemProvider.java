@@ -191,18 +191,32 @@ public class RootedFileSystemProvider extends FileSystemProvider {
 
     @Override
     public void createSymbolicLink(Path link, Path target, FileAttribute<?>... attrs) throws IOException {
-        Path l = unroot(link);
-        Path t = unroot(target, false);
-        FileSystemProvider p = provider(l);
-        p.createSymbolicLink(l, t, attrs);
+        createLink(link, target, true, attrs);
     }
 
     @Override
     public void createLink(Path link, Path existing) throws IOException {
+        createLink(link, existing, false);
+    }
+
+    protected void createLink(Path link, Path target, boolean symLink, FileAttribute<?>... attrs) throws IOException {
         Path l = unroot(link);
-        Path e = unroot(existing);
+        Path t = unroot(target);
+        /*
+         * For a symbolic link preserve the relative path
+         */
+        if (symLink && (!target.isAbsolute())) {
+            RootedFileSystem rfs = ((RootedPath) target).getFileSystem();
+            Path root = rfs.getRoot();
+            t = root.relativize(t);
+        }
+
         FileSystemProvider p = provider(l);
-        p.createLink(l, e);
+        if (symLink) {
+            p.createSymbolicLink(l, t, attrs);
+        } else {
+            p.createLink(l, t);
+        }
     }
 
     @Override
@@ -223,7 +237,7 @@ public class RootedFileSystemProvider extends FileSystemProvider {
     public Path readSymbolicLink(Path link) throws IOException {
         Path r = unroot(link);
         FileSystemProvider p = provider(r);
-        return root(link.getFileSystem(), p.readSymbolicLink(r));
+        return root((RootedFileSystem) link.getFileSystem(), p.readSymbolicLink(r));
     }
 
     @Override
@@ -265,7 +279,7 @@ public class RootedFileSystemProvider extends FileSystemProvider {
     }
 
     protected RootedFileSystem getFileSystem(Path path) throws FileSystemNotFoundException {
-        Path real = unroot(path, false);
+        Path real = unroot(path);
         Path rootInstance = null;
         RootedFileSystem fsInstance = null;
         synchronized (fileSystems) {
@@ -330,13 +344,12 @@ public class RootedFileSystemProvider extends FileSystemProvider {
         p.setAttribute(r, attribute, value, options);
     }
 
-    private static FileSystemProvider provider(Path path) {
+    protected FileSystemProvider provider(Path path) {
         FileSystem fs = path.getFileSystem();
         return fs.provider();
     }
 
-    private static Path root(FileSystem fs, Path nat) {
-        RootedFileSystem rfs = (RootedFileSystem) fs;
+    protected Path root(RootedFileSystem rfs, Path nat) {
         if (nat.isAbsolute()) {
             Path root = rfs.getRoot();
             Path rel = root.relativize(nat);
@@ -346,30 +359,34 @@ public class RootedFileSystemProvider extends FileSystemProvider {
         }
     }
 
-    private static Path unroot(Path path) {
-        return unroot(path, true);
-    }
-
-    private static Path unroot(Path path, boolean absolute) {
+    /**
+     * @param path The original (rooted) {@link Path}
+     * @return The actual <U>absolute <B>local</B></U> {@link Path} represented
+     * by the rooted one
+     * @see #resolveLocalPath(RootedPath)
+     * @throws IllegalArgumentException if {@code null} path argument
+     * @throws ProviderMismatchException if not a {@link RootedPath}
+     */
+    protected Path unroot(Path path) {
         ValidateUtils.checkNotNull(path, "No path to unroot");
         if (!(path instanceof RootedPath)) {
             throw new ProviderMismatchException("unroot(" + path + ") is not a " + RootedPath.class.getSimpleName()
                     + " but rather a " + path.getClass().getSimpleName());
         }
 
-        RootedPath p = (RootedPath) path;
-        if (absolute || p.isAbsolute()) {
-            Path absPath = p.toAbsolutePath();
-            String r = absPath.toString();
-            RootedFileSystem rfs = p.getFileSystem();
-            Path root = rfs.getRoot();
-            return root.resolve(r.substring(1));
-        } else {
-            RootedPath fileName = p.getFileName();
-            RootedPath root = fileName.getRoot();
-            RootedFileSystem rfs = root.getFileSystem();
-            return rfs.getPath(p.toString());
-        }
+        return resolveLocalPath((RootedPath) path);
     }
-
+    
+    /**
+     * @param path The original {@link RootedPath} - never {@code null}
+     * @return The actual <U>absolute <B>local</B></U> {@link Path} represented
+     * by the rooted one
+     */
+    protected Path resolveLocalPath(RootedPath path) {
+        Path absPath = path.toAbsolutePath();
+        String r = absPath.toString();
+        RootedFileSystem rfs = path.getFileSystem();
+        Path root = rfs.getRoot();
+        return root.resolve(r.substring(1));
+    }
 }

@@ -125,7 +125,7 @@ import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IXUSR;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-final class SftpHelper {
+public final class SftpHelper {
     
     private SftpHelper() {
         throw new UnsupportedOperationException("No instance allowed");
@@ -140,6 +140,7 @@ final class SftpHelper {
             throw new IllegalStateException("Unsupported SFTP version: " + version);
         }
     }
+
     public static void writeAttrsV3(Buffer buffer, Map<String, ?> attributes) throws IOException {
         boolean isReg = getBool((Boolean) attributes.get("isRegularFile"));
         boolean isDir = getBool((Boolean) attributes.get("isDirectory"));

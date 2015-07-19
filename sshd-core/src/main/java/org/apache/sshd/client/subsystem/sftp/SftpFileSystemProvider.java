@@ -448,7 +448,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         // attributes of source file
         BasicFileAttributes attrs = readAttributes(source, BasicFileAttributes.class, linkOptions);
         if (attrs.isSymbolicLink()) {
-            throw new IOException("Copying of symbolic links not supported");
+            throw new IOException("Moving of source symbolic link not supported: " + source);
         }
 
         // delete target if it exists and REPLACE_EXISTING is specified

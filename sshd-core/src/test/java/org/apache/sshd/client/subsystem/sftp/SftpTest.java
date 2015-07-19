@@ -18,6 +18,11 @@
  */
 package org.apache.sshd.client.subsystem.sftp;
 
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FX_FILE_ALREADY_EXISTS;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FX_NO_SUCH_FILE;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IRUSR;
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IWUSR;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -38,8 +43,6 @@ import java.util.Vector;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.jcraft.jsch.ChannelSftp;
-import com.jcraft.jsch.JSch;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.sftp.extensions.BuiltinSftpClientExtensions;
@@ -68,10 +71,8 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FX_FILE_ALREADY_EXISTS;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FX_NO_SUCH_FILE;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IRUSR;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IWUSR;
+import com.jcraft.jsch.ChannelSftp;
+import com.jcraft.jsch.JSch;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class SftpTest extends AbstractSftpClientTestSupport {
@@ -775,7 +776,6 @@ public class SftpTest extends AbstractSftpClientTestSupport {
     }
 
     @Test
-    @Ignore("Symlinks via Java + SFTP pose some issues")
     public void testCreateSymbolicLink() throws Exception {
         // Do not execute on windows as the file system does not support symlinks
         Assume.assumeTrue("Skip non-Unix O/S", OsUtils.isUNIX());
@@ -784,18 +784,31 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         Utils.deleteRecursive(lclSftp);
 
+        /*
+         * NOTE !!! according to Jsch documentation
+         * (see http://epaul.github.io/jsch-documentation/simple.javadoc/com/jcraft/jsch/ChannelSftp.html#current-directory)
+         * 
+         * 
+         * 		This sftp client has the concept of a current local directory and
+         * 		a current remote directory. These are not inherent to the protocol,
+         *  	but are used implicitly for all path-based commands sent to the server
+         *  	for the remote directory) or accessing the local file system (for the local directory).
+         *  
+         *  Therefore we are using "absolute" remote files for this test
+         */
         Path parentPath = targetPath.getParent();
         Path sourcePath = assertHierarchyTargetFolderExists(lclSftp).resolve("src.txt");
-        String remSrcPath = Utils.resolveRelativeRemotePath(parentPath, sourcePath);
+        String remSrcPath = "/" + Utils.resolveRelativeRemotePath(parentPath, sourcePath);
         Path linkPath = lclSftp.resolve("link-" + sourcePath.getFileName());
-        String remLinkPath = Utils.resolveRelativeRemotePath(parentPath, linkPath);
+        String remLinkPath = "/" + Utils.resolveRelativeRemotePath(parentPath, linkPath);
 
         String data = getCurrentTestName();
         ChannelSftp c = (ChannelSftp) session.openChannel(SftpConstants.SFTP_SUBSYSTEM_NAME);
         c.connect();
         try {
-            c.put(new ByteArrayInputStream(data.getBytes(StandardCharsets.UTF_8)), remSrcPath);
-
+        	try (InputStream dataStream = new ByteArrayInputStream(data.getBytes(StandardCharsets.UTF_8))) {
+        		c.put(dataStream, remSrcPath);
+        	}
             assertTrue("Source file not created: " + sourcePath, Files.exists(sourcePath));
             assertEquals("Mismatched stored data in " + remSrcPath, data, readFile(remSrcPath));
 
