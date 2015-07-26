@@ -30,6 +30,7 @@ import java.nio.file.AccessDeniedException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributeView;
@@ -408,10 +409,11 @@ public class ScpHelper extends AbstractLoggingBean {
         for (String pattern : paths) {
             pattern = pattern.replace('/', File.separatorChar);
 
-            int idx = pattern.indexOf('*');
+            int idx = pattern.indexOf('*'); // check if wildcard used
             if (idx >= 0) {
                 String basedir = "";
-                int lastSep = pattern.substring(0, idx).lastIndexOf(File.separatorChar);
+                String fixedPart = pattern.substring(0, idx);
+                int lastSep = fixedPart.lastIndexOf(File.separatorChar);
                 if (lastSep >= 0) {
                     basedir = pattern.substring(0, lastSep);
                     pattern = pattern.substring(lastSep + 1);
@@ -435,14 +437,7 @@ public class ScpHelper extends AbstractLoggingBean {
                     }
                 }
             } else {
-                String basedir = "";
-                int lastSep = pattern.lastIndexOf(File.separatorChar);
-                if (lastSep >= 0) {
-                    basedir = pattern.substring(0, lastSep);
-                    pattern = pattern.substring(lastSep + 1);
-                }
-
-                send(resolveLocalPath(basedir, pattern), recursive, preserve, bufferSize, options);
+                send(resolveLocalPath(pattern), recursive, preserve, bufferSize, options);
             }
         }
     }
@@ -486,12 +481,24 @@ public class ScpHelper extends AbstractLoggingBean {
         }
     }
 
-    public Path resolveLocalPath(String remotePath) throws IOException {
+    /**
+     * @param commandPath The original command path using <U>local</U> separator
+     * @return The resolved absolute and normalized local path {@link Path}
+     * @throws IOException If failed to resolve the path
+     * @throws InvalidPathException If invalid local path value
+     */
+    public Path resolveLocalPath(String commandPath) throws IOException, InvalidPathException {
         // In case double slashes and other patterns are used 
-        String path = SelectorUtils.normalizePath(remotePath, "/");
+        String path = SelectorUtils.applySlashifyRules(commandPath, File.separatorChar);
         String localPath = SelectorUtils.translateToLocalPath(path);
-
-        return fileSystem.getPath(localPath);
+        Path lcl = fileSystem.getPath(localPath);
+        Path abs = lcl.isAbsolute() ? lcl : lcl.toAbsolutePath();
+        Path p = abs.normalize();
+        if (log.isTraceEnabled()) {
+            log.trace("resolveLocalPath({}) {}", commandPath, p);
+        }
+        
+        return p;
     }
 
     public void sendFile(Path path, boolean preserve, int bufferSize) throws IOException {

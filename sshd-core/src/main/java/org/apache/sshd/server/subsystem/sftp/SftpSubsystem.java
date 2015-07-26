@@ -2925,6 +2925,12 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         return abs.normalize();
     }
 
+    /**
+     * @param remotePath The remote path - separated by '/'
+     * @return The local {@link Path}
+     * @throws IOException If failed to resolve the local path
+     * @throws InvalidPathException If bad local path specification
+     */
     protected Path resolveFile(String remotePath) throws IOException, InvalidPathException {
         // In case double slashes and other patterns are used 
         String path = SelectorUtils.applySlashifyRules(remotePath, '/');
