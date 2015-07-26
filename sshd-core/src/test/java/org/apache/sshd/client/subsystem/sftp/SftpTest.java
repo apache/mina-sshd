@@ -31,8 +31,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Iterator;
@@ -49,7 +51,9 @@ import org.apache.sshd.client.subsystem.sftp.extensions.BuiltinSftpClientExtensi
 import org.apache.sshd.client.subsystem.sftp.extensions.SftpClientExtension;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.random.Random;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.extensions.ParserUtils;
 import org.apache.sshd.common.subsystem.sftp.extensions.Supported2Parser.Supported2;
@@ -107,6 +111,35 @@ public class SftpTest extends AbstractSftpClientTestSupport {
     public void testExternal() throws Exception {
         System.out.println("SFTP subsystem available on port " + port);
         Thread.sleep(5 * 60000);
+    }
+
+    @Test   // see extra fix for SSHD-538
+    public void testNavigateBeyondRootFolder() throws Exception {
+        Path rootLocation = Paths.get(OsUtils.isUNIX() ? "/" : "C:\\");
+        final FileSystem fsRoot = rootLocation.getFileSystem();
+        sshd.setFileSystemFactory(new FileSystemFactory() {
+                @Override
+                public FileSystem createFileSystem(Session session) throws IOException {
+                    return fsRoot;
+                }
+            });
+
+        try (SshClient client = SshClient.setUpDefaultClient()) {
+            client.start();
+
+            try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+                session.addPasswordIdentity(getCurrentTestName());
+                session.auth().verify(5L, TimeUnit.SECONDS);
+
+                try (SftpClient sftp = session.createSftpClient()) {
+                    String rootDir = sftp.canonicalPath("/");
+                    String upDir = sftp.canonicalPath(rootDir + "/..");
+                    assertEquals("Mismatched root dir parent", rootDir, upDir);
+                }
+            } finally {
+                client.stop();
+            }
+        }
     }
 
     @Test

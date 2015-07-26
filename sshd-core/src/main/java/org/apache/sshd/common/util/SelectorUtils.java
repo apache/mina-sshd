@@ -533,7 +533,6 @@ public final class SelectorUtils {
         return ret;
     }
 
-
     /**
      * Normalizes the path by removing '.', '..' and double separators (e.g. '//')
      *
@@ -591,6 +590,95 @@ public final class SelectorUtils {
         }
 
         return buffer.toString();
+    }
+
+    /**
+     * Applies the &quot;slashification&quot; rules as specified in
+     * <A HREF="http://pubs.opengroup.org/onlinepubs/009695399/basedefs/xbd_chap03.html#tag_03_266">Single Unix Specification version 3, section 3.266</A>
+     * and <A HREF="http://pubs.opengroup.org/onlinepubs/009695399/basedefs/xbd_chap04.html#tag_04_11">section 4.11 - Pathname resolution</A>
+     * @param path The original path - ignored if {@code null}/empty or does
+     * not contain any slashes
+     * @param sepChar The &quot;slash&quot; character
+     * @return The effective path - may be same as input if no changes required
+     */
+    public static String applySlashifyRules(String path, char sepChar) {
+        if (GenericUtils.isEmpty(path)) {
+            return path;
+        }
+        
+        int curPos = path.indexOf(sepChar);
+        if (curPos < 0) {
+            return path;    // no slashes to handle
+        }
+        
+        int lastPos = 0;
+        StringBuilder sb = null;
+        while (curPos < path.length()) {
+            curPos++;   // skip the 1st '/'
+            
+            /*
+             * As per Single Unix Specification version 3, section 3.266:
+             * 
+             *      Multiple successive slashes are considered to be the
+             *      same as one slash
+             */
+            int nextPos = curPos;
+            while ((nextPos < path.length()) && (path.charAt(nextPos) == sepChar)) {
+                nextPos++;
+            }
+            
+            /*
+             * At this stage, nextPos is the first non-slash character after a
+             * possibly 'seqLen' sequence of consecutive slashes.
+             */
+            int seqLen = nextPos - curPos;
+            if (seqLen > 0) {
+                if (sb == null) {
+                    sb = new StringBuilder(path.length() - seqLen);
+                }
+                
+                if (lastPos < curPos) {
+                    String clrText = path.substring(lastPos, curPos);
+                    sb.append(clrText);
+                }
+                
+                lastPos = nextPos;
+            }
+            
+            if (nextPos >= path.length()) {
+                break;  // no more data
+            }
+            
+            curPos = path.indexOf(sepChar, nextPos);
+            if (curPos < nextPos) {
+                break;  // no more slashes
+            }
+        }
+
+        // check if any leftovers for the modified path
+        if (sb != null) {
+            if (lastPos < path.length()) {
+                String clrText = path.substring(lastPos);
+                sb.append(clrText);
+            }
+            
+            path = sb.toString();
+        }
+
+        /*
+         * At this point we know for sure that 'path' contains only SINGLE
+         * slashes. According to section 4.11 - Pathname resolution
+         * 
+         *      A pathname that contains at least one non-slash character
+         *      and that ends with one or more trailing slashes shall be
+         *      resolved as if a single dot character ( '.' ) were appended
+         *      to the pathname.
+         */
+        if ((path.length() > 1) && (path.charAt(path.length() - 1) == sepChar)) {
+            return path + ".";
+        } else {
+            return path;
+        }
     }
 
     /**

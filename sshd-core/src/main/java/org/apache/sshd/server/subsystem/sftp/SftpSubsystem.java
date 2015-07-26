@@ -2927,15 +2927,13 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
 
     protected Path resolveFile(String remotePath) throws IOException, InvalidPathException {
         // In case double slashes and other patterns are used 
-        String path = SelectorUtils.normalizePath(remotePath, "/");
-        String localPath = SelectorUtils.translateToLocalPath(path);
-
+        String path = SelectorUtils.applySlashifyRules(remotePath, '/');
         // In case we are running on Windows
+        String localPath = SelectorUtils.translateToLocalPath(path);
         Path p = defaultDir.resolve(localPath);
         if (log.isTraceEnabled()) {
             log.trace("resolveFile({}) {}", remotePath, p);
         }
-        
         return p;
     }
 }
