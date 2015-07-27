@@ -47,10 +47,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.client.subsystem.sftp.SftpClient.CloseableHandle;
+import org.apache.sshd.client.subsystem.sftp.SftpClient.OpenMode;
 import org.apache.sshd.client.subsystem.sftp.extensions.BuiltinSftpClientExtensions;
 import org.apache.sshd.client.subsystem.sftp.extensions.SftpClientExtension;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.session.Session;
@@ -111,6 +114,52 @@ public class SftpTest extends AbstractSftpClientTestSupport {
     public void testExternal() throws Exception {
         System.out.println("SFTP subsystem available on port " + port);
         Thread.sleep(5 * 60000);
+    }
+
+    @Test   // see SSHD-545
+    public void testReadBufferLimit() throws Exception {
+        Path targetPath = detectTargetFolder().toPath();
+        Path parentPath = targetPath.getParent();
+        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+        Path testFile = assertHierarchyTargetFolderExists(lclSftp).resolve("file.txt");
+        byte[] expected = new byte[1024];
+
+        Factory<? extends Random> factory = sshd.getRandomFactory();
+        Random rnd = factory.create();
+        rnd.fill(expected);
+        Files.write(testFile, expected);
+
+        try (SshClient client = SshClient.setUpDefaultClient()) {
+            client.start();
+
+            try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+                session.addPasswordIdentity(getCurrentTestName());
+                session.auth().verify(5L, TimeUnit.SECONDS);
+
+                try (SftpClient sftp = session.createSftpClient()) {
+                    String file = Utils.resolveRelativeRemotePath(parentPath, testFile);
+                    byte[] actual = new byte[expected.length];
+                    int maxAllowed = actual.length / 4;
+                    // allow less than actual
+                    FactoryManagerUtils.updateProperty(sshd, SftpSubsystem.MAX_PACKET_LENGTH_PROP, maxAllowed);
+                    try(CloseableHandle handle = sftp.open(file, OpenMode.Read)) {
+                        int readLen = sftp.read(handle, 0L, actual);
+                        assertEquals("Mismatched read len", maxAllowed, readLen);
+                        
+                        for (int index = 0; index < readLen; index++) {
+                            byte expByte = expected[index], actByte = actual[index];
+                            if (expByte != actByte) {
+                                fail("Mismatched values at index=" + index
+                                   + ": expected=0x" + Integer.toHexString(expByte & 0xFF)
+                                   + ", actual=0x" + Integer.toHexString(actByte & 0xFF));
+                            }
+                        }
+                    }
+                }
+            } finally {
+                client.stop();
+            }
+        }
     }
 
     @Test   // see extra fix for SSHD-538
@@ -179,11 +228,10 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         Path targetPath = detectTargetFolder().toPath();
         Path parentPath = targetPath.getParent();
         Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
-
         Path testFile = assertHierarchyTargetFolderExists(lclSftp).resolve("file.txt");
-
         String file = Utils.resolveRelativeRemotePath(parentPath, testFile);
         String[] comps = GenericUtils.split(file, '/');
+
         try (SshClient client = SshClient.setUpDefaultClient()) {
             client.start();
 

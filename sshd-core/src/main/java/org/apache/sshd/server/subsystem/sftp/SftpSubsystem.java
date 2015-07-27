@@ -217,7 +217,8 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
 
     /**
      * Force the use of a max. packet length - especially for {@link #doReadDir(Buffer, int)}
-     *
+     * and {@link #doRead(Buffer, int)} methods
+     * 
      * @see #DEFAULT_MAX_PACKET_LENGTH
      */
     public static final String MAX_PACKET_LENGTH_PROP = "sftp-max-packet-length";
@@ -1884,10 +1885,20 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     protected void doRead(Buffer buffer, int id) throws IOException {
         String handle = buffer.getString();
         long offset = buffer.getLong();
-        int readLen = buffer.getInt();
+        int requestedLength = buffer.getInt();
+        int maxAllowed = FactoryManagerUtils.getIntProperty(session, MAX_PACKET_LENGTH_PROP, DEFAULT_MAX_PACKET_LENGTH);
+        int readLen = Math.min(requestedLength, maxAllowed);
+
+        if (log.isTraceEnabled()) {
+            log.trace("doRead({})[offset={}] - req.={}, max.={}, effective={}",
+                      handle, offset, requestedLength, maxAllowed, readLen);
+        }
+
         try {
+            ValidateUtils.checkTrue(readLen >= 0, "Illegal requested read length: %d", readLen);
+
             buffer.clear();
-            buffer.ensureCapacity(readLen + Long.SIZE, Int2IntFunction.IDENTITY);
+            buffer.ensureCapacity(readLen + Long.SIZE /* the header */, Int2IntFunction.IDENTITY);
 
             buffer.putByte((byte) SSH_FXP_DATA);
             buffer.putInt(id);
