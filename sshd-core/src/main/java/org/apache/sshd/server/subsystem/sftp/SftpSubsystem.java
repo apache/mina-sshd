@@ -2932,11 +2932,8 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
      * @throws InvalidPathException If bad local path specification
      */
     protected Path resolveFile(String remotePath) throws IOException, InvalidPathException {
-        // In case double slashes and other patterns are used 
-        String path = SelectorUtils.applySlashifyRules(remotePath, '/');
-        // In case we are running on Windows
-        String localPath = SelectorUtils.translateToLocalPath(path);
-        Path p = defaultDir.resolve(localPath);
+        String path = SelectorUtils.translateToLocalFileSystemPath(remotePath, '/', defaultDir.getFileSystem());
+        Path p = defaultDir.resolve(path);
         if (log.isTraceEnabled()) {
             log.trace("resolveFile({}) {}", remotePath, p);
         }

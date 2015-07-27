@@ -537,7 +537,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             path = path.replace('\\', '/');
             Vector<?> res = c.ls(path);
             for (Object f : res) {
-                System.out.println(f.toString());
+                System.out.append('\t').println(f.toString());
             }
         } finally {
             c.disconnect();

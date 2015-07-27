@@ -42,12 +42,12 @@ import org.apache.sshd.common.util.ValidateUtils;
 
 public abstract class BasePath<T extends BasePath<T, FS>, FS extends BaseFileSystem<T>> implements Path {
 
-    protected final FS fileSystem;
     protected final String root;
     protected final ImmutableList<String> names;
+    private final FS fileSystem;
 
     public BasePath(FS fileSystem, String root, ImmutableList<String> names) {
-        this.fileSystem = fileSystem;
+        this.fileSystem = ValidateUtils.checkNotNull(fileSystem, "No file system provided");
         this.root = root;
         this.names = names;
     }
@@ -126,7 +126,7 @@ public abstract class BasePath<T extends BasePath<T, FS>, FS extends BaseFileSys
         return create(null, names.subList(beginIndex, endIndex));
     }
 
-    private static boolean startsWith(List<?> list, List<?> other) {
+    protected boolean startsWith(List<?> list, List<?> other) {
         return list.size() >= other.size() && list.subList(0, other.size()).equals(other);
     }
 
@@ -144,7 +144,7 @@ public abstract class BasePath<T extends BasePath<T, FS>, FS extends BaseFileSys
         return startsWith(getFileSystem().getPath(other));
     }
 
-    private static boolean endsWith(List<?> list, List<?> other) {
+    protected boolean endsWith(List<?> list, List<?> other) {
         return other.size() <= list.size() && list.subList(list.size() - other.size(), list.size()).equals(other);
     }
 
@@ -163,7 +163,7 @@ public abstract class BasePath<T extends BasePath<T, FS>, FS extends BaseFileSys
         return endsWith(getFileSystem().getPath(other));
     }
 
-    private boolean isNormal() {
+    protected boolean isNormal() {
         int count = getNameCount();
         if ((count == 0) || ((count == 1) && !isAbsolute())) {
             return true;
@@ -346,7 +346,7 @@ public abstract class BasePath<T extends BasePath<T, FS>, FS extends BaseFileSys
         return p1.names.size() - p2.names.size();
     }
 
-    private int compare(String s1, String s2) {
+    protected int compare(String s1, String s2) {
         if (s1 == null) {
             return s2 == null ? 0 : -1;
         } else {
@@ -355,7 +355,7 @@ public abstract class BasePath<T extends BasePath<T, FS>, FS extends BaseFileSys
     }
 
     @SuppressWarnings("unchecked")
-    private T checkPath(Path paramPath) {
+    protected T checkPath(Path paramPath) {
         ValidateUtils.checkNotNull(paramPath, "Missing path argument");
         if (paramPath.getClass() != getClass()) {
             throw new ProviderMismatchException("Path is not of this class: " + paramPath + "[" + paramPath.getClass().getSimpleName() + "]");
@@ -371,11 +371,11 @@ public abstract class BasePath<T extends BasePath<T, FS>, FS extends BaseFileSys
 
     @Override
     public int hashCode() {
-        int hash = getFileSystem().hashCode();
+        int hash = Objects.hashCode(getFileSystem());
         // use hash codes from toString() form of names
-        hash = 31 * hash + (root == null ? 0 : root.hashCode());
+        hash = 31 * hash + Objects.hashCode(root);
         for (String name : names) {
-            hash = 31 * hash + name.hashCode();
+            hash = 31 * hash + Objects.hashCode(name);
         }
         return hash;
     }
@@ -392,9 +392,11 @@ public abstract class BasePath<T extends BasePath<T, FS>, FS extends BaseFileSys
         if (root != null) {
             sb.append(root);
         }
+        
+        String separator = getFileSystem().getSeparator();
         for (String name : names) {
-            if (sb.length() > 0 && sb.charAt(sb.length() - 1) != '/') {
-                sb.append(fileSystem.getSeparator());
+            if ((sb.length() > 0) && (sb.charAt(sb.length() - 1) != '/')) {
+                sb.append(separator);
             }
             sb.append(name);
         }

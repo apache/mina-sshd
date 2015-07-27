@@ -482,16 +482,14 @@ public class ScpHelper extends AbstractLoggingBean {
     }
 
     /**
-     * @param commandPath The original command path using <U>local</U> separator
+     * @param commandPath The command path using the <U>local</U> file separator
      * @return The resolved absolute and normalized local path {@link Path}
      * @throws IOException If failed to resolve the path
      * @throws InvalidPathException If invalid local path value
      */
     public Path resolveLocalPath(String commandPath) throws IOException, InvalidPathException {
-        // In case double slashes and other patterns are used 
-        String path = SelectorUtils.applySlashifyRules(commandPath, File.separatorChar);
-        String localPath = SelectorUtils.translateToLocalPath(path);
-        Path lcl = fileSystem.getPath(localPath);
+        String path = SelectorUtils.translateToLocalFileSystemPath(commandPath, File.separatorChar, fileSystem);
+        Path lcl = fileSystem.getPath(path);
         Path abs = lcl.isAbsolute() ? lcl : lcl.toAbsolutePath();
         Path p = abs.normalize();
         if (log.isTraceEnabled()) {

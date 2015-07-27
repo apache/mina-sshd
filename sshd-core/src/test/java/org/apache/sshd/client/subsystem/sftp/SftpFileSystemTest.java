@@ -374,7 +374,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
         Files.move(file2, file1);
 
         Map<String, Object> attrs = Files.readAttributes(file1, "*");
-        System.out.append(file1.toString()).append(" attributes: ").println(attrs);
+        System.out.append('\t').append(file1.toString()).append(" attributes: ").println(attrs);
 
         // TODO: symbolic links only work for absolute files
 //        Path link = fs.getPath("target/sftp/client/test2.txt");
@@ -396,7 +396,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
         }
 
         attrs = Files.readAttributes(file1, "*", LinkOption.NOFOLLOW_LINKS);
-        System.out.append(file1.toString()).append(" no-follow attributes: ").println(attrs);
+        System.out.append('\t').append(file1.toString()).append(" no-follow attributes: ").println(attrs);
 
         assertEquals("Mismatched symlink data", expected, new String(Files.readAllBytes(file1)));
 

@@ -101,7 +101,7 @@ public abstract class BaseFileSystem<T extends Path> extends FileSystem {
         return create(root, names);
     }
 
-    private void appendDedupSep(StringBuilder sb, String s) {
+    protected void appendDedupSep(StringBuilder sb, CharSequence s) {
         for (int i = 0; i < s.length(); i++) {
             char ch = s.charAt(i);
             if ((ch != '/') || (sb.length() == 0) || (sb.charAt(sb.length() - 1) != '/')) {
@@ -140,7 +140,7 @@ public abstract class BaseFileSystem<T extends Path> extends FileSystem {
         };
     }
 
-    private String globToRegex(String pattern) {
+    protected String globToRegex(String pattern) {
         StringBuilder sb = new StringBuilder(pattern.length());
         int inGroup = 0;
         int inClass = 0;

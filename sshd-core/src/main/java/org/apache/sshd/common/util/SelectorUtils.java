@@ -20,8 +20,10 @@ package org.apache.sshd.common.util;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.FileSystem;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.StringTokenizer;
 
 /**
@@ -593,6 +595,42 @@ public final class SelectorUtils {
     }
 
     /**
+     * Converts a path to one matching the target file system by applying the
+     * &quot;slashification&quot; rules, converting it to a local path and
+     * then translating its separator to the target file system one (if different
+     * than local one)
+     * @param path          The input path
+     * @param pathSeparator The separator used to build the input path
+     * @param fs            The target {@link FileSystem} - may not be {@code null}
+     * @return The transformed path
+     * @see #translateToLocalFileSystemPath(String, char, String)
+     */
+    public static String translateToLocalFileSystemPath(String path, char pathSeparator, FileSystem fs) {
+        return translateToLocalFileSystemPath(path, pathSeparator,  ValidateUtils.checkNotNull(fs, "No target file system").getSeparator());
+    }
+
+    /**
+     * Converts a path to one matching the target file system by applying the
+     * &quot;slashification&quot; rules, converting it to a local path and
+     * then translating its separator to the target file system one (if different
+     * than local one)
+     * @param path          The input path
+     * @param pathSeparator The separator used to build the input path
+     * @param fsSeparator   The target file system separator
+     * @return The transformed path
+     * @see #applySlashifyRules(String, char)
+     * @see #translateToLocalPath(String)
+     * @see #translateToFileSystemPath(String, String, String)
+     */
+    public static String translateToLocalFileSystemPath(String path, char pathSeparator, String fsSeparator) {
+        // In case double slashes and other patterns are used 
+        String slashified = applySlashifyRules(path, pathSeparator);
+        // In case we are running on Windows
+        String localPath = translateToLocalPath(slashified);
+        return translateToFileSystemPath(localPath, File.separator, fsSeparator);
+    }
+
+    /**
      * Applies the &quot;slashification&quot; rules as specified in
      * <A HREF="http://pubs.opengroup.org/onlinepubs/009695399/basedefs/xbd_chap03.html#tag_03_266">Single Unix Specification version 3, section 3.266</A>
      * and <A HREF="http://pubs.opengroup.org/onlinepubs/009695399/basedefs/xbd_chap04.html#tag_04_11">section 4.11 - Pathname resolution</A>
@@ -724,6 +762,56 @@ public final class SelectorUtils {
         char drive = cs.charAt(0);
         return ((drive >= 'a') && (drive <= 'z'))
                 || ((drive >= 'A') && (drive <= 'Z'));
+    }
+
+    /**
+     * Converts a path containing a specific separator to one using the
+     * specified file-system one
+     * @param path          The input path - ignored if {@code null}/empty
+     * @param pathSeparator The separator used to build the input path - may not
+     *                      be {@code null}/empty
+     * @param fs            The target {@link FileSystem} - may not be {@code null}
+     * @return The path where the separator used to build it is replaced by
+     * the file-system one (if different)
+     * @see FileSystem#getSeparator()
+     * @see #translateToFileSystemPath(String, String, String)
+     */
+    public static String translateToFileSystemPath(String path, String pathSeparator, FileSystem fs) {
+        return translateToFileSystemPath(path, pathSeparator, ValidateUtils.checkNotNull(fs, "No target file system").getSeparator());
+    }
+    
+    /**
+     * Converts a path containing a specific separator to one using the
+     * specified file-system one
+     * @param path          The input path - ignored if {@code null}/empty
+     * @param pathSeparator The separator used to build the input path - may not
+     *                      be {@code null}/empty
+     * @param fsSeparator   The target file system separator - may not be {@code null}/empty
+     * @return The path where the separator used to build it is replaced by
+     * the file-system one (if different)
+     * @throws IllegalArgumentException if path or file-system separator are {@code null}/empty
+     * or if the separators are different and the path contains the target
+     * file-system separator as it would create an ambiguity
+     */
+    public static String translateToFileSystemPath(String path, String pathSeparator, String fsSeparator) {
+        ValidateUtils.checkNotNullAndNotEmpty(pathSeparator, "Missing path separator");
+        ValidateUtils.checkNotNullAndNotEmpty(fsSeparator, "Missing file-system separator");
+
+        if (GenericUtils.isEmpty(path) || Objects.equals(pathSeparator, fsSeparator)) {
+            return path;
+        }
+
+        // make sure path does not contain the target separator
+        if (path.indexOf(fsSeparator) >= 0) {
+            ValidateUtils.throwIllegalArgumentException("File system replacement may yield ambiguous result for %s with separator=%s", path, fsSeparator);
+        }
+
+        // check most likely case
+        if ((pathSeparator.length() == 1) && (fsSeparator.length() == 1)) {
+            return path.replace(pathSeparator.charAt(0), fsSeparator.charAt(0));
+        } else {
+            return path.replace(pathSeparator, fsSeparator);
+        }
     }
 
     /**
