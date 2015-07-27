@@ -35,6 +35,11 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  */
 public class CancelTcpipForwardHandler extends AbstractLoggingBean implements ConnectionServiceRequestHandler {
     public static final String REQUEST = "cancel-tcpip-forward";
+    /**
+     * Default growth factor function used to resize response buffers
+     */
+    public static final Int2IntFunction RESPONSE_BUFFER_GROWTH_FACTOR = Int2IntFunction.Utils.add(Byte.SIZE);
+
     public static final CancelTcpipForwardHandler INSTANCE = new CancelTcpipForwardHandler();
 
     public CancelTcpipForwardHandler() {
@@ -57,7 +62,7 @@ public class CancelTcpipForwardHandler extends AbstractLoggingBean implements Co
             if (wantReply) {
                 buffer.clear();
                 // leave room for the SSH header
-                buffer.ensureCapacity(5 + 1 + (Integer.SIZE / Byte.SIZE), Int2IntFunction.Utils.add(Byte.SIZE));
+                buffer.ensureCapacity(5 + 1 + (Integer.SIZE / Byte.SIZE), RESPONSE_BUFFER_GROWTH_FACTOR);
                 buffer.rpos(5);
                 buffer.wpos(5);
                 buffer.putByte(SshConstants.SSH_MSG_REQUEST_SUCCESS);

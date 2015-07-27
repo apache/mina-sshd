@@ -59,6 +59,11 @@ public abstract class AbstractChannel
 
     public static final long DEFAULT_CHANNEL_CLOSE_TIMEOUT = 5000;
 
+    /**
+     * Default growth factor function used to resize response buffers
+     */
+    public static final Int2IntFunction RESPONSE_BUFFER_GROWTH_FACTOR = Int2IntFunction.Utils.add(Byte.SIZE);
+
     protected static enum GracefulState {
         Opened, CloseSent, CloseReceived, Closed
     }
@@ -181,7 +186,7 @@ public abstract class AbstractChannel
                  : SshConstants.SSH_MSG_CHANNEL_FAILURE;
         buffer.clear();
         // leave room for the SSH header
-        buffer.ensureCapacity(5 + 1 + (Integer.SIZE / Byte.SIZE), Int2IntFunction.Utils.add(Byte.SIZE));
+        buffer.ensureCapacity(5 + 1 + (Integer.SIZE / Byte.SIZE), RESPONSE_BUFFER_GROWTH_FACTOR);
         buffer.rpos(5);
         buffer.wpos(5);
         buffer.putByte(cmd);
