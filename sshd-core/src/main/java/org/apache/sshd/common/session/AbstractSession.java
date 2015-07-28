@@ -589,7 +589,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     public IoWriteFuture writePacket(Buffer buffer, final long timeout, final TimeUnit unit) throws IOException {
         final IoWriteFuture writeFuture = writePacket(buffer);
         final DefaultSshFuture<IoWriteFuture> future = (DefaultSshFuture<IoWriteFuture>) writeFuture;
-        ScheduledExecutorService executor = factoryManager.getScheduledExecutorService(); 
+        ScheduledExecutorService executor = factoryManager.getScheduledExecutorService();
         final ScheduledFuture<?> sched = executor.schedule(new Runnable() {
                 @SuppressWarnings("synthetic-access")
                 @Override
@@ -1202,7 +1202,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
 
     @Override
     public void disconnect(int reason, String msg) throws IOException {
-        log.info("Disconnecting: {} - {}", Integer.valueOf(reason), msg);
+        log.info("Disconnecting: {} - {}", reason, msg);
         Buffer buffer = createBuffer(SshConstants.SSH_MSG_DISCONNECT);
         buffer.putInt(reason);
         buffer.putString(msg);

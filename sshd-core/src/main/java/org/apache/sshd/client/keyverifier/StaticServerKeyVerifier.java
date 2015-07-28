@@ -45,17 +45,27 @@ public abstract class StaticServerKeyVerifier extends AbstractLoggingBean implem
 
     @Override
     public final boolean verifyServerKey(ClientSession sshClientSession, SocketAddress remoteAddress, PublicKey serverKey) {
-        if (isAccepted()) {
-            log.warn("Server at {} presented unverified {} key: {}",
-                    new Object[]{remoteAddress, (serverKey == null) ? null : serverKey.getAlgorithm(), KeyUtils.getFingerPrint(serverKey)});
-            return true;
+        boolean accepted = isAccepted();
+        if (accepted) {
+            handleAcceptance(sshClientSession, remoteAddress, serverKey);
         } else {
-            if (log.isDebugEnabled()) {
-                log.debug("Reject server {} unverified {} key: {}",
-                        new Object[]{remoteAddress, (serverKey == null) ? null : serverKey.getAlgorithm(), KeyUtils.getFingerPrint(serverKey)});
-            }
+            handleRejection(sshClientSession, remoteAddress, serverKey);
+        }
 
-            return false;
+        return accepted;
+    }
+
+    protected void handleAcceptance(ClientSession sshClientSession, SocketAddress remoteAddress, PublicKey serverKey) {
+        // accepting without really checking is dangerous, thus the warning
+        log.warn("Server at {} presented unverified {} key: {}",
+                 remoteAddress, (serverKey == null) ? null : serverKey.getAlgorithm(), KeyUtils.getFingerPrint(serverKey));
+    }
+
+    protected void handleRejection(ClientSession sshClientSession, SocketAddress remoteAddress, PublicKey serverKey) {
+        if (log.isDebugEnabled()) {
+            log.debug("Reject server {} unverified {} key: {}",
+                      remoteAddress, (serverKey == null) ? null : serverKey.getAlgorithm(), KeyUtils.getFingerPrint(serverKey));
         }
     }
+
 }

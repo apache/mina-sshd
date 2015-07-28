@@ -38,10 +38,23 @@ public class StaticPasswordAuthenticator extends AbstractLoggingBean implements 
     @Override
     public final boolean authenticate(String username, String password, ServerSession session) {
         boolean accepted = isAccepted();
-        if (log.isDebugEnabled()) {
-            log.debug("authenticate({}[{}]: {}", username, session, accepted);
+        if (accepted) {
+            handleAcceptance(username, password, session);
+        } else {
+            handleRejection(username, password, session);
         }
 
         return accepted;
+    }
+
+    protected void handleAcceptance(String username, String password, ServerSession session) {
+        // accepting without really checking is dangerous, thus the warning
+        log.warn("authenticate({}[{}]: accepted without checking", username, session);
+    }
+
+    protected void handleRejection(String username, String password, ServerSession session) {
+        if (log.isDebugEnabled()) {
+            log.debug("authenticate({}[{}]: rejected", username, session);
+        }
     }
 }
