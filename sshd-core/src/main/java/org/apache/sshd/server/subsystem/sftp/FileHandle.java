@@ -48,7 +48,7 @@ import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXF_TRUNCA
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-class FileHandle extends Handle {
+public class FileHandle extends Handle {
 
     private final int access;
     private final FileChannel fileChannel;

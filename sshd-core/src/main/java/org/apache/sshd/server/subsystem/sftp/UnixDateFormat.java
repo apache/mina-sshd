@@ -28,12 +28,20 @@ import java.util.List;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-final class UnixDateFormat {
+public final class UnixDateFormat {
 
-    private static final List<String> MONTHS =
+    /**
+     * A {@link List} of <U>short</U> months names where Jan=0, Feb=1, etc.
+     */
+    public static final List<String> MONTHS =
         Collections.unmodifiableList(Arrays.asList(
             "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
         ));
+
+    /**
+     * Six months duration in msec.
+     */
+    public static final long SIX_MONTHS = 183L * 24L * 60L * 60L * 1000L;
 
     private UnixDateFormat() {
         throw new UnsupportedOperationException("No instance allowed");
@@ -43,11 +51,11 @@ final class UnixDateFormat {
      * Get unix style date string.
      */
     public static String getUnixDate(FileTime time) {
-        return getUnixDate(time != null ? time.toMillis() : -1);
+        return getUnixDate((time != null) ? time.toMillis() : -1L);
     }
 
     public static String getUnixDate(long millis) {
-        if (millis < 0) {
+        if (millis < 0L) {
             return "------------";
         }
 
@@ -67,9 +75,8 @@ final class UnixDateFormat {
         sb.append(day);
         sb.append(' ');
 
-        long sixMonth = 15811200000L; // 183L * 24L * 60L * 60L * 1000L;
         long nowTime = System.currentTimeMillis();
-        if (Math.abs(nowTime - millis) > sixMonth) {
+        if (Math.abs(nowTime - millis) > SIX_MONTHS) {
 
             // year
             int year = cal.get(Calendar.YEAR);
@@ -92,6 +99,7 @@ final class UnixDateFormat {
             }
             sb.append(mm);
         }
+
         return sb.toString();
     }
 }

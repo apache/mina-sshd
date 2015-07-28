@@ -25,10 +25,10 @@ import java.util.Objects;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-abstract class Handle implements java.io.Closeable {
+public abstract class Handle implements java.io.Closeable {
     private Path file;
 
-    public Handle(Path file) {
+    protected Handle(Path file) {
         this.file = file;
     }
 

@@ -59,18 +59,21 @@ public interface Transformer<I, O> {
     O transform(I input);
 
     final class Utils {
+        @SuppressWarnings("rawtypes")
+        private static final Transformer IDENTITY = new Transformer() {
+            @Override
+            public Object transform(Object input) {
+                return input;
+            }
+        };
 
         private Utils() {
             throw new UnsupportedOperationException("No instance allowed");
         }
 
+        @SuppressWarnings({ "cast", "unchecked" })
         public static <U extends V, V> Transformer<U, V> identity() {
-            return new Transformer<U, V>() {
-                @Override
-                public V transform(U input) {
-                    return input;
-                }
-            };
+            return (Transformer<U, V>) IDENTITY;
         }
 
     }

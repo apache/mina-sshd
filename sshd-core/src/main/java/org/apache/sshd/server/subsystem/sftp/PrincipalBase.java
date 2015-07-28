@@ -24,7 +24,7 @@ import java.util.Objects;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-class PrincipalBase implements Principal {
+public class PrincipalBase implements Principal {
 
     private final String name;
 

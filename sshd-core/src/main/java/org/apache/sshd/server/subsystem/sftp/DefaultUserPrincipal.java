@@ -23,7 +23,7 @@ import java.nio.file.attribute.UserPrincipal;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-class DefaultUserPrincipal extends PrincipalBase implements UserPrincipal {
+public class DefaultUserPrincipal extends PrincipalBase implements UserPrincipal {
 
     public DefaultUserPrincipal(String name) {
         super(name);

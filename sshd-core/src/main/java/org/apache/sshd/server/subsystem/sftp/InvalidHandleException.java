@@ -23,7 +23,7 @@ import java.io.IOException;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-class InvalidHandleException extends IOException {
+public class InvalidHandleException extends IOException {
     private static final long serialVersionUID = -1686077114375131889L;
 
     public InvalidHandleException(String handle, Handle h, Class<? extends Handle> expected) {

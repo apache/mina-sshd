@@ -27,7 +27,7 @@ import java.util.Iterator;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-class DirectoryHandle extends Handle implements Iterator<Path> {
+public class DirectoryHandle extends Handle implements Iterator<Path> {
 
     private boolean done;
     private boolean sendDotDot;
