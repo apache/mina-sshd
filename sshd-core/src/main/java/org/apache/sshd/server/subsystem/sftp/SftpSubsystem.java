@@ -218,7 +218,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     /**
      * Force the use of a max. packet length - especially for {@link #doReadDir(Buffer, int)}
      * and {@link #doRead(Buffer, int)} methods
-     * 
+     *
      * @see #DEFAULT_MAX_PACKET_LENGTH
      */
     public static final String MAX_PACKET_LENGTH_PROP = "sftp-max-packet-length";
@@ -393,7 +393,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     public void setFileSystem(FileSystem fileSystem) {
         if (fileSystem != this.fileSystem) {
             this.fileSystem = fileSystem;
-            
+
             Iterable<Path> roots = ValidateUtils.checkNotNull(fileSystem.getRootDirectories(), "No root directories");
             Iterator<Path> available = ValidateUtils.checkNotNull(roots.iterator(), "No roots iterator");
             ValidateUtils.checkTrue(available.hasNext(), "No available root");
@@ -720,7 +720,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
 
             /*
              * To quote http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt section 9.1.2:
-             * 
+             *
              *       If ACE4_READ_DATA was not included when the file was opened,
              *       the server MUST return STATUS_PERMISSION_DENIED.
              */
@@ -730,10 +730,10 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             }
         } else {
             path = resolveFile(target);
-            
+
             /*
              * To quote http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt section 9.1.2:
-             * 
+             *
              *      If 'check-file-name' refers to a SSH_FILEXFER_TYPE_SYMLINK, the
              *      target should be opened.
              */
@@ -891,7 +891,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
 
             /*
              * To quote http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt section 9.1.1:
-             * 
+             *
              *      The handle MUST be a file handle, and ACE4_READ_DATA MUST
              *      have been included in the desired-access when the file
              *      was opened
@@ -944,7 +944,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
 
             /*
              * To quote http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt section 9.1.1:
-             * 
+             *
              *      If this is a zero length string, the client does not have the
              *      data, and is requesting the hash for reasons other than comparing
              *      with a local file.  The server MAY return SSH_FX_OP_UNSUPPORTED in
@@ -966,10 +966,10 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                 if (hashMatches) {
                     /*
                      * Need to re-initialize the digester due to the Javadoc:
-                     * 
+                     *
                      *      "The digest method can be called once for a given number
                      *       of updates. After digest has been called, the MessageDigest
-                     *       object is reset to its initialized state." 
+                     *       object is reset to its initialized state."
                      */
                     if (effectiveLength > 0L) {
                         digest = BuiltinDigests.md5.create();
@@ -1471,10 +1471,10 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             if (version < SFTP_V6) {
                 /*
                  * See http://www.openssh.com/txt/draft-ietf-secsh-filexfer-02.txt:
-                 * 
+                 *
                  *      The SSH_FXP_REALPATH request can be used to have the server
                  *      canonicalize any given path name to an absolute path.
-                 * 
+                 *
                  * See also SSHD-294
                  */
                 result = doRealPathV345(id, path, options);
@@ -2345,9 +2345,9 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
 
         /*
          * As per the spec:
-         * 
+         *
          *      The server will respond with a SSH_FXP_NAME packet containing only
-         *      one name and a dummy attributes value. 
+         *      one name and a dummy attributes value.
          */
         SftpHelper.writeAttrs(version, buffer, Collections.<String, Object>emptyMap());
         send(buffer);
@@ -2428,7 +2428,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     private String getLongName(Path f, Map<String, ?> attributes) throws IOException {
         String username;
         if (attributes.containsKey("owner")) {
-            username = Objects.toString(attributes.get("owner"));
+            username = Objects.toString(attributes.get("owner"), null);
         } else {
             username = "owner";
         }
@@ -2441,7 +2441,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         }
         String group;
         if (attributes.containsKey("group")) {
-            group = Objects.toString(attributes.get("group"));
+            group = Objects.toString(attributes.get("group"), null);
         } else {
             group = "group";
         }
@@ -2480,7 +2480,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         int  count = nrm.getNameCount();
         /*
          * According to the javadoc:
-         * 
+         *
          *      The number of elements in the path, or 0 if this path only
          *      represents a root component
          */
@@ -2620,11 +2620,11 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                 if (Objects.equals(resolved, value)) {
                     continue;
                 }
-                
+
                 if (attrs == null) {
                     attrs = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
                 }
-                
+
                 attrs.put(name, resolved);
 
                 if (log.isDebugEnabled()) {
@@ -2635,18 +2635,18 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                 if (log.isDebugEnabled()) {
                     log.debug("resolveMissingFileAttributes(" + file + ")[" + name + "]"
                             + " failed (" + e.getClass().getSimpleName() + ")"
-                            + " to resolve missing value: " + e.getMessage()); 
+                            + " to resolve missing value: " + e.getMessage());
                 }
             }
         }
-        
+
         if (attrs == null) {
             return Collections.emptyMap();
         } else {
             return attrs;
         }
     }
-    
+
     protected Object resolveMissingFileAttributeValue(Path file, String name, Object value, FileInfoExtractor<?> x, LinkOption ... options) throws IOException {
         if (value != null) {
             return value;
@@ -2660,7 +2660,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         if (value != null) {    // already have the value
             return current;
         }
-        
+
         // skip if still no value
         value = x.infoOf(file, options);
         if (value == null) {
@@ -2670,7 +2670,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         if (current == null) {
             current = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         }
-        
+
         current.put(name, value);
         return current;
     }
@@ -2809,7 +2809,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
 
     protected void handleUserPrincipalLookupServiceException(Class<? extends Principal> principalType, String name, IOException e) throws IOException {
         /* According to Javadoc:
-         * 
+         *
          *      "Where an implementation does not support any notion of group
          *      or user then this method always throws UserPrincipalNotFoundException."
          */

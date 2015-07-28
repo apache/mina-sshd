@@ -126,7 +126,7 @@ import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IXUSR;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public final class SftpHelper {
-    
+
     private SftpHelper() {
         throw new UnsupportedOperationException("No instance allowed");
     }
@@ -199,8 +199,8 @@ public final class SftpHelper {
             buffer.putLong(size.longValue());
         }
         if ((flags & SSH_FILEXFER_ATTR_OWNERGROUP) != 0) {
-            buffer.putString(Objects.toString(attributes.get("owner")));
-            buffer.putString(Objects.toString(attributes.get("group")));
+            buffer.putString(Objects.toString(attributes.get("owner"), null));
+            buffer.putString(Objects.toString(attributes.get("group"), null));
         }
         if ((flags & SSH_FILEXFER_ATTR_PERMISSIONS) != 0) {
             buffer.putInt(attributesToPermissions(isReg, isDir, isLnk, perms));

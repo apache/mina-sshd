@@ -58,6 +58,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Int2IntFunction;
 import org.apache.sshd.common.util.Readable;
 import org.apache.sshd.common.util.SecurityUtils;
+import org.apache.sshd.common.util.Transformer;
 
 /**
  * Provides an abstract message buffer for encoding SSH messages
@@ -493,7 +494,7 @@ public abstract class Buffer implements Readable {
     }
 
     /**
-     * Encodes the {@link Objects#toString(Object)} value of each member.
+     * Encodes the {@link Transformer#TOSTRING} value of each member.
      *
      * @param objects       The objects to be encoded in the buffer - OK if
      *                      {@code null}/empty
@@ -506,7 +507,7 @@ public abstract class Buffer implements Readable {
     }
 
     /**
-     * Encodes the {@link Objects#toString(Object)} value of each member
+     * Encodes the {@link Transformer#TOSTRING} value of each member
      *
      * @param objects       The objects to be encoded in the buffer - OK if
      *                      {@code null}/empty
@@ -526,7 +527,7 @@ public abstract class Buffer implements Readable {
         }
 
         for (Object o : objects) {
-            putString(Objects.toString(o), charset);
+            putString(Transformer.TOSTRING.transform(o), charset);
         }
     }
 
@@ -535,7 +536,7 @@ public abstract class Buffer implements Readable {
     }
 
     public void putString(String string, Charset charset) {
-        putBytes(string.getBytes(charset));
+        putBytes(GenericUtils.isEmpty(string) ? GenericUtils.EMPTY_BYTE_ARRAY : string.getBytes(charset));
     }
 
     public void putMPInt(BigInteger bi) {

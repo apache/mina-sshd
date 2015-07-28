@@ -28,12 +28,13 @@ public interface Transformer<I, O> {
     // TODO in JDK-8 replace this with Function
 
     /**
-     * Invokes {@link Objects#toString(Object)} on the argument
+     * Invokes {@link Objects#toString(Object, String)} on the argument
+     * with {@code null} as the value to return if argument is {@code null}
      */
     Transformer<Object, String> TOSTRING = new Transformer<Object, String>() {
         @Override
         public String transform(Object input) {
-            return Objects.toString(input);
+            return Objects.toString(input, null);
         }
     };
 

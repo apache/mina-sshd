@@ -110,7 +110,7 @@ public class BuiltinCiphersTest extends BaseTestSupport {
                 continue;
             }
 
-            String name = Objects.toString(f.get(null));
+            String name = Objects.toString(f.get(null), null);
             BuiltinCiphers value = BuiltinCiphers.fromFactoryName(name);
             assertNotNull("No match found for " + name, value);
             assertTrue(name + " re-specified", avail.add(value));

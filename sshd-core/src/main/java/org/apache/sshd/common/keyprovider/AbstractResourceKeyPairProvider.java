@@ -34,6 +34,7 @@ import java.util.TreeSet;
 
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -41,10 +42,10 @@ import org.apache.sshd.common.util.GenericUtils;
 public abstract class AbstractResourceKeyPairProvider<R> extends AbstractKeyPairProvider {
 
     private FilePasswordProvider passwordFinder;
-    /* 
+    /*
      * NOTE: the map is case insensitive even for Linux, as it is (very) bad
      * practice to have 2 key files that differ from one another only in their
-     * case... 
+     * case...
      */
     private final Map<String, KeyPair> cacheMap = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
@@ -74,7 +75,7 @@ public abstract class AbstractResourceKeyPairProvider<R> extends AbstractKeyPair
             }
 
             for (Object r : resources) {
-                String resourceKey = Objects.toString(r);
+                String resourceKey = ValidateUtils.checkNotNullAndNotEmpty(Objects.toString(r, null), "No resource key value");
                 if (cacheMap.containsKey(resourceKey)) {
                     continue;
                 }
@@ -114,7 +115,7 @@ public abstract class AbstractResourceKeyPairProvider<R> extends AbstractKeyPair
     }
 
     protected KeyPair doLoadKey(R resource) throws IOException, GeneralSecurityException {
-        String resourceKey = Objects.toString(resource);
+        String resourceKey = ValidateUtils.checkNotNullAndNotEmpty(Objects.toString(resource, null), "No resource string value");
         KeyPair kp;
         synchronized (cacheMap) {
             // check if lucky enough to have already loaded this file
