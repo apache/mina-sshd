@@ -44,6 +44,8 @@ public interface SshFuture<T extends SshFuture> {
     /**
      * Wait for the asynchronous operation to complete with the specified timeout.
      *
+     * @param timeout   The number of time units to wait
+     * @param unit      The {@link TimeUnit} for waiting
      * @return {@code true} if the operation is completed.
      * @throws IOException if failed - specifically {@link java.io.InterruptedIOException}
      *                     if waiting was interrupted
@@ -53,6 +55,7 @@ public interface SshFuture<T extends SshFuture> {
     /**
      * Wait for the asynchronous operation to complete with the specified timeout.
      *
+     * @param timeoutMillis Wait time in milliseconds
      * @return {@code true} if the operation is completed.
      * @throws IOException if failed - specifically {@link java.io.InterruptedIOException}
      *                     if waiting was interrupted
@@ -64,7 +67,7 @@ public interface SshFuture<T extends SshFuture> {
      * The attached listeners will be notified when the operation is
      * completed.
      *
-     * @return the current IoFuture
+     * @return the current future
      */
     T awaitUninterruptibly();
 
@@ -72,6 +75,8 @@ public interface SshFuture<T extends SshFuture> {
      * Wait for the asynchronous operation to complete with the specified timeout
      * uninterruptibly.
      *
+     * @param timeout   The number of time units to wait
+     * @param unit      The {@link TimeUnit} for waiting
      * @return {@code true} if the operation is completed.
      */
     boolean awaitUninterruptibly(long timeout, TimeUnit unit);
@@ -80,12 +85,13 @@ public interface SshFuture<T extends SshFuture> {
      * Wait for the asynchronous operation to complete with the specified timeout
      * uninterruptibly.
      *
+     * @param timeoutMillis Wait time in milliseconds
      * @return {@code true} if the operation is finished.
      */
     boolean awaitUninterruptibly(long timeoutMillis);
 
     /**
-     * Returns if the asynchronous operation is completed.
+     * @return {@code true} if the asynchronous operation is completed.
      */
     boolean isDone();
 
@@ -93,12 +99,18 @@ public interface SshFuture<T extends SshFuture> {
      * Adds an event <tt>listener</tt> which is notified when
      * this future is completed. If the listener is added
      * after the completion, the listener is directly notified.
+     *
+     * @param listener The {@link SshFutureListener} instance to add
+     * @return The future instance
      */
     T addListener(SshFutureListener<T> listener);
 
     /**
      * Removes an existing event <tt>listener</tt> so it won't be notified when
      * the future is completed.
+     *
+     * @param listener The {@link SshFutureListener} instance to remove
+     * @return The future instance
      */
     T removeListener(SshFutureListener<T> listener);
 }

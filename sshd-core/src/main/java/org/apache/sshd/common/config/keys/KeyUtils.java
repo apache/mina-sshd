@@ -108,21 +108,21 @@ public final class KeyUtils {
     }
 
     /**
-     * <P>Checks if a path has strict permissions</P></BR>
+     * <P>Checks if a path has strict permissions</P>
      * <UL>
-     * <LI>
+     * <LI><P>
      * The path may not have {@link PosixFilePermission#OTHERS_EXECUTE}
      * permission
-     * </LI>
-     * <p/>
-     * <LI>
+     * </P></LI>
+     *
+     * <LI><P>
      * (For {@code Unix}) The path may not have group or others permissions
-     * </LI>
-     * <p/>
-     * <LI>
+     * </P></LI>
+     *
+     * <LI><P>
      * (For {@code Unix}) If the path is a file, then its folder may not have
      * group or others permissions
-     * </LI>
+     * </P></LI>
      * </UL>
      *
      * @param path    The {@link Path} to be checked - ignored if {@code null}

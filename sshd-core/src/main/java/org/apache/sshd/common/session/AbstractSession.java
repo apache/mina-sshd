@@ -75,12 +75,14 @@ import static org.apache.sshd.common.SshConstants.SSH_MSG_SERVICE_REQUEST;
 import static org.apache.sshd.common.SshConstants.SSH_MSG_UNIMPLEMENTED;
 
 /**
+ * <P>
  * The AbstractSession handles all the basic SSH protocol such as key exchange, authentication,
  * encoding and decoding. Both server side and client side sessions should inherit from this
  * abstract class. Some basic packet processing methods are defined but the actual call to these
  * methods should be done from the {@link #handleMessage(org.apache.sshd.common.util.buffer.Buffer)}
- * method, which is dependant on the state and side of this session.
- * <p/>
+ * method, which is dependent on the state and side of this session.
+ * </P>
+ *
  * TODO: if there is any very big packet, decoderBuffer and uncompressBuffer will get quite big
  * and they won't be resized down at any time. Though the packet size is really limited
  * by the channel max packet size
@@ -192,6 +194,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     /**
      * Create a new session.
      *
+     * @param isServer       {@code true} if this is a server session, {@code false} if client one
      * @param factoryManager the factory manager
      * @param ioSession      the underlying MINA session
      */
@@ -222,7 +225,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     /**
      * Retrieve the session from the MINA session.
      * If the session has not been attached and allowNull is <code>false</code>,
-     * an IllegalStateException will be thrown, else a {@code null} will
+     * an {@link IllegalStateException} will be thrown, else a {@code null} will
      * be returned
      *
      * @param ioSession the MINA session
@@ -232,7 +235,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
      */
     public static AbstractSession getSession(IoSession ioSession, boolean allowNull) {
         AbstractSession session = (AbstractSession) ioSession.getAttribute(SESSION);
-        if (!allowNull && session == null) {
+        if ((session == null) && (!allowNull)) {
             throw new IllegalStateException("No session available");
         }
         return session;
@@ -302,11 +305,13 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     }
 
     /**
-     * Main input point for the MINA framework.
-     * <p/>
+     * <P>Main input point for the MINA framework.</P>
+     *
+     * <P>
      * This method will be called each time new data is received on
      * the socket and will append it to the input buffer before
      * calling the {@link #decode()} method.
+     * </P>
      *
      * @param buffer the new buffer received
      * @throws Exception if an error occurs while decoding or handling the data
@@ -759,7 +764,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     /**
      * Decode the incoming buffer and handle packets as needed.
      *
-     * @throws Exception
+     * @throws Exception If failed to decode
      */
     protected void decode() throws Exception {
         // Decoding loop
@@ -885,6 +890,8 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
      * string will be returned and the data read will be consumed from the buffer.
      *
      * @param buffer the buffer containing the identification string
+     * @param server {@code true} if it is called by the server session,
+     * {@code false} if by the client session
      * @return the remote identification or {@code null} if more data is needed
      */
     protected String doReadIdentification(Buffer buffer, boolean server) {
@@ -928,8 +935,8 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     /**
      * Create our proposal for SSH negotiation
      *
-     * @param hostKeyTypes the list of supported host key types
-     * @return The proposal {@link Map>
+     * @param hostKeyTypes The comma-separated list of supported host key types
+     * @return The proposal {@link Map}
      */
     protected Map<KexProposalOption, String> createProposal(String hostKeyTypes) {
         Map<KexProposalOption, String> proposal = new EnumMap<>(KexProposalOption.class);
@@ -1497,7 +1504,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
      * Checks whether the session has timed out (both auth and idle timeouts are checked). If the session has
      * timed out, a DISCONNECT message will be sent.
      *
-     * @throws IOException
+     * @throws IOException If failed to check
      */
     protected void checkForTimeouts() throws IOException {
         if (!isClosing()) {
@@ -1521,7 +1528,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     /**
      * Check if timeout has occurred.
      *
-     * @return
+     * @return The {@link TimeoutStatus}
      */
     @Override
     public TimeoutStatus getTimeoutStatus() {
@@ -1531,7 +1538,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     /**
      * What is timeout value in milliseconds for authentication stage
      *
-     * @return
+     * @return The timeout value in milliseconds for authentication stage
      */
     @Override
     public long getAuthTimeout() {
@@ -1541,7 +1548,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     /**
      * What is timeout value in milliseconds for communication
      *
-     * @return
+     * @return The timeout value in milliseconds for communication
      */
     @Override
     public long getIdleTimeout() {
@@ -1552,5 +1559,4 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     public String toString() {
         return getClass().getSimpleName() + "[" + getUsername() + "@" + getIoSession().getRemoteAddress() + "]";
     }
-
 }

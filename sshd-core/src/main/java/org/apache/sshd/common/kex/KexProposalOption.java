@@ -43,7 +43,7 @@ public enum KexProposalOption {
     S2CLANG(Constants.PROPOSAL_LANG_STOC, "languages (server to client)");
 
     /**
-     * A {@link List} of all the options <U>sorted</U> according to {@link #getProposalIndex(){
+     * A {@link List} of all the options <U>sorted</U> according to {@link #getProposalIndex()}
      *
      * @see #BY_PROPOSAL_INDEX
      */

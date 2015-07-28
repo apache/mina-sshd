@@ -21,7 +21,7 @@ package org.apache.sshd.common.session;
 import java.util.EventListener;
 
 /**
- * Represents an interface receiving Session events.
+ * Represents an interface receiving session events.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -34,22 +34,22 @@ public interface SessionListener extends EventListener {
     /**
      * A new session just been created
      *
-     * @param session
+     * @param session The created {@link Session}
      */
     void sessionCreated(Session session);
 
     /**
      * An event has been triggered
      *
-     * @param session
-     * @param event
+     * @param session The referenced {@link Session}
+     * @param event The generated {@link Event}
      */
     void sessionEvent(Session session, Event event);
 
     /**
      * A session has been closed
      *
-     * @param session
+     * @param session The closed {@link Session}
      */
     void sessionClosed(Session session);
 

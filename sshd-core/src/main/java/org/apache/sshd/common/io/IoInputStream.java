@@ -25,6 +25,9 @@ public interface IoInputStream extends Closeable {
 
     /**
      * NOTE: the buffer must not be touched until the returned read future is completed.
+     *
+     * @param buffer the {@link Buffer} to use
+     * @return The {@link IoReadFuture} for the operation
      */
     IoReadFuture read(Buffer buffer);
 

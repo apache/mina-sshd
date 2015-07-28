@@ -39,28 +39,30 @@ public final class LoggingUtils {
      * @param level     The {@link Level} to evaluate
      * @param threshold The threshold {@link Level}
      * @return {@code true} if the evaluated level is above the required
-     * threshold.</BR>
-     * <P><B>Note(s):</B></BR></P>
-     * <P><UL>
-     * <LI>
+     * threshold.
+     * <P>
+     * <B>Note(s):</B>
+     * </P>
+     * <UL>
+     * <LI><P>
      * If either argument is {@code null} then result is {@code false}.
-     * </LI>
-     * <p/>
-     * <LI>
+     * </P></LI>
+     *
+     * <LI><P>
      * If the evaluated level is {@link Level#OFF} then result is {@code false}
      * regardless of the threshold.
-     * </LI>
-     * <p/>
-     * <LI>
+     * </P></LI>
+     *
+     * <LI><P>
      * If the threshold is {@link Level#ALL} and the evaluated level is
      * <U>not</U> {@link Level#OFF} the result is {@code true}.
-     * </LI>
-     * <p/>
-     * <LI>
+     * </P></LI>
+     *
+     * <LI><P>
      * Otherwise, the evaluated level {@link Level#intValue()} must be
      * greater or equal to the threshold.
-     * </LI>
-     * </UL></P>
+     * </P></LI>
+     * </UL>
      */
     public static boolean isLoggable(Level level, Level threshold) {
         if ((level == null) || (threshold == null)) {
@@ -116,7 +118,7 @@ public final class LoggingUtils {
      * @param logger The {@link Logger} instance - ignored if {@code null}
      * @param level  The validate log {@link Level} - ignored if {@code null}
      * @return <P>{@code true} if the level is enabled for the logger. The
-     * mapping of the level to the logger is as follows:</P></BR>
+     * mapping of the level to the logger is as follows:</P>
      * <UL>
      * <LI>{@link Level#OFF} always returns {@code false}</LI>
      * <LI>{@link Level#SEVERE} returns {@link Logger#isErrorEnabled()}</LI>

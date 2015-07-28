@@ -23,11 +23,15 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 /**
+ * <p>
  * Represents a command, shell or subsystem that can be used to send command.
- * <p/>
+ * </p>
+ *
+ * <p>
  * This command have direct streams, meaning those streams will be provided by the ssh server
- * for the shell to use directy. This interface is suitable for implementing commands in java,
+ * for the shell to use directly. This interface is suitable for implementing commands in java,
  * rather than using external processes.  For wrapping such processes or using inverted streams,
+ * </p>
  * see {@link org.apache.sshd.server.shell.InvertedShellWrapper}.
  */
 public interface Command {
@@ -35,28 +39,28 @@ public interface Command {
     /**
      * Set the input stream that can be used by the shell to read input.
      *
-     * @param in
+     * @param in The {@link InputStream}  used by the shell to read input.
      */
     void setInputStream(InputStream in);
 
     /**
      * Set the output stream that can be used by the shell to write its output.
      *
-     * @param out
+     * @param out The {@link OutputStream} used by the shell to write its output
      */
     void setOutputStream(OutputStream out);
 
     /**
      * Set the error stream that can be used by the shell to write its errors.
      *
-     * @param err
+     * @param err The {@link OutputStream} used by the shell to write its errors
      */
     void setErrorStream(OutputStream err);
 
     /**
      * Set the callback that the shell has to call when it is closed.
      *
-     * @param callback
+     * @param callback The {@link ExitCallback} to call when shell is closed
      */
     void setExitCallback(ExitCallback callback);
 
@@ -71,8 +75,8 @@ public interface Command {
      * }
      * </pre>
      *
-     * @param env
-     * @throws java.io.IOException
+     * @param env The {@link Environment}
+     * @throws IOException If failed to start
      */
     void start(Environment env) throws IOException;
 

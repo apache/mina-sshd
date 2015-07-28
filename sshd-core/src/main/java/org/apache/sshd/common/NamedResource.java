@@ -103,6 +103,7 @@ public interface NamedResource {
         /**
          * Remove the resource identified by the name from the list.
          *
+         * @param <R>       The generic resource type
          * @param name      Name of the resource - ignored if {@code null}/empty
          * @param c         The {@link Comparator} to decide whether the {@link NamedResource#getName()}
          *                  matches the <tt>name</tt> parameter
@@ -119,6 +120,7 @@ public interface NamedResource {
         }
 
         /**
+         * @param <R>       The generic resource type
          * @param name      Name of the resource - ignored if {@code null}/empty
          * @param c         The {@link Comparator} to decide whether the {@link NamedResource#getName()}
          *                  matches the <tt>name</tt> parameter

@@ -65,22 +65,22 @@ public class DERParser extends FilterInputStream {
      * encoding up to 4 octets. In BER/DER encoding, length can
      * be encoded in 2 forms:
      * <ul>
-     * <li>
+     * <li><p>
      * Short form - One octet. Bit 8 has value "0" and bits 7-1
      * give the length.
-     * </li>
-     * <p/>
-     * <li>
+     * </p></li>
+     *
+     * <li><p>
      * Long form - Two to 127 octets (only 4 is supported here).
      * Bit 8 of first octet has value "1" and bits 7-1 give the
      * number of additional length octets. Second and following
      * octets give the length, base 256, most significant digit
      * first.
-     * </li>
+     * </p></li>
      * </ul>
      *
      * @return The length as integer
-     * @throws IOException
+     * @throws IOException If invalid format found
      */
     public int readLength() throws IOException {
         int i = read();

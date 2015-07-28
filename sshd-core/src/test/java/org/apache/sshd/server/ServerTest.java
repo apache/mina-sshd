@@ -135,9 +135,9 @@ public class ServerTest extends BaseTestSupport {
                 s.getService(ClientUserAuthServiceOld.class)
                         .auth(new org.apache.sshd.deprecated.UserAuthPassword(s, "ssh-connection", "buggy"))
                 ;
-                res = s.waitFor(ClientSession.CLOSED | ClientSession.WAIT_AUTH, 5000);
+                res = s.waitFor(ClientSession.CLOSED | ClientSession.WAIT_AUTH, TimeUnit.SECONDS.toMillis(5L));
                 if (res == ClientSession.TIMEOUT) {
-                    throw new TimeoutException();
+                    throw new TimeoutException("Client session timeout signalled");
                 }
             }
             assertTrue("Number trials (" + nbTrials + ") below min.=" + MAX_AUTH_REQUESTS, nbTrials > MAX_AUTH_REQUESTS);

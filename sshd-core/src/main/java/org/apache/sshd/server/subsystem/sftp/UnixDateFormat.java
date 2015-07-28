@@ -49,6 +49,10 @@ public final class UnixDateFormat {
 
     /**
      * Get unix style date string.
+     *
+     * @param time The {@link FileTime} to format - ignored if {@code null}
+     * @return The formatted date string
+     * @see #getUnixDate(long)
      */
     public static String getUnixDate(FileTime time) {
         return getUnixDate((time != null) ? time.toMillis() : -1L);

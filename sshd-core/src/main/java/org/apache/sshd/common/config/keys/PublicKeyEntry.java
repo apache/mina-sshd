@@ -37,10 +37,11 @@ import org.apache.sshd.common.util.buffer.BufferUtils;
 
 /**
  * <P>Represents a {@link PublicKey} whose data is formatted according to
- * the <A HREF="http://en.wikibooks.org/wiki/OpenSSH">OpenSSH</A> format:</P></BR>
- * <CODE><PRE>
- * <key-type> <base64-encoded-public-key-data>
- * </CODE></PRE>
+ * the <A HREF="http://en.wikibooks.org/wiki/OpenSSH">OpenSSH</A> format:</P>
+ *
+ * <PRE>
+ * &lt;key-type&gt; &lt;base64-encoded-public-key-data&gt;
+ * </PRE>
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -177,6 +178,7 @@ public class PublicKeyEntry implements Serializable {
     }
 
     /**
+     * @param <E>   The generic entry type
      * @param entry The {@link PublicKeyEntry} whose contents are to be
      *              updated - ignored if {@code null}
      * @param data  Assumed to contain at least {@code key-type base64-data} (anything
@@ -214,7 +216,8 @@ public class PublicKeyEntry implements Serializable {
     /**
      * @param key The {@link PublicKey}
      * @return The {@code OpenSSH} encoded data
-     * @throws IllegalArgumentException
+     * @throws IllegalArgumentException If failed to encode
+     * @see #appendPublicKeyEntry(Appendable, PublicKey)
      */
     public static String toString(PublicKey key) throws IllegalArgumentException {
         try {
@@ -227,6 +230,7 @@ public class PublicKeyEntry implements Serializable {
     /**
      * Encodes a public key data the same way as the {@link #parsePublicKeyEntry(String)} expects it
      *
+     * @param <A> The generic appendable class
      * @param sb  The {@link Appendable} instance to encode the data into
      * @param key The {@link PublicKey}
      * @return The updated appendable instance

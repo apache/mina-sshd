@@ -106,7 +106,7 @@ public abstract class AbstractSftpClientExtension extends AbstractLoggingBean im
 
     /**
      * @param buffer The {@link Buffer}
-     * @param target A target path {@link String} or {@link Handle} or {@code byte[])
+     * @param target A target path {@link String} or {@link Handle} or {@code byte[]}
      *               to be encoded in the buffer
      * @return The updated buffer
      * @throws UnsupportedOperationException If target is not one of the above
@@ -127,7 +127,7 @@ public abstract class AbstractSftpClientExtension extends AbstractLoggingBean im
     }
 
     /**
-     * @param target A target path {@link String} or {@link Handle} or {@code byte[])
+     * @param target A target path {@link String} or {@link Handle} or {@code byte[]}
      *               to be encoded in the buffer
      * @return A {@link Buffer} with the extension name set
      * @see #getCommandBuffer(Object, int)
@@ -137,7 +137,7 @@ public abstract class AbstractSftpClientExtension extends AbstractLoggingBean im
     }
 
     /**
-     * @param target    A target path {@link String} or {@link Handle} or {@code byte[])
+     * @param target    A target path {@link String} or {@link Handle} or {@code byte[]}
      *                  to be encoded in the buffer
      * @param extraSize Extra size - beyond the path/handle to be allocated
      * @return A {@link Buffer} with the extension name set
@@ -198,7 +198,7 @@ public abstract class AbstractSftpClientExtension extends AbstractLoggingBean im
             throw new SshException("Unexpected SFTP packet received: type=" + type + ", id=" + id + ", length=" + length);
         }
     }
-    
+
     protected void throwStatusException(int id, int substatus, String msg, String lang) throws IOException {
         throw new SftpException(substatus, msg);
     }

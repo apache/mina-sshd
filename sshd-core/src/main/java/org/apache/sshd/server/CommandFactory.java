@@ -32,8 +32,8 @@ public interface CommandFactory {
      * If the command is not known, a dummy command should be returned to allow
      * the display output to be sent back to the client.
      *
-     * @param command
-     * @return a non null <code>Command</code>
+     * @param command The command that will be run
+     * @return a non {@code null} {@link Command} instance
      */
     Command createCommand(String command);
 

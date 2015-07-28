@@ -22,8 +22,8 @@ import java.nio.charset.StandardCharsets;
 import java.security.InvalidParameterException;
 
 /**
- * Provides Base64 encoding and decoding as defined by RFC 2045.
- * <p/>
+ * <p>Provides Base64 encoding and decoding as defined by RFC 2045.</p>
+ *
  * <p>This class implements section <cite>6.8. Base64 Content-Transfer-Encoding</cite>
  * from RFC 2045 <cite>Multipurpose Internet Mail Extensions (MIME) Part One:
  * Format of Internet Message Bodies</cite> by Freed and Borenstein.</p>
@@ -32,14 +32,12 @@ import java.security.InvalidParameterException;
  * @author <a href="http://mina.apache.org">Apache MINA Project</a>
  *         TODO replace this class with {@code java.util.Base64} when upgrading to JDK 1.8
  * @see <a href="http://www.ietf.org/rfc/rfc2045.txt">RFC 2045</a>
- * <p/>
- * This class was
  */
 public class Base64 {
 
     /**
-     * Chunk size per RFC 2045 section 6.8.
-     * <p/>
+     * <P>Chunk size per RFC 2045 section 6.8.</P>
+     *
      * <p>The {@value} character limit does not count the trailing CRLF, but counts
      * all other characters, including any equal signs.</p>
      *
@@ -94,7 +92,7 @@ public class Base64 {
      */
     static final byte PAD = (byte) '=';
 
-    // Create arrays to hold the base64 characters and a 
+    // Create arrays to hold the base64 characters and a
     // lookup for base64 chars
     private static byte[] base64Alphabet = new byte[BASELENGTH];
 
@@ -244,8 +242,8 @@ public class Base64 {
             encodedDataLength = numberTriplets * 4;
         }
 
-        // If the output is to be "chunked" into 76 character sections, 
-        // for compliance with RFC 2045 MIME, then it is important to 
+        // If the output is to be "chunked" into 76 character sections,
+        // for compliance with RFC 2045 MIME, then it is important to
         // allow for extra length to account for the separator(s)
         if (isChunked) {
 

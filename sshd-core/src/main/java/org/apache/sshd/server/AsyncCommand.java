@@ -31,21 +31,21 @@ public interface AsyncCommand extends Command {
     /**
      * Set the input stream that can be used by the shell to read input.
      *
-     * @param in
+     * @param in The {@link IoInputStream} used by the shell to read input
      */
     void setIoInputStream(IoInputStream in);
 
     /**
      * Set the output stream that can be used by the shell to write its output.
      *
-     * @param out
+     * @param out The {@link IoOutputStream} used by the shell to write its output
      */
     void setIoOutputStream(IoOutputStream out);
 
     /**
      * Set the error stream that can be used by the shell to write its errors.
      *
-     * @param err
+     * @param err The {@link IoOutputStream} used by the shell to write its errors
      */
     void setIoErrorStream(IoOutputStream err);
 

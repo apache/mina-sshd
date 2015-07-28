@@ -401,11 +401,11 @@ public final class CloseableUtils {
         }
 
         /**
-         * doCloseImmediately is called once and only once
-         * with state == Immediate
-         * <p/>
-         * Overriding methods should always call the base implementation.
-         * It may be called concurrently while preClose() or doCloseGracefully is executing
+         * <P>doCloseImmediately is called once and only once
+         * with state == Immediate</P>
+         *
+         * <P>Overriding methods should always call the base implementation.
+         * It may be called concurrently while preClose() or doCloseGracefully is executing</P>
          */
         protected void doCloseImmediately() {
             closeFuture.setClosed();

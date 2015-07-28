@@ -39,6 +39,8 @@ public interface AuthFuture extends SshFuture<AuthFuture> {
     /**
      * Wait and verify that the authentication succeeded within the specified timeout.
      *
+     * @param timeout   The number of time units
+     * @param unit      The {@link TimeUnit} for the timeout
      * @throws IOException if the authentication failed for any reason
      */
     void verify(long timeout, TimeUnit unit) throws IOException;
@@ -46,6 +48,7 @@ public interface AuthFuture extends SshFuture<AuthFuture> {
     /**
      * Wait and verify that the authentication succeeded within the specified timeout.
      *
+     * @param timeoutMillis Timeout in milliseconds
      * @throws IOException if the authentication failed for any reason
      */
     void verify(long timeoutMillis) throws IOException;
@@ -53,23 +56,23 @@ public interface AuthFuture extends SshFuture<AuthFuture> {
     /**
      * Returns the cause of the connection failure.
      *
-     * @return <tt>null</tt> if the connect operation is not finished yet,
+     * @return <code>null</code> if the connect operation is not finished yet,
      * or if the connection attempt is successful.
      */
     Throwable getException();
 
     /**
-     * Returns <tt>true</tt> if the authentication operation is finished successfully.
+     * @return <code>true</code> if the authentication operation is finished successfully.
      */
     boolean isSuccess();
 
     /**
-     * Returns <tt>false</tt> if the authentication operation failed.
+     * @return <code>false</code> if the authentication operation failed.
      */
     boolean isFailure();
 
     /**
-     * Returns {@code true} if the connect operation has been canceled by
+     * @return {@code true} if the connect operation has been canceled by
      * {@link #cancel()} method.
      */
     boolean isCanceled();
@@ -78,6 +81,8 @@ public interface AuthFuture extends SshFuture<AuthFuture> {
      * Notifies that the session has been authenticated.
      * This method is invoked by SSHD internally.  Please do not
      * call this method directly.
+     *
+     * @param authed Authentication success state
      */
     void setAuthed(boolean authed);
 
@@ -85,6 +90,8 @@ public interface AuthFuture extends SshFuture<AuthFuture> {
      * Sets the exception caught due to connection failure and notifies all
      * threads waiting for this future.  This method is invoked by SSHD
      * internally.  Please do not call this method directly.
+     *
+     * @param exception The caught {@link Throwable}
      */
     void setException(Throwable exception);
 

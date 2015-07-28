@@ -66,8 +66,11 @@ import org.apache.sshd.server.shell.ProcessShellFactory;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 
 /**
+ * <p>
  * The SshServer class is the main entry point for the server side of the SSH protocol.
- * <p/>
+ * </p>
+ *
+ * <p>
  * The SshServer has to be configured before being started.  Such configuration can be
  * done either using a dependency injection mechanism (such as the Spring framework)
  * or programmatically. Basic setup is usually done using the {@link #setUpDefaultServer()}
@@ -75,10 +78,13 @@ import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
  * Besides this basic setup, a few things have to be manually configured such as the
  * port number, {@link Factory}, the {@link org.apache.sshd.common.keyprovider.KeyPairProvider}
  * and the {@link PasswordAuthenticator}.
- * <p/>
+ * </p>
+ *
+ * <p>
  * Some properties can also be configured using the {@link #setProperties(java.util.Map)}
  * method.
- * <p/>
+ * </p>
+ *
  * Once the SshServer instance has been configured, it can be started using the
  * {@link #start()} method and stopped using the {@link #stop()} method.
  *
@@ -263,7 +269,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     /**
      * Start the SSH server and accept incoming exceptions on the configured port.
      *
-     * @throws IOException
+     * @throws IOException If failed to start
      */
     public void start() throws IOException {
         checkConfig();
@@ -307,6 +313,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
 
     /**
      * Stop the SSH server.  This method will block until all resources are actually disposed.
+     * @throws IOException if stopping failed somehow
      */
     public void stop() throws IOException {
         stop(false);
@@ -351,6 +358,8 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
 
     /**
      * Obtain the list of active sessions.
+     *
+     * @return A {@link List} of the currently active session
      */
     public List<AbstractSession> getActiveSessions() {
         List<AbstractSession> sessions = new ArrayList<>();

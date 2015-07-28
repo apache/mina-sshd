@@ -164,25 +164,25 @@ public interface FactoryManager {
      * client and is not supposed to be changed at runtime (changes are not
      * bound to have any effect on a running client or server), though it may
      * affect the creation of sessions later as these values are usually not
-     * cached.</P></BR>
-     * <B>Note:</B> the <U>type</U> of the mapped property should match the
+     * cached.</P>
+     *
+     * <P><B>Note:</B> the <U>type</U> of the mapped property should match the
      * expected configuration value type - {@code Long, Integer, Boolean,
-     * String, etc...). If it doesn't, the {@code toString()} result of the
+     * String}, etc.... If it doesn't, the {@code toString()} result of the
      * mapped value is used to convert it to the required type. E.g., if
      * the mapped value is the <U>string</U> &quot;1234&quot; and the expected
      * value is a {@code long} then it will be parsed into one. Also, if
      * the mapped value is an {@code Integer} but a {@code long} is expected,
-     * then it will be converted into one.
+     * then it will be converted into one.</P>
      *
      * @return a valid <code>Map</code> containing configuration values, never {@code null}
      */
     Map<String, Object> getProperties();
 
     /**
-     * An upper case string identifying the version of the
-     * software used on client or server side.
-     * This version includes the name of the software and usually
-     * looks like: <code>SSHD-1.0</code>
+     * An upper case string identifying the version of the software used on
+     * client or server side. This version includes the name of the software
+     * and usually looks like this: <code>SSHD-1.0</code>
      *
      * @return the version of the software
      */

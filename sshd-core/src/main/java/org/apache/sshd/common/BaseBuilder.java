@@ -66,8 +66,7 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
 
     /**
      * The default {@link BuiltinCiphers} setup in order of preference
-     * as specified by <A HREF="https://www.freebsd.org/cgi/man.cgi?query=ssh_config&sektion=5">
-     * ssh_config(5)</A>
+     * as specified by <A HREF="https://www.freebsd.org/cgi/man.cgi?query=ssh_config&sektion=5">ssh_config(5)</A>
      */
     public static final List<BuiltinCiphers> DEFAULT_CIPHERS_PREFERENCE =
         Collections.unmodifiableList(Arrays.asList(
@@ -120,7 +119,7 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
 
     /**
      * Preferred {@link BuiltinSignatures} according to
-     * <A HREF="https://www.freebsd.org/cgi/man.cgi?query=ssh_config&sektion=5>sshd_config(5)</A>
+     * <A HREF="https://www.freebsd.org/cgi/man.cgi?query=ssh_config&sektion=5">sshd_config(5)</A>
      * {@code HostKeyAlgorithms} recommendation
      */
     public static final List<BuiltinSignatures> DEFAULT_SIGNATURE_PREFERENCE =

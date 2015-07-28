@@ -242,14 +242,14 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     }
 
     @Override
-    public OpenFuture open(int recipient, int rwsize, int rmpsize, Buffer buffer) {
-        throw new IllegalStateException();
+    public OpenFuture open(int recipient, int rwSize, int packetSize, Buffer buffer) {
+        throw new UnsupportedOperationException("open(" + recipient + "," + rwSize + "," + packetSize + ") N/A");
     }
 
     @Override
-    public void handleOpenSuccess(int recipient, int rwsize, int rmpsize, Buffer buffer) {
+    public void handleOpenSuccess(int recipient, int rwSize, int packetSize, Buffer buffer) {
         this.recipient = recipient;
-        this.remoteWindow.init(rwsize, rmpsize, session.getFactoryManager().getProperties());
+        this.remoteWindow.init(rwSize, packetSize, session.getFactoryManager().getProperties());
         try {
             doOpen();
             this.opened.set(true);

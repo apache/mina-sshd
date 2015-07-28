@@ -39,34 +39,36 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
  * open. If they are invoked afterwards then they have no effect (silently
  * ignored).</P>
  * <P>A typical code snippet would be:</P>
- * <CODE><PRE>
- * client = SshClient.setUpDefaultClient();
- * client.start();
- * <p/>
- * try(ClientSession s = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
- * s.addPasswordIdentity(getCurrentTestName());
- * s.auth().verify(5L, TimeUnit.SECONDS);
- * <p/>
- * try(ChannelExec shell = s.createExecChannel("my super duper command")) {
- * shell.setEnv("var1", "val1");
- * shell.setEnv("var2", "val2");
- * ...etc...
- * shell.setPtyType(...);
- * shell.setPtyLines(...);
- * ...etc...
- * <p/>
- * shell.open().verify(5L, TimeUnit.SECONDS);
- * shell.waitFor(ClientChannel.CLOSED, TimeUnit.SECONDS.toMillis(17L));    // can use zero for infinite wait
- * <p/>
- * Integer status = shell.getExitStatus();
- * if (status.intValue() != 0) {
- * ...error...
+ * <PRE>
+ * try(client = SshClient.setUpDefaultClient()) {
+ *      client.start();
+ *
+ *      try(ClientSession s = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+ *          s.addPasswordIdentity(getCurrentTestName());
+ *          s.auth().verify(5L, TimeUnit.SECONDS);
+ *
+ *          try(ChannelExec shell = s.createExecChannel("my super duper command")) {
+ *              shell.setEnv("var1", "val1");
+ *              shell.setEnv("var2", "val2");
+ *              ...etc...
+ *
+ *              shell.setPtyType(...);
+ *              shell.setPtyLines(...);
+ *              ...etc...
+ *
+ *              shell.open().verify(5L, TimeUnit.SECONDS);
+ *              shell.waitFor(ClientChannel.CLOSED, TimeUnit.SECONDS.toMillis(17L));    // can use zero for infinite wait
+ *
+ *              Integer status = shell.getExitStatus();
+ *              if (status.intValue() != 0) {
+ *                  ...error...
+ *              }
+ *          }
+ *      } finally {
+ *          client.stop();
+ *      }
  * }
- * }
- * } finally {
- * client.stop();
- * }
- * </PRE></CODE>
+ * </PRE>
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */

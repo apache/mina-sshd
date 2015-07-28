@@ -24,7 +24,6 @@ import org.apache.sshd.common.session.ConnectionService;
  * The default {@link TcpipForwarderFactory} implementation.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see {@link DefaultTcpipForwarder}
  */
 public class DefaultTcpipForwarderFactory implements TcpipForwarderFactory {
     public static final DefaultTcpipForwarderFactory INSTANCE = new DefaultTcpipForwarderFactory();

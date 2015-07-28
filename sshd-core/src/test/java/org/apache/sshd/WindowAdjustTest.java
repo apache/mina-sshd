@@ -54,10 +54,12 @@ import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
 /**
+ * <p>
  * This test simulates heavy traffic coming from the server towards the client making sure the traffic does not get stuck.
  * Especially if the server receives window adjust message while it tries to transfer all the data.
- * <p/>
- * AsyncInPendingWrapper in this test serves as a handler for WritePendingException, which can occur when sending too many messages one after another.
+ * </p>
+ * {@link AsyncInPendingWrapper} in this test serves as a handler for
+ * {@link WritePendingException}, which can occur when sending too many messages one after another.
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class WindowAdjustTest {

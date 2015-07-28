@@ -80,7 +80,7 @@ public class ScpCommandFactoryTest extends BaseTestSupport {
      * Make sure the builder returns new instances on every call to
      * {@link ScpCommandFactory.Builder#build()} method
      * </LI>
-     * <p/>
+     *
      * <LI>
      * Make sure values are preserved between successive invocations
      * of the {@link ScpCommandFactory.Builder#build()} method

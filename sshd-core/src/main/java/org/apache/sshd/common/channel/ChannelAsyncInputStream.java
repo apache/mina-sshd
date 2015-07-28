@@ -58,7 +58,7 @@ public class ChannelAsyncInputStream extends CloseableUtils.AbstractCloseable im
         } else {
             synchronized (buffer) {
                 if (pending != null) {
-                    throw new ReadPendingException();
+                    throw new ReadPendingException("Previous pending read not handled");
                 }
                 pending = future;
             }

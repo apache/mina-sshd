@@ -190,8 +190,9 @@ public final class BufferUtils {
     /**
      * Writes a 32-bit value in network order (i.e., MSB 1st)
      *
-     * @param value The 32-bit value
-     * @param buf   A work buffer to use - must have enough space to contain 4 bytes
+     * @param output The {@link OutputStream} to write the value
+     * @param value  The 32-bit value
+     * @param buf    A work buffer to use - must have enough space to contain 4 bytes
      * @throws IOException If failed to write the value or work buffer to small
      * @see #writeInt(OutputStream, int, byte[], int, int)
      */
@@ -202,10 +203,11 @@ public final class BufferUtils {
     /**
      * Writes a 32-bit value in network order (i.e., MSB 1st)
      *
-     * @param value The 32-bit value
-     * @param buf   A work buffer to use - must have enough space to contain 4 bytes
-     * @param off   The offset to write the value
-     * @param len   The available space
+     * @param output The {@link OutputStream} to write the value
+     * @param value  The 32-bit value
+     * @param buf    A work buffer to use - must have enough space to contain 4 bytes
+     * @param off    The offset to write the value
+     * @param len    The available space
      * @throws IOException If failed to write the value or work buffer to small
      * @see #writeUInt(OutputStream, long, byte[], int, int)
      */
@@ -216,8 +218,9 @@ public final class BufferUtils {
     /**
      * Writes a 32-bit value in network order (i.e., MSB 1st)
      *
-     * @param value The 32-bit value
-     * @param buf   A work buffer to use - must have enough space to contain 4 bytes
+     * @param output The {@link OutputStream} to write the value
+     * @param value  The 32-bit value
+     * @param buf    A work buffer to use - must have enough space to contain 4 bytes
      * @throws IOException If failed to write the value or work buffer to small
      * @see #writeUInt(OutputStream, long, byte[], int, int)
      */
@@ -228,10 +231,11 @@ public final class BufferUtils {
     /**
      * Writes a 32-bit value in network order (i.e., MSB 1st)
      *
-     * @param value The 32-bit value
-     * @param buf   A work buffer to use - must have enough space to contain 4 bytes
-     * @param off   The offset to write the value
-     * @param len   The available space
+     * @param output The {@link OutputStream} to write the value
+     * @param value  The 32-bit value
+     * @param buf    A work buffer to use - must have enough space to contain 4 bytes
+     * @param off    The offset to write the value
+     * @param len    The available space
      * @throws IOException If failed to write the value or work buffer to small
      * @see #putUInt(long, byte[], int, int)
      */
@@ -339,7 +343,7 @@ public final class BufferUtils {
     }
 
     /**
-     * Updates a 32-bit &quot;placeholder&quot location for data length - moves
+     * Updates a 32-bit &quot;placeholder&quot; location for data length - moves
      * the write position to the specified placeholder position, updates the length
      * value and then moves the write position it back to its original value.
      *
@@ -359,6 +363,7 @@ public final class BufferUtils {
     /**
      * Invokes {@link Buffer#clear()}
      *
+     * @param <B>    The generic buffer type
      * @param buffer A {@link Buffer} instance - ignored if {@code null}
      * @return The same as the input instance
      */

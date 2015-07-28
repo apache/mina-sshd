@@ -224,7 +224,7 @@ public enum BuiltinSignatures implements SignatureFactory {
      *             if {@code null}/empty
      * @return A {@link ParseResult} of all the {@link NamedFactory} whose
      * name appears in the string and represent a built-in signature. Any
-     * unknown name is <U>ignored</I>. The order of the returned result
+     * unknown name is <U>ignored</U>. The order of the returned result
      * is the same as the original order - bar the unknown signatures.
      * <B>Note:</B> it is up to caller to ensure that the list does not
      * contain duplicates

@@ -50,7 +50,8 @@ public interface Session extends Closeable {
     /**
      * Returns the value of the user-defined attribute of this session.
      *
-     * @param key the key of the attribute; must not be null.
+     * @param <T> The generic attribute type
+     * @param key The key of the attribute; must not be {@code null}.
      * @return <tt>null</tt> if there is no attribute with the specified key
      */
     <T> T getAttribute(AttributeKey<T> key);
@@ -58,9 +59,11 @@ public interface Session extends Closeable {
     /**
      * Sets a user-defined attribute.
      *
-     * @param key   the key of the attribute; must not be null.
-     * @param value the value of the attribute; must not be null.
-     * @return The old value of the attribute.  <tt>null</tt> if it is new.
+     * @param <T>   The generic attribute type
+     * @param <E>   The generic value type
+     * @param key   The key of the attribute; must not be {@code null}.
+     * @param value The value of the attribute; must not be {@code null}.
+     * @return The old value of the attribute.  {@code null} if it is new.
      */
     <T, E extends T> T setAttribute(AttributeKey<T> key, E value);
 
@@ -193,6 +196,9 @@ public interface Session extends Closeable {
 
     /**
      * Initiate a new key exchange.
+     *
+     * @return An {@link SshFuture} for awaiting the completion of the exchange
+     * @throws IOException If failed to negotiate keys
      */
     @SuppressWarnings("rawtypes")
     SshFuture reExchangeKeys() throws IOException;
@@ -202,21 +208,26 @@ public interface Session extends Closeable {
      * If the service is not of the specified class,
      * an IllegalStateException will be thrown.
      *
-     * @throws java.lang.IllegalStateException
+     * @param <T>   The generic service type
+     * @param clazz The service class
+     * @return The service instance
+     * @throws IllegalStateException If failed to find a matching service
      */
     <T extends Service> T getService(Class<T> clazz);
 
     /**
-     * Returns the IoSession associated to this ssh session
+     * @return the {@link IoSession} associated to this session
      */
     IoSession getIoSession();
 
     /**
+     * <P>
      * Type safe key for storage within the user attributes of {@link org.apache.sshd.common.session.AbstractSession}.
      * Typically it is used as a static variable that is shared between the producer
      * and the consumer. To further restrict access the setting or getting it from
      * the Session you can add static get and set methods, e.g:
-     * <p/>
+     * </P>
+     *
      * <pre>
      * private static final AttributeKey&lt;MyValue&gt; MY_KEY = new AttributeKey&lt;MyValue&gt;();
      *

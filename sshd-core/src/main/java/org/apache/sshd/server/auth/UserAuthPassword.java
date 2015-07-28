@@ -38,7 +38,7 @@ public class UserAuthPassword extends AbstractUserAuth {
     @Override
     public Boolean doAuth(Buffer buffer, boolean init) throws Exception {
         if (!init) {
-            throw new IllegalStateException();
+            throw new IllegalStateException("Incomplete initialization");
         }
         boolean newPassword = buffer.getBoolean();
         if (newPassword) {

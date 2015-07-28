@@ -27,11 +27,15 @@ import org.apache.tomcat.jni.Pool;
 
 
 /**
+ * <p>
  * Internal singleton used for initializing correctly the APR native library
  * and the associated root memory pool.
- * <p/>
+ * </p>
+ *
+ * <p>
  * It'll finalize nicely the native resources (libraries and memory pools).
- * <p/>
+ * </p>
+ *
  * Each memory pool used in the APR transport module needs to be children of the
  * root pool {@link AprLibrary#getRootPool()}.
  *

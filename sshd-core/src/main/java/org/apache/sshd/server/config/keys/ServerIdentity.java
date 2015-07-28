@@ -71,6 +71,7 @@ public final class ServerIdentity {
     /**
      * Sets the server's {@link KeyPairProvider} with the loaded identities - if any
      *
+     * @param <S>           The generic server type
      * @param server        The {@link SshServer} to configure
      * @param props         The {@link Properties} holding the server's configuration - ignored
      *                      if {@code null}/empty
@@ -131,7 +132,7 @@ public final class ServerIdentity {
      *                if {@code null}/empty
      * @param options The {@link LinkOption}s to use when checking files existence
      * @return A {@link Map} of the found identities where key=the identity type
-     * (case <U>insensitive</I>) and value=the {@link Path} of the file holding
+     * (case <U>insensitive</U>) and value=the {@link Path} of the file holding
      * the specific type key
      * @throws IOException If failed to access the file system
      * @see #getIdentityType(String)

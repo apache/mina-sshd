@@ -37,8 +37,8 @@ public interface InvertedShell {
      * Starts the shell and will make the streams available for
      * the ssh server to retrieve and use.
      *
-     * @param env
-     * @throws IOException
+     * @param env The environment
+     * @throws IOException if failed to start
      */
     void start(Map<String, String> env) throws IOException;
 
@@ -46,28 +46,24 @@ public interface InvertedShell {
      * Returns the output stream used to feed the shell.
      * This method is called after the shell has been started.
      *
-     * @return
+     * @return The {@link OutputStream} used to feed the shell
      */
     OutputStream getInputStream();
 
     /**
-     * Return an InputStream representing the output stream of the shell.
-     *
-     * @return
+     * @return The {@link InputStream} representing the output stream of the shell
      */
     InputStream getOutputStream();
 
     /**
-     * Return an InputStream representing the error stream of the shell.
-     *
-     * @return
+     * @return The {@link InputStream} representing the error stream of the shell
      */
     InputStream getErrorStream();
 
     /**
      * Check if the underlying shell is still alive
      *
-     * @return
+     * @return {@code true} if alive
      */
     boolean isAlive();
 

@@ -52,7 +52,7 @@ public class ChannelAsyncOutputStream extends CloseableUtils.AbstractCloseable i
             future.setValue(new IOException("Closed"));
         } else {
             if (!pendingWrite.compareAndSet(null, future)) {
-                throw new WritePendingException();
+                throw new WritePendingException("No write pending future");
             }
             doWriteIfPossible(false);
         }

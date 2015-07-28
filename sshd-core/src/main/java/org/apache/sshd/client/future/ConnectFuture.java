@@ -31,28 +31,43 @@ import org.apache.sshd.common.future.SshFuture;
  */
 public interface ConnectFuture extends SshFuture<ConnectFuture> {
 
+    /**
+     * @return The referenced {@link ClientSession}
+     */
     ClientSession getSession();
 
-    // wait and verify that connection succeeded within specified timeout
+    /**
+     * Wait and verify that connection succeeded within specified timeout
+     *
+     * @param count The number of time units to wait
+     * @param unit  The {@link TimeUnit} for waiting
+     * @return The {@link ConnectFuture}
+     * @throws IOException If failed to verify the request on time
+     */
     ConnectFuture verify(long count, TimeUnit unit) throws IOException;
 
+    /**
+     * @param timeout The wait timeout in milliseconds
+     * @return The {@link ConnectFuture}
+     * @throws IOException If failed to verify the request on time
+     */
     ConnectFuture verify(long timeout) throws IOException;
 
     /**
      * Returns the cause of the connection failure.
      *
-     * @return <tt>null</tt> if the connect operation is not finished yet,
+     * @return <code>null</code> if the connect operation is not finished yet,
      * or if the connection attempt is successful.
      */
     Throwable getException();
 
     /**
-     * Returns <tt>true</tt> if the connect operation is finished successfully.
+     * @return <code>true</code> if the connect operation is finished successfully.
      */
     boolean isConnected();
 
     /**
-     * Returns {@code true} if the connect operation has been canceled by
+     * @return {@code true} if the connect operation has been canceled by
      * {@link #cancel()} method.
      */
     boolean isCanceled();
@@ -61,6 +76,8 @@ public interface ConnectFuture extends SshFuture<ConnectFuture> {
      * Sets the newly connected session and notifies all threads waiting for
      * this future.  This method is invoked by SSHD internally.  Please do not
      * call this method directly.
+     *
+     * @param session The {@link ClientSession}
      */
     void setSession(ClientSession session);
 
@@ -68,6 +85,8 @@ public interface ConnectFuture extends SshFuture<ConnectFuture> {
      * Sets the exception caught due to connection failure and notifies all
      * threads waiting for this future.  This method is invoked by SSHD
      * internally.  Please do not call this method directly.
+     *
+     * @param exception The caught {@link Throwable}
      */
     void setException(Throwable exception);
 

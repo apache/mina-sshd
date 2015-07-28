@@ -38,18 +38,27 @@ public final class EventListenerUtils {
      * interface implementation. <b>Note:</b> a listener interface is one whose
      * invoked methods return <u>only</u> {@code void}.
      *
+     * @param <T>          Generic listener type
      * @param listenerType The expected listener <u>interface</u>
-     * @param listeners    An {@link Iterable} container of listeners to be invoked.</P>
+     * @param listeners    An {@link Iterable} container of listeners to be invoked.
+     *                     <p>
      *                     <b>Note(s):</b>
+     *                     </p>
      *                     <ul>
-     *                     <li>The invocation order is same as the {@link Iterable} container</li>
-     *                     <p/>
-     *                     <li>If any of the invoked listener methods throws an exception, the
+     *                     <li><p>
+     *                     The invocation order is same as the {@link Iterable} container
+     *                     </p></li>
+     *
+     *                     <li><p>
+     *                     If any of the invoked listener methods throws an exception, the
      *                     rest of the listener are <u>not</u> invoked and the exception is
-     *                     propagated to the caller</li>
-     *                     <p/>
-     *                     <li>It is up to the <u>caller</u> to ensure that the container does
-     *                     not change while the proxy is invoked</li>
+     *                     propagated to the caller
+     *                     </p></li>
+     *
+     *                     <li><p>
+     *                     It is up to the <u>caller</u> to ensure that the container does
+     *                     not change while the proxy is invoked
+     *                     </p></li>
      *                     </ul>
      * @return A proxy wrapper implementing the same interface, but delegating
      * the calls to the container
@@ -64,19 +73,28 @@ public final class EventListenerUtils {
      * interface implementation. <b>Note:</b> a listener interface is one whose
      * invoked methods return <u>only</u> {@code void}.
      *
+     * @param <T>          Generic listener type
      * @param listenerType The expected listener <u>interface</u>
      * @param loader       The {@link ClassLoader} to use for the proxy
-     * @param listeners    An {@link Iterable} container of listeners to be invoked.</P>
+     * @param listeners    An {@link Iterable} container of listeners to be invoked.
+     *                     <p>
      *                     <b>Note(s):</b>
+     *                     </p>
      *                     <ul>
-     *                     <li>The invocation order is same as the {@link Iterable} container</li>
-     *                     <p/>
-     *                     <li>If any of the invoked listener methods throws an exception, the
+     *                     <li><p>
+     *                     The invocation order is same as the {@link Iterable} container
+     *                     </p></li>
+     *
+     *                     <li><p>
+     *                     If any of the invoked listener methods throws an exception, the
      *                     rest of the listener are <u>not</u> invoked and the exception is
-     *                     propagated to the caller</li>
-     *                     <p/>
-     *                     <li>It is up to the <u>caller</u> to ensure that the container does
-     *                     not change while the proxy is invoked</li>
+     *                     propagated to the caller
+     *                     </p></li>
+     *
+     *                     <li><p>
+     *                     It is up to the <u>caller</u> to ensure that the container does
+     *                     not change while the proxy is invoked
+     *                     </p></li>
      *                     </ul>
      * @return A proxy wrapper implementing the same interface, but delegating
      * the calls to the container

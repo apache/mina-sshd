@@ -40,22 +40,28 @@ import org.apache.sshd.common.scp.ScpTransferEventListener;
 import org.apache.sshd.common.session.Session;
 
 /**
- * An authenticated session to a given SSH server
- * <p/>
+ * <P>An authenticated session to a given SSH server</P>
+ *
+ * <P>
  * A client session is established using the {@link org.apache.sshd.client.SshClient}.
  * Once the session has been created, the user has to authenticate
  * using either {@link #addPasswordIdentity(String)} or
  * {@link #addPublicKeyIdentity(java.security.KeyPair)} followed by
  * a call to {$link #auth()}.
- * <p/>
+ * </P>
+ *
+ * <P>
  * From this session, channels can be created using the
  * {@link #createChannel(String)} method.  Multiple channels can
  * be created on a given session concurrently.
- * <p/>
+ * </P>
+ *
+ * <P>
  * When using the client in an interactive mode, the
  * {@link #waitFor(int, long)} method can be used to listen to specific
  * events such as the session being established, authenticated or closed.
- * <p/>
+ * </P>
+ *
  * When a given session is no longer used, it must be closed using the
  * {@link #close(boolean)} method.
  *
@@ -105,7 +111,7 @@ public interface ClientSession extends Session {
      * {@link #addPasswordIdentity(String)} or {@link #addPublicKeyIdentity(java.security.KeyPair)}.
      *
      * @return the authentication future
-     * @throws IOException
+     * @throws IOException if failed to generate the future
      * @see #addPasswordIdentity(String)
      * @see #addPublicKeyIdentity(java.security.KeyPair)
      */
@@ -114,31 +120,56 @@ public interface ClientSession extends Session {
     /**
      * Create a channel of the given type.
      * Same as calling <code>createChannel(type, null)</code>.
+     *
+     * @param type The channel type
+     * @return The created {@link ClientChannel}
+     * @throws IOException If failed to create the requested channel
      */
     ClientChannel createChannel(String type) throws IOException;
 
     /**
-     * Create a channel of the given type and subtype.
+     * Create a channel of the given type and sub-type.
+     *
+     * @param type      The channel type
+     * @param subType   The channel sub-type
+     * @return The created {@link ClientChannel}
+     * @throws IOException If failed to create the requested channel
      */
     ClientChannel createChannel(String type, String subType) throws IOException;
 
     /**
      * Create a channel to start a shell.
+     *
+     * @return The created {@link ChannelShell}
+     * @throws IOException If failed to create the requested channel
      */
     ChannelShell createShellChannel() throws IOException;
 
     /**
      * Create a channel to execute a command.
+     *
+     * @param command The command to execute
+     * @return The created {@link ChannelExec}
+     * @throws IOException If failed to create the requested channel
      */
     ChannelExec createExecChannel(String command) throws IOException;
 
     /**
      * Create a subsystem channel.
+     *
+     * @param subsystem The subsystem name
+     * @return The created {@link ChannelSubsystem}
+     * @throws IOException If failed to create the requested channel
      */
     ChannelSubsystem createSubsystemChannel(String subsystem) throws IOException;
 
     /**
      * Create a direct tcp-ip channel which can be used to stream data to a remote port from the server.
+     *
+     * @param local  The local address
+     * @param remote The remote address
+     * @return The created {@link ChannelDirectTcpip}
+     * @throws IOException If failed to create the requested channel
      */
     ChannelDirectTcpip createDirectTcpipChannel(SshdSocketAddress local, SshdSocketAddress remote) throws IOException;
 
@@ -204,18 +235,27 @@ public interface ClientSession extends Session {
 
     /**
      * Start forwarding the given local address on the client to the given address on the server.
+     *
+     * @param local  The local address
+     * @param remote The remote address
+     * @return The bound {@link SshdSocketAddress}
+     * @throws IOException If failed to create the requested binding
      */
     SshdSocketAddress startLocalPortForwarding(SshdSocketAddress local, SshdSocketAddress remote) throws IOException;
 
     /**
      * Stop forwarding the given local address.
+     *
+     * @param local  The local address
+     * @throws IOException If failed to cancel the requested binding
      */
     void stopLocalPortForwarding(SshdSocketAddress local) throws IOException;
 
     /**
+     * <P>
      * Start forwarding tcpip from the given address on the server to the
      * given address on the client.
-     * <p/>
+     * </P>
      * The remote host name is the address to bind to on the server:
      * <ul>
      * <li>"" means that connections are to be accepted on all protocol families
@@ -227,38 +267,54 @@ public interface ClientSession extends Session {
      * <li>"127.0.0.1" and "::1" indicate listening on the loopback interfaces for
      * IPv4 and IPv6 respectively</li>
      * </ul>
+     *
+     * @param local  The local address
+     * @param remote The remote address
+     * @return The bound {@link SshdSocketAddress}
+     * @throws IOException If failed to create the requested binding
      */
     SshdSocketAddress startRemotePortForwarding(SshdSocketAddress remote, SshdSocketAddress local) throws IOException;
 
     /**
      * Stop forwarding of the given remote address.
+     *
+     * @param remote The remote address
+     * @throws IOException If failed to cancel the requested binding
      */
     void stopRemotePortForwarding(SshdSocketAddress remote) throws IOException;
 
     /**
      * Start dynamic local port forwarding using a SOCKS proxy.
      *
-     * @param local
-     * @return
-     * @throws IOException
+     * @param local The local address
+     * @return The bound {@link SshdSocketAddress}
+     * @throws IOException If failed to create the requested binding
      */
     SshdSocketAddress startDynamicPortForwarding(SshdSocketAddress local) throws IOException;
 
     /**
      * Stop a previously started dynamic port forwarding.
      *
-     * @param local
-     * @throws IOException
+     * @param local The local address
+     * @throws IOException If failed to cancel the requested binding
      */
     void stopDynamicPortForwarding(SshdSocketAddress local) throws IOException;
 
     /**
      * Wait for a specific state.
+     *
+     * @param mask    The request mask
+     * @param timeout Wait time in milliseconds - non-positive means forever
+     * @return The actual state that was detected either due to the mask
+     * yielding non-zero state or due to timeout (in which case the {@link #TIMEOUT}
+     * bit is set)
      */
     int waitFor(int mask, long timeout);
 
     /**
      * Access to the metadata.
+     *
+     * @return The metadata {@link Map}
      */
     Map<Object, Object> getMetadataMap();
 
@@ -269,12 +325,14 @@ public interface ClientSession extends Session {
     ClientFactoryManager getFactoryManager();
 
     /**
-     * Switch to a none cipher for performance.
-     * <p/>
+     * <P>Switch to a none cipher for performance.</P>
+     *
+     * <P>
      * This should be done after the authentication phase has been performed.
      * After such a switch, interactive channels are not allowed anymore.
      * Both client and server must have been configured to support the none cipher.
      * If that's not the case, the returned future will be set with an exception.
+     * </P>
      *
      * @return an {@link SshFuture} that can be used to wait for the exchange
      * to be finished

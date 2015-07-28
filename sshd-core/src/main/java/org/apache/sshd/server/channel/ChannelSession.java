@@ -524,6 +524,8 @@ public class ChannelSession extends AbstractServerChannel {
      * will no longer be invoked. If you call this method from {@link Command#start(Environment)},
      * the input stream you received in {@link Command#setInputStream(java.io.InputStream)} will
      * not read any data.
+     *
+     * @param receiver The {@link ChannelDataReceiver} instance
      */
     public void setDataReceiver(ChannelDataReceiver receiver) {
         this.receiver = receiver;

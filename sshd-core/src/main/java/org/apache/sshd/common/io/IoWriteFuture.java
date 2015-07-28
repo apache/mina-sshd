@@ -36,12 +36,12 @@ public interface IoWriteFuture extends SshFuture<IoWriteFuture> {
     void verify(long timeout) throws IOException;
 
     /**
-     * Returns <tt>true</tt> if the write operation is finished successfully.
+     * @return <tt>true</tt> if the write operation is finished successfully.
      */
     boolean isWritten();
 
     /**
-     * Returns the cause of the write failure if and only if the write
+     * @return the cause of the write failure if and only if the write
      * operation has failed due to an {@link Exception}.  Otherwise,
      * <tt>null</tt> is returned.
      */

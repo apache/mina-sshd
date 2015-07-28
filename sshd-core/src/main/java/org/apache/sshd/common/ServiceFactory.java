@@ -41,6 +41,7 @@ public interface ServiceFactory extends NamedResource {
          *
          * @param factories list of available factories
          * @param name      the factory name to use
+         * @param session   the referenced {@link Session}
          * @return a newly created object or {@code null} if the factory is not in the list
          * @throws IOException if session creation failed
          * @see ServiceFactory#create(Session)

@@ -24,7 +24,10 @@ import org.apache.sshd.common.util.buffer.Buffer;
 public interface IoOutputStream extends Closeable {
 
     /**
-     * NOTE: the buffer must not be touched until the returned write future is completed.
+     * <B>NOTE:</B> the buffer must not be touched until the returned write future is completed.
+     *
+     * @param buffer the {@link Buffer} to use
+     * @return The {@link IoWriteFuture} for the operation
      */
     IoWriteFuture write(Buffer buffer);
 

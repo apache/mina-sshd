@@ -41,7 +41,7 @@ import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see <A HREF="https://github.com/openssh/openssh-portable/blob/master/PROTOCOL">OpenSSH</A> section 3.4
+ * @see <A HREF="https://github.com/openssh/openssh-portable/blob/master/PROTOCOL">OpenSSH -  section 3.4</A>
  */
 public final class ParserUtils {
     public static final Collection<ExtensionParser<?>> BUILT_IN_PARSERS =

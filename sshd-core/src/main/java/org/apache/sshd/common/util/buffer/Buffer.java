@@ -186,8 +186,8 @@ public abstract class Buffer implements Readable {
      *                           data available
      * @param charset            The {@link Charset} to use for the string
      * @return A {@link Collection} of the read strings
-     * @see {@link #getStringList(int, Charset)}
-     * @see {@link #getAvailableStrings()}
+     * @see #getStringList(int, Charset)
+     * @see #getAvailableStrings()
      */
     public Collection<String> getStringList(boolean usePrependedLength, Charset charset) {
         if (usePrependedLength) {
@@ -223,7 +223,7 @@ public abstract class Buffer implements Readable {
     }
 
     /**
-     * @param count The <U>exact</V> number of strings to read - can be zero
+     * @param count The <U>exact</U> number of strings to read - can be zero
      * @return A {@link List} with the specified number of strings
      * @see #getStringList(int, Charset)
      */
@@ -232,9 +232,10 @@ public abstract class Buffer implements Readable {
     }
 
     /**
-     * @param count   The <U>exact</V> number of strings to read - can be zero
+     * @param count   The <U>exact</U> number of strings to read - can be zero
      * @param charset The {@link Charset} of the strings
      * @return A {@link List} with the specified number of strings
+     * @see #getString(Charset)
      */
     public List<String> getStringList(int count, Charset charset) {
         if (count == 0) {
@@ -438,7 +439,7 @@ public abstract class Buffer implements Readable {
     /**
      * Writes 16 bits
      *
-     * @param i
+     * @param i The 16-bit value
      */
     public void putShort(int i) {
         // TODO use Short.BYTES for JDK-8
@@ -463,7 +464,7 @@ public abstract class Buffer implements Readable {
     /**
      * Writes 64 bits
      *
-     * @param i
+     * @param i The 64-bit value
      */
     public void putLong(long i) {
         // TODO use Long.BYTES for JDK-8

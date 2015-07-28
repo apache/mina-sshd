@@ -103,6 +103,7 @@ public final class ClientIdentity {
     }
 
     /**
+     * @param <C>           The generic client class
      * @param client        The {@link SshClient} to updated
      * @param strict        If {@code true} then files that do not have the required
      *                      access rights are excluded from consideration
@@ -128,6 +129,7 @@ public final class ClientIdentity {
     }
 
     /**
+     * @param <C>           The generic client class
      * @param client        The {@link SshClient} to updated
      * @param dir           The folder to scan for the built-in identities
      * @param strict        If {@code true} then files that do not have the required

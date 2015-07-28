@@ -27,7 +27,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
 public interface IoSession extends Closeable {
 
     /**
-     * Returns a unique identifier for this session.  Every session has its own
+     * @return a unique identifier for this session.  Every session has its own
      * ID which is different from each other.
      */
     long getId();
@@ -50,12 +50,12 @@ public interface IoSession extends Closeable {
     Object setAttribute(Object key, Object value);
 
     /**
-     * Returns the socket address of remote peer.
+     * @return the socket address of remote peer.
      */
     SocketAddress getRemoteAddress();
 
     /**
-     * Returns the socket address of local machine which is associated with this
+     * @return the socket address of local machine which is associated with this
      * session.
      */
     SocketAddress getLocalAddress();
@@ -63,6 +63,9 @@ public interface IoSession extends Closeable {
     /**
      * Write a packet on the socket.
      * Multiple writes can be issued concurrently and will be queued.
+     *
+     * @param buffer The {@link Buffer} with the encoded packet data
+     * @return The {@link IoWriteFuture} for the request
      */
     IoWriteFuture write(Buffer buffer);
 
@@ -76,12 +79,13 @@ public interface IoSession extends Closeable {
      *                    The pending write requests will simply be discarded.
      *                    {@code false} to close this session after all queued
      *                    write requests are flushed.
+     * @return The generated {@link CloseFuture}
      */
     @Override
     CloseFuture close(boolean immediately);
 
     /**
-     * Returns the IoService that created this session.
+     * @return the {@link IoService} that created this session.
      */
     IoService getService();
 }

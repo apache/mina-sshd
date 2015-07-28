@@ -61,7 +61,7 @@ public final class SelectorUtils {
     /**
      * <p>Tests whether or not a given path matches the start of a given
      * pattern up to the first "**".</p>
-     * <p/>
+     *
      * <p>This is not a general purpose test and should only be used if you
      * can live with false positives. For example, <code>pattern=**\a</code>
      * and <code>str=b</code> will yield <code>true</code>.</p>
@@ -80,7 +80,7 @@ public final class SelectorUtils {
     /**
      * <p>Tests whether or not a given path matches the start of a given
      * pattern up to the first "**".</p>
-     * <p/>
+     *
      * <p>This is not a general purpose test and should only be used if you
      * can live with false positives. For example, <code>pattern=**\a</code>
      * and <code>str=b</code> will yield <code>true</code>.</p>
@@ -571,7 +571,7 @@ public final class SelectorUtils {
 
         if (GenericUtils.isEmpty(tokens)) {
             if (removedDots > 0) {
-                return "";  // had some "." and ".." after which we remained with no path 
+                return "";  // had some "." and ".." after which we remained with no path
             } else {
                 return separator;   // it was all separators
             }
@@ -623,7 +623,7 @@ public final class SelectorUtils {
      * @see #translateToFileSystemPath(String, String, String)
      */
     public static String translateToLocalFileSystemPath(String path, char pathSeparator, String fsSeparator) {
-        // In case double slashes and other patterns are used 
+        // In case double slashes and other patterns are used
         String slashified = applySlashifyRules(path, pathSeparator);
         // In case we are running on Windows
         String localPath = translateToLocalPath(slashified);
@@ -643,20 +643,20 @@ public final class SelectorUtils {
         if (GenericUtils.isEmpty(path)) {
             return path;
         }
-        
+
         int curPos = path.indexOf(sepChar);
         if (curPos < 0) {
             return path;    // no slashes to handle
         }
-        
+
         int lastPos = 0;
         StringBuilder sb = null;
         while (curPos < path.length()) {
             curPos++;   // skip the 1st '/'
-            
+
             /*
              * As per Single Unix Specification version 3, section 3.266:
-             * 
+             *
              *      Multiple successive slashes are considered to be the
              *      same as one slash
              */
@@ -664,7 +664,7 @@ public final class SelectorUtils {
             while ((nextPos < path.length()) && (path.charAt(nextPos) == sepChar)) {
                 nextPos++;
             }
-            
+
             /*
              * At this stage, nextPos is the first non-slash character after a
              * possibly 'seqLen' sequence of consecutive slashes.
@@ -674,19 +674,19 @@ public final class SelectorUtils {
                 if (sb == null) {
                     sb = new StringBuilder(path.length() - seqLen);
                 }
-                
+
                 if (lastPos < curPos) {
                     String clrText = path.substring(lastPos, curPos);
                     sb.append(clrText);
                 }
-                
+
                 lastPos = nextPos;
             }
-            
+
             if (nextPos >= path.length()) {
                 break;  // no more data
             }
-            
+
             curPos = path.indexOf(sepChar, nextPos);
             if (curPos < nextPos) {
                 break;  // no more slashes
@@ -699,14 +699,14 @@ public final class SelectorUtils {
                 String clrText = path.substring(lastPos);
                 sb.append(clrText);
             }
-            
+
             path = sb.toString();
         }
 
         /*
          * At this point we know for sure that 'path' contains only SINGLE
          * slashes. According to section 4.11 - Pathname resolution
-         * 
+         *
          *      A pathname that contains at least one non-slash character
          *      and that ends with one or more trailing slashes shall be
          *      resolved as if a single dot character ( '.' ) were appended
@@ -779,7 +779,7 @@ public final class SelectorUtils {
     public static String translateToFileSystemPath(String path, String pathSeparator, FileSystem fs) {
         return translateToFileSystemPath(path, pathSeparator, ValidateUtils.checkNotNull(fs, "No target file system").getSeparator());
     }
-    
+
     /**
      * Converts a path containing a specific separator to one using the
      * specified file-system one

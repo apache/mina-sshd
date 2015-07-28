@@ -53,6 +53,9 @@ public class DefaultSshFuture<T extends SshFuture> extends AbstractLoggingBean i
 
     /**
      * Creates a new instance.
+     *
+     * @param lock A synchronization object for locking access - if {@code null}
+     * then synchronization occurs on {@code this} instance
      */
     public DefaultSshFuture(Object lock) {
         this.lock = lock != null ? lock : this;
@@ -104,32 +107,33 @@ public class DefaultSshFuture<T extends SshFuture> extends AbstractLoggingBean i
 
     /**
      * <P>Waits (interruptible) for the specified timeout (msec.) and then checks
-     * the result:</P><BR/>
+     * the result:</P>
      * <UL>
-     * <LI>
+     * <LI><P>
      * If result is {@code null} then timeout is assumed to have expired - throw
      * an appropriate {@link IOException}
-     * </LI>
-     * <p/>
-     * <LI>
+     * </P></LI>
+     *
+     * <LI><P>
      * If the result is of the expected type, then cast and return it
-     * </LI>
-     * <p/>
-     * <LI>
+     * </P></LI>
+     *
+     * <LI><P>
      * If the result is an {@link IOException} then re-throw it
-     * </LI>
-     * <p/>
-     * <LI>
+     * </P></LI>
+     *
+     * <LI><P>
      * If the result is a {@link Throwable} then throw an {@link IOException}
      * whose cause is the original exception
-     * </LI>
-     * <p/>
-     * <LI>
+     * </P></LI>
+     *
+     * <LI><P>
      * Otherwise (should never happen), throw a {@link StreamCorruptedException}
      * with the name of the result type
-     * </LI>
+     * </P></LI>
      * </UL>
      *
+     * @param <R>          The generic result type
      * @param expectedType The expected result type
      * @param timeout      The timeout (millis) to wait for a result
      * @return The (never {@code null}) result
@@ -205,6 +209,8 @@ public class DefaultSshFuture<T extends SshFuture> extends AbstractLoggingBean i
 
     /**
      * Sets the result of the asynchronous operation, and mark it as finished.
+     *
+     * @param newValue The operation result
      */
     public void setValue(Object newValue) {
         synchronized (lock) {
@@ -221,7 +227,7 @@ public class DefaultSshFuture<T extends SshFuture> extends AbstractLoggingBean i
     }
 
     /**
-     * Returns the result of the asynchronous operation.
+     * @return The result of the asynchronous operation.
      */
     protected Object getValue() {
         synchronized (lock) {

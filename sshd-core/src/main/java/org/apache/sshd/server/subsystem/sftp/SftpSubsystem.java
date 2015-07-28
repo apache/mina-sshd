@@ -2832,6 +2832,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     }
 
     /**
+     * @param <H>    The generic handle type
      * @param handle The original handle id
      * @param h      The resolved {@link Handle} instance
      * @param type   The expected handle type

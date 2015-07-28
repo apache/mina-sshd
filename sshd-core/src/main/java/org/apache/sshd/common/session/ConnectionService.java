@@ -42,14 +42,14 @@ public interface ConnectionService extends Service {
     /**
      * Remove this channel from the list of managed channels
      *
-     * @param channel the channel
+     * @param channel The {@link Channel} instance
      */
     void unregisterChannel(Channel channel);
 
     /**
      * Retrieve the tcpip forwarder
      *
-     * @return
+     * @return The {@link TcpipForwarder}
      */
     TcpipForwarder getTcpipForwarder();
 
@@ -60,5 +60,4 @@ public interface ConnectionService extends Service {
     String createX11Display(boolean singleConnection, String authenticationProtocol, String authenticationCookie, int screen) throws IOException;
 
     void setAllowMoreSessions(boolean allow);
-
 }

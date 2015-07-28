@@ -44,21 +44,21 @@ public abstract class AbstractServerChannel extends AbstractChannel {
     }
 
     @Override
-    public OpenFuture open(int recipient, int rwsize, int rmpsize, Buffer buffer) {
+    public OpenFuture open(int recipient, int rwSize, int packetSize, Buffer buffer) {
         this.recipient = recipient;
-        this.remoteWindow.init(rwsize, rmpsize, session.getFactoryManager().getProperties());
+        this.remoteWindow.init(rwSize, packetSize, session.getFactoryManager().getProperties());
         configureWindow();
         return doInit(buffer);
     }
 
     @Override
-    public void handleOpenSuccess(int recipient, int rwsize, int rmpsize, Buffer buffer) throws IOException {
-        throw new IllegalStateException();
+    public void handleOpenSuccess(int recipient, int rwSize, int packetSize, Buffer buffer) throws IOException {
+        throw new UnsupportedOperationException("handleOpenSuccess(" + recipient + "," + rwSize + "," + packetSize + ") N/A");
     }
 
     @Override
     public void handleOpenFailure(Buffer buffer) {
-        throw new IllegalStateException();
+        throw new UnsupportedOperationException("handleOpenFailure() N/A");
     }
 
     protected OpenFuture doInit(Buffer buffer) {

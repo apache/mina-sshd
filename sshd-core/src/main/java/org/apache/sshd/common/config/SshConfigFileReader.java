@@ -398,7 +398,7 @@ public final class SshConfigFileReader {
      * @param props The {@link Properties} - ignored if {@code null}/empty
      * @return A {@link BuiltinSignatures.ParseResult} of all the {@link NamedFactory}
      * whose name appears in the string and represent a built-in signature. Any
-     * unknown name is <U>ignored</I>. The order of the returned result is the
+     * unknown name is <U>ignored</U>. The order of the returned result is the
      * same as the original order - bar the unknown signatures. <B>Note:</B> it
      * is up to caller to ensure that the list does not contain duplicates
      * @see #HOST_KEY_ALGORITHMS_CONFIG_PROP
@@ -445,7 +445,7 @@ public final class SshConfigFileReader {
 
     /**
      * <P>Configures an {@link AbstractFactoryManager} with the values read from
-     * some configuration. Currently it configures:</P></BR>
+     * some configuration. Currently it configures:</P>
      * <UL>
      * <LI>The {@link Cipher}s - via the {@link #CIPHERS_CONFIG_PROP}</LI>
      * <LI>The {@link Mac}s - via the {@link #MACS_CONFIG_PROP}</LI>
@@ -453,6 +453,7 @@ public final class SshConfigFileReader {
      * <LI>The {@link Compression} - via the {@link #COMPRESSION_PROP}</LI>
      * </UL>
      *
+     * @param <M>               The generic factory manager
      * @param manager           The {@link AbstractFactoryManager} to configure
      * @param props             The {@link Properties} to use for configuration - <B>Note:</B>
      *                          if any known configuration value has a default and does not appear in the
@@ -528,6 +529,7 @@ public final class SshConfigFileReader {
     }
 
     /**
+     * @param <M>               The generic factory manager
      * @param manager           The {@link AbstractFactoryManager} to set up (may not be {@code null})
      * @param props             The (non-{@code null}) {@link Properties} containing the configuration
      * @param lenient           If {@code true} then any unknown/unsupported configuration
@@ -565,6 +567,7 @@ public final class SshConfigFileReader {
     /**
      * Configure the factory manager using one of the known {@link CompressionConfigValue}s.
      *
+     * @param <M>               The generic factory manager
      * @param manager           The {@link AbstractFactoryManager} to configure
      * @param props             The configuration {@link Properties}
      * @param lenient           If {@code true} and an unknown value is provided then

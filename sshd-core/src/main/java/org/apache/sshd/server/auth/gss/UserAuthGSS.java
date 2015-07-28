@@ -36,7 +36,7 @@ import org.ietf.jgss.Oid;
 /**
  * <p>Prototype user authentication handling gssapi-with-mic.  Implements <code>HandshakingUserAuth</code> because
  * the process involves several steps.</p>
- * <p/>
+ *
  * <p>Several methods are available for overriding in specific circumstances.</p>
  */
 public class UserAuthGSS extends AbstractUserAuth {
@@ -205,7 +205,7 @@ public class UserAuthGSS extends AbstractUserAuth {
      * Utility to get the configured GSS authenticator for the server, throwing an exception if none is available.
      *
      * @param session The current {@link ServerSession}
-     * @return The {@link GSSAuthenticator} - never {@code null)
+     * @return The {@link GSSAuthenticator} - never {@code null}
      * @throws Exception If no GSS authenticator is defined
      */
     protected GSSAuthenticator getAuthenticator(ServerSession session) throws Exception {

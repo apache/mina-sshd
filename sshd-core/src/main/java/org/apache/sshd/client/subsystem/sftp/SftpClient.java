@@ -436,6 +436,7 @@ public interface SftpClient extends SubsystemClient {
     OutputStream write(String path, int bufferSize, Collection<OpenMode> mode) throws IOException;
 
     /**
+     * @param <E>           The generic extension type
      * @param extensionType The extension type
      * @return The extension instance - <B>Note:</B> it is up to the caller
      * to invoke {@link SftpClientExtension#isSupported()} - {@code null} if

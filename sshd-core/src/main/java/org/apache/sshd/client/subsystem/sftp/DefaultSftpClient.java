@@ -130,6 +130,11 @@ public class DefaultSftpClient extends AbstractSftpClient {
 
     /**
      * Receive binary data
+     * @param buf   The buffer for the incoming data
+     * @param start Offset in buffer to place the data
+     * @param len   Available space in buffer for the data
+     * @return Actual size of received data
+     * @throws IOException If failed to receive incoming data
      */
     protected int data(byte[] buf, int start, int len) throws IOException {
         Buffer incoming = new ByteArrayBuffer(buf, start, len);
@@ -157,6 +162,11 @@ public class DefaultSftpClient extends AbstractSftpClient {
 
     /**
      * Read SFTP packets from buffer
+     *
+     * @param incoming The received {@link Buffer}
+     * @return {@code true} if data from incoming buffer was processed
+     * @throws IOException if failed to process the buffer
+     * @see #process(Buffer)
      */
     protected boolean receive(Buffer incoming) throws IOException {
         int rpos = incoming.rpos();
@@ -182,6 +192,9 @@ public class DefaultSftpClient extends AbstractSftpClient {
 
     /**
      * Process an SFTP packet
+     *
+     * @param incoming The received {@link Buffer}
+     * @throws IOException if failed to process the buffer
      */
     protected void process(Buffer incoming) throws IOException {
         Buffer buffer = new ByteArrayBuffer(incoming.available());

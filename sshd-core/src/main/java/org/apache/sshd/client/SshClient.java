@@ -76,37 +76,51 @@ import org.apache.sshd.common.util.io.NoCloseInputStream;
 import org.apache.sshd.common.util.io.NoCloseOutputStream;
 
 /**
+ * <P>
  * Entry point for the client side of the SSH protocol.
- * <p/>
+ * </P>
+ *
+ * <P>
  * The default configured client can be created using
  * the {@link #setUpDefaultClient()}.  The next step is to
  * start the client using the {@link #start()} method.
- * <p/>
+ * </P>
+ *
+ * <P>
  * Sessions can then be created using on of the
  * {@link #connect(String, String, int)} or {@link #connect(String, java.net.SocketAddress)}
  * methods.
- * <p/>
- * The client can be stopped at anytime using the {@link #stop()} method.
- * <p/>
- * Following is an example of using the SshClient:
- * <pre>
- *    SshClient client = SshClient.setUpDefaultClient();
- *    client.start();
- *    try {
- *        ClientSession session = client.connect(login, host, port).await().getSession();
- *        session.addPasswordIdentity(password);
- *        session.auth().verify();
+ * </P>
  *
- *        ClientChannel channel = session.createChannel("shell");
- *        channel.setIn(new NoCloseInputStream(System.in));
- *        channel.setOut(new NoCloseOutputStream(System.out));
- *        channel.setErr(new NoCloseOutputStream(System.err));
- *        channel.open();
- *        channel.waitFor(ClientChannel.CLOSED, 0);
- *        session.close(false);
+ * <P>
+ * The client can be stopped any time using the {@link #stop()} method.
+ * </P>
+ *
+ * <P>
+ * Following is an example of using the {@code SshClient}:
+ * </P>
+ *
+ * <pre>
+ * try(SshClient client = SshClient.setUpDefaultClient()) {
+ *      client.start();
+ *
+ *      try(ClientSession session = client.connect(login, host, port).await().getSession()) {
+ *          session.addPasswordIdentity(password);
+ *          session.auth().verify();
+ *
+ *          try(ClientChannel channel = session.createChannel("shell")) {
+ *              channel.setIn(new NoCloseInputStream(System.in));
+ *              channel.setOut(new NoCloseOutputStream(System.out));
+ *              channel.setErr(new NoCloseOutputStream(System.err));
+ *              channel.open();
+ *              channel.waitFor(ClientChannel.CLOSED, 0);
+ *          } finally {
+ *              session.close(false);
+ *          }
  *    } finally {
  *        client.stop();
  *    }
+ * }
  * </pre>
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>

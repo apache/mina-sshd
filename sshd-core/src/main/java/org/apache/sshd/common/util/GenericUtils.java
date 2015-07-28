@@ -265,18 +265,19 @@ public final class GenericUtils {
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     public static <V extends Comparable<V>> Comparator<V> naturalComparator() {
-        // TODO for JDK-8 use Comparator.naturalOrder() 
+        // TODO for JDK-8 use Comparator.naturalOrder()
         return (Comparator) NATURAL_ORDER_COMPARATOR;
     }
 
     public static <V extends Comparable<V>> SortedSet<V> asSortedSet(Collection<? extends V> values) {
-        // TODO for JDK-8 use Comparator.naturalOrder() 
+        // TODO for JDK-8 use Comparator.naturalOrder()
         return asSortedSet(GenericUtils.<V>naturalComparator(), values);
     }
 
     /**
+     * @param <V>    The element type
      * @param comp   The (non-{@code null}) {@link Comparator} to use
-     * @param values The values to be added (ignored if {@code null))
+     * @param values The values to be added (ignored if {@code null})
      * @return A {@link SortedSet} containing the values (if any) sorted
      * using the provided comparator
      */
@@ -356,6 +357,7 @@ public final class GenericUtils {
      * otherwise the new one is added as a <U>suppressed</U> exception to the
      * current one
      *
+     * @param <T>     The exception type
      * @param current The current exception
      * @param extra   The extra/new exception
      * @return The resolved exception

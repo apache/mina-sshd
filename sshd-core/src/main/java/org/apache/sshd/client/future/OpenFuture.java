@@ -36,25 +36,38 @@ public interface OpenFuture extends SshFuture<OpenFuture> {
      */
     void verify() throws IOException;
 
+    /**
+     * Wait and verify that the channel has been successfully opened.
+     *
+     * @param timeout The number of time units to wait
+     * @param unit    The wait {@link TimeUnit}
+     * @throws IOException If failed to verify successfully on time
+     */
     void verify(long timeout, TimeUnit unit) throws IOException;
 
+    /**
+     * Wait and verify that the channel has been successfully opened.
+     *
+     * @param timeoutMillis Wait timeout in milliseconds
+     * @throws IOException If failed to verify successfully on time
+     */
     void verify(long timeoutMillis) throws IOException;
 
     /**
      * Returns the cause of the connection failure.
      *
-     * @return <tt>null</tt> if the connect operation is not finished yet,
+     * @return <code>null</code> if the connect operation is not finished yet,
      * or if the connection attempt is successful.
      */
     Throwable getException();
 
     /**
-     * Returns <tt>true</tt> if the connect operation is finished successfully.
+     * @return <code>true</code> if the connect operation is finished successfully.
      */
     boolean isOpened();
 
     /**
-     * Returns {@code true} if the connect operation has been canceled by
+     * @return {@code true} if the connect operation has been canceled by
      * {@link #cancel()} method.
      */
     boolean isCanceled();
@@ -70,6 +83,8 @@ public interface OpenFuture extends SshFuture<OpenFuture> {
      * Sets the exception caught due to connection failure and notifies all
      * threads waiting for this future.  This method is invoked by SSHD
      * internally.  Please do not call this method directly.
+     *
+     * @param exception The caught {@link Throwable}
      */
     void setException(Throwable exception);
 

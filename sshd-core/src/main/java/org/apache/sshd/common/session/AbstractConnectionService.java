@@ -426,8 +426,8 @@ public abstract class AbstractConnectionService extends CloseableUtils.AbstractI
     /**
      * Process global requests
      *
-     * @param buffer the request
-     * @throws Exception
+     * @param buffer The request {@link Buffer}
+     * @throws Exception If failed to process the request
      */
     protected void globalRequest(Buffer buffer) throws Exception {
         String req = buffer.getString();

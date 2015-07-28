@@ -30,13 +30,14 @@ public interface UserAuth {
 
     /**
      * Try to authenticate the user.
-     * This methods should return a non null object which is the user identity if
+     * This methods should return a non {@code null} object which is the user identity if
      * the authentication succeeded.  If the authentication failed, this method should
      * throw an exception.  If the authentication is still ongoing, a null value should
      * be returned.
      *
      * @param session  the current ssh session
      * @param username the user trying to log in
+     * @param service  the requested service name
      * @param buffer   the request buffer containing parameters specific to this request
      * @return <code>true</code> if the authentication succeeded, <code>false</code> if the authentication
      * failed and {@code null} if not finished yet

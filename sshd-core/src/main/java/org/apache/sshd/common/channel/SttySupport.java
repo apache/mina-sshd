@@ -21,9 +21,12 @@ package org.apache.sshd.common.channel;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Support for stty command on unix
@@ -31,10 +34,16 @@ import java.util.TreeMap;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public final class SttySupport {
+    public static final int DEFAULT_TERMINAL_WIDTH = 80;
+    public static final int  DEFAULT_TERMINAL_HEIGHT = 24;
 
-    private static String sttyCommand = System.getProperty("sshd.sttyCommand", "stty");
-    private static String ttyProps;
-    private static long ttyPropsLastFetched;
+    public static final String SSHD_STTY_COMMAND_PROP = "sshd.sttyCommand";
+    public static final String DEFAULT_SSHD_STTY_COMMAND = "stty";
+
+    private static final AtomicReference<String> STTY_COMMAND_HOLDER =
+            new AtomicReference<String>(System.getProperty(SSHD_STTY_COMMAND_PROP, DEFAULT_SSHD_STTY_COMMAND));
+    private static final AtomicReference<String> TTY_PROPS_HOLDER = new AtomicReference<String>(null);
+    private static final AtomicLong TTY_PROPS_LAST_FETCHED_HOLDER = new AtomicLong(0L);
 
     private SttySupport() {
         throw new UnsupportedOperationException("No instance allowed");
@@ -125,51 +134,53 @@ public final class SttySupport {
     }
 
     /**
-     * Returns the value of "stty size" width param.
-     * <p/>
+     * <P>Returns the value of "stty size" width param.</P>
+     *
+     * <P>
      * <strong>Note</strong>: this method caches the value from the
      * first time it is called in order to increase speed, which means
      * that changing to size of the terminal will not be reflected
      * in the console.
+     * </P>
+     *
+     * @return The terminal width
      */
     public static int getTerminalWidth() {
-        int val = -1;
-
         try {
-            val = getTerminalProperty("columns");
+            int val = getTerminalProperty("columns");
+            if (val == -1) {
+                val = DEFAULT_TERMINAL_WIDTH;
+            }
+
+            return val;
         } catch (Exception e) {
-            // ignored
+            return DEFAULT_TERMINAL_WIDTH;  // debug breakpoint
         }
-
-        if (val == -1) {
-            val = 80;
-        }
-
-        return val;
     }
 
     /**
-     * Returns the value of "stty size" height param.
-     * <p/>
+     * <P>Returns the value of "stty size" height param.</P>
+     *
+     * <P>
      * <strong>Note</strong>: this method caches the value from the
      * first time it is called in order to increase speed, which means
      * that changing to size of the terminal will not be reflected
      * in the console.
+     * </P>
+     *
+     * @return The terminal height
      */
     public static int getTerminalHeight() {
-        int val = -1;
-
         try {
-            val = getTerminalProperty("rows");
+            int val = getTerminalProperty("rows");
+            if (val == -1) {
+                val = DEFAULT_TERMINAL_HEIGHT;
+            }
+
+            return val;
         } catch (Exception e) {
-            // ignored
+            return DEFAULT_TERMINAL_HEIGHT;  // debug breakpoint
         }
-
-        if (val == -1) {
-            val = 24;
-        }
-
-        return val;
     }
 
     private static int getTerminalProperty(String prop)
@@ -197,17 +208,25 @@ public final class SttySupport {
 
     public static String getTtyProps() throws IOException, InterruptedException {
         // tty properties are cached so we don't have to worry too much about getting term widht/height
-        if (ttyProps == null || System.currentTimeMillis() - ttyPropsLastFetched > 1000) {
-            ttyProps = stty("-a");
-            ttyPropsLastFetched = System.currentTimeMillis();
+        long now = System.currentTimeMillis();
+        long lastFetched = TTY_PROPS_LAST_FETCHED_HOLDER.get();
+        if ((TTY_PROPS_HOLDER.get() == null) || ((now - lastFetched) > 1000L)) {
+            TTY_PROPS_HOLDER.set(stty("-a"));
+            TTY_PROPS_LAST_FETCHED_HOLDER.set(System.currentTimeMillis());
         }
-        return ttyProps;
-    }
 
+        return TTY_PROPS_HOLDER.get();
+    }
 
     /**
      * Execute the stty command with the specified arguments
      * against the current active terminal.
+     *
+     * @param args The command arguments
+     * @return The execution result
+     * @throws IOException If failed to execute the command
+     * @throws InterruptedException If interrupted while awaiting command execution
+     * @see #exec(String)
      */
     public static String stty(final String args)
             throws IOException, InterruptedException {
@@ -217,6 +236,12 @@ public final class SttySupport {
     /**
      * Execute the specified command and return the output
      * (both stdout and stderr).
+     *
+     * @param cmd The command to execute
+     * @return The execution result
+     * @throws IOException If failed to execute the command
+     * @throws InterruptedException If interrupted while awaiting command execution
+     * @see #exec(String[])
      */
     public static String exec(final String cmd)
             throws IOException, InterruptedException {
@@ -230,48 +255,52 @@ public final class SttySupport {
     /**
      * Execute the specified command and return the output
      * (both stdout and stderr).
+     *
+     * @param cmd The command components
+     * @return The execution result
+     * @throws IOException If failed to execute the command
+     * @throws InterruptedException If interrupted while awaiting command execution
      */
-    private static String exec(final String[] cmd)
+    private static String exec(final String ... cmd)
             throws IOException, InterruptedException {
-        ByteArrayOutputStream bout = new ByteArrayOutputStream();
+        try (ByteArrayOutputStream bout = new ByteArrayOutputStream()) {
+            Process p = Runtime.getRuntime().exec(cmd);
+            copyStream(p.getInputStream(), bout);
+            copyStream(p.getErrorStream(), bout);
+            p.waitFor();
 
-        Process p = Runtime.getRuntime().exec(cmd);
-        int c;
-        InputStream in;
-
-        in = p.getInputStream();
-
-        while ((c = in.read()) != -1) {
-            bout.write(c);
+            String result = new String(bout.toByteArray());
+            return result;
         }
+    }
 
-        in = p.getErrorStream();
+    private static int copyStream(InputStream in, OutputStream bout) throws IOException {
+        int count = 0;
+        while (true) {
+            int c = in.read();
+            if (c == (-1)) {
+                return count;
+            }
 
-        while ((c = in.read()) != -1) {
             bout.write(c);
+            count++;
         }
-
-        p.waitFor();
-
-        String result = new String(bout.toByteArray());
-
-        return result;
     }
 
     /**
-     * The command to use to set the terminal options. Defaults
-     * to "stty", or the value of the system property "jline.sttyCommand".
-     */
-    public static void setSttyCommand(String cmd) {
-        sttyCommand = cmd;
-    }
-
-    /**
-     * The command to use to set the terminal options. Defaults
-     * to "stty", or the value of the system property "jline.sttyCommand".
+     * @return The command to use to set the terminal options.
+     * @see #setSttyCommand(String)
      */
     public static String getSttyCommand() {
-        return sttyCommand;
+        return STTY_COMMAND_HOLDER.get();
     }
 
+    /**
+     * @param cmd The command to use to set the terminal options. Defaults
+     * to {@link #DEFAULT_SSHD_STTY_COMMAND}, or the value of the
+     * {@link #SSHD_STTY_COMMAND_PROP} system property if not set via this method
+     */
+    public static void setSttyCommand(String cmd) {
+        STTY_COMMAND_HOLDER.set(cmd);
+    }
 }

@@ -35,7 +35,7 @@ public interface SshAgentFactory {
      * The channel will receive agent requests and need to forward them to the agent,
      * either local or through another proxy.
      *
-     * @return The channel factory used to create channels on the client side
+     * @return The (named) channel factory used to create channels on the client side
      */
     NamedFactory<Channel> getChannelForwardingFactory();
 
@@ -43,8 +43,9 @@ public interface SshAgentFactory {
      * Create an SshAgent that can be used on the client side by the authentication
      * process to send possible keys.
      *
-     * @param manager
-     * @return
+     * @param manager The {@link FactoryManager} instance
+     * @return The {@link SshAgent} instance
+     * @throws IOException If failed to create the client
      */
     SshAgent createClient(FactoryManager manager) throws IOException;
 
@@ -53,9 +54,9 @@ public interface SshAgentFactory {
      * It will usually create a channel that will forward the requests
      * to the original client.
      *
-     * @param service
-     * @return
+     * @param service The {@link ConnectionService} to use
+     * @return The {@link SshAgentServer} instance
+     * @throws IOException If failed to create the server
      */
     SshAgentServer createServer(ConnectionService service) throws IOException;
-
 }

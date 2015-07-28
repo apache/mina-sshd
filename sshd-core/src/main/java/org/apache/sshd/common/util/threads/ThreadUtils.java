@@ -92,20 +92,20 @@ public final class ThreadUtils {
     }
 
     /**
-     * Attempts to find the most suitable {@link ClassLoader} as follows:</BR>
+     * <P>Attempts to find the most suitable {@link ClassLoader} as follows:</P>
      * <UL>
-     * <LI>
+     * <LI><P>
      * Check the {@link Thread#getContextClassLoader()} value
-     * </LI>
-     * <p/>
-     * <LI>
+     * </P></LI>
+     *
+     * <LI><P>
      * If no thread context class loader then check the anchor
      * class (if given) for its class loader
-     * </LI>
-     * <p/>
-     * <LI>
+     * </P></LI>
+     *
+     * <LI><P>
      * If still no loader available, then use {@link ClassLoader#getSystemClassLoader()}
-     * </LI>
+     * </P></LI>
      * </UL>
      *
      * @param anchor The anchor {@link Class} to use if no current thread

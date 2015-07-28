@@ -44,6 +44,9 @@ public interface Random {
     /**
      * Returns a pseudo-random uniformly distributed {@code int}
      * in the half-open range [0, n).
+     *
+     * @param n The range upper limit
+     * @return The randomly selected value in the range
      */
     int random(int n);
 

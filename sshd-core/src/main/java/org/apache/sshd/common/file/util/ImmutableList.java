@@ -23,7 +23,7 @@ import java.util.AbstractList;
 /**
  * Simple immutable array list
  *
- * @param <T>
+ * @param <T> The element type
  */
 public class ImmutableList<T> extends AbstractList<T> {
 

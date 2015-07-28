@@ -34,11 +34,15 @@ import org.apache.sshd.common.util.GenericUtils;
  */
 public interface ForwardingFilter {
     /**
+     * <p>
      * Determine if the session may arrange for agent forwarding.
-     * <p/>
+     * </p>
+     *
+     * <p>
      * This server process will open a new listen socket locally and export
      * the address in the {@link org.apache.sshd.agent.SshAgent#SSH_AUTHSOCKET_ENV_NAME} environment
      * variable.
+     * </p>
      *
      * @param session session requesting permission to forward the agent.
      * @return true if the agent forwarding is permitted, false if denied.
@@ -46,11 +50,15 @@ public interface ForwardingFilter {
     boolean canForwardAgent(Session session);
 
     /**
+     * <p>
      * Determine if the session may arrange for X11 forwarding.
-     * <p/>
+     * </p>
+     *
+     * <p>
      * This server process will open a new listen socket locally and export
      * the address in the environment so X11 clients can be tunneled to the
      * user's X11 display server.
+     * </p>
      *
      * @param session session requesting permission to forward X11 connections.
      * @return true if the X11 forwarding is permitted, false if denied.
@@ -58,13 +66,17 @@ public interface ForwardingFilter {
     boolean canForwardX11(Session session);
 
     /**
+     * <p>
      * Determine if the session may listen for inbound connections.
-     * <p/>
+     * </p>
+     *
+     * <p>
      * This server process will open a new listen socket on the address given
      * by the client (usually 127.0.0.1 but may be any address).  Any inbound
      * connections to this socket will be tunneled over the session to the
      * client, which the client will then forward the connection to another
      * host on the client's side of the network.
+     * </p>
      *
      * @param address address the client has requested this server listen
      *                for inbound connections on, and relay them through the client.
@@ -145,12 +157,16 @@ public interface ForwardingFilter {
     }
 
     /**
+     * <p>
      * Determine if the session may create an outbound connection.
-     * <p/>
+     * </p>
+     *
+     * <p>
      * This server process will connect to another server listening on the
      * address specified by the client.  Usually this is to another port on
      * the same host (127.0.0.1) but may be to any other system this server
      * can reach on the server's side of the network.
+     * </p>
      *
      * @param type    The {@link Type} of requested connection forwarding
      * @param address address the client has requested this server listen

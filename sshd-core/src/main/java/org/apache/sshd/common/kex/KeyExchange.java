@@ -60,21 +60,23 @@ public interface KeyExchange {
     Digest getHash();
 
     /**
-     * Retrieves the computed h parameter
+     * Retrieves the computed {@code h} parameter
      *
-     * @return
+     * @return The {@code h} parameter
      */
     byte[] getH();
 
     /**
      * Retrieves the computed k parameter
      *
-     * @return
+     * @return The {@code k} parameter
      */
     byte[] getK();
 
     /**
      * Retrieves the server's key
+     *
+     * @return The server's {@link PublicKey}
      */
     PublicKey getServerKey();
 }

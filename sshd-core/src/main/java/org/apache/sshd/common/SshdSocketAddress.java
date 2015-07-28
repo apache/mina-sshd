@@ -27,7 +27,7 @@ import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * <P>A simple socket address holding the host name and port number. The reason
- * it does not extend {@link InetSocketAddress} is twofold:</P></BR>
+ * it does not extend {@link InetSocketAddress} is twofold:</P>
  * <OL>
  * <LI><P>
  * The {@link InetSocketAddress} performs a DNS resolution on the
@@ -35,7 +35,7 @@ import org.apache.sshd.common.util.ValidateUtils;
  * create a connection using this address (thus the {@link #toInetSocketAddress()}
  * call which executes this query
  * </P></LI>
- * <p/>
+ *
  * <LI><P>
  * If empty host name is provided we replace it with the <I>any</I>
  * address of 0.0.0.0

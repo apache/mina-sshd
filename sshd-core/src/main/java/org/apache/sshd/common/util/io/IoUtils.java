@@ -121,7 +121,8 @@ public final class IoUtils {
      * {@link Files#getPosixFilePermissions(Path, LinkOption...)}, otherwise
      * uses the {@link #getPermissionsFromFile(File)} method
      *
-     * @param path The {@link Path}
+     * @param path    The {@link Path}
+     * @param options The {@link LinkOption}s to use when querying the permissions
      * @return A {@link Set} of {@link PosixFilePermission}
      * @throws IOException If failed to access the file system in order to
      *                     retrieve the permissions
@@ -213,7 +214,8 @@ public final class IoUtils {
     /**
      * <P>Checks if a file exists - <B>Note:</B> according to the
      * <A HREF="http://docs.oracle.com/javase/tutorial/essential/io/check.html">Java tutorial - Checking a File or Directory</A>:
-     * </P></BR>
+     * </P>
+     *
      * <PRE>
      * The methods in the Path class are syntactic, meaning that they operate
      * on the Path instance. But eventually you must access the file system
@@ -221,11 +223,11 @@ public final class IoUtils {
      * so with the exists(Path, LinkOption...) and the notExists(Path, LinkOption...)
      * methods. Note that !Files.exists(path) is not equivalent to Files.notExists(path).
      * When you are testing a file's existence, three results are possible:
-     * <p/>
+     *
      * - The file is verified to exist.
      * - The file is verified to not exist.
      * - The file's status is unknown.
-     * <p/>
+     *
      * This result can occur when the program does not have access to the file.
      * If both exists and notExists return false, the existence of the file cannot
      * be verified.
@@ -264,7 +266,7 @@ public final class IoUtils {
      * @param input  where to read input from
      * @param buffer destination
      * @param offset initial offset into buffer
-     * @param length length to read, must be >= 0
+     * @param length length to read, must be &ge; 0
      * @throws IOException  if there is a problem reading the file
      * @throws EOFException if the number of bytes read was incorrect
      */
@@ -313,7 +315,7 @@ public final class IoUtils {
 
     /**
      * @param perms    The current {@link PosixFilePermission}s - ignored if {@code null}/empty
-     * @param excluded The permissions <U>not</U> allowed to exist - ignored if {@code null)/empty
+     * @param excluded The permissions <U>not</U> allowed to exist - ignored if {@code null}/empty
      * @return The violating {@link PosixFilePermission} - {@code null}
      * if no violating permission found
      */
