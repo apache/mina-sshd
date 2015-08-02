@@ -33,10 +33,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.apache.sshd.common.subsystem.sftp.SftpConstants.ACE4_APPEND_DATA;
 import static org.apache.sshd.common.subsystem.sftp.SftpConstants.ACE4_READ_ATTRIBUTES;
 import static org.apache.sshd.common.subsystem.sftp.SftpConstants.ACE4_READ_DATA;
 import static org.apache.sshd.common.subsystem.sftp.SftpConstants.ACE4_WRITE_ATTRIBUTES;
 import static org.apache.sshd.common.subsystem.sftp.SftpConstants.ACE4_WRITE_DATA;
+
 import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXF_ACCESS_DISPOSITION;
 import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXF_APPEND_DATA;
 import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXF_CREATE_NEW;
@@ -123,6 +125,10 @@ public class FileHandle extends Handle {
         return access;
     }
 
+    public boolean isOpenAppend() {
+        return ACE4_APPEND_DATA == (getAccessMask() & ACE4_APPEND_DATA);
+    }
+
     public int read(byte[] data, long offset) throws IOException {
         return read(data, 0, data.length, offset);
     }
@@ -138,6 +144,15 @@ public class FileHandle extends Handle {
         return read;
     }
 
+    public void append(byte[] data) throws IOException {
+        append(data, 0, data.length);
+    }
+
+    public void append(byte[] data, int doff, int length) throws IOException {
+        FileChannel channel = getFileChannel();
+        write(data, doff, length, channel.size());
+    }
+
     public void write(byte[] data, long offset) throws IOException {
         write(data, 0, data.length, offset);
     }
@@ -148,6 +163,7 @@ public class FileHandle extends Handle {
             channel.position(offset);
             pos = offset;
         }
+
         channel.write(ByteBuffer.wrap(data, doff, length));
         pos += length;
     }

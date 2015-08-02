@@ -35,6 +35,7 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Iterator;
@@ -116,6 +117,59 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         Thread.sleep(5 * 60000);
     }
 
+    @Test   // see SSHD-547
+    public void testWriteOffsetIgnoredForAppendMode() throws IOException {
+        Path targetPath = detectTargetFolder().toPath();
+        Path parentPath = targetPath.getParent();
+        Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
+        Path testFile = assertHierarchyTargetFolderExists(lclSftp).resolve("file.txt");
+        Files.deleteIfExists(testFile);
+
+        byte[] expectedRandom = new byte[Byte.MAX_VALUE];
+        Factory<? extends Random> factory = sshd.getRandomFactory();
+        Random rnd = factory.create();
+        rnd.fill(expectedRandom);
+
+        byte[] expectedText = (getClass().getName() + "#" + getCurrentTestName()).getBytes(StandardCharsets.UTF_8);
+        try (SshClient client = SshClient.setUpDefaultClient()) {
+            client.start();
+
+            try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+                session.addPasswordIdentity(getCurrentTestName());
+                session.auth().verify(5L, TimeUnit.SECONDS);
+
+                try (SftpClient sftp = session.createSftpClient()) {
+                    String file = Utils.resolveRelativeRemotePath(parentPath, testFile);
+
+                    try (CloseableHandle handle = sftp.open(file, OpenMode.Create, OpenMode.Write, OpenMode.Read, OpenMode.Append)) {
+                        sftp.write(handle, 7365L, expectedRandom);
+                        byte[] actualRandom = new byte[expectedRandom.length];
+                        int readLen = sftp.read(handle, 0L, actualRandom);
+                        assertEquals("Incomplete random data read", expectedRandom.length, readLen);
+                        assertArrayEquals("Mismatched read random data", expectedRandom, actualRandom);
+
+                        sftp.write(handle, 3777347L, expectedText);
+                        byte[] actualText = new byte[expectedText.length];
+                        readLen = sftp.read(handle, actualRandom.length, actualText);
+                        assertEquals("Incomplete text data read", actualText.length, readLen);
+                        assertArrayEquals("Mismatched read text data", expectedText, actualText);
+                    }
+                }
+            } finally {
+                client.stop();
+            }
+        }
+
+        byte[] actualBytes = Files.readAllBytes(testFile);
+        assertEquals("Mismatched result file size", expectedRandom.length + expectedText.length, actualBytes.length);
+
+        byte[] actualRandom = Arrays.copyOfRange(actualBytes, 0, expectedRandom.length);
+        assertArrayEquals("Mismatched random part", expectedRandom, actualRandom);
+
+        byte[] actualText = Arrays.copyOfRange(actualBytes, expectedRandom.length, actualBytes.length);
+        assertArrayEquals("Mismatched text part", expectedText, actualText);
+    }
+
     @Test   // see SSHD-545
     public void testReadBufferLimit() throws Exception {
         Path targetPath = detectTargetFolder().toPath();
@@ -145,7 +199,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                     try(CloseableHandle handle = sftp.open(file, OpenMode.Read)) {
                         int readLen = sftp.read(handle, 0L, actual);
                         assertEquals("Mismatched read len", maxAllowed, readLen);
-                        
+
                         for (int index = 0; index < readLen; index++) {
                             byte expByte = expected[index], actByte = actual[index];
                             if (expByte != actByte) {
@@ -868,13 +922,13 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         /*
          * NOTE !!! according to Jsch documentation
          * (see http://epaul.github.io/jsch-documentation/simple.javadoc/com/jcraft/jsch/ChannelSftp.html#current-directory)
-         * 
-         * 
+         *
+         *
          * 		This sftp client has the concept of a current local directory and
          * 		a current remote directory. These are not inherent to the protocol,
          *  	but are used implicitly for all path-based commands sent to the server
          *  	for the remote directory) or accessing the local file system (for the local directory).
-         *  
+         *
          *  Therefore we are using "absolute" remote files for this test
          */
         Path parentPath = targetPath.getParent();
@@ -897,7 +951,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
             assertTrue("Symlink not created: " + linkPath, Files.exists(linkPath));
             assertEquals("Mismatched link data in " + remLinkPath, data, readFile(remLinkPath));
-    
+
             String str1 = c.readlink(remLinkPath);
             String str2 = c.realpath(remSrcPath);
             assertEquals("Mismatched link vs. real path", str1, str2);

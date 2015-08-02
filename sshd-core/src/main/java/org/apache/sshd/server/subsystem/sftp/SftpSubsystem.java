@@ -1879,7 +1879,11 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             throw new IllegalStateException("Not enough buffer data for writing to " + fh + ": required=" + length + ", available=" + remaining);
         }
 
-        fh.write(data, doff, length, offset);
+        if (fh.isOpenAppend()) {
+            fh.append(data, doff, length);
+        } else {
+            fh.write(data, doff, length, offset);
+        }
     }
 
     protected void doRead(Buffer buffer, int id) throws IOException {
