@@ -36,6 +36,7 @@ public interface ChannelRequestHandler extends RequestHandler<Channel> {
             }
         };
 
+    @Override
     Result process(Channel channel, String request, boolean wantReply, Buffer buffer) throws Exception;
 
 }

@@ -60,9 +60,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -289,7 +287,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             } else if (option == StandardOpenOption.SPARSE) {
                 /*
                  * As per the Javadoc:
-                 * 
+                 *
                  *      The option is ignored when the file system does not
                  *  support the creation of sparse files
                  */
@@ -309,7 +307,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
     @Override
     public DirectoryStream<Path> newDirectoryStream(Path dir, DirectoryStream.Filter<? super Path> filter) throws IOException {
         final SftpPath p = toSftpPath(dir);
-        return new PathDirectoryStream(p);
+        return new SftpDirectoryStream(p);
     }
 
     @Override
@@ -576,7 +574,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
     @Override
     public <V extends FileAttributeView> V getFileAttributeView(final Path path, Class<V> type, final LinkOption... options) {
         if (isSupportedFileAttributeView(type)) {
-            return type.cast(new SftpPosixFileAttributeView(path, options));
+            return type.cast(new SftpPosixFileAttributeView(this, path, options));
         } else {
             throw new UnsupportedOperationException("getFileAttributeView(" + path + ") view not supported: " + type.getSimpleName());
         }
@@ -728,7 +726,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         }
     }
 
-    private SftpPath toSftpPath(Path path) {
+    protected SftpPath toSftpPath(Path path) {
         ValidateUtils.checkNotNull(path, "No path provided");
         if (!(path instanceof SftpPath)) {
             throw new ProviderMismatchException("Path is not SFTP: " + path);
@@ -959,214 +957,5 @@ public class SftpFileSystemProvider extends FileSystemProvider {
 
     public static URI createFileSystemURI(String host, int port, String username, String password) {
         return URI.create(SftpConstants.SFTP_SUBSYSTEM_NAME + "://" + username + ":" + password + "@" + host + ":" + port + "/");
-    }
-
-    private static class PathDirectoryStream implements DirectoryStream<Path> {
-        private final SftpFileSystem fs;
-        private final SftpClient sftp;
-        private final Iterable<SftpClient.DirEntry> iter;
-        private final SftpPath p;
-
-        public PathDirectoryStream(SftpPath p) throws IOException {
-            this.p = p;
-            fs = p.getFileSystem();
-            sftp = fs.getClient();
-            iter = sftp.readDir(p.toString());
-        }
-
-        @Override
-        public Iterator<Path> iterator() {
-            return new PathIterator();
-        }
-
-        @Override
-        public void close() throws IOException {
-            sftp.close();
-        }
-
-        private class PathIterator implements Iterator<Path> {
-            @SuppressWarnings("synthetic-access")
-            private final Iterator<SftpClient.DirEntry> it = (iter == null) ? null : iter.iterator();
-            private boolean dotIgnored;
-            private boolean dotdotIgnored;
-            private SftpClient.DirEntry curEntry = nextEntry();
-
-            @Override
-            public boolean hasNext() {
-                return curEntry != null;
-            }
-
-            @Override
-            public Path next() {
-                if (curEntry == null) {
-                    throw new NoSuchElementException("No next entry");
-                }
-
-                SftpClient.DirEntry entry = curEntry;
-                curEntry = nextEntry();
-                return p.resolve(entry.filename);
-            }
-
-            private SftpClient.DirEntry nextEntry() {
-                while ((it != null) && it.hasNext()) {
-                    SftpClient.DirEntry entry = it.next();
-                    String name = entry.filename;
-                    if (".".equals(name) && (!dotIgnored)) {
-                        dotIgnored = true;
-                    } else if ("..".equals(name) && (!dotdotIgnored)) {
-                        dotdotIgnored = true;
-                    } else {
-                        return entry;
-                    }
-                }
-
-                return null;
-            }
-
-            @Override
-            public void remove() {
-                throw new UnsupportedOperationException("newDirectoryStream(" + p + ") Iterator#remove() N/A");
-            }
-        }
-    }
-
-    private class SftpPosixFileAttributeView implements PosixFileAttributeView {
-        private final Path path;
-        private final LinkOption[] options;
-
-        public SftpPosixFileAttributeView(Path path, LinkOption... options) {
-            this.path = path;
-            this.options = options;
-        }
-
-        @Override
-        public String name() {
-            return "view";
-        }
-
-        @SuppressWarnings("synthetic-access")
-        @Override
-        public PosixFileAttributes readAttributes() throws IOException {
-            SftpPath p = toSftpPath(path);
-            SftpFileSystem fs = p.getFileSystem();
-            final Attributes attributes;
-            try (SftpClient client = fs.getClient()) {
-                try {
-                    if (IoUtils.followLinks(options)) {
-                        attributes = client.stat(p.toString());
-                    } else {
-                        attributes = client.lstat(p.toString());
-                    }
-                } catch (SftpException e) {
-                    if (e.getStatus() == SftpConstants.SSH_FX_NO_SUCH_FILE) {
-                        throw new NoSuchFileException(p.toString());
-                    }
-                    throw e;
-                }
-            }
-            return new SftpPosixFileAttributes(attributes);
-        }
-
-        @Override
-        public void setTimes(FileTime lastModifiedTime, FileTime lastAccessTime, FileTime createTime) throws IOException {
-            if (lastModifiedTime != null) {
-                setAttribute(path, "lastModifiedTime", lastModifiedTime, options);
-            }
-            if (lastAccessTime != null) {
-                setAttribute(path, "lastAccessTime", lastAccessTime, options);
-            }
-            if (createTime != null) {
-                setAttribute(path, "createTime", createTime, options);
-            }
-        }
-
-        @Override
-        public void setPermissions(Set<PosixFilePermission> perms) throws IOException {
-            setAttribute(path, "permissions", perms, options);
-        }
-
-        @Override
-        public void setGroup(GroupPrincipal group) throws IOException {
-            setAttribute(path, "group", group, options);
-        }
-
-        @Override
-        public UserPrincipal getOwner() throws IOException {
-            return readAttributes().owner();
-        }
-
-        @Override
-        public void setOwner(UserPrincipal owner) throws IOException {
-            setAttribute(path, "owner", owner, options);
-        }
-
-        private class SftpPosixFileAttributes implements PosixFileAttributes {
-            private final Attributes attributes;
-
-            public SftpPosixFileAttributes(Attributes attributes) {
-                this.attributes = attributes;
-            }
-
-            @Override
-            public UserPrincipal owner() {
-                return attributes.owner != null ? new SftpFileSystem.DefaultGroupPrincipal(attributes.owner) : null;
-            }
-
-            @Override
-            public GroupPrincipal group() {
-                return attributes.group != null ? new SftpFileSystem.DefaultGroupPrincipal(attributes.group) : null;
-            }
-
-            @Override
-            public Set<PosixFilePermission> permissions() {
-                return permissionsToAttributes(attributes.perms);
-            }
-
-            @Override
-            public FileTime lastModifiedTime() {
-                return FileTime.from(attributes.mtime, TimeUnit.SECONDS);
-            }
-
-            @Override
-            public FileTime lastAccessTime() {
-                return FileTime.from(attributes.atime, TimeUnit.SECONDS);
-            }
-
-            @Override
-            public FileTime creationTime() {
-                return FileTime.from(attributes.ctime, TimeUnit.SECONDS);
-            }
-
-            @Override
-            public boolean isRegularFile() {
-                return attributes.isRegularFile();
-            }
-
-            @Override
-            public boolean isDirectory() {
-                return attributes.isDirectory();
-            }
-
-            @Override
-            public boolean isSymbolicLink() {
-                return attributes.isSymbolicLink();
-            }
-
-            @Override
-            public boolean isOther() {
-                return attributes.isOther();
-            }
-
-            @Override
-            public long size() {
-                return attributes.size;
-            }
-
-            @Override
-            public Object fileKey() {
-                // TODO
-                return null;
-            }
-        }
     }
 }

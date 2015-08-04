@@ -40,7 +40,10 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
  */
 public class TcpipClientChannel extends AbstractClientChannel {
 
-    public enum Type {
+    /**
+     * Type of channel being created
+     */
+    public static enum Type {
         Direct,
         Forwarded
     }

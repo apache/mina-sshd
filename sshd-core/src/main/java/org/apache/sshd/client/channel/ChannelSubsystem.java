@@ -35,8 +35,20 @@ public class ChannelSubsystem extends ChannelSession {
 
     private final String subsystem;
 
+    /**
+     * @param subsystem The subsystem name for the channel - never {@code null} or empty
+     */
     public ChannelSubsystem(String subsystem) {
         this.subsystem = ValidateUtils.checkNotNullAndNotEmpty(subsystem, "Subsystem may not be null/empty");
+    }
+
+    /**
+     * The subsystem name
+     *
+     * @return The subsystem name for the channel - never {@code null} or empty
+     */
+    public final String getSubsystem() {
+        return subsystem;
     }
 
     @Override

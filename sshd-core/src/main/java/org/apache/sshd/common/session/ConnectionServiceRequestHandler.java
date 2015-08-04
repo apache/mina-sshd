@@ -31,6 +31,7 @@ public interface ConnectionServiceRequestHandler extends RequestHandler<Connecti
     // required because of generics issues
     Transformer<ConnectionServiceRequestHandler, RequestHandler<ConnectionService>> SVC2HNDLR = Transformer.Utils.identity();
 
+    @Override
     Result process(ConnectionService service, String request, boolean wantReply, Buffer buffer) throws Exception;
 
 }

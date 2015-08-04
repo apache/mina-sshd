@@ -16,7 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
 package org.apache.sshd.client.subsystem.sftp;
 
 import java.io.IOException;
@@ -27,7 +26,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -43,8 +41,6 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
-import org.apache.sshd.common.util.io.InputStreamWithChannel;
-import org.apache.sshd.common.util.io.OutputStreamWithChannel;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 import static org.apache.sshd.common.subsystem.sftp.SftpConstants.ACE4_APPEND_DATA;
@@ -373,7 +369,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
         int id = buffer.getInt();
         if (type == SSH_FXP_ATTRS) {
             return readAttributes(buffer);
-        }            
+        }
 
         if (type == SSH_FXP_STATUS) {
             int substatus = buffer.getInt();
@@ -424,7 +420,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             }
             return name;
         }
-        
+
         if (type == SSH_FXP_STATUS) {
             int substatus = buffer.getInt();
             String msg = buffer.getString();
@@ -900,7 +896,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
                 if (log.isTraceEnabled()) {
                     log.trace("checkDir(id={})[{}] ({})[{}]: {}", Integer.valueOf(id), Integer.valueOf(i), name, longName, attrs);
                 }
-    
+
                 entries.add(new DirEntry(name, longName, attrs));
             }
             return entries;
@@ -1080,7 +1076,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
         if (!isOpen()) {
             throw new IOException("readDir(" + path + ") client is closed");
         }
-        return new DirEntryIterable(path);
+        return new SftpIterableDirEntry(this, path);
     }
 
     @Override
@@ -1093,7 +1089,7 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             throw new IOException("read(" + path + ")[" + mode + "] size=" + bufferSize + ": client is closed");
         }
 
-        return new SftpInputStreamWithChannel(bufferSize, path, mode);
+        return new SftpInputStreamWithChannel(this, bufferSize, path, mode);
     }
 
     @Override
@@ -1106,236 +1102,6 @@ public abstract class AbstractSftpClient extends AbstractLoggingBean implements 
             throw new IOException("write(" + path + ")[" + mode + "] size=" + bufferSize + ": client is closed");
         }
 
-        return new SftpOutputStreamWithChannel(bufferSize, path, mode);
-    }
-
-    private class DirEntryIterable implements Iterable<DirEntry> {
-
-        private final String path;
-
-        public DirEntryIterable(String path) {
-            this.path = path;
-        }
-
-        @Override
-        public Iterator<DirEntry> iterator() {
-            return new DirEntryIterator();
-        }
-
-        private class DirEntryIterator implements Iterator<DirEntry> {
-            private CloseableHandle handle;
-            private List<DirEntry> entries;
-            private int index;
-
-            public DirEntryIterator() {
-                open();
-                load();
-            }
-
-            @Override
-            public boolean hasNext() {
-                return (entries != null) && (index < entries.size());
-            }
-
-            @Override
-            public DirEntry next() {
-                DirEntry entry = entries.get(index++);
-                if (index >= entries.size()) {
-                    load();
-                }
-                return entry;
-            }
-
-            @SuppressWarnings("synthetic-access")
-            private void open() {
-                try {
-                    handle = openDir(path);
-                    if (log.isDebugEnabled()) {
-                        log.debug("readDir(" + path + ") handle=" + handle);
-                    }
-                } catch (IOException e) {
-                    if (log.isDebugEnabled()) {
-                        log.debug("readDir(" + path + ") failed (" + e.getClass().getSimpleName() + ") to open dir: " + e.getMessage());
-                    }
-                    throw new RuntimeException(e);
-                }
-            }
-
-            @SuppressWarnings("synthetic-access")
-            private void load() {
-                try {
-                    entries = readDir(handle);
-                    index = 0;
-                    if (entries == null) {
-                        handle.close();
-                    }
-                } catch (IOException e) {
-                    entries = null;
-                    try {
-                        handle.close();
-                    } catch (IOException t) {
-                        if (log.isTraceEnabled()) {
-                            log.trace(t.getClass().getSimpleName() + " while close handle=" + handle
-                                    + " due to " + e.getClass().getSimpleName() + " [" + e.getMessage() + "]"
-                                    + ": " + t.getMessage());
-                        }
-                    }
-                    throw new RuntimeException(e);
-                }
-            }
-
-            @Override
-            public void remove() {
-                throw new UnsupportedOperationException("readDir(" + path + ") Iterator#remove() N/A");
-            }
-        }
-    }
-
-    private class SftpOutputStreamWithChannel extends OutputStreamWithChannel {
-        private final String path;
-        private byte[] bb;
-        private byte[] buffer;
-        private int index;
-        private CloseableHandle handle;
-        private long offset;
-
-        public SftpOutputStreamWithChannel(int bufferSize, String path, Collection<OpenMode> mode) throws IOException {
-            this.path = path;
-            bb = new byte[1];
-            buffer = new byte[bufferSize];
-            handle = AbstractSftpClient.this.open(path, mode);
-        }
-
-        @Override
-        public boolean isOpen() {
-            return (handle != null) && handle.isOpen();
-        }
-
-        @Override
-        public void write(int b) throws IOException {
-            bb[0] = (byte) b;
-            write(bb, 0, 1);
-        }
-
-        @Override
-        public void write(byte[] b, int off, int len) throws IOException {
-            if (!isOpen()) {
-                throw new IOException("write(" + path + ")[len=" + len + "] stream is closed");
-            }
-
-            do {
-                int nb = Math.min(len, buffer.length - index);
-                System.arraycopy(b, off, buffer, index, nb);
-                index += nb;
-                if (index == buffer.length) {
-                    flush();
-                }
-                off += nb;
-                len -= nb;
-            } while (len > 0);
-        }
-
-        @Override
-        public void flush() throws IOException {
-            if (!isOpen()) {
-                throw new IOException("flush(" + path + ") stream is closed");
-            }
-
-            AbstractSftpClient.this.write(handle, offset, buffer, 0, index);
-            offset += index;
-            index = 0;
-        }
-
-        @Override
-        public void close() throws IOException {
-            if (isOpen()) {
-                try {
-                    try {
-                        if (index > 0) {
-                            flush();
-                        }
-                    } finally {
-                        handle.close();
-                    }
-                } finally {
-                    handle = null;
-                }
-            }
-        }
-    }
-
-    private class SftpInputStreamWithChannel extends InputStreamWithChannel {
-        private final String path;
-        private byte[] bb;
-        private byte[] buffer;
-        private int index;
-        private int available;
-        private CloseableHandle handle;
-        private long offset;
-
-        public SftpInputStreamWithChannel(int bufferSize, String path, Collection<OpenMode> mode) throws IOException {
-            this.path = path;
-            bb = new byte[1];
-            buffer = new byte[bufferSize];
-            handle = AbstractSftpClient.this.open(path, mode);
-        }
-
-        @Override
-        public boolean isOpen() {
-            return (handle != null) && handle.isOpen();
-        }
-
-        @Override
-        public int read() throws IOException {
-            int read = read(bb, 0, 1);
-            if (read > 0) {
-                return bb[0];
-            }
-
-            return read;
-        }
-
-        @Override
-        public int read(byte[] b, int off, int len) throws IOException {
-            if (!isOpen()) {
-                throw new IOException("read(" + path + ") stream closed");
-            }
-
-            int idx = off;
-            while (len > 0) {
-                if (index >= available) {
-                    available = AbstractSftpClient.this.read(handle, offset, buffer, 0, buffer.length);
-                    if (available < 0) {
-                        if (idx == off) {
-                            return -1;
-                        } else {
-                            break;
-                        }
-                    }
-                    offset += available;
-                    index = 0;
-                }
-                if (index >= available) {
-                    break;
-                }
-                int nb = Math.min(len, available - index);
-                System.arraycopy(buffer, index, b, idx, nb);
-                index += nb;
-                idx += nb;
-                len -= nb;
-            }
-            return idx - off;
-        }
-
-        @Override
-        public void close() throws IOException {
-            if (isOpen()) {
-                try {
-                    handle.close();
-                } finally {
-                    handle = null;
-                }
-            }
-        }
+        return new SftpOutputStreamWithChannel(this, bufferSize, path, mode);
     }
 }

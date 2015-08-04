@@ -32,6 +32,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -485,7 +486,10 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> {
         }
     }
 
-    protected static class DefaultUserPrincipalLookupService extends UserPrincipalLookupService {
+    public static class DefaultUserPrincipalLookupService extends UserPrincipalLookupService {
+        public DefaultUserPrincipalLookupService() {
+            super();
+        }
 
         @Override
         public UserPrincipal lookupPrincipalByName(String name) throws IOException {
@@ -498,19 +502,16 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> {
         }
     }
 
-    protected static class DefaultUserPrincipal implements UserPrincipal {
+    public static class DefaultUserPrincipal implements UserPrincipal {
 
         private final String name;
 
         public DefaultUserPrincipal(String name) {
-            if (name == null) {
-                throw new IllegalArgumentException("name is null");
-            }
-            this.name = name;
+            this.name = ValidateUtils.checkNotNull(name, "name is null");
         }
 
         @Override
-        public String getName() {
+        public final String getName() {
             return name;
         }
 
@@ -523,26 +524,24 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> {
                 return false;
             }
             DefaultUserPrincipal that = (DefaultUserPrincipal) o;
-            return name.equals(that.name);
+            return Objects.equals(this.getName(), that.getName());
         }
 
         @Override
         public int hashCode() {
-            return name.hashCode();
+            return Objects.hashCode(getName());
         }
 
         @Override
         public String toString() {
-            return name;
+            return getName();
         }
     }
 
-    protected static class DefaultGroupPrincipal extends DefaultUserPrincipal implements GroupPrincipal {
+    public static class DefaultGroupPrincipal extends DefaultUserPrincipal implements GroupPrincipal {
 
         public DefaultGroupPrincipal(String name) {
             super(name);
         }
-
     }
-
 }

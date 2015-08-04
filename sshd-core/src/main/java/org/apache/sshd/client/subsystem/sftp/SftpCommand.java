@@ -53,6 +53,7 @@ public class SftpCommand implements Channel {
     private final Map<String, CommandExecutor> commandsMap;
     private String cwdRemote;
 
+    @SuppressWarnings("synthetic-access")
     public SftpCommand(SftpClient client) {
         this.client = ValidateUtils.checkNotNull(client, "No client");
 
