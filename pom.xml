@@ -29,7 +29,7 @@
 
     <groupId>org.apache.sshd</groupId>
     <artifactId>sshd</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.0</version>
     <name>Apache Mina SSHD</name>
     <packaging>pom</packaging>
     <inceptionYear>2008</inceptionYear>
@@ -77,7 +77,7 @@
         <connection>scm:git:http://git-wip-us.apache.org/repos/asf/mina-sshd.git</connection>
         <developerConnection>scm:git:http://git-wip-us.apache.org/repos/asf/mina-sshd.git</developerConnection>
         <url>https://git-wip-us.apache.org/repos/asf?p=mina-sshd.git</url>
-		<tag>HEAD</tag>
+		<tag>sshd-1.0.0</tag>
     </scm>
 
 	<properties>
@@ -612,14 +612,14 @@
                       <!-- Checks whether files end with a new line.                        -->
                       <!-- See http://checkstyle.sf.net/config_misc.html#NewlineAtEndOfFile -->
                       <!--
-                          <module name="NewlineAtEndOfFile"/>
+                          <module name="NewlineAtEndOfFile" />
                       -->
 
                       <!-- Checks that property files contain the same keys.         -->
                       <!-- See http://checkstyle.sf.net/config_misc.html#Translation -->
                       <module name="Translation" />
 
-                      <!--<module name="StrictDuplicateCode"/>-->
+                      <!--<module name="StrictDuplicateCode" />-->
 
                       <module name="TreeWalker">
                           <!-- Enable FileContentsHolder to allow us to in turn turn on suppression comments -->
@@ -627,11 +627,11 @@
                           <!-- Checks for Javadoc comments.                     -->
                           <!-- See http://checkstyle.sf.net/config_javadoc.html -->
                           <!--
-                              <module name="PackageHtml"/>
-                              <module name="JavadocMethod"/>
-                              <module name="JavadocType"/>
-                              <module name="JavadocVariable"/>
-                              <module name="JavadocStyle"/>
+                              <module name="PackageHtml" />
+                              <module name="JavadocMethod" />
+                              <module name="JavadocType" />
+                              <module name="JavadocVariable" />
+                              <module name="JavadocStyle" />
                           -->
 
 
@@ -640,15 +640,15 @@
                           <module name="ConstantName" />
                           <module name="LocalFinalVariableName" />
                           <module name="LocalVariableName">
-                              <property name="format" value="^[a-z][a-zA-Z0-9_]*$"/>
+                              <property name="format" value="^[a-z][a-zA-Z0-9_]*$" />
                           </module>
                           <module name="MemberName">
-                              <property name="format" value="^[a-z][a-zA-Z0-9_]*$"/>
+                              <property name="format" value="^[a-z][a-zA-Z0-9_]*$" />
                           </module>
                           <module name="MethodName" />
                           <module name="PackageName" />
                           <module name="ParameterName">
-                              <property name="format" value="^[a-z][a-zA-Z0-9_]*$"/>
+                              <property name="format" value="^[a-z][a-zA-Z0-9_]*$" />
                           </module>
                           <module name="StaticVariableName" />
                           <module name="TypeName" />
@@ -661,13 +661,12 @@
                           <module name="RedundantImport" />
                           <module name="UnusedImports" />
                           <module name="ImportOrder">
-                              <property name="groups"
-                                        value="java,javax,org.w3c,org.xml,junit,antlr,com.,net,org,*" />
+                              <property name="groups" value="java,javax,org.w3c,org.xml,junit,antlr,com.,net,org,*" />
                               <property name="ordered" value="true" />
                           </module>
                           <!--
                               <module name="ImportControl">
-                              <property name="file" value="etc/import-control.xml"/>
+                              <property name="file" value="etc/import-control.xml" />
                               </module>
                           -->
 
@@ -699,8 +698,7 @@
                           <module name="EmptyForInitializerPad" />
                           <module name="MethodParamPad" />
                           <module name="NoWhitespaceAfter">
-                              <property name="tokens"
-                                        value="ARRAY_INIT,BNOT,DEC,DOT,INC,LNOT,UNARY_MINUS,UNARY_PLUS" />
+                              <property name="tokens" value="ARRAY_INIT,BNOT,DEC,DOT,INC,LNOT,UNARY_MINUS,UNARY_PLUS" />
                           </module>
                           <module name="NoWhitespaceBefore" />
                           <module name="OperatorWrap" />
@@ -710,8 +708,7 @@
                               <property name="tokens" value="COMMA, SEMI" />
                           </module>
                           <module name="WhitespaceAround">
-                              <property name="tokens"
-                                        value="ASSIGN, BAND, BAND_ASSIGN, BOR, BOR_ASSIGN, BSR, BSR_ASSIGN, BXOR, BXOR_ASSIGN, COLON, DIV, DIV_ASSIGN, EQUAL, GE, GT, LAND, LCURLY, LE, LITERAL_ASSERT, LITERAL_CATCH, LITERAL_DO, LITERAL_ELSE, LITERAL_FINALLY, LITERAL_FOR, LITERAL_IF, LITERAL_RETURN, LITERAL_SYNCHRONIZED, LITERAL_TRY, LITERAL_WHILE, LOR, LT, MINUS, MINUS_ASSIGN, MOD, MOD_ASSIGN, NOT_EQUAL, PLUS, PLUS_ASSIGN, QUESTION, RCURLY, SL, SLIST, SL_ASSIGN, SR, SR_ASSIGN, STAR, STAR_ASSIGN,TYPE_EXTENSION_AND" />
+                              <property name="tokens" value="ASSIGN, BAND, BAND_ASSIGN, BOR, BOR_ASSIGN, BSR, BSR_ASSIGN, BXOR, BXOR_ASSIGN, COLON, DIV, DIV_ASSIGN, EQUAL, GE, GT, LAND, LCURLY, LE, LITERAL_ASSERT, LITERAL_CATCH, LITERAL_DO, LITERAL_ELSE, LITERAL_FINALLY, LITERAL_FOR, LITERAL_IF, LITERAL_RETURN, LITERAL_SYNCHRONIZED, LITERAL_TRY, LITERAL_WHILE, LOR, LT, MINUS, MINUS_ASSIGN, MOD, MOD_ASSIGN, NOT_EQUAL, PLUS, PLUS_ASSIGN, QUESTION, RCURLY, SL, SLIST, SL_ASSIGN, SR, SR_ASSIGN, STAR, STAR_ASSIGN,TYPE_EXTENSION_AND" />
                           </module>
 
                           <!-- Modifier Checks                                    -->
@@ -735,12 +732,12 @@
 
                           <!-- Checks for common coding problems               -->
                           <!-- See http://checkstyle.sf.net/config_coding.html -->
-                          <!--<module name="ArrayTrailingComma"/>-->
-                          <!--<module name="AvoidInlineConditionals"/>-->
+                          <!--<module name="ArrayTrailingComma" />-->
+                          <!--<module name="AvoidInlineConditionals" />-->
                           <module name="CovariantEquals" />
                           <module name="EmptyStatement" />
                           <module name="EqualsHashCode" />
-                          <!--<module name="FinalLocalVariable"/>-->
+                          <!--<module name="FinalLocalVariable" />-->
                           <!-- DISABLED
                           <module name="HiddenField">
                               <property name="ignoreConstructorParameter" value="true" />
@@ -748,10 +745,10 @@
                           </module>
                           -->
                           <module name="IllegalInstantiation" />
-                          <!--<module name="IllegalToken"/>-->
-                          <!--<module name="IllegalTokenText"/>-->
+                          <!--<module name="IllegalToken" />-->
+                          <!--<module name="IllegalTokenText" />-->
                           <module name="InnerAssignment" />
-                          <!--<module name="MagicNumber"/>-->
+                          <!--<module name="MagicNumber" />-->
                           <module name="MissingSwitchDefault" />
                           <!--module name="ModifiedControlVariable"/-->
                           <module name="SimplifyBooleanExpression" />
@@ -765,12 +762,11 @@
                           </module>
                           <module name="SuperClone" />
                           <module name="SuperFinalize" />
-                          <!--<module name="IllegalCatch"/>-->
+                          <!--<module name="IllegalCatch" />-->
                           <module name="IllegalThrows">
-                              <property name="illegalClassNames"
-                                        value="java.lang.Error,java.lang.RuntimeException" />
+                              <property name="illegalClassNames" value="java.lang.Error,java.lang.RuntimeException" />
                           </module>
-                          <!--<module name="RedundantThrows"/>-->
+                          <!--<module name="RedundantThrows" />-->
                           <module name="PackageDeclaration" />
                           <module name="ReturnCount">
                               <property name="max" value="15" />
@@ -778,29 +774,28 @@
 
                           <module name="IllegalType">
                               <property name="format" value="^xxx$" />
-                              <property name="illegalClassNames"
-                                        value="java.util.GregorianCalendar, java.util.Hashtable, java.util.HashSet, java.util.HashMap, java.util.ArrayList, java.util.LinkedList, java.util.LinkedHashMap, java.util.LinkedHashSet, java.util.TreeSet, java.util.TreeMap" />
+                              <property name="illegalClassNames" value="java.util.GregorianCalendar, java.util.Hashtable, java.util.HashSet, java.util.HashMap, java.util.ArrayList, java.util.LinkedList, java.util.LinkedHashMap, java.util.LinkedHashSet, java.util.TreeSet, java.util.TreeMap" />
                           </module>
                           <module name="DeclarationOrder" />
-                          <!--<module name="ParameterAssignment"/>-->
+                          <!--<module name="ParameterAssignment" />-->
                           <module name="ExplicitInitialization" />
                           <module name="DefaultComesLast" />
-                          <!--<module name="MissingCtor"/>-->
+                          <!--<module name="MissingCtor" />-->
                           <module name="FallThrough" />
-                          <!--<module name="MultipleStringLiterals"/>-->
+                          <!--<module name="MultipleStringLiterals" />-->
                           <module name="MultipleVariableDeclarations" />
-                          <!--<module name="RequireThis"/>-->
+                          <!--<module name="RequireThis" />-->
                           <module name="UnnecessaryParentheses" />
 
 
 
                           <!-- Checks for class design                         -->
                           <!-- See http://checkstyle.sf.net/config_design.html -->
-                          <!--<module name="DesignForExtension"/>-->
+                          <!--<module name="DesignForExtension" />-->
                           <module name="FinalClass" />
                           <module name="HideUtilityClassConstructor" />
                           <module name="InterfaceIsType" />
-                          <!--<module name="MutableException"/>-->
+                          <!--<module name="MutableException" />-->
                           <module name="ThrowsCount">
                               <property name="max" value="5" />
                           </module>
@@ -820,10 +815,10 @@
                           <module name="BooleanExpressionComplexity">
                               <property name="max" value="10" />
                           </module>
-                          <!--<module name="ClassDataAbstractionCoupling"/>-->
-                          <!--<module name="ClassFanOutComplexity"/>-->
-                          <!--<module name="CyclomaticComplexity"/>-->
-                          <!--<module name="NPathComplexity"/>-->
+                          <!--<module name="ClassDataAbstractionCoupling" />-->
+                          <!--<module name="ClassFanOutComplexity" />-->
+                          <!--<module name="CyclomaticComplexity" />-->
+                          <!--<module name="NPathComplexity" />-->
                           <module name="JavaNCSS">
                               <property name="methodMaximum" value="150" />
                               <property name="classMaximum" value="2000" />
@@ -833,13 +828,13 @@
                           <!-- Miscellaneous other checks.                   -->
                           <!-- See http://checkstyle.sf.net/config_misc.html -->
                           <!--
-                              <module name="ArrayTypeStyle"/>
-                              <module name="FinalParameters"/>
+                              <module name="ArrayTypeStyle" />
+                              <module name="FinalParameters" />
                           -->
                           <!--
                               <module name="GenericIllegalRegexp">
-                              <property name="format" value="\s+$"/>
-                              <property name="message" value="Line has trailing spaces."/>
+                              <property name="format" value="\s+$" />
+                              <property name="message" value="Line has trailing spaces." />
                               </module>
                           -->
                           <!-- DISABLED
@@ -853,41 +848,39 @@
                           <!--Assert statement may have side effects:-->
                           <module name="DescendantToken">
                               <property name="tokens" value="LITERAL_ASSERT" />
-                              <property name="limitedTokens"
-                                        value="ASSIGN,DEC,INC,POST_DEC,POST_INC,PLUS_ASSIGN,MINUS_ASSIGN,STAR_ASSIGN,DIV_ASSIGN,MOD_ASSIGN,BSR_ASSIGN,SR_ASSIGN,SL_ASSIGN,BAND_ASSIGN,BXOR_ASSIGN,BOR_ASSIGN" />
+                              <property name="limitedTokens" value="ASSIGN,DEC,INC,POST_DEC,POST_INC,PLUS_ASSIGN,MINUS_ASSIGN,STAR_ASSIGN,DIV_ASSIGN,MOD_ASSIGN,BSR_ASSIGN,SR_ASSIGN,SL_ASSIGN,BAND_ASSIGN,BXOR_ASSIGN,BOR_ASSIGN" />
                               <property name="maximumNumber" value="0" />
                           </module>
 
-                          <!--<module name="UncommentedMain"/>-->
+                          <!--<module name="UncommentedMain" />-->
                           <!--module name="TrailingComment"/-->
                           <module name="Indentation">
                               <property name="caseIndent" value="4" />
-                              <property name="lineWrappingIndentation" value="0"/>
+                              <property name="lineWrappingIndentation" value="0" />
                           </module>
                           <!--<module name="RequiredRegexp">-->
                           <module name="SuppressWarningsHolder" />
                       </module>
                       <module name="SuppressionCommentFilter">
-                          <property name="offCommentFormat" value="CHECKSTYLE\:OFF"/>
-                          <property name="onCommentFormat" value="CHECKSTYLE\:ON"/>
+                          <property name="offCommentFormat" value="CHECKSTYLE\:OFF" />
+                          <property name="onCommentFormat" value="CHECKSTYLE\:ON" />
                       </module>
                       <module name="SuppressionCommentFilter">
-                          <property name="offCommentFormat" value="CHECKSTYLE.OFF\:([\w\|]+)"/>
-                          <property name="onCommentFormat" value="CHECKSTYLE.ON\:([\w\|]+)"/>
-                          <property name="checkFormat" value="$1"/>
+                          <property name="offCommentFormat" value="CHECKSTYLE.OFF\:([\w\|]+)" />
+                          <property name="onCommentFormat" value="CHECKSTYLE.ON\:([\w\|]+)" />
+                          <property name="checkFormat" value="$1" />
                       </module>
-                      <module name="SuppressWarningsFilter"/>
+                      <module name="SuppressWarningsFilter" />
                       <!-- Header checks -->
                       <module name="Header">
-                          <property name="header"
-                                    value="/*\n * Licensed to the Apache Software Foundation (ASF) under one\n * or more contributor license agreements.  See the NOTICE file\n * distributed with this work for additional information\n * regarding copyright ownership.  The ASF licenses this file\n * to you under the Apache License, Version 2.0 (the\n * &amp;quot;License&amp;quot;); you may not use this file except in compliance\n * with the License.  You may obtain a copy of the License at\n *\n *   http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing,\n * software distributed under the License is distributed on an\n * &amp;quot;AS IS&amp;quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY\n * KIND, either express or implied.  See the License for the\n * specific language governing permissions and limitations\n * under the License.\n */\n" />
+                          <property name="header" value="/*\n * Licensed to the Apache Software Foundation (ASF) under one\n * or more contributor license agreements.  See the NOTICE file\n * distributed with this work for additional information\n * regarding copyright ownership.  The ASF licenses this file\n * to you under the Apache License, Version 2.0 (the\n * &amp;quot;License&amp;quot;); you may not use this file except in compliance\n * with the License.  You may obtain a copy of the License at\n *\n *   http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing,\n * software distributed under the License is distributed on an\n * &amp;quot;AS IS&amp;quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY\n * KIND, either express or implied.  See the License for the\n * specific language governing permissions and limitations\n * under the License.\n */\n" />
                       </module>
-                      <!-- <module name="RegexpHeader"/> -->
+                      <!-- <module name="RegexpHeader" /> -->
                       <module name="FileLength">
                           <property name="max" value="3000" />
                       </module>
                       <module name="FileTabCharacter">
-                          <property name="eachLine" value="true"/>
+                          <property name="eachLine" value="true" />
                       </module>
                   </module>
 	            </checkstyleRules>
