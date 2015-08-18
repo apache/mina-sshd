@@ -194,6 +194,21 @@ public class PtyCapableChannelSession extends ChannelSession {
         env.put(key, value);
     }
 
+    public void sendWindowChange(int columns, int lines, int height, int width) throws IOException {
+        ptyColumns = columns;
+        ptyLines = lines;
+        ptyHeight = height;
+        ptyWidth = width;
+        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST);
+        buffer.putInt(recipient);
+        buffer.putString("window-change");
+        buffer.putInt(ptyColumns);
+        buffer.putInt(ptyLines);
+        buffer.putInt(ptyHeight);
+        buffer.putInt(ptyWidth);
+        writePacket(buffer);
+    }
+
     protected void doOpenPty() throws IOException {
         Buffer buffer;
 
