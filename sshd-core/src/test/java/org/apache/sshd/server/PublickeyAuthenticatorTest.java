@@ -19,10 +19,12 @@
 
 package org.apache.sshd.server;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.math.BigInteger;
 import java.security.PublicKey;
+import java.security.interfaces.RSAPublicKey;
 import java.util.Arrays;
-import java.util.Random;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.server.auth.pubkey.AcceptAllPublickeyAuthenticator;
@@ -46,38 +48,54 @@ public class PublickeyAuthenticatorTest extends BaseTestSupport {
     }
 
     @Test
-    public void testAcceptAllPublickeyAuthenticator() throws Exception {
+    public void testAcceptAllPublickeyAuthenticator() throws Throwable {
         testStaticPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);
     }
 
     @Test
-    public void testRejectAllPublickeyAuthenticator() throws Exception {
+    public void testRejectAllPublickeyAuthenticator() throws Throwable {
         testStaticPublickeyAuthenticator(RejectAllPublickeyAuthenticator.INSTANCE);
     }
 
-    private void testStaticPublickeyAuthenticator(StaticPublickeyAuthenticator authenticator) throws Exception {
+    private void testStaticPublickeyAuthenticator(StaticPublickeyAuthenticator authenticator) throws Throwable {
         Method method = PublickeyAuthenticator.class.getMethod("authenticate", String.class, PublicKey.class, ServerSession.class);
-        PublicKey key = Mockito.mock(PublicKey.class);
+        RSAPublicKey key = Mockito.mock(RSAPublicKey.class);
         Mockito.when(key.getAlgorithm()).thenReturn(getCurrentTestName());
         Mockito.when(key.getEncoded()).thenReturn(GenericUtils.EMPTY_BYTE_ARRAY);
         Mockito.when(key.getFormat()).thenReturn(getCurrentTestName());
+        Mockito.when(key.getModulus()).thenReturn(BigInteger.TEN);
+        Mockito.when(key.getPublicExponent()).thenReturn(BigInteger.ONE);
 
-        Object[] args = {getCurrentTestName(), key, null /* ServerSession */};
-        Object[] invArgs = new Object[args.length];
-        Random rnd = new Random(System.nanoTime());
+        ServerSession session = Mockito.mock(ServerSession.class);
+        Object[] invArgs = new Object[] { null /* username */, null /* key */, null /* server session */ };
         boolean expected = authenticator.isAccepted();
-        for (int index = 0; index < Long.SIZE; index++) {
-            for (int j = 0; j < args.length; j++) {
-                if (rnd.nextBoolean()) {
-                    invArgs[j] = args[j];
-                } else {
-                    invArgs[j] = null;
+        boolean[] flags = new boolean[] { false, true };
+        for (boolean useUsername : flags) {
+            invArgs[0] = useUsername ? getCurrentTestName() : null;
+
+            for (boolean useKey : flags) {
+                invArgs[1] = useKey ? key : null;
+
+                for (boolean useSession : flags) {
+                    invArgs[2] = useSession ? session : null;
+
+                    Object result;
+                    try {
+                        result = method.invoke(authenticator, invArgs);
+                    } catch(InvocationTargetException e) {
+                        Throwable t = e.getTargetException();   // peel of the real exception
+                        System.err.println("Failed (" + t.getClass().getSimpleName() + ")"
+                                          + " to invoke with user=" + useUsername
+                                          + ", key=" + useKey
+                                          + ", session=" + useSession
+                                          + ": " + t.getMessage());
+                        throw t;
+                    }
+
+                    assertTrue("No boolean result", result instanceof Boolean);
+                    assertEquals("Mismatched result for " + Arrays.toString(invArgs), expected, ((Boolean) result).booleanValue());
                 }
             }
-
-            Object result = method.invoke(authenticator, invArgs);
-            assertTrue("No boolean result", result instanceof Boolean);
-            assertEquals("Mismatched result for " + Arrays.toString(invArgs), expected, ((Boolean) result).booleanValue());
         }
     }
 }
