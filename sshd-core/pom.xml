@@ -24,12 +24,12 @@
     <parent>
         <groupId>org.apache.sshd</groupId>
         <artifactId>sshd</artifactId>
-        <version>1.0.0</version>
+        <version>1.0.1-SNAPSHOT</version>
         <relativePath>..</relativePath>
     </parent>
 
     <artifactId>sshd-core</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1-SNAPSHOT</version>
     <name>Apache Mina SSHD :: Core</name>
     <packaging>jar</packaging>
     <inceptionYear>2008</inceptionYear>
