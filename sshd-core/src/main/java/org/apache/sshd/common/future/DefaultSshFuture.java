@@ -101,7 +101,9 @@ public class DefaultSshFuture<T extends SshFuture> extends AbstractLoggingBean i
         try {
             return await0(timeoutMillis, false) != null;
         } catch (InterruptedIOException e) {
-            throw new InternalError("Unexpected interrupted exception wile awaitUninterruptibly " + timeoutMillis + " msec.: " + e.getMessage(), e);
+            // TODO for JDK-8 use the 2-args constructors
+            throw (InternalError) new InternalError("Unexpected interrupted exception wile awaitUninterruptibly "
+                    + timeoutMillis + " msec.: " + e.getMessage()).initCause(e);
         }
     }
 
