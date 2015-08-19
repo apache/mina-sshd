@@ -1,18 +1,18 @@
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
+ * or more contributor license agreements. See the NOTICE file
  * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
+ * regarding copyright ownership. The ASF licenses this file
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * with the License. You may obtain a copy of the License at
  *
  *   http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
+ * KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations
  * under the License.
  */
@@ -32,7 +32,6 @@ import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
@@ -75,7 +74,7 @@ public class AuthorizedKeysAuthenticatorTest extends BaseTestSupport {
         URL url = getClass().getResource(AuthorizedKeyEntry.STD_AUTHORIZED_KEYS_FILENAME);
         assertNotNull("Missing " + AuthorizedKeyEntry.STD_AUTHORIZED_KEYS_FILENAME + " resource", url);
 
-        List<String> lines = new ArrayList<String>();
+        List<String> keyLines = new ArrayList<String>();
         try (BufferedReader rdr = new BufferedReader(new InputStreamReader(url.openStream(), StandardCharsets.UTF_8))) {
             for (String l = rdr.readLine(); l != null; l = rdr.readLine()) {
                 l = GenericUtils.trimToEmpty(l);
@@ -83,7 +82,7 @@ public class AuthorizedKeysAuthenticatorTest extends BaseTestSupport {
                 if (GenericUtils.isEmpty(l) || (l.charAt(0) == PublicKeyEntry.COMMENT_CHAR)) {
                     continue;
                 } else {
-                    lines.add(l);
+                    keyLines.add(l);
                 }
             }
         }
@@ -91,34 +90,38 @@ public class AuthorizedKeysAuthenticatorTest extends BaseTestSupport {
         assertHierarchyTargetFolderExists(file.getParent());
 
         final String EOL = System.getProperty("line.separator");
-        Random rnd = new Random(System.nanoTime());
-        List<String> removed = new ArrayList<String>(lines.size());
-        for (; ; ) {
-            try (Writer w = Files.newBufferedWriter(file)) {
-                for (String l : lines) {
+        while(keyLines.size() > 0) {
+            try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
+                w.append(PublicKeyEntry.COMMENT_CHAR)
+                 .append(' ').append(getCurrentTestName())
+                 .append(' ').append(String.valueOf(keyLines.size())).append(" remaining keys")
+                 .append(EOL)
+                 ;
+                for (String l : keyLines) {
                     w.append(l).append(EOL);
                 }
             }
 
-            Collection<AuthorizedKeyEntry> entries = AuthorizedKeyEntry.readAuthorizedKeys(file);
-            Collection<PublicKey> keySet = AuthorizedKeyEntry.resolveAuthorizedKeys(entries);
+            List<AuthorizedKeyEntry> entries = AuthorizedKeyEntry.readAuthorizedKeys(file);
+            assertEquals("Mismatched number of loaded entries", keyLines.size(), entries.size());
+
+            List<PublicKey> keySet = AuthorizedKeyEntry.resolveAuthorizedKeys(entries);
+            assertEquals("Mismatched number of loaded keys", entries.size(), keySet.size());
 
             reloadCount.set(0);
-            for (PublicKey k : keySet) {
-                assertTrue("Failed to authenticate with key=" + k.getAlgorithm() + " on file=" + file, auth.authenticate(getCurrentTestName(), k, null));
+            for (int index = 0; index < keySet.size(); index++) {
+                PublicKey k = keySet.get(index);
+                String keyData = keyLines.get(index);  // we know they are 1-1 matching
+
+                assertTrue("Failed to authenticate with key #" + (index + 1) + " " + k.getAlgorithm() + "[" + keyData + "] on file=" + file,
+                           auth.authenticate(getCurrentTestName(), k, null));
+
                 // we expect EXACTLY ONE re-load call since we did not modify the file during the authentication
-                assertEquals("Unexpected extra calls to keys re-loading", 1, reloadCount.get());
+                assertEquals("Unexpected keys re-loading of " + keyLines.size() + " remaining at key #" + (index + 1) + " on file=" + file,
+                             1, reloadCount.get());
             }
 
-            if (lines.isEmpty()) {
-                break;
-            }
-
-            int nextSize = rnd.nextInt(lines.size());
-            while (lines.size() > nextSize) {
-                String l = lines.remove(0);
-                removed.add(l);
-            }
+            keyLines.remove(0);
         }
 
         assertTrue("File no longer exists: " + file, Files.exists(file));

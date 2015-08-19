@@ -1,14 +1,13 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
-
     <!--
 
         Licensed to the Apache Software Foundation (ASF) under one or more
-        contributor license agreements.  See the NOTICE file distributed with
+        contributor license agreements. See the NOTICE file distributed with
         this work for additional information regarding copyright ownership.
         The ASF licenses this file to You under the Apache License, Version 2.0
         (the "License"); you may not use this file except in compliance with
-        the License.  You may obtain a copy of the License at
+        the License. You may obtain a copy of the License at
 
            http://www.apache.org/licenses/LICENSE-2.0
 
@@ -77,33 +76,36 @@
         <connection>scm:git:http://git-wip-us.apache.org/repos/asf/mina-sshd.git</connection>
         <developerConnection>scm:git:http://git-wip-us.apache.org/repos/asf/mina-sshd.git</developerConnection>
         <url>https://git-wip-us.apache.org/repos/asf?p=mina-sshd.git</url>
-		<tag>HEAD</tag>
+        <tag>HEAD</tag>
     </scm>
 
-	<properties>
+    <properties>
         <projectRoot>${basedir}</projectRoot>
-		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        
-		<javac.source>1.7</javac.source>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <java.major.version>1</java.major.version>
+        <java.minor.version>7</java.minor.version>
+        <sniffer.signatures.version>1.0</sniffer.signatures.version>
+        <javac.source>${java.major.version}.${java.minor.version}</javac.source>
         <project.build.java.source>${javac.source}</project.build.java.source>
         <maven.compiler.source>${javac.source}</maven.compiler.source>
-		<ant.build.javac.source>${javac.source}</ant.build.javac.source>
+        <ant.build.javac.source>${javac.source}</ant.build.javac.source>
 
         <javac.target>${javac.source}</javac.target>
         <project.build.java.target>${javac.target}</project.build.java.target>
         <maven.compiler.target>${javac.target}</maven.compiler.target>
-		<ant.build.javac.target>${javac.target}</ant.build.javac.target>
+        <ant.build.javac.target>${javac.target}</ant.build.javac.target>
 
         <min.required.maven.version>3.0</min.required.maven.version>
 
-		<bouncycastle.version>1.52</bouncycastle.version>
-		<slf4j.version>1.7.12</slf4j.version>
-		<spring.version>3.0.6.RELEASE</spring.version>
-		<jgit.version>3.4.1.201406201815-r</jgit.version>
-		<junit.version>4.12</junit.version>
+        <bouncycastle.version>1.52</bouncycastle.version>
+        <slf4j.version>1.7.12</slf4j.version>
+        <spring.version>3.0.6.RELEASE</spring.version>
+        <jgit.version>3.4.1.201406201815-r</jgit.version>
+        <junit.version>4.12</junit.version>
         <surefire.plugin.version>2.18.1</surefire.plugin.version>
-		<httpcomps.version>4.4.1</httpcomps.version>
-	</properties>
+        <httpcomps.version>4.4.1</httpcomps.version>
+    </properties>
 
     <dependencyManagement>
         <dependencies>
@@ -182,28 +184,28 @@
                 <artifactId>jzlib</artifactId>
                 <version>1.1.3</version>
             </dependency>
-			<dependency>
+            <dependency>
                 <groupId>org.springframework</groupId>
                 <artifactId>spring-asm</artifactId>
                 <version>${spring.version}</version>
             </dependency>
-			<dependency>
+            <dependency>
                 <groupId>org.springframework</groupId>
                 <artifactId>spring-beans</artifactId>
                 <version>${spring.version}</version>
             </dependency>
-			<dependency>
+            <dependency>
                 <groupId>org.springframework</groupId>
                 <artifactId>spring-core</artifactId>
                 <version>${spring.version}</version>
-				<exclusions>
-					<exclusion>	<!-- we are using jcl-over-slf4j -->
-						<groupId>commons-logging</groupId>
-						<artifactId>commons-logging</artifactId>
-					</exclusion>
-				</exclusions>
+                <exclusions>
+                    <exclusion>    <!-- we are using jcl-over-slf4j -->
+                        <groupId>commons-logging</groupId>
+                        <artifactId>commons-logging</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
-			<dependency>
+            <dependency>
                 <groupId>org.springframework</groupId>
                 <artifactId>spring-expression</artifactId>
                 <version>${spring.version}</version>
@@ -224,47 +226,47 @@
                 <artifactId>commons-logging</artifactId>
                 <version>1.1.1</version>
             </dependency>
-			<dependency>
-				<groupId>log4j</groupId>
-				<artifactId>log4j</artifactId>
-				<version>1.2.17</version>
-				<exclusions>
-					<exclusion>
-						<groupId>javax.jms</groupId>
-						<artifactId>jms</artifactId>
-					</exclusion>
-					<exclusion>
-						<groupId>com.sun.jmx</groupId>
-						<artifactId>jmxri</artifactId>
-					</exclusion>
-					<exclusion>
-						<groupId>com.sun.jdmk</groupId>
-						<artifactId>jmxtools</artifactId>
-					</exclusion>
-					<exclusion>
-						<groupId>ant</groupId>
-						<artifactId>ant-nodeps</artifactId>
-					</exclusion>
-					<exclusion>
-						<groupId>ant</groupId>
-						<artifactId>ant-junit</artifactId>
-					</exclusion>
-					<exclusion>
-						<groupId>ant-contrib</groupId>
-						<artifactId>ant-contrib</artifactId>
-					</exclusion>
-				</exclusions>
-			</dependency>
+            <dependency>
+                <groupId>log4j</groupId>
+                <artifactId>log4j</artifactId>
+                <version>1.2.17</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>javax.jms</groupId>
+                        <artifactId>jms</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.sun.jmx</groupId>
+                        <artifactId>jmxri</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.sun.jdmk</groupId>
+                        <artifactId>jmxtools</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>ant</groupId>
+                        <artifactId>ant-nodeps</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>ant</groupId>
+                        <artifactId>ant-junit</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>ant-contrib</groupId>
+                        <artifactId>ant-contrib</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
             <dependency>
                 <groupId>junit</groupId>
                 <artifactId>junit</artifactId>
                 <version>${junit.version}</version>
             </dependency>
-			<dependency>
-				<groupId>org.mockito</groupId>
-				<artifactId>mockito-all</artifactId>
-				<version>1.10.19</version>
-			</dependency>
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-all</artifactId>
+                <version>1.10.19</version>
+            </dependency>
             <dependency>
                 <groupId>net.sf.jpam</groupId>
                 <artifactId>jpam</artifactId>
@@ -274,23 +276,23 @@
                 <groupId>commons-httpclient</groupId>
                 <artifactId>commons-httpclient</artifactId>
                 <version>3.1</version>
-				<exclusions>
-					<exclusion>	<!-- we are using jcl-over-slf4j -->
-						<groupId>commons-logging</groupId>
-						<artifactId>commons-logging</artifactId>
-					</exclusion>
-				</exclusions>
+                <exclusions>
+                    <exclusion>    <!-- we are using jcl-over-slf4j -->
+                        <groupId>commons-logging</groupId>
+                        <artifactId>commons-logging</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.apache.httpcomponents</groupId>
                 <artifactId>httpclient</artifactId>
                 <version>${httpcomps.version}</version>
-				<exclusions>
-					<exclusion>	<!-- we are using jcl-over-slf4j -->
-						<groupId>commons-logging</groupId>
-						<artifactId>commons-logging</artifactId>
-					</exclusion>
-				</exclusions>
+                <exclusions>
+                    <exclusion>    <!-- we are using jcl-over-slf4j -->
+                        <groupId>commons-logging</groupId>
+                        <artifactId>commons-logging</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.apache.httpcomponents</groupId>
@@ -317,76 +319,76 @@
 
     <build>
         <pluginManagement>
-			<plugins>
-				<!--This plugin's configuration is used to store Eclipse 
-					m2e settings only and overcome integration problems.
-					It has no influence on the Maven build itself. -->
-				<plugin>
-					<groupId>org.eclipse.m2e</groupId>
-					<artifactId>lifecycle-mapping</artifactId>
-					<version>1.0.0</version>
-					<configuration>
-						<lifecycleMappingMetadata>
-							<pluginExecutions>
-								<pluginExecution>
-									<pluginExecutionFilter>
-										<groupId>org.apache.maven.plugins</groupId>
-										<artifactId>maven-dependency-plugin</artifactId>
-										<versionRange>[1.0,)</versionRange>
-										<goals>
-											<goal>copy</goal>
-											<goal>copy-dependencies</goal>
-										</goals>
-									</pluginExecutionFilter>
-									<action>
-										<execute />
-									</action>
-								</pluginExecution>
-								<pluginExecution>
-									<pluginExecutionFilter>
+            <plugins>
+                <!--This plugin's configuration is used to store Eclipse 
+                    m2e settings only and overcome integration problems.
+                    It has no influence on the Maven build itself. -->
+                <plugin>
+                    <groupId>org.eclipse.m2e</groupId>
+                    <artifactId>lifecycle-mapping</artifactId>
+                    <version>1.0.0</version>
+                    <configuration>
+                        <lifecycleMappingMetadata>
+                            <pluginExecutions>
+                                <pluginExecution>
+                                    <pluginExecutionFilter>
+                                        <groupId>org.apache.maven.plugins</groupId>
+                                        <artifactId>maven-dependency-plugin</artifactId>
+                                        <versionRange>[1.0,)</versionRange>
+                                        <goals>
+                                            <goal>copy</goal>
+                                            <goal>copy-dependencies</goal>
+                                        </goals>
+                                    </pluginExecutionFilter>
+                                    <action>
+                                        <execute />
+                                    </action>
+                                </pluginExecution>
+                                <pluginExecution>
+                                    <pluginExecutionFilter>
                                         <groupId>org.codehaus.gmaven</groupId>
                                         <artifactId>gmaven-plugin</artifactId>
-										<versionRange>[1.0,)</versionRange>
-										<goals>
-											<goal>compile</goal>
-											<goal>execute</goal>
-											<goal>testCompile</goal>
-										</goals>
-									</pluginExecutionFilter>
-									<action>
-										<execute />
-									</action>
-								</pluginExecution>
-								<pluginExecution>
-									<pluginExecutionFilter>
-								        <groupId>org.apache.rat</groupId>
-										<artifactId>apache-rat-plugin</artifactId>
-										<versionRange>[0.1,)</versionRange>
-										<goals>
-											<goal>check</goal>
-										</goals>
-									</pluginExecutionFilter>
-									<action>
-										<execute />
-									</action>
-								</pluginExecution>
-								<pluginExecution>
-									<pluginExecutionFilter>
-									    <groupId>org.apache.maven.plugins</groupId>
-									    <artifactId>maven-checkstyle-plugin</artifactId>
-										<versionRange>[1.0,)</versionRange>
-										<goals>
-											<goal>check</goal>
-										</goals>
-									</pluginExecutionFilter>
-									<action>
-										<execute />
-									</action>
-								</pluginExecution>
-							</pluginExecutions>
-						</lifecycleMappingMetadata>
-					</configuration>
-				</plugin>
+                                        <versionRange>[1.0,)</versionRange>
+                                        <goals>
+                                            <goal>compile</goal>
+                                            <goal>execute</goal>
+                                            <goal>testCompile</goal>
+                                        </goals>
+                                    </pluginExecutionFilter>
+                                    <action>
+                                        <execute />
+                                    </action>
+                                </pluginExecution>
+                                <pluginExecution>
+                                    <pluginExecutionFilter>
+                                        <groupId>org.apache.rat</groupId>
+                                        <artifactId>apache-rat-plugin</artifactId>
+                                        <versionRange>[0.1,)</versionRange>
+                                        <goals>
+                                            <goal>check</goal>
+                                        </goals>
+                                    </pluginExecutionFilter>
+                                    <action>
+                                        <execute />
+                                    </action>
+                                </pluginExecution>
+                                <pluginExecution>
+                                    <pluginExecutionFilter>
+                                        <groupId>org.apache.maven.plugins</groupId>
+                                        <artifactId>maven-checkstyle-plugin</artifactId>
+                                        <versionRange>[1.0,)</versionRange>
+                                        <goals>
+                                            <goal>check</goal>
+                                        </goals>
+                                    </pluginExecutionFilter>
+                                    <action>
+                                        <execute />
+                                    </action>
+                                </pluginExecution>
+                            </pluginExecutions>
+                        </lifecycleMappingMetadata>
+                    </configuration>
+                </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-release-plugin</artifactId>
@@ -395,16 +397,16 @@
                         <autoVersionSubmodules>true</autoVersionSubmodules>
                     </configuration>
                 </plugin>
-				<plugin>
-					<groupId>org.apache.maven.plugins</groupId>
-					<artifactId>maven-source-plugin</artifactId>
-					<version>2.4</version>
-				</plugin>
-				<plugin>
-					<groupId>org.apache.maven.plugins</groupId>
-					<artifactId>maven-javadoc-plugin</artifactId>
-					<version>2.10.3</version>
-				</plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-source-plugin</artifactId>
+                    <version>2.4</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-javadoc-plugin</artifactId>
+                    <version>2.10.3</version>
+                </plugin>
             </plugins>
         </pluginManagement>
 
@@ -413,21 +415,31 @@
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>animal-sniffer-maven-plugin</artifactId>
                 <version>1.14</version>
+                <configuration>
+                    <signature>
+                        <groupId>org.codehaus.mojo.signature</groupId>
+                        <artifactId>java${java.major.version}${java.minor.version}</artifactId>
+                        <version>${sniffer.signatures.version}</version>
+                    </signature>
+                </configuration>
                 <executions>
                     <execution>
                         <id>check-java-api</id>
+                        <phase>compile</phase>
                         <goals>
                             <goal>check</goal>
                         </goals>
-                        <configuration>
-                            <signature>
-                                <groupId>org.codehaus.mojo.signature</groupId>
-                                <artifactId>java17</artifactId>
-                                <version>1.0</version>
-                            </signature>
-                        </configuration>
                     </execution>
                 </executions>
+                    <!-- make sure the signatures artifact is downloaded -->
+                <dependencies>
+                    <dependency>
+                        <groupId>org.codehaus.mojo.signature</groupId>
+                        <artifactId>java${java.major.version}${java.minor.version}</artifactId>
+                        <version>${sniffer.signatures.version}</version>
+                        <type>pom</type>
+                    </dependency>
+                </dependencies>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -457,10 +469,10 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.3</version>
                 <configuration>
-					<source>${javac.source}</source>
-					<target>${javac.target}</target>
-					<compilerArgument>-g</compilerArgument>
-					<compilerArgument>-Xlint:-serial</compilerArgument>
+                    <source>${javac.source}</source>
+                    <target>${javac.target}</target>
+                    <compilerArgument>-g</compilerArgument>
+                    <compilerArgument>-Xlint:-serial</compilerArgument>
                 </configuration>
             </plugin>
             <plugin>
@@ -493,6 +505,8 @@
                 <version>0.11</version>
                 <executions>
                     <execution>
+                        <id>check-apache-license-header</id>
+                        <phase>validate</phase>
                         <goals>
                             <goal>check</goal>
                         </goals>
@@ -505,14 +519,14 @@
                                 <exclude>**/big-msg.txt</exclude>
                                 <exclude>sshd-sftp/**</exclude>
                                 <exclude>sshd-pam/**</exclude>
-									<!-- Eclipse files -->
-								<exclude>.metadata/**</exclude>
-								<exclude>.recommenders/**</exclude>
-								<exclude>RemoteSystemsTempFiles/**</exclude>
-								<exclude>.project</exclude>
-								<exclude>.classpath</exclude>
-								<exclude>.springBeans</exclude>
-								<exclude>.settings/**</exclude>
+                                    <!-- Eclipse files -->
+                                <exclude>.metadata/**</exclude>
+                                <exclude>.recommenders/**</exclude>
+                                <exclude>RemoteSystemsTempFiles/**</exclude>
+                                <exclude>.project</exclude>
+                                <exclude>.classpath</exclude>
+                                <exclude>.springBeans</exclude>
+                                <exclude>.settings/**</exclude>
                             </excludes>
                         </configuration>
                     </execution>
@@ -567,7 +581,7 @@
                     </includes>
                     <runOrder>alphabetical</runOrder>
                     <forkCount>1</forkCount>
-					<reuseForks>true</reuseForks>
+                    <reuseForks>true</reuseForks>
                         <!-- avoid inherent multi-threaded tests -->
                     <perCoreThreadCount>false</perCoreThreadCount>
                     <threadCount>1</threadCount>
@@ -593,319 +607,313 @@
                     </dependency>
                 </dependencies>
             </plugin>
-				<!-- Automatically remove artifacts from local repository on clean -->
-			<plugin>
-		        <groupId>org.codehaus.mojo</groupId>
-		        <artifactId>build-helper-maven-plugin</artifactId>
-		        <version>1.9.1</version>
-				 <executions>
-	          		<execution>
-			        	<id>remove-previous-artifact</id>
-						<phase>clean</phase>
-			            <goals>
-			            	<goal>remove-project-artifact</goal>
-			            </goals>
-			            <configuration>
-			            	<removeAll>false</removeAll>
-			            </configuration>
-			          </execution>
-		        </executions>
-			</plugin>
-	        <plugin>
-	          <groupId>org.apache.maven.plugins</groupId>
-	          <artifactId>maven-checkstyle-plugin</artifactId>
-	          <version>2.15</version>
-	          <executions>
-	            <execution>
-	              <id>verify-style</id>
-	              <phase>process-classes</phase>
-	              <goals>
-	                <goal>check</goal>
-	              </goals>
-	            </execution>
-	          </executions>
-	          <configuration>
-	            <logViolationsToConsole>true</logViolationsToConsole>
-                <resourceExcludes>**/sshd-version.properties</resourceExcludes>
-	            <checkstyleRules>
-	              <module name="Checker">
-                      <!-- Checks whether files end with a new line.                        -->
-                      <!-- See http://checkstyle.sf.net/config_misc.html#NewlineAtEndOfFile -->
-                      <!--
-                          <module name="NewlineAtEndOfFile" />
-                      -->
+                <!-- Automatically remove artifacts from local repository on clean -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>1.9.1</version>
+                 <executions>
+                      <execution>
+                        <id>remove-previous-artifact</id>
+                        <phase>clean</phase>
+                        <goals>
+                            <goal>remove-project-artifact</goal>
+                        </goals>
+                        <configuration>
+                            <removeAll>false</removeAll>
+                        </configuration>
+                      </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>2.15</version>
+                <executions>
+                    <execution>
+                        <id>verify-style</id>
+                        <phase>process-classes</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <logViolationsToConsole>true</logViolationsToConsole>
+                    <resourceExcludes>**/sshd-version.properties</resourceExcludes>
+                    <checkstyleRules>
+                        <module name="Checker">
+                            <!-- Checks whether files end with a new line.                        -->
+                            <!-- See http://checkstyle.sf.net/config_misc.html#NewlineAtEndOfFile -->
+                            <!--
+                                <module name="NewlineAtEndOfFile" />
+                            -->
 
-                      <!-- Checks that property files contain the same keys.         -->
-                      <!-- See http://checkstyle.sf.net/config_misc.html#Translation -->
-                      <module name="Translation" />
+                            <!-- Checks that property files contain the same keys.         -->
+                            <!-- See http://checkstyle.sf.net/config_misc.html#Translation -->
+                            <module name="Translation" />
 
-                      <!--<module name="StrictDuplicateCode" />-->
+                            <!--<module name="StrictDuplicateCode" />-->
 
-                      <module name="TreeWalker">
-                          <!-- Enable FileContentsHolder to allow us to in turn turn on suppression comments -->
-                          <module name="FileContentsHolder" />
-                          <!-- Checks for Javadoc comments.                     -->
-                          <!-- See http://checkstyle.sf.net/config_javadoc.html -->
-                          <!--
-                              <module name="PackageHtml" />
-                              <module name="JavadocMethod" />
-                              <module name="JavadocType" />
-                              <module name="JavadocVariable" />
-                              <module name="JavadocStyle" />
-                          -->
-
-
-                          <!-- Checks for Naming Conventions.                  -->
-                          <!-- See http://checkstyle.sf.net/config_naming.html -->
-                          <module name="ConstantName" />
-                          <module name="LocalFinalVariableName" />
-                          <module name="LocalVariableName">
-                              <property name="format" value="^[a-z][a-zA-Z0-9_]*$" />
-                          </module>
-                          <module name="MemberName">
-                              <property name="format" value="^[a-z][a-zA-Z0-9_]*$" />
-                          </module>
-                          <module name="MethodName" />
-                          <module name="PackageName" />
-                          <module name="ParameterName">
-                              <property name="format" value="^[a-z][a-zA-Z0-9_]*$" />
-                          </module>
-                          <module name="StaticVariableName" />
-                          <module name="TypeName" />
+                            <module name="TreeWalker">
+                                <!-- Enable FileContentsHolder to allow us to in turn turn on suppression comments -->
+                            <module name="FileContentsHolder" />
+                                <!-- Checks for Javadoc comments.                     -->
+                                <!-- See http://checkstyle.sf.net/config_javadoc.html -->
+                                <!--
+                                    <module name="PackageHtml" />
+                                    <module name="JavadocMethod" />
+                                    <module name="JavadocType" />
+                                    <module name="JavadocVariable" />
+                                    <module name="JavadocStyle" />
+                                -->
 
 
-                          <!-- Checks for imports                              -->
-                          <!-- See http://checkstyle.sf.net/config_import.html -->
-                          <module name="AvoidStarImport" />
-                          <module name="IllegalImport" /><!-- defaults to sun.* packages -->
-                          <module name="RedundantImport" />
-                          <module name="UnusedImports" />
-                          <module name="ImportOrder">
-                              <property name="groups" value="java,javax,org.w3c,org.xml,junit,antlr,com.,net,org,*" />
-                              <property name="ordered" value="true" />
-                          </module>
-                          <!--
-                              <module name="ImportControl">
-                              <property name="file" value="etc/import-control.xml" />
-                              </module>
-                          -->
+                                <!-- Checks for Naming Conventions.                  -->
+                                <!-- See http://checkstyle.sf.net/config_naming.html -->
+                            <module name="ConstantName" />
+                            <module name="LocalFinalVariableName" />
+                            <module name="LocalVariableName">
+                                <property name="format" value="^[a-z][a-zA-Z0-9_]*$" />
+                            </module>
+                            <module name="MemberName">
+                                <property name="format" value="^[a-z][a-zA-Z0-9_]*$" />
+                            </module>
+                            <module name="MethodName" />
+                            <module name="PackageName" />
+                            <module name="ParameterName">
+                                <property name="format" value="^[a-z][a-zA-Z0-9_]*$" />
+                            </module>
+                            <module name="StaticVariableName" />
+                            <module name="TypeName" />
 
 
-                          <!-- Checks for Size Violations.                    -->
-                          <!-- See http://checkstyle.sf.net/config_sizes.html -->
-                          <module name="AnonInnerLength">
-                              <property name="max" value="40" />
-                          </module>
-                          <module name="ExecutableStatementCount">
-                              <property name="max" value="100" />
-                          </module>
-                          <module name="LineLength">
-                              <property name="max" value="180" />
-                          </module>
-                          <module name="MethodLength">
-                              <property name="max" value="150" />
-                              <property name="countEmpty" value="false" />
-                          </module>
-                          <!-- DISABLED
-                          <module name="ParameterNumber">
-                              <property name="max" value="7" />
-                          </module>
-                          -->
+                                <!-- Checks for imports                              -->
+                                <!-- See http://checkstyle.sf.net/config_import.html -->
+                            <module name="AvoidStarImport" />
+                            <module name="IllegalImport" /><!-- defaults to sun.* packages -->
+                            <module name="RedundantImport" />
+                            <module name="UnusedImports" />
+                            <module name="ImportOrder">
+                                <property name="groups" value="java,javax,org.w3c,org.xml,junit,antlr,com.,net,org,*" />
+                                <property name="ordered" value="true" />
+                            </module>
+                            
+                                <!--
+                                    <module name="ImportControl">
+                                        <property name="file" value="etc/import-control.xml" />
+                                    </module>
+                                -->
 
-                          <!-- Checks for whitespace                               -->
-                          <!-- See http://checkstyle.sf.net/config_whitespace.html -->
-                          <module name="EmptyForIteratorPad" />
-                          <module name="EmptyForInitializerPad" />
-                          <module name="MethodParamPad" />
-                          <module name="NoWhitespaceAfter">
-                              <property name="tokens" value="ARRAY_INIT,BNOT,DEC,DOT,INC,LNOT,UNARY_MINUS,UNARY_PLUS" />
-                          </module>
-                          <module name="NoWhitespaceBefore" />
-                          <module name="OperatorWrap" />
-                          <module name="ParenPad" />
-                          <module name="TypecastParenPad" />
-                          <module name="WhitespaceAfter">
-                              <property name="tokens" value="COMMA, SEMI" />
-                          </module>
-                          <module name="WhitespaceAround">
-                              <property name="tokens" value="ASSIGN, BAND, BAND_ASSIGN, BOR, BOR_ASSIGN, BSR, BSR_ASSIGN, BXOR, BXOR_ASSIGN, COLON, DIV, DIV_ASSIGN, EQUAL, GE, GT, LAND, LCURLY, LE, LITERAL_ASSERT, LITERAL_CATCH, LITERAL_DO, LITERAL_ELSE, LITERAL_FINALLY, LITERAL_FOR, LITERAL_IF, LITERAL_RETURN, LITERAL_SYNCHRONIZED, LITERAL_TRY, LITERAL_WHILE, LOR, LT, MINUS, MINUS_ASSIGN, MOD, MOD_ASSIGN, NOT_EQUAL, PLUS, PLUS_ASSIGN, QUESTION, RCURLY, SL, SLIST, SL_ASSIGN, SR, SR_ASSIGN, STAR, STAR_ASSIGN,TYPE_EXTENSION_AND" />
-                          </module>
+                                <!-- Checks for Size Violations.                    -->
+                                <!-- See http://checkstyle.sf.net/config_sizes.html -->
+                            <module name="AnonInnerLength">
+                                <property name="max" value="40" />
+                            </module>
+                            <module name="ExecutableStatementCount">
+                                <property name="max" value="100" />
+                            </module>
+                            <module name="LineLength">
+                                <property name="max" value="180" />
+                            </module>
+                            <module name="MethodLength">
+                                <property name="max" value="150" />
+                                <property name="countEmpty" value="false" />
+                            </module>
+                            
+                            <!-- DISABLED
+                                <module name="ParameterNumber">
+                                    <property name="max" value="7" />
+                                </module>
+                            -->
 
-                          <!-- Modifier Checks                                    -->
-                          <!-- See http://checkstyle.sf.net/config_modifiers.html -->
-                          <module name="ModifierOrder" />
-                          <module name="RedundantModifier" />
+                                <!-- Checks for whitespace                               -->
+                                <!-- See http://checkstyle.sf.net/config_whitespace.html -->
+                            <module name="EmptyForIteratorPad" />
+                            <module name="EmptyForInitializerPad" />
+                            <module name="MethodParamPad" />
+                            <module name="NoWhitespaceAfter">
+                                <property name="tokens" value="ARRAY_INIT,BNOT,DEC,DOT,INC,LNOT,UNARY_MINUS,UNARY_PLUS" />
+                            </module>
+                            <module name="NoWhitespaceBefore" />
+                            <module name="OperatorWrap" />
+                            <module name="ParenPad" />
+                            <module name="TypecastParenPad" />
+                            <module name="WhitespaceAfter">
+                                <property name="tokens" value="COMMA, SEMI" />
+                            </module>
+                            <module name="WhitespaceAround">
+                                <property name="tokens" value="ASSIGN, BAND, BAND_ASSIGN, BOR, BOR_ASSIGN, BSR, BSR_ASSIGN, BXOR, BXOR_ASSIGN, COLON, DIV, DIV_ASSIGN, EQUAL, GE, GT, LAND, LCURLY, LE, LITERAL_ASSERT, LITERAL_CATCH, LITERAL_DO, LITERAL_ELSE, LITERAL_FINALLY, LITERAL_FOR, LITERAL_IF, LITERAL_RETURN, LITERAL_SYNCHRONIZED, LITERAL_TRY, LITERAL_WHILE, LOR, LT, MINUS, MINUS_ASSIGN, MOD, MOD_ASSIGN, NOT_EQUAL, PLUS, PLUS_ASSIGN, QUESTION, RCURLY, SL, SLIST, SL_ASSIGN, SR, SR_ASSIGN, STAR, STAR_ASSIGN,TYPE_EXTENSION_AND" />
+                            </module>
 
+                                <!-- Modifier Checks                                    -->
+                                <!-- See http://checkstyle.sf.net/config_modifiers.html -->
+                            <module name="ModifierOrder" />
+                            <module name="RedundantModifier" />
 
-                          <!-- Checks for blocks. You know, those {}'s         -->
-                          <!-- See http://checkstyle.sf.net/config_blocks.html -->
-                          <module name="AvoidNestedBlocks">
-                              <property name="allowInSwitchCase" value="true" />
-                          </module>
-                          <module name="EmptyBlock">
-                              <property name="option" value="text" />
-                          </module>
-                          <module name="LeftCurly" />
-                          <module name="NeedBraces" />
-                          <module name="RightCurly" />
+                                <!-- Checks for blocks. You know, those {}'s         -->
+                                <!-- See http://checkstyle.sf.net/config_blocks.html -->
+                            <module name="AvoidNestedBlocks">
+                                <property name="allowInSwitchCase" value="true" />
+                            </module>
+                            <module name="EmptyBlock">
+                                <property name="option" value="text" />
+                            </module>
+                            <module name="LeftCurly" />
+                            <module name="NeedBraces" />
+                            <module name="RightCurly" />
 
+                                <!-- Checks for common coding problems               -->
+                                <!-- See http://checkstyle.sf.net/config_coding.html -->
+                            <!--<module name="ArrayTrailingComma" />-->
+                            <!--<module name="AvoidInlineConditionals" />-->
+                            <module name="CovariantEquals" />
+                            <module name="EmptyStatement" />
+                            <module name="EqualsHashCode" />
+                            <!--<module name="FinalLocalVariable" />-->
+                            <!-- DISABLED
+                                <module name="HiddenField">
+                                    <property name="ignoreConstructorParameter" value="true" />
+                                    <property name="ignoreSetter" value="true" />
+                                </module>
+                            -->
+                            <module name="IllegalInstantiation" />
+                            <!--<module name="IllegalToken" />-->
+                            <!--<module name="IllegalTokenText" />-->
+                            <module name="InnerAssignment" />
+                            <!--<module name="MagicNumber" />-->
+                            <module name="MissingSwitchDefault" />
+                            <!--module name="ModifiedControlVariable"/-->
+                            <module name="SimplifyBooleanExpression" />
+                            <module name="SimplifyBooleanReturn" />
+                            <module name="StringLiteralEquality" />
+                            <module name="NestedIfDepth">
+                                <property name="max" value="3" />
+                            </module>
+                            <module name="NestedTryDepth">
+                                <property name="max" value="3" />
+                            </module>
+                            <module name="SuperClone" />
+                            <module name="SuperFinalize" />
+                            <!--<module name="IllegalCatch" />-->
+                            <module name="IllegalThrows">
+                                <property name="illegalClassNames" value="java.lang.Error,java.lang.RuntimeException" />
+                            </module>
+                            <!--<module name="RedundantThrows" />-->
+                            <module name="PackageDeclaration" />
+                            <module name="ReturnCount">
+                                <property name="max" value="15" />
+                            </module>
 
-                          <!-- Checks for common coding problems               -->
-                          <!-- See http://checkstyle.sf.net/config_coding.html -->
-                          <!--<module name="ArrayTrailingComma" />-->
-                          <!--<module name="AvoidInlineConditionals" />-->
-                          <module name="CovariantEquals" />
-                          <module name="EmptyStatement" />
-                          <module name="EqualsHashCode" />
-                          <!--<module name="FinalLocalVariable" />-->
-                          <!-- DISABLED
-                          <module name="HiddenField">
-                              <property name="ignoreConstructorParameter" value="true" />
-                              <property name="ignoreSetter" value="true" />
-                          </module>
-                          -->
-                          <module name="IllegalInstantiation" />
-                          <!--<module name="IllegalToken" />-->
-                          <!--<module name="IllegalTokenText" />-->
-                          <module name="InnerAssignment" />
-                          <!--<module name="MagicNumber" />-->
-                          <module name="MissingSwitchDefault" />
-                          <!--module name="ModifiedControlVariable"/-->
-                          <module name="SimplifyBooleanExpression" />
-                          <module name="SimplifyBooleanReturn" />
-                          <module name="StringLiteralEquality" />
-                          <module name="NestedIfDepth">
-                              <property name="max" value="3" />
-                          </module>
-                          <module name="NestedTryDepth">
-                              <property name="max" value="3" />
-                          </module>
-                          <module name="SuperClone" />
-                          <module name="SuperFinalize" />
-                          <!--<module name="IllegalCatch" />-->
-                          <module name="IllegalThrows">
-                              <property name="illegalClassNames" value="java.lang.Error,java.lang.RuntimeException" />
-                          </module>
-                          <!--<module name="RedundantThrows" />-->
-                          <module name="PackageDeclaration" />
-                          <module name="ReturnCount">
-                              <property name="max" value="15" />
-                          </module>
+                            <module name="IllegalType">
+                                <property name="format" value="^xxx$" />
+                                <property name="illegalClassNames" value="java.util.GregorianCalendar, java.util.Hashtable, java.util.HashSet, java.util.HashMap, java.util.ArrayList, java.util.LinkedList, java.util.LinkedHashMap, java.util.LinkedHashSet, java.util.TreeSet, java.util.TreeMap" />
+                            </module>
+                            <module name="DeclarationOrder" />
+                            <!--<module name="ParameterAssignment" />-->
+                            <module name="ExplicitInitialization" />
+                            <module name="DefaultComesLast" />
+                            <!--<module name="MissingCtor" />-->
+                            <module name="FallThrough" />
+                            <!--<module name="MultipleStringLiterals" />-->
+                            <module name="MultipleVariableDeclarations" />
+                            <!--<module name="RequireThis" />-->
+                            <module name="UnnecessaryParentheses" />
 
-                          <module name="IllegalType">
-                              <property name="format" value="^xxx$" />
-                              <property name="illegalClassNames" value="java.util.GregorianCalendar, java.util.Hashtable, java.util.HashSet, java.util.HashMap, java.util.ArrayList, java.util.LinkedList, java.util.LinkedHashMap, java.util.LinkedHashSet, java.util.TreeSet, java.util.TreeMap" />
-                          </module>
-                          <module name="DeclarationOrder" />
-                          <!--<module name="ParameterAssignment" />-->
-                          <module name="ExplicitInitialization" />
-                          <module name="DefaultComesLast" />
-                          <!--<module name="MissingCtor" />-->
-                          <module name="FallThrough" />
-                          <!--<module name="MultipleStringLiterals" />-->
-                          <module name="MultipleVariableDeclarations" />
-                          <!--<module name="RequireThis" />-->
-                          <module name="UnnecessaryParentheses" />
+                                <!-- Checks for class design                         -->
+                                <!-- See http://checkstyle.sf.net/config_design.html -->
+                            <!--<module name="DesignForExtension" />-->
+                            <module name="FinalClass" />
+                            <module name="HideUtilityClassConstructor" />
+                            <module name="InterfaceIsType" />
+                            <!--<module name="MutableException" />-->
+                            <module name="ThrowsCount">
+                                <property name="max" value="5" />
+                            </module>
+                            <module name="VisibilityModifier">
+                                <property name="protectedAllowed" value="true" />
+                                <property name="packageAllowed" value="true" />
+                                <!-- this is needed for the resource injection unit tests.  It will removed
+                                      when private member inject is supported.
+                                 -->
+                                <property name="publicMemberPattern" value="resource[12].*" />
+                            </module>
 
+                                <!-- Metrics checks.                   -->
+                                <!-- See http://checkstyle.sf.net/config_metrics.html -->
+                            <module name="BooleanExpressionComplexity">
+                                <property name="max" value="10" />
+                            </module>
+                            <!--<module name="ClassDataAbstractionCoupling" />-->
+                            <!--<module name="ClassFanOutComplexity" />-->
+                            <!--<module name="CyclomaticComplexity" />-->
+                            <!--<module name="NPathComplexity" />-->
+                            <module name="JavaNCSS">
+                                <property name="methodMaximum" value="150" />
+                                <property name="classMaximum" value="2000" />
+                            </module>
 
+                                <!-- Miscellaneous other checks.                   -->
+                                <!-- See http://checkstyle.sf.net/config_misc.html -->
+                            <!--
+                                <module name="ArrayTypeStyle" />
+                                <module name="FinalParameters" />
+                            -->
+                            <!--
+                                <module name="GenericIllegalRegexp">
+                                    <property name="format" value="\s+$" />
+                                    <property name="message" value="Line has trailing spaces." />
+                                </module>
+                            -->
+                            <!-- DISABLED
+                                <module name="TodoComment">
+                                    <property name="format" value="TODO" />
+                                </module>
+                            -->
 
-                          <!-- Checks for class design                         -->
-                          <!-- See http://checkstyle.sf.net/config_design.html -->
-                          <!--<module name="DesignForExtension" />-->
-                          <module name="FinalClass" />
-                          <module name="HideUtilityClassConstructor" />
-                          <module name="InterfaceIsType" />
-                          <!--<module name="MutableException" />-->
-                          <module name="ThrowsCount">
-                              <property name="max" value="5" />
-                          </module>
-                          <module name="VisibilityModifier">
-                              <property name="protectedAllowed" value="true" />
-                              <property name="packageAllowed" value="true" />
-                              <!-- this is needed for the resource injection unit tests.  It will removed
-                                  when private member inject is supported.
-                              -->
-                              <property name="publicMemberPattern" value="resource[12].*" />
-                          </module>
+                            <module name="UpperEll" />
 
+                                <!--Assert statement may have side effects:-->
+                            <module name="DescendantToken">
+                                <property name="tokens" value="LITERAL_ASSERT" />
+                                <property name="limitedTokens" value="ASSIGN,DEC,INC,POST_DEC,POST_INC,PLUS_ASSIGN,MINUS_ASSIGN,STAR_ASSIGN,DIV_ASSIGN,MOD_ASSIGN,BSR_ASSIGN,SR_ASSIGN,SL_ASSIGN,BAND_ASSIGN,BXOR_ASSIGN,BOR_ASSIGN" />
+                                <property name="maximumNumber" value="0" />
+                            </module>
 
-
-                          <!-- Metrics checks.                   -->
-                          <!-- See http://checkstyle.sf.net/config_metrics.html -->
-                          <module name="BooleanExpressionComplexity">
-                              <property name="max" value="10" />
-                          </module>
-                          <!--<module name="ClassDataAbstractionCoupling" />-->
-                          <!--<module name="ClassFanOutComplexity" />-->
-                          <!--<module name="CyclomaticComplexity" />-->
-                          <!--<module name="NPathComplexity" />-->
-                          <module name="JavaNCSS">
-                              <property name="methodMaximum" value="150" />
-                              <property name="classMaximum" value="2000" />
-                          </module>
-
-
-                          <!-- Miscellaneous other checks.                   -->
-                          <!-- See http://checkstyle.sf.net/config_misc.html -->
-                          <!--
-                              <module name="ArrayTypeStyle" />
-                              <module name="FinalParameters" />
-                          -->
-                          <!--
-                              <module name="GenericIllegalRegexp">
-                              <property name="format" value="\s+$" />
-                              <property name="message" value="Line has trailing spaces." />
-                              </module>
-                          -->
-                          <!-- DISABLED
-                          <module name="TodoComment">
-                              <property name="format" value="TODO" />
-                          </module>
-                          -->
-
-                          <module name="UpperEll" />
-
-                          <!--Assert statement may have side effects:-->
-                          <module name="DescendantToken">
-                              <property name="tokens" value="LITERAL_ASSERT" />
-                              <property name="limitedTokens" value="ASSIGN,DEC,INC,POST_DEC,POST_INC,PLUS_ASSIGN,MINUS_ASSIGN,STAR_ASSIGN,DIV_ASSIGN,MOD_ASSIGN,BSR_ASSIGN,SR_ASSIGN,SL_ASSIGN,BAND_ASSIGN,BXOR_ASSIGN,BOR_ASSIGN" />
-                              <property name="maximumNumber" value="0" />
-                          </module>
-
-                          <!--<module name="UncommentedMain" />-->
-                          <!--module name="TrailingComment"/-->
-                          <module name="Indentation">
-                              <property name="caseIndent" value="4" />
-                              <property name="lineWrappingIndentation" value="0" />
-                          </module>
-                          <!--<module name="RequiredRegexp">-->
-                          <module name="SuppressWarningsHolder" />
-                      </module>
-                      <module name="SuppressionCommentFilter">
-                          <property name="offCommentFormat" value="CHECKSTYLE\:OFF" />
-                          <property name="onCommentFormat" value="CHECKSTYLE\:ON" />
-                      </module>
-                      <module name="SuppressionCommentFilter">
-                          <property name="offCommentFormat" value="CHECKSTYLE.OFF\:([\w\|]+)" />
-                          <property name="onCommentFormat" value="CHECKSTYLE.ON\:([\w\|]+)" />
-                          <property name="checkFormat" value="$1" />
-                      </module>
-                      <module name="SuppressWarningsFilter" />
-                      <!-- Header checks -->
-                      <module name="Header">
-                          <property name="header" value="/*\n * Licensed to the Apache Software Foundation (ASF) under one\n * or more contributor license agreements. See the NOTICE file\n * distributed with this work for additional information\n * regarding copyright ownership.  The ASF licenses this file\n * to you under the Apache License, Version 2.0 (the\n * &amp;quot;License&amp;quot;); you may not use this file except in compliance\n * with the License.  You may obtain a copy of the License at\n *\n *   http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing,\n * software distributed under the License is distributed on an\n * &amp;quot;AS IS&amp;quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY\n * KIND, either express or implied.  See the License for the\n * specific language governing permissions and limitations\n * under the License.\n */\n" />
-                      </module>
-                      <!-- <module name="RegexpHeader" /> -->
-                      <module name="FileLength">
-                          <property name="max" value="3000" />
-                      </module>
-                      <module name="FileTabCharacter">
-                          <property name="eachLine" value="true" />
-                      </module>
-                  </module>
-	            </checkstyleRules>
-	          </configuration>
-	        </plugin>
+                                <!--<module name="UncommentedMain" />-->
+                                <!--module name="TrailingComment"/-->
+                            <module name="Indentation">
+                                <property name="caseIndent" value="4" />
+                                <property name="lineWrappingIndentation" value="0" />
+                            </module>
+                            <!--<module name="RequiredRegexp">-->
+                            <module name="SuppressWarningsHolder" />
+                        </module>
+                        <module name="SuppressionCommentFilter">
+                            <property name="offCommentFormat" value="CHECKSTYLE\:OFF" />
+                            <property name="onCommentFormat" value="CHECKSTYLE\:ON" />
+                        </module>
+                        <module name="SuppressionCommentFilter">
+                            <property name="offCommentFormat" value="CHECKSTYLE.OFF\:([\w\|]+)" />
+                            <property name="onCommentFormat" value="CHECKSTYLE.ON\:([\w\|]+)" />
+                            <property name="checkFormat" value="$1" />
+                        </module>
+                        <module name="SuppressWarningsFilter" />
+                            <!-- Header checks -->
+                            <module name="Header">
+                                <property name="header" value="/*\n * Licensed to the Apache Software Foundation (ASF) under one\n * or more contributor license agreements. See the NOTICE file\n * distributed with this work for additional information\n * regarding copyright ownership. The ASF licenses this file\n * to you under the Apache License, Version 2.0 (the\n * &amp;quot;License&amp;quot;); you may not use this file except in compliance\n * with the License. You may obtain a copy of the License at\n *\n *   http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing,\n * software distributed under the License is distributed on an\n * &amp;quot;AS IS&amp;quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY\n * KIND, either express or implied. See the License for the\n * specific language governing permissions and limitations\n * under the License.\n */\n" />
+                            </module>
+                            <!-- <module name="RegexpHeader" /> -->
+                            <module name="FileLength">
+                                <property name="max" value="3000" />
+                            </module>
+                            <module name="FileTabCharacter">
+                                <property name="eachLine" value="true" />
+                            </module>
+                        </module>
+                    </checkstyleRules>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 

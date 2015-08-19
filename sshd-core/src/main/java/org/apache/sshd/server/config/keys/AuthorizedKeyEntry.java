@@ -1,18 +1,18 @@
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
+ * or more contributor license agreements. See the NOTICE file
  * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
+ * regarding copyright ownership. The ASF licenses this file
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * with the License. You may obtain a copy of the License at
  *
  *   http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
+ * KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations
  * under the License.
  */
@@ -37,7 +37,6 @@ import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -179,11 +178,11 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
     /**
      * Reads read the contents of the default OpenSSH <code>authorized_keys</code> file
      *
-     * @return A {@link Collection} of all the {@link AuthorizedKeyEntry}-ies found there -
+     * @return A {@link List} of all the {@link AuthorizedKeyEntry}-ies found there -
      * or empty if file does not exist
      * @throws IOException If failed to read keys from file
      */
-    public static Collection<AuthorizedKeyEntry> readDefaultAuthorizedKeys() throws IOException {
+    public static List<AuthorizedKeyEntry> readDefaultAuthorizedKeys() throws IOException {
         File keysFile = getDefaultAuthorizedKeysFile();
         if (keysFile.exists()) {
             return readAuthorizedKeys(keysFile);
@@ -196,11 +195,11 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
      * Reads read the contents of an <code>authorized_keys</code> file
      *
      * @param url The {@link URL} to read from
-     * @return A {@link Collection} of all the {@link AuthorizedKeyEntry}-ies found there
+     * @return A {@link List} of all the {@link AuthorizedKeyEntry}-ies found there
      * @throws IOException If failed to read or parse the entries
      * @see #readAuthorizedKeys(InputStream, boolean)
      */
-    public static Collection<AuthorizedKeyEntry> readAuthorizedKeys(URL url) throws IOException {
+    public static List<AuthorizedKeyEntry> readAuthorizedKeys(URL url) throws IOException {
         return readAuthorizedKeys(url.openStream(), true);
     }
 
@@ -208,11 +207,11 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
      * Reads read the contents of an <code>authorized_keys</code> file
      *
      * @param file The {@link File} to read from
-     * @return A {@link Collection} of all the {@link AuthorizedKeyEntry}-ies found there
+     * @return A {@link List} of all the {@link AuthorizedKeyEntry}-ies found there
      * @throws IOException If failed to read or parse the entries
      * @see #readAuthorizedKeys(InputStream, boolean)
      */
-    public static Collection<AuthorizedKeyEntry> readAuthorizedKeys(File file) throws IOException {
+    public static List<AuthorizedKeyEntry> readAuthorizedKeys(File file) throws IOException {
         return readAuthorizedKeys(new FileInputStream(file), true);
     }
 
@@ -222,12 +221,12 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
      * @param path    {@link Path} to read from
      * @param options The {@link OpenOption}s to use - if unspecified then appropriate
      *                defaults assumed
-     * @return A {@link Collection} of all the {@link AuthorizedKeyEntry}-ies found there
+     * @return A {@link List} of all the {@link AuthorizedKeyEntry}-ies found there
      * @throws IOException If failed to read or parse the entries
      * @see #readAuthorizedKeys(InputStream, boolean)
      * @see Files#newInputStream(Path, OpenOption...)
      */
-    public static Collection<AuthorizedKeyEntry> readAuthorizedKeys(Path path, OpenOption... options) throws IOException {
+    public static List<AuthorizedKeyEntry> readAuthorizedKeys(Path path, OpenOption... options) throws IOException {
         return readAuthorizedKeys(Files.newInputStream(path, options), true);
     }
 
@@ -235,11 +234,11 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
      * Reads read the contents of an <code>authorized_keys</code> file
      *
      * @param filePath The file path to read from
-     * @return A {@link Collection} of all the {@link AuthorizedKeyEntry}-ies found there
+     * @return A {@link List} of all the {@link AuthorizedKeyEntry}-ies found there
      * @throws IOException If failed to read or parse the entries
      * @see #readAuthorizedKeys(InputStream, boolean)
      */
-    public static Collection<AuthorizedKeyEntry> readAuthorizedKeys(String filePath) throws IOException {
+    public static List<AuthorizedKeyEntry> readAuthorizedKeys(String filePath) throws IOException {
         return readAuthorizedKeys(new FileInputStream(filePath), true);
     }
 
@@ -249,11 +248,11 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
      * @param in        The {@link InputStream}
      * @param okToClose <code>true</code> if method may close the input stream
      *                  regardless of whether successful or failed
-     * @return A {@link Collection} of all the {@link AuthorizedKeyEntry}-ies found there
+     * @return A {@link List} of all the {@link AuthorizedKeyEntry}-ies found there
      * @throws IOException If failed to read or parse the entries
      * @see #readAuthorizedKeys(Reader, boolean)
      */
-    public static Collection<AuthorizedKeyEntry> readAuthorizedKeys(InputStream in, boolean okToClose) throws IOException {
+    public static List<AuthorizedKeyEntry> readAuthorizedKeys(InputStream in, boolean okToClose) throws IOException {
         try (Reader rdr = new InputStreamReader(NoCloseInputStream.resolveInputStream(in, okToClose), StandardCharsets.UTF_8)) {
             return readAuthorizedKeys(rdr, true);
         }
@@ -265,11 +264,11 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
      * @param rdr       The {@link Reader}
      * @param okToClose <code>true</code> if method may close the input stream
      *                  regardless of whether successful or failed
-     * @return A {@link Collection} of all the {@link AuthorizedKeyEntry}-ies found there
+     * @return A {@link List} of all the {@link AuthorizedKeyEntry}-ies found there
      * @throws IOException If failed to read or parse the entries
      * @see #readAuthorizedKeys(BufferedReader)
      */
-    public static Collection<AuthorizedKeyEntry> readAuthorizedKeys(Reader rdr, boolean okToClose) throws IOException {
+    public static List<AuthorizedKeyEntry> readAuthorizedKeys(Reader rdr, boolean okToClose) throws IOException {
         try (BufferedReader buf = new BufferedReader(NoCloseReader.resolveReader(rdr, okToClose))) {
             return readAuthorizedKeys(buf);
         }
@@ -278,12 +277,12 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
     /**
      * @param rdr The {@link BufferedReader} to use to read the contents of
      *            an <code>authorized_keys</code> file
-     * @return A {@link Collection} of all the {@link AuthorizedKeyEntry}-ies found there
+     * @return A {@link List} of all the {@link AuthorizedKeyEntry}-ies found there
      * @throws IOException If failed to read or parse the entries
      * @see #parseAuthorizedKeyEntry(String)
      */
-    public static Collection<AuthorizedKeyEntry> readAuthorizedKeys(BufferedReader rdr) throws IOException {
-        Collection<AuthorizedKeyEntry> entries = null;
+    public static List<AuthorizedKeyEntry> readAuthorizedKeys(BufferedReader rdr) throws IOException {
+        List<AuthorizedKeyEntry> entries = null;
 
         for (String line = rdr.readLine(); line != null; line = rdr.readLine()) {
             final AuthorizedKeyEntry entry;
@@ -297,7 +296,7 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
             }
 
             if (entries == null) {
-                entries = new LinkedList<>();
+                entries = new ArrayList<>();
             }
 
             entries.add(entry);
