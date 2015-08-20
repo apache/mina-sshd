@@ -247,7 +247,7 @@ public final class FactoryManagerUtils {
 
     public static String getStringProperty(Map<String, ?> props, String name, String defaultValue) {
         Object value = GenericUtils.isEmpty(props) ? null : props.get(name);
-        String s = Objects.toString(value);
+        String s = Objects.toString(value, null);
         if (GenericUtils.isEmpty(s)) {
             return defaultValue;
         } else {
