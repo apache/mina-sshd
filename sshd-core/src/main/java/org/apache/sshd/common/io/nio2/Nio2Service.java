@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.SocketOption;
 import java.nio.channels.AsynchronousChannelGroup;
 import java.nio.channels.NetworkChannel;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -89,11 +90,24 @@ public abstract class Nio2Service extends CloseableUtils.AbstractInnerCloseable 
                 throw new IllegalStateException("Unsupported socket option type " + type);
             }
         }
+
         if (val != null) {
+            Collection<? extends SocketOption<?>> supported = socket.supportedOptions();
+            if ((GenericUtils.size(supported) <= 0) || (!supported.contains(option))) {
+                log.warn("Unsupported socket option (" + option + ") to set using property '" + property + "' value=" + val);
+                return;
+            }
+
             try {
                 socket.setOption(option, val);
-            } catch (IOException e) {
-                log.warn("Unable to set socket option " + option + " to " + val, e);
+                if (log.isDebugEnabled()) {
+                    log.debug("setOption({})[{}] from property={}", option, val, property);
+                }
+            } catch (IOException | RuntimeException e) {
+                log.warn("Unable (" + e.getClass().getSimpleName() + ")"
+                       + " to set socket option " + option
+                       + " using property '" + property + "' value=" + val
+                       + ": " + e.getMessage());
             }
         }
     }

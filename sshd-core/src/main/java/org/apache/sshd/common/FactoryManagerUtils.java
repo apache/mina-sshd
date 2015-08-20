@@ -20,6 +20,7 @@
 package org.apache.sshd.common;
 
 import java.util.Map;
+import java.util.Objects;
 
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
@@ -246,7 +247,7 @@ public final class FactoryManagerUtils {
 
     public static String getStringProperty(Map<String, ?> props, String name, String defaultValue) {
         Object value = GenericUtils.isEmpty(props) ? null : props.get(name);
-        String s = (value == null) ? null : value.toString();
+        String s = Objects.toString(value);
         if (GenericUtils.isEmpty(s)) {
             return defaultValue;
         } else {
