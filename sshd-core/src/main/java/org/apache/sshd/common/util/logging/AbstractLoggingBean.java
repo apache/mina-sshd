@@ -19,6 +19,7 @@
 
 package org.apache.sshd.common.util.logging;
 
+import org.apache.sshd.common.util.GenericUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,16 +37,21 @@ public abstract class AbstractLoggingBean {
      * Default constructor - creates a logger using the full class name
      */
     protected AbstractLoggingBean() {
-        log = LoggerFactory.getLogger(getClass());
+        this("");
     }
 
     /**
      * Create a logger for instances of the same class for which we might
      * want to have a &quot;discriminator&quot; for them
      *
-     * @param discriminator The discriminator value
+     * @param discriminator The discriminator value - ignored if {@code null}
+     * or empty
      */
     protected AbstractLoggingBean(String discriminator) {
-        log = LoggerFactory.getLogger(getClass().getName() + "[" + discriminator + "]");
+        String name = getClass().getName();
+        if (GenericUtils.length(discriminator) > 0) {
+            name += "[" + discriminator + "]";
+        }
+        log = LoggerFactory.getLogger(name);
     }
 }

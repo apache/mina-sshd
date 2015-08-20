@@ -21,9 +21,9 @@ package org.apache.sshd.client.channel;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.channels.Channel;
 
 import org.apache.sshd.client.future.OpenFuture;
+import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.io.IoInputStream;
 import org.apache.sshd.common.io.IoOutputStream;
@@ -97,6 +97,7 @@ public interface ClientChannel extends Channel {
 
     int waitFor(int mask, long timeout);
 
+    @Override
     CloseFuture close(boolean immediate);
 
     Integer getExitStatus();

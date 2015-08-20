@@ -156,7 +156,7 @@ public final class CloseableUtils {
 
     public abstract static class IoBaseCloseable extends AbstractLoggingBean implements Closeable {
         protected IoBaseCloseable() {
-            super();
+            this("");
         }
 
         protected IoBaseCloseable(String discriminator) {
@@ -330,7 +330,7 @@ public final class CloseableUtils {
         protected final CloseFuture closeFuture = new DefaultCloseFuture(lock);
 
         protected AbstractCloseable() {
-            super();
+            this("");
         }
 
         protected AbstractCloseable(String discriminator) {
@@ -422,7 +422,7 @@ public final class CloseableUtils {
     public abstract static class AbstractInnerCloseable extends AbstractCloseable {
 
         protected AbstractInnerCloseable() {
-            super();
+            this("");
         }
 
         protected AbstractInnerCloseable(String discriminator) {

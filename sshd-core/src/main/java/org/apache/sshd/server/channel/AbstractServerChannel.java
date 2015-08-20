@@ -31,12 +31,12 @@ import org.apache.sshd.common.util.buffer.Buffer;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractServerChannel extends AbstractChannel {
+public abstract class AbstractServerChannel extends AbstractChannel implements ServerChannel {
 
     protected boolean exitStatusSent;
 
     protected AbstractServerChannel() {
-        super();
+        this("");
     }
 
     protected AbstractServerChannel(String discriminator) {

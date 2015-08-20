@@ -82,7 +82,7 @@ public abstract class AbstractChannel
     protected final List<RequestHandler<Channel>> handlers = new ArrayList<RequestHandler<Channel>>();
 
     protected AbstractChannel() {
-        super();
+        this("");
     }
 
     protected AbstractChannel(String discriminator) {
@@ -155,7 +155,7 @@ public abstract class AbstractChannel
                 log.warn("Error processing channel request " + req, e);
                 result = RequestHandler.Result.ReplyFailure;
             }
-            
+
             // if Unsupported then check the next handler in line
             if (RequestHandler.Result.Unsupported.equals(result)) {
                 if (log.isTraceEnabled()) {
