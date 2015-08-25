@@ -55,6 +55,7 @@ import org.apache.sshd.client.future.DefaultConnectFuture;
 import org.apache.sshd.client.session.ClientConnectionServiceFactory;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.ClientUserAuthServiceFactory;
+import org.apache.sshd.client.session.SessionFactory;
 import org.apache.sshd.common.AbstractFactoryManager;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.Factory;
@@ -230,7 +231,6 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
         setupSessionTimeout(sessionFactory);
 
-        sessionFactory.setClient(this);
         connector = createConnector();
     }
 
@@ -276,17 +276,12 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     }
 
     public ConnectFuture connect(String username, String host, int port) throws IOException {
-        assert host != null;
-        assert port >= 0;
-        if (connector == null) {
-            throw new IllegalStateException("SshClient not started. Please call start() method before connecting to a server");
-        }
-        SocketAddress address = new InetSocketAddress(host, port);
+        ValidateUtils.checkTrue(port >= 0, "Invalid port: %d", port);
+        SocketAddress address = new InetSocketAddress(ValidateUtils.checkNotNullAndNotEmpty(host, "No host"), port);
         return connect(username, address);
     }
 
     public ConnectFuture connect(final String username, SocketAddress address) {
-        assert address != null;
         if (connector == null) {
             throw new IllegalStateException("SshClient not started. Please call start() method before connecting to a server");
         }
@@ -313,7 +308,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     }
 
     protected SessionFactory createSessionFactory() {
-        return new SessionFactory();
+        return new SessionFactory(this);
     }
 
     @Override

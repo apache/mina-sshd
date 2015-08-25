@@ -188,10 +188,10 @@ public class ClientUserAuthServiceOld extends CloseableUtils.AbstractCloseable i
 
     @Override
     protected void preClose() {
-        super.preClose();
         if (!authFuture.isDone()) {
             authFuture.setException(new SshException("Session is closed"));
         }
+        super.preClose();
     }
 
     public AuthFuture auth(UserAuth userAuth) throws IOException {

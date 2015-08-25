@@ -29,10 +29,12 @@ import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.channel.AbstractServerChannel;
@@ -45,6 +47,18 @@ import org.apache.tomcat.jni.Status;
  * The client side channel that will receive requests forwards by the SSH server.
  */
 public class ChannelAgentForwarding extends AbstractServerChannel {
+    /**
+     * Property that can be set on the factory manager in order to control
+     * the buffer size used to forward data from the established channel
+     *
+     * @see #MIN_FORWARDER_BUF_SIZE
+     * @see #MAX_FORWARDER_BUF_SIZE
+     * @see #DEFAULT_FORWARDER_BUF_SIZE
+     */
+    public static final String FORWARDER_BUFFER_SIZE = "channel-agent-fwd-buf-size";
+    public static final int MIN_FORWARDER_BUF_SIZE = Byte.MAX_VALUE;
+    public static final int DEFAULT_FORWARDER_BUF_SIZE = 1024;
+    public static final int MAX_FORWARDER_BUF_SIZE = Short.MAX_VALUE;
 
     private String authSocket;
     private long pool;
@@ -61,6 +75,7 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
     @Override
     protected OpenFuture doInit(Buffer buffer) {
         final OpenFuture f = new DefaultOpenFuture(this);
+        ChannelListener listener = getChannelListenerProxy();
         try {
             out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA);
             authSocket = FactoryManagerUtils.getString(session, SshAgent.SSH_AUTHSOCKET_ENV_NAME);
@@ -74,12 +89,17 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
             ExecutorService service = getExecutorService();
             forwardService = (service == null) ? ThreadUtils.newSingleThreadExecutor("ChannelAgentForwarding[" + authSocket + "]") : service;
             shutdownForwarder = (service == forwardService) ? isShutdownOnExit() : true;
+
+            final int copyBufSize = FactoryManagerUtils.getIntProperty(getSession(), FORWARDER_BUFFER_SIZE, DEFAULT_FORWARDER_BUF_SIZE);
+            ValidateUtils.checkTrue(copyBufSize >= MIN_FORWARDER_BUF_SIZE, "Copy buf size below min.: %d", copyBufSize);
+            ValidateUtils.checkTrue(copyBufSize <= MAX_FORWARDER_BUF_SIZE, "Copy buf size above max.: %d", copyBufSize);
+
             forwarder = forwardService.submit(new Runnable() {
                 @SuppressWarnings("synthetic-access")
                 @Override
                 public void run() {
                     try {
-                        byte[] buf = new byte[1024];
+                        byte[] buf = new byte[copyBufSize];
                         while (true) {
                             int len = Socket.recv(handle, buf, 0, buf.length);
                             if (len > 0) {
@@ -92,11 +112,20 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
                     }
                 }
             });
-            f.setOpened();
 
-        } catch (Exception e) {
+            listener.channelOpenSuccess(this);
+            f.setOpened();
+        } catch (Exception t) {
+            Throwable e = GenericUtils.peelException(t);
+            try {
+                listener.channelOpenFailure(this, e);
+            } catch (Throwable ignored) {
+                log.warn("doInit({}) failed ({}) to inform listener of open failure={}: {}",
+                         this, ignored.getClass().getSimpleName(), e.getClass().getSimpleName(), ignored.getMessage());
+            }
             f.setException(e);
         }
+
         return f;
     }
 

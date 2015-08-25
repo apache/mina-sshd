@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.InterruptedIOException;
 import java.net.SocketException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -44,20 +45,20 @@ public class ChannelPipedInputStream extends InputStream implements ChannelPiped
     private final Window localWindow;
     private final Buffer buffer = new ByteArrayBuffer();
     private final byte[] b = new byte[1];
-    private boolean closed;
-    private boolean eofSent;
+    private final AtomicBoolean closed = new AtomicBoolean(false);
+    private final AtomicBoolean eofSent = new AtomicBoolean(false);
 
     private final Lock lock = new ReentrantLock();
     private final Condition dataAvailable = lock.newCondition();
-
-    private long timeout;
 
     /**
      * {@link ChannelPipedOutputStream} is already closed and so we will not receive additional data.
      * This is different from the {@link #closed}, which indicates that the reader of this {@link InputStream}
      * will not be reading data any more.
      */
-    private boolean writerClosed;
+    private final AtomicBoolean writerClosed = new AtomicBoolean(false);
+
+    private long timeout;
 
     public ChannelPipedInputStream(Window localWindow) {
         this.localWindow = ValidateUtils.checkNotNull(localWindow, "No local window provided");
@@ -77,7 +78,7 @@ public class ChannelPipedInputStream extends InputStream implements ChannelPiped
         lock.lock();
         try {
             int avail = buffer.available();
-            if (avail == 0 && writerClosed) {
+            if ((avail == 0) && writerClosed.get()) {
                 return -1;
             }
             return avail;
@@ -103,14 +104,14 @@ public class ChannelPipedInputStream extends InputStream implements ChannelPiped
         lock.lock();
         try {
             for (int index = 0;; index++) {
-                if ((closed && writerClosed && eofSent) || (closed && !writerClosed)) {
+                if ((closed.get() && writerClosed.get() && eofSent.get()) || (closed.get() && (!writerClosed.get()))) {
                     throw new IOException("Pipe closed after " + index + " cycles");
                 }
                 if (buffer.available() > 0) {
                     break;
                 }
-                if (writerClosed) {
-                    eofSent = true;
+                if (writerClosed.get()) {
+                    eofSent.set(true);
                     return -1; // no more data to read
                 }
 
@@ -146,7 +147,7 @@ public class ChannelPipedInputStream extends InputStream implements ChannelPiped
     public void eof() {
         lock.lock();
         try {
-            writerClosed = true;
+            writerClosed.set(true);
             dataAvailable.signalAll();
         } finally {
             lock.unlock();
@@ -159,7 +160,7 @@ public class ChannelPipedInputStream extends InputStream implements ChannelPiped
         try {
             dataAvailable.signalAll();
         } finally {
-            closed = true;
+            closed.set(true);
             lock.unlock();
         }
     }
@@ -168,7 +169,7 @@ public class ChannelPipedInputStream extends InputStream implements ChannelPiped
     public void receive(byte[] bytes, int off, int len) throws IOException {
         lock.lock();
         try {
-            if (writerClosed || closed) {
+            if (writerClosed.get() || closed.get()) {
                 throw new IOException("Pipe closed");
             }
             buffer.putRawBytes(bytes, off, len);

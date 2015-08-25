@@ -24,6 +24,8 @@ import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.AbstractChannel;
+import org.apache.sshd.common.channel.ChannelListener;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
@@ -62,8 +64,22 @@ public abstract class AbstractServerChannel extends AbstractChannel implements S
     }
 
     protected OpenFuture doInit(Buffer buffer) {
+        ChannelListener listener = getChannelListenerProxy();
         OpenFuture f = new DefaultOpenFuture(this);
-        f.setOpened();
+        try {
+            listener.channelOpenSuccess(this);
+            f.setOpened();
+        } catch (RuntimeException t) {
+            Throwable e = GenericUtils.peelException(t);
+            try {
+                listener.channelOpenFailure(this, e);
+            } catch (Throwable ignored) {
+                log.warn("doInit({}) failed ({}) to inform listener of open failure={}: {}",
+                         this, ignored.getClass().getSimpleName(), e.getClass().getSimpleName(), ignored.getMessage());
+            }
+            f.setException(e);
+        }
+
         return f;
     }
 

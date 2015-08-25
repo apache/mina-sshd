@@ -19,6 +19,8 @@
 
 package org.apache.sshd.common.util;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.UndeclaredThrowableException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -31,6 +33,9 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+
+import javax.management.MBeanException;
+import javax.management.ReflectionException;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -332,6 +337,47 @@ public final class GenericUtils {
         }
     }
 
+    /**
+     * Attempts to get to the &quot;effective&quot; exception being thrown,
+     * by taking care of some known exceptions that wrap the original thrown
+     * one.
+     * @param t The original {@link Throwable} - ignored if {@code null}
+     * @return The effective exception - same as input if not a wrapper
+     */
+    public static Throwable peelException(Throwable t) {
+        if (t == null) {
+            return t;
+        } else if (t instanceof UndeclaredThrowableException) {
+            Throwable wrapped = ((UndeclaredThrowableException) t).getUndeclaredThrowable();
+            // according to the Javadoc it may be null, in which case 'getCause'
+            // might contain the information we need
+            if (wrapped != null) {
+                return peelException(wrapped);
+            }
+
+            wrapped = t.getCause();
+            if (wrapped != t) {     // make sure it is a real cause
+                return peelException(wrapped);
+            }
+        } else if (t instanceof InvocationTargetException) {
+            Throwable target = ((InvocationTargetException) t).getTargetException();
+            if (target != null) {
+                return peelException(target);
+            }
+        } else if (t instanceof ReflectionException) {
+            Throwable target = ((ReflectionException) t).getTargetException();
+            if (target != null) {
+                return peelException(target);
+            }
+        } else if (t instanceof MBeanException) {
+            Throwable target = ((MBeanException) t).getTargetException();
+            if (target != null) {
+                return peelException(target);
+            }
+        }
+
+        return t;   // no special handling required or available
+    }
     /**
      * @param t The original {@link Throwable} - ignored if {@code null}
      * @return If {@link Throwable#getCause()} is non-{@code null} then

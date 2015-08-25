@@ -16,31 +16,32 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.client;
 
-import org.apache.sshd.client.session.ClientSessionImpl;
-import org.apache.sshd.common.io.IoSession;
-import org.apache.sshd.common.session.AbstractSession;
-import org.apache.sshd.common.session.AbstractSessionFactory;
+package org.apache.sshd.common.channel;
 
 /**
- * A factory of client sessions.
- * This class can be used as a way to customize the creation of client sessions.
- *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- * @see org.apache.sshd.client.SshClient#setSessionFactory(SessionFactory)
  */
-public class SessionFactory extends AbstractSessionFactory {
+public interface ChannelListenerManager {
+    /**
+     * Add a channel listener
+     *
+     * @param listener The {@link ChannelListener} to add - not {@code null}
+     */
+    void addChannelListener(ChannelListener listener);
 
-    protected ClientFactoryManager client;
+    /**
+     * Remove a channel listener
+     *
+     * @param listener The {@link ChannelListener} to remove
+     */
+    void removeChannelListener(ChannelListener listener);
 
-    public void setClient(ClientFactoryManager client) {
-        this.client = client;
-    }
-
-    @Override
-    protected AbstractSession doCreateSession(IoSession ioSession) throws Exception {
-        return new ClientSessionImpl(client, ioSession);
-    }
+    /**
+     * @return A (never {@code null} proxy {@link ChannelListener} that represents
+     * all the currently registered listeners. Any method invocation on the proxy
+     * is replicated to the currently registered listeners
+     */
+    ChannelListener getChannelListenerProxy();
 
 }

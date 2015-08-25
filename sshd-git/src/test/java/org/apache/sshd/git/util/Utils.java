@@ -52,7 +52,7 @@ public class Utils {
         URL url = Utils.class.getClassLoader().getResource(resource);
         try {
             return new File(url.toURI());
-        } catch(URISyntaxException e) {
+        } catch (URISyntaxException e) {
             return new File(url.getPath());
         }
     }

@@ -18,15 +18,18 @@
  */
 package org.apache.sshd.common;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.common.channel.Channel;
+import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.channel.RequestHandler;
 import org.apache.sshd.common.cipher.Cipher;
 import org.apache.sshd.common.compression.Compression;
@@ -42,9 +45,11 @@ import org.apache.sshd.common.mac.Mac;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.session.AbstractSessionFactory;
 import org.apache.sshd.common.session.ConnectionService;
+import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.session.SessionTimeoutListener;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.CloseableUtils;
+import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.forward.ForwardingFilter;
@@ -56,7 +61,7 @@ import org.apache.sshd.server.forward.ForwardingFilter;
  */
 public abstract class AbstractFactoryManager extends CloseableUtils.AbstractInnerCloseable implements FactoryManager {
 
-    protected Map<String, Object> properties = new HashMap<String, Object>();
+    protected Map<String, Object> properties = new HashMap<>();
     protected IoServiceFactoryFactory ioServiceFactoryFactory;
     protected IoServiceFactory ioServiceFactory;
     protected List<NamedFactory<KeyExchange>> keyExchangeFactories;
@@ -77,9 +82,15 @@ public abstract class AbstractFactoryManager extends CloseableUtils.AbstractInne
     protected List<RequestHandler<ConnectionService>> globalRequestHandlers;
     protected SessionTimeoutListener sessionTimeoutListener;
     protected ScheduledFuture<?> timeoutListenerFuture;
+    protected final Collection<SessionListener> sessionListeners = new CopyOnWriteArraySet<>();
+    protected final SessionListener sessionListenerProxy;
+    protected final Collection<ChannelListener> channelListeners = new CopyOnWriteArraySet<>();
+    protected final ChannelListener channelListenerProxy;
 
     protected AbstractFactoryManager() {
-        super();
+        ClassLoader loader = getClass().getClassLoader();
+        sessionListenerProxy = EventListenerUtils.proxyWrapper(SessionListener.class, loader, sessionListeners);
+        channelListenerProxy = EventListenerUtils.proxyWrapper(ChannelListener.class, loader, channelListeners);
     }
 
     @Override
@@ -271,16 +282,76 @@ public abstract class AbstractFactoryManager extends CloseableUtils.AbstractInne
         this.globalRequestHandlers = globalRequestHandlers;
     }
 
-    protected void setupSessionTimeout(final AbstractSessionFactory sessionFactory) {
+    @Override
+    public void addSessionListener(SessionListener listener) {
+        ValidateUtils.checkNotNull(listener, "addSessionListener(%s) null instance", this);
+        // avoid race conditions on notifications while manager is being closed
+        if (!isOpen()) {
+            log.warn("addSessionListener({})[{}] ignore registration while manager is closing", this, listener);
+            return;
+        }
+
+        if (this.sessionListeners.add(listener)) {
+            log.trace("addSessionListener({})[{}] registered", this, listener);
+        } else {
+            log.trace("addSessionListener({})[{}] ignored duplicate", this, listener);
+        }
+    }
+
+    @Override
+    public void removeSessionListener(SessionListener listener) {
+        if (this.sessionListeners.remove(listener)) {
+            log.trace("removeSessionListener({})[{}] removed", this, listener);
+        } else {
+            log.trace("removeSessionListener({})[{}] not registered", this, listener);
+        }
+    }
+
+    @Override
+    public SessionListener getSessionListenerProxy() {
+        return sessionListenerProxy;
+    }
+
+    @Override
+    public void addChannelListener(ChannelListener listener) {
+        ValidateUtils.checkNotNull(listener, "addChannelListener(%s) null instance", this);
+        // avoid race conditions on notifications while manager is being closed
+        if (!isOpen()) {
+            log.warn("addChannelListener({})[{}] ignore registration while session is closing", this, listener);
+            return;
+        }
+
+        if (this.channelListeners.add(listener)) {
+            log.trace("addChannelListener({})[{}] registered", this, listener);
+        } else {
+            log.trace("addChannelListener({})[{}] ignored duplicate", this, listener);
+        }
+    }
+
+    @Override
+    public void removeChannelListener(ChannelListener listener) {
+        if (this.channelListeners.remove(listener)) {
+            log.trace("removeChannelListener({})[{}] removed", this, listener);
+        } else {
+            log.trace("removeChannelListener({})[{}] not registered", this, listener);
+        }
+    }
+
+    @Override
+    public ChannelListener getChannelListenerProxy() {
+        return channelListenerProxy;
+    }
+
+    protected void setupSessionTimeout(final AbstractSessionFactory<?, ?> sessionFactory) {
         // set up the the session timeout listener and schedule it
         sessionTimeoutListener = createSessionTimeoutListener();
-        sessionFactory.addListener(sessionTimeoutListener);
+        addSessionListener(sessionTimeoutListener);
 
         timeoutListenerFuture = getScheduledExecutorService()
                 .scheduleAtFixedRate(sessionTimeoutListener, 1, 1, TimeUnit.SECONDS);
     }
 
-    protected void removeSessionTimeout(final AbstractSessionFactory sessionFactory) {
+    protected void removeSessionTimeout(final AbstractSessionFactory<?, ?> sessionFactory) {
         stopSessionTimeoutListener(sessionFactory);
     }
 
@@ -288,19 +359,25 @@ public abstract class AbstractFactoryManager extends CloseableUtils.AbstractInne
         return new SessionTimeoutListener();
     }
 
-    protected void stopSessionTimeoutListener(final AbstractSessionFactory sessionFactory) {
+    protected void stopSessionTimeoutListener(final AbstractSessionFactory<?, ?> sessionFactory) {
         // cancel the timeout monitoring task
         if (timeoutListenerFuture != null) {
-            timeoutListenerFuture.cancel(true);
-            timeoutListenerFuture = null;
+            try {
+                timeoutListenerFuture.cancel(true);
+            } finally {
+                timeoutListenerFuture = null;
+            }
         }
 
         // remove the sessionTimeoutListener completely; should the SSH server/client be restarted, a new one
         // will be created.
-        if (sessionFactory != null && sessionTimeoutListener != null) {
-            sessionFactory.removeListener(sessionTimeoutListener);
+        if (sessionTimeoutListener != null) {
+            try {
+                removeSessionListener(sessionTimeoutListener);
+            } finally {
+                sessionTimeoutListener = null;
+            }
         }
-        sessionTimeoutListener = null;
     }
 
     protected void checkConfig() {

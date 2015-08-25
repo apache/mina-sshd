@@ -585,14 +585,14 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
     }
 
     @Override
-    protected void sendEvent(SessionListener.Event event) throws IOException {
+    protected void sendSessionEvent(SessionListener.Event event) throws IOException {
         if (event == SessionListener.Event.KeyEstablished) {
             sendInitialServiceRequest();
         }
         synchronized (lock) {
             lock.notifyAll();
         }
-        super.sendEvent(event);
+        super.sendSessionEvent(event);
     }
 
     protected void sendInitialServiceRequest() throws IOException {

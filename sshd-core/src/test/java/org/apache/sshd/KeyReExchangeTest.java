@@ -206,7 +206,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
                     sb.append("\n");
 
                     final AtomicInteger exchanges = new AtomicInteger();
-                    session.addListener(new SessionListener() {
+                    session.addSessionListener(new SessionListener() {
                         @Override
                         public void sessionCreated(Session session) {
                             // ignored

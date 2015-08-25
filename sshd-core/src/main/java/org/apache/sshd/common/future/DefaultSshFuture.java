@@ -150,10 +150,19 @@ public class DefaultSshFuture<T extends SshFuture> extends AbstractLoggingBean i
         Class<?> actualType = value.getClass();
         if (expectedType.isAssignableFrom(actualType)) {
             return expectedType.cast(value);
-        } else if (IOException.class.isAssignableFrom(actualType)) {
-            throw (IOException) value;
-        } else if (Throwable.class.isAssignableFrom(actualType)) {
-            Throwable t = (Throwable) value;
+        }
+
+        if (Throwable.class.isAssignableFrom(actualType)) {
+            Throwable t = GenericUtils.peelException((Throwable) value);
+            if (t != value) {
+                value = t;
+                actualType = value.getClass();
+            }
+
+            if (IOException.class.isAssignableFrom(actualType)) {
+                throw (IOException) value;
+            }
+
             throw new SshException("Failed (" + t.getClass().getSimpleName() + ") to execute: " + t.getMessage(), GenericUtils.resolveExceptionCause(t));
         } else {    // what else can it be ????
             throw new StreamCorruptedException("Unknown result type: " + actualType.getName());

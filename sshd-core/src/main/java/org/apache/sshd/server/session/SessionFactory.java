@@ -19,7 +19,6 @@
 package org.apache.sshd.server.session;
 
 import org.apache.sshd.common.io.IoSession;
-import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.session.AbstractSessionFactory;
 import org.apache.sshd.server.ServerFactoryManager;
 
@@ -30,29 +29,18 @@ import org.apache.sshd.server.ServerFactoryManager;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @see org.apache.sshd.server.SshServer#setSessionFactory(SessionFactory)
  */
-public class SessionFactory extends AbstractSessionFactory {
+public class SessionFactory extends AbstractSessionFactory<ServerFactoryManager, ServerSessionImpl> {
 
-    private ServerFactoryManager manager;
-
-    public SessionFactory() {
-        super();
+    public SessionFactory(ServerFactoryManager server) {
+        super(server);
     }
 
-    public SessionFactory(ServerFactoryManager manager) {
-        this.manager = manager;
-    }
-
-    public ServerFactoryManager getServer() {
-        return manager;
-    }
-
-    public void setServer(ServerFactoryManager server) {
-        this.manager = server;
+    public final ServerFactoryManager getServer() {
+        return getFactoryManager();
     }
 
     @Override
-    protected AbstractSession doCreateSession(IoSession ioSession) throws Exception {
+    protected ServerSessionImpl doCreateSession(IoSession ioSession) throws Exception {
         return new ServerSessionImpl(getServer(), ioSession);
     }
-
 }

@@ -158,5 +158,4 @@ public interface ServerFactoryManager extends FactoryManager {
      * or {@code null} if subsystems are not supported on this server
      */
     List<NamedFactory<Command>> getSubsystemFactories();
-
 }

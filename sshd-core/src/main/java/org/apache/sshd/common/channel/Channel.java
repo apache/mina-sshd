@@ -28,11 +28,12 @@ import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
- * TODO Add javadoc
+ * Represents a channel opened over an SSH session - holds information that is
+ * common both to server and client channels.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface Channel extends Closeable {
+public interface Channel extends ChannelListenerManager, Closeable {
 
     /**
      * @return Local channel identifier
@@ -109,5 +110,4 @@ public interface Channel extends Closeable {
      * @throws IOException If failed to handle the success
      */
     void handleOpenFailure(Buffer buffer) throws IOException;
-
 }

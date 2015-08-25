@@ -103,20 +103,27 @@ public final class EventListenerUtils {
      * @see #proxyWrapper(Class, ClassLoader, Iterable)
      */
     public static <T extends EventListener> T proxyWrapper(Class<T> listenerType, ClassLoader loader, final Iterable<? extends T> listeners) {
-        if ((listenerType == null) || (!listenerType.isInterface())) {
-            throw new IllegalArgumentException("Target proxy is not an interface");
-        }
-
-        if (listeners == null) {
-            throw new IllegalArgumentException("No listeners container provided");
-        }
+        ValidateUtils.checkNotNull(listenerType, "No listener type specified");
+        ValidateUtils.checkTrue(listenerType.isInterface(), "Target proxy is not an interface: %s", listenerType.getSimpleName());
+        ValidateUtils.checkNotNull(listeners, "No listeners container provided");
 
         Object wrapper = Proxy.newProxyInstance(loader, new Class<?>[]{listenerType}, new InvocationHandler() {
             @Override
             public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                Throwable err = null;
                 for (T l : listeners) {
-                    method.invoke(l, args);
+                    try {
+                        method.invoke(l, args);
+                    } catch (Throwable t) {
+                        Throwable e = GenericUtils.peelException(t);
+                        err = GenericUtils.accumulateException(err, e);
+                    }
                 }
+
+                if (err != null) {
+                    throw err;
+                }
+
                 return null;    // we assume always void return value...
             }
         });

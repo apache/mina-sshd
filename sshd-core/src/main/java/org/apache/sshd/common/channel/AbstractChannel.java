@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -38,8 +39,10 @@ import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.CloseableUtils;
+import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Int2IntFunction;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -80,6 +83,11 @@ public abstract class AbstractChannel
     protected AtomicReference<GracefulState> gracefulState = new AtomicReference<GracefulState>(GracefulState.Opened);
     protected final DefaultCloseFuture gracefulFuture = new DefaultCloseFuture(lock);
     protected final List<RequestHandler<Channel>> handlers = new ArrayList<RequestHandler<Channel>>();
+    /**
+     * Channel events listener
+     */
+    protected final Collection<ChannelListener> channelListeners = new CopyOnWriteArraySet<>();
+    protected final ChannelListener channelListenerProxy;
 
     protected AbstractChannel() {
         this("");
@@ -87,6 +95,7 @@ public abstract class AbstractChannel
 
     protected AbstractChannel(String discriminator) {
         super(discriminator);
+        channelListenerProxy = EventListenerUtils.proxyWrapper(ChannelListener.class, getClass().getClassLoader(), channelListeners);
     }
 
     public void addRequestHandler(RequestHandler<Channel> handler) {
@@ -195,10 +204,20 @@ public abstract class AbstractChannel
     }
 
     @Override
-    public void init(ConnectionService service, Session session, int id) {
+    public void init(ConnectionService service, Session session, int id) throws IOException {
         this.service = service;
         this.session = session;
         this.id = id;
+
+        ChannelListener listener = session.getChannelListenerProxy();
+        try {
+            listener.channelInitialized(this);
+        } catch (RuntimeException t) {
+            Throwable e = GenericUtils.peelException(t);
+            throw new IOException("Failed (" + e.getClass().getSimpleName() + ") to notify channel " + toString() + " initialization: " + e.getMessage(), e);
+        }
+        // delegate the rest of the notifications to the channel
+        addChannelListener(listener);
         configureWindow();
     }
 
@@ -206,6 +225,36 @@ public abstract class AbstractChannel
         synchronized (lock) {
             lock.notifyAll();
         }
+    }
+
+    @Override
+    public void addChannelListener(ChannelListener listener) {
+        ValidateUtils.checkNotNull(listener, "addChannelListener(%s) null instance", this);
+        // avoid race conditions on notifications while channel is being closed
+        if (!isOpen()) {
+            log.warn("addChannelListener({})[{}] ignore registration while channel is closing", this, listener);
+            return;
+        }
+
+        if (this.channelListeners.add(listener)) {
+            log.trace("addChannelListener({})[{}] registered", this, listener);
+        } else {
+            log.trace("addChannelListener({})[{}] ignored duplicate", this, listener);
+        }
+    }
+
+    @Override
+    public void removeChannelListener(ChannelListener listener) {
+        if (this.channelListeners.remove(listener)) {
+            log.trace("removeChannelListener({})[{}] removed", this, listener);
+        } else {
+            log.trace("removeChannelListener({})[{}] not registered", this, listener);
+        }
+    }
+
+    @Override
+    public ChannelListener getChannelListenerProxy() {
+        return channelListenerProxy;
     }
 
     @Override
@@ -252,8 +301,9 @@ public abstract class AbstractChannel
                 gracefulFuture.setClosed();
             } else if (!gracefulFuture.isClosed()) {
                 log.debug("Send SSH_MSG_CHANNEL_CLOSE on channel {}", AbstractChannel.this);
-                Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_CLOSE);
-                buffer.putInt(recipient);
+                Session s = getSession();
+                Buffer buffer = s.createBuffer(SshConstants.SSH_MSG_CHANNEL_CLOSE);
+                buffer.putInt(getRecipient());
                 try {
                     long timeout = FactoryManagerUtils.getLongProperty(getSession(), FactoryManager.CHANNEL_CLOSE_TIMEOUT, DEFAULT_CHANNEL_CLOSE_TIMEOUT);
                     session.writePacket(buffer, timeout, TimeUnit.MILLISECONDS).addListener(new SshFutureListener<IoWriteFuture>() {
@@ -292,6 +342,20 @@ public abstract class AbstractChannel
     }
 
     @Override
+    protected void preClose() {
+        ChannelListener listener = getChannelListenerProxy();
+        try {
+            listener.channelClosed(this);
+        } catch (RuntimeException t) {
+            Throwable e = GenericUtils.peelException(t);
+            log.warn(e.getClass().getSimpleName() + " while signal channel " + toString() + " closed: " + e.getMessage(), e);
+        } finally {
+            // clear the listeners since we are closing the channel (quicker GC)
+            this.channelListeners.clear();
+        }
+    }
+
+    @Override
     protected void doCloseImmediately() {
         if (service != null) {
             service.unregisterChannel(AbstractChannel.this);
@@ -301,9 +365,10 @@ public abstract class AbstractChannel
 
     protected void writePacket(Buffer buffer) throws IOException {
         if (!isClosing()) {
-            session.writePacket(buffer);
+            Session s = getSession();
+            s.writePacket(buffer);
         } else {
-            log.debug("Discarding output packet because channel is being closed");
+            log.debug("writePacket({}) Discarding output packet because channel is being closed", this);
         }
     }
 
@@ -326,8 +391,9 @@ public abstract class AbstractChannel
         // Only accept extended data for stderr
         if (ex != 1) {
             log.debug("Send SSH_MSG_CHANNEL_FAILURE on channel {}", this);
-            buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_FAILURE);
-            buffer.putInt(recipient);
+            Session s = getSession();
+            buffer = s.createBuffer(SshConstants.SSH_MSG_CHANNEL_FAILURE);
+            buffer.putInt(getRecipient());
             writePacket(buffer);
             return;
         }
@@ -376,27 +442,29 @@ public abstract class AbstractChannel
 
     protected void sendEof() throws IOException {
         log.debug("Send SSH_MSG_CHANNEL_EOF on channel {}", this);
-        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_EOF);
-        buffer.putInt(recipient);
+        Session s = getSession();
+        Buffer buffer = s.createBuffer(SshConstants.SSH_MSG_CHANNEL_EOF);
+        buffer.putInt(getRecipient());
         writePacket(buffer);
     }
 
     protected void configureWindow() {
-        localWindow.init(session);
+        localWindow.init(getSession());
     }
 
     protected void sendWindowAdjust(int len) throws IOException {
         if (log.isDebugEnabled()) {
             log.debug("Send SSH_MSG_CHANNEL_WINDOW_ADJUST on channel {}", Integer.valueOf(id));
         }
-        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_WINDOW_ADJUST);
-        buffer.putInt(recipient);
+        Session s = getSession();
+        Buffer buffer = s.createBuffer(SshConstants.SSH_MSG_CHANNEL_WINDOW_ADJUST);
+        buffer.putInt(getRecipient());
         buffer.putInt(len);
         writePacket(buffer);
     }
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "[id=" + id + ", recipient=" + recipient + "]";
+        return getClass().getSimpleName() + "[id=" + getId() + ", recipient=" + getRecipient() + "]";
     }
 }

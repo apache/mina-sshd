@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.Service;
+import org.apache.sshd.common.channel.ChannelListenerManager;
 import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
@@ -36,7 +37,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface Session extends Closeable {
+public interface Session extends SessionListenerManager, ChannelListenerManager, Closeable {
 
     /**
      * Timeout status.
@@ -179,20 +180,6 @@ public interface Session extends Closeable {
      * @param t the exception to process
      */
     void exceptionCaught(Throwable t);
-
-    /**
-     * Add a session |listener|.
-     *
-     * @param listener the session listener to add
-     */
-    void addListener(SessionListener listener);
-
-    /**
-     * Remove a session |listener|.
-     *
-     * @param listener the session listener to remove
-     */
-    void removeListener(SessionListener listener);
 
     /**
      * Initiate a new key exchange.

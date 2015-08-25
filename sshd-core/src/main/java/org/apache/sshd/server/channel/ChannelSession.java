@@ -447,7 +447,7 @@ public class ChannelSession extends AbstractServerChannel {
             return false;
         }
 
-        ServerFactoryManager manager = ((ServerSession) session).getFactoryManager();
+        ServerFactoryManager manager = ((ServerSession) getSession()).getFactoryManager();
         Factory<Command> factory = manager.getShellFactory();
         if (factory == null) {
             log.debug("handleShell - no shell factory");
@@ -472,7 +472,7 @@ public class ChannelSession extends AbstractServerChannel {
         }
 
         String commandLine = buffer.getString();
-        ServerFactoryManager manager = ((ServerSession) session).getFactoryManager();
+        ServerFactoryManager manager = ((ServerSession) getSession()).getFactoryManager();
         CommandFactory factory = manager.getCommandFactory();
         if (factory == null) {
             log.warn("No command factory for command: {}", commandLine);
@@ -498,7 +498,7 @@ public class ChannelSession extends AbstractServerChannel {
 
     protected boolean handleSubsystem(Buffer buffer) throws IOException {
         String subsystem = buffer.getString();
-        ServerFactoryManager manager = ((ServerSession) session).getFactoryManager();
+        ServerFactoryManager manager = ((ServerSession) getSession()).getFactoryManager();
         List<NamedFactory<Command>> factories = manager.getSubsystemFactories();
         if (GenericUtils.isEmpty(factories)) {
             log.warn("No factories for subsystem: {}", subsystem);
@@ -536,14 +536,15 @@ public class ChannelSession extends AbstractServerChannel {
         addEnvVariable(Environment.ENV_USER, session.getUsername());
         // If the shell wants to be aware of the session, let's do that
         if (command instanceof SessionAware) {
-            ((SessionAware) command).setSession((ServerSession) session);
+            ((SessionAware) command).setSession((ServerSession) getSession());
         }
         if (command instanceof ChannelSessionAware) {
             ((ChannelSessionAware) command).setChannelSession(this);
         }
         // If the shell wants to be aware of the file system, let's do that too
         if (command instanceof FileSystemAware) {
-            FileSystemFactory factory = ((ServerSession) session).getFactoryManager().getFileSystemFactory();
+            ServerFactoryManager manager = ((ServerSession) getSession()).getFactoryManager();
+            FileSystemFactory factory = manager.getFileSystemFactory();
             ((FileSystemAware) command).setFileSystem(factory.createFileSystem(session));
         }
         // If the shell wants to use non-blocking io

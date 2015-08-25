@@ -38,6 +38,7 @@ import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.file.util.BaseFileSystem;
@@ -205,6 +206,11 @@ public class SftpFileSystem extends BaseFileSystem<SftpPath> {
         @Override
         public ClientSession getClientSession() {
             return delegate.getClientSession();
+        }
+
+        @Override
+        public ClientChannel getClientChannel() {
+            return delegate.getClientChannel();
         }
 
         @Override

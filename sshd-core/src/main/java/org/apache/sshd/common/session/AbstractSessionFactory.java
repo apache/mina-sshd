@@ -18,9 +18,7 @@
  */
 package org.apache.sshd.common.session;
 
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-
+import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.util.ValidateUtils;
 
@@ -29,45 +27,32 @@ import org.apache.sshd.common.util.ValidateUtils;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractSessionFactory extends AbstractSessionIoHandler {
+public abstract class AbstractSessionFactory<M extends FactoryManager, S extends AbstractSession> extends AbstractSessionIoHandler {
+    private final M manager;
 
-    protected final List<SessionListener> listeners = new CopyOnWriteArrayList<>();
+    protected AbstractSessionFactory(M manager) {
+        this.manager = ValidateUtils.checkNotNull(manager, "No factory manager instance");
+    }
 
-    protected AbstractSessionFactory() {
-        super();
+    public M getFactoryManager() {
+        return manager;
     }
 
     @Override
-    protected AbstractSession createSession(IoSession ioSession) throws Exception {
-        AbstractSession session = doCreateSession(ioSession);
+    protected S createSession(IoSession ioSession) throws Exception {
+        return setupSession(doCreateSession(ioSession));
+    }
 
-        for (SessionListener l : listeners) {
-            l.sessionCreated(session);
-            session.addListener(l);
-        }
+    protected abstract S doCreateSession(IoSession ioSession) throws Exception;
 
+    protected S setupSession(S session) throws Exception {
+        FactoryManager listenersManager = getFactoryManager();
+        SessionListener sessionListener = listenersManager.getSessionListenerProxy();
+        // Inform the listener of the newly created session
+        sessionListener.sessionCreated(session);
+        // Delegate the task of further notifications to the session
+        session.addSessionListener(sessionListener);
+        session.addChannelListener(listenersManager.getChannelListenerProxy());
         return session;
     }
-
-    protected abstract AbstractSession doCreateSession(IoSession ioSession) throws Exception;
-
-    /**
-     * Add a session |listener|.
-     *
-     * @param listener the session listener to add
-     */
-    public void addListener(SessionListener listener) {
-        ValidateUtils.checkNotNull(listener, "addListener(%s) no listener", this);
-        this.listeners.add(listener);
-    }
-
-    /**
-     * Remove a session |listener|.
-     *
-     * @param listener the session listener to remove
-     */
-    public void removeListener(SessionListener listener) {
-        this.listeners.remove(listener);
-    }
-
 }

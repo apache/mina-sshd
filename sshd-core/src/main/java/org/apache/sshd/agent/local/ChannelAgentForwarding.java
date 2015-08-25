@@ -22,13 +22,18 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 import org.apache.sshd.agent.SshAgent;
+import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.agent.common.AbstractAgentClient;
 import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
+import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.server.channel.AbstractServerChannel;
@@ -48,13 +53,24 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
     @Override
     protected OpenFuture doInit(Buffer buffer) {
         final OpenFuture f = new DefaultOpenFuture(this);
+        ChannelListener listener = getChannelListenerProxy();
         try {
             out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA);
-            agent = session.getFactoryManager().getAgentFactory().createClient(session.getFactoryManager());
+            FactoryManager manager = session.getFactoryManager();
+            SshAgentFactory factory = ValidateUtils.checkNotNull(manager.getAgentFactory(), "No agent factory");
+            agent = factory.createClient(manager);
             client = new AgentClient();
-            f.setOpened();
 
-        } catch (Exception e) {
+            listener.channelOpenSuccess(this);
+            f.setOpened();
+        } catch (Throwable t) {
+            Throwable e = GenericUtils.peelException(t);
+            try {
+                listener.channelOpenFailure(this, e);
+            } catch (Throwable ignored) {
+                log.warn("doInit({}) failed ({}) to inform listener of open failure={}: {}",
+                         this, ignored.getClass().getSimpleName(), e.getClass().getSimpleName(), ignored.getMessage());
+            }
             f.setException(e);
         }
         return f;

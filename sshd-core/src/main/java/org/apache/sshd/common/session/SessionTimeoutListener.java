@@ -32,10 +32,17 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 public class SessionTimeoutListener extends AbstractLoggingBean implements SessionListener, Runnable {
     private final Set<AbstractSession> sessions = new CopyOnWriteArraySet<AbstractSession>();
 
+    public SessionTimeoutListener() {
+        super();
+    }
+
     @Override
     public void sessionCreated(Session session) {
-        if (session instanceof AbstractSession && (session.getAuthTimeout() > 0 || session.getIdleTimeout() > 0)) {
+        if ((session instanceof AbstractSession) && ((session.getAuthTimeout() > 0L) || (session.getIdleTimeout() > 0L))) {
             sessions.add((AbstractSession) session);
+            log.debug("sessionCreated({}) tracking", session);
+        } else {
+            log.trace("sessionCreated({}) not tracked", session);
         }
     }
 
@@ -46,7 +53,11 @@ public class SessionTimeoutListener extends AbstractLoggingBean implements Sessi
 
     @Override
     public void sessionClosed(Session s) {
-        sessions.remove(s);
+        if (sessions.remove(s)) {
+            log.debug("sessionClosed({}) un-tracked", s);
+        } else {
+            log.trace("sessionClosed({}) not tracked", s);
+        }
     }
 
     @Override
@@ -55,7 +66,7 @@ public class SessionTimeoutListener extends AbstractLoggingBean implements Sessi
             try {
                 session.checkForTimeouts();
             } catch (Exception e) {
-                log.warn("An error occurred while checking session=" + session + " timeouts", e);
+                log.warn(e.getClass().getSimpleName() + " while checking session=" + session + " timeouts: " + e.getMessage(), e);
             }
         }
     }

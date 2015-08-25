@@ -82,7 +82,7 @@ public class PublickeyAuthenticatorTest extends BaseTestSupport {
                     Object result;
                     try {
                         result = method.invoke(authenticator, invArgs);
-                    } catch(InvocationTargetException e) {
+                    } catch (InvocationTargetException e) {
                         Throwable t = e.getTargetException();   // peel of the real exception
                         System.err.println("Failed (" + t.getClass().getSimpleName() + ")"
                                           + " to invoke with user=" + useUsername

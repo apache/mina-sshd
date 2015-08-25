@@ -32,9 +32,11 @@ import org.apache.sshd.common.channel.AbstractChannel;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelAsyncInputStream;
 import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
+import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.channel.ChannelRequestHandler;
 import org.apache.sshd.common.io.IoInputStream;
 import org.apache.sshd.common.io.IoOutputStream;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.IoUtils;
@@ -250,11 +252,22 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     public void handleOpenSuccess(int recipient, int rwSize, int packetSize, Buffer buffer) {
         this.recipient = recipient;
         this.remoteWindow.init(rwSize, packetSize, session.getFactoryManager().getProperties());
+        ChannelListener listener = getChannelListenerProxy();
         try {
             doOpen();
+
+            listener.channelOpenSuccess(this);
             this.opened.set(true);
             this.openFuture.setOpened();
-        } catch (Exception e) {
+        } catch (Throwable t) {
+            Throwable e = GenericUtils.peelException(t);
+            try {
+                listener.channelOpenFailure(this, e);
+            } catch (Throwable ignored) {
+                log.warn("handleOpenSuccess({}) failed ({}) to inform listener of open failure={}: {}",
+                         this, ignored.getClass().getSimpleName(), e.getClass().getSimpleName(), ignored.getMessage());
+            }
+
             this.openFuture.setException(e);
             this.closeFuture.setClosed();
             this.doCloseImmediately();

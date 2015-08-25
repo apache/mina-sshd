@@ -34,6 +34,7 @@ import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.client.channel.ChannelSubsystem;
+import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.SshException;
@@ -104,6 +105,11 @@ public class DefaultSftpClient extends AbstractSftpClient {
     @Override
     public ClientSession getClientSession() {
         return clientSession;
+    }
+
+    @Override
+    public ClientChannel getClientChannel() {
+        return channel;
     }
 
     @Override

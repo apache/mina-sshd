@@ -33,6 +33,9 @@ import org.apache.sshd.common.util.Readable;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
+/**
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ */
 public class ChannelAsyncInputStream extends CloseableUtils.AbstractCloseable implements IoInputStream {
 
     private final Channel channel;
@@ -76,6 +79,7 @@ public class ChannelAsyncInputStream extends CloseableUtils.AbstractCloseable im
                 }
             }
         }
+        super.preClose();
     }
 
     @Override

@@ -47,7 +47,7 @@ public class CachingPublicKeyAuthenticator implements PublickeyAuthenticator, Se
         if (map == null) {
             map = new ConcurrentHashMap<>();
             cache.put(session, map);
-            session.addListener(this);
+            session.addSessionListener(this);
         }
 
         Boolean result = map.get(key);

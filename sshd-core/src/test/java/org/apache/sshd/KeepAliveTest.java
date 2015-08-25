@@ -52,9 +52,9 @@ public class KeepAliveTest extends BaseTestSupport {
     private SshServer sshd;
     private int port;
 
-    private static final int HEARTBEAT = 2000;
-    private static final int TIMEOUT = 4000;
-    private static final int WAIT = 8000;
+    private static final long HEARTBEAT = TimeUnit.SECONDS.toMillis(2L);
+    private static final long TIMEOUT = 2L * HEARTBEAT;
+    private static final long WAIT = 2L * TIMEOUT;
 
     @Before
     public void setUp() throws Exception {
@@ -76,27 +76,7 @@ public class KeepAliveTest extends BaseTestSupport {
     }
 
     @Test
-    public void testClient() throws Exception {
-        SshClient client = SshClient.setUpDefaultClient();
-        client.start();
-
-        try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
-            session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
-
-            try (ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL)) {
-                int state = channel.waitFor(ClientChannel.CLOSED, WAIT);
-                assertEquals("Wrong channel state", ClientChannel.CLOSED | ClientChannel.EOF, state);
-
-                channel.close(false);
-            }
-        } finally {
-            client.stop();
-        }
-    }
-
-    @Test
-    public void testClientNew() throws Exception {
+    public void testIdleClient() throws Exception {
         SshClient client = SshClient.setUpDefaultClient();
         client.start();
 
@@ -137,58 +117,7 @@ public class KeepAliveTest extends BaseTestSupport {
     }
 
     @Test
-    public void testClientWithHeartBeatNew() throws Exception {
-        SshClient client = SshClient.setUpDefaultClient();
-        FactoryManagerUtils.updateProperty(client, ClientFactoryManager.HEARTBEAT_INTERVAL, HEARTBEAT);
-        client.start();
-
-        try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
-            session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
-
-            try (ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL)) {
-                int state = channel.waitFor(ClientChannel.CLOSED, WAIT);
-                assertEquals("Wrong channel state", ClientChannel.TIMEOUT, state);
-
-                channel.close(false);
-            }
-        } finally {
-            client.stop();
-        }
-    }
-
-    @Test
     public void testShellClosedOnClientTimeout() throws Exception {
-        TestEchoShellFactory.TestEchoShell.latch = new CountDownLatch(1);
-
-        SshClient client = SshClient.setUpDefaultClient();
-        client.start();
-
-        try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
-            session.addPasswordIdentity(getCurrentTestName());
-            session.auth().verify(5L, TimeUnit.SECONDS);
-
-            try (ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL);
-                 ByteArrayOutputStream out = new ByteArrayOutputStream();
-                 ByteArrayOutputStream err = new ByteArrayOutputStream()) {
-
-                channel.setOut(out);
-                channel.setErr(err);
-                channel.open().verify(9L, TimeUnit.SECONDS);
-
-                assertTrue("Latch time out", TestEchoShellFactory.TestEchoShell.latch.await(10L, TimeUnit.SECONDS));
-                int state = channel.waitFor(ClientChannel.CLOSED, WAIT);
-                assertEquals("Wrong channel state", ClientChannel.CLOSED | ClientChannel.EOF | ClientChannel.OPENED, state);
-
-                channel.close(false);
-            }
-        } finally {
-            client.stop();
-        }
-    }
-
-    @Test
-    public void testShellClosedOnClientTimeoutNew() throws Exception {
         TestEchoShellFactory.TestEchoShell.latch = new CountDownLatch(1);
 
         SshClient client = SshClient.setUpDefaultClient();

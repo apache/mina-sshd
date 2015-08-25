@@ -77,7 +77,5 @@ public class AgentForwardedChannel extends AbstractClientChannel implements Runn
         if (result < Status.APR_SUCCESS) {
             AgentServerProxy.throwException(result);
         }
-
     }
-
 }

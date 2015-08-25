@@ -31,6 +31,7 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelFactory;
+import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
@@ -40,6 +41,7 @@ import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Readable;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -112,7 +114,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
         int originatorPort = buffer.getInt();
         if (log.isDebugEnabled()) {
             log.debug("Receiving request for direct tcpip: hostToConnect={}, portToConnect={}, originatorIpAddress={}, originatorPort={}",
-                    hostToConnect, portToConnect, originatorIpAddress, originatorPort);
+                      hostToConnect, portToConnect, originatorIpAddress, originatorPort);
         }
 
         final SshdSocketAddress address;
@@ -172,31 +174,71 @@ public class TcpipServerChannel extends AbstractServerChannel {
                 close(true);
             }
         };
+
         connector = manager.getIoServiceFactory().createConnector(handler);
         IoConnectFuture future = connector.connect(address.toInetSocketAddress());
         future.addListener(new SshFutureListener<IoConnectFuture>() {
-            @SuppressWarnings("synthetic-access")
             @Override
             public void operationComplete(IoConnectFuture future) {
-                if (future.isConnected()) {
-                    ioSession = future.getSession();
-                    f.setOpened();
-                } else if (future.getException() != null) {
-                    closeImmediately0();
-                    if (future.getException() instanceof ConnectException) {
-                        f.setException(new OpenChannelException(
-                                SshConstants.SSH_OPEN_CONNECT_FAILED,
-                                future.getException().getMessage(),
-                                future.getException()));
-                    } else {
-                        f.setException(future.getException());
-                    }
-                }
+                handleChannelConnectResult(f, future);
             }
         });
         return f;
     }
 
+    protected void handleChannelConnectResult(OpenFuture f, IoConnectFuture future) {
+        ChannelListener listener = getChannelListenerProxy();
+        try {
+            if (future.isConnected()) {
+                handleChannelOpenSuccess(f, future.getSession());
+                return;
+            }
+
+            Throwable problem = GenericUtils.peelException(future.getException());
+            if (problem != null) {
+                handleChannelOpenFailure(f, problem);
+            }
+        } catch (RuntimeException t) {
+            Throwable e = GenericUtils.peelException(t);
+            try {
+                listener.channelOpenFailure(this, e);
+            } catch (Throwable ignored) {
+                log.warn("handleChannelConnectResult({})[exception] failed ({}) to inform listener of open failure={}: {}",
+                         this, ignored.getClass().getSimpleName(), e.getClass().getSimpleName(), ignored.getMessage());
+            }
+            f.setException(e);
+        }
+    }
+
+    protected void handleChannelOpenSuccess(OpenFuture f, IoSession session) {
+        ioSession = session;
+
+        ChannelListener listener = getChannelListenerProxy();
+        listener.channelOpenSuccess(this);
+        f.setOpened();
+    }
+
+    protected void handleChannelOpenFailure(OpenFuture f, Throwable problem) {
+        ChannelListener listener = getChannelListenerProxy();
+        try {
+            listener.channelOpenFailure(this, problem);
+        } catch (Throwable ignored) {
+            log.warn("handleChannelOpenFailure({}) failed ({}) to inform listener of open failure={}: {}",
+                     this, ignored.getClass().getSimpleName(), problem.getClass().getSimpleName(), ignored.getMessage());
+        }
+
+        closeImmediately0();
+
+        if (problem instanceof ConnectException) {
+            f.setException(new OpenChannelException(
+                    SshConstants.SSH_OPEN_CONNECT_FAILED,
+                    problem.getMessage(),
+                    problem));
+        } else {
+            f.setException(problem);
+        }
+
+    }
     private void closeImmediately0() {
         // We need to close the channel immediately to remove it from the
         // server session's channel table and *not* send a packet to the

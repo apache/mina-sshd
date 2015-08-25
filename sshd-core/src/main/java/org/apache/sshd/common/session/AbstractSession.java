@@ -21,13 +21,13 @@ package org.apache.sshd.common.session;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
 import java.util.EnumMap;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -43,6 +43,7 @@ import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.cipher.Cipher;
 import org.apache.sshd.common.compression.Compression;
 import org.apache.sshd.common.digest.Digest;
@@ -65,21 +66,12 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
-import static org.apache.sshd.common.SshConstants.SSH_MSG_DEBUG;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_DISCONNECT;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_IGNORE;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_KEXINIT;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_NEWKEYS;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_SERVICE_ACCEPT;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_SERVICE_REQUEST;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_UNIMPLEMENTED;
-
 /**
  * <P>
  * The AbstractSession handles all the basic SSH protocol such as key exchange, authentication,
  * encoding and decoding. Both server side and client side sessions should inherit from this
  * abstract class. Some basic packet processing methods are defined but the actual call to these
- * methods should be done from the {@link #handleMessage(org.apache.sshd.common.util.buffer.Buffer)}
+ * methods should be done from the {@link #handleMessage(Buffer)}
  * method, which is dependent on the state and side of this session.
  * </P>
  *
@@ -128,8 +120,15 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     /**
      * Session listeners container
      */
-    protected final List<SessionListener> listeners = new CopyOnWriteArrayList<SessionListener>();
+    protected final Collection<SessionListener> sessionListeners = new CopyOnWriteArraySet<>();
     protected final SessionListener sessionListenerProxy;
+
+    /**
+     * Channel events listener
+     */
+    protected final Collection<ChannelListener> channelListeners = new CopyOnWriteArraySet<>();
+    protected final ChannelListener channelListenerProxy;
+
     //
     // Key exchange support
     //
@@ -202,7 +201,11 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
         this.isServer = isServer;
         this.factoryManager = ValidateUtils.checkNotNull(factoryManager, "No factory manager provided", GenericUtils.EMPTY_OBJECT_ARRAY);
         this.ioSession = ioSession;
-        sessionListenerProxy = EventListenerUtils.proxyWrapper(SessionListener.class, getClass().getClassLoader(), listeners);
+
+        ClassLoader loader = getClass().getClassLoader();
+        sessionListenerProxy = EventListenerUtils.proxyWrapper(SessionListener.class, loader, sessionListeners);
+        channelListenerProxy = EventListenerUtils.proxyWrapper(ChannelListener.class, loader, channelListeners);
+
         random = factoryManager.getRandomFactory().create();
         authTimeoutMs = getLongProperty(FactoryManager.AUTH_TIMEOUT, authTimeoutMs);
         authTimeoutTimestamp = System.currentTimeMillis() + authTimeoutMs;
@@ -301,7 +304,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     @Override
     public void setAuthenticated() throws IOException {
         this.authed = true;
-        sendEvent(SessionListener.Event.Authenticated);
+        sendSessionEvent(SessionListener.Event.Authenticated);
     }
 
     /**
@@ -353,22 +356,22 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     protected void doHandleMessage(Buffer buffer) throws Exception {
         int cmd = buffer.getUByte();
         switch (cmd) {
-            case SSH_MSG_DISCONNECT: {
+            case SshConstants.SSH_MSG_DISCONNECT: {
                 handleDisconnect(buffer);
                 break;
             }
-            case SSH_MSG_IGNORE: {
+            case SshConstants.SSH_MSG_IGNORE: {
                 log.debug("Received SSH_MSG_IGNORE");
                 break;
             }
-            case SSH_MSG_UNIMPLEMENTED: {
+            case SshConstants.SSH_MSG_UNIMPLEMENTED: {
                 int code = buffer.getInt();
                 if (log.isDebugEnabled()) {
                     log.debug("Received SSH_MSG_UNIMPLEMENTED #{}", Integer.valueOf(code));
                 }
                 break;
             }
-            case SSH_MSG_DEBUG: {
+            case SshConstants.SSH_MSG_DEBUG: {
                 boolean display = buffer.getBoolean();
                 String msg = buffer.getString();
                 if (log.isDebugEnabled()) {
@@ -376,16 +379,16 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
                 }
                 break;
             }
-            case SSH_MSG_SERVICE_REQUEST:
+            case SshConstants.SSH_MSG_SERVICE_REQUEST:
                 handleServiceRequest(buffer);
                 break;
-            case SSH_MSG_SERVICE_ACCEPT:
+            case SshConstants.SSH_MSG_SERVICE_ACCEPT:
                 handleServiceAccept();
                 break;
-            case SSH_MSG_KEXINIT:
+            case SshConstants.SSH_MSG_KEXINIT:
                 handleKexInit(buffer);
                 break;
-            case SSH_MSG_NEWKEYS:
+            case SshConstants.SSH_MSG_NEWKEYS:
                 handleNewKeys(cmd);
                 break;
             default:
@@ -420,7 +423,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     private void handleServiceRequest(Buffer buffer) throws IOException {
         String service = buffer.getString();
         log.debug("Received SSH_MSG_SERVICE_REQUEST '{}'", service);
-        validateKexState(SSH_MSG_SERVICE_REQUEST, KexState.DONE);
+        validateKexState(SshConstants.SSH_MSG_SERVICE_REQUEST, KexState.DONE);
         try {
             startService(service);
         } catch (Exception e) {
@@ -434,39 +437,39 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
         writePacket(response);
     }
 
-    private void handleServiceAccept() throws java.io.IOException {
+    private void handleServiceAccept() throws IOException {
         log.debug("Received SSH_MSG_SERVICE_ACCEPT");
-        validateKexState(SSH_MSG_SERVICE_ACCEPT, org.apache.sshd.common.kex.KexState.DONE);
+        validateKexState(SshConstants.SSH_MSG_SERVICE_ACCEPT, KexState.DONE);
         serviceAccept();
     }
 
-    private void handleKexInit(org.apache.sshd.common.util.buffer.Buffer buffer) throws Exception {
+    private void handleKexInit(Buffer buffer) throws Exception {
         log.debug("Received SSH_MSG_KEXINIT");
         receiveKexInit(buffer);
-        if (kexState.compareAndSet(org.apache.sshd.common.kex.KexState.DONE, org.apache.sshd.common.kex.KexState.RUN)) {
+        if (kexState.compareAndSet(KexState.DONE, KexState.RUN)) {
             sendKexInit();
-        } else if (!kexState.compareAndSet(org.apache.sshd.common.kex.KexState.INIT, org.apache.sshd.common.kex.KexState.RUN)) {
+        } else if (!kexState.compareAndSet(KexState.INIT, KexState.RUN)) {
             throw new IllegalStateException("Received SSH_MSG_KEXINIT while key exchange is running");
         }
 
-        java.util.Map<org.apache.sshd.common.kex.KexProposalOption, String> result = negotiate();
-        String kexAlgorithm = result.get(org.apache.sshd.common.kex.KexProposalOption.ALGORITHMS);
-        kex = org.apache.sshd.common.util.ValidateUtils.checkNotNull(org.apache.sshd.common.NamedFactory.Utils.create(factoryManager.getKeyExchangeFactories(), kexAlgorithm),
+        Map<KexProposalOption, String> result = negotiate();
+        String kexAlgorithm = result.get(KexProposalOption.ALGORITHMS);
+        kex = ValidateUtils.checkNotNull(NamedFactory.Utils.create(factoryManager.getKeyExchangeFactories(), kexAlgorithm),
                 "Unknown negotiated KEX algorithm: %s",
                 kexAlgorithm);
-        kex.init(this, serverVersion.getBytes(java.nio.charset.StandardCharsets.UTF_8), clientVersion.getBytes(java.nio.charset.StandardCharsets.UTF_8), i_s, i_c);
+        kex.init(this, serverVersion.getBytes(StandardCharsets.UTF_8), clientVersion.getBytes(StandardCharsets.UTF_8), i_s, i_c);
 
-        sendEvent(org.apache.sshd.common.session.SessionListener.Event.KexCompleted);
+        sendSessionEvent(SessionListener.Event.KexCompleted);
     }
 
     private void handleNewKeys(int cmd) throws Exception {
         log.debug("Received SSH_MSG_NEWKEYS");
-        validateKexState(cmd, org.apache.sshd.common.kex.KexState.KEYS);
+        validateKexState(cmd, KexState.KEYS);
         receiveNewKeys();
         if (reexchangeFuture != null) {
             reexchangeFuture.setValue(Boolean.TRUE);
         }
-        sendEvent(org.apache.sshd.common.session.SessionListener.Event.KeyEstablished);
+        sendSessionEvent(SessionListener.Event.KeyEstablished);
         synchronized (pendingPackets) {
             if (!pendingPackets.isEmpty()) {
                 log.debug("Dequeing pending packets");
@@ -477,7 +480,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
                     }
                 }
             }
-            kexState.set(org.apache.sshd.common.kex.KexState.DONE);
+            kexState.set(KexState.DONE);
         }
         synchronized (lock) {
             lock.notifyAll();
@@ -495,7 +498,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
      * Handle any exceptions that occurred on this session.
      * The session will be closed and a disconnect packet will be
      * sent before if the given exception is an
-     * {@link org.apache.sshd.common.SshException}.
+     * {@link SshException}.
      *
      * @param t the exception to process
      */
@@ -534,10 +537,19 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     }
 
     @Override
-    protected void doCloseImmediately() {
-        super.doCloseImmediately();
+    protected void preClose() {
         // Fire 'close' event
-        sessionListenerProxy.sessionClosed(this);
+        SessionListener listener = getSessionListenerProxy();
+        try {
+            listener.sessionClosed(this);
+        } catch (RuntimeException t) {
+            Throwable e = GenericUtils.peelException(t);
+            log.warn(e.getClass().getSimpleName() + " while signal session " + toString() + " closed: " + e.getMessage(), e);
+        } finally {
+            // clear the listeners since we are closing the session (quicker GC)
+            this.sessionListeners.clear();
+            this.channelListeners.clear();
+        }
     }
 
     protected Service[] getServices() {
@@ -561,7 +573,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
      *
      * @param buffer the buffer to encode and send
      * @return a future that can be used to check when the packet has actually been sent
-     * @throws java.io.IOException if an error occured when encoding sending the packet
+     * @throws IOException if an error occurred when encoding sending the packet
      */
     @Override
     public IoWriteFuture writePacket(Buffer buffer) throws IOException {
@@ -630,7 +642,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
      *
      * @param buffer the buffer containing the global request
      * @return <code>true</code> if the request was successful, <code>false</code> otherwise.
-     * @throws java.io.IOException if an error occured when encoding sending the packet
+     * @throws IOException if an error occurred when encoding sending the packet
      */
     @Override
     public Buffer request(Buffer buffer) throws IOException {
@@ -873,7 +885,7 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     /**
      * Read the other side identification.
      * This method is specific to the client or server side, but both should call
-     * {@link #doReadIdentification(org.apache.sshd.common.util.buffer.Buffer, boolean)} and
+     * {@link #doReadIdentification(Buffer, boolean)} and
      * store the result in the needed property.
      *
      * @param buffer the buffer containing the remote identification
@@ -1397,18 +1409,68 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     }
 
     @Override
-    public void addListener(SessionListener listener) {
-        ValidateUtils.checkNotNull(listener, "addListener(%s) null instance", this);
-        this.listeners.add(listener);
+    public void addSessionListener(SessionListener listener) {
+        ValidateUtils.checkNotNull(listener, "addSessionListener(%s) null instance", this);
+        // avoid race conditions on notifications while session is being closed
+        if (!isOpen()) {
+            log.warn("addSessionListener({})[{}] ignore registration while session is closing", this, listener);
+            return;
+        }
+
+        if (this.sessionListeners.add(listener)) {
+            log.trace("addSessionListener({})[{}] registered", this, listener);
+        } else {
+            log.trace("addSessionListener({})[{}] ignored duplicate", this, listener);
+        }
     }
 
     @Override
-    public void removeListener(SessionListener listener) {
-        this.listeners.remove(listener);
+    public void removeSessionListener(SessionListener listener) {
+        if (this.sessionListeners.remove(listener)) {
+            log.trace("removeSessionListener({})[{}] removed", this, listener);
+        } else {
+            log.trace("removeSessionListener({})[{}] not registered", this, listener);
+        }
     }
 
-    protected void sendEvent(SessionListener.Event event) throws IOException {
-        sessionListenerProxy.sessionEvent(this, event);
+    @Override
+    public SessionListener getSessionListenerProxy() {
+        return sessionListenerProxy;
+    }
+
+    @Override
+    public void addChannelListener(ChannelListener listener) {
+        ValidateUtils.checkNotNull(listener, "addChannelListener(%s) null instance", this);
+        // avoid race conditions on notifications while session is being closed
+        if (!isOpen()) {
+            log.warn("addChannelListener({})[{}] ignore registration while session is closing", this, listener);
+            return;
+        }
+
+        if (this.channelListeners.add(listener)) {
+            log.trace("addChannelListener({})[{}] registered", this, listener);
+        } else {
+            log.trace("addChannelListener({})[{}] ignored duplicate", this, listener);
+        }
+    }
+
+    @Override
+    public void removeChannelListener(ChannelListener listener) {
+        if (this.channelListeners.remove(listener)) {
+            log.trace("removeChannelListener({})[{}] removed", this, listener);
+        } else {
+            log.trace("removeChannelListener({})[{}] not registered", this, listener);
+        }
+    }
+
+    @Override
+    public ChannelListener getChannelListenerProxy() {
+        return channelListenerProxy;
+    }
+
+    protected void sendSessionEvent(SessionListener.Event event) throws IOException {
+        SessionListener listener = getSessionListenerProxy();
+        listener.sessionEvent(this, event);
     }
 
     @Override
@@ -1509,11 +1571,11 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     protected void checkForTimeouts() throws IOException {
         if (!isClosing()) {
             long now = System.currentTimeMillis();
-            if (!authed && authTimeoutMs > 0 && now > authTimeoutTimestamp) {
+            if ((!authed) && (authTimeoutMs > 0L) && (now > authTimeoutTimestamp)) {
                 timeoutStatus.set(TimeoutStatus.AuthTimeout);
                 disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "Session has timed out waiting for authentication after " + authTimeoutMs + " ms.");
             }
-            if (idleTimeoutMs > 0 && idleTimeoutTimestamp > 0 && now > idleTimeoutTimestamp) {
+            if ((idleTimeoutMs > 0) && (idleTimeoutTimestamp > 0L) && (now > idleTimeoutTimestamp)) {
                 timeoutStatus.set(TimeoutStatus.AuthTimeout);
                 disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "User session has timed out idling after " + idleTimeoutMs + " ms.");
             }

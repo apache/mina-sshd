@@ -68,7 +68,6 @@ public abstract class AbstractSignatureFactoryTestSupport extends BaseTestSuppor
     public void setUp() throws Exception {
         sshd = SshServer.setUpDefaultServer();
         sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
-        sshd.setSessionFactory(new org.apache.sshd.server.session.SessionFactory());
     }
 
     @After

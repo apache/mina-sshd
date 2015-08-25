@@ -301,7 +301,7 @@ public class SshKeyScan extends AbstractSimplifiedLog
             }
 
             try {
-                session.addListener(this);
+                session.addSessionListener(this);
                 if (isEnabled(Level.FINER)) {
                     log(Level.FINER, "Authenticating with key type=" + kt + " to " + remoteLocation);
                 }
@@ -324,7 +324,7 @@ public class SshKeyScan extends AbstractSimplifiedLog
                     }
                 }
             } finally {
-                session.removeListener(this);
+                session.removeSessionListener(this);
             }
         }
     }

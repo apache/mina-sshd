@@ -24,6 +24,7 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.common.channel.Channel;
+import org.apache.sshd.common.channel.ChannelListenerManager;
 import org.apache.sshd.common.channel.RequestHandler;
 import org.apache.sshd.common.cipher.Cipher;
 import org.apache.sshd.common.compression.Compression;
@@ -35,6 +36,7 @@ import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.mac.Mac;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.session.ConnectionService;
+import org.apache.sshd.common.session.SessionListenerManager;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.server.forward.ForwardingFilter;
 
@@ -44,7 +46,7 @@ import org.apache.sshd.server.forward.ForwardingFilter;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface FactoryManager {
+public interface FactoryManager extends SessionListenerManager, ChannelListenerManager {
 
     /**
      * Key used to retrieve the value of the window size in the

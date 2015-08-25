@@ -30,7 +30,6 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
-import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.deprecated.ClientUserAuthServiceOld;
 import org.apache.sshd.deprecated.UserAuthKeyboardInteractive;
@@ -70,9 +69,9 @@ public class AuthenticationTest extends BaseTestSupport {
         sshd.setPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);
         FactoryManagerUtils.updateProperty(sshd, ServerFactoryManager.WELCOME_BANNER, WELCOME);
         FactoryManagerUtils.updateProperty(sshd, ServerFactoryManager.AUTH_METHODS, "publickey,password publickey,keyboard-interactive");
-        sshd.setSessionFactory(new SessionFactory() {
+        sshd.setSessionFactory(new SessionFactory(sshd) {
             @Override
-            protected AbstractSession doCreateSession(IoSession ioSession) throws Exception {
+            protected ServerSessionImpl doCreateSession(IoSession ioSession) throws Exception {
                 return new TestSession(getServer(), ioSession);
             }
         });

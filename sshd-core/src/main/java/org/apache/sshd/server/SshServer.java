@@ -276,7 +276,6 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
         if (sessionFactory == null) {
             sessionFactory = createSessionFactory();
         }
-        sessionFactory.setServer(this);
         acceptor = createAcceptor();
 
         setupSessionTimeout(sessionFactory);
@@ -377,7 +376,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     }
 
     protected SessionFactory createSessionFactory() {
-        return new SessionFactory();
+        return new SessionFactory(this);
     }
 
     @Override

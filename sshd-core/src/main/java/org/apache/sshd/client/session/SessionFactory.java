@@ -16,26 +16,31 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+package org.apache.sshd.client.session;
 
-package org.apache.sshd.client.subsystem;
-
-import java.nio.channels.Channel;
-
-import org.apache.sshd.client.channel.ClientChannel;
-import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.client.ClientFactoryManager;
+import org.apache.sshd.common.io.IoSession;
+import org.apache.sshd.common.session.AbstractSessionFactory;
 
 /**
+ * A factory of client sessions.
+ * This class can be used as a way to customize the creation of client sessions.
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @see org.apache.sshd.client.SshClient#setSessionFactory(SessionFactory)
  */
-public interface SubsystemClient extends NamedResource, Channel {
-    /**
-     * @return The underlying {@link ClientSession} used
-     */
-    ClientSession getClientSession();
+public class SessionFactory extends AbstractSessionFactory<ClientFactoryManager, ClientSessionImpl> {
 
-    /**
-     * @return The underlying {@link ClientChannel} used
-     */
-    ClientChannel getClientChannel();
+    public SessionFactory(ClientFactoryManager client) {
+        super(client);
+    }
+
+    public final ClientFactoryManager getClient() {
+        return getFactoryManager();
+    }
+
+    @Override
+    protected ClientSessionImpl doCreateSession(IoSession ioSession) throws Exception {
+        return new ClientSessionImpl(getClient(), ioSession);
+    }
 }

@@ -55,7 +55,6 @@ public class Nio2ServiceTest extends BaseTestSupport {
             sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
             sshd.setShellFactory(new TestEchoShellFactory());
             sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
-            sshd.setSessionFactory(new org.apache.sshd.server.session.SessionFactory());
             sshd.start();
 
             int port = sshd.getPort();

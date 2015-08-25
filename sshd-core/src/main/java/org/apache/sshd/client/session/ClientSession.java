@@ -340,5 +340,4 @@ public interface ClientSession extends Session {
      */
     @SuppressWarnings("rawtypes")
     SshFuture switchToNoneCipher() throws IOException;
-
 }
