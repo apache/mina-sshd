@@ -22,10 +22,13 @@ import java.io.IOException;
 
 import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
+import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.AbstractChannel;
 import org.apache.sshd.common.channel.ChannelListener;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
@@ -42,13 +45,16 @@ public abstract class AbstractServerChannel extends AbstractChannel implements S
     }
 
     protected AbstractServerChannel(String discriminator) {
-        super(discriminator);
+        super(discriminator, false);
     }
 
     @Override
     public OpenFuture open(int recipient, int rwSize, int packetSize, Buffer buffer) {
         this.recipient = recipient;
-        this.remoteWindow.init(rwSize, packetSize, session.getFactoryManager().getProperties());
+
+        Session s = getSession();
+        FactoryManager manager = ValidateUtils.checkNotNull(s.getFactoryManager(), "No factory manager");
+        this.remoteWindow.init(rwSize, packetSize, manager.getProperties());
         configureWindow();
         return doInit(buffer);
     }

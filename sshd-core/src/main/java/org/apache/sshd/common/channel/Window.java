@@ -19,8 +19,11 @@
 package org.apache.sshd.common.channel;
 
 import java.io.IOException;
+import java.io.StreamCorruptedException;
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.FactoryManagerUtils;
@@ -37,22 +40,23 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class Window extends AbstractLoggingBean {
+public class Window extends AbstractLoggingBean implements java.nio.channels.Channel {
+    private final AtomicInteger waitingCount = new AtomicInteger(0);
+    private final AtomicBoolean closed = new AtomicBoolean(false);
+    private final AtomicBoolean initialized = new AtomicBoolean(false);
     private final AbstractChannel channel;
     private final Object lock;
-    private final String name;
+    private final String suffix;
 
     private int size;
     private int maxSize;
     private int packetSize;
-    private boolean waiting;
-    private boolean closed;
     private Map<String, ?> props = Collections.<String, Object>emptyMap();
 
     public Window(AbstractChannel channel, Object lock, boolean client, boolean local) {
         this.channel = ValidateUtils.checkNotNull(channel, "No channel provided");
         this.lock = (lock != null) ? lock : this;
-        this.name = String.valueOf(channel) + ": " + (client ? "client" : "server") + " " + (local ? "local " : "remote") + " window";
+        this.suffix = ": " + (client ? "client" : "server") + " " + (local ? "local " : "remote") + " window";
     }
 
     public Map<String, ?> getProperties() {
@@ -83,123 +87,226 @@ public class Window extends AbstractLoggingBean {
 
     public void init(Map<String, ?> props) {
         init(FactoryManagerUtils.getIntProperty(props, FactoryManager.WINDOW_SIZE, AbstractChannel.DEFAULT_WINDOW_SIZE),
-                FactoryManagerUtils.getIntProperty(props, FactoryManager.MAX_PACKET_SIZE, AbstractChannel.DEFAULT_PACKET_SIZE),
-                props);
+             FactoryManagerUtils.getIntProperty(props, FactoryManager.MAX_PACKET_SIZE, AbstractChannel.DEFAULT_PACKET_SIZE),
+             props);
     }
 
     public void init(int size, int packetSize, Map<String, ?> props) {
+        ValidateUtils.checkTrue(size >= 0, "Illegal initial size: %d", size);
+        ValidateUtils.checkTrue(packetSize > 0, "Illegal packet size: %d", packetSize);
+
         synchronized (lock) {
             this.size = size;
             this.maxSize = size;
             this.packetSize = packetSize;
-            this.props = props;
+            this.props = (props == null) ? Collections.<String, Object>emptyMap() : props;
             lock.notifyAll();
+        }
+
+        initialized.set(true);
+
+        if (log.isDebugEnabled()) {
+            log.debug("init({}) size={}, max.={}, packet={}", this, getSize(), getMaxSize(), getPacketSize());
         }
     }
 
     public void expand(int window) {
+        ValidateUtils.checkTrue(window >= 0, "Negative window size: %d", window);
+        checkInitialized("expand");
+
+        long expandedSize;
         synchronized (lock) {
-            size += window;
-            if (log.isDebugEnabled()) {
-                log.debug("Increase " + name + " by " + window + " up to " + size);
+            /*
+             * See RFC-4254 section 5.2:
+             *
+             *      "Implementations MUST correctly handle window sizes
+             *      of up to 2^32 - 1 bytes.  The window MUST NOT be increased above
+             *      2^32 - 1 bytes.
+             */
+            expandedSize = size + window;
+            if (expandedSize > Integer.MAX_VALUE) {
+                size = Integer.MAX_VALUE;
+            } else {
+                size = (int) expandedSize;
             }
             lock.notifyAll();
+        }
+
+        if (expandedSize > Integer.MAX_VALUE) {
+            log.warn("expand({}) window={} - truncated expanded size ({}) to {}", this, window, expandedSize, Integer.MAX_VALUE);
+        } else if (log.isDebugEnabled()) {
+            log.debug("Increase {} by {} up to {}", this, window, expandedSize);
         }
     }
 
     public void consume(int len) {
+        ValidateUtils.checkTrue(len >= 0, "Negative consumption length: %d", len);
+        checkInitialized("consume");
+
+        int remainLen;
         synchronized (lock) {
-            //assert size > len;
-            size -= len;
-            if (log.isTraceEnabled()) {
-                log.trace("Consume " + name + " by " + len + " down to " + size);
+            remainLen = size - len;
+            if (remainLen >= 0) {
+                size = remainLen;
             }
+        }
+
+        if (remainLen < 0) {
+            throw new IllegalStateException("consume(" + this + ") required length (" + len + ") above available: " + (remainLen + len));
+        }
+
+        if (log.isTraceEnabled()) {
+            log.trace("Consume {} by {} down to {}", this, len, remainLen);
         }
     }
 
     public void consumeAndCheck(int len) throws IOException {
         synchronized (lock) {
-            //assert size > len;
-            size -= len;
-            if (log.isTraceEnabled()) {
-                log.trace("Consume " + name + " by " + len + " down to " + size);
+            try {
+                consume(len);
+                check(maxSize);
+            } catch (RuntimeException e) {
+                throw new StreamCorruptedException("consumeAndCheck(" + this + ")"
+                                                 + " failed " + e.getClass().getSimpleName() + ")"
+                                                 + " to consume " + len + " bytes"
+                                                 + ": " + e.getMessage());
             }
-            check(maxSize);
         }
     }
 
     public void check(int maxFree) throws IOException {
+        ValidateUtils.checkTrue(maxFree >= 0, "Negative check size: %d", maxFree);
+        checkInitialized("check");
+
+        int adjustSize = -1;
         synchronized (lock) {
-            if (size < maxFree / 2) {
-                if (log.isDebugEnabled()) {
-                    log.debug("Increase " + name + " by " + (maxFree - size) + " up to " + maxFree);
-                }
-                channel.sendWindowAdjust(maxFree - size);
+            // TODO make the adjust factor configurable via FactoryManager property
+            if (size < (maxFree / 2)) {
+                adjustSize = maxFree - size;
+                channel.sendWindowAdjust(adjustSize);
                 size = maxFree;
+            }
+        }
+
+        if (adjustSize >= 0) {
+            if (log.isDebugEnabled()) {
+                log.debug("Increase {} by {} up to {}", this, adjustSize, maxFree);
             }
         }
     }
 
     public void waitAndConsume(int len) throws InterruptedException, WindowClosedException {
+        ValidateUtils.checkTrue(len >= 0, "Negative wait consume length: %d", len);
+        checkInitialized("waitAndConsume");
+
         synchronized (lock) {
-            while (size < len && !closed) {
+            while ((size < len) && isOpen()) {
+                int waiters = waitingCount.incrementAndGet();
                 if (log.isDebugEnabled()) {
-                    log.debug("Waiting for {} bytes on {}", Integer.valueOf(len), name);
+                    log.debug("waitAndConsume({}) - requested={}, available={}, waiters={}", this, len, size, waiters);
                 }
-                waiting = true;
-                lock.wait();
-            }
-            if (waiting) {
-                if (closed) {
-                    log.debug("Window {} has been closed", name);
-                } else {
-                    log.debug("Space available for {}", name);
+
+                long nanoStart = System.nanoTime();
+                try {
+                    lock.wait();
+                } finally {
+                    long nanoEnd = System.nanoTime();
+                    long nanoDuration = nanoEnd - nanoStart;
+                    waiters = waitingCount.decrementAndGet();
+                    if (log.isTraceEnabled()) {
+                        log.debug("waitAndConsume({}) - requested={}, available={}, waiters={} - ended after {} nanos",
+                                  this, len, size, waiters, nanoDuration);
+                    }
                 }
-                waiting = false;
             }
-            if (closed) {
-                throw new WindowClosedException(name);
+
+            if (!isOpen()) {
+                throw new WindowClosedException(toString());
             }
-            size -= len;
-            if (log.isTraceEnabled()) {
-                log.trace("Consume " + name + " by " + len + " down to " + size);
+
+            if (log.isDebugEnabled()) {
+                log.debug("waitAndConsume({}) - requested={}, available={}", this, len, size);
             }
+
+            consume(len);
         }
     }
 
+    /**
+     * Waits (forever) until some data becomes available
+     *
+     * @return Amount of available data - always positive
+     * @throws InterruptedException If interrupted while waiting
+     * @throws WindowClosedException If window closed while waiting
+     */
     public int waitForSpace() throws InterruptedException, WindowClosedException {
+        checkInitialized("waitForSpace");
+
         synchronized (lock) {
-            while (size == 0 && !closed) {
-                log.debug("Waiting for some space on {}", name);
-                waiting = true;
-                lock.wait();
-            }
-            if (waiting) {
-                if (closed) {
-                    log.debug("Window {} has been closed", name);
-                } else {
-                    log.debug("Space available for {}", name);
+            while ((size == 0) && isOpen()) {
+                int waiters = waitingCount.incrementAndGet();
+                if (log.isDebugEnabled()) {
+                    log.debug("waitForSpace({}) - waiters={}", this, waiters);
                 }
-                waiting = false;
+
+                long nanoStart = System.nanoTime();
+                try {
+                    lock.wait();
+                } finally {
+                    long nanoEnd = System.nanoTime();
+                    long nanoDuration = nanoEnd - nanoStart;
+                    waiters = waitingCount.decrementAndGet();
+                    if (log.isTraceEnabled()) {
+                        log.debug("waitForSpace({}) - waiters={} - ended after {} nanos", this, waiters, nanoDuration);
+                    }
+                }
             }
-            if (closed) {
-                throw new WindowClosedException(name);
+
+            if (!isOpen()) {
+                throw new WindowClosedException(toString());
+            }
+
+            if (log.isDebugEnabled()) {
+                log.debug("waitForSpace({}) available: {}", this, size);
             }
             return size;
         }
     }
 
-    public void notifyClosed() {
+    protected void checkInitialized(String location) {
+        if (!initialized.get()) {
+            throw new IllegalStateException(location + " - window not initialized: " + this);
+        }
+    }
+
+    @Override
+    public boolean isOpen() {
+        return !closed.get();
+    }
+
+    @Override
+    public void close() throws IOException {
+        if (isOpen()) {
+            closed.set(true);
+            log.debug("Closing {}", this);
+        }
+
+        // just in case someone is still waiting
+        int waiters;
         synchronized (lock) {
-            closed = true;
-            if (waiting) {
+            waiters = waitingCount.get();
+            if (waiters > 0) {
                 lock.notifyAll();
             }
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug("close({}) waiters={}", this, waiters);
         }
     }
 
     @Override
     public String toString() {
-        return name;
+        return String.valueOf(channel) + suffix;
     }
 }

@@ -56,6 +56,7 @@ import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.cipher.CipherNone;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.forward.TcpipForwarder;
 import org.apache.sshd.common.future.DefaultSshFuture;
 import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.io.IoSession;
@@ -453,32 +454,37 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
 
     @Override
     public SshdSocketAddress startLocalPortForwarding(SshdSocketAddress local, SshdSocketAddress remote) throws IOException {
-        return getConnectionService().getTcpipForwarder().startLocalPortForwarding(local, remote);
+        return getTcpipForwarder().startLocalPortForwarding(local, remote);
     }
 
     @Override
     public void stopLocalPortForwarding(SshdSocketAddress local) throws IOException {
-        getConnectionService().getTcpipForwarder().stopLocalPortForwarding(local);
+        getTcpipForwarder().stopLocalPortForwarding(local);
     }
 
     @Override
     public SshdSocketAddress startRemotePortForwarding(SshdSocketAddress remote, SshdSocketAddress local) throws IOException {
-        return getConnectionService().getTcpipForwarder().startRemotePortForwarding(remote, local);
+        return getTcpipForwarder().startRemotePortForwarding(remote, local);
     }
 
     @Override
     public void stopRemotePortForwarding(SshdSocketAddress remote) throws IOException {
-        getConnectionService().getTcpipForwarder().stopRemotePortForwarding(remote);
+        getTcpipForwarder().stopRemotePortForwarding(remote);
     }
 
     @Override
     public SshdSocketAddress startDynamicPortForwarding(SshdSocketAddress local) throws IOException {
-        return getConnectionService().getTcpipForwarder().startDynamicPortForwarding(local);
+        return getTcpipForwarder().startDynamicPortForwarding(local);
     }
 
     @Override
     public void stopDynamicPortForwarding(SshdSocketAddress local) throws IOException {
-        getConnectionService().getTcpipForwarder().stopDynamicPortForwarding(local);
+        getTcpipForwarder().stopDynamicPortForwarding(local);
+    }
+
+    protected TcpipForwarder getTcpipForwarder() {
+        ConnectionService service = ValidateUtils.checkNotNull(getConnectionService(), "No connection service");
+        return ValidateUtils.checkNotNull(service.getTcpipForwarder(), "No forwarder");
     }
 
     @Override
@@ -490,7 +496,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
 
     @Override
     public int waitFor(int mask, long timeout) {
-        long t = 0;
+        long t = 0L;
         synchronized (lock) {
             for (;;) {
                 int cond = 0;
@@ -504,27 +510,50 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
                     cond |= WAIT_AUTH;
                 }
                 if ((cond & mask) != 0) {
+                    if (log.isTraceEnabled()) {
+                        log.trace("WaitFor call returning on session {}, mask=0x{}, cond=0x{}",
+                                  this, Integer.toHexString(mask), Integer.toHexString(cond));
+                    }
                     return cond;
                 }
-                if (timeout > 0) {
-                    if (t == 0) {
+                if (timeout > 0L) {
+                    if (t == 0L) {
                         t = System.currentTimeMillis() + timeout;
                     } else {
                         timeout = t - System.currentTimeMillis();
-                        if (timeout <= 0) {
+                        if (timeout <= 0L) {
+                            if (log.isTraceEnabled()) {
+                                log.trace("WaitFor call timeout on session {}, mask=0x{}", this, Integer.toHexString(mask));
+                            }
                             cond |= TIMEOUT;
                             return cond;
                         }
                     }
                 }
+
+                if (log.isTraceEnabled()) {
+                    log.trace("Waiting {} millis for lock on session {}, mask={}, cond={}", timeout, this, mask, cond);
+                }
+
+                long nanoStart = System.nanoTime();
                 try {
                     if (timeout > 0) {
                         lock.wait(timeout);
                     } else {
                         lock.wait();
                     }
+
+                    long nanoEnd = System.nanoTime();
+                    long nanoDuration = nanoEnd - nanoStart;
+                    if (log.isTraceEnabled()) {
+                        log.trace("Lock notified on session {} after {} nanos", this, nanoDuration);
+                    }
                 } catch (InterruptedException e) {
-                    // Ignore
+                    long nanoEnd = System.nanoTime();
+                    long nanoDuration = nanoEnd - nanoStart;
+                    if (log.isTraceEnabled()) {
+                        log.trace("waitFor({}) mask={} - ignoring interrupted exception after {} nanos", this, Integer.toHexString(mask), nanoDuration);
+                    }
                 }
             }
         }

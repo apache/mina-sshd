@@ -21,6 +21,7 @@ package org.apache.sshd.common.channel;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Collections;
 
 import org.apache.sshd.util.BaseTestSupport;
 import org.apache.sshd.util.BogusChannel;
@@ -36,8 +37,7 @@ public class ChannelPipedInputStreamTest extends BaseTestSupport {
 
     @Test
     public void testAvailable() throws IOException {
-        Window window = new Window(new BogusChannel(), null, true, true);
-        try (ChannelPipedInputStream stream = new ChannelPipedInputStream(window)) {
+        try (ChannelPipedInputStream stream = createTestStream()) {
             byte[] b = getCurrentTestName().getBytes(StandardCharsets.UTF_8);
             stream.receive(b, 0, b.length);
             assertEquals("Mismatched reported available size after receive", b.length, stream.available());
@@ -54,8 +54,7 @@ public class ChannelPipedInputStreamTest extends BaseTestSupport {
 
     @Test
     public void testIdempotentClose() throws IOException {
-        Window window = new Window(new BogusChannel(), null, true, true);
-        try (ChannelPipedInputStream stream = new ChannelPipedInputStream(window)) {
+        try (ChannelPipedInputStream stream = createTestStream()) {
             byte[] b = getCurrentTestName().getBytes(StandardCharsets.UTF_8);
             stream.receive(b, 0, b.length);
             stream.eof();
@@ -66,11 +65,17 @@ public class ChannelPipedInputStreamTest extends BaseTestSupport {
         }
     }
 
-    private void assertStreamEquals(byte[] expected, byte[] read) {
+    private static ChannelPipedInputStream createTestStream() {
+        Window window = new Window(new BogusChannel(), null, true, true);
+        window.init(Collections.<String,Object>emptyMap());
+        return new ChannelPipedInputStream(window);
+    }
+
+    private static void assertStreamEquals(byte[] expected, byte[] read) {
         if (expected.length > read.length) {
             fail("Less bytes than expected: " + Arrays.toString(expected) + " but got: " + Arrays.toString(read));
         } else {
-            assertArrayEquals(expected, Arrays.copyOf(read, expected.length));
+            assertArrayEquals("Mismatched stream content", expected, Arrays.copyOf(read, expected.length));
             for (int i = expected.length; i < read.length; i++) {
                 assertTrue("Non-zero value at position " + i, read[i] == 0);
             }

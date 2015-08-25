@@ -45,7 +45,7 @@ public class ChannelPipedInputStream extends InputStream implements ChannelPiped
     private final Window localWindow;
     private final Buffer buffer = new ByteArrayBuffer();
     private final byte[] b = new byte[1];
-    private final AtomicBoolean closed = new AtomicBoolean(false);
+    private final AtomicBoolean open = new AtomicBoolean(true);
     private final AtomicBoolean eofSent = new AtomicBoolean(false);
 
     private final Lock lock = new ReentrantLock();
@@ -63,6 +63,11 @@ public class ChannelPipedInputStream extends InputStream implements ChannelPiped
     public ChannelPipedInputStream(Window localWindow) {
         this.localWindow = ValidateUtils.checkNotNull(localWindow, "No local window provided");
         this.timeout = FactoryManagerUtils.getLongProperty(localWindow.getProperties(), FactoryManager.WINDOW_TIMEOUT, DEFAULT_TIMEOUT);
+    }
+
+    @Override
+    public boolean isOpen() {
+        return open.get();
     }
 
     public void setTimeout(long timeout) {
@@ -104,7 +109,9 @@ public class ChannelPipedInputStream extends InputStream implements ChannelPiped
         lock.lock();
         try {
             for (int index = 0;; index++) {
-                if ((closed.get() && writerClosed.get() && eofSent.get()) || (closed.get() && (!writerClosed.get()))) {
+                boolean openState = isOpen();
+                boolean writerClosedState = writerClosed.get();
+                if (((!openState) && writerClosedState && eofSent.get()) || ((!openState) && (!writerClosedState))) {
                     throw new IOException("Pipe closed after " + index + " cycles");
                 }
                 if (buffer.available() > 0) {
@@ -116,7 +123,7 @@ public class ChannelPipedInputStream extends InputStream implements ChannelPiped
                 }
 
                 try {
-                    if (timeout > 0) {
+                    if (timeout > 0L) {
                         long remaining = timeout - (System.currentTimeMillis() - startTime);
                         if (remaining <= 0) {
                             throw new SocketException("Timeout (" + timeout + ") exceeded after " + index + " cycles");
@@ -160,7 +167,7 @@ public class ChannelPipedInputStream extends InputStream implements ChannelPiped
         try {
             dataAvailable.signalAll();
         } finally {
-            closed.set(true);
+            open.set(false);
             lock.unlock();
         }
     }
@@ -169,7 +176,7 @@ public class ChannelPipedInputStream extends InputStream implements ChannelPiped
     public void receive(byte[] bytes, int off, int len) throws IOException {
         lock.lock();
         try {
-            if (writerClosed.get() || closed.get()) {
+            if (writerClosed.get() || (!isOpen())) {
                 throw new IOException("Pipe closed");
             }
             buffer.putRawBytes(bytes, off, len);

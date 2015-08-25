@@ -301,7 +301,8 @@ public class ServerTest extends BaseTestSupport {
                 for (long totalNanoTime = 0L; channel.getRemoteWindow().getSize() > 0; ) {
                     long nanoStart = System.nanoTime();
                     Thread.sleep(1L);
-                    long nanoEnd = System.nanoTime(), nanoDuration = nanoEnd - nanoStart;
+                    long nanoEnd = System.nanoTime();
+                    long nanoDuration = nanoEnd - nanoStart;
 
                     totalNanoTime += nanoDuration;
                     assertTrue("Waiting for too long on remote window size to reach zero", totalNanoTime < TimeUnit.MILLISECONDS.toNanos(MAX_TIMEOUT_VALUE));

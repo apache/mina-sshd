@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd;
+package org.apache.sshd.common.channel;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -40,8 +40,8 @@ import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.Service;
-import org.apache.sshd.common.channel.Channel;
-import org.apache.sshd.common.channel.Window;
+import org.apache.sshd.common.io.IoInputStream;
+import org.apache.sshd.common.io.IoOutputStream;
 import org.apache.sshd.common.io.IoReadFuture;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -82,6 +82,10 @@ public class WindowTest extends BaseTestSupport {
     private int port;
     private CountDownLatch authLatch;
     private CountDownLatch channelLatch;
+
+    public WindowTest() {
+        super();
+    }
 
     @Before
     public void setUp() throws Exception {
@@ -186,13 +190,13 @@ public class WindowTest extends BaseTestSupport {
                             writer.write("\n");
                             writer.flush();
 
-                            waitForWindowNotEquals(clientLocal, serverRemote, "client local", "server remote");
+                            waitForWindowNotEquals(clientLocal, serverRemote, "client local", "server remote", TimeUnit.SECONDS.toMillis(3L));
 
                             String line = reader.readLine();
                             assertEquals("Mismatched message at line #" + i, message, line);
 
-                            waitForWindowEquals(clientLocal, serverRemote, "client local", "server remote");
-                            waitForWindowEquals(clientRemote, serverLocal, "client remote", "server local");
+                            waitForWindowEquals(clientLocal, serverRemote, "client local", "server remote", TimeUnit.SECONDS.toMillis(3L));
+                            waitForWindowEquals(clientRemote, serverLocal, "client remote", "server local", TimeUnit.SECONDS.toMillis(3L));
                         }
                     }
                 }
@@ -222,7 +226,7 @@ public class WindowTest extends BaseTestSupport {
 
                 channel.setIn(inPis);
                 channel.setOut(outPos);
-                channel.open().verify();
+                channel.open().verify(7L, TimeUnit.SECONDS);
 
                 try (Channel serverChannel = sshd.getActiveSessions().iterator().next().getService(ServerConnectionService.class).getChannels().iterator().next()) {
                     Window clientLocal = channel.getLocalWindow();
@@ -237,16 +241,16 @@ public class WindowTest extends BaseTestSupport {
                          BufferedReader reader = new BufferedReader(new InputStreamReader(outPis))) {
                         for (int i = 0; i < nbMessages; i++) {
                             writer.write(message);
-                            writer.write("\n");
+                            writer.write('\n');
                             writer.flush();
 
-                            waitForWindowEquals(clientLocal, serverRemote, "client local", "server remote");
+                            waitForWindowEquals(clientLocal, serverRemote, "client local", "server remote", TimeUnit.SECONDS.toMillis(3L));
 
                             String line = reader.readLine();
                             assertEquals("Mismatched message at line #" + i, message, line);
 
-                            waitForWindowEquals(clientLocal, serverRemote, "client local", "server remote");
-                            waitForWindowEquals(clientRemote, serverLocal, "client remote", "server local");
+                            waitForWindowEquals(clientLocal, serverRemote, "client local", "server remote", TimeUnit.SECONDS.toMillis(3L));
+                            waitForWindowEquals(clientRemote, serverLocal, "client remote", "server local", TimeUnit.SECONDS.toMillis(3L));
                         }
                     }
                 }
@@ -281,20 +285,22 @@ public class WindowTest extends BaseTestSupport {
                     final String message = "0123456789\n";
                     final byte[] bytes = message.getBytes(StandardCharsets.UTF_8);
                     final int nbMessages = 500;
+                    IoOutputStream output = channel.getAsyncIn();
+                    IoInputStream input = channel.getAsyncOut();
                     for (int i = 0; i < nbMessages; i++) {
                         Buffer buffer = new ByteArrayBuffer(bytes);
-                        channel.getAsyncIn().write(buffer).verify();
+                        output.write(buffer).verify(5L, TimeUnit.SECONDS);
 
-                        waitForWindowNotEquals(clientLocal, serverRemote, "client local", "server remote");
+                        waitForWindowNotEquals(clientLocal, serverRemote, "client local", "server remote", TimeUnit.SECONDS.toMillis(3L));
 
                         Buffer buf = new ByteArrayBuffer(16);
-                        IoReadFuture future = channel.getAsyncOut().read(buf);
-                        future.verify();
+                        IoReadFuture future = input.read(buf);
+                        future.verify(5L, TimeUnit.SECONDS);
                         assertEquals("Mismatched available data at line #" + i, message.length(), buf.available());
                         assertEquals("Mismatched data at line #" + i, message, new String(buf.array(), buf.rpos(), buf.available()));
 
-                        waitForWindowEquals(clientLocal, serverRemote, "client local", "server remote");
-                        waitForWindowEquals(clientRemote, serverLocal, "client remote", "server local");
+                        waitForWindowEquals(clientLocal, serverRemote, "client local", "server remote", TimeUnit.SECONDS.toMillis(3L));
+                        waitForWindowEquals(clientRemote, serverLocal, "client remote", "server local", TimeUnit.SECONDS.toMillis(3L));
                     }
                 }
             }
@@ -303,23 +309,37 @@ public class WindowTest extends BaseTestSupport {
         }
     }
 
-    protected void waitForWindowNotEquals(Window w1, Window w2, String n1, String n2) throws InterruptedException {
-        for (int j = 0; j < 50; j++) {
+    private static void waitForWindowNotEquals(Window w1, Window w2, String n1, String n2, long maxWait) throws InterruptedException {
+        for (long waited = 0L, maxWaitNanos = TimeUnit.MILLISECONDS.toNanos(maxWait); waited < maxWaitNanos; ) {
             if (w1.getSize() != w2.getSize()) {
-                break;
+                return;
             }
-            Thread.sleep(1);
+
+            long nanoStart = System.nanoTime();
+            Thread.sleep(1L);
+            long nanoEnd = System.nanoTime();
+            long nanoDuration = nanoEnd - nanoStart;
+            waited += nanoDuration;
         }
+
+        // one last chance ...
         assertNotEquals(n1 + " and " + n2, w1.getSize(), w2.getSize());
     }
 
-    protected void waitForWindowEquals(Window w1, Window w2, String n1, String n2) throws InterruptedException {
-        for (int j = 0; j < 50; j++) {
+    private static void waitForWindowEquals(Window w1, Window w2, String n1, String n2, long maxWait) throws InterruptedException {
+        for (long waited = 0L, maxWaitNanos = TimeUnit.MILLISECONDS.toNanos(maxWait); waited < maxWaitNanos; ) {
             if (w1.getSize() == w2.getSize()) {
-                break;
+                return;
             }
-            Thread.sleep(1);
+
+            long nanoStart = System.nanoTime();
+            Thread.sleep(1L);
+            long nanoEnd = System.nanoTime();
+            long nanoDuration = nanoEnd - nanoStart;
+            waited += nanoDuration;
         }
+
+        // one last chance ...
         assertEquals(n1 + " and " + n2, w1.getSize(), w2.getSize());
     }
 

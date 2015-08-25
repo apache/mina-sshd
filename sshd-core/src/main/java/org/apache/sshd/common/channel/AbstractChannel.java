@@ -46,6 +46,7 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.threads.ExecutorServiceConfigurer;
 
 /**
@@ -60,7 +61,7 @@ public abstract class AbstractChannel
     public static final int DEFAULT_WINDOW_SIZE = 0x200000;
     public static final int DEFAULT_PACKET_SIZE = 0x8000;
 
-    public static final long DEFAULT_CHANNEL_CLOSE_TIMEOUT = 5000;
+    public static final long DEFAULT_CHANNEL_CLOSE_TIMEOUT = TimeUnit.SECONDS.toMillis(5L);
 
     /**
      * Default growth factor function used to resize response buffers
@@ -73,8 +74,8 @@ public abstract class AbstractChannel
 
     protected ExecutorService executor;
     protected boolean shutdownExecutor;
-    protected final Window localWindow = new Window(this, null, getClass().getName().contains(".client."), true);
-    protected final Window remoteWindow = new Window(this, null, getClass().getName().contains(".client."), false);
+    protected final Window localWindow;
+    protected final Window remoteWindow;
     protected ConnectionService service;
     protected Session session;
     protected int id;
@@ -89,12 +90,14 @@ public abstract class AbstractChannel
     protected final Collection<ChannelListener> channelListeners = new CopyOnWriteArraySet<>();
     protected final ChannelListener channelListenerProxy;
 
-    protected AbstractChannel() {
-        this("");
+    protected AbstractChannel(boolean client) {
+        this("", client);
     }
 
-    protected AbstractChannel(String discriminator) {
+    protected AbstractChannel(String discriminator, boolean client) {
         super(discriminator);
+        localWindow = new Window(this, null, client, true);
+        remoteWindow = new Window(this, null, client, false);
         channelListenerProxy = EventListenerUtils.proxyWrapper(ChannelListener.class, getClass().getClassLoader(), channelListeners);
     }
 
@@ -353,6 +356,22 @@ public abstract class AbstractChannel
             // clear the listeners since we are closing the channel (quicker GC)
             this.channelListeners.clear();
         }
+
+        IOException err = IoUtils.closeQuietly(localWindow, remoteWindow);
+        if (err != null) {
+            if (log.isDebugEnabled()) {
+                log.debug("Failed (" + err.getClass().getSimpleName() + ") to close window(s) of " + this + ": " + err.getMessage());
+            }
+
+            if (log.isTraceEnabled()) {
+                Throwable[] suppressed = err.getSuppressed();
+                if (GenericUtils.length(suppressed) > 0) {
+                    for (Throwable t : suppressed) {
+                        log.trace("Suppressed " + t.getClass().getSimpleName() + ") while close window(s) of " + this + ": " + t.getMessage());
+                    }
+                }
+            }
+        }
     }
 
     @Override
@@ -360,6 +379,7 @@ public abstract class AbstractChannel
         if (service != null) {
             service.unregisterChannel(AbstractChannel.this);
         }
+
         super.doCloseImmediately();
     }
 
@@ -454,7 +474,7 @@ public abstract class AbstractChannel
 
     protected void sendWindowAdjust(int len) throws IOException {
         if (log.isDebugEnabled()) {
-            log.debug("Send SSH_MSG_CHANNEL_WINDOW_ADJUST on channel {}", Integer.valueOf(id));
+            log.debug("Send SSH_MSG_CHANNEL_WINDOW_ADJUST (len={}) on channel {}", len, this);
         }
         Session s = getSession();
         Buffer buffer = s.createBuffer(SshConstants.SSH_MSG_CHANNEL_WINDOW_ADJUST);
@@ -465,6 +485,6 @@ public abstract class AbstractChannel
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "[id=" + getId() + ", recipient=" + getRecipient() + "]";
+        return getClass().getSimpleName() + "[id=" + getId() + ", recipient=" + getRecipient() + "]" + "-" + getSession();
     }
 }

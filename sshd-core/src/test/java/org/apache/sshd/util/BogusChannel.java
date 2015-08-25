@@ -26,6 +26,9 @@ import org.apache.sshd.common.channel.AbstractChannel;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 public class BogusChannel extends AbstractChannel {
+    public BogusChannel() {
+        super(false);
+    }
 
     @Override
     protected void doWriteData(byte[] data, int off, int len) throws IOException {

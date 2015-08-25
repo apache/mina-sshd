@@ -27,6 +27,7 @@ import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoOutputStream;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.io.WritePendingException;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 
@@ -66,47 +67,61 @@ public class ChannelAsyncOutputStream extends CloseableUtils.AbstractCloseable i
 
     protected synchronized void doWriteIfPossible(boolean resume) {
         final IoWriteFutureImpl future = pendingWrite.get();
-        if (future != null) {
-            final Buffer buffer = future.getBuffer();
-            final int total = buffer.available();
-            if (total > 0) {
-                final int length = Math.min(Math.min(channel.getRemoteWindow().getSize(), total), channel.getRemoteWindow().getPacketSize());
-                if (length > 0) {
-                    if (resume) {
-                        log.debug("Resuming write due to more space available in the remote window");
-                    }
-                    Buffer buf = channel.getSession().createBuffer(cmd, length + 12);
-                    buf.putInt(channel.getRecipient());
-                    if (cmd == SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA) {
-                        buf.putInt(1);
-                    }
-                    buf.putInt(length);
-                    buf.putRawBytes(buffer.array(), buffer.rpos(), length);
-                    buffer.rpos(buffer.rpos() + length);
-                    channel.getRemoteWindow().consume(length);
-                    try {
-                        channel.getSession().writePacket(buf).addListener(new SshFutureListener<org.apache.sshd.common.io.IoWriteFuture>() {
-                            @SuppressWarnings("synthetic-access")
-                            @Override
-                            public void operationComplete(org.apache.sshd.common.io.IoWriteFuture f) {
-                                if (total > length) {
-                                    doWriteIfPossible(false);
-                                } else {
-                                    pendingWrite.compareAndSet(future, null);
-                                    future.setValue(Boolean.TRUE);
-                                }
-                            }
-                        });
-                    } catch (IOException e) {
-                        future.setValue(e);
-                    }
-                } else if (!resume) {
-                    log.debug("Delaying write until space is available in the remote window");
-                }
-            } else {
-                pendingWrite.compareAndSet(future, null);
-                future.setValue(Boolean.TRUE);
+        if (future == null) {
+            if (log.isTraceEnabled()) {
+                log.trace("doWriteIfPossible({})[resume={}] no pending write future", this, resume);
             }
+            return;
+        }
+
+        final Buffer buffer = future.getBuffer();
+        final int total = buffer.available();
+        if (total > 0) {
+            Window remoteWindow = channel.getRemoteWindow();
+            final int length = Math.min(Math.min(remoteWindow.getSize(), total), remoteWindow.getPacketSize());
+            if (log.isTraceEnabled()) {
+                log.trace("doWriteIfPossible({})[resume={}] attempting to write {} out of {}", this, resume, length, total);
+            }
+
+            if (length > 0) {
+                if (resume) {
+                    if (log.isDebugEnabled()) {
+                        log.debug("Resuming {} write due to more space ({}) available in the remote window", this, length);
+                    }
+                }
+
+                Session s = channel.getSession();
+                Buffer buf = s.createBuffer(cmd, length + 12);
+                buf.putInt(channel.getRecipient());
+                if (cmd == SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA) {
+                    buf.putInt(1);
+                }
+                buf.putInt(length);
+                buf.putRawBytes(buffer.array(), buffer.rpos(), length);
+                buffer.rpos(buffer.rpos() + length);
+                remoteWindow.consume(length);
+                try {
+                    s.writePacket(buf).addListener(new SshFutureListener<IoWriteFuture>() {
+                        @SuppressWarnings("synthetic-access")
+                        @Override
+                        public void operationComplete(IoWriteFuture f) {
+                            if (total > length) {
+                                doWriteIfPossible(false);
+                            } else {
+                                pendingWrite.compareAndSet(future, null);
+                                future.setValue(Boolean.TRUE);
+                            }
+                        }
+                    });
+                } catch (IOException e) {
+                    future.setValue(e);
+                }
+            } else if (!resume) {
+                log.debug("Delaying write to {} until space is available in the remote window", this);
+            }
+        } else {
+            pendingWrite.compareAndSet(future, null);
+            future.setValue(Boolean.TRUE);
         }
     }
 

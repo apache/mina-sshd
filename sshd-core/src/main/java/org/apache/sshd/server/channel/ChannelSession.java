@@ -264,8 +264,7 @@ public class ChannelSession extends AbstractServerChannel {
             command.destroy();
             command = null;
         }
-        remoteWindow.notifyClosed();
-        IoUtils.closeQuietly(out, err, receiver);
+        IoUtils.closeQuietly(remoteWindow, out, err, receiver);
         super.doCloseImmediately();
     }
 

@@ -20,6 +20,8 @@ package org.apache.sshd.server.channel;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -34,8 +36,9 @@ import org.junit.runners.MethodSorters;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class ChannelSessionTest extends BaseTestSupport {
-
-    private boolean expanded = false;
+    public ChannelSessionTest() {
+        super();
+    }
 
     /**
      * Test whether onWindowExpanded is called from server session
@@ -45,17 +48,21 @@ public class ChannelSessionTest extends BaseTestSupport {
         final Buffer buffer = new ByteArrayBuffer();
         buffer.putInt(1234);
 
-        try (ChannelSession channelSession = new ChannelSession()) {
+        try (ChannelSession channelSession = new ChannelSession() {
+                {
+                    this.remoteWindow.init(Collections.<String,Object>emptyMap());
+                }
+        }) {
+            final AtomicBoolean expanded = new AtomicBoolean(false);
             channelSession.asyncOut = new ChannelAsyncOutputStream(new BogusChannel(), (byte) 0) {
-                @SuppressWarnings("synthetic-access")
                 @Override
                 public void onWindowExpanded() throws IOException {
-                    expanded = true;
+                    expanded.set(true);
                     super.onWindowExpanded();
                 }
             };
             channelSession.handleWindowAdjust(buffer);
-            assertTrue(expanded);
+            assertTrue("Expanded ?", expanded.get());
         }
     }
 

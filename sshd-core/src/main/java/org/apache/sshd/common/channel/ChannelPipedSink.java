@@ -24,7 +24,7 @@ import java.io.IOException;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface ChannelPipedSink {
+public interface ChannelPipedSink extends java.nio.channels.Channel {
     /**
      * @param bytes Bytes to be sent to the sink
      * @param off   Offset in buffer

@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.Closeable;
+import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.AbstractChannel;
@@ -36,7 +37,9 @@ import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.channel.ChannelRequestHandler;
 import org.apache.sshd.common.io.IoInputStream;
 import org.apache.sshd.common.io.IoOutputStream;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.IoUtils;
@@ -70,6 +73,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     protected OpenFuture openFuture;
 
     protected AbstractClientChannel(String type) {
+        super(true);
         this.type = type;
         this.streaming = Streaming.Sync;
         addRequestHandler(new ExitStatusChannelRequestHandler());
@@ -194,8 +198,8 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
                 }
                 if ((cond & mask) != 0) {
                     if (log.isTraceEnabled()) {
-                        log.trace("WaitFor call returning on channel {}, mask={}, cond={}",
-                                this, mask, cond);
+                        log.trace("WaitFor call returning on channel {}, mask=0x{}, cond=0x{}",
+                                  this, Integer.toHexString(mask), Integer.toHexString(cond));
                     }
                     return cond;
                 }
@@ -205,23 +209,38 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
                     } else {
                         timeout = t - System.currentTimeMillis();
                         if (timeout <= 0) {
+                            if (log.isTraceEnabled()) {
+                                log.trace("WaitFor call timeout on channel {}, mask=0x{}", this, Integer.toHexString(mask));
+                            }
                             cond |= ClientChannel.TIMEOUT;
                             return cond;
                         }
                     }
                 }
+
+                if (log.isTraceEnabled()) {
+                    log.trace("Waiting {} millis for lock on channel {}, mask={}, cond={}", timeout, this, mask, cond);
+                }
+
+                long nanoStart = System.nanoTime();
                 try {
-                    if (log.isTraceEnabled()) {
-                        log.trace("Waiting for lock on channel {}, mask={}, cond={}", this, mask, cond);
-                    }
-                    if (timeout > 0) {
+                    if (timeout > 0L) {
                         lock.wait(timeout);
                     } else {
                         lock.wait();
                     }
-                    log.trace("Lock notified on channel {}", this);
+
+                    long nanoEnd = System.nanoTime();
+                    long nanoDuration = nanoEnd - nanoStart;
+                    if (log.isTraceEnabled()) {
+                        log.trace("Lock notified on channel {} after {} nanos", this, nanoDuration);
+                    }
                 } catch (InterruptedException e) {
-                    // Ignore
+                    long nanoEnd = System.nanoTime();
+                    long nanoDuration = nanoEnd - nanoStart;
+                    if (log.isTraceEnabled()) {
+                        log.trace("waitFor({}) mask={} - ignoring interrupted exception after {} nanos", this, Integer.toHexString(mask), nanoDuration);
+                    }
                 }
             }
         }
@@ -251,7 +270,10 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     @Override
     public void handleOpenSuccess(int recipient, int rwSize, int packetSize, Buffer buffer) {
         this.recipient = recipient;
-        this.remoteWindow.init(rwSize, packetSize, session.getFactoryManager().getProperties());
+
+        Session s = getSession();
+        FactoryManager manager = ValidateUtils.checkNotNull(s.getFactoryManager(), "No factory manager");
+        this.remoteWindow.init(rwSize, packetSize, manager.getProperties());
         ChannelListener listener = getChannelListenerProxy();
         try {
             doOpen();

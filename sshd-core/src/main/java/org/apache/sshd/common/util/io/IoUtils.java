@@ -88,16 +88,29 @@ public final class IoUtils {
         return nread;
     }
 
-    public static void closeQuietly(Closeable... closeables) {
+    /**
+     * Closes a bunch of resources suppressing any {@link IOException}s their
+     * {@link Closeable#close()} method may have thrown
+     *
+     * @param closeables The {@link Closeable}s to close
+     * @return The <U>first</U> {@link IOException} that occurred during closing
+     * of a resource - if more than one exception occurred, they are added as
+     * suppressed exceptions to the first one
+     * @see Throwable#getSuppressed()
+     */
+    public static IOException closeQuietly(Closeable... closeables) {
+        IOException err = null;
         for (Closeable c : closeables) {
             try {
                 if (c != null) {
                     c.close();
                 }
             } catch (IOException e) {
-                // Ignore
+                GenericUtils.accumulateException(err, e);
             }
         }
+
+        return err;
     }
 
     /**
