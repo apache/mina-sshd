@@ -96,7 +96,7 @@ public class WindowAdjustTest {
         }
     }
 
-    @Test(timeout = 60 * 1000L)
+    @Test(timeout = 2L * 60L * 1000L)
     public void testTrafficHeavyLoad() throws Exception {
 
         try (SshClient client = SshClient.setUpDefaultClient()) {
