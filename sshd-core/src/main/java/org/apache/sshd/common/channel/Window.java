@@ -167,7 +167,7 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
                 check(maxSize);
             } catch (RuntimeException e) {
                 throw new StreamCorruptedException("consumeAndCheck(" + this + ")"
-                                                 + " failed " + e.getClass().getSimpleName() + ")"
+                                                 + " failed (" + e.getClass().getSimpleName() + ")"
                                                  + " to consume " + len + " bytes"
                                                  + ": " + e.getMessage());
             }

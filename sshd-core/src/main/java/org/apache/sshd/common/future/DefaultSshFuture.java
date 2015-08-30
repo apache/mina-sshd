@@ -238,9 +238,10 @@ public class DefaultSshFuture<T extends SshFuture> extends AbstractLoggingBean i
     }
 
     /**
-     * @return The result of the asynchronous operation.
+     * @return The result of the asynchronous operation - or {@code null}
+     * if none set.
      */
-    protected Object getValue() {
+    public Object getValue() {
         synchronized (lock) {
             return result == NULL ? null : result;
         }

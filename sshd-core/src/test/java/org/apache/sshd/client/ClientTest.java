@@ -74,7 +74,6 @@ import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.channel.ChannelListenerManager;
 import org.apache.sshd.common.channel.TestChannelListener;
-import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoReadFuture;
@@ -254,7 +253,7 @@ public class ClientTest extends BaseTestSupport {
                 assertObjectInstanceOf("Mismatched failure reason type", ChannelFailureException.class, reason);
 
                 String name = ((NamedResource) reason).getName();
-                synchronized(failuresSet) {
+                synchronized (failuresSet) {
                     assertTrue("Re-signalled failure location: " + name, failuresSet.add(name));
                 }
             }
@@ -271,7 +270,7 @@ public class ClientTest extends BaseTestSupport {
 
             private void handleChannelEvent(String name, Channel channel) {
                 int id = channel.getId();
-                synchronized(eventsMap) {
+                synchronized (eventsMap) {
                     if (eventsMap.put(name, id) != null) {
                         return; // already generated an exception for this event
                     }
@@ -300,7 +299,7 @@ public class ClientTest extends BaseTestSupport {
                         break;  // 1st success means all methods have been invoked
                     }
                 } catch (IOException e) {
-                    synchronized(eventsMap) {
+                    synchronized (eventsMap) {
                         eventsMap.remove("Closed"); // since it is called anyway but does not cause an IOException
                         assertTrue("Unexpected failure at retry #" + retryCount, eventsMap.size() < 3);
                     }
@@ -1226,24 +1225,6 @@ public class ClientTest extends BaseTestSupport {
             assertNotNull("Client session creation not signalled", clientSessionHolder.get());
             session.waitFor(ClientSession.WAIT_AUTH, TimeUnit.SECONDS.toMillis(10L));
             assertTrue("Server key verifier invoked ?", ok.get());
-        } finally {
-            client.stop();
-        }
-        assertNull("Session closure not signalled", clientSessionHolder.get());
-    }
-
-    @Test
-    public void testSwitchToNoneCipher() throws Exception {
-        sshd.getCipherFactories().add(BuiltinCiphers.none);
-        client.getCipherFactories().add(BuiltinCiphers.none);
-        client.start();
-
-        try (ClientSession session = createTestClientSession()) {
-            assertTrue("Failed to switch to NONE cipher on time", session.switchToNoneCipher().await(5L, TimeUnit.SECONDS));
-
-            try (ClientChannel channel = session.createSubsystemChannel(SftpConstants.SFTP_SUBSYSTEM_NAME)) {
-                channel.open().verify(5L, TimeUnit.SECONDS);
-            }
         } finally {
             client.stop();
         }

@@ -141,5 +141,4 @@ public class DHGServer extends AbstractDHServerKeyExchange {
         session.writePacket(buffer);
         return true;
     }
-
 }

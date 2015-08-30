@@ -372,6 +372,8 @@ public abstract class AbstractChannel
                 }
             }
         }
+
+        super.preClose();
     }
 
     @Override

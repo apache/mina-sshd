@@ -25,7 +25,7 @@ import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.channel.ChannelListenerManager;
-import org.apache.sshd.common.future.SshFuture;
+import org.apache.sshd.common.future.KeyExchangeFuture;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.kex.KexProposalOption;
@@ -184,11 +184,10 @@ public interface Session extends SessionListenerManager, ChannelListenerManager,
     /**
      * Initiate a new key exchange.
      *
-     * @return An {@link SshFuture} for awaiting the completion of the exchange
+     * @return An {@link KeyExchangeFuture} for awaiting the completion of the exchange
      * @throws IOException If failed to negotiate keys
      */
-    @SuppressWarnings("rawtypes")
-    SshFuture reExchangeKeys() throws IOException;
+    KeyExchangeFuture reExchangeKeys() throws IOException;
 
     /**
      * Get the service of the specified type.

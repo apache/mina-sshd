@@ -35,7 +35,7 @@ import org.apache.sshd.client.scp.ScpClient;
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.client.subsystem.sftp.SftpVersionSelector;
 import org.apache.sshd.common.SshdSocketAddress;
-import org.apache.sshd.common.future.SshFuture;
+import org.apache.sshd.common.future.KeyExchangeFuture;
 import org.apache.sshd.common.scp.ScpTransferEventListener;
 import org.apache.sshd.common.session.Session;
 
@@ -334,10 +334,9 @@ public interface ClientSession extends Session {
      * If that's not the case, the returned future will be set with an exception.
      * </P>
      *
-     * @return an {@link SshFuture} that can be used to wait for the exchange
+     * @return an {@link KeyExchangeFuture} that can be used to wait for the exchange
      * to be finished
      * @throws IOException if a key exchange is already running
      */
-    @SuppressWarnings("rawtypes")
-    SshFuture switchToNoneCipher() throws IOException;
+    KeyExchangeFuture switchToNoneCipher() throws IOException;
 }

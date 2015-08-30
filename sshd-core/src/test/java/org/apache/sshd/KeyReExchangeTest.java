@@ -23,18 +23,29 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.jcraft.jsch.JSch;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.FactoryManagerUtils;
+import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.cipher.BuiltinCiphers;
+import org.apache.sshd.common.future.KeyExchangeFuture;
+import org.apache.sshd.common.kex.BuiltinDHFactories;
+import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionListener;
+import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.BaseTestSupport;
@@ -49,6 +60,8 @@ import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
+import com.jcraft.jsch.JSch;
+
 /**
  * Test key exchange algorithms.
  *
@@ -59,6 +72,10 @@ public class KeyReExchangeTest extends BaseTestSupport {
 
     private SshServer sshd;
     private int port;
+
+    public KeyReExchangeTest() {
+        super();
+    }
 
     @After
     public void tearDown() throws Exception {
@@ -82,11 +99,107 @@ public class KeyReExchangeTest extends BaseTestSupport {
     }
 
     @Test
-    public void testReExchangeFromClient() throws Exception {
+    public void testSwitchToNoneCipher() throws Exception {
+        setUp(0, 0);
+
+        sshd.getCipherFactories().add(BuiltinCiphers.none);
+        try (SshClient client = SshClient.setUpDefaultClient()) {
+            client.getCipherFactories().add(BuiltinCiphers.none);
+            client.start();
+
+            try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+                session.addPasswordIdentity(getCurrentTestName());
+                session.auth().verify(5L, TimeUnit.SECONDS);
+
+                KeyExchangeFuture switchFuture = session.switchToNoneCipher();
+                switchFuture.verify(5L, TimeUnit.SECONDS);
+                try (ClientChannel channel = session.createSubsystemChannel(SftpConstants.SFTP_SUBSYSTEM_NAME)) {
+                    channel.open().verify(5L, TimeUnit.SECONDS);
+                }
+            } finally {
+                client.stop();
+            }
+        }
+    }
+
+    @Test   // see SSHD-558
+    public void testKexFutureExceptionPropagation() throws Exception {
+        setUp(0, 0);
+        sshd.getCipherFactories().add(BuiltinCiphers.none);
+
+        try (SshClient client = SshClient.setUpDefaultClient()) {
+            client.getCipherFactories().add(BuiltinCiphers.none);
+            // replace the original KEX factories with wrapped ones that we can fail intentionally
+            List<NamedFactory<KeyExchange>> kexFactories = new ArrayList<>();
+            final AtomicBoolean successfulInit = new AtomicBoolean(true);
+            final AtomicBoolean successfulNext = new AtomicBoolean(true);
+            final ClassLoader loader = getClass().getClassLoader();
+            final Class<?>[] interfaces = { KeyExchange.class };
+            for (final NamedFactory<KeyExchange> factory : client.getKeyExchangeFactories()) {
+                kexFactories.add(new NamedFactory<KeyExchange>() {
+                    @Override
+                    public String getName() {
+                        return factory.getName();
+                    }
+
+                    @Override
+                    public KeyExchange create() {
+                        final KeyExchange proxiedInstance = factory.create();
+                        return (KeyExchange) Proxy.newProxyInstance(loader, interfaces, new InvocationHandler() {
+                            @Override
+                            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                                String name = method.getName();
+                                if ("init".equals(name) && (!successfulInit.get())) {
+                                    throw new UnsupportedOperationException("Intentionally failing 'init'");
+                                } else if ("next".equals(name) && (!successfulNext.get())) {
+                                    throw new UnsupportedOperationException("Intentionally failing 'next'");
+                                } else {
+                                    return method.invoke(proxiedInstance, args);
+                                }
+                            }
+                        });
+                    }
+                });
+            }
+            client.setKeyExchangeFactories(kexFactories);
+            client.start();
+
+            try {
+                try {
+                    testKexFutureExceptionPropagation("init", successfulInit, client);
+                } finally {
+                    successfulInit.set(true);
+                }
+
+                try {
+                    testKexFutureExceptionPropagation("next", successfulNext, client);
+                } finally {
+                    successfulNext.set(true);
+                }
+            } finally {
+                client.stop();
+            }
+        }
+    }
+
+    private void testKexFutureExceptionPropagation(String failureType, AtomicBoolean successFlag, SshClient client) throws Exception {
+        try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
+            session.auth().verify(5L, TimeUnit.SECONDS);
+
+            successFlag.set(false);
+            KeyExchangeFuture kexFuture = session.switchToNoneCipher();
+            assertTrue(failureType + ": failed to complete KEX on time", kexFuture.await(7L, TimeUnit.SECONDS));
+            assertNotNull(failureType + ": unexpected success", kexFuture.getException());
+        }
+    }
+
+    @Test
+    public void testReExchangeFromJschClient() throws Exception {
         setUp(0, 0);
 
         JSchLogger.init();
-        JSch.setConfig("kex", "diffie-hellman-group-exchange-sha1");
+        JSch.setConfig("kex", BuiltinDHFactories.Constants.DIFFIE_HELLMAN_GROUP_EXCHANGE_SHA1);
         JSch sch = new JSch();
         com.jcraft.jsch.Session s = sch.getSession(getCurrentTestName(), "localhost", port);
         try {
@@ -119,7 +232,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
     }
 
     @Test
-    public void testReExchangeFromNativeClient() throws Exception {
+    public void testReExchangeFromSshdClient() throws Exception {
         setUp(0, 0);
 
         try (SshClient client = SshClient.setUpDefaultClient()) {
@@ -155,7 +268,10 @@ public class KeyReExchangeTest extends BaseTestSupport {
                     for (int i = 0; i < 10; i++) {
                         teeOut.write(data);
                         teeOut.flush();
-                        session.reExchangeKeys();
+
+                        KeyExchangeFuture kexFuture = session.reExchangeKeys();
+                        assertTrue("Failed to complete KEX on time at iteration " + i, kexFuture.await(5L, TimeUnit.SECONDS));
+                        assertNull("KEX exception signalled at iteration " + 1, kexFuture.getException());
                     }
                     teeOut.write("exit\n".getBytes(StandardCharsets.UTF_8));
                     teeOut.flush();
@@ -224,8 +340,10 @@ public class KeyReExchangeTest extends BaseTestSupport {
                             // ignored
                         }
                     });
+
+                    byte[] data = sb.toString().getBytes(StandardCharsets.UTF_8);
                     for (int i = 0; i < 100; i++) {
-                        teeOut.write(sb.toString().getBytes(StandardCharsets.UTF_8));
+                        teeOut.write(data);
                         teeOut.flush();
                     }
                     teeOut.write("exit\n".getBytes(StandardCharsets.UTF_8));

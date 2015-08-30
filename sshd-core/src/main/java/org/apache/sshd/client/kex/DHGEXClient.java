@@ -160,7 +160,7 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
             verif.update(h);
             if (!verif.verify(sig)) {
                 throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
-                        "KeyExchange signature verification failed");
+                        "KeyExchange signature verification failed for key type=" + keyAlg);
             }
             return true;
         }

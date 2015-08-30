@@ -24,6 +24,7 @@ import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
@@ -33,7 +34,6 @@ import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.kex.BuiltinDHFactories;
-import org.apache.sshd.common.kex.DHFactory;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.BaseTestSupport;
@@ -42,10 +42,14 @@ import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.TeeOutputStream;
 import org.apache.sshd.util.Utils;
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 /**
  * Test client key exchange algorithms.
@@ -53,13 +57,20 @@ import org.junit.runners.MethodSorters;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@RunWith(Parameterized.class)   // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 public class KexTest extends BaseTestSupport {
 
+    private final BuiltinDHFactories factory;
     private SshServer sshd;
     private int port;
 
-    public KexTest() {
-        super();
+    public KexTest(BuiltinDHFactories factory) {
+        this.factory = factory;
+    }
+
+    @Parameters(name = "Factory={0}")
+    public static Collection<Object[]> parameters() {
+        return parameterize(BuiltinDHFactories.VALUES);
     }
 
     @Before
@@ -80,29 +91,8 @@ public class KexTest extends BaseTestSupport {
     }
 
     @Test
-    public void testClientKeyExchanges() throws Exception {
-        Exception err = null;
-
-        for (BuiltinDHFactories f : BuiltinDHFactories.VALUES) {
-            if (!f.isSupported()) {
-                System.out.println("Skip KEX=" + f.getName() + " - unsupported");
-                continue;
-            }
-
-            try {
-                testClient(f);
-            } catch (Exception e) {
-                System.err.println(e.getClass().getSimpleName() + " while test KEX=" + f.getName() + ": " + e.getMessage());
-                err = e;
-            }
-        }
-
-        if (err != null) {
-            throw err;
-        }
-    }
-
-    private void testClient(DHFactory factory) throws Exception {
+    public void testClientKeyExchange() throws Exception {
+        Assume.assumeTrue(factory.getName() + " not supported", factory.isSupported());
         testClient(ClientBuilder.DH2KEX.transform(factory));
     }
 

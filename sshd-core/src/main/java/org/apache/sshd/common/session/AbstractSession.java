@@ -47,8 +47,9 @@ import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.cipher.Cipher;
 import org.apache.sshd.common.compression.Compression;
 import org.apache.sshd.common.digest.Digest;
+import org.apache.sshd.common.future.DefaultKeyExchangeFuture;
 import org.apache.sshd.common.future.DefaultSshFuture;
-import org.apache.sshd.common.future.SshFuture;
+import org.apache.sshd.common.future.KeyExchangeFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
@@ -142,9 +143,8 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     protected byte[] i_c; // the payload of the client's SSH_MSG_KEXINIT
     protected byte[] i_s; // the payload of the factoryManager's SSH_MSG_KEXINIT
     protected KeyExchange kex;
-    protected final AtomicReference<KexState> kexState = new AtomicReference<KexState>(KexState.UNKNOWN);
-    @SuppressWarnings("rawtypes")
-    protected DefaultSshFuture reexchangeFuture;
+    protected final AtomicReference<KexState> kexState = new AtomicReference<>(KexState.UNKNOWN);
+    protected final AtomicReference<DefaultKeyExchangeFuture> kexFutureHolder = new AtomicReference<>(null);
 
     //
     // SSH packets encoding / decoding support
@@ -345,11 +345,27 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
      * method returns.
      *
      * @param buffer the buffer containing the packet
-     * @throws Exception if an exeption occurs while handling this packet.
+     * @throws Exception if an exception occurs while handling this packet.
+     * @see #doHandleMessage(Buffer)
      */
     protected void handleMessage(Buffer buffer) throws Exception {
-        synchronized (lock) {
-            doHandleMessage(buffer);
+        try {
+            synchronized (lock) {
+                doHandleMessage(buffer);
+            }
+        } catch (Exception e) {
+            DefaultKeyExchangeFuture kexFuture = kexFutureHolder.get();
+            // if have any ongoing KEX notify it about the failure
+            if (kexFuture != null) {
+                synchronized (kexFuture) {
+                    Object value = kexFuture.getValue();
+                    if (value == null) {
+                        kexFuture.setValue(e);
+                    }
+                }
+            }
+
+            throw e;
         }
     }
 
@@ -466,9 +482,17 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
         log.debug("Received SSH_MSG_NEWKEYS");
         validateKexState(cmd, KexState.KEYS);
         receiveNewKeys();
-        if (reexchangeFuture != null) {
-            reexchangeFuture.setValue(Boolean.TRUE);
+
+        DefaultKeyExchangeFuture kexFuture = kexFutureHolder.get();
+        if (kexFuture != null) {
+            synchronized (kexFuture) {
+                Object value = kexFuture.getValue();
+                if (value == null) {
+                    kexFuture.setValue(Boolean.TRUE);
+                }
+            }
         }
+
         sendSessionEvent(SessionListener.Event.KeyEstablished);
         synchronized (pendingPackets) {
             if (!pendingPackets.isEmpty()) {
@@ -538,6 +562,17 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
 
     @Override
     protected void preClose() {
+        DefaultKeyExchangeFuture kexFuture = kexFutureHolder.get();
+        if (kexFuture != null) {
+            // if have any pending KEX then notify it about the closing session
+            synchronized (kexFuture) {
+                Object value = kexFuture.getValue();
+                if (value == null) {
+                    kexFuture.setValue(new SshException("Session closing while KEX in progress"));
+                }
+            }
+        }
+
         // Fire 'close' event
         SessionListener listener = getSessionListenerProxy();
         try {
@@ -550,6 +585,8 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
             this.sessionListeners.clear();
             this.channelListeners.clear();
         }
+
+        super.preClose();
     }
 
     protected Service[] getServices() {
@@ -1474,14 +1511,23 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     }
 
     @Override
-    @SuppressWarnings("rawtypes")
-    public SshFuture reExchangeKeys() throws IOException {
+    public KeyExchangeFuture reExchangeKeys() throws IOException {
         if (kexState.compareAndSet(KexState.DONE, KexState.INIT)) {
             log.info("Initiating key re-exchange");
             sendKexInit();
-            reexchangeFuture = new DefaultSshFuture(null);
+
+            DefaultKeyExchangeFuture kexFuture = kexFutureHolder.getAndSet(new DefaultKeyExchangeFuture(null));
+            if (kexFuture != null) {
+                synchronized (kexFuture) {
+                    Object value = kexFuture.getValue();
+                    if (value == null) {
+                        kexFuture.setValue(new SshException("New KEX started while previous one still ongoing"));
+                    }
+                }
+            }
         }
-        return reexchangeFuture;
+
+        return ValidateUtils.checkNotNull(kexFutureHolder.get(), "No current KEX future");
     }
 
     protected void checkRekey() throws IOException {

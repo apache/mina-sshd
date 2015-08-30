@@ -57,8 +57,8 @@ import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.cipher.CipherNone;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.forward.TcpipForwarder;
-import org.apache.sshd.common.future.DefaultSshFuture;
-import org.apache.sshd.common.future.SshFuture;
+import org.apache.sshd.common.future.DefaultKeyExchangeFuture;
+import org.apache.sshd.common.future.KeyExchangeFuture;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.kex.KexState;
@@ -271,14 +271,23 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
     }
 
     @Override
-    @SuppressWarnings("rawtypes")
-    public SshFuture switchToNoneCipher() throws IOException {
+    public KeyExchangeFuture switchToNoneCipher() throws IOException {
         if (!(currentService instanceof AbstractConnectionService)
                 || !((AbstractConnectionService) currentService).getChannels().isEmpty()) {
             throw new IllegalStateException("The switch to the none cipher must be done immediately after authentication");
         }
+
         if (kexState.compareAndSet(KexState.DONE, KexState.INIT)) {
-            reexchangeFuture = new DefaultSshFuture(null);
+            DefaultKeyExchangeFuture kexFuture = new DefaultKeyExchangeFuture(null);
+            DefaultKeyExchangeFuture prev = kexFutureHolder.getAndSet(kexFuture);
+            if (prev != null) {
+                synchronized (prev) {
+                    Object value = prev.getValue();
+                    if (value == null) {
+                        prev.setValue(new SshException("Switch to none cipher while previous KEX is ongoing"));
+                    }
+                }
+            }
 
             String c2sEncServer;
             String s2cEncServer;
@@ -300,9 +309,9 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
             boolean s2cEncClientNone = BuiltinCiphers.Constants.isNoneCipherIncluded(s2cEncClient);
 
             if ((!c2sEncServerNone) || (!s2cEncServerNone)) {
-                reexchangeFuture.setValue(new SshException("Server does not support none cipher"));
+                kexFuture.setValue(new SshException("Server does not support none cipher"));
             } else if ((!c2sEncClientNone) || (!s2cEncClientNone)) {
-                reexchangeFuture.setValue(new SshException("Client does not support none cipher"));
+                kexFuture.setValue(new SshException("Client does not support none cipher"));
             } else {
                 log.info("Switching to none cipher");
 
@@ -317,7 +326,8 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
                 byte[] seed = sendKexInit(proposal);
                 setKexSeed(seed);
             }
-            return reexchangeFuture;
+
+            return ValidateUtils.checkNotNull(kexFutureHolder.get(), "No current KEX future");
         } else {
             throw new SshException("In flight key exchange");
         }
