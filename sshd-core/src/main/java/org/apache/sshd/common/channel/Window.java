@@ -103,7 +103,9 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
             lock.notifyAll();
         }
 
-        initialized.set(true);
+        if (initialized.getAndSet(true)) {
+            log.debug("init({}) re-initializing", this);
+        }
 
         if (log.isDebugEnabled()) {
             log.debug("init({}) size={}, max.={}, packet={}", this, getSize(), getMaxSize(), getPacketSize());
@@ -200,7 +202,7 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
         checkInitialized("waitAndConsume");
 
         synchronized (lock) {
-            while ((size < len) && isOpen()) {
+            while (isOpen() && (size < len)) {
                 int waiters = waitingCount.incrementAndGet();
                 if (log.isDebugEnabled()) {
                     log.debug("waitAndConsume({}) - requested={}, available={}, waiters={}", this, len, size, waiters);
@@ -243,7 +245,7 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
         checkInitialized("waitForSpace");
 
         synchronized (lock) {
-            while ((size == 0) && isOpen()) {
+            while (isOpen() && (size <= 0)) {
                 int waiters = waitingCount.incrementAndGet();
                 if (log.isDebugEnabled()) {
                     log.debug("waitForSpace({}) - waiters={}", this, waiters);
@@ -286,8 +288,7 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
 
     @Override
     public void close() throws IOException {
-        if (isOpen()) {
-            closed.set(true);
+        if (!closed.getAndSet(true)) {
             log.debug("Closing {}", this);
         }
 
@@ -295,9 +296,7 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
         int waiters;
         synchronized (lock) {
             waiters = waitingCount.get();
-            if (waiters > 0) {
-                lock.notifyAll();
-            }
+            lock.notifyAll();
         }
 
         if (log.isDebugEnabled()) {
