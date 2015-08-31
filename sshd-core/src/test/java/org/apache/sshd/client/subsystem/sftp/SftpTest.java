@@ -947,8 +947,8 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             assertTrue("Source file not created: " + sourcePath, Files.exists(sourcePath));
             assertEquals("Mismatched stored data in " + remSrcPath, data, readFile(remSrcPath));
 
+            assertFalse("Target link exists before linking: " + linkPath, Files.exists(linkPath));
             c.symlink(remSrcPath, remLinkPath);
-
             assertTrue("Symlink not created: " + linkPath, Files.exists(linkPath));
             assertEquals("Mismatched link data in " + remLinkPath, data, readFile(remLinkPath));
 

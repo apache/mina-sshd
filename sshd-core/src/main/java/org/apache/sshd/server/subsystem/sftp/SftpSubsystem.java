@@ -2868,8 +2868,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
 
     protected void sendStatus(Buffer buffer, int id, int substatus, String msg, String lang) throws IOException {
         if (log.isDebugEnabled()) {
-            log.debug("Send SSH_FXP_STATUS (substatus={}, lang={}, msg={})",
-                    substatus, lang, msg);
+            log.debug("Send SSH_FXP_STATUS (substatus={}, lang={}, msg={})", substatus, lang, msg);
         }
 
         buffer.putByte((byte) SSH_FXP_STATUS);
