@@ -42,6 +42,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.sshd.client.SshClient;
+import org.apache.sshd.client.config.hosts.HostConfigEntryResolver;
+import org.apache.sshd.client.keyverifier.AcceptAllServerKeyVerifier;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.keyprovider.AbstractFileKeyPairProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
@@ -49,6 +52,8 @@ import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.server.SshServer;
+import org.apache.sshd.server.auth.pubkey.AcceptAllPublickeyAuthenticator;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 
 public class Utils {
@@ -61,7 +66,6 @@ public class Utils {
         if (provider != null) {
             return provider;
         }
-
 
         File targetFolder = ValidateUtils.checkNotNull(detectTargetFolder(Utils.class), "Failed to detect target folder");
         File file = new File(targetFolder, "hostkey." + DEFAULT_TEST_HOST_KEY_PROVIDER_ALGORITHM.toLowerCase());
@@ -543,5 +547,22 @@ public class Utils {
     public static final String resolveRelativeRemotePath(Path root, Path file) {
         Path relPath = root.relativize(file);
         return relPath.toString().replace(File.separatorChar, '/');
+    }
+
+    public static final SshClient setupTestClient() {
+        SshClient client = SshClient.setUpDefaultClient();
+        client.setServerKeyVerifier(AcceptAllServerKeyVerifier.INSTANCE);
+        client.setHostConfigEntryResolver(HostConfigEntryResolver.EMPTY);
+        return client;
+    }
+
+    public static final SshServer setupTestServer() {
+        SshServer sshd = SshServer.setUpDefaultServer();
+        sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
+        sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
+        sshd.setPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);
+        sshd.setShellFactory(EchoShellFactory.INSTANCE);
+        sshd.setCommandFactory(UnknownCommandFactory.INSTANCE);
+        return sshd;
     }
 }

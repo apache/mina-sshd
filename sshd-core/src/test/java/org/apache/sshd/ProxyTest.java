@@ -40,8 +40,6 @@ import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
 import org.apache.sshd.util.BaseTestSupport;
-import org.apache.sshd.util.BogusPasswordAuthenticator;
-import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.Utils;
 import org.junit.After;
 import org.junit.Before;
@@ -62,12 +60,9 @@ public class ProxyTest extends BaseTestSupport {
 
     @Before
     public void setUp() throws Exception {
-        sshd = SshServer.setUpDefaultServer();
+        sshd = Utils.setupTestServer();
         FactoryManagerUtils.updateProperty(sshd, FactoryManager.WINDOW_SIZE, 2048);
         FactoryManagerUtils.updateProperty(sshd, FactoryManager.MAX_PACKET_SIZE, "256");
-        sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
-        sshd.setShellFactory(new EchoShellFactory());
-        sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
         sshd.setTcpipForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
         sshd.start();
         sshPort = sshd.getPort();
@@ -145,7 +140,7 @@ public class ProxyTest extends BaseTestSupport {
     }
 
     protected ClientSession createNativeSession() throws Exception {
-        client = SshClient.setUpDefaultClient();
+        client = Utils.setupTestClient();
         FactoryManagerUtils.updateProperty(client, FactoryManager.WINDOW_SIZE, 2048);
         FactoryManagerUtils.updateProperty(client, FactoryManager.MAX_PACKET_SIZE, 256);
         client.setTcpipForwardingFilter(AcceptAllForwardingFilter.INSTANCE);

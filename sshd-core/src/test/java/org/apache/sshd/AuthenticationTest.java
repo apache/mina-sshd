@@ -37,11 +37,9 @@ import org.apache.sshd.deprecated.UserAuthPassword;
 import org.apache.sshd.deprecated.UserAuthPublicKey;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.SshServer;
-import org.apache.sshd.server.auth.pubkey.AcceptAllPublickeyAuthenticator;
 import org.apache.sshd.server.session.ServerSessionImpl;
 import org.apache.sshd.server.session.SessionFactory;
 import org.apache.sshd.util.BaseTestSupport;
-import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.Utils;
 import org.junit.After;
 import org.junit.Before;
@@ -63,10 +61,7 @@ public class AuthenticationTest extends BaseTestSupport {
 
     @Before
     public void setUp() throws Exception {
-        sshd = SshServer.setUpDefaultServer();
-        sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
-        sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
-        sshd.setPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);
+        sshd = Utils.setupTestServer();
         FactoryManagerUtils.updateProperty(sshd, ServerFactoryManager.WELCOME_BANNER, WELCOME);
         FactoryManagerUtils.updateProperty(sshd, ServerFactoryManager.AUTH_METHODS, "publickey,password publickey,keyboard-interactive");
         sshd.setSessionFactory(new SessionFactory(sshd) {
@@ -88,7 +83,7 @@ public class AuthenticationTest extends BaseTestSupport {
 
     @Test
     public void testWrongPassword() throws Exception {
-        try (SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = Utils.setupTestClient()) {
             client.start();
             try (ClientSession s = client.connect("user", "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
                 s.addPasswordIdentity("bad password");
@@ -100,7 +95,7 @@ public class AuthenticationTest extends BaseTestSupport {
 
     @Test
     public void testChangeUser() throws Exception {
-        try (SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = Utils.setupTestClient()) {
             client.setServiceFactories(Arrays.asList(
                     new ClientUserAuthServiceOld.Factory(),
                     ClientConnectionServiceFactory.INSTANCE
@@ -125,7 +120,7 @@ public class AuthenticationTest extends BaseTestSupport {
 
     @Test
     public void testAuthPasswordOnly() throws Exception {
-        try (SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = Utils.setupTestClient()) {
             client.setServiceFactories(Arrays.asList(
                     new ClientUserAuthServiceOld.Factory(),
                     ClientConnectionServiceFactory.INSTANCE
@@ -146,7 +141,7 @@ public class AuthenticationTest extends BaseTestSupport {
 
     @Test
     public void testAuthKeyPassword() throws Exception {
-        try (SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = Utils.setupTestClient()) {
             client.setServiceFactories(Arrays.asList(
                     new ClientUserAuthServiceOld.Factory(),
                     ClientConnectionServiceFactory.INSTANCE
@@ -168,7 +163,7 @@ public class AuthenticationTest extends BaseTestSupport {
 
     @Test
     public void testAuthKeyInteractive() throws Exception {
-        try (SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = Utils.setupTestClient()) {
             client.setServiceFactories(Arrays.asList(
                     new ClientUserAuthServiceOld.Factory(),
                     ClientConnectionServiceFactory.INSTANCE

@@ -2095,7 +2095,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
 
     protected void appendExtensions(Buffer buffer, String supportedVersions) {
         appendVersionsExtension(buffer, supportedVersions);
-        appendNewlineExtension(buffer, System.getProperty("line.separator"));
+        appendNewlineExtension(buffer, IoUtils.EOL);
         appendVendorIdExtension(buffer, VersionProperties.getVersionProperties());
         appendOpenSSHExtensions(buffer);
 

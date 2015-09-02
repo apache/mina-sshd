@@ -22,8 +22,11 @@ import java.util.List;
 
 import org.apache.sshd.client.auth.UserAuth;
 import org.apache.sshd.client.auth.UserInteraction;
+import org.apache.sshd.client.config.hosts.HostConfigEntryResolver;
+import org.apache.sshd.client.config.keys.ClientIdentityLoader;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.config.keys.FilePasswordProvider;
 
 /**
  * The <code>ClientFactoryManager</code> enable the retrieval of additional
@@ -70,6 +73,18 @@ public interface ClientFactoryManager extends FactoryManager {
     int DEFAULT_PASSWORD_PROMPTS = 3;
 
     /**
+     * Whether to ignore invalid identities files when pre-initializing
+     * the client session
+     * @see ClientIdentityLoader#isValidLocation(String)
+     */
+    String IGNORE_INVALID_IDENTITIES = "ignore-invalid-identities";
+
+    /**
+     * Default value of {@link #IGNORE_INVALID_IDENTITIES} if none configured
+     */
+    boolean DEFAULT_IGNORE_INVALID_IDENTITIES = true;
+
+    /**
      * Retrieve the server key verifier to be used to check the key when connecting
      * to an ssh server.
      *
@@ -89,4 +104,21 @@ public interface ClientFactoryManager extends FactoryManager {
      */
     List<NamedFactory<UserAuth>> getUserAuthFactories();
 
+    /**
+     * @return The {@link HostConfigEntryResolver} to use in order to resolve the
+     * effective session parameters
+     */
+    HostConfigEntryResolver getHostConfigEntryResolver();
+
+    /**
+     * @return The {@link ClientIdentityLoader} to use in order to load client
+     * key pair identities
+     */
+    ClientIdentityLoader getClientIdentityLoader();
+
+    /**
+     * @return The {@link FilePasswordProvider} to use if need to load encrypted
+     * identities keys
+     */
+    FilePasswordProvider getFilePasswordProvider();
 }

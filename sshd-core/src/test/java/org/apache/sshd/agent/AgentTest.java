@@ -40,10 +40,9 @@ import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.SshServer;
-import org.apache.sshd.server.auth.pubkey.AcceptAllPublickeyAuthenticator;
 import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
 import org.apache.sshd.util.BaseTestSupport;
-import org.apache.sshd.util.BogusPasswordAuthenticator;
+import org.apache.sshd.util.EchoShell;
 import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.Utils;
 import org.junit.Assume;
@@ -107,27 +106,21 @@ public class AgentTest extends BaseTestSupport {
         KeyPair pair = createTestKeyPairProvider("dsaprivkey.pem").loadKey(KeyPairProvider.SSH_DSS);
         localAgentFactory.getAgent().addIdentity(pair, username);
 
-        try (SshServer sshd1 = SshServer.setUpDefaultServer()) {
-            sshd1.setKeyPairProvider(Utils.createTestHostKeyProvider());
+        try (SshServer sshd1 = Utils.setupTestServer()) {
             sshd1.setShellFactory(shellFactory);
-            sshd1.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
-            sshd1.setPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);
             sshd1.setAgentFactory(agentFactory);
             sshd1.setTcpipForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
             sshd1.start();
 
             final int port1 = sshd1.getPort();
-            try (SshServer sshd2 = SshServer.setUpDefaultServer()) {
-                sshd2.setKeyPairProvider(Utils.createTestHostKeyProvider());
+            try (SshServer sshd2 = Utils.setupTestServer()) {
                 sshd2.setShellFactory(new TestEchoShellFactory());
-                sshd2.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
-                sshd2.setPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);
                 sshd1.setTcpipForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
                 sshd2.setAgentFactory(new ProxyAgentFactory());
                 sshd2.start();
 
                 final int port2 = sshd2.getPort();
-                try (SshClient client1 = SshClient.setUpDefaultClient()) {
+                try (SshClient client1 = Utils.setupTestClient()) {
                     client1.setAgentFactory(localAgentFactory);
                     client1.start();
 
@@ -151,7 +144,7 @@ public class AgentTest extends BaseTestSupport {
                                     }
                                 }
 
-                                try (SshClient client2 = SshClient.setUpDefaultClient()) {
+                                try (SshClient client2 = Utils.setupTestClient()) {
                                     client2.setAgentFactory(agentFactory);
                                     client2.getProperties().putAll(shellFactory.shell.getEnvironment().getEnv());
                                     client2.start();
@@ -190,24 +183,22 @@ public class AgentTest extends BaseTestSupport {
     }
 
     public static class TestEchoShellFactory extends EchoShellFactory {
-
-        TestEchoShell shell = new TestEchoShell();
+        public final TestEchoShell shell = new TestEchoShell();
 
         @Override
         public Command create() {
             return shell;
         }
+    }
 
-        public class TestEchoShell extends EchoShell {
+    public static class TestEchoShell extends EchoShell {
+        public boolean started;
 
-            boolean started;
-
-            @Override
-            public synchronized void start(Environment env) throws IOException {
-                super.start(env);
-                started = true;
-                notifyAll();
-            }
+        @Override
+        public synchronized void start(Environment env) throws IOException {
+            super.start(env);
+            started = true;
+            notifyAll();
         }
     }
 }

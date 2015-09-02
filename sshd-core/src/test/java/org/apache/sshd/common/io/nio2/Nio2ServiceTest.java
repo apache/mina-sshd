@@ -25,9 +25,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.server.SshServer;
-import org.apache.sshd.server.ServerTest.TestEchoShellFactory;
 import org.apache.sshd.util.BaseTestSupport;
-import org.apache.sshd.util.BogusPasswordAuthenticator;
 import org.apache.sshd.util.Utils;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -44,7 +42,7 @@ public class Nio2ServiceTest extends BaseTestSupport {
 
     @Test   // see SSHD-554
     public void testSetSocketOptions() throws Exception {
-        try(SshServer sshd = SshServer.setUpDefaultServer()) {
+        try(SshServer sshd = Utils.setupTestServer()) {
             FactoryManagerUtils.updateProperty(sshd, FactoryManager.SOCKET_KEEPALIVE, true);
             FactoryManagerUtils.updateProperty(sshd, FactoryManager.SOCKET_LINGER, 5);
             FactoryManagerUtils.updateProperty(sshd, FactoryManager.SOCKET_RCVBUF, 1024);
@@ -52,9 +50,6 @@ public class Nio2ServiceTest extends BaseTestSupport {
             FactoryManagerUtils.updateProperty(sshd, FactoryManager.SOCKET_SNDBUF, 1024);
             FactoryManagerUtils.updateProperty(sshd, FactoryManager.TCP_NODELAY, true);
 
-            sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
-            sshd.setShellFactory(new TestEchoShellFactory());
-            sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
             sshd.start();
 
             int port = sshd.getPort();

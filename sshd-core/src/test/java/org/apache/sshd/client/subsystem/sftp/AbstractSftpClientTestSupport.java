@@ -35,8 +35,6 @@ import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.command.ScpCommandFactory;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 import org.apache.sshd.util.BaseTestSupport;
-import org.apache.sshd.util.BogusPasswordAuthenticator;
-import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.Utils;
 
 /**
@@ -61,12 +59,9 @@ public abstract class AbstractSftpClientTestSupport extends BaseTestSupport {
     }
 
     protected void setupServer() throws Exception {
-        sshd = SshServer.setUpDefaultServer();
-        sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
+        sshd = Utils.setupTestServer();
         sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(new SftpSubsystemFactory()));
         sshd.setCommandFactory(new ScpCommandFactory());
-        sshd.setShellFactory(new EchoShellFactory());
-        sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
         sshd.setFileSystemFactory(fileSystemFactory);
         sshd.start();
         port = sshd.getPort();

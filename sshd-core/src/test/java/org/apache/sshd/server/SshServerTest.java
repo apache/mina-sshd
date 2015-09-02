@@ -22,8 +22,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.apache.sshd.util.BaseTestSupport;
-import org.apache.sshd.util.BogusPasswordAuthenticator;
-import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.Utils;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -49,7 +47,7 @@ public class SshServerTest extends BaseTestSupport {
     public void testExecutorShutdownFalse() throws Exception {
         ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
-        try (SshServer sshd = createTestServer()) {
+        try (SshServer sshd = Utils.setupTestServer()) {
             sshd.setScheduledExecutorService(executorService);
 
             sshd.start();
@@ -64,7 +62,7 @@ public class SshServerTest extends BaseTestSupport {
     public void testExecutorShutdownTrue() throws Exception {
         ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
-        try (SshServer sshd = createTestServer()) {
+        try (SshServer sshd = Utils.setupTestServer()) {
             sshd.setScheduledExecutorService(executorService, true);
 
             sshd.start();
@@ -76,7 +74,7 @@ public class SshServerTest extends BaseTestSupport {
 
     @Test
     public void testDynamicPort() throws Exception {
-        try (SshServer sshd = createTestServer()) {
+        try (SshServer sshd = Utils.setupTestServer()) {
             sshd.setHost("localhost");
             sshd.start();
 
@@ -84,15 +82,5 @@ public class SshServerTest extends BaseTestSupport {
 
             sshd.stop();
         }
-    }
-
-
-    private SshServer createTestServer() {
-        SshServer sshd = SshServer.setUpDefaultServer();
-        sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
-        sshd.setShellFactory(new EchoShellFactory());
-        sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
-
-        return sshd;
     }
 }

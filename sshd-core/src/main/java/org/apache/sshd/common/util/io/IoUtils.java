@@ -54,7 +54,15 @@ public final class IoUtils {
 
     public static final List<String> WINDOWS_EXECUTABLE_EXTENSIONS = Collections.unmodifiableList(Arrays.asList(".bat", ".exe", ".cmd"));
 
+    /**
+     * Size of preferred work buffer when reading / writing data to / from streams
+     */
     public static final int DEFAULT_COPY_SIZE = 8192;
+
+    /**
+     * The local O/S line separator
+     */
+    public static final String EOL = System.getProperty("line.separator");
 
     private static final LinkOption[] NO_FOLLOW_OPTIONS = new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
 
@@ -378,4 +386,30 @@ public final class IoUtils {
         return true;
     }
 
+    public static String appendPathComponent(String prefix, String component) {
+        if (GenericUtils.isEmpty(prefix)) {
+            return component;
+        }
+
+        if (GenericUtils.isEmpty(component)) {
+            return prefix;
+        }
+
+        StringBuilder sb = new StringBuilder(prefix.length() + component.length() + File.separator.length()).append(prefix);
+
+        if (sb.charAt(prefix.length() - 1) == File.separatorChar) {
+            if (component.charAt(0) == File.separatorChar) {
+                sb.append(component.substring(1));
+            } else {
+                sb.append(component);
+            }
+        } else {
+            if (component.charAt(0) != File.separatorChar) {
+                sb.append(File.separatorChar);
+            }
+            sb.append(component);
+        }
+
+        return sb.toString();
+    }
 }

@@ -63,7 +63,7 @@ import org.apache.sshd.deprecated.ClientUserAuthServiceOld;
 import org.apache.sshd.server.command.ScpCommandFactory;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 import org.apache.sshd.util.BaseTestSupport;
-import org.apache.sshd.util.BogusPasswordAuthenticator;
+import org.apache.sshd.util.EchoShell;
 import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.Utils;
 import org.junit.After;
@@ -92,14 +92,12 @@ public class ServerTest extends BaseTestSupport {
 
     @Before
     public void setUp() throws Exception {
-        sshd = SshServer.setUpDefaultServer();
-        sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
+        sshd = Utils.setupTestServer();
         sshd.setShellFactory(new TestEchoShellFactory());
-        sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
         sshd.start();
         port = sshd.getPort();
 
-        client = SshClient.setUpDefaultClient();
+        client = Utils.setupTestClient();
     }
 
     @After
@@ -193,7 +191,7 @@ public class ServerTest extends BaseTestSupport {
     @Test
     public void testIdleTimeout() throws Exception {
         final CountDownLatch latch = new CountDownLatch(1);
-        TestEchoShellFactory.TestEchoShell.latch = new CountDownLatch(1);
+        TestEchoShell.latch = new CountDownLatch(1);
         final long IDLE_TIMEOUT = 2500;
         FactoryManagerUtils.updateProperty(sshd, FactoryManager.IDLE_TIMEOUT, IDLE_TIMEOUT);
 
@@ -236,8 +234,8 @@ public class ServerTest extends BaseTestSupport {
             client.stop();
         }
 
-        assertTrue("Session latch not signalled in time", latch.await(1, TimeUnit.SECONDS));
-        assertTrue("Shell latch not signalled in time", TestEchoShellFactory.TestEchoShell.latch.await(1, TimeUnit.SECONDS));
+        assertTrue("Session latch not signalled in time", latch.await(1L, TimeUnit.SECONDS));
+        assertTrue("Shell latch not signalled in time", TestEchoShell.latch.await(1L, TimeUnit.SECONDS));
     }
 
     /**
@@ -585,22 +583,22 @@ public class ServerTest extends BaseTestSupport {
         public Command create() {
             return new TestEchoShell();
         }
+    }
 
-        public static class TestEchoShell extends EchoShell {
+    public static class TestEchoShell extends EchoShell {
 
-            public static CountDownLatch latch = new CountDownLatch(1);
+        public static CountDownLatch latch;
 
-            public TestEchoShell() {
-                super();
+        public TestEchoShell() {
+            super();
+        }
+
+        @Override
+        public void destroy() {
+            if (latch != null) {
+                latch.countDown();
             }
-
-            @Override
-            public void destroy() {
-                if (latch != null) {
-                    latch.countDown();
-                }
-                super.destroy();
-            }
+            super.destroy();
         }
     }
 
@@ -663,10 +661,11 @@ public class ServerTest extends BaseTestSupport {
         @Override
         public void run() {
             try {
-                Thread.sleep(5000);
+                Thread.sleep(TimeUnit.SECONDS.toMillis(5L));
                 while (true) {
+                    byte[] data = "0123456789\n".getBytes(StandardCharsets.UTF_8);
                     for (int i = 0; i < 100; i++) {
-                        out.write("0123456789\n".getBytes(StandardCharsets.UTF_8));
+                        out.write(data);
                     }
                     out.flush();
                 }
@@ -683,14 +682,11 @@ public class ServerTest extends BaseTestSupport {
     }
 
     public static void main(String[] args) throws Exception {
-        SshServer sshd = SshServer.setUpDefaultServer();
+        SshServer sshd = Utils.setupTestServer();
         FactoryManagerUtils.updateProperty(sshd, FactoryManager.IDLE_TIMEOUT, TimeUnit.SECONDS.toMillis(10L));
         sshd.setPort(8001);
-        sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(new SftpSubsystemFactory()));
-        sshd.setShellFactory(new EchoShellFactory());
         sshd.setCommandFactory(new ScpCommandFactory());
-        sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
         sshd.start();
         Thread.sleep(100000);
     }

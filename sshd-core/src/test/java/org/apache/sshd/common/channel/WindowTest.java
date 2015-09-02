@@ -47,12 +47,9 @@ import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.server.Command;
-import org.apache.sshd.server.CommandFactory;
 import org.apache.sshd.server.SshServer;
-import org.apache.sshd.server.auth.pubkey.AcceptAllPublickeyAuthenticator;
 import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.channel.ChannelSessionFactory;
-import org.apache.sshd.server.command.UnknownCommand;
 import org.apache.sshd.server.forward.DirectTcpipFactory;
 import org.apache.sshd.server.session.ServerConnectionService;
 import org.apache.sshd.server.session.ServerConnectionServiceFactory;
@@ -60,7 +57,7 @@ import org.apache.sshd.server.session.ServerUserAuthService;
 import org.apache.sshd.server.session.ServerUserAuthServiceFactory;
 import org.apache.sshd.util.AsyncEchoShellFactory;
 import org.apache.sshd.util.BaseTestSupport;
-import org.apache.sshd.util.BogusPasswordAuthenticator;
+import org.apache.sshd.util.EchoShell;
 import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.Utils;
 import org.junit.After;
@@ -92,17 +89,8 @@ public class WindowTest extends BaseTestSupport {
         authLatch = new CountDownLatch(0);
         channelLatch = new CountDownLatch(0);
 
-        sshd = SshServer.setUpDefaultServer();
-        sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
+        sshd = Utils.setupTestServer();
         sshd.setShellFactory(new TestEchoShellFactory());
-        sshd.setCommandFactory(new CommandFactory() {
-            @Override
-            public Command createCommand(String command) {
-                return new UnknownCommand(command);
-            }
-        });
-        sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
-        sshd.setPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);
         sshd.setServiceFactories(Arrays.asList(
                 new ServerUserAuthServiceFactory() {
                     @Override
@@ -146,7 +134,7 @@ public class WindowTest extends BaseTestSupport {
         sshd.start();
         port = sshd.getPort();
 
-        client = SshClient.setUpDefaultClient();
+        client = Utils.setupTestClient();
     }
 
     @After
@@ -348,18 +336,18 @@ public class WindowTest extends BaseTestSupport {
         public Command create() {
             return new TestEchoShell();
         }
+    }
 
-        public static class TestEchoShell extends EchoShell {
+    public static class TestEchoShell extends EchoShell {
 
-            public static CountDownLatch latch = new CountDownLatch(1);
+        public static final CountDownLatch latch = new CountDownLatch(1);
 
-            @Override
-            public void destroy() {
-                if (latch != null) {
-                    latch.countDown();
-                }
-                super.destroy();
+        @Override
+        public void destroy() {
+            if (latch != null) {
+                latch.countDown();
             }
+            super.destroy();
         }
     }
 }

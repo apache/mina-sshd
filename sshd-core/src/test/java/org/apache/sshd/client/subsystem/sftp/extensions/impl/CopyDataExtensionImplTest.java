@@ -123,7 +123,7 @@ public class CopyDataExtensionImplTest extends AbstractSftpClientTestSupport {
         byte[] seed = (getClass().getName() + "#" + getCurrentTestName()
                 + "-" + dataSize
                 + "-" + readOffset + "/" + readLength + "/" + writeOffset
-                + System.getProperty("line.separator"))
+                + IoUtils.EOL)
                 .getBytes(StandardCharsets.UTF_8);
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream(dataSize + seed.length)) {
             while (baos.size() < dataSize) {
@@ -150,7 +150,7 @@ public class CopyDataExtensionImplTest extends AbstractSftpClientTestSupport {
         }
         String dstPath = Utils.resolveRelativeRemotePath(parentPath, dstFile);
 
-        try (SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = Utils.setupTestClient()) {
             client.start();
 
             if (writeOffset > 0L) {

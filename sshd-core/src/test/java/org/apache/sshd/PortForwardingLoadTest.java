@@ -51,8 +51,6 @@ import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
 import org.apache.sshd.util.BaseTestSupport;
-import org.apache.sshd.util.BogusPasswordAuthenticator;
-import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.JSchLogger;
 import org.apache.sshd.util.SimpleUserInfo;
 import org.apache.sshd.util.Utils;
@@ -83,10 +81,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
 
     @Before
     public void setUp() throws Exception {
-        sshd = SshServer.setUpDefaultServer();
-        sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
-        sshd.setShellFactory(new EchoShellFactory());
-        sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
+        sshd = Utils.setupTestServer();
         sshd.setTcpipForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
         sshd.start();
         sshPort = sshd.getPort();

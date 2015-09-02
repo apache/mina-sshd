@@ -158,7 +158,7 @@ public class ModifiableFileWatcher extends AbstractLoggingBean {
             long size = size();
             FileTime modifiedTime = lastModified();
 
-            if (size >= 0L && modifiedTime != null) {
+            if ((size >= 0L) && (modifiedTime != null)) {
                 lastExisted.set(true);
                 lastSize.set(size);
                 lastModified.set(modifiedTime.toMillis());

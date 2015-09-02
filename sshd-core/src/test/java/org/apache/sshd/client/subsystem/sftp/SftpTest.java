@@ -131,7 +131,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         rnd.fill(expectedRandom);
 
         byte[] expectedText = (getClass().getName() + "#" + getCurrentTestName()).getBytes(StandardCharsets.UTF_8);
-        try (SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = Utils.setupTestClient()) {
             client.start();
 
             try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
@@ -183,7 +183,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         rnd.fill(expected);
         Files.write(testFile, expected);
 
-        try (SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = Utils.setupTestClient()) {
             client.start();
 
             try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
@@ -227,7 +227,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                 }
             });
 
-        try (SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = Utils.setupTestClient()) {
             client.start();
 
             try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
@@ -247,7 +247,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     @Test
     public void testNormalizeRemoteRootValues() throws Exception {
-        try (SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = Utils.setupTestClient()) {
             client.start();
 
             try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
@@ -286,7 +286,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         String file = Utils.resolveRelativeRemotePath(parentPath, testFile);
         String[] comps = GenericUtils.split(file, '/');
 
-        try (SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = Utils.setupTestClient()) {
             client.start();
 
             Factory<? extends Random> factory = client.getRandomFactory();
@@ -347,7 +347,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         File javaFile = testFile.toFile();
         assertHierarchyTargetFolderExists(javaFile.getParentFile());
 
-        try (SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = Utils.setupTestClient()) {
             client.start();
 
             try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
@@ -439,7 +439,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     @Test
     public void testClient() throws Exception {
-        try (SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = Utils.setupTestClient()) {
             client.start();
 
             try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
@@ -464,7 +464,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
      */
     @Test
     public void testWriteChunking() throws Exception {
-        try (SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = Utils.setupTestClient()) {
             client.start();
 
             try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
@@ -655,7 +655,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         Path parentPath = targetPath.getParent();
         Path clientFolder = assertHierarchyTargetFolderExists(lclSftp.resolve("client"));
 
-        try (SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = Utils.setupTestClient()) {
             client.start();
 
             try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
@@ -701,7 +701,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     @Test
     public void testServerExtensionsDeclarations() throws Exception {
-        try (SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = Utils.setupTestClient()) {
             client.start();
 
             try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
@@ -800,7 +800,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             }
         };
 
-        try (SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = Utils.setupTestClient()) {
             client.start();
 
             try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {

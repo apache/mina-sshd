@@ -96,7 +96,7 @@ public class AbstractMD5HashExtensionTest extends AbstractSftpClientTestSupport 
     }
 
     private void testMD5HashExtension(int dataSize) throws Exception {
-        byte[] seed = (getClass().getName() + "#" + getCurrentTestName() + "-" + dataSize + System.getProperty("line.separator")).getBytes(StandardCharsets.UTF_8);
+        byte[] seed = (getClass().getName() + "#" + getCurrentTestName() + "-" + dataSize + IoUtils.EOL).getBytes(StandardCharsets.UTF_8);
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream(dataSize + seed.length)) {
             while (baos.size() < dataSize) {
                 baos.write(seed);
@@ -131,7 +131,7 @@ public class AbstractMD5HashExtensionTest extends AbstractSftpClientTestSupport 
         String srcPath = Utils.resolveRelativeRemotePath(parentPath, srcFile);
         String srcFolder = Utils.resolveRelativeRemotePath(parentPath, srcFile.getParent());
 
-        try (SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = Utils.setupTestClient()) {
             client.start();
 
             try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {

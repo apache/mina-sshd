@@ -23,12 +23,16 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.sshd.client.config.hosts.DefaultConfigFileHostEntryResolver;
+import org.apache.sshd.client.config.hosts.HostConfigEntryResolver;
+import org.apache.sshd.client.config.keys.ClientIdentityLoader;
 import org.apache.sshd.client.kex.DHGClient;
 import org.apache.sshd.client.kex.DHGEXClient;
 import org.apache.sshd.client.keyverifier.AcceptAllServerKeyVerifier;
 import org.apache.sshd.common.BaseBuilder;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.channel.Channel;
+import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.kex.DHFactory;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.util.Transformer;
@@ -56,8 +60,14 @@ public class ClientBuilder extends BaseBuilder<SshClient, ClientBuilder> {
             Collections.unmodifiableList(Arrays.<NamedFactory<Channel>>asList(ForwardedTcpipFactory.INSTANCE));
 
     public static final ServerKeyVerifier DEFAULT_SERVER_KEY_VERIFIER = AcceptAllServerKeyVerifier.INSTANCE;
+    public static final HostConfigEntryResolver DEFAULT_HOST_CONFIG_ENTRY_RESOLVER = DefaultConfigFileHostEntryResolver.INSTANCE;
+    public static final ClientIdentityLoader DEFAULT_CLIENT_IDENTITY_LOADER = ClientIdentityLoader.DEFAULT;
+    public static final FilePasswordProvider DEFAULT_FILE_PASSWORD_PROVIDER = FilePasswordProvider.EMPTY;
 
     protected ServerKeyVerifier serverKeyVerifier;
+    protected HostConfigEntryResolver hostConfigEntryResolver;
+    protected ClientIdentityLoader clientIdentityLoader;
+    protected FilePasswordProvider filePasswordProvider;
 
     public ClientBuilder() {
         super();
@@ -65,6 +75,21 @@ public class ClientBuilder extends BaseBuilder<SshClient, ClientBuilder> {
 
     public ClientBuilder serverKeyVerifier(ServerKeyVerifier serverKeyVerifier) {
         this.serverKeyVerifier = serverKeyVerifier;
+        return me();
+    }
+
+    public ClientBuilder hostConfigEntryResolver(HostConfigEntryResolver resolver) {
+        this.hostConfigEntryResolver = resolver;
+        return me();
+    }
+
+    public ClientBuilder clientIdentityLoader(ClientIdentityLoader loader) {
+        this.clientIdentityLoader = loader;
+        return me();
+    }
+
+    public ClientBuilder filePasswordProvider(FilePasswordProvider provider) {
+        this.filePasswordProvider = provider;
         return me();
     }
 
@@ -84,6 +109,18 @@ public class ClientBuilder extends BaseBuilder<SshClient, ClientBuilder> {
             serverKeyVerifier = DEFAULT_SERVER_KEY_VERIFIER;
         }
 
+        if (hostConfigEntryResolver == null) {
+            hostConfigEntryResolver = DEFAULT_HOST_CONFIG_ENTRY_RESOLVER;
+        }
+
+        if (clientIdentityLoader == null) {
+            clientIdentityLoader = DEFAULT_CLIENT_IDENTITY_LOADER;
+        }
+
+        if (filePasswordProvider == null) {
+            filePasswordProvider = DEFAULT_FILE_PASSWORD_PROVIDER;
+        }
+
         if (factory == null) {
             factory = SshClient.DEFAULT_SSH_CLIENT_FACTORY;
         }
@@ -95,6 +132,9 @@ public class ClientBuilder extends BaseBuilder<SshClient, ClientBuilder> {
     public SshClient build(boolean isFillWithDefaultValues) {
         SshClient client = super.build(isFillWithDefaultValues);
         client.setServerKeyVerifier(serverKeyVerifier);
+        client.setHostConfigEntryResolver(hostConfigEntryResolver);
+        client.setClientIdentityLoader(clientIdentityLoader);
+        client.setFilePasswordProvider(filePasswordProvider);
         return client;
     }
 

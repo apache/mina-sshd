@@ -27,8 +27,8 @@ import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
-import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.BaseTestSupport;
+import org.apache.sshd.util.Utils;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -114,7 +114,7 @@ public class AbstractSessionTest extends BaseTestSupport {
 
     public static class MySession extends AbstractSession {
         public MySession() {
-            super(true, SshServer.setUpDefaultServer(), null);
+            super(true, Utils.setupTestServer(), null);
         }
 
         @Override

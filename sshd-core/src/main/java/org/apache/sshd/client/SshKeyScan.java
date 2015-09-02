@@ -73,6 +73,7 @@ import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
 import org.apache.sshd.common.util.logging.AbstractSimplifiedLog;
 import org.apache.sshd.common.util.logging.LoggingUtils;
@@ -608,9 +609,8 @@ public class SshKeyScan extends AbstractSimplifiedLog
             // convert the hosts from the arguments into a "file" - one host per line
             try (ByteArrayOutputStream baos = new ByteArrayOutputStream(hosts.size() * 32)) {
                 try (Writer w = new OutputStreamWriter(baos, StandardCharsets.UTF_8)) {
-                    String eol = System.getProperty("line.separator");
                     for (String h : hosts) {
-                        w.append(h).append(eol);
+                        w.append(h).append(IoUtils.EOL);
                     }
                 }
 

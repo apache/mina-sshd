@@ -138,7 +138,7 @@ public class AbstractCheckFileExtensionTest extends AbstractSftpClientTestSuppor
         byte[] seed = (getClass().getName() + "#" + getCurrentTestName()
                 + "-" + expectedAlgorithm
                 + "-" + inputDataSize + "/" + hashBlockSize
-                + System.getProperty("line.separator"))
+                + IoUtils.EOL)
                 .getBytes(StandardCharsets.UTF_8);
 
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream(inputDataSize + seed.length)) {
@@ -175,7 +175,7 @@ public class AbstractCheckFileExtensionTest extends AbstractSftpClientTestSuppor
         String srcPath = Utils.resolveRelativeRemotePath(parentPath, srcFile);
         String srcFolder = Utils.resolveRelativeRemotePath(parentPath, srcFile.getParent());
 
-        try (SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = Utils.setupTestClient()) {
             client.start();
 
             try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {

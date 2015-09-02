@@ -1,0 +1,5 @@
+# Same configuration duplicated in multiple configuration entries
+Host *.github.com *.apache.org 10.*.*.*
+    User mina-sshd
+    Port 443
+    HostName 7.3.6.5

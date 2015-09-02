@@ -30,14 +30,11 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
-import org.apache.sshd.server.Command;
-import org.apache.sshd.server.CommandFactory;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.CachingPublicKeyAuthenticator;
 import org.apache.sshd.server.auth.UserAuthPublicKeyFactory;
 import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
-import org.apache.sshd.server.command.UnknownCommand;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.util.BaseTestSupport;
@@ -70,14 +67,7 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
 
     @Before
     public void setUp() throws Exception {
-        sshd = SshServer.setUpDefaultServer();
-        sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
-        sshd.setCommandFactory(new CommandFactory() {
-            @Override
-            public Command createCommand(String command) {
-                return new UnknownCommand(command);
-            }
-        });
+        sshd = Utils.setupTestServer();
         FactoryManagerUtils.updateProperty(sshd, ServerFactoryManager.AUTH_METHODS, UserAuthPublicKeyFactory.NAME);
         sshd.setPublickeyAuthenticator(new PublickeyAuthenticator() {
             @SuppressWarnings("synthetic-access")
@@ -111,7 +101,7 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
         });
         delegate = auth;
 
-        try (SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = Utils.setupTestClient()) {
             client.start();
 
             try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
@@ -147,7 +137,7 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
             }
         };
 
-        try (SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = Utils.setupTestClient()) {
             client.start();
 
             try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {

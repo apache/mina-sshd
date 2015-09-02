@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.server.command;
+package org.apache.sshd.util;
 
 import java.io.IOException;
 import java.io.InputStream;

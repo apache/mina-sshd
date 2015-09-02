@@ -55,11 +55,10 @@ import org.apache.sshd.common.scp.ScpTransferEventListener;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
+import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.command.ScpCommandFactory;
 import org.apache.sshd.util.BaseTestSupport;
-import org.apache.sshd.util.BogusPasswordAuthenticator;
-import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.JSchLogger;
 import org.apache.sshd.util.SimpleUserInfo;
 import org.apache.sshd.util.Utils;
@@ -99,11 +98,8 @@ public class ScpTest extends BaseTestSupport {
 
     @Before
     public void setUp() throws Exception {
-        sshd = SshServer.setUpDefaultServer();
-        sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
+        sshd = Utils.setupTestServer();
         sshd.setCommandFactory(new ScpCommandFactory());
-        sshd.setShellFactory(new EchoShellFactory());
-        sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
         sshd.setFileSystemFactory(fileSystemFactory);
         sshd.start();
         port = sshd.getPort();
@@ -145,7 +141,7 @@ public class ScpTest extends BaseTestSupport {
 
         Path localDir = assertHierarchyTargetFolderExists(scpRoot.resolve("local"));
         Path localFile = localDir.resolve("file.txt");
-        byte[] data = writeFile(localFile, getClass().getName() + "#" + getCurrentTestName() + System.getProperty("line.separator"));
+        byte[] data = writeFile(localFile, getClass().getName() + "#" + getCurrentTestName() + IoUtils.EOL);
 
         Path remoteDir = assertHierarchyTargetFolderExists(scpRoot.resolve("remote"));
         Path remoteFile = remoteDir.resolve(localFile.getFileName().toString());
@@ -153,7 +149,7 @@ public class ScpTest extends BaseTestSupport {
         String remotePath = Utils.resolveRelativeRemotePath(parentPath, remoteFile);
         String[] remoteComps = GenericUtils.split(remotePath, '/');
 
-        try (SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = Utils.setupTestClient()) {
             client.start();
 
             Factory<? extends Random> factory = client.getRandomFactory();
@@ -208,14 +204,14 @@ public class ScpTest extends BaseTestSupport {
 
         Path localDir = assertHierarchyTargetFolderExists(scpRoot.resolve("local"));
         Path localFile = localDir.resolve("file-1.txt");
-        byte[] data = writeFile(localFile, getClass().getName() + "#" + getCurrentTestName() + System.getProperty("line.separator"));
+        byte[] data = writeFile(localFile, getClass().getName() + "#" + getCurrentTestName() + IoUtils.EOL);
 
         Path remoteDir = assertHierarchyTargetFolderExists(scpRoot.resolve("remote"));
         Path remoteFile = remoteDir.resolve(localFile.getFileName().toString());
         String localPath = localFile.toString();
         String remotePath = Utils.resolveRelativeRemotePath(parentPath, remoteFile);
 
-        try (SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = Utils.setupTestClient()) {
             client.start();
 
             try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
@@ -243,7 +239,7 @@ public class ScpTest extends BaseTestSupport {
 
     @Test
     public void testScpUploadOverwrite() throws Exception {
-        try (SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = Utils.setupTestClient()) {
             client.start();
 
             try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
@@ -251,7 +247,7 @@ public class ScpTest extends BaseTestSupport {
                 session.auth().verify(5L, TimeUnit.SECONDS);
 
                 ScpClient scp = createScpClient(session);
-                String data = getClass().getName() + "#" + getCurrentTestName() + System.getProperty("line.separator");
+                String data = getClass().getName() + "#" + getCurrentTestName() + IoUtils.EOL;
 
                 Path targetPath = detectTargetFolder().toPath();
                 Path parentPath = targetPath.getParent();
@@ -295,7 +291,7 @@ public class ScpTest extends BaseTestSupport {
             Files.delete(zeroRemote);
         }
 
-        try (SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = Utils.setupTestClient()) {
             client.start();
 
             try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
@@ -331,7 +327,7 @@ public class ScpTest extends BaseTestSupport {
         }
         assertEquals("Non-zero size for remote file=" + zeroRemote, 0L, Files.size(zeroRemote));
 
-        try (SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = Utils.setupTestClient()) {
             client.start();
 
             try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
@@ -350,7 +346,7 @@ public class ScpTest extends BaseTestSupport {
 
     @Test
     public void testScpNativeOnSingleFile() throws Exception {
-        String data = getClass().getName() + "#" + getCurrentTestName() + System.getProperty("line.separator");
+        String data = getClass().getName() + "#" + getCurrentTestName() + IoUtils.EOL;
 
         Path targetPath = detectTargetFolder().toPath();
         Path parentPath = targetPath.getParent();
@@ -362,7 +358,7 @@ public class ScpTest extends BaseTestSupport {
         Path remoteDir = scpRoot.resolve("remote");
         Path remoteOutFile = remoteDir.resolve(localOutFile.getFileName());
 
-        try (SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = Utils.setupTestClient()) {
             client.start();
 
             try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
@@ -402,7 +398,7 @@ public class ScpTest extends BaseTestSupport {
 
     @Test
     public void testScpNativeOnMultipleFiles() throws Exception {
-        try (SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = Utils.setupTestClient()) {
             client.start();
 
             try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
@@ -417,7 +413,7 @@ public class ScpTest extends BaseTestSupport {
 
                 Path localDir = assertHierarchyTargetFolderExists(scpRoot.resolve("local"));
                 Path local1 = localDir.resolve("file-1.txt");
-                byte[] data = writeFile(local1, getClass().getName() + "#" + getCurrentTestName() + System.getProperty("line.separator"));
+                byte[] data = writeFile(local1, getClass().getName() + "#" + getCurrentTestName() + IoUtils.EOL);
 
                 Path local2 = localDir.resolve("file-2.txt");
                 Files.write(local2, data);
@@ -483,7 +479,7 @@ public class ScpTest extends BaseTestSupport {
 
     @Test
     public void testScpNativeOnRecursiveDirs() throws Exception {
-        try (SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = Utils.setupTestClient()) {
             client.start();
 
             try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
@@ -499,7 +495,7 @@ public class ScpTest extends BaseTestSupport {
                 Path localDir = scpRoot.resolve("local");
                 Path localSubDir = assertHierarchyTargetFolderExists(localDir.resolve("dir"));
                 Path localSub1 = localSubDir.resolve("file-1.txt");
-                byte[] data = writeFile(localSub1, getClass().getName() + "#" + getCurrentTestName() + System.getProperty("line.separator"));
+                byte[] data = writeFile(localSub1, getClass().getName() + "#" + getCurrentTestName() + IoUtils.EOL);
                 Path localSub2 = localSubDir.resolve("file-2.txt");
                 Files.write(localSub2, data);
 
@@ -523,7 +519,7 @@ public class ScpTest extends BaseTestSupport {
 
     @Test
     public void testScpNativeOnDirWithPattern() throws Exception {
-        try (SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = Utils.setupTestClient()) {
             client.start();
 
             try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
@@ -538,7 +534,7 @@ public class ScpTest extends BaseTestSupport {
 
                 Path localDir = assertHierarchyTargetFolderExists(scpRoot.resolve("local"));
                 Path local1 = localDir.resolve("file-1.txt");
-                byte[] data = writeFile(local1, getClass().getName() + "#" + getCurrentTestName() + System.getProperty("line.separator"));
+                byte[] data = writeFile(local1, getClass().getName() + "#" + getCurrentTestName() + IoUtils.EOL);
                 Path local2 = localDir.resolve("file-2.txt");
                 Files.write(local2, data);
 
@@ -561,7 +557,7 @@ public class ScpTest extends BaseTestSupport {
 
     @Test
     public void testScpNativeOnMixedDirAndFiles() throws Exception {
-        try (SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = Utils.setupTestClient()) {
             client.start();
 
             try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
@@ -577,7 +573,7 @@ public class ScpTest extends BaseTestSupport {
                 Path localDir = scpRoot.resolve("local");
                 Path localSubDir = assertHierarchyTargetFolderExists(localDir.resolve("dir"));
                 Path local1 = localDir.resolve("file-1.txt");
-                byte[] data = writeFile(local1, getClass().getName() + "#" + getCurrentTestName() + System.getProperty("line.separator"));
+                byte[] data = writeFile(local1, getClass().getName() + "#" + getCurrentTestName() + IoUtils.EOL);
                 Path localSub2 = localSubDir.resolve("file-2.txt");
                 Files.write(localSub2, data);
 
@@ -608,7 +604,7 @@ public class ScpTest extends BaseTestSupport {
 
     @Test
     public void testScpNativePreserveAttributes() throws Exception {
-        try (SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = Utils.setupTestClient()) {
             client.start();
 
             try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
@@ -627,7 +623,7 @@ public class ScpTest extends BaseTestSupport {
                 final long lastModMillis = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(1);
                 final long lastModSecs = TimeUnit.MILLISECONDS.toSeconds(lastModMillis);
                 Path local1 = localDir.resolve("file-1.txt");
-                byte[] data = writeFile(local1, getClass().getName() + "#" + getCurrentTestName() + System.getProperty("line.separator"));
+                byte[] data = writeFile(local1, getClass().getName() + "#" + getCurrentTestName() + IoUtils.EOL);
 
                 File lclFile1 = local1.toFile();
                 boolean lcl1ModSet = lclFile1.setLastModified(lastModMillis);
@@ -672,7 +668,7 @@ public class ScpTest extends BaseTestSupport {
 
     @Test
     public void testStreamsUploadAndDownload() throws Exception {
-        try (SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = Utils.setupTestClient()) {
             client.start();
 
             try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
@@ -821,7 +817,7 @@ public class ScpTest extends BaseTestSupport {
             byte[] remoteData = Files.readAllBytes(remoteFile);
             assertArrayEquals("Mismatched remote put data", expected, remoteData);
 
-            Arrays.fill(remoteData, (byte) 0);  // make sure we start with a clean slate 
+            Arrays.fill(remoteData, (byte) 0);  // make sure we start with a clean slate
             try (InputStream input = scp_client.get(remotePath + "/" + fileName)) {
                 int readLen = input.read(remoteData);
                 assertEquals("Mismatched remote get data size", expected.length, readLen);

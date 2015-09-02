@@ -50,7 +50,6 @@ import org.apache.sshd.server.ExitCallback;
 import org.apache.sshd.server.SessionAware;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.password.AcceptAllPasswordAuthenticator;
-import org.apache.sshd.server.auth.pubkey.AcceptAllPublickeyAuthenticator;
 import org.apache.sshd.server.command.ScpCommandFactory;
 import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
@@ -293,7 +292,7 @@ public class SshFsMounter {
 
         System.err.println("Starting SSHD on port " + port);
 
-        SshServer sshd = SshServer.setUpDefaultServer();
+        SshServer sshd = Utils.setupTestServer();
         Map<String, Object> props = sshd.getProperties();
 //        FactoryManagerUtils.updateProperty(props, ServerFactoryManager.WELCOME_BANNER, "Welcome to SSH-FS Mounter\n");
         props.putAll(options);
@@ -308,7 +307,6 @@ public class SshFsMounter {
 
         sshd.setShellFactory(InteractiveProcessShellFactory.INSTANCE);
         sshd.setPasswordAuthenticator(AcceptAllPasswordAuthenticator.INSTANCE);
-        sshd.setPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);
         sshd.setTcpipForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
         sshd.setCommandFactory(new ScpCommandFactory.Builder().withDelegate(MounterCommandFactory.INSTANCE).build());
         sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(new SftpSubsystemFactory()));

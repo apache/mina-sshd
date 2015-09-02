@@ -23,12 +23,9 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-import com.jcraft.jsch.JSch;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.BaseTestSupport;
-import org.apache.sshd.util.BogusPasswordAuthenticator;
-import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.JSchLogger;
 import org.apache.sshd.util.SimpleUserInfo;
 import org.apache.sshd.util.Utils;
@@ -36,6 +33,8 @@ import org.junit.After;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
+
+import com.jcraft.jsch.JSch;
 
 /**
  * Test compression algorithms.
@@ -66,11 +65,8 @@ public class CompressionTest extends BaseTestSupport {
     }
 
     protected void setUp(NamedFactory<org.apache.sshd.common.compression.Compression> compression) throws Exception {
-        sshd = SshServer.setUpDefaultServer();
-        sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
+        sshd = Utils.setupTestServer();
         sshd.setCompressionFactories(Arrays.<NamedFactory<org.apache.sshd.common.compression.Compression>>asList(compression));
-        sshd.setShellFactory(new EchoShellFactory());
-        sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
         sshd.start();
         JSch.setConfig("compression.s2c", "zlib@openssh.com,zlib,none");
         JSch.setConfig("compression.c2s", "zlib@openssh.com,zlib,none");

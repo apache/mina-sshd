@@ -68,6 +68,10 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
 
     private static final long serialVersionUID = -9007505285002809156L;
 
+    private static final class LazyDefaultAuthorizedKeysFileHolder {
+        private static final File KEYS_FILE = new File(PublicKeyEntry.getDefaultKeysFolder(), STD_AUTHORIZED_KEYS_FILENAME);
+    }
+
     private String comment;
     // for options that have no value, "true" is used
     private Map<String, String> loginOptions = Collections.emptyMap();
@@ -161,10 +165,6 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
         }
 
         return keys;
-    }
-
-    private static final class LazyDefaultAuthorizedKeysFileHolder {
-        private static final File KEYS_FILE = new File(PublicKeyEntry.getDefaultKeysFolder(), STD_AUTHORIZED_KEYS_FILENAME);
     }
 
     /**

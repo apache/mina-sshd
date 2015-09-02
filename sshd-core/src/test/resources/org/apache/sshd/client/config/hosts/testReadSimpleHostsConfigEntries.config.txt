@@ -1,0 +1,8 @@
+# Simple configuration file
+Host *.github.com
+    User mina-sshd
+    Port 443
+    IdentityFile ~/.ssh/github.key
+
+Host *.apache.org
+    User mina-sshd

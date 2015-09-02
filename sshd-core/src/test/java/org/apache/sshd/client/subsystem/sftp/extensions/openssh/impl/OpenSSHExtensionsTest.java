@@ -89,7 +89,7 @@ public class OpenSSHExtensionsTest extends AbstractSftpClientTestSupport {
 
         Path parentPath = targetPath.getParent();
         String srcPath = Utils.resolveRelativeRemotePath(parentPath, srcFile);
-        try (SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = Utils.setupTestClient()) {
             client.start();
 
             try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
@@ -178,7 +178,7 @@ public class OpenSSHExtensionsTest extends AbstractSftpClientTestSupport {
             }
         }));
 
-        try (SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = Utils.setupTestClient()) {
             client.start();
 
             try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {

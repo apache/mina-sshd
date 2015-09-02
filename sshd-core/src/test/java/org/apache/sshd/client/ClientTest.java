@@ -94,13 +94,10 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.NoCloseOutputStream;
 import org.apache.sshd.server.Command;
-import org.apache.sshd.server.CommandFactory;
 import org.apache.sshd.server.SshServer;
-import org.apache.sshd.server.auth.pubkey.AcceptAllPublickeyAuthenticator;
 import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
 import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.channel.ChannelSessionFactory;
-import org.apache.sshd.server.command.UnknownCommand;
 import org.apache.sshd.server.forward.DirectTcpipFactory;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.server.session.ServerConnectionServiceFactory;
@@ -110,7 +107,7 @@ import org.apache.sshd.server.session.ServerUserAuthServiceFactory;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 import org.apache.sshd.util.AsyncEchoShellFactory;
 import org.apache.sshd.util.BaseTestSupport;
-import org.apache.sshd.util.BogusPasswordAuthenticator;
+import org.apache.sshd.util.EchoShell;
 import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.TeeOutputStream;
 import org.apache.sshd.util.Utils;
@@ -167,17 +164,8 @@ public class ClientTest extends BaseTestSupport {
         authLatch = new CountDownLatch(0);
         channelLatch = new CountDownLatch(0);
 
-        sshd = SshServer.setUpDefaultServer();
-        sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
+        sshd = Utils.setupTestServer();
         sshd.setShellFactory(new TestEchoShellFactory());
-        sshd.setCommandFactory(new CommandFactory() {
-            @Override
-            public Command createCommand(String command) {
-                return new UnknownCommand(command);
-            }
-        });
-        sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
-        sshd.setPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);
         sshd.setServiceFactories(Arrays.asList(
                 new ServerUserAuthServiceFactory() {
                     @Override
@@ -221,7 +209,7 @@ public class ClientTest extends BaseTestSupport {
         sshd.start();
         port = sshd.getPort();
 
-        client = SshClient.setUpDefaultClient();
+        client = Utils.setupTestClient();
         clientSessionHolder.set(null);  // just making sure
         client.addSessionListener(clientSessionListener);
     }
@@ -1164,7 +1152,7 @@ public class ClientTest extends BaseTestSupport {
 
     @Test
     public void testClientDisconnect() throws Exception {
-        TestEchoShellFactory.TestEchoShell.latch = new CountDownLatch(1);
+        TestEchoShell.latch = new CountDownLatch(1);
         try {
             client.start();
 
@@ -1191,14 +1179,14 @@ public class ClientTest extends BaseTestSupport {
                 assertTrue("Packet writing not completed in time", f.await(11L, TimeUnit.SECONDS));
                 suspend(cs.getIoSession());
 
-                TestEchoShellFactory.TestEchoShell.latch.await();
+                TestEchoShell.latch.await();
             } finally {
                 client.stop();
             }
 
             assertNull("Session closure not signalled", clientSessionHolder.get());
         } finally {
-            TestEchoShellFactory.TestEchoShell.latch = null;
+            TestEchoShell.latch = null;
         }
     }
 
@@ -1352,18 +1340,17 @@ public class ClientTest extends BaseTestSupport {
         public Command create() {
             return new TestEchoShell();
         }
+    }
 
-        public static class TestEchoShell extends EchoShell {
+    public static class TestEchoShell extends EchoShell {
+        public static CountDownLatch latch;
 
-            public static CountDownLatch latch = new CountDownLatch(1);
-
-            @Override
-            public void destroy() {
-                if (latch != null) {
-                    latch.countDown();
-                }
-                super.destroy();
+        @Override
+        public void destroy() {
+            if (latch != null) {
+                latch.countDown();
             }
+            super.destroy();
         }
     }
 

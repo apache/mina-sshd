@@ -286,6 +286,18 @@ public final class GenericUtils {
      * @return A {@link SortedSet} containing the values (if any) sorted
      * using the provided comparator
      */
+    @SafeVarargs
+    public static <V> SortedSet<V> asSortedSet(Comparator<? super V> comp, V ... values) {
+        return asSortedSet(comp, isEmpty(values) ? Collections.<V>emptyList() : Arrays.asList(values));
+    }
+
+    /**
+     * @param <V>    The element type
+     * @param comp   The (non-{@code null}) {@link Comparator} to use
+     * @param values The values to be added (ignored if {@code null}/empty)
+     * @return A {@link SortedSet} containing the values (if any) sorted
+     * using the provided comparator
+     */
     public static <V> SortedSet<V> asSortedSet(Comparator<? super V> comp, Collection<? extends V> values) {
         // TODO for JDK-8 return Collections.emptySortedSet()
         SortedSet<V> set = new TreeSet<V>(ValidateUtils.checkNotNull(comp, "No comparator"));

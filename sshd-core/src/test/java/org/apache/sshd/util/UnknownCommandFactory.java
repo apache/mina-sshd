@@ -16,25 +16,24 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.sshd.util;
 
-import org.apache.sshd.common.Factory;
 import org.apache.sshd.server.Command;
+import org.apache.sshd.server.CommandFactory;
 
 /**
- * TODO Add javadoc
- *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class EchoShellFactory implements Factory<Command> {
-    public static final EchoShellFactory INSTANCE = new EchoShellFactory();
+public class UnknownCommandFactory implements CommandFactory {
+    public static final UnknownCommandFactory INSTANCE = new UnknownCommandFactory();
 
-    public EchoShellFactory() {
+    public UnknownCommandFactory() {
         super();
     }
 
     @Override
-    public Command create() {
-        return new EchoShell();
+    public Command createCommand(String command) {
+        return new UnknownCommand(command);
     }
 }

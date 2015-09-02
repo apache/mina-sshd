@@ -46,7 +46,7 @@ import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
-import org.apache.sshd.util.BogusPasswordAuthenticator;
+import org.apache.sshd.util.Utils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
@@ -71,7 +71,7 @@ public class WindowAdjustTest {
 
     @Before
     public void setUp() throws Exception {
-        sshServer = SshServer.setUpDefaultServer();
+        sshServer = Utils.setupTestServer();
         final byte[] msg = Files.readAllBytes(
                 Paths.get(getClass().getResource("/big-msg.txt").toURI()));
 
@@ -82,7 +82,6 @@ public class WindowAdjustTest {
             }
         });
 
-        sshServer.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
         sshServer.setKeyPairProvider(new SimpleGeneratorHostKeyProvider());
         sshServer.start();
         port = sshServer.getPort();
@@ -99,7 +98,7 @@ public class WindowAdjustTest {
     @Test(timeout = 2L * 60L * 1000L)
     public void testTrafficHeavyLoad() throws Exception {
 
-        try (SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = Utils.setupTestClient()) {
             client.start();
 
             try (final ClientSession session = client.connect("admin", "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {

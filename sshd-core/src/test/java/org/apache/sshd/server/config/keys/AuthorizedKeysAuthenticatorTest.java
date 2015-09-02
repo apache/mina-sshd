@@ -36,6 +36,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.util.BaseTestSupport;
@@ -89,16 +90,15 @@ public class AuthorizedKeysAuthenticatorTest extends BaseTestSupport {
 
         assertHierarchyTargetFolderExists(file.getParent());
 
-        final String EOL = System.getProperty("line.separator");
         while(keyLines.size() > 0) {
             try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
                 w.append(PublicKeyEntry.COMMENT_CHAR)
                  .append(' ').append(getCurrentTestName())
                  .append(' ').append(String.valueOf(keyLines.size())).append(" remaining keys")
-                 .append(EOL)
+                 .append(IoUtils.EOL)
                  ;
                 for (String l : keyLines) {
-                    w.append(l).append(EOL);
+                    w.append(l).append(IoUtils.EOL);
                 }
             }
 

@@ -37,8 +37,6 @@ import org.apache.sshd.common.kex.BuiltinDHFactories;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.BaseTestSupport;
-import org.apache.sshd.util.BogusPasswordAuthenticator;
-import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.TeeOutputStream;
 import org.apache.sshd.util.Utils;
 import org.junit.After;
@@ -75,10 +73,7 @@ public class KexTest extends BaseTestSupport {
 
     @Before
     public void setUp() throws Exception {
-        sshd = SshServer.setUpDefaultServer();
-        sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
-        sshd.setShellFactory(new EchoShellFactory());
-        sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
+        sshd = Utils.setupTestServer();
         sshd.start();
         port = sshd.getPort();
     }
@@ -102,7 +97,7 @@ public class KexTest extends BaseTestSupport {
         try (ByteArrayOutputStream sent = new ByteArrayOutputStream();
              ByteArrayOutputStream out = new ByteArrayOutputStream()) {
 
-            try (SshClient client = SshClient.setUpDefaultClient()) {
+            try (SshClient client = Utils.setupTestClient()) {
                 client.setKeyExchangeFactories(Collections.singletonList(kex));
                 client.start();
 

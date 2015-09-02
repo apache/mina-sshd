@@ -20,15 +20,21 @@ package org.apache.sshd.client;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.io.PrintWriter;
+import java.io.StreamCorruptedException;
 import java.io.StringWriter;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.nio.file.LinkOption;
+import java.security.GeneralSecurityException;
+import java.security.KeyPair;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -49,7 +55,10 @@ import org.apache.sshd.client.auth.UserAuthPublicKeyFactory;
 import org.apache.sshd.client.auth.UserInteraction;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.ClientChannel;
+import org.apache.sshd.client.config.hosts.HostConfigEntry;
+import org.apache.sshd.client.config.hosts.HostConfigEntryResolver;
 import org.apache.sshd.client.config.keys.ClientIdentity;
+import org.apache.sshd.client.config.keys.ClientIdentityLoader;
 import org.apache.sshd.client.future.ConnectFuture;
 import org.apache.sshd.client.future.DefaultConnectFuture;
 import org.apache.sshd.client.session.ClientConnectionServiceFactory;
@@ -59,12 +68,14 @@ import org.apache.sshd.client.session.SessionFactory;
 import org.apache.sshd.common.AbstractFactoryManager;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.Factory;
+import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.config.SshConfigFileReader;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
+import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoConnectFuture;
 import org.apache.sshd.common.io.IoConnector;
@@ -73,6 +84,7 @@ import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
 import org.apache.sshd.common.util.io.NoCloseOutputStream;
 
@@ -153,6 +165,9 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     protected List<NamedFactory<UserAuth>> userAuthFactories;
 
     private ServerKeyVerifier serverKeyVerifier;
+    private HostConfigEntryResolver hostConfigEntryResolver;
+    private ClientIdentityLoader clientIdentityLoader;
+    private FilePasswordProvider filePasswordProvider;
 
     public SshClient() {
         super();
@@ -173,6 +188,33 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
     public void setServerKeyVerifier(ServerKeyVerifier serverKeyVerifier) {
         this.serverKeyVerifier = serverKeyVerifier;
+    }
+
+    @Override
+    public HostConfigEntryResolver getHostConfigEntryResolver() {
+        return hostConfigEntryResolver;
+    }
+
+    public void setHostConfigEntryResolver(HostConfigEntryResolver resolver) {
+        this.hostConfigEntryResolver = resolver;
+    }
+
+    @Override
+    public FilePasswordProvider getFilePasswordProvider() {
+        return filePasswordProvider;
+    }
+
+    public void setFilePasswordProvider(FilePasswordProvider provider) {
+        this.filePasswordProvider = provider;
+    }
+
+    @Override
+    public ClientIdentityLoader getClientIdentityLoader() {
+        return clientIdentityLoader;
+    }
+
+    public void setClientIdentityLoader(ClientIdentityLoader loader) {
+        this.clientIdentityLoader = loader;
     }
 
     @Override
@@ -199,6 +241,9 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
         ValidateUtils.checkNotNull(getTcpipForwarderFactory(), "TcpipForwarderFactory not set");
         ValidateUtils.checkNotNull(getServerKeyVerifier(), "ServerKeyVerifier not set");
+        ValidateUtils.checkNotNull(getHostConfigEntryResolver(), "HostConfigEntryResolver not set");
+        ValidateUtils.checkNotNull(getClientIdentityLoader(), "ClientIdentityLoader not set");
+        ValidateUtils.checkNotNull(getFilePasswordProvider(), "FilePasswordProvider not set");
 
         // Register the additional agent forwarding channel if needed
         SshAgentFactory agentFactory = getAgentFactory();
@@ -275,18 +320,144 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                 .build();
     }
 
+    /**
+     * Resolves the <U>effective</U> {@link HostConfigEntry} and connects to it
+     *
+     * @param username The intended username
+     * @param host The target host name/address - never {@code null}/empty
+     * @param port The target port
+     * @return A {@link ConnectFuture}
+     * @throws IOException If failed to resolve the effective target or
+     * connect to it
+     * @see #getHostConfigEntryResolver()
+     * @see #connect(HostConfigEntry)
+     */
     public ConnectFuture connect(String username, String host, int port) throws IOException {
-        ValidateUtils.checkTrue(port >= 0, "Invalid port: %d", port);
-        SocketAddress address = new InetSocketAddress(ValidateUtils.checkNotNullAndNotEmpty(host, "No host"), port);
-        return connect(username, address);
+        HostConfigEntryResolver resolver = getHostConfigEntryResolver();
+        HostConfigEntry entry = resolver.resolveEffectiveHost(host, port, username);
+        if (entry == null) {
+            if (log.isDebugEnabled()) {
+                log.debug("connect({}@{}:{}) no overrides", username, host, port);
+            }
+
+            // generate a synthetic entry
+            entry = new HostConfigEntry(host, host, port, username);
+        } else {
+            if (log.isDebugEnabled()) {
+                log.debug("connect({}@{}:{}) effective: {}", username, host, port, entry);
+            }
+        }
+
+        return connect(entry);
     }
 
-    public ConnectFuture connect(final String username, SocketAddress address) {
+    /**
+     * Resolves the <U>effective</U> {@link HostConfigEntry} and connects to it
+     *
+     * @param username The intended username
+     * @param address The intended {@link SocketAddress] - never {@code null}. If
+     * this is an {@link InetSocketAddress} then the <U>effective</U> {@link HostConfigEntry}
+     * is resolved and used.
+     * @return A {@link ConnectFuture}
+     * @throws IOException If failed to resolve the effective target or
+     * connect to it
+     * @see #getHostConfigEntryResolver()
+     * @see #connect(HostConfigEntry)
+     * @see #doConnect(String, SocketAddress)
+     */
+    public ConnectFuture connect(String username, SocketAddress address) throws IOException {
+        ValidateUtils.checkNotNull(address, "No target address");
+        if (address instanceof InetSocketAddress) {
+            InetSocketAddress inetAddress = (InetSocketAddress) address;
+            String host = ValidateUtils.checkNotNullAndNotEmpty(inetAddress.getHostString(), "No host");
+            int port = inetAddress.getPort();
+            ValidateUtils.checkTrue(port > 0, "Invalid port: %d", port);
+
+            HostConfigEntryResolver resolver = getHostConfigEntryResolver();
+            HostConfigEntry entry = resolver.resolveEffectiveHost(host, port, username);
+            if (entry == null) {
+                if (log.isDebugEnabled()) {
+                    log.debug("connect({}@{}:{}) no overrides", username, host, port);
+                }
+
+                return doConnect(username, address, Collections.<KeyPair>emptyList());
+            } else {
+                if (log.isDebugEnabled()) {
+                    log.debug("connect({}@{}:{}) effective: {}", username, host, port, entry);
+                }
+
+                return connect(entry);
+            }
+        } else {
+            if (log.isDebugEnabled()) {
+                log.debug("connect({}@{}) not an InetSocketAddress: {}", username, address, address.getClass().getName());
+            }
+            return doConnect(username, address, Collections.<KeyPair>emptyList());
+        }
+    }
+
+    /**
+     * @param hostConfig The effective {@link HostConfigEntry} to connect to - never {@code null}
+     * @return A {@link ConnectFuture}
+     * @throws IOException If failed to create the connector
+     * @see #doCloseGracefully()
+     */
+    public ConnectFuture connect(HostConfigEntry hostConfig) throws IOException {
+        ValidateUtils.checkNotNull(hostConfig, "No host configuration");
+        String host = ValidateUtils.checkNotNullAndNotEmpty(hostConfig.getHostName(), "No target host");
+        int port = hostConfig.getPort();
+        ValidateUtils.checkTrue(port > 0, "Invalid port: %d", port);
+
+        Collection<KeyPair> keys = loadClientIdentities(hostConfig.getIdentities(), IoUtils.EMPTY_LINK_OPTIONS);
+        return doConnect(hostConfig.getUsername(), new InetSocketAddress(host, port), keys);
+    }
+
+    protected List<KeyPair> loadClientIdentities(Collection<String> locations, LinkOption ... options) throws IOException {
+        if (GenericUtils.isEmpty(locations)) {
+            return Collections.emptyList();
+        }
+
+        List<KeyPair> ids = new ArrayList<>(locations.size());
+        boolean ignoreNonExisting = FactoryManagerUtils.getBooleanProperty(this, IGNORE_INVALID_IDENTITIES, DEFAULT_IGNORE_INVALID_IDENTITIES);
+        ClientIdentityLoader loader = ValidateUtils.checkNotNull(getClientIdentityLoader(), "No ClientIdentityLoader");
+        FilePasswordProvider provider = ValidateUtils.checkNotNull(getFilePasswordProvider(), "No FilePasswordProvider");
+        for (String l : locations) {
+            if (!loader.isValidLocation(l)) {
+                if (ignoreNonExisting) {
+                    log.debug("loadClientIdentities - skip non-existing identity location: {}", l);
+                    continue;
+                }
+
+                throw new FileNotFoundException("Invalid identity location: " + l);
+            }
+
+            try {
+                KeyPair kp = loader.loadClientIdentity(l, provider);
+                if (kp == null) {
+                    throw new IOException("No identity loaded from " + l);
+                }
+
+                if (log.isDebugEnabled()) {
+                    log.debug("loadClientIdentities({}) type={}, fingerprint={}",
+                              l, KeyUtils.getKeyType(kp), KeyUtils.getFingerPrint(kp.getPublic()));
+                }
+
+                ids.add(kp);
+            } catch (GeneralSecurityException e) {
+                throw new StreamCorruptedException("Failed (" + e.getClass().getSimpleName() + ") to load identity from " + l + ": " + e.getMessage());
+            }
+        }
+
+        return ids;
+    }
+
+    protected ConnectFuture doConnect(final String username, final SocketAddress address, final Collection<? extends KeyPair> identities) throws IOException {
         if (connector == null) {
             throw new IllegalStateException("SshClient not started. Please call start() method before connecting to a server");
         }
         final ConnectFuture connectFuture = new DefaultConnectFuture(null);
         connector.connect(address).addListener(new SshFutureListener<IoConnectFuture>() {
+            @SuppressWarnings("synthetic-access")
             @Override
             public void operationComplete(IoConnectFuture future) {
                 if (future.isCanceled()) {
@@ -296,13 +467,26 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                 } else {
                     ClientSession session = (ClientSession) AbstractSession.getSession(future.getSession());
                     session.setUsername(username);
+
+                    int numIds = GenericUtils.size(identities);
+                    if (numIds > 0) {
+                        if (log.isDebugEnabled()) {
+                            log.debug("doConnect({}@{}) adding {} identities", username, address, numIds);
+                        }
+                        for (KeyPair kp : identities) {
+                            if (log.isTraceEnabled()) {
+                                log.trace("doConnect({}@{}) add identity type={}, fingerprint={}",
+                                          username, address, KeyUtils.getKeyType(kp), KeyUtils.getFingerPrint(kp.getPublic()));
+                            }
+                            session.addPublicKeyIdentity(kp);
+                        }
+                    }
                     connectFuture.setSession(session);
                 }
             }
         });
         return connectFuture;
     }
-
     protected IoConnector createConnector() {
         return getIoServiceFactory().createConnector(getSessionFactory());
     }

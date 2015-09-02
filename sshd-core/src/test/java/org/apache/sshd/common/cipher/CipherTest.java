@@ -27,15 +27,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-import com.jcraft.jsch.JSch;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.BaseTestSupport;
-import org.apache.sshd.util.BogusPasswordAuthenticator;
-import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.JSchLogger;
 import org.apache.sshd.util.SimpleUserInfo;
 import org.apache.sshd.util.Utils;
@@ -46,6 +43,8 @@ import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
+
+import com.jcraft.jsch.JSch;
 
 /**
  * Test Cipher algorithms.
@@ -105,11 +104,8 @@ public class CipherTest extends BaseTestSupport {
     public void testBuiltinCipherSession() throws Exception {
         Assume.assumeTrue("No internal support for " + builtInCipher.getName(), builtInCipher.isSupported() && checkCipher(jschCipher.getName()));
 
-        try (SshServer sshd = SshServer.setUpDefaultServer()) {
-            sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
+        try (SshServer sshd = Utils.setupTestServer()) {
             sshd.setCipherFactories(Arrays.<NamedFactory<org.apache.sshd.common.cipher.Cipher>>asList(builtInCipher));
-            sshd.setShellFactory(new EchoShellFactory());
-            sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
             sshd.start();
 
             try {

@@ -49,8 +49,6 @@ import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.BaseTestSupport;
-import org.apache.sshd.util.BogusPasswordAuthenticator;
-import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.JSchLogger;
 import org.apache.sshd.util.SimpleUserInfo;
 import org.apache.sshd.util.TeeOutputStream;
@@ -83,7 +81,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
     }
 
     protected void setUp(long bytesLimit, long timeLimit) throws Exception {
-        sshd = SshServer.setUpDefaultServer();
+        sshd = Utils.setupTestServer();
         if (bytesLimit > 0L) {
             FactoryManagerUtils.updateProperty(sshd, ServerFactoryManager.REKEY_BYTES_LIMIT, bytesLimit);
         }
@@ -91,9 +89,6 @@ public class KeyReExchangeTest extends BaseTestSupport {
             FactoryManagerUtils.updateProperty(sshd, ServerFactoryManager.REKEY_TIME_LIMIT, timeLimit);
         }
 
-        sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
-        sshd.setShellFactory(new EchoShellFactory());
-        sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
         sshd.start();
         port = sshd.getPort();
     }
@@ -103,7 +98,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
         setUp(0, 0);
 
         sshd.getCipherFactories().add(BuiltinCiphers.none);
-        try (SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = Utils.setupTestClient()) {
             client.getCipherFactories().add(BuiltinCiphers.none);
             client.start();
 
@@ -127,7 +122,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
         setUp(0, 0);
         sshd.getCipherFactories().add(BuiltinCiphers.none);
 
-        try (SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = Utils.setupTestClient()) {
             client.getCipherFactories().add(BuiltinCiphers.none);
             // replace the original KEX factories with wrapped ones that we can fail intentionally
             List<NamedFactory<KeyExchange>> kexFactories = new ArrayList<>();
@@ -235,7 +230,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
     public void testReExchangeFromSshdClient() throws Exception {
         setUp(0, 0);
 
-        try (SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = Utils.setupTestClient()) {
             client.start();
 
             try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
@@ -292,7 +287,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
     public void testReExchangeFromServer() throws Exception {
         setUp(8192, 0);
 
-        try (SshClient client = SshClient.setUpDefaultClient()) {
+        try (SshClient client = Utils.setupTestClient()) {
             client.start();
 
             try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {

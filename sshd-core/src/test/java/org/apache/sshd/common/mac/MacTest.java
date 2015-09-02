@@ -23,15 +23,12 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-import com.jcraft.jsch.JSch;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.cipher.Cipher;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.BaseTestSupport;
-import org.apache.sshd.util.BogusPasswordAuthenticator;
-import org.apache.sshd.util.EchoShellFactory;
 import org.apache.sshd.util.JSchLogger;
 import org.apache.sshd.util.SimpleUserInfo;
 import org.apache.sshd.util.Utils;
@@ -40,6 +37,8 @@ import org.junit.FixMethodOrder;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
+
+import com.jcraft.jsch.JSch;
 
 /**
  * Test Cipher algorithms.
@@ -117,11 +116,9 @@ public class MacTest extends BaseTestSupport {
 
 
     protected void setUp(NamedFactory<Mac> mac) throws Exception {
-        sshd = SshServer.setUpDefaultServer();
+        sshd = Utils.setupTestServer();
         sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
         sshd.setMacFactories(Arrays.<NamedFactory<Mac>>asList(mac));
-        sshd.setShellFactory(new EchoShellFactory());
-        sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
         sshd.start();
         port = sshd.getPort();
     }

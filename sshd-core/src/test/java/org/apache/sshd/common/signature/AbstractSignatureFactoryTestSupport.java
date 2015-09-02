@@ -35,7 +35,7 @@ import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.BaseTestSupport;
-import org.apache.sshd.util.BogusPasswordAuthenticator;
+import org.apache.sshd.util.Utils;
 import org.junit.After;
 import org.junit.Before;
 
@@ -66,8 +66,7 @@ public abstract class AbstractSignatureFactoryTestSupport extends BaseTestSuppor
 
     @Before
     public void setUp() throws Exception {
-        sshd = SshServer.setUpDefaultServer();
-        sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
+        sshd = Utils.setupTestServer();
     }
 
     @After
@@ -118,7 +117,7 @@ public abstract class AbstractSignatureFactoryTestSupport extends BaseTestSuppor
         sshd.start();
         port = sshd.getPort();
 
-        client = SshClient.setUpDefaultClient();
+        client = Utils.setupTestClient();
         client.setSignatureFactories(signatures);
         client.start();
         try (ClientSession s = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
