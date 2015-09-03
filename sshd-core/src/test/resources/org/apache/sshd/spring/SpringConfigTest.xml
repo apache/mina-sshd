@@ -35,7 +35,7 @@
             <bean class="org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider"/>
         </property>
         <property name="passwordAuthenticator">
-            <util:constant static-field="org.apache.sshd.util.BogusPasswordAuthenticator.INSTANCE"/>
+            <util:constant static-field="org.apache.sshd.util.test.BogusPasswordAuthenticator.INSTANCE"/>
         </property>
         <property name="publickeyAuthenticator">
             <util:constant static-field="org.apache.sshd.server.auth.pubkey.AcceptAllPublickeyAuthenticator.INSTANCE"/>

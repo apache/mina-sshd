@@ -55,11 +55,10 @@ import org.apache.sshd.server.session.ServerConnectionService;
 import org.apache.sshd.server.session.ServerConnectionServiceFactory;
 import org.apache.sshd.server.session.ServerUserAuthService;
 import org.apache.sshd.server.session.ServerUserAuthServiceFactory;
-import org.apache.sshd.util.AsyncEchoShellFactory;
-import org.apache.sshd.util.BaseTestSupport;
-import org.apache.sshd.util.EchoShell;
-import org.apache.sshd.util.EchoShellFactory;
-import org.apache.sshd.util.Utils;
+import org.apache.sshd.util.test.AsyncEchoShellFactory;
+import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.EchoShell;
+import org.apache.sshd.util.test.EchoShellFactory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
@@ -89,7 +88,7 @@ public class WindowTest extends BaseTestSupport {
         authLatch = new CountDownLatch(0);
         channelLatch = new CountDownLatch(0);
 
-        sshd = Utils.setupTestServer();
+        sshd = setupTestServer();
         sshd.setShellFactory(new TestEchoShellFactory());
         sshd.setServiceFactories(Arrays.asList(
                 new ServerUserAuthServiceFactory() {
@@ -134,7 +133,7 @@ public class WindowTest extends BaseTestSupport {
         sshd.start();
         port = sshd.getPort();
 
-        client = Utils.setupTestClient();
+        client = setupTestClient();
     }
 
     @After

@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.util;
+package org.apache.sshd.util.test;
 
 import java.io.File;
 import java.io.IOException;
@@ -45,8 +45,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.sshd.client.SshClient;
+import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.server.SshServer;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.rules.TestName;
@@ -87,6 +90,7 @@ public abstract class BaseTestSupport extends Assert {
             System.out.println("\nFinished " + description.getClassName() + ":" + description.getMethodName() + " in " + duration + " ms\n");
         }
     };
+
     @Rule
     public final TestName TEST_NAME_HOLDER = new TestName();
     private File targetFolder;
@@ -97,6 +101,48 @@ public abstract class BaseTestSupport extends Assert {
 
     public final String getCurrentTestName() {
         return TEST_NAME_HOLDER.getMethodName();
+    }
+
+    protected SshServer setupTestServer() {
+        return Utils.setupTestServer(getClass());
+    }
+
+    protected SshClient setupTestClient() {
+        return Utils.setupTestClient(getClass());
+    }
+
+    protected KeyPairProvider createTestHostKeyProvider() {
+        return Utils.createTestHostKeyProvider(getClass());
+    }
+
+    /**
+     * Attempts to build a <U>relative</U> path whose root is the location
+     * of the Maven &quot;target&quot; folder associated with the project
+     *
+     * @param comps The path components - ignored if {@code null}/empty
+     * @return The {@link File} representing the result - same as target folder if no components
+     */
+    protected File getTargetRelativeFile(String ... comps) {
+        return getTargetRelativeFile(GenericUtils.isEmpty(comps) ? Collections.<String>emptyList() : Arrays.asList(comps));
+    }
+
+    /**
+     * Attempts to build a <U>relative</U> path whose root is the location
+     * of the Maven &quot;target&quot; folder associated with the project
+     *
+     * @param comps The path components - ignored if {@code null}/empty
+     * @return The {@link File} representing the result - same as target folder if no components
+     * @see #detectTargetFolder()
+     */
+    protected File getTargetRelativeFile(Collection<String> comps) {
+        File file = detectTargetFolder();
+        if (GenericUtils.size(comps) > 0) {
+            for (String name : comps) {
+                file = new File(file, name);
+            }
+        }
+
+        return file;
     }
 
     /**

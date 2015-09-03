@@ -105,12 +105,11 @@ import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.session.ServerUserAuthService;
 import org.apache.sshd.server.session.ServerUserAuthServiceFactory;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
-import org.apache.sshd.util.AsyncEchoShellFactory;
-import org.apache.sshd.util.BaseTestSupport;
-import org.apache.sshd.util.EchoShell;
-import org.apache.sshd.util.EchoShellFactory;
-import org.apache.sshd.util.TeeOutputStream;
-import org.apache.sshd.util.Utils;
+import org.apache.sshd.util.test.AsyncEchoShellFactory;
+import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.EchoShell;
+import org.apache.sshd.util.test.EchoShellFactory;
+import org.apache.sshd.util.test.TeeOutputStream;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
@@ -164,7 +163,7 @@ public class ClientTest extends BaseTestSupport {
         authLatch = new CountDownLatch(0);
         channelLatch = new CountDownLatch(0);
 
-        sshd = Utils.setupTestServer();
+        sshd = setupTestServer();
         sshd.setShellFactory(new TestEchoShellFactory());
         sshd.setServiceFactories(Arrays.asList(
                 new ServerUserAuthServiceFactory() {
@@ -209,7 +208,7 @@ public class ClientTest extends BaseTestSupport {
         sshd.start();
         port = sshd.getPort();
 
-        client = Utils.setupTestClient();
+        client = setupTestClient();
         clientSessionHolder.set(null);  // just making sure
         client.addSessionListener(clientSessionListener);
     }
@@ -829,7 +828,7 @@ public class ClientTest extends BaseTestSupport {
 
         try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             assertNotNull("Client session creation not signalled", clientSessionHolder.get());
-            KeyPair pair = Utils.createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
+            KeyPair pair = createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
             session.addPublicKeyIdentity(pair);
             session.auth().verify(5L, TimeUnit.SECONDS);
         } finally {
@@ -845,7 +844,7 @@ public class ClientTest extends BaseTestSupport {
 
         try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
             assertNotNull("Client session creation not signalled", clientSessionHolder.get());
-            session.addPublicKeyIdentity(Utils.createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA));
+            session.addPublicKeyIdentity(createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA));
             session.auth().verify(5L, TimeUnit.SECONDS);
         } finally {
             client.stop();
@@ -858,7 +857,7 @@ public class ClientTest extends BaseTestSupport {
         SimpleGeneratorHostKeyProvider provider = new SimpleGeneratorHostKeyProvider();
         provider.setAlgorithm("RSA");
 
-        final KeyPair pair = Utils.createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
+        final KeyPair pair = createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
         sshd.setPublickeyAuthenticator(new PublickeyAuthenticator() {
             @Override
             public boolean authenticate(String username, PublicKey key, ServerSession session) {

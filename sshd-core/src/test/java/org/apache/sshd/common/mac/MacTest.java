@@ -28,10 +28,10 @@ import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.cipher.Cipher;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.server.SshServer;
-import org.apache.sshd.util.BaseTestSupport;
-import org.apache.sshd.util.JSchLogger;
-import org.apache.sshd.util.SimpleUserInfo;
-import org.apache.sshd.util.Utils;
+import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.JSchLogger;
+import org.apache.sshd.util.test.SimpleUserInfo;
+import org.apache.sshd.util.test.Utils;
 import org.junit.After;
 import org.junit.FixMethodOrder;
 import org.junit.Ignore;
@@ -116,8 +116,8 @@ public class MacTest extends BaseTestSupport {
 
 
     protected void setUp(NamedFactory<Mac> mac) throws Exception {
-        sshd = Utils.setupTestServer();
-        sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
+        sshd = setupTestServer();
+        sshd.setKeyPairProvider(createTestHostKeyProvider());
         sshd.setMacFactories(Arrays.<NamedFactory<Mac>>asList(mac));
         sshd.start();
         port = sshd.getPort();

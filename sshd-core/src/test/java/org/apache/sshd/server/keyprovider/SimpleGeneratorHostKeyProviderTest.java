@@ -25,7 +25,7 @@ import java.security.spec.ECGenParameterSpec;
 
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.SecurityUtils;
-import org.apache.sshd.util.BaseTestSupport;
+import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.Assume;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -108,11 +108,7 @@ public class SimpleGeneratorHostKeyProviderTest extends BaseTestSupport {
     }
 
     private File initKeyFileLocation(String algorithm) {
-        File path = new File(detectTargetFolder(), "keys");
-        if (!path.exists()) {
-            assertTrue("Failed to crearte hierarchy of " + path.getAbsolutePath(), path.mkdirs());
-        }
-
+        File path = assertHierarchyTargetFolderExists(getTargetRelativeFile(TEMP_SUBFOLDER_NAME, getClass().getSimpleName()));
         path = new File(path, algorithm + "-simple.key");
         if (path.exists()) {
             assertTrue("Failed to delete test key file: " + path.getAbsolutePath(), path.delete());

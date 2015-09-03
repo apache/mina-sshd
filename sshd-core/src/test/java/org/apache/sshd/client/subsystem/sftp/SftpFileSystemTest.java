@@ -65,8 +65,8 @@ import org.apache.sshd.server.Command;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.command.ScpCommandFactory;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
-import org.apache.sshd.util.BaseTestSupport;
-import org.apache.sshd.util.Utils;
+import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.Utils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
@@ -94,7 +94,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
 
     @Before
     public void setUp() throws Exception {
-        sshd = Utils.setupTestServer();
+        sshd = setupTestServer();
         sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(new SftpSubsystemFactory()));
         sshd.setCommandFactory(new ScpCommandFactory());
         sshd.setFileSystemFactory(fileSystemFactory);
@@ -211,7 +211,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
 
     @Test
     public void testMultipleFileStoresOnSameProvider() throws IOException {
-        try (SshClient client = Utils.setupTestClient()) {
+        try (SshClient client = setupTestClient()) {
             client.start();
 
             SftpFileSystemProvider provider = new SftpFileSystemProvider(client);
@@ -281,7 +281,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
                 return selected.get();
             }
         };
-        try (SshClient client = Utils.setupTestClient()) {
+        try (SshClient client = setupTestClient()) {
             client.start();
 
             try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {

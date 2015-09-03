@@ -36,9 +36,8 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.kex.BuiltinDHFactories;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.server.SshServer;
-import org.apache.sshd.util.BaseTestSupport;
-import org.apache.sshd.util.TeeOutputStream;
-import org.apache.sshd.util.Utils;
+import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.TeeOutputStream;
 import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
@@ -73,7 +72,7 @@ public class KexTest extends BaseTestSupport {
 
     @Before
     public void setUp() throws Exception {
-        sshd = Utils.setupTestServer();
+        sshd = setupTestServer();
         sshd.start();
         port = sshd.getPort();
     }
@@ -97,7 +96,7 @@ public class KexTest extends BaseTestSupport {
         try (ByteArrayOutputStream sent = new ByteArrayOutputStream();
              ByteArrayOutputStream out = new ByteArrayOutputStream()) {
 
-            try (SshClient client = Utils.setupTestClient()) {
+            try (SshClient client = setupTestClient()) {
                 client.setKeyExchangeFactories(Collections.singletonList(kex));
                 client.start();
 

@@ -32,10 +32,10 @@ import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.server.SshServer;
-import org.apache.sshd.util.BaseTestSupport;
-import org.apache.sshd.util.JSchLogger;
-import org.apache.sshd.util.SimpleUserInfo;
-import org.apache.sshd.util.Utils;
+import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.JSchLogger;
+import org.apache.sshd.util.test.SimpleUserInfo;
+import org.apache.sshd.util.test.Utils;
 import org.junit.Assume;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -104,7 +104,7 @@ public class CipherTest extends BaseTestSupport {
     public void testBuiltinCipherSession() throws Exception {
         Assume.assumeTrue("No internal support for " + builtInCipher.getName(), builtInCipher.isSupported() && checkCipher(jschCipher.getName()));
 
-        try (SshServer sshd = Utils.setupTestServer()) {
+        try (SshServer sshd = setupTestServer()) {
             sshd.setCipherFactories(Arrays.<NamedFactory<org.apache.sshd.common.cipher.Cipher>>asList(builtInCipher));
             sshd.start();
 

@@ -38,8 +38,7 @@ import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.cipher.BuiltinCiphers.ParseResult;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.server.SshServer;
-import org.apache.sshd.util.BaseTestSupport;
-import org.apache.sshd.util.Utils;
+import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
@@ -157,14 +156,14 @@ public class BuiltinCiphersTest extends BaseTestSupport {
 
     @Test
     public void testSshClientSupportedCiphersConfiguration() throws Exception {
-        try (SshClient client = Utils.setupTestClient()) {
+        try (SshClient client = setupTestClient()) {
             testSupportedCiphersConfiguration(client);
         }
     }
 
     @Test
     public void testSshSercerSupportedCiphersConfiguration() throws Exception {
-        try (SshServer server = Utils.setupTestServer()) {
+        try (SshServer server = setupTestServer()) {
             testSupportedCiphersConfiguration(server);
         }
     }

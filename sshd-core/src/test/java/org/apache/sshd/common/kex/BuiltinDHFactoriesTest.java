@@ -31,7 +31,7 @@ import java.util.Set;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.kex.BuiltinDHFactories.ParseResult;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.util.BaseTestSupport;
+import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;

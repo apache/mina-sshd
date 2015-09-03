@@ -39,8 +39,7 @@ import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.session.ServerSessionImpl;
 import org.apache.sshd.server.session.SessionFactory;
-import org.apache.sshd.util.BaseTestSupport;
-import org.apache.sshd.util.Utils;
+import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
@@ -61,7 +60,7 @@ public class AuthenticationTest extends BaseTestSupport {
 
     @Before
     public void setUp() throws Exception {
-        sshd = Utils.setupTestServer();
+        sshd = setupTestServer();
         FactoryManagerUtils.updateProperty(sshd, ServerFactoryManager.WELCOME_BANNER, WELCOME);
         FactoryManagerUtils.updateProperty(sshd, ServerFactoryManager.AUTH_METHODS, "publickey,password publickey,keyboard-interactive");
         sshd.setSessionFactory(new SessionFactory(sshd) {
@@ -83,7 +82,7 @@ public class AuthenticationTest extends BaseTestSupport {
 
     @Test
     public void testWrongPassword() throws Exception {
-        try (SshClient client = Utils.setupTestClient()) {
+        try (SshClient client = setupTestClient()) {
             client.start();
             try (ClientSession s = client.connect("user", "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
                 s.addPasswordIdentity("bad password");
@@ -95,7 +94,7 @@ public class AuthenticationTest extends BaseTestSupport {
 
     @Test
     public void testChangeUser() throws Exception {
-        try (SshClient client = Utils.setupTestClient()) {
+        try (SshClient client = setupTestClient()) {
             client.setServiceFactories(Arrays.asList(
                     new ClientUserAuthServiceOld.Factory(),
                     ClientConnectionServiceFactory.INSTANCE
@@ -120,7 +119,7 @@ public class AuthenticationTest extends BaseTestSupport {
 
     @Test
     public void testAuthPasswordOnly() throws Exception {
-        try (SshClient client = Utils.setupTestClient()) {
+        try (SshClient client = setupTestClient()) {
             client.setServiceFactories(Arrays.asList(
                     new ClientUserAuthServiceOld.Factory(),
                     ClientConnectionServiceFactory.INSTANCE
@@ -141,7 +140,7 @@ public class AuthenticationTest extends BaseTestSupport {
 
     @Test
     public void testAuthKeyPassword() throws Exception {
-        try (SshClient client = Utils.setupTestClient()) {
+        try (SshClient client = setupTestClient()) {
             client.setServiceFactories(Arrays.asList(
                     new ClientUserAuthServiceOld.Factory(),
                     ClientConnectionServiceFactory.INSTANCE
@@ -151,7 +150,7 @@ public class AuthenticationTest extends BaseTestSupport {
             try (ClientSession s = client.connect(null, "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
                 s.waitFor(ClientSession.CLOSED | ClientSession.WAIT_AUTH, 0);
 
-                KeyPair pair = Utils.createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
+                KeyPair pair = createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
                 assertFalse("Unexpected pubkey auth success", authPublicKey(s, getCurrentTestName(), pair).await().isSuccess());
                 assertTrue("Failed password auth", authPassword(s, getCurrentTestName(), getCurrentTestName()).await().isSuccess());
                 s.close(true);
@@ -163,7 +162,7 @@ public class AuthenticationTest extends BaseTestSupport {
 
     @Test
     public void testAuthKeyInteractive() throws Exception {
-        try (SshClient client = Utils.setupTestClient()) {
+        try (SshClient client = setupTestClient()) {
             client.setServiceFactories(Arrays.asList(
                     new ClientUserAuthServiceOld.Factory(),
                     ClientConnectionServiceFactory.INSTANCE
@@ -173,7 +172,7 @@ public class AuthenticationTest extends BaseTestSupport {
             try (ClientSession s = client.connect(null, "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
                 s.waitFor(ClientSession.CLOSED | ClientSession.WAIT_AUTH, 0);
 
-                KeyPair pair = Utils.createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
+                KeyPair pair = createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
                 assertFalse("Unexpected pubkey auth success", authPublicKey(s, getCurrentTestName(), pair).await().isSuccess());
                 assertTrue("Failed password auth", authInteractive(s, getCurrentTestName(), getCurrentTestName()).await().isSuccess());
 

@@ -37,8 +37,7 @@ import org.apache.sshd.server.auth.UserAuthPublicKeyFactory;
 import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.server.session.ServerSession;
-import org.apache.sshd.util.BaseTestSupport;
-import org.apache.sshd.util.Utils;
+import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
@@ -55,7 +54,7 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
 
     private SshServer sshd;
     private int port = 0;
-    private KeyPair pairRsa = Utils.createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
+    private KeyPair pairRsa = createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
     private KeyPair pairRsaBad;
     private PublickeyAuthenticator delegate;
 
@@ -67,7 +66,7 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
 
     @Before
     public void setUp() throws Exception {
-        sshd = Utils.setupTestServer();
+        sshd = setupTestServer();
         FactoryManagerUtils.updateProperty(sshd, ServerFactoryManager.AUTH_METHODS, UserAuthPublicKeyFactory.NAME);
         sshd.setPublickeyAuthenticator(new PublickeyAuthenticator() {
             @SuppressWarnings("synthetic-access")
@@ -101,7 +100,7 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
         });
         delegate = auth;
 
-        try (SshClient client = Utils.setupTestClient()) {
+        try (SshClient client = setupTestClient()) {
             client.start();
 
             try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
@@ -137,7 +136,7 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
             }
         };
 
-        try (SshClient client = Utils.setupTestClient()) {
+        try (SshClient client = setupTestClient()) {
             client.start();
 
             try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {

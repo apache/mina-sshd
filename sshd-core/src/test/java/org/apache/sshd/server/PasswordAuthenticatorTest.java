@@ -28,7 +28,7 @@ import org.apache.sshd.server.auth.password.PasswordAuthenticator;
 import org.apache.sshd.server.auth.password.RejectAllPasswordAuthenticator;
 import org.apache.sshd.server.auth.password.StaticPasswordAuthenticator;
 import org.apache.sshd.server.session.ServerSession;
-import org.apache.sshd.util.BaseTestSupport;
+import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;

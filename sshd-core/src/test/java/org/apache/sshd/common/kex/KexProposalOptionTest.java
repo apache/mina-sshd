@@ -26,7 +26,7 @@ import java.util.EnumSet;
 
 import org.apache.sshd.common.kex.KexProposalOption.Constants;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.util.BaseTestSupport;
+import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;

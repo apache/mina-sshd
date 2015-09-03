@@ -20,7 +20,7 @@ package org.apache.sshd.git.pgm;
 
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.CommandFactory;
-import org.apache.sshd.util.UnknownCommand;
+import org.apache.sshd.server.command.UnknownCommand;
 
 /**
  * TODO Add javadoc
@@ -51,5 +51,4 @@ public class GitPgmCommandFactory implements CommandFactory {
             return new UnknownCommand(command);
         }
     }
-
 }

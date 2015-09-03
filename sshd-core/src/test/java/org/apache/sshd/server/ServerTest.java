@@ -62,10 +62,10 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.deprecated.ClientUserAuthServiceOld;
 import org.apache.sshd.server.command.ScpCommandFactory;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
-import org.apache.sshd.util.BaseTestSupport;
-import org.apache.sshd.util.EchoShell;
-import org.apache.sshd.util.EchoShellFactory;
-import org.apache.sshd.util.Utils;
+import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.EchoShell;
+import org.apache.sshd.util.test.EchoShellFactory;
+import org.apache.sshd.util.test.Utils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
@@ -92,12 +92,12 @@ public class ServerTest extends BaseTestSupport {
 
     @Before
     public void setUp() throws Exception {
-        sshd = Utils.setupTestServer();
+        sshd = setupTestServer();
         sshd.setShellFactory(new TestEchoShellFactory());
         sshd.start();
         port = sshd.getPort();
 
-        client = Utils.setupTestClient();
+        client = setupTestClient();
     }
 
     @After
@@ -682,7 +682,7 @@ public class ServerTest extends BaseTestSupport {
     }
 
     public static void main(String[] args) throws Exception {
-        SshServer sshd = Utils.setupTestServer();
+        SshServer sshd = Utils.setupTestServer(ServerTest.class);
         FactoryManagerUtils.updateProperty(sshd, FactoryManager.IDLE_TIMEOUT, TimeUnit.SECONDS.toMillis(10L));
         sshd.setPort(8001);
         sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(new SftpSubsystemFactory()));

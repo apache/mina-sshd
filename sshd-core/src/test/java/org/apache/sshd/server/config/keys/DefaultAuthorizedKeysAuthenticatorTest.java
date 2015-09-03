@@ -19,7 +19,6 @@
 
 package org.apache.sshd.server.config.keys;
 
-import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
@@ -30,7 +29,7 @@ import java.util.Collection;
 
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
-import org.apache.sshd.util.BaseTestSupport;
+import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
@@ -46,7 +45,7 @@ public class DefaultAuthorizedKeysAuthenticatorTest extends BaseTestSupport {
 
     @Test
     public void testUsernameValidation() throws Exception {
-        Path file = new File(new File(detectTargetFolder(), TEMP_SUBFOLDER_NAME), getCurrentTestName()).toPath();
+        Path file = getTargetRelativeFile(TEMP_SUBFOLDER_NAME, getCurrentTestName()).toPath();
         URL url = getClass().getResource(AuthorizedKeyEntry.STD_AUTHORIZED_KEYS_FILENAME);
         assertNotNull("Missing " + AuthorizedKeyEntry.STD_AUTHORIZED_KEYS_FILENAME + " resource", url);
 

@@ -21,8 +21,7 @@ package org.apache.sshd.server;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
-import org.apache.sshd.util.BaseTestSupport;
-import org.apache.sshd.util.Utils;
+import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
@@ -47,7 +46,7 @@ public class SshServerTest extends BaseTestSupport {
     public void testExecutorShutdownFalse() throws Exception {
         ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
-        try (SshServer sshd = Utils.setupTestServer()) {
+        try (SshServer sshd = setupTestServer()) {
             sshd.setScheduledExecutorService(executorService);
 
             sshd.start();
@@ -62,7 +61,7 @@ public class SshServerTest extends BaseTestSupport {
     public void testExecutorShutdownTrue() throws Exception {
         ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
-        try (SshServer sshd = Utils.setupTestServer()) {
+        try (SshServer sshd = setupTestServer()) {
             sshd.setScheduledExecutorService(executorService, true);
 
             sshd.start();
@@ -74,7 +73,7 @@ public class SshServerTest extends BaseTestSupport {
 
     @Test
     public void testDynamicPort() throws Exception {
-        try (SshServer sshd = Utils.setupTestServer()) {
+        try (SshServer sshd = setupTestServer()) {
             sshd.setHost("localhost");
             sshd.start();
 

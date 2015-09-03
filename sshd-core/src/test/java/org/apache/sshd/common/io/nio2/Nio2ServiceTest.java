@@ -25,8 +25,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.server.SshServer;
-import org.apache.sshd.util.BaseTestSupport;
-import org.apache.sshd.util.Utils;
+import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
@@ -42,7 +41,7 @@ public class Nio2ServiceTest extends BaseTestSupport {
 
     @Test   // see SSHD-554
     public void testSetSocketOptions() throws Exception {
-        try(SshServer sshd = Utils.setupTestServer()) {
+        try(SshServer sshd = setupTestServer()) {
             FactoryManagerUtils.updateProperty(sshd, FactoryManager.SOCKET_KEEPALIVE, true);
             FactoryManagerUtils.updateProperty(sshd, FactoryManager.SOCKET_LINGER, 5);
             FactoryManagerUtils.updateProperty(sshd, FactoryManager.SOCKET_RCVBUF, 1024);

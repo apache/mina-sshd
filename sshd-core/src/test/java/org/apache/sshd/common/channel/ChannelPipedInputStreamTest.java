@@ -23,8 +23,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 
-import org.apache.sshd.util.BaseTestSupport;
-import org.apache.sshd.util.BogusChannel;
+import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.BogusChannel;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;

@@ -44,7 +44,7 @@ import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.io.IoUtils;
-import org.apache.sshd.util.Utils;
+import org.apache.sshd.util.test.Utils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
@@ -150,7 +150,7 @@ public class CopyDataExtensionImplTest extends AbstractSftpClientTestSupport {
         }
         String dstPath = Utils.resolveRelativeRemotePath(parentPath, dstFile);
 
-        try (SshClient client = Utils.setupTestClient()) {
+        try (SshClient client = setupTestClient()) {
             client.start();
 
             if (writeOffset > 0L) {

@@ -21,7 +21,8 @@ package org.apache.sshd.common.util.io;
 
 import java.nio.file.LinkOption;
 
-import org.apache.sshd.util.BaseTestSupport;
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
@@ -40,5 +41,17 @@ public class IoUtilsTest extends BaseTestSupport {
         assertTrue("Null ?", IoUtils.followLinks((LinkOption[]) null));
         assertTrue("Empty ?", IoUtils.followLinks(IoUtils.EMPTY_LINK_OPTIONS));
         assertFalse("No-follow ?", IoUtils.followLinks(IoUtils.getLinkOptions(false)));
+    }
+
+    @Test
+    public void testGetEOLBytes() {
+        byte[] expected = IoUtils.getEOLBytes();
+        assertTrue("Empty bytes", GenericUtils.length(expected) > 0);
+
+        for (int index = 1; index < Byte.SIZE; index++) {
+            byte[] actual = IoUtils.getEOLBytes();
+            assertNotSame("Same bytes received at iteration " + index, expected, actual);
+            assertArrayEquals("Mismatched bytes at iteration " + index, expected, actual);
+        }
     }
 }

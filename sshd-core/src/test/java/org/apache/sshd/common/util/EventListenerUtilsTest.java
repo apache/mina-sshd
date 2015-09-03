@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.EventListener;
 import java.util.List;
 
-import org.apache.sshd.util.BaseTestSupport;
+import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;

@@ -18,6 +18,8 @@
  */
 package org.apache.sshd;
 
+import static org.apache.sshd.util.test.Utils.getFreePort;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -50,10 +52,9 @@ import org.apache.mina.core.session.IoSession;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
-import org.apache.sshd.util.BaseTestSupport;
-import org.apache.sshd.util.JSchLogger;
-import org.apache.sshd.util.SimpleUserInfo;
-import org.apache.sshd.util.Utils;
+import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.JSchLogger;
+import org.apache.sshd.util.test.SimpleUserInfo;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
@@ -61,8 +62,6 @@ import org.junit.Test;
 import org.junit.runners.MethodSorters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.sshd.util.Utils.getFreePort;
 
 /**
  * Port forwarding tests
@@ -81,7 +80,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
 
     @Before
     public void setUp() throws Exception {
-        sshd = Utils.setupTestServer();
+        sshd = setupTestServer();
         sshd.setTcpipForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
         sshd.start();
         sshPort = sshd.getPort();

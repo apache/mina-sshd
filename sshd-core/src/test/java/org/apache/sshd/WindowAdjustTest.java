@@ -46,7 +46,7 @@ import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
-import org.apache.sshd.util.Utils;
+import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
@@ -62,7 +62,7 @@ import org.junit.runners.MethodSorters;
  * {@link WritePendingException}, which can occur when sending too many messages one after another.
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class WindowAdjustTest {
+public class WindowAdjustTest extends BaseTestSupport {
 
     public static final String END_FILE = "#";
 
@@ -71,7 +71,7 @@ public class WindowAdjustTest {
 
     @Before
     public void setUp() throws Exception {
-        sshServer = Utils.setupTestServer();
+        sshServer = setupTestServer();
         final byte[] msg = Files.readAllBytes(
                 Paths.get(getClass().getResource("/big-msg.txt").toURI()));
 
@@ -98,7 +98,7 @@ public class WindowAdjustTest {
     @Test(timeout = 2L * 60L * 1000L)
     public void testTrafficHeavyLoad() throws Exception {
 
-        try (SshClient client = Utils.setupTestClient()) {
+        try (SshClient client = setupTestClient()) {
             client.start();
 
             try (final ClientSession session = client.connect("admin", "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {

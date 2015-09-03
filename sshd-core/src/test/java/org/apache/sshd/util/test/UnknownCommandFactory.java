@@ -16,49 +16,25 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.util;
 
-import java.io.IOException;
-import java.io.OutputStream;
+package org.apache.sshd.util.test;
+
+import org.apache.sshd.server.Command;
+import org.apache.sshd.server.CommandFactory;
+import org.apache.sshd.server.command.UnknownCommand;
 
 /**
- * TODO Add javadoc
- *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class TeeOutputStream extends OutputStream {
+public class UnknownCommandFactory implements CommandFactory {
+    public static final UnknownCommandFactory INSTANCE = new UnknownCommandFactory();
 
-    private OutputStream[] tees;
-
-    public TeeOutputStream(OutputStream... tees) {
-        this.tees = tees;
+    public UnknownCommandFactory() {
+        super();
     }
 
     @Override
-    public void write(int b) throws IOException {
-        for (OutputStream s : tees) {
-            s.write(b);
-        }
-    }
-
-    @Override
-    public void write(byte[] b, int off, int len) throws IOException {
-        for (OutputStream s : tees) {
-            s.write(b, off, len);
-        }
-    }
-
-    @Override
-    public void flush() throws IOException {
-        for (OutputStream s : tees) {
-            s.flush();
-        }
-    }
-
-    @Override
-    public void close() throws IOException {
-        for (OutputStream s : tees) {
-            s.close();
-        }
+    public Command createCommand(String command) {
+        return new UnknownCommand(command);
     }
 }

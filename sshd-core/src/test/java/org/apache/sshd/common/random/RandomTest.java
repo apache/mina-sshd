@@ -19,8 +19,8 @@
 package org.apache.sshd.common.random;
 
 import org.apache.sshd.common.util.SecurityUtils;
-import org.apache.sshd.util.BaseTestSupport;
-import org.apache.sshd.util.Utils;
+import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.Utils;
 import org.junit.Assume;
 import org.junit.FixMethodOrder;
 import org.junit.Test;

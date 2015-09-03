@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import org.apache.sshd.common.util.buffer.BufferUtils;
-import org.apache.sshd.util.BaseTestSupport;
+import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;

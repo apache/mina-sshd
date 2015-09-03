@@ -24,6 +24,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.CopyOption;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
@@ -63,6 +64,7 @@ public final class IoUtils {
      * The local O/S line separator
      */
     public static final String EOL = System.getProperty("line.separator");
+    private static final byte[] EOL_BYTES = EOL.getBytes(StandardCharsets.UTF_8);
 
     private static final LinkOption[] NO_FOLLOW_OPTIONS = new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
 
@@ -71,6 +73,16 @@ public final class IoUtils {
      */
     private IoUtils() {
         throw new UnsupportedOperationException("No instance allowed");
+    }
+
+    /**
+     * @return The local platform line separator bytes as UTF-8. <B>Note:</B>
+     * each call returns a <U>new</U> instance in order to avoid inadvertent
+     * changes in shared objects
+     * @see #EOL
+     */
+    public static byte[] getEOLBytes() {
+        return EOL_BYTES.clone();
     }
 
     public static LinkOption[] getLinkOptions(boolean followLinks) {

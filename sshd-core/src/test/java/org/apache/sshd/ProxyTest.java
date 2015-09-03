@@ -39,8 +39,7 @@ import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
-import org.apache.sshd.util.BaseTestSupport;
-import org.apache.sshd.util.Utils;
+import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
@@ -60,7 +59,7 @@ public class ProxyTest extends BaseTestSupport {
 
     @Before
     public void setUp() throws Exception {
-        sshd = Utils.setupTestServer();
+        sshd = setupTestServer();
         FactoryManagerUtils.updateProperty(sshd, FactoryManager.WINDOW_SIZE, 2048);
         FactoryManagerUtils.updateProperty(sshd, FactoryManager.MAX_PACKET_SIZE, "256");
         sshd.setTcpipForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
@@ -140,7 +139,7 @@ public class ProxyTest extends BaseTestSupport {
     }
 
     protected ClientSession createNativeSession() throws Exception {
-        client = Utils.setupTestClient();
+        client = setupTestClient();
         FactoryManagerUtils.updateProperty(client, FactoryManager.WINDOW_SIZE, 2048);
         FactoryManagerUtils.updateProperty(client, FactoryManager.MAX_PACKET_SIZE, 256);
         client.setTcpipForwardingFilter(AcceptAllForwardingFilter.INSTANCE);

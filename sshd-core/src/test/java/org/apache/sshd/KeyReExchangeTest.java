@@ -48,11 +48,10 @@ import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.SshServer;
-import org.apache.sshd.util.BaseTestSupport;
-import org.apache.sshd.util.JSchLogger;
-import org.apache.sshd.util.SimpleUserInfo;
-import org.apache.sshd.util.TeeOutputStream;
-import org.apache.sshd.util.Utils;
+import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.JSchLogger;
+import org.apache.sshd.util.test.SimpleUserInfo;
+import org.apache.sshd.util.test.TeeOutputStream;
 import org.junit.After;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -81,7 +80,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
     }
 
     protected void setUp(long bytesLimit, long timeLimit) throws Exception {
-        sshd = Utils.setupTestServer();
+        sshd = setupTestServer();
         if (bytesLimit > 0L) {
             FactoryManagerUtils.updateProperty(sshd, ServerFactoryManager.REKEY_BYTES_LIMIT, bytesLimit);
         }
@@ -98,7 +97,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
         setUp(0, 0);
 
         sshd.getCipherFactories().add(BuiltinCiphers.none);
-        try (SshClient client = Utils.setupTestClient()) {
+        try (SshClient client = setupTestClient()) {
             client.getCipherFactories().add(BuiltinCiphers.none);
             client.start();
 
@@ -122,7 +121,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
         setUp(0, 0);
         sshd.getCipherFactories().add(BuiltinCiphers.none);
 
-        try (SshClient client = Utils.setupTestClient()) {
+        try (SshClient client = setupTestClient()) {
             client.getCipherFactories().add(BuiltinCiphers.none);
             // replace the original KEX factories with wrapped ones that we can fail intentionally
             List<NamedFactory<KeyExchange>> kexFactories = new ArrayList<>();
@@ -230,7 +229,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
     public void testReExchangeFromSshdClient() throws Exception {
         setUp(0, 0);
 
-        try (SshClient client = Utils.setupTestClient()) {
+        try (SshClient client = setupTestClient()) {
             client.start();
 
             try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
@@ -287,7 +286,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
     public void testReExchangeFromServer() throws Exception {
         setUp(8192, 0);
 
-        try (SshClient client = Utils.setupTestClient()) {
+        try (SshClient client = setupTestClient()) {
             client.start();
 
             try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {

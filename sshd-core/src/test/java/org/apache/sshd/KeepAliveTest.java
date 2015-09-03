@@ -30,10 +30,9 @@ import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.SshServer;
-import org.apache.sshd.util.BaseTestSupport;
-import org.apache.sshd.util.EchoShell;
-import org.apache.sshd.util.EchoShellFactory;
-import org.apache.sshd.util.Utils;
+import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.EchoShell;
+import org.apache.sshd.util.test.EchoShellFactory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
@@ -57,7 +56,7 @@ public class KeepAliveTest extends BaseTestSupport {
 
     @Before
     public void setUp() throws Exception {
-        sshd = Utils.setupTestServer();
+        sshd = setupTestServer();
         FactoryManagerUtils.updateProperty(sshd, FactoryManager.IDLE_TIMEOUT, TIMEOUT);
         sshd.setShellFactory(new TestEchoShellFactory());
         sshd.start();
@@ -73,7 +72,7 @@ public class KeepAliveTest extends BaseTestSupport {
 
     @Test
     public void testIdleClient() throws Exception {
-        SshClient client = Utils.setupTestClient();
+        SshClient client = setupTestClient();
         client.start();
 
         try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
@@ -93,7 +92,7 @@ public class KeepAliveTest extends BaseTestSupport {
 
     @Test
     public void testClientWithHeartBeat() throws Exception {
-        SshClient client = Utils.setupTestClient();
+        SshClient client = setupTestClient();
         FactoryManagerUtils.updateProperty(client, ClientFactoryManager.HEARTBEAT_INTERVAL, HEARTBEAT);
         client.start();
 
@@ -116,7 +115,7 @@ public class KeepAliveTest extends BaseTestSupport {
     public void testShellClosedOnClientTimeout() throws Exception {
         TestEchoShell.latch = new CountDownLatch(1);
 
-        SshClient client = Utils.setupTestClient();
+        SshClient client = setupTestClient();
         client.start();
 
         try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {

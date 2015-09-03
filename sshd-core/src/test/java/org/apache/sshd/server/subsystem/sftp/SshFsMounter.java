@@ -55,7 +55,7 @@ import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.shell.InteractiveProcessShellFactory;
-import org.apache.sshd.util.Utils;
+import org.apache.sshd.util.test.Utils;
 
 /**
  * A basic implementation to allow remote mounting of the local file system via SFTP
@@ -292,7 +292,7 @@ public class SshFsMounter {
 
         System.err.println("Starting SSHD on port " + port);
 
-        SshServer sshd = Utils.setupTestServer();
+        SshServer sshd = Utils.setupTestServer(SshFsMounter.class);
         Map<String, Object> props = sshd.getProperties();
 //        FactoryManagerUtils.updateProperty(props, ServerFactoryManager.WELCOME_BANNER, "Welcome to SSH-FS Mounter\n");
         props.putAll(options);

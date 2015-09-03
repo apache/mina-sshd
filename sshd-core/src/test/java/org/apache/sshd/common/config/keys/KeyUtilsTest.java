@@ -36,7 +36,7 @@ import org.apache.sshd.common.digest.DigestInformation;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.SecurityUtils;
-import org.apache.sshd.util.BaseTestSupport;
+import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.Assume;
 import org.junit.FixMethodOrder;
 import org.junit.Test;

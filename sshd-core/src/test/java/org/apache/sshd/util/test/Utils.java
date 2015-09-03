@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.util;
+package org.apache.sshd.util.test;
 
 import java.io.File;
 import java.io.IOException;
@@ -61,13 +61,13 @@ public class Utils {
     private static final AtomicReference<KeyPairProvider> keyPairProviderHolder = new AtomicReference<KeyPairProvider>();
     public static final String DEFAULT_TEST_HOST_KEY_PROVIDER_ALGORITHM = "RSA";
 
-    public static KeyPairProvider createTestHostKeyProvider() {
+    public static KeyPairProvider createTestHostKeyProvider(Class<?> anchor) {
         KeyPairProvider provider = keyPairProviderHolder.get();
         if (provider != null) {
             return provider;
         }
 
-        File targetFolder = ValidateUtils.checkNotNull(detectTargetFolder(Utils.class), "Failed to detect target folder");
+        File targetFolder = ValidateUtils.checkNotNull(detectTargetFolder(anchor), "Failed to detect target folder");
         File file = new File(targetFolder, "hostkey." + DEFAULT_TEST_HOST_KEY_PROVIDER_ALGORITHM.toLowerCase());
         SimpleGeneratorHostKeyProvider keyProvider = new SimpleGeneratorHostKeyProvider();
         keyProvider.setFile(file);
@@ -549,16 +549,16 @@ public class Utils {
         return relPath.toString().replace(File.separatorChar, '/');
     }
 
-    public static final SshClient setupTestClient() {
+    public static final SshClient setupTestClient(Class<?> anchor) {
         SshClient client = SshClient.setUpDefaultClient();
         client.setServerKeyVerifier(AcceptAllServerKeyVerifier.INSTANCE);
         client.setHostConfigEntryResolver(HostConfigEntryResolver.EMPTY);
         return client;
     }
 
-    public static final SshServer setupTestServer() {
+    public static final SshServer setupTestServer(Class<?> anchor) {
         SshServer sshd = SshServer.setUpDefaultServer();
-        sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
+        sshd.setKeyPairProvider(createTestHostKeyProvider(anchor));
         sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
         sshd.setPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);
         sshd.setShellFactory(EchoShellFactory.INSTANCE);

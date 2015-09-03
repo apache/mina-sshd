@@ -20,14 +20,15 @@ package org.apache.sshd.spring;
 
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.TimeUnit;
 
 import com.jcraft.jsch.Channel;
 import com.jcraft.jsch.JSch;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.server.SshServer;
-import org.apache.sshd.util.BaseTestSupport;
-import org.apache.sshd.util.JSchLogger;
-import org.apache.sshd.util.SimpleUserInfo;
+import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.JSchLogger;
+import org.apache.sshd.util.test.SimpleUserInfo;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
@@ -82,7 +83,7 @@ public class SpringConfigTest extends BaseTestSupport {
             try (OutputStream os = c.getOutputStream()) {
                 os.write(command.getBytes(StandardCharsets.UTF_8));
                 os.flush();
-                Thread.sleep(100);
+                Thread.sleep(TimeUnit.SECONDS.toMillis(1L));
             } finally {
                 c.disconnect();
             }

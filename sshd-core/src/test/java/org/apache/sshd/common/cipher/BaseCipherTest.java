@@ -28,7 +28,7 @@ import java.security.InvalidKeyException;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.cipher.Cipher.Mode;
 import org.apache.sshd.common.util.SecurityUtils;
-import org.apache.sshd.util.BaseTestSupport;
+import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.Assume;
 
 /**

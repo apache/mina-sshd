@@ -26,7 +26,7 @@ import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.sshd.util.BaseTestSupport;
+import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Rule;
 import org.junit.Test;

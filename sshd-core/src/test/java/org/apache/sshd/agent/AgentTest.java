@@ -18,6 +18,8 @@
  */
 package org.apache.sshd.agent;
 
+import static org.apache.sshd.util.test.Utils.createTestKeyPairProvider;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -41,16 +43,13 @@ import org.apache.sshd.server.Command;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
-import org.apache.sshd.util.BaseTestSupport;
-import org.apache.sshd.util.EchoShell;
-import org.apache.sshd.util.EchoShellFactory;
-import org.apache.sshd.util.Utils;
+import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.EchoShell;
+import org.apache.sshd.util.test.EchoShellFactory;
 import org.junit.Assume;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
-
-import static org.apache.sshd.util.Utils.createTestKeyPairProvider;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class AgentTest extends BaseTestSupport {
@@ -78,7 +77,7 @@ public class AgentTest extends BaseTestSupport {
                 assertNotNull("No initial identities", keys);
                 assertEquals("Unexpected initial identities size", 0, keys.size());
 
-                KeyPair k = Utils.createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
+                KeyPair k = createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
                 client.addIdentity(k, "");
                 keys = client.getIdentities();
                 assertNotNull("No registered identities after add", keys);
@@ -106,21 +105,21 @@ public class AgentTest extends BaseTestSupport {
         KeyPair pair = createTestKeyPairProvider("dsaprivkey.pem").loadKey(KeyPairProvider.SSH_DSS);
         localAgentFactory.getAgent().addIdentity(pair, username);
 
-        try (SshServer sshd1 = Utils.setupTestServer()) {
+        try (SshServer sshd1 = setupTestServer()) {
             sshd1.setShellFactory(shellFactory);
             sshd1.setAgentFactory(agentFactory);
             sshd1.setTcpipForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
             sshd1.start();
 
             final int port1 = sshd1.getPort();
-            try (SshServer sshd2 = Utils.setupTestServer()) {
+            try (SshServer sshd2 = setupTestServer()) {
                 sshd2.setShellFactory(new TestEchoShellFactory());
                 sshd1.setTcpipForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
                 sshd2.setAgentFactory(new ProxyAgentFactory());
                 sshd2.start();
 
                 final int port2 = sshd2.getPort();
-                try (SshClient client1 = Utils.setupTestClient()) {
+                try (SshClient client1 = setupTestClient()) {
                     client1.setAgentFactory(localAgentFactory);
                     client1.start();
 
@@ -144,7 +143,7 @@ public class AgentTest extends BaseTestSupport {
                                     }
                                 }
 
-                                try (SshClient client2 = Utils.setupTestClient()) {
+                                try (SshClient client2 = setupTestClient()) {
                                     client2.setAgentFactory(agentFactory);
                                     client2.getProperties().putAll(shellFactory.shell.getEnvironment().getEnv());
                                     client2.start();

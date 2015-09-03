@@ -22,7 +22,7 @@ package org.apache.sshd.common.util;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.sshd.util.BaseTestSupport;
+import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;

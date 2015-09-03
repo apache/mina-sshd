@@ -19,6 +19,7 @@
 package org.apache.sshd.git.pgm;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
@@ -27,12 +28,11 @@ import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.git.util.BogusPasswordAuthenticator;
-import org.apache.sshd.git.util.EchoShellFactory;
-import org.apache.sshd.git.util.Utils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
+import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.Utils;
 import org.eclipse.jgit.api.Git;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -41,63 +41,70 @@ import org.junit.runners.MethodSorters;
 /**
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class GitPgmCommandTest {
+public class GitPgmCommandTest extends BaseTestSupport {
+    public GitPgmCommandTest() {
+        super();
+    }
 
     @Test
     public void testGitpgm() throws Exception {
+        Path targetParent = detectTargetFolder().toPath().getParent();
+        File serverDir = getTargetRelativeFile(TEMP_SUBFOLDER_NAME, getClass().getSimpleName());
 
         //
         // TODO: the GitpgmCommandFactory is kept in the test tree
         // TODO: because it's quite limited for now
         //
 
-        SshServer sshd = SshServer.setUpDefaultServer();
-        sshd.setPort(8001);
-        sshd.setKeyPairProvider(Utils.createTestHostKeyProvider());
-        sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(new SftpSubsystemFactory()));
-        sshd.setShellFactory(new EchoShellFactory());
-        sshd.setCommandFactory(new GitPgmCommandFactory("target/git/pgm"));
-        sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
-        sshd.start();
+        try(SshServer sshd = setupTestServer()) {
+            sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(new SftpSubsystemFactory()));
+            sshd.setCommandFactory(new GitPgmCommandFactory(Utils.resolveRelativeRemotePath(targetParent, serverDir.toPath())));
+            sshd.start();
 
-        File serverDir = new File("target/git/pgm");
-        Utils.deleteRecursive(serverDir);
+            int port = sshd.getPort();
+            try {
+                Utils.deleteRecursive(serverDir);
 
-        File repo = new File(serverDir, "test");
+                try(SshClient client = setupTestClient()) {
+                    client.start();
 
-        SshClient client = SshClient.setUpDefaultClient();
-        client.start();
+                    try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+                        session.addPasswordIdentity(getCurrentTestName());
+                        session.auth().verify(5L, TimeUnit.SECONDS);
 
-        ClientSession session = client.connect("sshd", "localhost", 8001).verify(7L, TimeUnit.SECONDS).getSession();
-        session.addPasswordIdentity("sshd");
-        session.auth().verify();
+                        File repo = new File(serverDir, getCurrentTestName());
+                        Git.init().setDirectory(repo).call();
+                        Git git = Git.open(repo);
+                        git.commit().setMessage("First Commit").setCommitter(getCurrentTestName(), "sshd@apache.org").call();
 
-        Git.init().setDirectory(repo).call();
-        Git git = Git.open(repo);
-        git.commit().setMessage("First Commit").setCommitter("sshd", "sshd@apache.org").call();
+                        File readmeFile = new File(repo, "readme.txt");
+                        assertTrue("Failed to create test file " + readmeFile, readmeFile.createNewFile());
 
-        new File("target/git/pgm/test/readme.txt").createNewFile();
-        execute(session, "git --git-dir test add readme.txt");
-
-        execute(session, "git --git-dir test commit -m \"readme\"");
-
-        client.stop();
-        sshd.stop();
-    }
-
-    private void execute(ClientSession session, String command) throws Exception {
-        ChannelExec channel = session.createExecChannel(command);
-        channel.setOut(System.out);
-        channel.setErr(System.err);
-        channel.open().verify();
-        channel.waitFor(ClientChannel.CLOSED, 0);
-        
-        Integer status = channel.getExitStatus();
-        if (status != null) {
-            if (status.intValue() != 0) {
-                throw new Exception("Command failed with status " + status);
+                        String commandPrefix = "git --git-dir " + repo.getName();
+                        execute(session, commandPrefix + " add " + readmeFile.getName());
+                        execute(session, commandPrefix + " commit -m \"readme\"");
+                    } finally {
+                        client.stop();
+                    }
+                }
+            } finally {
+                sshd.stop();
             }
         }
     }
 
+    private void execute(ClientSession session, String command) throws Exception {
+        try(ChannelExec channel = session.createExecChannel(command)) {
+            channel.setOut(System.out);
+            channel.setErr(System.err);
+            channel.open().verify(11L, TimeUnit.SECONDS);
+            int mask = channel.waitFor(ClientChannel.CLOSED, TimeUnit.MINUTES.toMillis(1L));
+            assertEquals("Command not completed on time: " + command, ClientChannel.CLOSED, ClientChannel.CLOSED & mask);
+
+            Integer status = channel.getExitStatus();
+            if (status != null) {
+                assertEquals("Failed (" + status + ") " + command, 0, status.intValue());
+            }
+        }
+    }
 }

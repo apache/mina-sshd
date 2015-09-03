@@ -38,7 +38,7 @@ import org.apache.sshd.common.subsystem.sftp.extensions.SpaceAvailableExtensionI
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystem;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
-import org.apache.sshd.util.Utils;
+import org.apache.sshd.util.test.Utils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
@@ -88,7 +88,7 @@ public class SpaceAvailableExtensionImplTest extends AbstractSftpClientTestSuppo
             }
         }));
 
-        try (SshClient client = Utils.setupTestClient()) {
+        try (SshClient client = setupTestClient()) {
             client.start();
 
             try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {

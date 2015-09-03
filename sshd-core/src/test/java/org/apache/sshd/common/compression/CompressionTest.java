@@ -25,10 +25,9 @@ import java.util.Arrays;
 
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.server.SshServer;
-import org.apache.sshd.util.BaseTestSupport;
-import org.apache.sshd.util.JSchLogger;
-import org.apache.sshd.util.SimpleUserInfo;
-import org.apache.sshd.util.Utils;
+import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.JSchLogger;
+import org.apache.sshd.util.test.SimpleUserInfo;
 import org.junit.After;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -65,7 +64,7 @@ public class CompressionTest extends BaseTestSupport {
     }
 
     protected void setUp(NamedFactory<org.apache.sshd.common.compression.Compression> compression) throws Exception {
-        sshd = Utils.setupTestServer();
+        sshd = setupTestServer();
         sshd.setCompressionFactories(Arrays.<NamedFactory<org.apache.sshd.common.compression.Compression>>asList(compression));
         sshd.start();
         JSch.setConfig("compression.s2c", "zlib@openssh.com,zlib,none");

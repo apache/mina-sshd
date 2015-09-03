@@ -20,7 +20,6 @@
 package org.apache.sshd.server.config.keys;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Writer;
@@ -39,7 +38,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
 import org.apache.sshd.server.session.ServerSession;
-import org.apache.sshd.util.BaseTestSupport;
+import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
@@ -56,7 +55,7 @@ public class AuthorizedKeysAuthenticatorTest extends BaseTestSupport {
 
     @Test
     public void testAutomaticReload() throws Exception {
-        final Path file = new File(new File(detectTargetFolder(), TEMP_SUBFOLDER_NAME), getCurrentTestName()).toPath();
+        final Path file = getTargetRelativeFile(TEMP_SUBFOLDER_NAME, getCurrentTestName()).toPath();
         if (Files.exists(file)) {
             Files.delete(file);
         }

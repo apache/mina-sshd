@@ -34,7 +34,7 @@ import org.apache.sshd.client.subsystem.sftp.SftpException;
 import org.apache.sshd.client.subsystem.sftp.extensions.CopyFileExtension;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.util.io.IoUtils;
-import org.apache.sshd.util.Utils;
+import org.apache.sshd.util.test.Utils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
@@ -78,7 +78,7 @@ public class CopyFileExtensionImplTest extends AbstractSftpClientTestSupport {
         LinkOption[] options = IoUtils.getLinkOptions(false);
         assertFalse("Destination file unexpectedly exists", Files.exists(dstFile, options));
 
-        try (SshClient client = Utils.setupTestClient()) {
+        try (SshClient client = setupTestClient()) {
             client.start();
 
             try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {

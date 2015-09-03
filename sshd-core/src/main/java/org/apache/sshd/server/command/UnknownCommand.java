@@ -16,13 +16,15 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.util;
+package org.apache.sshd.server.command;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
@@ -36,14 +38,24 @@ import org.apache.sshd.server.ExitCallback;
  */
 public class UnknownCommand implements Command {
 
-    private String command;
+    private final String command;
+    private final String message;
     private InputStream in;
     private OutputStream out;
     private OutputStream err;
     private ExitCallback callback;
 
     public UnknownCommand(String command) {
-        this.command = command;
+        this.command = ValidateUtils.checkNotNullAndNotEmpty(command, "No command");
+        this.message = "Unknown command: " + command;
+    }
+
+    public String getCommand() {
+        return command;
+    }
+
+    public String getMessage() {
+        return message;
     }
 
     @Override
@@ -68,15 +80,46 @@ public class UnknownCommand implements Command {
 
     @Override
     public void start(Environment env) throws IOException {
-        err.write(("Unknown command: " + command + "\n").getBytes(StandardCharsets.UTF_8));
-        err.flush();
+        ValidateUtils.checkNotNull(err, "No error stream");
+        String errorMessage = getMessage();
+        try {
+            err.write(errorMessage.getBytes(StandardCharsets.UTF_8));
+            err.write('\n');
+        } finally {
+            err.flush();
+        }
         if (callback != null) {
-            callback.onExit(1, "Unknown command: " + command);
+            callback.onExit(1, errorMessage);
         }
     }
 
     @Override
     public void destroy() {
         // ignored
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(getCommand());
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (obj == this) {
+            return true;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+
+        return Objects.equals(this.getCommand(), ((UnknownCommand) obj).getCommand());
+    }
+
+    @Override
+    public String toString() {
+        return getMessage();
     }
 }

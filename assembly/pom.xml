@@ -27,9 +27,7 @@
         <version>1.0.1-SNAPSHOT</version>
     </parent>
 
-    <groupId>org.apache.sshd</groupId>
     <artifactId>apache-sshd</artifactId>
-    <version>1.0.1-SNAPSHOT</version>
     <name>Apache Mina SSHD :: Assembly</name>
     <packaging>pom</packaging>
 
@@ -41,23 +39,8 @@
         <dependency>
             <groupId>org.apache.sshd</groupId>
             <artifactId>sshd-core</artifactId>
+            <version>${project.version}</version>
         </dependency>
-		<!--
-        <dependency>
-            <groupId>org.apache.sshd</groupId>
-            <artifactId>sshd-sftp</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.sshd</groupId>
-            <artifactId>sshd-pam</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>net.sf.jpam</groupId>
-                    <artifactId>jpam</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-		-->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-jdk14</artifactId>
@@ -140,5 +123,4 @@
             </plugin>
         </plugins>
     </build>
-
 </project>

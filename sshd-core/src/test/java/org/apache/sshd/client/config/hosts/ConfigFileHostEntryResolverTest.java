@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.common.util.io.IoUtils;
-import org.apache.sshd.util.BaseTestSupport;
+import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
@@ -46,7 +46,7 @@ public class ConfigFileHostEntryResolverTest extends BaseTestSupport {
 
     @Test
     public void testConfigFileReload() throws IOException {
-        File dir = new File(new File(detectTargetFolder(), TEMP_SUBFOLDER_NAME), getClass().getSimpleName());
+        File dir = getTargetRelativeFile(TEMP_SUBFOLDER_NAME, getClass().getSimpleName());
         final AtomicInteger reloadCount = new AtomicInteger();
         ConfigFileHostEntryResolver resolver = new ConfigFileHostEntryResolver(new File(assertHierarchyTargetFolderExists(dir), getCurrentTestName() + ".config.txt")) {
             @Override

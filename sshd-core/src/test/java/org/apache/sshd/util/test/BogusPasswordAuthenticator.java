@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.util;
+package org.apache.sshd.util.test;
 
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.server.auth.password.PasswordAuthenticator;

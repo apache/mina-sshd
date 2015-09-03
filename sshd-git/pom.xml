@@ -28,7 +28,6 @@
     </parent>
 
     <artifactId>sshd-git</artifactId>
-    <version>1.0.1-SNAPSHOT</version>
     <name>Apache Mina SSHD :: Git</name>
     <packaging>jar</packaging>
     <inceptionYear>2008</inceptionYear>
@@ -41,6 +40,7 @@
         <dependency>
             <groupId>org.apache.sshd</groupId>
             <artifactId>sshd-core</artifactId>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.eclipse.jgit</groupId>
@@ -52,6 +52,14 @@
             <optional>true</optional>
         </dependency>
 
+            <!--  Test dependencies -->
+        <dependency>
+            <groupId>org.apache.sshd</groupId>
+            <artifactId>sshd-core</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
@@ -101,5 +109,4 @@
             </plugin>
         </plugins>
     </build>
-
 </project>

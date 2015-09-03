@@ -22,10 +22,10 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 
-import org.apache.sshd.util.BaseTestSupport;
-import org.apache.sshd.util.BogusEnvironment;
-import org.apache.sshd.util.BogusExitCallback;
-import org.apache.sshd.util.BogusInvertedShell;
+import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.BogusEnvironment;
+import org.apache.sshd.util.test.BogusExitCallback;
+import org.apache.sshd.util.test.BogusInvertedShell;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
