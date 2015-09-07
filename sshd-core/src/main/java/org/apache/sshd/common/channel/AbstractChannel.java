@@ -38,7 +38,6 @@ import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
-import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Int2IntFunction;
@@ -46,6 +45,8 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
+import org.apache.sshd.common.util.closeable.IoBaseCloseable;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.threads.ExecutorServiceConfigurer;
 
@@ -55,7 +56,7 @@ import org.apache.sshd.common.util.threads.ExecutorServiceConfigurer;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractChannel
-        extends CloseableUtils.AbstractInnerCloseable
+        extends AbstractInnerCloseable
         implements Channel, ExecutorServiceConfigurer {
 
     public static final int DEFAULT_WINDOW_SIZE = 0x200000;
@@ -275,7 +276,7 @@ public abstract class AbstractChannel
         return new GracefulChannelCloseable();
     }
 
-    public class GracefulChannelCloseable extends CloseableUtils.IoBaseCloseable {
+    public class GracefulChannelCloseable extends IoBaseCloseable {
 
         private final AtomicBoolean closing = new AtomicBoolean(false);
 

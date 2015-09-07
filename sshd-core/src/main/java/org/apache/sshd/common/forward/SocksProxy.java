@@ -30,9 +30,9 @@ import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.session.ConnectionService;
-import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.common.util.closeable.AbstractCloseable;
 
 /**
  * SOCKS proxy server, supporting simple socks4/5 protocols.
@@ -40,7 +40,7 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @see <A HREF="https://en.wikipedia.org/wiki/SOCKS">SOCKS Wikipedia</A>
  */
-public class SocksProxy extends CloseableUtils.AbstractCloseable implements IoHandler {
+public class SocksProxy extends AbstractCloseable implements IoHandler {
 
     private final ConnectionService service;
     private final Map<IoSession, Proxy> proxies = new ConcurrentHashMap<IoSession, Proxy>();

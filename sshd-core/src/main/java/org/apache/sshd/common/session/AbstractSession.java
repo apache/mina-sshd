@@ -58,7 +58,6 @@ import org.apache.sshd.common.kex.KexState;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.mac.Mac;
 import org.apache.sshd.common.random.Random;
-import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Readable;
@@ -66,6 +65,7 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
 
 /**
  * <P>
@@ -82,7 +82,7 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractSession extends CloseableUtils.AbstractInnerCloseable implements Session {
+public abstract class AbstractSession extends AbstractInnerCloseable implements Session {
 
     public static final String DEFAULT_SSH_VERSION_PREFIX = "SSH-2.0-";
 

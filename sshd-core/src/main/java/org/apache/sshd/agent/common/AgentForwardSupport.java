@@ -23,12 +23,12 @@ import java.io.IOException;
 import org.apache.sshd.agent.SshAgentServer;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.session.ConnectionService;
-import org.apache.sshd.common.util.CloseableUtils;
+import org.apache.sshd.common.util.closeable.AbstractCloseable;
 
 /**
  * The server side fake agent, acting as an agent, but actually forwarding the requests to the auth channel on the client side.
  */
-public class AgentForwardSupport extends CloseableUtils.AbstractCloseable {
+public class AgentForwardSupport extends AbstractCloseable {
 
     private final ConnectionService service;
     private String agentId;

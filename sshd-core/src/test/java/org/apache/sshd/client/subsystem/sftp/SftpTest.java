@@ -935,6 +935,10 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         Path sourcePath = assertHierarchyTargetFolderExists(lclSftp).resolve("src.txt");
         String remSrcPath = "/" + Utils.resolveRelativeRemotePath(parentPath, sourcePath);
         Path linkPath = lclSftp.resolve("link-" + sourcePath.getFileName());
+        if (Files.exists(linkPath, IoUtils.EMPTY_LINK_OPTIONS)) {
+            Files.delete(linkPath);
+        }
+
         String remLinkPath = "/" + Utils.resolveRelativeRemotePath(parentPath, linkPath);
 
         String data = getCurrentTestName();

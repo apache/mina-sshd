@@ -19,24 +19,22 @@
 package org.apache.sshd.common.channel;
 
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
-
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.CloseFuture;
-import org.apache.sshd.common.future.DefaultSshFuture;
+import org.apache.sshd.common.future.DefaultVerifiableSshFuture;
 import org.apache.sshd.common.io.IoInputStream;
 import org.apache.sshd.common.io.IoReadFuture;
 import org.apache.sshd.common.io.ReadPendingException;
-import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.Readable;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.common.util.closeable.AbstractCloseable;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ChannelAsyncInputStream extends CloseableUtils.AbstractCloseable implements IoInputStream {
+public class ChannelAsyncInputStream extends AbstractCloseable implements IoInputStream {
 
     private final Channel channel;
     private final Buffer buffer = new ByteArrayBuffer();
@@ -125,7 +123,7 @@ public class ChannelAsyncInputStream extends CloseableUtils.AbstractCloseable im
         return "ChannelAsyncInputStream[" + channel + "]";
     }
 
-    public static class IoReadFutureImpl extends DefaultSshFuture<IoReadFuture> implements IoReadFuture {
+    public static class IoReadFutureImpl extends DefaultVerifiableSshFuture<IoReadFuture> implements IoReadFuture {
         private final Buffer buffer;
 
         public IoReadFutureImpl(Buffer buffer) {
@@ -139,23 +137,15 @@ public class ChannelAsyncInputStream extends CloseableUtils.AbstractCloseable im
         }
 
         @Override   // TODO for JDK-8 make this a default method
-        public void verify() throws IOException {
-            verify(Long.MAX_VALUE);
-        }
-
-        @Override   // TODO for JDK-8 make this a default method
-        public void verify(long timeout, TimeUnit unit) throws IOException {
-            verify(unit.toMillis(timeout));
-        }
-
-        @Override   // TODO for JDK-8 make this a default method
-        public void verify(long timeoutMillis) throws IOException {
+        public IoReadFuture verify(long timeoutMillis) throws IOException {
             long startTime = System.nanoTime();
             Number result = verifyResult(Number.class, timeoutMillis);
             long endTime = System.nanoTime();
             if (log.isDebugEnabled()) {
                 log.debug("Read " + result + " bytes after " + (endTime - startTime) + " nanos");
             }
+
+            return this;
         }
 
         @Override   // TODO for JDK-8 make this a default method

@@ -19,10 +19,9 @@
 package org.apache.sshd.client.future;
 
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.future.DefaultSshFuture;
+import org.apache.sshd.common.future.DefaultVerifiableSshFuture;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
@@ -30,27 +29,19 @@ import org.apache.sshd.common.util.ValidateUtils;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class DefaultOpenFuture extends DefaultSshFuture<OpenFuture> implements OpenFuture {
+public class DefaultOpenFuture extends DefaultVerifiableSshFuture<OpenFuture> implements OpenFuture {
     public DefaultOpenFuture(Object lock) {
         super(lock);
     }
 
     @Override   // TODO for JDK-8 make this a default method
-    public void verify() throws IOException {
-        verify(Long.MAX_VALUE);
-    }
-
-    @Override   // TODO for JDK-8 make this a default method
-    public void verify(long timeout, TimeUnit unit) throws IOException {
-        verify(unit.toMillis(timeout));
-    }
-
-    @Override   // TODO for JDK-8 make this a default method
-    public void verify(long timeoutMillis) throws IOException {
+    public OpenFuture verify(long timeoutMillis) throws IOException {
         Boolean result = verifyResult(Boolean.class, timeoutMillis);
         if (!result.booleanValue()) {
             throw new SshException("Channel opening failed");
         }
+
+        return this;
     }
 
     @Override   // TODO for JDK-8 make this a default method

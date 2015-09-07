@@ -37,13 +37,13 @@ import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoService;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
-import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.Readable;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.closeable.AbstractCloseable;
 
 /**
  */
-public class Nio2Session extends CloseableUtils.AbstractCloseable implements IoSession {
+public class Nio2Session extends AbstractCloseable implements IoSession {
 
     public static final int DEFAULT_READBUF_SIZE = 32 * 1024;
 

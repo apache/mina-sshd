@@ -18,9 +18,6 @@
  */
 package org.apache.sshd.common.future;
 
-import java.io.IOException;
-import java.util.concurrent.TimeUnit;
-
 /**
  * Represents the completion of an asynchronous SSH operation on a given object
  * (it may be an SSH session or an SSH channel).
@@ -28,73 +25,7 @@ import java.util.concurrent.TimeUnit;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface SshFuture<T extends SshFuture> {
-
-    /**
-     * Wait for the asynchronous operation to complete.
-     * The attached listeners will be notified when the operation is
-     * completed.
-     *
-     * @return The {@code this} instance
-     * @throws IOException if failed - specifically {@link java.io.InterruptedIOException}
-     *                     if waiting was interrupted
-     */
-    T await() throws IOException;
-
-    /**
-     * Wait for the asynchronous operation to complete with the specified timeout.
-     *
-     * @param timeout   The number of time units to wait
-     * @param unit      The {@link TimeUnit} for waiting
-     * @return {@code true} if the operation is completed.
-     * @throws IOException if failed - specifically {@link java.io.InterruptedIOException}
-     *                     if waiting was interrupted
-     */
-    boolean await(long timeout, TimeUnit unit) throws IOException;
-
-    /**
-     * Wait for the asynchronous operation to complete with the specified timeout.
-     *
-     * @param timeoutMillis Wait time in milliseconds
-     * @return {@code true} if the operation is completed.
-     * @throws IOException if failed - specifically {@link java.io.InterruptedIOException}
-     *                     if waiting was interrupted
-     */
-    boolean await(long timeoutMillis) throws IOException;
-
-    /**
-     * Wait for the asynchronous operation to complete uninterruptibly.
-     * The attached listeners will be notified when the operation is
-     * completed.
-     *
-     * @return the current future
-     */
-    T awaitUninterruptibly();
-
-    /**
-     * Wait for the asynchronous operation to complete with the specified timeout
-     * uninterruptibly.
-     *
-     * @param timeout   The number of time units to wait
-     * @param unit      The {@link TimeUnit} for waiting
-     * @return {@code true} if the operation is completed.
-     */
-    boolean awaitUninterruptibly(long timeout, TimeUnit unit);
-
-    /**
-     * Wait for the asynchronous operation to complete with the specified timeout
-     * uninterruptibly.
-     *
-     * @param timeoutMillis Wait time in milliseconds
-     * @return {@code true} if the operation is finished.
-     */
-    boolean awaitUninterruptibly(long timeoutMillis);
-
-    /**
-     * @return {@code true} if the asynchronous operation is completed.
-     */
-    boolean isDone();
-
+public interface SshFuture<T extends SshFuture> extends WaitableFuture {
     /**
      * Adds an event <tt>listener</tt> which is notified when
      * this future is completed. If the listener is added

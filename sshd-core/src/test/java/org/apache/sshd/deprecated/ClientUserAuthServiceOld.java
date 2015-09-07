@@ -29,8 +29,8 @@ import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.session.Session;
-import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.closeable.AbstractCloseable;
 import org.apache.sshd.deprecated.UserAuth.Result;
 
 /**
@@ -38,7 +38,7 @@ import org.apache.sshd.deprecated.UserAuth.Result;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ClientUserAuthServiceOld extends CloseableUtils.AbstractCloseable implements Service {
+public class ClientUserAuthServiceOld extends AbstractCloseable implements Service {
 
     public static class Factory implements ServiceFactory {
 

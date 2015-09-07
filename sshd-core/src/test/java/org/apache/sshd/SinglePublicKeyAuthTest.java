@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.client.SshClient;
+import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.config.keys.KeyUtils;
@@ -142,7 +143,10 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
             try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
                 session.addPublicKeyIdentity(pairRsaBad);
                 session.addPublicKeyIdentity(pairRsa);
-                assertTrue("Failed to authenticate", session.auth().await().isSuccess());
+
+                AuthFuture auth = session.auth();
+                assertTrue("Failed to authenticate on time", auth.await(5L, TimeUnit.SECONDS));
+                assertTrue("Authentication failed", auth.isSuccess());
             } finally {
                 client.stop();
             }

@@ -27,13 +27,13 @@ import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoOutputStream;
 import org.apache.sshd.common.io.IoWriteFuture;
-import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
 
 /**
  * An IoOutputStream capable of queuing write requests
  */
-public class BufferedIoOutputStream extends CloseableUtils.AbstractInnerCloseable implements IoOutputStream {
+public class BufferedIoOutputStream extends AbstractInnerCloseable implements IoOutputStream {
 
     private final IoOutputStream out;
     private final Queue<IoWriteFutureImpl> writes = new ConcurrentLinkedQueue<IoWriteFutureImpl>();

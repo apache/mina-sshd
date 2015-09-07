@@ -19,42 +19,16 @@
 
 package org.apache.sshd.common.future;
 
-import java.io.IOException;
-import java.util.concurrent.TimeUnit;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface KeyExchangeFuture extends SshFuture<KeyExchangeFuture> {
-    /**
-     * Wait and verify that the exchange has been successful
-     *
-     * @throws IOException if the action failed for any reason
-     */
-    void verify() throws IOException;
-
-    /**
-     * Wait and verify that the exchange has been successful
-     *
-     * @param timeout The number of time units to wait
-     * @param unit    The wait {@link TimeUnit}
-     * @throws IOException If failed to verify successfully on time
-     */
-    void verify(long timeout, TimeUnit unit) throws IOException;
-
-    /**
-     * Wait and verify that the exchange has been successful
-     *
-     * @param timeoutMillis Wait timeout in milliseconds
-     * @throws IOException If failed to verify successfully on time
-     */
-    void verify(long timeoutMillis) throws IOException;
-
+public interface KeyExchangeFuture extends SshFuture<KeyExchangeFuture>, VerifiableFuture<KeyExchangeFuture> {
     /**
      * Returns the cause of the exchange failure.
      *
      * @return <code>null</code> if the exchange operation is not finished yet,
-     * or if the exchange attempt is successful.
+     * or if the connection attempt is successful (use {@link #isDone()} to
+     * distinguish between the two).
      */
     Throwable getException();
 }

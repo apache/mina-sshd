@@ -18,46 +18,21 @@
  */
 package org.apache.sshd.client.future;
 
-import java.io.IOException;
-import java.util.concurrent.TimeUnit;
-
 import org.apache.sshd.common.future.SshFuture;
+import org.apache.sshd.common.future.VerifiableFuture;
 
 /**
  * An {@link SshFuture} for asynchronous channel opening requests.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface OpenFuture extends SshFuture<OpenFuture> {
-    /**
-     * Wait and verify that the channel has been successfully opened.
-     *
-     * @throws IOException if the action failed for any reason
-     */
-    void verify() throws IOException;
-
-    /**
-     * Wait and verify that the channel has been successfully opened.
-     *
-     * @param timeout The number of time units to wait
-     * @param unit    The wait {@link TimeUnit}
-     * @throws IOException If failed to verify successfully on time
-     */
-    void verify(long timeout, TimeUnit unit) throws IOException;
-
-    /**
-     * Wait and verify that the channel has been successfully opened.
-     *
-     * @param timeoutMillis Wait timeout in milliseconds
-     * @throws IOException If failed to verify successfully on time
-     */
-    void verify(long timeoutMillis) throws IOException;
-
+public interface OpenFuture extends SshFuture<OpenFuture>, VerifiableFuture<OpenFuture> {
     /**
      * Returns the cause of the connection failure.
      *
      * @return <code>null</code> if the connect operation is not finished yet,
-     * or if the connection attempt is successful.
+     * or if the connection attempt is successful (use {@link #isDone()} to
+     * distinguish between the two).
      */
     Throwable getException();
 

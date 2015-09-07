@@ -16,26 +16,27 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.sshd.common.future;
 
-import java.util.EventListener;
+import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 /**
- * Something interested in being notified when the completion
- * of an asynchronous SSH operation : {@link SshFuture}.
- *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@SuppressWarnings("rawtypes")
-public interface SshFutureListener<T extends SshFuture> extends EventListener {
+public abstract class DefaultVerifiableSshFuture<T extends SshFuture> extends DefaultSshFuture<T>implements VerifiableFuture<T> {
+    protected DefaultVerifiableSshFuture(Object lock) {
+        super(lock);
+    }
 
-    /**
-     * Invoked when the operation associated with the {@link SshFuture}
-     * has been completed even if you add the listener after the completion.
-     *
-     * @param future The source {@link SshFuture} which called this
-     *               callback.
-     */
-    void operationComplete(T future);
+    @Override   // TODO for JDK-8 make this a default method
+    public T verify() throws IOException {
+        return verify(Long.MAX_VALUE);
+    }
 
+    @Override   // TODO for JDK-8 make this a default method
+    public T verify(long timeout, TimeUnit unit) throws IOException {
+        return verify(unit.toMillis(timeout));
+    }
 }

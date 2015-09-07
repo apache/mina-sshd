@@ -86,8 +86,7 @@ public class AuthenticationTest extends BaseTestSupport {
             client.start();
             try (ClientSession s = client.connect("user", TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
                 s.addPasswordIdentity("bad password");
-                assertTrue(s.auth().await().isFailure());
-
+                assertAuthenticationResult(getCurrentTestName(), s.auth(), false);
             }
         }
     }
@@ -105,8 +104,9 @@ public class AuthenticationTest extends BaseTestSupport {
             try (ClientSession s = client.connect(null, TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
                 s.waitFor(ClientSession.CLOSED | ClientSession.WAIT_AUTH, 0);
 
-                assertFalse("Unexpected user1 password auth success", authPassword(s, "user1", "the-password").await().isSuccess());
-                assertFalse("Unexpected user2 password auth success", authPassword(s, "user2", "the-password").await().isSuccess());
+                for (String username : new String[]{"user1", "user2"}) {
+                    assertAuthenticationResult(username, authPassword(s, username, "the-password"), false);
+                }
 
                 // Note that WAIT_AUTH flag should be false, but since the internal
                 // authentication future is not updated, it's still returned
@@ -128,9 +128,7 @@ public class AuthenticationTest extends BaseTestSupport {
 
             try (ClientSession s = client.connect(null, TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
                 s.waitFor(ClientSession.CLOSED | ClientSession.WAIT_AUTH, 0);
-
-                assertFalse("Unexpected password auth sucess", authPassword(s, getCurrentTestName(), getCurrentTestName()).await().isSuccess());
-
+                assertAuthenticationResult(getCurrentTestName(), authPassword(s, getCurrentTestName(), getCurrentTestName()), false);
                 s.close(true);
             } finally {
                 client.stop();
@@ -151,8 +149,8 @@ public class AuthenticationTest extends BaseTestSupport {
                 s.waitFor(ClientSession.CLOSED | ClientSession.WAIT_AUTH, 0);
 
                 KeyPair pair = createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
-                assertFalse("Unexpected pubkey auth success", authPublicKey(s, getCurrentTestName(), pair).await().isSuccess());
-                assertTrue("Failed password auth", authPassword(s, getCurrentTestName(), getCurrentTestName()).await().isSuccess());
+                assertAuthenticationResult("pubkey", authPublicKey(s, getCurrentTestName(), pair), false);
+                assertAuthenticationResult("password", authPassword(s, getCurrentTestName(), getCurrentTestName()), true);
                 s.close(true);
             } finally {
                 client.stop();
@@ -173,14 +171,19 @@ public class AuthenticationTest extends BaseTestSupport {
                 s.waitFor(ClientSession.CLOSED | ClientSession.WAIT_AUTH, 0);
 
                 KeyPair pair = createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
-                assertFalse("Unexpected pubkey auth success", authPublicKey(s, getCurrentTestName(), pair).await().isSuccess());
-                assertTrue("Failed password auth", authInteractive(s, getCurrentTestName(), getCurrentTestName()).await().isSuccess());
+                assertAuthenticationResult("pubkey", authPublicKey(s, getCurrentTestName(), pair), false);
+                assertAuthenticationResult("interactive", authInteractive(s, getCurrentTestName(), getCurrentTestName()), true);
 
                 s.close(true);
             } finally {
                 client.stop();
             }
         }
+    }
+
+    private static void assertAuthenticationResult(String message, AuthFuture future, boolean expected) throws IOException {
+        assertTrue(message + ": failed to get result on time", future.await(5L, TimeUnit.SECONDS));
+        assertEquals(message + ": mismatched authentication result", expected, future.isSuccess());
     }
 
     private AuthFuture authPassword(ClientSession s, String user, String pswd) throws IOException {

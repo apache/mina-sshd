@@ -248,8 +248,7 @@ public class Utils {
             // same logic as deleteRecursive(File) which does not check if deletion succeeded
             System.err.append("Failed (").append(e.getClass().getSimpleName()).append(")")
                     .append(" to delete ").append(path.toString())
-                    .append(": ").println(e.getMessage())
-            ;
+                    .append(": ").println(e.getMessage());
         }
 
         return path;

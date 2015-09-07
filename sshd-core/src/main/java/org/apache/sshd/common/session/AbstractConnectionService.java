@@ -39,11 +39,11 @@ import org.apache.sshd.common.channel.RequestHandler;
 import org.apache.sshd.common.forward.TcpipForwarder;
 import org.apache.sshd.common.forward.TcpipForwarderFactory;
 import org.apache.sshd.common.future.SshFutureListener;
-import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Int2IntFunction;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
 import org.apache.sshd.server.channel.OpenChannelException;
 import org.apache.sshd.server.x11.X11ForwardSupport;
 
@@ -66,7 +66,7 @@ import static org.apache.sshd.common.SshConstants.SSH_MSG_REQUEST_SUCCESS;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractConnectionService extends CloseableUtils.AbstractInnerCloseable implements ConnectionService {
+public abstract class AbstractConnectionService extends AbstractInnerCloseable implements ConnectionService {
     /**
      * Property that can be used to configure max. allowed concurrent active channels
      *

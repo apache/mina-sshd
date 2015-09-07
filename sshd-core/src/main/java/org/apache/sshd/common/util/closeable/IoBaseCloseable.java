@@ -16,26 +16,34 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.future;
+package org.apache.sshd.common.util.closeable;
 
-import java.util.EventListener;
+import java.io.IOException;
+
+import org.apache.sshd.common.Closeable;
+import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
- * Something interested in being notified when the completion
- * of an asynchronous SSH operation : {@link SshFuture}.
- *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@SuppressWarnings("rawtypes")
-public interface SshFutureListener<T extends SshFuture> extends EventListener {
+public abstract class IoBaseCloseable extends AbstractLoggingBean implements Closeable {
+    protected IoBaseCloseable() {
+        this("");
+    }
 
-    /**
-     * Invoked when the operation associated with the {@link SshFuture}
-     * has been completed even if you add the listener after the completion.
-     *
-     * @param future The source {@link SshFuture} which called this
-     *               callback.
-     */
-    void operationComplete(T future);
+    protected IoBaseCloseable(String discriminator) {
+        super(discriminator);
+    }
 
+    // TODO once JDK 8+ becomes the minimum for this project, make it a default method instead of this class
+    @Override
+    public boolean isOpen() {
+        return !(isClosed() || isClosing());
+    }
+
+    // TODO once JDK 8+ becomes the minimum for this project, make it a default method instead of this class
+    @Override
+    public void close() throws IOException {
+        CloseableUtils.close(this);
+    }
 }

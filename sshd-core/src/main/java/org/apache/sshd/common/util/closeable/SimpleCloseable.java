@@ -16,38 +16,45 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+package org.apache.sshd.common.util.closeable;
 
-package org.apache.sshd.common.future;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-import java.io.IOException;
-
-import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.future.CloseFuture;
+import org.apache.sshd.common.future.DefaultCloseFuture;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class DefaultKeyExchangeFuture extends DefaultVerifiableSshFuture<KeyExchangeFuture> implements KeyExchangeFuture {
-    public DefaultKeyExchangeFuture(Object lock) {
-        super(lock);
+public class SimpleCloseable extends IoBaseCloseable {
+
+    protected final DefaultCloseFuture future;
+    protected final AtomicBoolean closing;
+
+    public SimpleCloseable(Object lock) {
+        future = new DefaultCloseFuture(lock);
+        closing = new AtomicBoolean();
     }
 
-    @Override   // TODO for JDK-8 make this a default method
-    public KeyExchangeFuture verify(long timeoutMillis) throws IOException {
-        Boolean result = verifyResult(Boolean.class, timeoutMillis);
-        if (!result.booleanValue()) {
-            throw new SshException("Key exchange failed");
-        }
-
-        return this;
+    @Override
+    public boolean isClosed() {
+        return future.isClosed();
     }
 
-    @Override   // TODO for JDK-8 make this a default method
-    public Throwable getException() {
-        Object v = getValue();
-        if (v instanceof Throwable) {
-            return (Throwable) v;
-        } else {
-            return null;
+    @Override
+    public boolean isClosing() {
+        return closing.get();
+    }
+
+    @Override
+    public CloseFuture close(boolean immediately) {
+        if (closing.compareAndSet(false, true)) {
+            doClose(immediately);
         }
+        return future;
+    }
+
+    protected void doClose(boolean immediately) {
+        future.setClosed();
     }
 }

@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.sshd.common.util;
+package org.apache.sshd.common.util.closeable;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
@@ -45,7 +45,7 @@ public class CloseableUtilsTest extends BaseTestSupport {
 
     @Test
     public void testCloseImmediateNotCalledIfAlreadyClosed() throws IOException {
-        Closeable closeable = new CloseableUtils.IoBaseCloseable() {
+        Closeable closeable = new IoBaseCloseable() {
             @Override
             public CloseFuture close(boolean immediately) {
                 fail("Unexpected call to close(" + immediately + ")");
@@ -67,7 +67,7 @@ public class CloseableUtilsTest extends BaseTestSupport {
 
     @Test
     public void testCloseImmediateNotCalledIfIsClosing() throws IOException {
-        Closeable closeable = new CloseableUtils.IoBaseCloseable() {
+        Closeable closeable = new IoBaseCloseable() {
             @Override
             public CloseFuture close(boolean immediately) {
                 fail("Unexpected call to close(" + immediately + ")");
@@ -91,7 +91,7 @@ public class CloseableUtilsTest extends BaseTestSupport {
     public void testCloseImmediateCalledAndWait() throws Exception {
         final DefaultCloseFuture future = new DefaultCloseFuture(this);
         final AtomicInteger callsCount = new AtomicInteger(0);
-        final Closeable closeable = new CloseableUtils.IoBaseCloseable() {
+        final Closeable closeable = new IoBaseCloseable() {
             @Override
             public CloseFuture close(boolean immediately) {
                 assertTrue("Closure is not immediate", immediately);

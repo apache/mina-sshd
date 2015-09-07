@@ -30,13 +30,14 @@ import org.apache.sshd.common.io.AbstractIoWriteFuture;
 import org.apache.sshd.common.io.IoService;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
-import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
+import org.apache.sshd.common.util.closeable.IoBaseCloseable;
 
 /**
  */
-public class MinaSession extends CloseableUtils.AbstractInnerCloseable implements IoSession {
+public class MinaSession extends AbstractInnerCloseable implements IoSession {
 
     private final MinaService service;
     private final org.apache.mina.core.session.IoSession session;
@@ -87,7 +88,7 @@ public class MinaSession extends CloseableUtils.AbstractInnerCloseable implement
 
     @Override
     protected Closeable getInnerCloseable() {
-        return new CloseableUtils.IoBaseCloseable() {
+        return new IoBaseCloseable() {
             @SuppressWarnings("synthetic-access")
             @Override
             public boolean isClosing() {

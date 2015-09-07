@@ -48,11 +48,11 @@ import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
-import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.common.util.closeable.IoBaseCloseable;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.LoggingFilterOutputStream;
 import org.apache.sshd.server.AsyncCommand;
@@ -216,7 +216,7 @@ public class ChannelSession extends AbstractServerChannel {
                 .build();
     }
 
-    public class CommandCloseable extends CloseableUtils.IoBaseCloseable {
+    public class CommandCloseable extends IoBaseCloseable {
         @Override
         public boolean isClosed() {
             return commandExitFuture.isClosed();

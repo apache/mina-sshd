@@ -18,46 +18,21 @@
  */
 package org.apache.sshd.client.future;
 
-import java.io.IOException;
-import java.util.concurrent.TimeUnit;
-
 import org.apache.sshd.common.future.SshFuture;
+import org.apache.sshd.common.future.VerifiableFuture;
 
 /**
  * An {@link SshFuture} for asynchronous authentication requests.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface AuthFuture extends SshFuture<AuthFuture> {
+public interface AuthFuture extends SshFuture<AuthFuture>, VerifiableFuture<AuthFuture> {
     /**
-     * Wait and verify that the authentication succeeded.
+     * Returns the cause of the authentication failure.
      *
-     * @throws IOException if the authentication failed for any reason
-     */
-    void verify() throws IOException;
-
-    /**
-     * Wait and verify that the authentication succeeded within the specified timeout.
-     *
-     * @param timeout   The number of time units
-     * @param unit      The {@link TimeUnit} for the timeout
-     * @throws IOException if the authentication failed for any reason
-     */
-    void verify(long timeout, TimeUnit unit) throws IOException;
-
-    /**
-     * Wait and verify that the authentication succeeded within the specified timeout.
-     *
-     * @param timeoutMillis Timeout in milliseconds
-     * @throws IOException if the authentication failed for any reason
-     */
-    void verify(long timeoutMillis) throws IOException;
-
-    /**
-     * Returns the cause of the connection failure.
-     *
-     * @return <code>null</code> if the connect operation is not finished yet,
-     * or if the connection attempt is successful.
+     * @return <code>null</code> if the authentication operation is not finished yet,
+     * or if the connection attempt is successful (use {@link #isDone()} to distinguish
+     * between the two).
      */
     Throwable getException();
 
@@ -100,5 +75,4 @@ public interface AuthFuture extends SshFuture<AuthFuture> {
      * this future.
      */
     void cancel();
-
 }

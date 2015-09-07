@@ -645,7 +645,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             });
 
             // TODO use a configurable wait time
-            ClientSession session = client.connect(login, host, port).await().getSession();
+            ClientSession session = client.connect(login, host, port).verify().getSession();
             try {
                 session.auth().verify();    // TODO use a configurable wait time
                 return session;

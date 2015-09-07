@@ -18,23 +18,10 @@
  */
 package org.apache.sshd.common.io;
 
-import java.io.IOException;
-import java.util.concurrent.TimeUnit;
-
 import org.apache.sshd.common.future.SshFuture;
+import org.apache.sshd.common.future.VerifiableFuture;
 
-public interface IoWriteFuture extends SshFuture<IoWriteFuture> {
-    /**
-     * Wait and verify that the write succeeded.
-     *
-     * @throws IOException if the write failed for any reason
-     */
-    void verify() throws IOException;
-
-    void verify(long count, TimeUnit unit) throws IOException;
-
-    void verify(long timeout) throws IOException;
-
+public interface IoWriteFuture extends SshFuture<IoWriteFuture>, VerifiableFuture<IoWriteFuture> {
     /**
      * @return <tt>true</tt> if the write operation is finished successfully.
      */
@@ -43,7 +30,8 @@ public interface IoWriteFuture extends SshFuture<IoWriteFuture> {
     /**
      * @return the cause of the write failure if and only if the write
      * operation has failed due to an {@link Exception}.  Otherwise,
-     * <tt>null</tt> is returned.
+     * <tt>null</tt> is returned (use {@link #isDone()} to distinguish
+     * between the two.
      */
     Throwable getException();
 

@@ -18,28 +18,24 @@
  */
 package org.apache.sshd.common.io;
 
-import java.io.IOException;
-import java.util.concurrent.TimeUnit;
-
 import org.apache.sshd.common.future.SshFuture;
+import org.apache.sshd.common.future.VerifiableFuture;
 import org.apache.sshd.common.util.buffer.Buffer;
 
-public interface IoReadFuture extends SshFuture<IoReadFuture> {
-    /**
-     * Wait and verify that the read succeeded.
-     *
-     * @throws IOException if the action failed for any reason
-     */
-    void verify() throws IOException;
-
-    void verify(long timeout, TimeUnit unit) throws IOException;
-
-    void verify(long timeoutMillis) throws IOException;
-
+/**
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ */
+public interface IoReadFuture extends SshFuture<IoReadFuture>, VerifiableFuture<IoReadFuture> {
     Buffer getBuffer();
 
     int getRead();
 
+    /**
+     * Returns the cause of the read failure.
+     *
+     * @return <code>null</code> if the read operation is not finished yet,
+     * or if the read attempt is successful (use {@link #isDone()} to
+     * distinguish between the two).
+     */
     Throwable getException();
-
 }

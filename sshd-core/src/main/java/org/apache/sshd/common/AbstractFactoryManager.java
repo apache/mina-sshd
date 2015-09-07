@@ -49,9 +49,9 @@ import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.session.SessionTimeoutListener;
 import org.apache.sshd.common.signature.Signature;
-import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.forward.ForwardingFilter;
 
@@ -61,7 +61,7 @@ import org.apache.sshd.server.forward.ForwardingFilter;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractFactoryManager
-        extends CloseableUtils.AbstractInnerCloseable
+        extends AbstractInnerCloseable
         implements FactoryManager, KeyPairProviderHolder {
 
     protected Map<String, Object> properties = new HashMap<>();

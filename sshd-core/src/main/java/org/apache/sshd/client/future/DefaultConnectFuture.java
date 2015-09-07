@@ -19,11 +19,10 @@
 package org.apache.sshd.client.future;
 
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.RuntimeSshException;
-import org.apache.sshd.common.future.DefaultSshFuture;
+import org.apache.sshd.common.future.DefaultVerifiableSshFuture;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.util.ValidateUtils;
 
@@ -32,14 +31,9 @@ import org.apache.sshd.common.util.ValidateUtils;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class DefaultConnectFuture extends DefaultSshFuture<ConnectFuture> implements ConnectFuture {
+public class DefaultConnectFuture extends DefaultVerifiableSshFuture<ConnectFuture> implements ConnectFuture {
     public DefaultConnectFuture(Object lock) {
         super(lock);
-    }
-
-    @Override   // TODO in JDK-8 make this a default method
-    public ConnectFuture verify(long count, TimeUnit unit) throws IOException {
-        return verify(unit.toMillis(count));
     }
 
     @Override   // TODO in JDK-8 make this a default method

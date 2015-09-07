@@ -34,13 +34,13 @@ import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoService;
 import org.apache.sshd.common.io.IoSession;
-import org.apache.sshd.common.util.CloseableUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
 
 /**
  */
-public abstract class Nio2Service extends CloseableUtils.AbstractInnerCloseable implements IoService {
+public abstract class Nio2Service extends AbstractInnerCloseable implements IoService {
     protected final FactoryManager manager;
     protected final IoHandler handler;
     protected final Map<Long, IoSession> sessions;

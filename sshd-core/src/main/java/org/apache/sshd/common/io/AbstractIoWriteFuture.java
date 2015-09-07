@@ -20,35 +20,25 @@
 package org.apache.sshd.common.io;
 
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
-
 import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.future.DefaultSshFuture;
+import org.apache.sshd.common.future.DefaultVerifiableSshFuture;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractIoWriteFuture extends DefaultSshFuture<IoWriteFuture> implements IoWriteFuture {
+public abstract class AbstractIoWriteFuture extends DefaultVerifiableSshFuture<IoWriteFuture> implements IoWriteFuture {
     protected AbstractIoWriteFuture(Object lock) {
         super(lock);
     }
 
     @Override      // TODO for JDK-8 make this a default method
-    public void verify() throws IOException {
-        verify(Long.MAX_VALUE);
-    }
-
-    @Override      // TODO for JDK-8 make this a default method
-    public void verify(long count, TimeUnit unit) throws IOException {
-        verify(unit.toMillis(count));
-    }
-
-    @Override      // TODO for JDK-8 make this a default method
-    public void verify(long timeout) throws IOException {
+    public IoWriteFuture verify(long timeout) throws IOException {
         Boolean result = verifyResult(Boolean.class, timeout);
         if (!result) {
             throw new SshException("Write failed signalled");
         }
+
+        return this;
     }
 
     @Override      // TODO for JDK-8 make this a default method

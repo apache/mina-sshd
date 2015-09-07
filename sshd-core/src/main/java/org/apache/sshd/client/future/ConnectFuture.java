@@ -18,48 +18,20 @@
  */
 package org.apache.sshd.client.future;
 
-import java.io.IOException;
-import java.util.concurrent.TimeUnit;
-
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.future.SshFuture;
+import org.apache.sshd.common.future.VerifiableFuture;
 
 /**
  * An {@link SshFuture} for asynchronous connections requests.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface ConnectFuture extends SshFuture<ConnectFuture> {
-
+public interface ConnectFuture extends SshFuture<ConnectFuture>, VerifiableFuture<ConnectFuture> {
     /**
      * @return The referenced {@link ClientSession}
      */
     ClientSession getSession();
-
-    /**
-     * Wait and verify that connection succeeded within specified timeout
-     *
-     * @param count The number of time units to wait
-     * @param unit  The {@link TimeUnit} for waiting
-     * @return The {@link ConnectFuture}
-     * @throws IOException If failed to verify the request on time
-     */
-    ConnectFuture verify(long count, TimeUnit unit) throws IOException;
-
-    /**
-     * @param timeout The wait timeout in milliseconds
-     * @return The {@link ConnectFuture}
-     * @throws IOException If failed to verify the request on time
-     */
-    ConnectFuture verify(long timeout) throws IOException;
-
-    /**
-     * Returns the cause of the connection failure.
-     *
-     * @return <code>null</code> if the connect operation is not finished yet,
-     * or if the connection attempt is successful.
-     */
-    Throwable getException();
 
     /**
      * @return <code>true</code> if the connect operation is finished successfully.
@@ -82,6 +54,15 @@ public interface ConnectFuture extends SshFuture<ConnectFuture> {
     void setSession(ClientSession session);
 
     /**
+     * Returns the cause of the connection failure.
+     *
+     * @return <code>null</code> if the connect operation is not finished yet,
+     * or if the connection attempt is successful (use {@link #isDone()} to
+     * distinguish between the two)
+     */
+    Throwable getException();
+
+    /**
      * Sets the exception caught due to connection failure and notifies all
      * threads waiting for this future.  This method is invoked by SSHD
      * internally.  Please do not call this method directly.
@@ -95,5 +76,4 @@ public interface ConnectFuture extends SshFuture<ConnectFuture> {
      * this future.
      */
     void cancel();
-
 }

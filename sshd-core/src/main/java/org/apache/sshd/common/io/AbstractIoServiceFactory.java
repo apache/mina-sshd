@@ -24,13 +24,13 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.FactoryManagerUtils;
-import org.apache.sshd.common.util.CloseableUtils;
+import org.apache.sshd.common.util.closeable.AbstractCloseable;
 import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractIoServiceFactory extends CloseableUtils.AbstractCloseable implements IoServiceFactory, ExecutorServiceCarrier {
+public abstract class AbstractIoServiceFactory extends AbstractCloseable implements IoServiceFactory, ExecutorServiceCarrier {
 
     private final FactoryManager manager;
     private final ExecutorService executor;

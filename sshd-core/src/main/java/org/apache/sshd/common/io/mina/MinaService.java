@@ -33,11 +33,11 @@ import org.apache.mina.transport.socket.nio.NioSession;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.FactoryManagerUtils;
-import org.apache.sshd.common.util.CloseableUtils;
+import org.apache.sshd.common.util.closeable.AbstractCloseable;
 
 /**
  */
-public abstract class MinaService extends CloseableUtils.AbstractCloseable implements org.apache.sshd.common.io.IoService, IoHandler, Closeable {
+public abstract class MinaService extends AbstractCloseable implements org.apache.sshd.common.io.IoService, IoHandler, Closeable {
     protected final FactoryManager manager;
     protected final org.apache.sshd.common.io.IoHandler handler;
     protected final IoProcessor<NioSession> ioProcessor;
