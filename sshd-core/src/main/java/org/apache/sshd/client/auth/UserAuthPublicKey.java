@@ -80,7 +80,7 @@ public class UserAuthPublicKey extends AbstractLoggingBean implements UserAuth {
             this.agent = null;
         }
 
-        KeyPairProvider provider = manager.getKeyPairProvider();
+        KeyPairProvider provider = session.getKeyPairProvider();
         if (provider != null) {
             for (KeyPair pair : provider.loadKeys()) {
                 ids.add(new KeyPairIdentity(manager, pair));

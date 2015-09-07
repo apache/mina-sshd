@@ -85,7 +85,7 @@ public class ScpTest extends BaseTestSupport {
     private final FileSystemFactory fileSystemFactory;
 
     public ScpTest() throws IOException {
-        Path targetPath = detectTargetFolder().toPath();
+        Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
         final FileSystem fileSystem = new RootedFileSystemProvider().newFileSystem(parentPath, Collections.<String, Object>emptyMap());
         fileSystemFactory = new FileSystemFactory() {
@@ -134,7 +134,7 @@ public class ScpTest extends BaseTestSupport {
 
     @Test
     public void testNormalizedScpRemotePaths() throws Exception {
-        Path targetPath = detectTargetFolder().toPath();
+        Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
         Path scpRoot = Utils.resolve(targetPath, ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
         Utils.deleteRecursive(scpRoot);
@@ -197,7 +197,7 @@ public class ScpTest extends BaseTestSupport {
 
     @Test
     public void testUploadAbsoluteDriveLetter() throws Exception {
-        Path targetPath = detectTargetFolder().toPath();
+        Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
         Path scpRoot = Utils.resolve(targetPath, ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
         Utils.deleteRecursive(scpRoot);
@@ -249,7 +249,7 @@ public class ScpTest extends BaseTestSupport {
                 ScpClient scp = createScpClient(session);
                 String data = getClass().getName() + "#" + getCurrentTestName() + IoUtils.EOL;
 
-                Path targetPath = detectTargetFolder().toPath();
+                Path targetPath = detectTargetFolder();
                 Path parentPath = targetPath.getParent();
                 Path scpRoot = Utils.resolve(targetPath, ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
                 Utils.deleteRecursive(scpRoot);
@@ -273,7 +273,7 @@ public class ScpTest extends BaseTestSupport {
 
     @Test
     public void testScpUploadZeroLengthFile() throws Exception {
-        Path targetPath = detectTargetFolder().toPath();
+        Path targetPath = detectTargetFolder();
         Path scpRoot = Utils.resolve(targetPath, ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
         Path localDir = assertHierarchyTargetFolderExists(scpRoot.resolve("local"));
         Path remoteDir = assertHierarchyTargetFolderExists(scpRoot.resolve("remote"));
@@ -310,7 +310,7 @@ public class ScpTest extends BaseTestSupport {
 
     @Test
     public void testScpDownloadZeroLengthFile() throws Exception {
-        Path targetPath = detectTargetFolder().toPath();
+        Path targetPath = detectTargetFolder();
         Path scpRoot = Utils.resolve(targetPath, ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
         Path localDir = assertHierarchyTargetFolderExists(scpRoot.resolve("local"));
         Path remoteDir = assertHierarchyTargetFolderExists(scpRoot.resolve("remote"));
@@ -348,7 +348,7 @@ public class ScpTest extends BaseTestSupport {
     public void testScpNativeOnSingleFile() throws Exception {
         String data = getClass().getName() + "#" + getCurrentTestName() + IoUtils.EOL;
 
-        Path targetPath = detectTargetFolder().toPath();
+        Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
         Path scpRoot = Utils.resolve(targetPath, ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
         Utils.deleteRecursive(scpRoot);
@@ -406,7 +406,7 @@ public class ScpTest extends BaseTestSupport {
                 session.auth().verify(5L, TimeUnit.SECONDS);
 
                 ScpClient scp = createScpClient(session);
-                Path targetPath = detectTargetFolder().toPath();
+                Path targetPath = detectTargetFolder();
                 Path parentPath = targetPath.getParent();
                 Path scpRoot = Utils.resolve(targetPath, ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
                 Utils.deleteRecursive(scpRoot);
@@ -487,7 +487,7 @@ public class ScpTest extends BaseTestSupport {
                 session.auth().verify(5L, TimeUnit.SECONDS);
 
                 ScpClient scp = createScpClient(session);
-                Path targetPath = detectTargetFolder().toPath();
+                Path targetPath = detectTargetFolder();
                 Path parentPath = targetPath.getParent();
                 Path scpRoot = Utils.resolve(targetPath, ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
                 Utils.deleteRecursive(scpRoot);
@@ -527,7 +527,7 @@ public class ScpTest extends BaseTestSupport {
                 session.auth().verify(5L, TimeUnit.SECONDS);
 
                 ScpClient scp = createScpClient(session);
-                Path targetPath = detectTargetFolder().toPath();
+                Path targetPath = detectTargetFolder();
                 Path parentPath = targetPath.getParent();
                 Path scpRoot = Utils.resolve(targetPath, ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
                 Utils.deleteRecursive(scpRoot);
@@ -565,7 +565,7 @@ public class ScpTest extends BaseTestSupport {
                 session.auth().verify(5L, TimeUnit.SECONDS);
 
                 ScpClient scp = createScpClient(session);
-                Path targetPath = detectTargetFolder().toPath();
+                Path targetPath = detectTargetFolder();
                 Path parentPath = targetPath.getParent();
                 Path scpRoot = Utils.resolve(targetPath, ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
                 Utils.deleteRecursive(scpRoot);
@@ -612,7 +612,7 @@ public class ScpTest extends BaseTestSupport {
                 session.auth().verify(5L, TimeUnit.SECONDS);
 
                 ScpClient scp = createScpClient(session);
-                Path targetPath = detectTargetFolder().toPath();
+                Path targetPath = detectTargetFolder();
                 Path parentPath = targetPath.getParent();
                 Path scpRoot = Utils.resolve(targetPath, ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
                 Utils.deleteRecursive(scpRoot);
@@ -676,7 +676,7 @@ public class ScpTest extends BaseTestSupport {
                 session.auth().verify(5L, TimeUnit.SECONDS);
 
                 ScpClient scp = createScpClient(session);
-                Path targetPath = detectTargetFolder().toPath();
+                Path targetPath = detectTargetFolder();
                 Path parentPath = targetPath.getParent();
                 Path scpRoot = Utils.resolve(targetPath, ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
                 Utils.deleteRecursive(scpRoot);
@@ -784,7 +784,7 @@ public class ScpTest extends BaseTestSupport {
 
     @Test
     public void testWithGanymede() throws Exception {
-        Path targetPath = detectTargetFolder().toPath();
+        Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
         Path scpRoot = Utils.resolve(targetPath, ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
         Utils.deleteRecursive(scpRoot);

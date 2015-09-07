@@ -119,7 +119,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     @Test   // see SSHD-547
     public void testWriteOffsetIgnoredForAppendMode() throws IOException {
-        Path targetPath = detectTargetFolder().toPath();
+        Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
         Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         Path testFile = assertHierarchyTargetFolderExists(lclSftp).resolve("file.txt");
@@ -172,7 +172,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     @Test   // see SSHD-545
     public void testReadBufferLimit() throws Exception {
-        Path targetPath = detectTargetFolder().toPath();
+        Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
         Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         Path testFile = assertHierarchyTargetFolderExists(lclSftp).resolve("file.txt");
@@ -279,7 +279,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     @Test
     public void testNormalizeRemotePathsValues() throws Exception {
-        Path targetPath = detectTargetFolder().toPath();
+        Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
         Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         Path testFile = assertHierarchyTargetFolderExists(lclSftp).resolve("file.txt");
@@ -337,7 +337,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     @Test
     public void testOpen() throws Exception {
-        Path targetPath = detectTargetFolder().toPath();
+        Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
         Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         Path clientFolder = lclSftp.resolve("client");
@@ -471,7 +471,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                 session.addPasswordIdentity(getCurrentTestName());
                 session.auth().verify(5L, TimeUnit.SECONDS);
 
-                Path targetPath = detectTargetFolder().toPath();
+                Path targetPath = detectTargetFolder();
                 Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
                 Utils.deleteRecursive(lclSftp);
 
@@ -570,7 +570,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
     public void testSftp() throws Exception {
         String d = getCurrentTestName() + "\n";
 
-        Path targetPath = detectTargetFolder().toPath();
+        Path targetPath = detectTargetFolder();
         Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         Utils.deleteRecursive(lclSftp);
 
@@ -596,7 +596,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     @Test
     public void testReadWriteWithOffset() throws Exception {
-        Path targetPath = detectTargetFolder().toPath();
+        Path targetPath = detectTargetFolder();
         Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         Utils.deleteRecursive(lclSftp);
 
@@ -648,7 +648,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     @Test
     public void testRename() throws Exception {
-        Path targetPath = detectTargetFolder().toPath();
+        Path targetPath = detectTargetFolder();
         Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         Utils.deleteRecursive(lclSftp);
 
@@ -818,7 +818,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
     }
 
     private void testClient(FactoryManager manager, SftpClient sftp) throws Exception {
-        Path targetPath = detectTargetFolder().toPath();
+        Path targetPath = detectTargetFolder();
         Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         Utils.deleteRecursive(lclSftp);
 
@@ -915,7 +915,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         // Do not execute on windows as the file system does not support symlinks
         Assume.assumeTrue("Skip non-Unix O/S", OsUtils.isUNIX());
 
-        Path targetPath = detectTargetFolder().toPath();
+        Path targetPath = detectTargetFolder();
         Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         Utils.deleteRecursive(lclSftp);
 

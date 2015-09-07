@@ -23,6 +23,7 @@ import java.util.List;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.keyprovider.KeyPairProviderHolder;
 import org.apache.sshd.server.auth.UserAuth;
 import org.apache.sshd.server.auth.gss.GSSAuthenticator;
 import org.apache.sshd.server.auth.password.PasswordAuthenticator;
@@ -34,7 +35,7 @@ import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface ServerFactoryManager extends FactoryManager {
+public interface ServerFactoryManager extends FactoryManager, KeyPairProviderHolder {
     /**
      * Key used to retrieve the value of the maximum concurrent open session count per username
      */

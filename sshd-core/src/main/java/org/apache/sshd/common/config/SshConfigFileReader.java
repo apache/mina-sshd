@@ -365,6 +365,17 @@ public final class SshConfigFileReader {
     }
 
     /**
+     * Returns a &quot;yes&quot; or &quot;no&quot; value based on the input
+     * parameter
+     *
+     * @param flag The required state
+     * @return &quot;yes&quot; if {@code true}, &quot;no&quot; otherwise
+     */
+    public static String yesNoValueOf(boolean flag) {
+        return flag ? "yes" : "no";
+    }
+
+    /**
      * @param props The {@link Properties} - ignored if {@code null}/empty
      * @return A {@link BuiltinCiphers.ParseResult} of all the {@link NamedFactory}-ies
      * whose name appears in the string and represent a built-in cipher.

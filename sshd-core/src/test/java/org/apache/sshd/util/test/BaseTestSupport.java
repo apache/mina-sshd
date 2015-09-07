@@ -93,7 +93,8 @@ public abstract class BaseTestSupport extends Assert {
 
     @Rule
     public final TestName TEST_NAME_HOLDER = new TestName();
-    private File targetFolder;
+    private Path targetFolder;
+    private Path tempFolder;
 
     protected BaseTestSupport() {
         super();
@@ -117,12 +118,54 @@ public abstract class BaseTestSupport extends Assert {
 
     /**
      * Attempts to build a <U>relative</U> path whose root is the location
+     * of the TEMP sub-folder of the Maven &quot;target&quot; folder associated
+     * with the project
+     *
+     * @param comps The path components - ignored if {@code null}/empty
+     * @return The {@link Path} representing the result - same as target folder if no components
+     * @see #TEMP_SUBFOLDER_NAME
+     * @see #getTargetRelativeFile(Collection)
+     */
+    protected Path getTempTargetRelativeFile(String ... comps) {
+        return getTempTargetRelativeFile(GenericUtils.isEmpty(comps) ? Collections.<String>emptyList() : Arrays.asList(comps));
+    }
+
+    /**
+     * Attempts to build a <U>relative</U> path whose root is the location
+     * of the TEMP sub-folder of the Maven &quot;target&quot; folder associated
+     * with the project
+     *
+     * @param comps The path components - ignored if {@code null}/empty
+     * @return The {@link Path} representing the result - same as target folder if no components
+     * @see #TEMP_SUBFOLDER_NAME
+     * @see #getTempTargetFolder();
+     */
+    protected Path getTempTargetRelativeFile(Collection<String> comps) {
+        return Utils.resolve(getTempTargetFolder(), comps);
+    }
+
+    /**
+     * @return The TEMP sub-folder {@link Path} of the Maven &quot;target&quot; folder
+     * associated with the project - never {@code null}
+     */
+    protected Path getTempTargetFolder() {
+        synchronized(TEMP_SUBFOLDER_NAME) {
+            if (tempFolder == null) {
+                tempFolder = ValidateUtils.checkNotNull(detectTargetFolder(), "No target folder detected").resolve(TEMP_SUBFOLDER_NAME);
+            }
+        }
+
+        return tempFolder;
+    }
+
+    /**
+     * Attempts to build a <U>relative</U> path whose root is the location
      * of the Maven &quot;target&quot; folder associated with the project
      *
      * @param comps The path components - ignored if {@code null}/empty
-     * @return The {@link File} representing the result - same as target folder if no components
+     * @return The {@link Path} representing the result - same as target folder if no components
      */
-    protected File getTargetRelativeFile(String ... comps) {
+    protected Path getTargetRelativeFile(String ... comps) {
         return getTargetRelativeFile(GenericUtils.isEmpty(comps) ? Collections.<String>emptyList() : Arrays.asList(comps));
     }
 
@@ -131,18 +174,11 @@ public abstract class BaseTestSupport extends Assert {
      * of the Maven &quot;target&quot; folder associated with the project
      *
      * @param comps The path components - ignored if {@code null}/empty
-     * @return The {@link File} representing the result - same as target folder if no components
+     * @return The {@link Path} representing the result - same as target folder if no components
      * @see #detectTargetFolder()
      */
-    protected File getTargetRelativeFile(Collection<String> comps) {
-        File file = detectTargetFolder();
-        if (GenericUtils.size(comps) > 0) {
-            for (String name : comps) {
-                file = new File(file, name);
-            }
-        }
-
-        return file;
+    protected Path getTargetRelativeFile(Collection<String> comps) {
+        return Utils.resolve(detectTargetFolder(), comps);
     }
 
     /**
@@ -153,42 +189,42 @@ public abstract class BaseTestSupport extends Assert {
      * @return The {@link File} representing the location of the &quot;target&quot; folder
      * @throws IllegalArgumentException If failed to detect the folder
      */
-    protected File detectTargetFolder() throws IllegalStateException {
+    protected Path detectTargetFolder() throws IllegalStateException {
         synchronized (TEMP_SUBFOLDER_NAME) {
             if (targetFolder == null) {
-                targetFolder = ValidateUtils.checkNotNull(Utils.detectTargetFolder(getClass()), "Failed to detect target folder");
+                targetFolder = ValidateUtils.checkNotNull(Utils.detectTargetFolder(getClass()), "Failed to detect target folder").toPath();
             }
         }
 
         return targetFolder;
     }
 
-    protected File detectSourcesFolder() throws IllegalStateException {
-        File target = detectTargetFolder();
-        File parent = target.getParentFile();
-        return new File(parent, "src");
+    protected Path detectSourcesFolder() throws IllegalStateException {
+        Path target = detectTargetFolder();
+        Path parent = target.getParent();
+        return parent.resolve("src");
     }
 
     public static final String MAIN_SUBFOLDER = "main", TEST_SUBFOLDER = "test";
     public static final String RESOURCES_SUBFOLDER = "resources";
 
-    protected File getClassResourcesFolder(String resType /* test or main */) {
+    protected Path getClassResourcesFolder(String resType /* test or main */) {
         return getClassResourcesFolder(resType, getClass());
     }
 
-    protected File getClassResourcesFolder(String resType /* test or main */, Class<?> clazz) {
+    protected Path getClassResourcesFolder(String resType /* test or main */, Class<?> clazz) {
         return getPackageResourcesFolder(resType, clazz.getPackage());
     }
 
-    protected File getPackageResourcesFolder(String resType /* test or main */, Package pkg) {
+    protected Path getPackageResourcesFolder(String resType /* test or main */, Package pkg) {
         return getPackageResourcesFolder(resType, pkg.getName());
     }
 
-    protected File getPackageResourcesFolder(String resType /* test or main */, String pkgName) {
-        File src = detectSourcesFolder();
-        File root = new File(src, resType);
-        File resources = new File(root, RESOURCES_SUBFOLDER);
-        return new File(resources, pkgName.replace('.', File.separatorChar));
+    protected Path getPackageResourcesFolder(String resType /* test or main */, String pkgName) {
+        Path src = detectSourcesFolder();
+        Path root = src.resolve(resType);
+        Path resources = root.resolve(RESOURCES_SUBFOLDER);
+        return resources.resolve(pkgName.replace('.', File.separatorChar));
     }
 
     /* ------------------- Useful extra test helpers ---------------------- */

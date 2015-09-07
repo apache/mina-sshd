@@ -53,7 +53,7 @@ public class ClientIdentityTest extends BaseTestSupport {
     public void testLoadClientIdentities() throws Exception {
         Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
 
-        Path resFolder = getClassResourcesFolder(TEST_SUBFOLDER, getClass()).toPath();
+        Path resFolder = getClassResourcesFolder(TEST_SUBFOLDER, getClass());
         LinkOption[] options = IoUtils.getLinkOptions(false);
         Collection<BuiltinIdentities> expected = EnumSet.noneOf(BuiltinIdentities.class);
         for (BuiltinIdentities type : BuiltinIdentities.VALUES) {

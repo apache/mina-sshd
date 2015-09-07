@@ -57,12 +57,14 @@ import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.config.hosts.HostConfigEntry;
 import org.apache.sshd.client.config.hosts.HostConfigEntryResolver;
-import org.apache.sshd.client.config.keys.ClientIdentity;
 import org.apache.sshd.client.config.keys.ClientIdentityLoader;
+import org.apache.sshd.client.config.keys.DefaultClientIdentitiesWatcher;
 import org.apache.sshd.client.future.ConnectFuture;
 import org.apache.sshd.client.future.DefaultConnectFuture;
 import org.apache.sshd.client.session.ClientConnectionServiceFactory;
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.client.session.ClientSessionCreator;
+import org.apache.sshd.client.session.ClientSessionImpl;
 import org.apache.sshd.client.session.ClientUserAuthServiceFactory;
 import org.apache.sshd.client.session.SessionFactory;
 import org.apache.sshd.common.AbstractFactoryManager;
@@ -80,6 +82,7 @@ import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoConnectFuture;
 import org.apache.sshd.common.io.IoConnector;
 import org.apache.sshd.common.keyprovider.AbstractFileKeyPairProvider;
+import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.SecurityUtils;
@@ -138,7 +141,7 @@ import org.apache.sshd.common.util.io.NoCloseOutputStream;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SshClient extends AbstractFactoryManager implements ClientFactoryManager, Closeable {
+public class SshClient extends AbstractFactoryManager implements ClientFactoryManager, ClientSessionCreator, Closeable {
 
     public static final Factory<SshClient> DEFAULT_SSH_CLIENT_FACTORY = new Factory<SshClient>() {
         @Override
@@ -245,6 +248,12 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         ValidateUtils.checkNotNull(getClientIdentityLoader(), "ClientIdentityLoader not set");
         ValidateUtils.checkNotNull(getFilePasswordProvider(), "FilePasswordProvider not set");
 
+        // if no client identities override use the default
+        KeyPairProvider defaultIdentities = getKeyPairProvider();
+        if (defaultIdentities == null) {
+            setKeyPairProvider(new DefaultClientIdentitiesWatcher(getClientIdentityLoader(), getFilePasswordProvider()));
+        }
+
         // Register the additional agent forwarding channel if needed
         SshAgentFactory agentFactory = getAgentFactory();
         if (agentFactory != null) {
@@ -320,18 +329,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                 .build();
     }
 
-    /**
-     * Resolves the <U>effective</U> {@link HostConfigEntry} and connects to it
-     *
-     * @param username The intended username
-     * @param host The target host name/address - never {@code null}/empty
-     * @param port The target port
-     * @return A {@link ConnectFuture}
-     * @throws IOException If failed to resolve the effective target or
-     * connect to it
-     * @see #getHostConfigEntryResolver()
-     * @see #connect(HostConfigEntry)
-     */
+    @Override
     public ConnectFuture connect(String username, String host, int port) throws IOException {
         HostConfigEntryResolver resolver = getHostConfigEntryResolver();
         HostConfigEntry entry = resolver.resolveEffectiveHost(host, port, username);
@@ -351,20 +349,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         return connect(entry);
     }
 
-    /**
-     * Resolves the <U>effective</U> {@link HostConfigEntry} and connects to it
-     *
-     * @param username The intended username
-     * @param address The intended {@link SocketAddress] - never {@code null}. If
-     * this is an {@link InetSocketAddress} then the <U>effective</U> {@link HostConfigEntry}
-     * is resolved and used.
-     * @return A {@link ConnectFuture}
-     * @throws IOException If failed to resolve the effective target or
-     * connect to it
-     * @see #getHostConfigEntryResolver()
-     * @see #connect(HostConfigEntry)
-     * @see #doConnect(String, SocketAddress)
-     */
+    @Override
     public ConnectFuture connect(String username, SocketAddress address) throws IOException {
         ValidateUtils.checkNotNull(address, "No target address");
         if (address instanceof InetSocketAddress) {
@@ -380,7 +365,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                     log.debug("connect({}@{}:{}) no overrides", username, host, port);
                 }
 
-                return doConnect(username, address, Collections.<KeyPair>emptyList());
+                return doConnect(username, address, Collections.<KeyPair>emptyList(), true);
             } else {
                 if (log.isDebugEnabled()) {
                     log.debug("connect({}@{}:{}) effective: {}", username, host, port, entry);
@@ -392,16 +377,11 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             if (log.isDebugEnabled()) {
                 log.debug("connect({}@{}) not an InetSocketAddress: {}", username, address, address.getClass().getName());
             }
-            return doConnect(username, address, Collections.<KeyPair>emptyList());
+            return doConnect(username, address, Collections.<KeyPair>emptyList(), true);
         }
     }
 
-    /**
-     * @param hostConfig The effective {@link HostConfigEntry} to connect to - never {@code null}
-     * @return A {@link ConnectFuture}
-     * @throws IOException If failed to create the connector
-     * @see #doCloseGracefully()
-     */
+    @Override
     public ConnectFuture connect(HostConfigEntry hostConfig) throws IOException {
         ValidateUtils.checkNotNull(hostConfig, "No host configuration");
         String host = ValidateUtils.checkNotNullAndNotEmpty(hostConfig.getHostName(), "No target host");
@@ -409,7 +389,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         ValidateUtils.checkTrue(port > 0, "Invalid port: %d", port);
 
         Collection<KeyPair> keys = loadClientIdentities(hostConfig.getIdentities(), IoUtils.EMPTY_LINK_OPTIONS);
-        return doConnect(hostConfig.getUsername(), new InetSocketAddress(host, port), keys);
+        return doConnect(hostConfig.getUsername(), new InetSocketAddress(host, port), keys, !hostConfig.isIdentitiesOnly());
     }
 
     protected List<KeyPair> loadClientIdentities(Collection<String> locations, LinkOption ... options) throws IOException {
@@ -451,7 +431,9 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         return ids;
     }
 
-    protected ConnectFuture doConnect(final String username, final SocketAddress address, final Collection<? extends KeyPair> identities) throws IOException {
+    protected ConnectFuture doConnect(
+            final String username, final SocketAddress address, final Collection<? extends KeyPair> identities, final boolean useDefaultIdentities)
+                    throws IOException {
         if (connector == null) {
             throw new IllegalStateException("SshClient not started. Please call start() method before connecting to a server");
         }
@@ -465,8 +447,12 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                 } else if (future.getException() != null) {
                     connectFuture.setException(future.getException());
                 } else {
-                    ClientSession session = (ClientSession) AbstractSession.getSession(future.getSession());
+                    ClientSessionImpl session = (ClientSessionImpl) AbstractSession.getSession(future.getSession());
                     session.setUsername(username);
+
+                    if (useDefaultIdentities) {
+                        session.setKeyPairProvider(getKeyPairProvider());
+                    }
 
                     int numIds = GenericUtils.size(identities);
                     if (numIds > 0) {
@@ -613,25 +599,20 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         }
 
         SshClient client = SshClient.setUpDefaultClient();
+        client.setFilePasswordProvider(new FilePasswordProvider() {
+            @Override
+            public String getPassword(String file) throws IOException {
+                stdout.print("Enter password for private key file=" + file + ": ");
+                return stdin.readLine();
+            }
+        });
+
         try {
-            if (SecurityUtils.isBouncyCastleRegistered()) {
+            if (GenericUtils.size(identities) > 0) {
                 try {
-                    if (GenericUtils.isEmpty(identities)) {
-                        ClientIdentity.setKeyPairProvider(client,
-                                false,  // not strict - even though we should...
-                                true,   // supportedOnly
-                                new FilePasswordProvider() {
-                                    @Override
-                                    public String getPassword(String file) throws IOException {
-                                        stdout.print("Enter password for private key file=" + file + ": ");
-                                        return stdin.readLine();
-                                    }
-                                });
-                    } else {
-                        AbstractFileKeyPairProvider provider = SecurityUtils.createFileKeyPairProvider();
-                        provider.setFiles(identities);
-                        client.setKeyPairProvider(provider);
-                    }
+                    AbstractFileKeyPairProvider provider = SecurityUtils.createFileKeyPairProvider();
+                    provider.setFiles(identities);
+                    client.setKeyPairProvider(provider);
                 } catch (Throwable t) {
                     stderr.println("Error loading user keys: " + t.getMessage());
                 }

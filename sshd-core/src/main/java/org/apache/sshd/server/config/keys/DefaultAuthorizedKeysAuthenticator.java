@@ -103,10 +103,13 @@ public class DefaultAuthorizedKeysAuthenticator extends AuthorizedKeysAuthentica
     protected Collection<AuthorizedKeyEntry> reloadAuthorizedKeys(Path path, String username, ServerSession session) throws IOException {
         if (isStrict()) {
             if (log.isDebugEnabled()) {
-                log.debug("reloadAuthorizedKeys(" + username + ")[" + session + "] check permissions of " + path);
+                log.debug("reloadAuthorizedKeys({})[{}] check permissions of {}", username, session, path);
             }
 
-            KeyUtils.validateStrictKeyFilePermissions(path);
+            PosixFilePermission violation = KeyUtils.validateStrictKeyFilePermissions(path);
+            if (violation != null) {
+                throw new IOException("String permission violation (" + violation + ") for " + path);
+            }
         }
 
         return super.reloadAuthorizedKeys(path, username, session);

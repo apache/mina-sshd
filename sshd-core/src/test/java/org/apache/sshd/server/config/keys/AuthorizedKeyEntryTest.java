@@ -20,7 +20,6 @@
 package org.apache.sshd.server.config.keys;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -96,10 +95,9 @@ public class AuthorizedKeyEntryTest extends BaseTestSupport {
     @Test
     @Ignore("It might cause some exceptions if user's file contains unsupported keys")
     public void testReadDefaultAuthorizedKeysFile() throws Exception {
-        File file = AuthorizedKeyEntry.getDefaultAuthorizedKeysFile();
-        assertNotNull("No default location", file);
+        Path path = AuthorizedKeyEntry.getDefaultAuthorizedKeysFile();
+        assertNotNull("No default location", path);
 
-        Path path = file.toPath();
         LinkOption[] options = IoUtils.getLinkOptions(false);
         if (!Files.exists(path, options)) {
             System.out.append(getCurrentTestName()).append(": verify non-existing ").println(path);

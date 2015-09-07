@@ -26,6 +26,7 @@ import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -167,5 +168,10 @@ public class ModifiableFileWatcher extends AbstractLoggingBean {
         }
 
         resetReloadAttributes();
+    }
+
+    @Override
+    public String toString() {
+        return Objects.toString(getPath());
     }
 }

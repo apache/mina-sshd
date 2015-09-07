@@ -46,7 +46,7 @@ public abstract class AbstractSftpClientTestSupport extends BaseTestSupport {
     protected final FileSystemFactory fileSystemFactory;
 
     protected AbstractSftpClientTestSupport() throws IOException {
-        Path targetPath = detectTargetFolder().toPath();
+        Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
         rootFileSystem = new RootedFileSystemProvider().newFileSystem(parentPath, Collections.<String, Object>emptyMap());
         fileSystemFactory = new FileSystemFactory() {

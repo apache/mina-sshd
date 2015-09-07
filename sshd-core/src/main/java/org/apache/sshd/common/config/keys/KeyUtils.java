@@ -526,7 +526,7 @@ public final class KeyUtils {
     public static boolean compareKeyPairs(KeyPair k1, KeyPair k2) {
         if (Objects.equals(k1, k2)) {
             return true;
-        } else if (k1 == null || k2 == null) {
+        } else if ((k1 == null) || (k2 == null)) {
             return false;   // both null is covered by Objects#equals
         } else {
             return compareKeys(k1.getPublic(), k2.getPublic())

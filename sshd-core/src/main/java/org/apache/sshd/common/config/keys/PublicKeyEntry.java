@@ -20,10 +20,10 @@
 package org.apache.sshd.common.config.keys;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.io.StreamCorruptedException;
+import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
 import java.security.PublicKey;
@@ -254,8 +254,7 @@ public class PublicKeyEntry implements Serializable {
     }
 
     private static final class LazyDefaultKeysFolderHolder {
-        private static final File FOLDER =
-                new File(System.getProperty("user.home") + File.separator + STD_KEYFILE_FOLDER_NAME);
+        private static final Path PATH = IdentityUtils.getUserHomeFolder().resolve(STD_KEYFILE_FOLDER_NAME);
     }
 
     /**
@@ -263,7 +262,7 @@ public class PublicKeyEntry implements Serializable {
      * {@code known_hosts}, {@code authorized_keys}, etc.
      */
     @SuppressWarnings("synthetic-access")
-    public static File getDefaultKeysFolder() {
-        return LazyDefaultKeysFolderHolder.FOLDER;
+    public static Path getDefaultKeysFolderPath() {
+        return LazyDefaultKeysFolderHolder.PATH;
     }
 }

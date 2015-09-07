@@ -81,7 +81,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
     private final FileSystemFactory fileSystemFactory;
 
     public SftpFileSystemTest() throws IOException {
-        Path targetPath = detectTargetFolder().toPath();
+        Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
         final FileSystem fileSystem = new RootedFileSystemProvider().newFileSystem(parentPath, Collections.<String, Object>emptyMap());
         fileSystemFactory = new FileSystemFactory() {
@@ -126,7 +126,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
 
     @Test
     public void testAttributes() throws IOException {
-        Path targetPath = detectTargetFolder().toPath();
+        Path targetPath = detectTargetFolder();
         Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         Utils.deleteRecursive(lclSftp);
 
@@ -175,7 +175,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
 
     @Test
     public void testRootFileSystem() throws IOException {
-        Path targetPath = detectTargetFolder().toPath();
+        Path targetPath = detectTargetFolder();
         Path rootNative = targetPath.resolve("root").toAbsolutePath();
         Utils.deleteRecursive(rootNative);
         assertHierarchyTargetFolderExists(rootNative);
@@ -327,7 +327,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
             }
         }
 
-        Path targetPath = detectTargetFolder().toPath();
+        Path targetPath = detectTargetFolder();
         Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         Utils.deleteRecursive(lclSftp);
 

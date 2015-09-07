@@ -45,6 +45,7 @@ import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.config.keys.PublicKeyEntryDecoder;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.NoCloseInputStream;
 import org.apache.sshd.common.util.io.NoCloseReader;
 import org.apache.sshd.server.auth.pubkey.KeySetPublickeyAuthenticator;
@@ -69,7 +70,7 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
     private static final long serialVersionUID = -9007505285002809156L;
 
     private static final class LazyDefaultAuthorizedKeysFileHolder {
-        private static final File KEYS_FILE = new File(PublicKeyEntry.getDefaultKeysFolder(), STD_AUTHORIZED_KEYS_FILENAME);
+        private static final Path KEYS_FILE = PublicKeyEntry.getDefaultKeysFolderPath().resolve(STD_AUTHORIZED_KEYS_FILENAME);
     }
 
     private String comment;
@@ -168,23 +169,24 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
     }
 
     /**
-     * @return The default {@link File} location of the OpenSSH authorized keys file
+     * @return The default {@link Path} location of the OpenSSH authorized keys file
      */
     @SuppressWarnings("synthetic-access")
-    public static File getDefaultAuthorizedKeysFile() {
+    public static Path getDefaultAuthorizedKeysFile() {
         return LazyDefaultAuthorizedKeysFileHolder.KEYS_FILE;
     }
 
     /**
      * Reads read the contents of the default OpenSSH <code>authorized_keys</code> file
      *
+     * @param options The {@link OpenOption}s to use when reading the file
      * @return A {@link List} of all the {@link AuthorizedKeyEntry}-ies found there -
      * or empty if file does not exist
      * @throws IOException If failed to read keys from file
      */
-    public static List<AuthorizedKeyEntry> readDefaultAuthorizedKeys() throws IOException {
-        File keysFile = getDefaultAuthorizedKeysFile();
-        if (keysFile.exists()) {
+    public static List<AuthorizedKeyEntry> readDefaultAuthorizedKeys(OpenOption ... options) throws IOException {
+        Path keysFile = getDefaultAuthorizedKeysFile();
+        if (Files.exists(keysFile, IoUtils.EMPTY_LINK_OPTIONS)) {
             return readAuthorizedKeys(keysFile);
         } else {
             return Collections.emptyList();

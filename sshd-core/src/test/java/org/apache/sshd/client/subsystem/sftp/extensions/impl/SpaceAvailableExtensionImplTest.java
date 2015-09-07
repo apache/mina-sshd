@@ -66,7 +66,7 @@ public class SpaceAvailableExtensionImplTest extends AbstractSftpClientTestSuppo
 
     @Test
     public void testFileStoreReport() throws Exception {
-        Path targetPath = detectTargetFolder().toPath();
+        Path targetPath = detectTargetFolder();
         Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
         Path parentPath = targetPath.getParent();
         FileStore store = Files.getFileStore(lclSftp.getRoot());

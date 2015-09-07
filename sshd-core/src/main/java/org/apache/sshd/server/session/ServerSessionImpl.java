@@ -66,7 +66,7 @@ public class ServerSessionImpl extends AbstractSession implements ServerSession 
 
     @Override
     public ServerFactoryManager getFactoryManager() {
-        return (ServerFactoryManager) factoryManager;
+        return (ServerFactoryManager) super.getFactoryManager();
     }
 
     @Override
@@ -122,10 +122,13 @@ public class ServerSessionImpl extends AbstractSession implements ServerSession 
     }
 
     @Override
-    protected String resolveAvailableSignaturesProposal(FactoryManager manager) {
+    protected String resolveAvailableSignaturesProposal(FactoryManager proposedManager) {
         /*
          * Make sure we can provide key(s) for the available signatures
          */
+        ServerFactoryManager manager = getFactoryManager();
+        ValidateUtils.checkTrue(proposedManager == manager, "Mismatched signatures proposed factory manager");
+
         KeyPairProvider kpp = manager.getKeyPairProvider();
         Collection<String> supported = NamedResource.Utils.getNameList(manager.getSignatureFactories());
         Iterable<String> provided = (kpp == null) ? null : kpp.getKeyTypes();
@@ -208,7 +211,8 @@ public class ServerSessionImpl extends AbstractSession implements ServerSession 
     @Override
     public KeyPair getHostKey() {
         String value = getNegotiatedKexParameter(KexProposalOption.SERVERKEYS);
-        KeyPairProvider provider = ValidateUtils.checkNotNull(factoryManager.getKeyPairProvider(), "No host keys provider");
+        ServerFactoryManager manager = getFactoryManager();
+        KeyPairProvider provider = ValidateUtils.checkNotNull(manager.getKeyPairProvider(), "No host keys provider");
         return provider.loadKey(value);
     }
 

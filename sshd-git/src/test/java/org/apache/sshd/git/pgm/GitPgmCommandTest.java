@@ -18,7 +18,7 @@
  */
 package org.apache.sshd.git.pgm;
 
-import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
@@ -48,8 +48,8 @@ public class GitPgmCommandTest extends BaseTestSupport {
 
     @Test
     public void testGitpgm() throws Exception {
-        Path targetParent = detectTargetFolder().toPath().getParent();
-        File serverDir = getTargetRelativeFile(TEMP_SUBFOLDER_NAME, getClass().getSimpleName());
+        Path targetParent = detectTargetFolder().getParent();
+        Path serverDir = getTempTargetRelativeFile(getClass().getSimpleName());
 
         //
         // TODO: the GitpgmCommandFactory is kept in the test tree
@@ -58,7 +58,7 @@ public class GitPgmCommandTest extends BaseTestSupport {
 
         try(SshServer sshd = setupTestServer()) {
             sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(new SftpSubsystemFactory()));
-            sshd.setCommandFactory(new GitPgmCommandFactory(Utils.resolveRelativeRemotePath(targetParent, serverDir.toPath())));
+            sshd.setCommandFactory(new GitPgmCommandFactory(Utils.resolveRelativeRemotePath(targetParent, serverDir)));
             sshd.start();
 
             int port = sshd.getPort();
@@ -72,16 +72,14 @@ public class GitPgmCommandTest extends BaseTestSupport {
                         session.addPasswordIdentity(getCurrentTestName());
                         session.auth().verify(5L, TimeUnit.SECONDS);
 
-                        File repo = new File(serverDir, getCurrentTestName());
-                        Git.init().setDirectory(repo).call();
-                        Git git = Git.open(repo);
+                        Path repo = serverDir.resolve(getCurrentTestName());
+                        Git.init().setDirectory(repo.toFile()).call();
+                        Git git = Git.open(repo.toFile());
                         git.commit().setMessage("First Commit").setCommitter(getCurrentTestName(), "sshd@apache.org").call();
 
-                        File readmeFile = new File(repo, "readme.txt");
-                        assertTrue("Failed to create test file " + readmeFile, readmeFile.createNewFile());
-
-                        String commandPrefix = "git --git-dir " + repo.getName();
-                        execute(session, commandPrefix + " add " + readmeFile.getName());
+                        Path readmeFile = Files.createFile(repo.resolve("readme.txt"));
+                        String commandPrefix = "git --git-dir " + repo.getFileName();
+                        execute(session, commandPrefix + " add " + readmeFile.getFileName());
                         execute(session, commandPrefix + " commit -m \"readme\"");
                     } finally {
                         client.stop();

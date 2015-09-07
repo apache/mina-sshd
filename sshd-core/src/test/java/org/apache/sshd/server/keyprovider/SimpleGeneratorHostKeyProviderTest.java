@@ -18,13 +18,16 @@
  */
 package org.apache.sshd.server.keyprovider;
 
-import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.KeyPair;
 import java.security.spec.AlgorithmParameterSpec;
 import java.security.spec.ECGenParameterSpec;
 
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.SecurityUtils;
+import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.Assume;
 import org.junit.FixMethodOrder;
@@ -38,50 +41,53 @@ import org.junit.runners.MethodSorters;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class SimpleGeneratorHostKeyProviderTest extends BaseTestSupport {
+    public SimpleGeneratorHostKeyProviderTest() {
+        super();
+    }
 
     @Test
-    public void testDSA() {
+    public void testDSA() throws IOException {
         testSimpleGeneratorHostKeyProvider("DSA", KeyPairProvider.SSH_DSS, 512, null);
     }
 
     @Test
-    public void testRSA() {
+    public void testRSA() throws IOException {
         testSimpleGeneratorHostKeyProvider("RSA", KeyPairProvider.SSH_RSA, 512, null);
     }
 
     @Test
-    public void testEC_NISTP256() {
+    public void testEC_NISTP256() throws IOException {
         Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
         testSimpleGeneratorHostKeyProvider("EC", KeyPairProvider.ECDSA_SHA2_NISTP256, -1, new ECGenParameterSpec("prime256v1"));
     }
 
     @Test
-    public void testEC_NISTP384() {
+    public void testEC_NISTP384() throws IOException {
         Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
         testSimpleGeneratorHostKeyProvider("EC", KeyPairProvider.ECDSA_SHA2_NISTP384, -1, new ECGenParameterSpec("P-384"));
     }
 
     @Test
-    public void testEC_NISTP521() {
+    public void testEC_NISTP521() throws IOException {
         Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
         testSimpleGeneratorHostKeyProvider("EC", KeyPairProvider.ECDSA_SHA2_NISTP521, -1, new ECGenParameterSpec("P-521"));
     }
 
-    private File testSimpleGeneratorHostKeyProvider(String algorithm, String keyType, int keySize, AlgorithmParameterSpec keySpec) {
-        File path = initKeyFileLocation(algorithm);
+    private Path testSimpleGeneratorHostKeyProvider(String algorithm, String keyType, int keySize, AlgorithmParameterSpec keySpec) throws IOException {
+        Path path = initKeyFileLocation(algorithm);
         KeyPair kpWrite = invokeSimpleGeneratorHostKeyProvider(path, algorithm, keyType, keySize, keySpec);
-        assertTrue("Key file not generated: " + path.getAbsolutePath(), path.exists());
+        assertTrue("Key file not generated: " + path, Files.exists(path, IoUtils.EMPTY_LINK_OPTIONS));
 
         KeyPair kpRead = invokeSimpleGeneratorHostKeyProvider(path, algorithm, keyType, keySize, keySpec);
         assertKeyPairEquals("Mismatched write/read key pairs", kpWrite, kpRead);
         return path;
     }
 
-    private static KeyPair invokeSimpleGeneratorHostKeyProvider(File path, String algorithm, String keyType, int keySize, AlgorithmParameterSpec keySpec) {
+    private static KeyPair invokeSimpleGeneratorHostKeyProvider(Path path, String algorithm, String keyType, int keySize, AlgorithmParameterSpec keySpec) {
         SimpleGeneratorHostKeyProvider provider = new SimpleGeneratorHostKeyProvider();
         provider.setAlgorithm(algorithm);
         provider.setOverwriteAllowed(true);
-        provider.setFile(path.getAbsoluteFile());
+        provider.setPath(path);
         if (keySize > 0) {
             provider.setKeySize(keySize);
         }
@@ -107,13 +113,10 @@ public class SimpleGeneratorHostKeyProviderTest extends BaseTestSupport {
         return kp;
     }
 
-    private File initKeyFileLocation(String algorithm) {
-        File path = assertHierarchyTargetFolderExists(getTargetRelativeFile(TEMP_SUBFOLDER_NAME, getClass().getSimpleName()));
-        path = new File(path, algorithm + "-simple.key");
-        if (path.exists()) {
-            assertTrue("Failed to delete test key file: " + path.getAbsolutePath(), path.delete());
-        }
-
+    private Path initKeyFileLocation(String algorithm) throws IOException {
+        Path path = assertHierarchyTargetFolderExists(getTempTargetRelativeFile(getClass().getSimpleName()));
+        path = path.resolve(algorithm + "-simple.key");
+        Files.deleteIfExists(path);
         return path;
     }
 }

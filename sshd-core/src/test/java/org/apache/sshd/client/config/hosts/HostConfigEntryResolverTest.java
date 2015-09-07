@@ -23,11 +23,14 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.PublicKey;
-import java.util.Iterator;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.SshClient;
@@ -38,6 +41,7 @@ import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.io.IoSession;
+import org.apache.sshd.common.keyprovider.AbstractKeyPairProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -46,6 +50,7 @@ import org.apache.sshd.server.auth.password.RejectAllPasswordAuthenticator;
 import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.util.test.BaseTestSupport;
+import org.apache.sshd.util.test.Utils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
@@ -106,12 +111,7 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
 
     @Test
     public void testPreloadedIdentities() throws Exception {
-        KeyPairProvider provider = ValidateUtils.checkNotNull(sshd.getKeyPairProvider(), "No key pair provider");
-        Iterable<? extends KeyPair> pairs = ValidateUtils.checkNotNull(provider.loadKeys(), "No loaded keys");
-        Iterator<? extends KeyPair> iter = ValidateUtils.checkNotNull(pairs.iterator(), "No keys iterator");
-        assertTrue("Empty loaded kyes iterator", iter.hasNext());
-
-        final KeyPair identity = iter.next();
+        final KeyPair identity = Utils.getFirstKeyPair(sshd);
         final String USER = getCurrentTestName();
         // make sure authentication is achieved only via the identity public key
         sshd.setPublickeyAuthenticator(new PublickeyAuthenticator() {
@@ -161,7 +161,78 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
         } finally {
             client.stop();
         }
+    }
 
+    @Test
+    public void testUseIdentitiesOnly() throws Exception {
+        Path clientIdFile = assertHierarchyTargetFolderExists(getTempTargetRelativeFile(getClass().getSimpleName()));
+        KeyPairProvider clientIdProvider = Utils.createTestHostKeyProvider(clientIdFile.resolve(getCurrentTestName() + ".pem"));
+
+        final KeyPair specificIdentity = Utils.getFirstKeyPair(sshd);
+        final KeyPair defaultIdentity = Utils.getFirstKeyPair(clientIdProvider);
+        ValidateUtils.checkTrue(!KeyUtils.compareKeyPairs(specificIdentity, defaultIdentity), "client identity not different then entry one");
+        client.setKeyPairProvider(clientIdProvider);
+
+        final String USER = getCurrentTestName();
+        final AtomicBoolean defaultClientIdentityAttempted = new AtomicBoolean(false);
+        // make sure authentication is achieved only via the identity public key
+        sshd.setPublickeyAuthenticator(new PublickeyAuthenticator() {
+            @Override
+            public boolean authenticate(String username, PublicKey key, ServerSession session) {
+                if (KeyUtils.compareKeys(defaultIdentity.getPublic(), key)) {
+                    defaultClientIdentityAttempted.set(true);
+                }
+
+                if (USER.equals(username)) {
+                    return KeyUtils.compareKeys(specificIdentity.getPublic(), key);
+                }
+
+                return false;
+            }
+        });
+        sshd.setPasswordAuthenticator(RejectAllPasswordAuthenticator.INSTANCE);
+
+        final String IDENTITY = getCurrentTestName();
+        HostConfigEntry entry = new HostConfigEntry("localhost", "localhost", port, USER);
+        entry.addIdentity(IDENTITY);
+        entry.setIdentitiesOnly(true);
+
+        client.setClientIdentityLoader(new ClientIdentityLoader() {
+            @Override
+            public boolean isValidLocation(String location) throws IOException {
+                return IDENTITY.equals(location);
+            }
+
+            @Override
+            public KeyPair loadClientIdentity(String location, FilePasswordProvider provider) throws IOException, GeneralSecurityException {
+                if (isValidLocation(location)) {
+                    return specificIdentity;
+                }
+
+                throw new FileNotFoundException("Unknown location: " + location);
+            }
+        });
+        FactoryManagerUtils.updateProperty(client, ClientFactoryManager.IGNORE_INVALID_IDENTITIES, false);
+
+        final Collection<KeyPair> clientIdentities = Collections.singletonList(defaultIdentity);
+        client.setKeyPairProvider(new AbstractKeyPairProvider() {
+            @Override
+            public Iterable<KeyPair> loadKeys() {
+                return clientIdentities;
+            }
+        });
+
+        client.start();
+        try(ClientSession session = client.connect(entry).verify(7L, TimeUnit.SECONDS).getSession()) {
+            assertNull("Unexpected session key pairs provider", session.getKeyPairProvider());
+            session.auth().verify(5L, TimeUnit.SECONDS);
+            assertFalse("Unexpected default client identity attempted", defaultClientIdentityAttempted.get());
+            assertNull("Default client identity auto-added", session.removePublicKeyIdentity(defaultIdentity));
+            assertNotNull("Entry identity not automatically added", session.removePublicKeyIdentity(specificIdentity));
+            assertEffectiveRemoteAddress(session, entry);
+        } finally {
+            client.stop();
+        }
     }
 
     private static int getMovedPortNumber(int port) {

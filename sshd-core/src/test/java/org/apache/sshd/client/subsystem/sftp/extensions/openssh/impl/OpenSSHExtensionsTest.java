@@ -82,7 +82,7 @@ public class OpenSSHExtensionsTest extends AbstractSftpClientTestSupport {
 
     @Test
     public void testFsync() throws IOException {
-        Path targetPath = detectTargetFolder().toPath();
+        Path targetPath = detectTargetFolder();
         Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
         Path srcFile = assertHierarchyTargetFolderExists(lclSftp).resolve(getCurrentTestName() + ".txt");
         byte[] expected = (getClass().getName() + "#" + getCurrentTestName()).getBytes(StandardCharsets.UTF_8);
@@ -114,7 +114,7 @@ public class OpenSSHExtensionsTest extends AbstractSftpClientTestSupport {
 
     @Test
     public void testStat() throws Exception {
-        Path targetPath = detectTargetFolder().toPath();
+        Path targetPath = detectTargetFolder();
         Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
         Path srcFile = assertHierarchyTargetFolderExists(lclSftp).resolve(getCurrentTestName() + ".txt");
         Files.write(srcFile, (getClass().getName() + "#" + getCurrentTestName()).getBytes(StandardCharsets.UTF_8), IoUtils.EMPTY_OPEN_OPTIONS);

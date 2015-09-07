@@ -18,7 +18,7 @@
  */
 package org.apache.sshd.git.pack;
 
-import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 
@@ -50,41 +50,40 @@ public class GitPackCommandTest extends BaseTestSupport {
 
     @Test
     public void testGitPack() throws Exception {
-        Path targetParent = detectTargetFolder().toPath().getParent();
-        File gitRootDir = getTargetRelativeFile(TEMP_SUBFOLDER_NAME, getClass().getSimpleName());
+        Path targetParent = detectTargetFolder().getParent();
+        Path gitRootDir = getTempTargetRelativeFile(getClass().getSimpleName());
 
         try(SshServer sshd = setupTestServer()) {
-            File serverRootDir = new File(gitRootDir, "server");
+            Path serverRootDir = gitRootDir.resolve("server");
             sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(new SftpSubsystemFactory()));
-            sshd.setCommandFactory(new GitPackCommandFactory(Utils.resolveRelativeRemotePath(targetParent, serverRootDir.toPath())));
+            sshd.setCommandFactory(new GitPackCommandFactory(Utils.resolveRelativeRemotePath(targetParent, serverRootDir)));
             sshd.start();
 
             int port = sshd.getPort();
             try {
-                File serverDir = new File(serverRootDir, "test.git");
+                Path serverDir = serverRootDir.resolve("test.git");
                 Utils.deleteRecursive(serverDir);
-                Git.init().setBare(true).setDirectory(serverDir).call();
+                Git.init().setBare(true).setDirectory(serverDir.toFile()).call();
 
                 JSchLogger.init();
                 JSch.setConfig("StrictHostKeyChecking", "no");
                 CredentialsProvider.setDefault(new UsernamePasswordCredentialsProvider(getCurrentTestName(), getCurrentTestName()));
                 SshSessionFactory.setInstance(new GitSshdSessionFactory());
 
-                File localRootDir = new File(gitRootDir, "local");
-                File localDir = new File(localRootDir, serverDir.getName());
+                Path localRootDir = gitRootDir.resolve("local");
+                Path localDir = localRootDir.resolve(serverDir.getFileName());
                 Utils.deleteRecursive(localDir);
                 Git.cloneRepository()
-                        .setURI("ssh://" + getCurrentTestName() + "@localhost:" + port + "/" + serverDir.getName())
-                        .setDirectory(localDir)
+                        .setURI("ssh://" + getCurrentTestName() + "@localhost:" + port + "/" + serverDir.getFileName())
+                        .setDirectory(localDir.toFile())
                         .call();
 
-                Git git = Git.open(localDir);
+                Git git = Git.open(localDir.toFile());
                 git.commit().setMessage("First Commit").setCommitter(getCurrentTestName(), "sshd@apache.org").call();
                 git.push().call();
 
-                File readmeFile = new File(localDir, "readme.txt");
-                assertTrue("Failed to create " + readmeFile, readmeFile.createNewFile());
-                git.add().addFilepattern(readmeFile.getName()).call();
+                Path readmeFile = Files.createFile(localDir.resolve("readme.txt"));
+                git.add().addFilepattern(readmeFile.getFileName().toString()).call();
                 git.commit().setMessage(getCurrentTestName()).setCommitter(getCurrentTestName(), "sshd@apache.org").call();
                 git.push().call();
 

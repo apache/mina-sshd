@@ -62,6 +62,7 @@ import org.apache.sshd.common.future.KeyExchangeFuture;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.kex.KexState;
+import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.scp.ScpTransferEventListener;
 import org.apache.sshd.common.session.AbstractConnectionService;
 import org.apache.sshd.common.session.AbstractSession;
@@ -124,6 +125,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
     private final List<Object> identities = new ArrayList<>();
     private UserInteraction userInteraction;
     private ScpTransferEventListener scpListener;
+    private KeyPairProvider keyPairProvider;
 
     public ClientSessionImpl(ClientFactoryManager client, IoSession session) throws Exception {
         super(false, client, session);
@@ -165,7 +167,16 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
 
     @Override
     public ClientFactoryManager getFactoryManager() {
-        return (ClientFactoryManager) factoryManager;
+        return (ClientFactoryManager) super.getFactoryManager();
+    }
+
+    @Override
+    public KeyPairProvider getKeyPairProvider() {
+        return keyPairProvider;
+    }
+
+    public void setKeyPairProvider(KeyPairProvider keyPairProvider) {
+        this.keyPairProvider = keyPairProvider;
     }
 
     @Override
@@ -455,7 +466,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
 
     @Override
     public FileSystem createSftpFileSystem(SftpVersionSelector selector, int readBufferSize, int writeBufferSize) throws IOException {
-        SftpFileSystemProvider provider = new SftpFileSystemProvider((org.apache.sshd.client.SshClient) factoryManager, selector);
+        SftpFileSystemProvider provider = new SftpFileSystemProvider((org.apache.sshd.client.SshClient) getFactoryManager(), selector);
         SftpFileSystem fs = provider.newFileSystem(this);
         fs.setReadBufferSize(readBufferSize);
         fs.setWriteBufferSize(writeBufferSize);

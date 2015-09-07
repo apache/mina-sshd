@@ -32,7 +32,6 @@ import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.forward.TcpipForwarderFactory;
 import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.kex.KeyExchange;
-import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.mac.Mac;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.session.ConnectionService;
@@ -226,14 +225,6 @@ public interface FactoryManager extends SessionListenerManager, ChannelListenerM
      * @return a list of named <code>Signature</code> factories, never {@code null}
      */
     List<NamedFactory<Signature>> getSignatureFactories();
-
-    /**
-     * Retrieve the <code>KeyPairProvider</code> that will be used to find
-     * the host key to use on the server side or the user key on the client side.
-     *
-     * @return the <code>KeyPairProvider</code>, never {@code null}
-     */
-    KeyPairProvider getKeyPairProvider();
 
     /**
      * Retrieve the <code>Random</code> factory to be used.

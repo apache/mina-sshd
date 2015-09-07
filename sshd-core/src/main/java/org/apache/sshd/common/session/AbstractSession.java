@@ -98,10 +98,6 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
      */
     protected final boolean isServer;
     /**
-     * The factory manager used to retrieve factories of Ciphers, Macs and other objects
-     */
-    protected final FactoryManager factoryManager;
-    /**
      * The underlying MINA session
      */
     protected final IoSession ioSession;
@@ -189,6 +185,11 @@ public abstract class AbstractSession extends CloseableUtils.AbstractInnerClosea
     protected final Queue<PendingWriteFuture> pendingPackets = new LinkedList<>();
 
     protected Service currentService;
+
+    /**
+     * The factory manager used to retrieve factories of Ciphers, Macs and other objects
+     */
+    private final FactoryManager factoryManager;
 
     /**
      * Create a new session.

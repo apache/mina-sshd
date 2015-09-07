@@ -19,8 +19,8 @@
 
 package org.apache.sshd.common.util;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -127,8 +127,8 @@ public class SecurityUtilsTest extends BaseTestSupport {
     }
 
     private KeyPair testLoadPrivateKey(String name, Class<? extends PublicKey> pubType, Class<? extends PrivateKey> prvType) {
-        File folder = getClassResourcesFolder(TEST_SUBFOLDER);
-        KeyPair kpFile = testLoadPrivateKeyFile(new File(folder, name), pubType, prvType);
+        Path folder = getClassResourcesFolder(TEST_SUBFOLDER);
+        KeyPair kpFile = testLoadPrivateKeyFile(folder.resolve(name), pubType, prvType);
         Class<?> clazz = getClass();
         Package pkg = clazz.getPackage();
         KeyPair kpResource = testLoadPrivateKeyResource(pkg.getName().replace('.', '/') + "/" + name, pubType, prvType);
@@ -143,10 +143,10 @@ public class SecurityUtilsTest extends BaseTestSupport {
         return testLoadPrivateKey(name, provider, pubType, prvType);
     }
 
-    private static KeyPair testLoadPrivateKeyFile(File file, Class<? extends PublicKey> pubType, Class<? extends PrivateKey> prvType) {
+    private static KeyPair testLoadPrivateKeyFile(Path file, Class<? extends PublicKey> pubType, Class<? extends PrivateKey> prvType) {
         AbstractFileKeyPairProvider provider = SecurityUtils.createFileKeyPairProvider();
-        provider.setFiles(Collections.singletonList(file));
-        return testLoadPrivateKey(file.getAbsolutePath(), provider, pubType, prvType);
+        provider.setPaths(Collections.singletonList(file));
+        return testLoadPrivateKey(file.toString(), provider, pubType, prvType);
     }
 
     private static KeyPair testLoadPrivateKey(String resourceKey, AbstractResourceKeyPairProvider<?> provider, Class<? extends PublicKey> pubType, Class<? extends PrivateKey> prvType) {

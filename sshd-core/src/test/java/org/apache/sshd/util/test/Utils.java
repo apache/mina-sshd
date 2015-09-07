@@ -37,6 +37,7 @@ import java.security.ProtectionDomain;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -48,6 +49,7 @@ import org.apache.sshd.client.keyverifier.AcceptAllServerKeyVerifier;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.keyprovider.AbstractFileKeyPairProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
+import org.apache.sshd.common.keyprovider.KeyPairProviderHolder;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.SecurityUtils;
@@ -69,10 +71,7 @@ public class Utils {
 
         File targetFolder = ValidateUtils.checkNotNull(detectTargetFolder(anchor), "Failed to detect target folder");
         File file = new File(targetFolder, "hostkey." + DEFAULT_TEST_HOST_KEY_PROVIDER_ALGORITHM.toLowerCase());
-        SimpleGeneratorHostKeyProvider keyProvider = new SimpleGeneratorHostKeyProvider();
-        keyProvider.setFile(file);
-        keyProvider.setAlgorithm(DEFAULT_TEST_HOST_KEY_PROVIDER_ALGORITHM);
-        provider = validateKeyPairProvider(keyProvider);
+        provider = createTestHostKeyProvider(file);
 
         KeyPairProvider prev = keyPairProviderHolder.getAndSet(provider);
         if (prev != null) { // check if somebody else beat us to it
@@ -80,6 +79,29 @@ public class Utils {
         } else {
             return provider;
         }
+    }
+
+    public static KeyPairProvider createTestHostKeyProvider(File file) {
+        return createTestHostKeyProvider(ValidateUtils.checkNotNull(file, "No file").toPath());
+    }
+
+    public static KeyPairProvider createTestHostKeyProvider(Path path) {
+        SimpleGeneratorHostKeyProvider keyProvider = new SimpleGeneratorHostKeyProvider();
+        keyProvider.setPath(ValidateUtils.checkNotNull(path, "No path"));
+        keyProvider.setAlgorithm(DEFAULT_TEST_HOST_KEY_PROVIDER_ALGORITHM);
+        return validateKeyPairProvider(keyProvider);
+    }
+
+    public static KeyPair getFirstKeyPair(KeyPairProviderHolder holder) {
+        return getFirstKeyPair(ValidateUtils.checkNotNull(holder, "No holder").getKeyPairProvider());
+    }
+
+    public static KeyPair getFirstKeyPair(KeyPairProvider provider) {
+        ValidateUtils.checkNotNull(provider, "No key pair provider");
+        Iterable<? extends KeyPair> pairs = ValidateUtils.checkNotNull(provider.loadKeys(), "No loaded keys");
+        Iterator<? extends KeyPair> iter = ValidateUtils.checkNotNull(pairs.iterator(), "No keys iterator");
+        ValidateUtils.checkTrue(iter.hasNext(), "Empty loaded kyes iterator");
+        return ValidateUtils.checkNotNull(iter.next(), "No key pair in iterator");
     }
 
     // uses a cached instance to avoid re-creating the keys as it is a time-consuming effort
@@ -553,6 +575,7 @@ public class Utils {
         SshClient client = SshClient.setUpDefaultClient();
         client.setServerKeyVerifier(AcceptAllServerKeyVerifier.INSTANCE);
         client.setHostConfigEntryResolver(HostConfigEntryResolver.EMPTY);
+        client.setKeyPairProvider(KeyPairProvider.EMPTY_KEYPAIR_PROVIDER);
         return client;
     }
 

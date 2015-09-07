@@ -45,7 +45,7 @@ public class DefaultAuthorizedKeysAuthenticatorTest extends BaseTestSupport {
 
     @Test
     public void testUsernameValidation() throws Exception {
-        Path file = getTargetRelativeFile(TEMP_SUBFOLDER_NAME, getCurrentTestName()).toPath();
+        Path file = getTempTargetRelativeFile(getCurrentTestName());
         URL url = getClass().getResource(AuthorizedKeyEntry.STD_AUTHORIZED_KEYS_FILENAME);
         assertNotNull("Missing " + AuthorizedKeyEntry.STD_AUTHORIZED_KEYS_FILENAME + " resource", url);
 

@@ -256,7 +256,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
                     for (int i = 0; i < 10; i++) {
                         sb.append("0123456789");
                     }
-                    sb.append("\n");
+                    sb.append('\n');
 
                     byte[] data = sb.toString().getBytes(StandardCharsets.UTF_8);
                     for (int i = 0; i < 10; i++) {
@@ -265,7 +265,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
 
                         KeyExchangeFuture kexFuture = session.reExchangeKeys();
                         assertTrue("Failed to complete KEX on time at iteration " + i, kexFuture.await(5L, TimeUnit.SECONDS));
-                        assertNull("KEX exception signalled at iteration " + 1, kexFuture.getException());
+                        assertNull("KEX exception signalled at iteration " + i, kexFuture.getException());
                     }
                     teeOut.write("exit\n".getBytes(StandardCharsets.UTF_8));
                     teeOut.flush();
@@ -283,8 +283,9 @@ public class KeyReExchangeTest extends BaseTestSupport {
     }
 
     @Test
-    public void testReExchangeFromServer() throws Exception {
-        setUp(8192, 0);
+    public void testReExchangeFromServerBySize() throws Exception {
+        final long LIMIT = 8192;
+        setUp(LIMIT, 0);
 
         try (SshClient client = setupTestClient()) {
             client.start();
@@ -313,7 +314,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
                     for (int i = 0; i < 100; i++) {
                         sb.append("0123456789");
                     }
-                    sb.append("\n");
+                    sb.append('\n');
 
                     final AtomicInteger exchanges = new AtomicInteger();
                     session.addSessionListener(new SessionListener() {
@@ -336,10 +337,109 @@ public class KeyReExchangeTest extends BaseTestSupport {
                     });
 
                     byte[] data = sb.toString().getBytes(StandardCharsets.UTF_8);
-                    for (int i = 0; i < 100; i++) {
+                    for (long sentSize = 0L; sentSize < (LIMIT + Byte.MAX_VALUE + data.length); sentSize += data.length) {
                         teeOut.write(data);
                         teeOut.flush();
+                        // no need to wait until the limit is reached if a re-key occurred
+                        if (exchanges.get() > 0) {
+                            break;
+                        }
                     }
+
+                    teeOut.write("exit\n".getBytes(StandardCharsets.UTF_8));
+                    teeOut.flush();
+
+                    channel.waitFor(ClientChannel.CLOSED, 0);
+
+                    channel.close(false);
+
+                    assertTrue("Expected rekeying", exchanges.get() > 0);
+                    assertEquals("Mismatched sent data length", sent.toByteArray().length, out.toByteArray().length);
+                    assertArrayEquals("Mismatched sent data content", sent.toByteArray(), out.toByteArray());
+                }
+            } finally {
+                client.stop();
+            }
+        }
+    }
+    @Test
+    public void testReExchangeFromServerByTime() throws Exception {
+        final long TIME = TimeUnit.SECONDS.toMillis(2L);
+        setUp(0, TIME);
+
+        try (SshClient client = setupTestClient()) {
+            client.start();
+
+            try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+                session.addPasswordIdentity(getCurrentTestName());
+                session.auth().verify(5L, TimeUnit.SECONDS);
+
+                try (ChannelShell channel = session.createShellChannel();
+                     ByteArrayOutputStream sent = new ByteArrayOutputStream();
+                     PipedOutputStream pipedIn = new PipedOutputStream();
+                     OutputStream teeOut = new TeeOutputStream(sent, pipedIn);
+                     ByteArrayOutputStream out = new ByteArrayOutputStream();
+                     ByteArrayOutputStream err = new ByteArrayOutputStream();
+                     InputStream inPipe = new PipedInputStream(pipedIn)) {
+
+                    channel.setIn(inPipe);
+                    channel.setOut(out);
+                    channel.setErr(err);
+                    channel.open();
+
+                    teeOut.write("this is my command\n".getBytes(StandardCharsets.UTF_8));
+                    teeOut.flush();
+
+                    StringBuilder sb = new StringBuilder();
+                    for (int i = 0; i < 100; i++) {
+                        sb.append("0123456789");
+                    }
+                    sb.append('\n');
+
+                    final AtomicInteger exchanges = new AtomicInteger();
+                    session.addSessionListener(new SessionListener() {
+                        @Override
+                        public void sessionCreated(Session session) {
+                            // ignored
+                        }
+
+                        @Override
+                        public void sessionEvent(Session session, Event event) {
+                            if (event == Event.KeyEstablished) {
+                                exchanges.incrementAndGet();
+                            }
+                        }
+
+                        @Override
+                        public void sessionClosed(Session session) {
+                            // ignored
+                        }
+                    });
+
+                    byte[] data = getCurrentTestName().getBytes(StandardCharsets.UTF_8);
+                    final long MAX_WAIT_NANOS = TimeUnit.MILLISECONDS.toNanos(3L * TIME);
+                    final long MIN_WAIT = 10L;
+                    final long MIN_WAIT_NANOS = TimeUnit.MILLISECONDS.toNanos(MIN_WAIT);
+                    for (long timePassed = 0L; timePassed < MAX_WAIT_NANOS; timePassed++) {
+                        long nanoStart = System.nanoTime();
+                        teeOut.write(data);
+                        teeOut.write('\n');
+                        teeOut.flush();
+
+                        // no need to wait until the timeout expires if a re-key occurred
+                        if (exchanges.get() > 0) {
+                            break;
+                        }
+
+                        long nanoEnd = System.nanoTime();
+                        long nanoDuration = nanoEnd - nanoStart;
+
+                        timePassed += nanoDuration;
+                        if ((timePassed < MAX_WAIT_NANOS) && (nanoDuration < MIN_WAIT_NANOS)) {
+                            Thread.sleep(MIN_WAIT);
+                        }
+                    }
+
                     teeOut.write("exit\n".getBytes(StandardCharsets.UTF_8));
                     teeOut.flush();
 

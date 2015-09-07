@@ -28,11 +28,12 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
- * TODO Add javadoc
+ * Provides a default implementation for some {@link KeyPairProvider} methods
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractKeyPairProvider extends AbstractLoggingBean implements KeyPairProvider {
+    // TODO move this code as default interface methods in Java-8
     protected AbstractKeyPairProvider() {
         super();
     }
@@ -43,7 +44,8 @@ public abstract class AbstractKeyPairProvider extends AbstractLoggingBean implem
 
         Iterable<KeyPair> keys = loadKeys();
         for (KeyPair key : keys) {
-            if (type.equals(KeyUtils.getKeyType(key))) {
+            String keyType = KeyUtils.getKeyType(key);
+            if (type.equals(keyType)) {
                 return key;
             }
         }

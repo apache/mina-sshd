@@ -55,7 +55,7 @@ public class AuthorizedKeysAuthenticatorTest extends BaseTestSupport {
 
     @Test
     public void testAutomaticReload() throws Exception {
-        final Path file = getTargetRelativeFile(TEMP_SUBFOLDER_NAME, getCurrentTestName()).toPath();
+        final Path file = getTempTargetRelativeFile(getCurrentTestName());
         if (Files.exists(file)) {
             Files.delete(file);
         }

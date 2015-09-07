@@ -36,6 +36,7 @@ import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.client.subsystem.sftp.SftpVersionSelector;
 import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.future.KeyExchangeFuture;
+import org.apache.sshd.common.keyprovider.KeyPairProviderHolder;
 import org.apache.sshd.common.scp.ScpTransferEventListener;
 import org.apache.sshd.common.session.Session;
 
@@ -67,7 +68,7 @@ import org.apache.sshd.common.session.Session;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface ClientSession extends Session {
+public interface ClientSession extends Session, KeyPairProviderHolder {
 
     int TIMEOUT = 0x0001;
     int CLOSED = 0x0002;

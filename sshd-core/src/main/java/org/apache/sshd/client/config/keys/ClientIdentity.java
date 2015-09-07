@@ -19,8 +19,6 @@
 
 package org.apache.sshd.client.config.keys;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
@@ -119,13 +117,12 @@ public final class ClientIdentity {
      * {@link KeyPairProvider} was generated
      * @throws IOException              If failed to access the file system
      * @throws GeneralSecurityException If failed to load the keys
-     * @see #getDefaultUserIdentitiesFolder()
      * @see #setKeyPairProvider(SshClient, Path, boolean, boolean, FilePasswordProvider, LinkOption...)
      */
     public static <C extends SshClient> C setKeyPairProvider(
             C client, boolean strict, boolean supportedOnly, FilePasswordProvider provider, LinkOption... options)
             throws IOException, GeneralSecurityException {
-        return setKeyPairProvider(client, getDefaultUserIdentitiesFolder(), strict, supportedOnly, provider, options);
+        return setKeyPairProvider(client, PublicKeyEntry.getDefaultKeysFolderPath(), strict, supportedOnly, provider, options);
     }
 
     /**
@@ -174,13 +171,13 @@ public final class ClientIdentity {
      * available (e.g., after filtering unsupported ones or strict permissions)
      * @throws IOException              If failed to access the file system
      * @throws GeneralSecurityException If failed to load the keys
+     * @see {@link PublicKeyEntry#getDefaultKeysFolderPath()}
      * @see #loadDefaultIdentities(Path, boolean, FilePasswordProvider, LinkOption...)
-     * @see #getDefaultUserIdentitiesFolder()
      */
     public static KeyPairProvider loadDefaultKeyPairProvider(
             boolean strict, boolean supportedOnly, FilePasswordProvider provider, LinkOption... options)
             throws IOException, GeneralSecurityException {
-        return loadDefaultKeyPairProvider(getDefaultUserIdentitiesFolder(), strict, supportedOnly, provider, options);
+        return loadDefaultKeyPairProvider(PublicKeyEntry.getDefaultKeysFolderPath(), strict, supportedOnly, provider, options);
     }
 
     /**
@@ -222,12 +219,12 @@ public final class ClientIdentity {
      * <U>insensitive</U>), value=the {@link KeyPair} of the identity
      * @throws IOException              If failed to access the file system
      * @throws GeneralSecurityException If failed to load the keys
-     * @see #getDefaultUserIdentitiesFolder()
+     * @see {@link PublicKeyEntry#getDefaultKeysFolderPath()}
      * @see #loadDefaultIdentities(Path, boolean, FilePasswordProvider, LinkOption...)
      */
     public static Map<String, KeyPair> loadDefaultIdentities(boolean strict, FilePasswordProvider provider, LinkOption... options)
             throws IOException, GeneralSecurityException {
-        return loadDefaultIdentities(getDefaultUserIdentitiesFolder(), strict, provider, options);
+        return loadDefaultIdentities(PublicKeyEntry.getDefaultKeysFolderPath(), strict, provider, options);
     }
 
     /**
@@ -250,21 +247,6 @@ public final class ClientIdentity {
     public static Map<String, KeyPair> loadDefaultIdentities(Path dir, boolean strict, FilePasswordProvider provider, LinkOption... options)
             throws IOException, GeneralSecurityException {
         return loadIdentities(dir, strict, BuiltinIdentities.NAMES, ID_GENERATOR, provider, options);
-    }
-
-    /**
-     * @return The {@link Path} of the default folder where client identity
-     * files are kept
-     * @throws IOException If not value for {@code user.home} system property
-     */
-    public static Path getDefaultUserIdentitiesFolder() throws IOException {
-        String userHome = System.getProperty("user.home");
-        if (GenericUtils.isEmpty(userHome)) {
-            throw new FileNotFoundException("No user home value");
-        }
-
-        Path homeDir = new File(userHome).toPath();
-        return homeDir.resolve(PublicKeyEntry.STD_KEYFILE_FOLDER_NAME);
     }
 
     /**

@@ -41,6 +41,7 @@ import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.io.IoServiceFactoryFactory;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
+import org.apache.sshd.common.keyprovider.KeyPairProviderHolder;
 import org.apache.sshd.common.mac.Mac;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.session.AbstractSessionFactory;
@@ -59,7 +60,9 @@ import org.apache.sshd.server.forward.ForwardingFilter;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractFactoryManager extends CloseableUtils.AbstractInnerCloseable implements FactoryManager {
+public abstract class AbstractFactoryManager
+        extends CloseableUtils.AbstractInnerCloseable
+        implements FactoryManager, KeyPairProviderHolder {
 
     protected Map<String, Object> properties = new HashMap<>();
     protected IoServiceFactoryFactory ioServiceFactoryFactory;
@@ -70,7 +73,6 @@ public abstract class AbstractFactoryManager extends CloseableUtils.AbstractInne
     protected List<NamedFactory<Mac>> macFactories;
     protected List<NamedFactory<Signature>> signatureFactories;
     protected Factory<Random> randomFactory;
-    protected KeyPairProvider keyPairProvider;
     protected List<NamedFactory<Channel>> channelFactories;
     protected SshAgentFactory agentFactory;
     protected ScheduledExecutorService executor;
@@ -86,6 +88,8 @@ public abstract class AbstractFactoryManager extends CloseableUtils.AbstractInne
     protected final SessionListener sessionListenerProxy;
     protected final Collection<ChannelListener> channelListeners = new CopyOnWriteArraySet<>();
     protected final ChannelListener channelListenerProxy;
+
+    private KeyPairProvider keyPairProvider;
 
     protected AbstractFactoryManager() {
         ClassLoader loader = getClass().getClassLoader();

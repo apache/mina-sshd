@@ -50,6 +50,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.sshd.common.config.SshConfigFileReader;
+import org.apache.sshd.common.config.keys.IdentityUtils;
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -92,6 +93,11 @@ public class HostConfigEntry implements Cloneable {
     public static final String PORT_CONFIG_PROP = SshConfigFileReader.PORT_CONFIG_PROP;
     public static final String USER_CONFIG_PROP = "User";
     public static final String IDENTITY_FILE_CONFIG_PROP = "IdentityFile";
+    /**
+     * Use only the identities specified in the host entry (if any)
+     */
+    public static final String EXCLUSIVE_IDENTITIES_CONFIG_PROP = "IdentitiesOnly";
+    public static final boolean DEFAULT_EXCLUSIVE_IDENTITIES = false;
 
     /**
      * A case <U>insensitive</U> {@link Set} of the properties that receive special handling
@@ -100,7 +106,7 @@ public class HostConfigEntry implements Cloneable {
             Collections.unmodifiableSet(
                     GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER,
                             HOST_CONFIG_PROP, HOST_NAME_CONFIG_PROP, PORT_CONFIG_PROP,
-                            USER_CONFIG_PROP, IDENTITY_FILE_CONFIG_PROP
+                            USER_CONFIG_PROP, IDENTITY_FILE_CONFIG_PROP, EXCLUSIVE_IDENTITIES_CONFIG_PROP
                         ));
 
     public static final String MULTI_VALUE_SEPARATORS = " ,";
@@ -116,7 +122,7 @@ public class HostConfigEntry implements Cloneable {
     public static final char REMOTE_PORT_MACRO = 'p';
 
     private static final class LazyDefaultConfigFileHolder {
-        private static final File KEYS_FILE = new File(PublicKeyEntry.getDefaultKeysFolder(), STD_CONFIG_FILENAME);
+        private static final Path KEYS_FILE = PublicKeyEntry.getDefaultKeysFolderPath().resolve(STD_CONFIG_FILENAME);
     }
 
     private String hostValue;
@@ -124,6 +130,7 @@ public class HostConfigEntry implements Cloneable {
     private String hostName;
     private int port;
     private String username;
+    private Boolean exclusiveIdentites;
     private Collection<String> identities = Collections.emptyList();
     private Map<String, String> properties = Collections.emptyMap();
 
@@ -271,6 +278,17 @@ public class HostConfigEntry implements Cloneable {
     }
 
     /**
+     * @return {@code true} if must use only the identities in this entry
+     */
+    public boolean isIdentitiesOnly() {
+        return (exclusiveIdentites == null) ? DEFAULT_EXCLUSIVE_IDENTITIES : exclusiveIdentites.booleanValue();
+    }
+
+    public void setIdentitiesOnly(boolean identitiesOnly) {
+        exclusiveIdentites = Boolean.valueOf(identitiesOnly);
+    }
+
+    /**
      * @return A {@link Map} of extra properties that have been read - may be
      * {@code null}/empty, or even contain some values that have been parsed
      * and set as members of the entry (e.g., host, port, etc.). <B>Note:</B>
@@ -331,6 +349,7 @@ public class HostConfigEntry implements Cloneable {
         modified = updateGlobalHostName(globalEntry.getHostName()) || modified;
         modified = updateGlobalUserName(globalEntry.getUsername()) || modified;
         modified = updateGlobalIdentities(globalEntry.getIdentities()) || modified;
+        modified = updateGlobalIdentityOnly(globalEntry.isIdentitiesOnly()) || modified;
 
         Map<String, String> updated = updateGlobalProperties(globalEntry.getProperties());
         modified = (GenericUtils.size(updated) > 0) || modified;
@@ -434,6 +453,20 @@ public class HostConfigEntry implements Cloneable {
     }
 
     /**
+     * @param identitiesOnly Whether to use only the identities in this entry.
+     * Ignored if already set
+     * @return {@code true} if updated the option value
+     */
+    public boolean updateGlobalIdentityOnly(boolean identitiesOnly) {
+        if (exclusiveIdentites != null) {
+            return false;
+        }
+
+        setIdentitiesOnly(identitiesOnly);
+        return true;
+    }
+
+    /**
      * @param name Property name - never {@code null}/empty
      * @param valsList The available values for the property
      * @param ignoreAlreadyInitialized If {@code false} and one of the &quot;known&quot;
@@ -477,6 +510,10 @@ public class HostConfigEntry implements Cloneable {
             for (String id : valsList) {
                 addIdentity(id);
             }
+        } else if (EXCLUSIVE_IDENTITIES_CONFIG_PROP.equalsIgnoreCase(key)) {
+            setIdentitiesOnly(
+                    SshConfigFileReader.parseBooleanValue(
+                            ValidateUtils.checkNotNullAndNotEmpty(joinedValue, "No identities option value")));
         }
     }
 
@@ -554,6 +591,9 @@ public class HostConfigEntry implements Cloneable {
         appendNonEmptyPort(sb, PORT_CONFIG_PROP, getPort());
         appendNonEmptyProperty(sb, USER_CONFIG_PROP, getUsername());
         appendNonEmptyValues(sb, IDENTITY_FILE_CONFIG_PROP, getIdentities());
+        if (exclusiveIdentites != null) {
+            appendNonEmptyProperty(sb, EXCLUSIVE_IDENTITIES_CONFIG_PROP, SshConfigFileReader.yesNoValueOf(exclusiveIdentites.booleanValue()));
+        }
         appendNonEmptyProperties(sb, getProperties());
         return sb;
     }
@@ -1374,7 +1414,11 @@ public class HostConfigEntry implements Cloneable {
     }
 
     public static StringBuilder appendUserHome(StringBuilder sb) {
-        return appendUserHome(sb, ValidateUtils.checkNotNullAndNotEmpty(System.getProperty("user.home"), "No user home property"));
+        return appendUserHome(sb, IdentityUtils.getUserHomeFolder());
+    }
+
+    public static StringBuilder appendUserHome(StringBuilder sb, Path userHome) {
+        return appendUserHome(sb, ValidateUtils.checkNotNull(userHome, "No user home folder").toString());
     }
 
     public static StringBuilder appendUserHome(StringBuilder sb, String userHome) {
@@ -1393,11 +1437,10 @@ public class HostConfigEntry implements Cloneable {
     }
 
     /**
-     * @return The default {@link File} location of the OpenSSH authorized keys file
+     * @return The default {@link Path} location of the OpenSSH authorized keys file
      */
     @SuppressWarnings("synthetic-access")
-    public static File getDefaultHostConfigFile() {
+    public static Path getDefaultHostConfigFile() {
         return LazyDefaultConfigFileHolder.KEYS_FILE;
     }
-
 }

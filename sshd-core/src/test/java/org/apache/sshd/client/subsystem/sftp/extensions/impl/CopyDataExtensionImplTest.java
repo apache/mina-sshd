@@ -135,7 +135,7 @@ public class CopyDataExtensionImplTest extends AbstractSftpClientTestSupport {
     }
 
     private void testCopyDataExtension(byte[] data, int readOffset, int readLength, long writeOffset) throws Exception {
-        Path targetPath = detectTargetFolder().toPath();
+        Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
         Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
         LinkOption[] options = IoUtils.getLinkOptions(false);

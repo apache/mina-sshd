@@ -41,7 +41,7 @@ public class LimitInputStreamTest extends BaseTestSupport {
 
     @Test
     public void testReadLimit() throws IOException {
-        Path targetPath = detectTargetFolder().toPath();
+        Path targetPath = detectTargetFolder();
         Path rootFolder = assertHierarchyTargetFolderExists(targetPath.resolve(getClass().getSimpleName()));
         Path inputFile = rootFolder.resolve(getCurrentTestName() + ".bin");
         byte[] data = (getClass().getName() + "#" + getCurrentTestName()).getBytes(StandardCharsets.UTF_8);

@@ -19,7 +19,6 @@
 
 package org.apache.sshd.client.config.hosts;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -46,9 +45,9 @@ public class ConfigFileHostEntryResolverTest extends BaseTestSupport {
 
     @Test
     public void testConfigFileReload() throws IOException {
-        File dir = getTargetRelativeFile(TEMP_SUBFOLDER_NAME, getClass().getSimpleName());
+        Path dir = getTempTargetRelativeFile(getClass().getSimpleName());
         final AtomicInteger reloadCount = new AtomicInteger();
-        ConfigFileHostEntryResolver resolver = new ConfigFileHostEntryResolver(new File(assertHierarchyTargetFolderExists(dir), getCurrentTestName() + ".config.txt")) {
+        ConfigFileHostEntryResolver resolver = new ConfigFileHostEntryResolver(assertHierarchyTargetFolderExists(dir).resolve(getCurrentTestName() + ".config.txt")) {
             @Override
             protected List<HostConfigEntry> reloadHostConfigEntries(Path path, String host, int port, String username)
                     throws IOException {

@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermission;
 import java.util.List;
 
 import org.apache.sshd.common.config.keys.KeyUtils;
@@ -74,7 +75,10 @@ public class DefaultConfigFileHostEntryResolver extends ConfigFileHostEntryResol
                 log.debug("reloadHostConfigEntries({}@{}:{}) check permissions of {}", username, host, port, path);
             }
 
-            KeyUtils.validateStrictKeyFilePermissions(path);
+            PosixFilePermission violation = KeyUtils.validateStrictKeyFilePermissions(path);
+            if (violation != null) {
+                throw new IOException("String permission violation (" + violation + ") for " + path);
+            }
         }
 
         return super.reloadHostConfigEntries(path, host, port, username);

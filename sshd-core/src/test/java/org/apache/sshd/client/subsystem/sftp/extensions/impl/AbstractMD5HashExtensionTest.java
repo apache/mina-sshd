@@ -122,7 +122,7 @@ public class AbstractMD5HashExtensionTest extends AbstractSftpClientTestSupport 
             quickHash = digest.digest();
         }
 
-        Path targetPath = detectTargetFolder().toPath();
+        Path targetPath = detectTargetFolder();
         Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
         Path srcFile = assertHierarchyTargetFolderExists(lclSftp).resolve("data-" + data.length + ".txt");
         Files.write(srcFile, data, IoUtils.EMPTY_OPEN_OPTIONS);

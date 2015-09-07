@@ -19,6 +19,7 @@
 
 package org.apache.sshd.common.config.keys;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -42,6 +43,22 @@ import org.apache.sshd.common.util.ValidateUtils;
 public final class IdentityUtils {
     private IdentityUtils() {
         throw new UnsupportedOperationException("No instance");
+    }
+
+    private static final class LazyDefaultUserHomeFolderHolder {
+        private static final Path PATH =
+                new File(ValidateUtils.checkNotNullAndNotEmpty(System.getProperty("user.home"), "No user home"))
+                        .toPath()
+                        .toAbsolutePath()
+                        .normalize();
+    }
+
+    /**
+     * @return The {@link Path} to the currently running user home
+     */
+    @SuppressWarnings("synthetic-access")
+    public static Path getUserHomeFolder() {
+        return LazyDefaultUserHomeFolderHolder.PATH;
     }
 
     /**
