@@ -126,7 +126,7 @@ public class ServerTest extends BaseTestSupport {
         ));
         client.start();
 
-        try (ClientSession s = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
             int nbTrials = 0;
             int res = 0;
             while ((res & ClientSession.CLOSED) == 0) {
@@ -154,7 +154,7 @@ public class ServerTest extends BaseTestSupport {
                 ClientConnectionServiceFactory.INSTANCE
         ));
         client.start();
-        try (ClientSession s = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
             int nbTrials = 0;
             AuthFuture authFuture;
             do {
@@ -180,7 +180,7 @@ public class ServerTest extends BaseTestSupport {
         FactoryManagerUtils.updateProperty(sshd, FactoryManager.AUTH_TIMEOUT, AUTH_TIMEOUT);
 
         client.start();
-        try (ClientSession s = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
             int res = s.waitFor(ClientSession.CLOSED, 2 * AUTH_TIMEOUT);
             assertEquals("Session should be closed", ClientSession.CLOSED | ClientSession.WAIT_AUTH, res);
         } finally {
@@ -338,7 +338,7 @@ public class ServerTest extends BaseTestSupport {
         });
 
         client.start();
-        try (ClientSession s = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
             // do nothing
         } finally {
             client.stop();
@@ -559,7 +559,7 @@ public class ServerTest extends BaseTestSupport {
     }
 
     private ClientSession createTestClientSession() throws Exception {
-        ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession();
+        ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession();
         try {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(5L, TimeUnit.SECONDS);

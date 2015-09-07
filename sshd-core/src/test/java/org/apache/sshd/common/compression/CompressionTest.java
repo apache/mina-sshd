@@ -85,7 +85,7 @@ public class CompressionTest extends BaseTestSupport {
     protected void runTest() throws Exception {
         JSchLogger.init();
         JSch sch = new JSch();
-        com.jcraft.jsch.Session s = sch.getSession(getCurrentTestName(), "localhost", sshd.getPort());
+        com.jcraft.jsch.Session s = sch.getSession(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort());
         s.setUserInfo(new SimpleUserInfo(getCurrentTestName()));
 
         s.connect();

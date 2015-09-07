@@ -91,7 +91,7 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
 
     @Test
     public void testEffectiveHostConfigResolution() throws Exception {
-        final HostConfigEntry entry = new HostConfigEntry(getCurrentTestName(), "localhost", port, getCurrentTestName());
+        final HostConfigEntry entry = new HostConfigEntry(getCurrentTestName(), TEST_LOCALHOST, port, getCurrentTestName());
         client.setHostConfigEntryResolver(new HostConfigEntryResolver() {
             @Override
             public HostConfigEntry resolveEffectiveHost(String host, int portValue, String username) throws IOException {
@@ -145,7 +145,7 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
         FactoryManagerUtils.updateProperty(client, ClientFactoryManager.IGNORE_INVALID_IDENTITIES, false);
 
         final String HOST = getClass().getSimpleName();
-        final HostConfigEntry entry = new HostConfigEntry(HOST, "localhost", port, USER);
+        final HostConfigEntry entry = new HostConfigEntry(HOST, TEST_LOCALHOST, port, USER);
         entry.addIdentity(IDENTITY);
         client.setHostConfigEntryResolver(new HostConfigEntryResolver() {
             @Override
@@ -193,7 +193,7 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
         sshd.setPasswordAuthenticator(RejectAllPasswordAuthenticator.INSTANCE);
 
         final String IDENTITY = getCurrentTestName();
-        HostConfigEntry entry = new HostConfigEntry("localhost", "localhost", port, USER);
+        HostConfigEntry entry = new HostConfigEntry(TEST_LOCALHOST, TEST_LOCALHOST, port, USER);
         entry.addIdentity(IDENTITY);
         entry.setIdentitiesOnly(true);
 

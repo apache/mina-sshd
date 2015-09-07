@@ -46,6 +46,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.SshClient;
+import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -63,6 +64,8 @@ import org.junit.runner.Description;
  */
 public abstract class BaseTestSupport extends Assert {
     public static final String TEMP_SUBFOLDER_NAME = "temp";
+    // can be used to override the 'localhost' with an address other than 127.0.0.1 in case it is required
+    public static final String TEST_LOCALHOST = System.getProperty("org.apache.sshd.test.localhost", SshdSocketAddress.LOCALHOST_IP);
 
     // useful test sizes for keys
     @SuppressWarnings("boxing")

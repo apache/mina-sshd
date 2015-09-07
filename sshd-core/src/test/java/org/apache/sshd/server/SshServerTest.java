@@ -74,7 +74,7 @@ public class SshServerTest extends BaseTestSupport {
     @Test
     public void testDynamicPort() throws Exception {
         try (SshServer sshd = setupTestServer()) {
-            sshd.setHost("localhost");
+            sshd.setHost(TEST_LOCALHOST);
             sshd.start();
 
             assertNotEquals(0, sshd.getPort());

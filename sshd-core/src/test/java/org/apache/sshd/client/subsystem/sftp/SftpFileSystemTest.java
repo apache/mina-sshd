@@ -284,7 +284,7 @@ public class SftpFileSystemTest extends BaseTestSupport {
         try (SshClient client = setupTestClient()) {
             client.start();
 
-            try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
                 session.addPasswordIdentity(getCurrentTestName());
                 session.auth().verify(5L, TimeUnit.SECONDS);
 
@@ -422,6 +422,6 @@ public class SftpFileSystemTest extends BaseTestSupport {
     }
 
     private static URI createFileSystemURI(String username, int port) {
-        return SftpFileSystemProvider.createFileSystemURI("localhost", port, username, username);
+        return SftpFileSystemProvider.createFileSystemURI(TEST_LOCALHOST, port, username, username);
     }
 }

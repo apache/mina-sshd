@@ -61,7 +61,7 @@ public class StaticServerKeyVerifierTest extends BaseTestSupport {
         Mockito.when(key.getEncoded()).thenReturn(GenericUtils.EMPTY_BYTE_ARRAY);
         Mockito.when(key.getFormat()).thenReturn(getCurrentTestName());
 
-        Object[] args = {Mockito.mock(ClientSession.class), new InetSocketAddress("localhost", 7365), key};
+        Object[] args = {Mockito.mock(ClientSession.class), new InetSocketAddress(TEST_LOCALHOST, 7365), key};
         Object[] invArgs = new Object[args.length];
         Random rnd = new Random(System.nanoTime());
         boolean expected = authenticator.isAccepted();

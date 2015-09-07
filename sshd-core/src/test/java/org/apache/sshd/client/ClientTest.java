@@ -747,7 +747,7 @@ public class ClientTest extends BaseTestSupport {
         authLatch = new CountDownLatch(1);
         client.start();
 
-        try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
             assertNotNull("Client session creation not signalled", clientSessionHolder.get());
             session.addPasswordIdentity(getCurrentTestName());
 
@@ -826,7 +826,7 @@ public class ClientTest extends BaseTestSupport {
     public void testPublicKeyAuth() throws Exception {
         client.start();
 
-        try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
             assertNotNull("Client session creation not signalled", clientSessionHolder.get());
             KeyPair pair = createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
             session.addPublicKeyIdentity(pair);
@@ -842,7 +842,7 @@ public class ClientTest extends BaseTestSupport {
         client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(UserAuthPublicKeyFactory.INSTANCE));
         client.start();
 
-        try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
             assertNotNull("Client session creation not signalled", clientSessionHolder.get());
             session.addPublicKeyIdentity(createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA));
             session.auth().verify(5L, TimeUnit.SECONDS);
@@ -867,7 +867,7 @@ public class ClientTest extends BaseTestSupport {
         client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(UserAuthPublicKeyFactory.INSTANCE));
         client.start();
 
-        try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
             assertNotNull("Client session creation not signalled", clientSessionHolder.get());
             session.addPublicKeyIdentity(provider.loadKey(KeyPairProvider.SSH_RSA));
             session.addPublicKeyIdentity(pair);
@@ -896,7 +896,7 @@ public class ClientTest extends BaseTestSupport {
         client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthPasswordFactory()));
         client.start();
 
-        try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
             assertNotNull("Client session creation not signalled", clientSessionHolder.get());
             session.addPasswordIdentity(getClass().getSimpleName());
             session.addPasswordIdentity(getCurrentTestName());
@@ -925,7 +925,7 @@ public class ClientTest extends BaseTestSupport {
         client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(UserAuthKeyboardInteractiveFactory.INSTANCE));
         client.start();
 
-        try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
             assertNotNull("Client session creation not signalled", clientSessionHolder.get());
             session.addPasswordIdentity(getClass().getSimpleName());
             session.addPasswordIdentity(getCurrentTestName());
@@ -1016,7 +1016,7 @@ public class ClientTest extends BaseTestSupport {
 
         try {
             for (int index = 0; index < xformers.size(); index++) {
-                try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7, TimeUnit.SECONDS).getSession()) {
+                try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7, TimeUnit.SECONDS).getSession()) {
                     assertNotNull("Client session creation not signalled at iteration #" + index, clientSessionHolder.get());
                     String password = "bad-" + getCurrentTestName() + "-" + index;
                     session.addPasswordIdentity(password);
@@ -1061,7 +1061,7 @@ public class ClientTest extends BaseTestSupport {
         });
         client.start();
 
-        try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
             assertNotNull("Client session creation not signalled", clientSessionHolder.get());
 
             AuthFuture future = session.auth();
@@ -1085,7 +1085,7 @@ public class ClientTest extends BaseTestSupport {
                 .<NamedFactory<UserAuth>>asList(UserAuthKeyboardInteractiveFactory.INSTANCE));
         client.start();
 
-        try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
             assertNotNull("Client session creation not signalled", clientSessionHolder.get());
             session.setUserInteraction(new UserInteraction() {
                 @Override
@@ -1122,7 +1122,7 @@ public class ClientTest extends BaseTestSupport {
                 .<NamedFactory<UserAuth>>asList(new UserAuthKeyboardInteractiveFactory()));
         client.start();
 
-        try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
             assertNotNull("Client session creation not signalled", clientSessionHolder.get());
             session.setUserInteraction(new UserInteraction() {
                 @Override
@@ -1208,7 +1208,7 @@ public class ClientTest extends BaseTestSupport {
         );
         client.start();
 
-        try (ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
             assertNotNull("Client session creation not signalled", clientSessionHolder.get());
             session.waitFor(ClientSession.WAIT_AUTH, TimeUnit.SECONDS.toMillis(10L));
             assertTrue("Server key verifier invoked ?", ok.get());
@@ -1310,7 +1310,7 @@ public class ClientTest extends BaseTestSupport {
     }
 
     private ClientSession createTestClientSession() throws IOException {
-        ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession();
+        ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession();
         try {
             assertNotNull("Client session creation not signalled", clientSessionHolder.get());
             session.addPasswordIdentity(getCurrentTestName());

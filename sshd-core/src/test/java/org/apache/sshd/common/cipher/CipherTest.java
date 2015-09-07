@@ -121,7 +121,7 @@ public class CipherTest extends BaseTestSupport {
         JSch sch = new JSch();
         JSch.setConfig("cipher.s2c", CRYPT_NAMES);
         JSch.setConfig("cipher.c2s", CRYPT_NAMES);
-        com.jcraft.jsch.Session s = sch.getSession(getCurrentTestName(), "localhost", port);
+        com.jcraft.jsch.Session s = sch.getSession(getCurrentTestName(), TEST_LOCALHOST, port);
         s.setUserInfo(new SimpleUserInfo(getCurrentTestName()));
         s.connect();
 

@@ -101,7 +101,7 @@ public class WindowAdjustTest extends BaseTestSupport {
         try (SshClient client = setupTestClient()) {
             client.start();
 
-            try (final ClientSession session = client.connect("admin", "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+            try (final ClientSession session = client.connect("admin", TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
                 session.addPasswordIdentity("admin");
                 session.auth().verify();
 

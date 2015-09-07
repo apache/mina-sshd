@@ -28,6 +28,7 @@ import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
@@ -68,7 +69,7 @@ public class GitPgmCommandTest extends BaseTestSupport {
                 try(SshClient client = setupTestClient()) {
                     client.start();
 
-                    try(ClientSession session = client.connect(getCurrentTestName(), "localhost", port).verify(7L, TimeUnit.SECONDS).getSession()) {
+                    try(ClientSession session = client.connect(getCurrentTestName(), SshdSocketAddress.LOCALHOST_IP, port).verify(7L, TimeUnit.SECONDS).getSession()) {
                         session.addPasswordIdentity(getCurrentTestName());
                         session.auth().verify(5L, TimeUnit.SECONDS);
 

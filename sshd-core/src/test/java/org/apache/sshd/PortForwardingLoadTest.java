@@ -133,7 +133,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
             ss.setReuseAddress(true);
             ss.bind(new InetSocketAddress((InetAddress) null, 0));
             int forwardedPort = ss.getLocalPort();
-            int sinkPort = session.setPortForwardingL(0, "localhost", forwardedPort);
+            int sinkPort = session.setPortForwardingL(0, TEST_LOCALHOST, forwardedPort);
             final AtomicInteger conCount = new AtomicInteger(0);
 
             Thread tAcceptor = new Thread(getCurrentTestName() + "Acceptor") {
@@ -180,7 +180,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
             byte[] bytes = PAYLOAD.getBytes(StandardCharsets.UTF_8);
             for (int i = 0; i < NUM_ITERATIONS; i++) {
                 log.info("Iteration {}", Integer.valueOf(i));
-                try (Socket s = new Socket("localhost", sinkPort);
+                try (Socket s = new Socket(TEST_LOCALHOST, sinkPort);
                      OutputStream sockOut = s.getOutputStream()) {
 
                     s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(10L));
@@ -224,7 +224,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
             ss.bind(new InetSocketAddress((InetAddress) null, 0));
             int forwardedPort = ss.getLocalPort();
             int sinkPort = getFreePort();
-            session.setPortForwardingR(sinkPort, "localhost", forwardedPort);
+            session.setPortForwardingR(sinkPort, TEST_LOCALHOST, forwardedPort);
             final boolean started[] = new boolean[1];
             started[0] = false;
             final AtomicInteger conCount = new AtomicInteger(0);
@@ -262,7 +262,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
 
             for (int i = 0; i < NUM_ITERATIONS; i++) {
                 final int ii = i;
-                try (Socket s = new Socket("localhost", sinkPort);
+                try (Socket s = new Socket(TEST_LOCALHOST, sinkPort);
                      InputStream sockIn = s.getInputStream()) {
 
                     s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(10L));
@@ -313,7 +313,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
 //        final String path = "";
 //        final String host = "www.bahn.de";
         final String path = "";
-        final String host = "localhost";
+        final String host = TEST_LOCALHOST;
         final int nbThread = 2;
         final int nbDownloads = 2;
         final int nbLoops = 2;
@@ -345,7 +345,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
         try {
             final int forwardedPort1 = session.setPortForwardingL(0, host, port);
             final int forwardedPort2 = getFreePort();
-            session.setPortForwardingR(forwardedPort2, "localhost", forwardedPort1);
+            session.setPortForwardingR(forwardedPort2, TEST_LOCALHOST, forwardedPort1);
             System.err.println("URL: http://localhost:" + forwardedPort2);
 
             final CountDownLatch latch = new CountDownLatch(nbThread * nbDownloads * nbLoops);
@@ -391,7 +391,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
     protected Session createSession() throws JSchException {
         JSchLogger.init();
         JSch sch = new JSch();
-        Session session = sch.getSession("sshd", "localhost", sshPort);
+        Session session = sch.getSession("sshd", TEST_LOCALHOST, sshPort);
         session.setUserInfo(new SimpleUserInfo("sshd"));
         session.connect();
         return session;

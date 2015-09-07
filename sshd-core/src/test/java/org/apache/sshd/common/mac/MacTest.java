@@ -138,7 +138,7 @@ public class MacTest extends BaseTestSupport {
         JSch.setConfig("mac.s2c", "hmac-md5,hmac-sha1,hmac-sha2-256,hmac-sha1-96,hmac-md5-96,hmac-sha2-512");
         JSch.setConfig("mac.c2s", "hmac-md5,hmac-sha1,hmac-sha2-256,hmac-sha1-96,hmac-md5-96,hmac-sha2-512");
         JSch.setConfig("hmac-sha2-512", "com.jcraft.jsch.jce.HMACSHA512");
-        com.jcraft.jsch.Session s = sch.getSession(getCurrentTestName(), "localhost", port);
+        com.jcraft.jsch.Session s = sch.getSession(getCurrentTestName(), TEST_LOCALHOST, port);
         try {
             s.setUserInfo(new SimpleUserInfo(getCurrentTestName()));
             s.connect();

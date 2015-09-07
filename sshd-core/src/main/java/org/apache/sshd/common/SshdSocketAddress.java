@@ -45,22 +45,28 @@ import org.apache.sshd.common.util.ValidateUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class SshdSocketAddress extends SocketAddress {
+    public static final String LOCALHOST_IP = "127.0.0.1";
+    public static final String IP_ANYADDR = "0.0.0.0";
 
     /**
      * A dummy placeholder that can be used instead of {@code null}s
      */
-    public static final SshdSocketAddress LOCALHOST_ADDRESS = new SshdSocketAddress("localhost", 0);
+    public static final SshdSocketAddress LOCALHOST_ADDRESS = new SshdSocketAddress(LOCALHOST_IP, 0);
 
     private static final long serialVersionUID = 6461645947151952729L;
 
     private final String hostName;
     private final int port;
 
+    public SshdSocketAddress(int port) {
+        this(IP_ANYADDR, port);
+    }
+
     public SshdSocketAddress(String hostName, int port) {
         ValidateUtils.checkNotNull(hostName, "Host name may not be null");
-        this.hostName = GenericUtils.isEmpty(hostName) ? "0.0.0.0" : hostName;
+        this.hostName = GenericUtils.isEmpty(hostName) ? IP_ANYADDR : hostName;
 
-        ValidateUtils.checkTrue(port >= 0, "Port must be >= 0", Integer.valueOf(port));
+        ValidateUtils.checkTrue(port >= 0, "Port must be >= 0: %d", port);
         this.port = port;
     }
 

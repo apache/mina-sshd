@@ -99,14 +99,14 @@ public class ProxyTest extends BaseTestSupport {
     @Test
     public void testSocksProxy() throws Exception {
         try (ClientSession session = createNativeSession()) {
-            SshdSocketAddress dynamic = session.startDynamicPortForwarding(new SshdSocketAddress("localhost", 0));
+            SshdSocketAddress dynamic = session.startDynamicPortForwarding(new SshdSocketAddress(TEST_LOCALHOST, 0));
 
             String expected = getCurrentTestName();
             byte[] bytes = expected.getBytes(StandardCharsets.UTF_8);
             byte[] buf = new byte[bytes.length + Long.SIZE];
             for (int i = 0; i < 10; i++) {
-                try (Socket s = new Socket(new Proxy(Proxy.Type.SOCKS, new InetSocketAddress("localhost", dynamic.getPort())))) {
-                    s.connect(new InetSocketAddress("localhost", echoPort));
+                try (Socket s = new Socket(new Proxy(Proxy.Type.SOCKS, new InetSocketAddress(TEST_LOCALHOST, dynamic.getPort())))) {
+                    s.connect(new InetSocketAddress(TEST_LOCALHOST, echoPort));
                     s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(10L));
 
                     try (OutputStream sockOut = s.getOutputStream();
@@ -124,8 +124,8 @@ public class ProxyTest extends BaseTestSupport {
             session.stopDynamicPortForwarding(dynamic);
 
             try {
-                try (Socket s = new Socket(new Proxy(Proxy.Type.SOCKS, new InetSocketAddress("localhost", dynamic.getPort())))) {
-                    s.connect(new InetSocketAddress("localhost", echoPort));
+                try (Socket s = new Socket(new Proxy(Proxy.Type.SOCKS, new InetSocketAddress(TEST_LOCALHOST, dynamic.getPort())))) {
+                    s.connect(new InetSocketAddress(TEST_LOCALHOST, echoPort));
                     s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(10L));
                     s.getOutputStream().write(bytes);
                     fail("Unexpected success to write proxy data");
@@ -145,7 +145,7 @@ public class ProxyTest extends BaseTestSupport {
         client.setTcpipForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
         client.start();
 
-        ClientSession session = client.connect("sshd", "localhost", sshPort).verify(7L, TimeUnit.SECONDS).getSession();
+        ClientSession session = client.connect("sshd", TEST_LOCALHOST, sshPort).verify(7L, TimeUnit.SECONDS).getSession();
         session.addPasswordIdentity("sshd");
         session.auth().verify();
         return session;

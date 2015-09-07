@@ -193,10 +193,10 @@ public class PortForwardingTest extends BaseTestSupport {
         Session session = createSession();
         try {
             int forwardedPort = getFreePort();
-            session.setPortForwardingR(forwardedPort, "localhost", echoPort);
+            session.setPortForwardingR(forwardedPort, TEST_LOCALHOST, echoPort);
             waitForForwardingRequest(TcpipForwardHandler.REQUEST, TimeUnit.SECONDS.toMillis(5L));
 
-            try (Socket s = new Socket("localhost", forwardedPort);
+            try (Socket s = new Socket(TEST_LOCALHOST, forwardedPort);
                  OutputStream output = s.getOutputStream();
                  InputStream input = s.getInputStream()) {
 
@@ -224,16 +224,16 @@ public class PortForwardingTest extends BaseTestSupport {
         Session session = createSession();
         try {
             int forwardedPort = getFreePort();
-            session.setPortForwardingR(forwardedPort, "localhost", echoPort);
+            session.setPortForwardingR(forwardedPort, TEST_LOCALHOST, echoPort);
             waitForForwardingRequest(TcpipForwardHandler.REQUEST, TimeUnit.SECONDS.toMillis(5L));
 
-            session.delPortForwardingR("localhost", forwardedPort);
+            session.delPortForwardingR(TEST_LOCALHOST, forwardedPort);
             waitForForwardingRequest(CancelTcpipForwardHandler.REQUEST, TimeUnit.SECONDS.toMillis(5L));
 
-            session.setPortForwardingR(forwardedPort, "localhost", echoPort);
+            session.setPortForwardingR(forwardedPort, TEST_LOCALHOST, echoPort);
             waitForForwardingRequest(TcpipForwardHandler.REQUEST, TimeUnit.SECONDS.toMillis(5L));
 
-            try (Socket s = new Socket("localhost", forwardedPort);
+            try (Socket s = new Socket(TEST_LOCALHOST, forwardedPort);
                  OutputStream output = s.getOutputStream();
                  InputStream input = s.getInputStream()) {
 
@@ -249,7 +249,7 @@ public class PortForwardingTest extends BaseTestSupport {
                 String res = new String(buf, 0, n, StandardCharsets.UTF_8);
                 assertEquals("Mismatched data", expected, res);
             }
-            session.delPortForwardingR("localhost", forwardedPort);
+            session.delPortForwardingR(TEST_LOCALHOST, forwardedPort);
         } finally {
             session.disconnect();
         }
@@ -259,7 +259,7 @@ public class PortForwardingTest extends BaseTestSupport {
     public void testRemoteForwardingNative() throws Exception {
         try (ClientSession session = createNativeSession()) {
             SshdSocketAddress remote = new SshdSocketAddress("", 0);
-            SshdSocketAddress local = new SshdSocketAddress("localhost", echoPort);
+            SshdSocketAddress local = new SshdSocketAddress(TEST_LOCALHOST, echoPort);
             SshdSocketAddress bound = session.startRemotePortForwarding(remote, local);
 
             try (Socket s = new Socket(bound.getHostName(), bound.getPort());
@@ -288,7 +288,7 @@ public class PortForwardingTest extends BaseTestSupport {
     public void testRemoteForwardingNativeBigPayload() throws Exception {
         try (ClientSession session = createNativeSession()) {
             SshdSocketAddress remote = new SshdSocketAddress("", 0);
-            SshdSocketAddress local = new SshdSocketAddress("localhost", echoPort);
+            SshdSocketAddress local = new SshdSocketAddress(TEST_LOCALHOST, echoPort);
             SshdSocketAddress bound = session.startRemotePortForwarding(remote, local);
 
             try (Socket s = new Socket(bound.getHostName(), bound.getPort());
@@ -321,9 +321,9 @@ public class PortForwardingTest extends BaseTestSupport {
         Session session = createSession();
         try {
             int forwardedPort = getFreePort();
-            session.setPortForwardingL(forwardedPort, "localhost", echoPort);
+            session.setPortForwardingL(forwardedPort, TEST_LOCALHOST, echoPort);
 
-            try (Socket s = new Socket("localhost", forwardedPort);
+            try (Socket s = new Socket(TEST_LOCALHOST, forwardedPort);
                  OutputStream output = s.getOutputStream();
                  InputStream input = s.getInputStream()) {
 
@@ -351,7 +351,7 @@ public class PortForwardingTest extends BaseTestSupport {
     public void testLocalForwardingNative() throws Exception {
         try (ClientSession session = createNativeSession()) {
             SshdSocketAddress local = new SshdSocketAddress("", 0);
-            SshdSocketAddress remote = new SshdSocketAddress("localhost", echoPort);
+            SshdSocketAddress remote = new SshdSocketAddress(TEST_LOCALHOST, echoPort);
             SshdSocketAddress bound = session.startLocalPortForwarding(local, remote);
 
             try (Socket s = new Socket(bound.getHostName(), bound.getPort());
@@ -381,7 +381,7 @@ public class PortForwardingTest extends BaseTestSupport {
     public void testLocalForwardingNativeReuse() throws Exception {
         try (ClientSession session = createNativeSession()) {
             SshdSocketAddress local = new SshdSocketAddress("", 0);
-            SshdSocketAddress remote = new SshdSocketAddress("localhost", echoPort);
+            SshdSocketAddress remote = new SshdSocketAddress(TEST_LOCALHOST, echoPort);
             SshdSocketAddress bound = session.startLocalPortForwarding(local, remote);
 
             session.stopLocalPortForwarding(bound);
@@ -397,7 +397,7 @@ public class PortForwardingTest extends BaseTestSupport {
     public void testLocalForwardingNativeBigPayload() throws Exception {
         try (ClientSession session = createNativeSession()) {
             SshdSocketAddress local = new SshdSocketAddress("", 0);
-            SshdSocketAddress remote = new SshdSocketAddress("localhost", echoPort);
+            SshdSocketAddress remote = new SshdSocketAddress(TEST_LOCALHOST, echoPort);
             SshdSocketAddress bound = session.startLocalPortForwarding(local, remote);
 
             String expected = getCurrentTestName();
@@ -428,7 +428,7 @@ public class PortForwardingTest extends BaseTestSupport {
     public void testForwardingChannel() throws Exception {
         try (ClientSession session = createNativeSession()) {
             SshdSocketAddress local = new SshdSocketAddress("", 0);
-            SshdSocketAddress remote = new SshdSocketAddress("localhost", echoPort);
+            SshdSocketAddress remote = new SshdSocketAddress(TEST_LOCALHOST, echoPort);
 
             try (ChannelDirectTcpip channel = session.createDirectTcpipChannel(local, remote)) {
                 channel.open().verify(9L, TimeUnit.SECONDS);
@@ -459,11 +459,11 @@ public class PortForwardingTest extends BaseTestSupport {
         try {
             // 1. Create a Port Forward
             int forwardedPort = getFreePort();
-            session.setPortForwardingR(forwardedPort, "localhost", echoPort);
+            session.setPortForwardingR(forwardedPort, TEST_LOCALHOST, echoPort);
             waitForForwardingRequest(TcpipForwardHandler.REQUEST, TimeUnit.SECONDS.toMillis(5L));
 
             // 2. Establish a connection through it
-            try (Socket s = new Socket("localhost", forwardedPort)) {
+            try (Socket s = new Socket(TEST_LOCALHOST, forwardedPort)) {
                 s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(10L));
 
                 // 3. Simulate the client going away
@@ -585,7 +585,7 @@ public class PortForwardingTest extends BaseTestSupport {
     protected Session createSession() throws JSchException {
         JSchLogger.init();
         JSch sch = new JSch();
-        Session session = sch.getSession(getCurrentTestName(), "localhost", sshPort);
+        Session session = sch.getSession(getCurrentTestName(), TEST_LOCALHOST, sshPort);
         session.setUserInfo(new SimpleUserInfo(getCurrentTestName()));
         session.connect();
         return session;
@@ -598,7 +598,7 @@ public class PortForwardingTest extends BaseTestSupport {
         client.setTcpipForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
         client.start();
 
-        ClientSession session = client.connect(getCurrentTestName(), "localhost", sshPort).verify(7L, TimeUnit.SECONDS).getSession();
+        ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshPort).verify(7L, TimeUnit.SECONDS).getSession();
         session.addPasswordIdentity(getCurrentTestName());
         session.auth().verify();
         return session;
