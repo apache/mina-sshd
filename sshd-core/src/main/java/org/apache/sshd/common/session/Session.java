@@ -229,11 +229,13 @@ public interface Session extends SessionListenerManager, ChannelListenerManager,
      * @param <T> type of value stored in the attribute.
      * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
      */
-    public class AttributeKey<T> {
+    // CHECKSTYLE:OFF
+    class AttributeKey<T> {
         public AttributeKey() {
             super();
         }
     }
+    // CHECKSTYLE:ON
 
     void resetIdleTimeout();
 

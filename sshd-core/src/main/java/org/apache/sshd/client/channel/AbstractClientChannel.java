@@ -22,7 +22,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.sshd.client.channel.exit.ExitSignalChannelRequestHandler;
+import org.apache.sshd.client.channel.exit.ExitStatusChannelRequestHandler;
 import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.Closeable;
@@ -30,14 +33,13 @@ import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.AbstractChannel;
-import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelAsyncInputStream;
 import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
 import org.apache.sshd.common.channel.ChannelListener;
-import org.apache.sshd.common.channel.ChannelRequestHandler;
 import org.apache.sshd.common.io.IoInputStream;
 import org.apache.sshd.common.io.IoOutputStream;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.util.EventNotifier;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -66,8 +68,8 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     protected InputStream invertedOut;
     protected OutputStream err;
     protected InputStream invertedErr;
-    protected Integer exitStatus;
-    protected String exitSignal;
+    protected final AtomicReference<Integer> exitStatusHolder = new AtomicReference<>(null);
+    protected final AtomicReference<String> exitSignalHolder = new AtomicReference<>(null);
     protected int openFailureReason;
     protected String openFailureMsg;
     protected OpenFuture openFuture;
@@ -76,8 +78,17 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         super(true);
         this.type = type;
         this.streaming = Streaming.Sync;
-        addRequestHandler(new ExitStatusChannelRequestHandler());
-        addRequestHandler(new ExitSignalChannelRequestHandler());
+
+        final EventNotifier<String> notifier = new EventNotifier<String>() {
+            @SuppressWarnings("synthetic-access")
+            @Override
+            public void notifyEvent(String event) throws Exception {
+                log.debug("notifyEvent({})", event);
+                notifyStateChanged();
+            }
+        };
+        addRequestHandler(new ExitStatusChannelRequestHandler(exitStatusHolder, notifier));
+        addRequestHandler(new ExitSignalChannelRequestHandler(exitSignalHolder, notifier));
     }
 
     @Override
@@ -190,10 +201,16 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
                 if (isEofSignalled()) {
                     cond |= ClientChannel.EOF;
                 }
-                if (exitStatus != null) {
+                if (exitStatusHolder.get() != null) {
+                    if (log.isDebugEnabled()) {
+                        log.debug("waitFor({}) mask=0x{} - exit status={}", this, Integer.toHexString(mask), exitStatusHolder);
+                    }
                     cond |= ClientChannel.EXIT_STATUS;
                 }
-                if (exitSignal != null) {
+                if (exitSignalHolder.get() != null) {
+                    if (log.isDebugEnabled()) {
+                        log.debug("waitFor({}) mask=0x{} - exit signal={}", this, Integer.toHexString(mask), exitSignalHolder);
+                    }
                     cond |= ClientChannel.EXIT_SIGNAL;
                 }
                 if ((cond & mask) != 0) {
@@ -203,12 +220,13 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
                     }
                     return cond;
                 }
-                if (timeout > 0) {
-                    if (t == 0) {
+
+                if (timeout > 0L) {
+                    if (t == 0L) {
                         t = System.currentTimeMillis() + timeout;
                     } else {
                         timeout = t - System.currentTimeMillis();
-                        if (timeout <= 0) {
+                        if (timeout <= 0L) {
                             if (log.isTraceEnabled()) {
                                 log.trace("WaitFor call timeout on channel {}, mask=0x{}", this, Integer.toHexString(mask));
                             }
@@ -360,41 +378,6 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
 
     @Override
     public Integer getExitStatus() {
-        return exitStatus;
+        return exitStatusHolder.get();
     }
-
-    private class ExitStatusChannelRequestHandler implements ChannelRequestHandler {
-        public ExitStatusChannelRequestHandler() {
-            super();
-        }
-
-        @SuppressWarnings("synthetic-access")
-        @Override
-        public Result process(Channel channel, String request, boolean wantReply, Buffer buffer) throws Exception {
-            if ("exit-status".equals(request)) {
-                exitStatus = buffer.getInt();
-                notifyStateChanged();
-                return Result.ReplySuccess;
-            }
-            return Result.Unsupported;
-        }
-    }
-
-    private class ExitSignalChannelRequestHandler implements ChannelRequestHandler {
-        public ExitSignalChannelRequestHandler() {
-            super();
-        }
-
-        @SuppressWarnings("synthetic-access")
-        @Override
-        public Result process(Channel channel, String request, boolean wantReply, Buffer buffer) throws Exception {
-            if ("exit-signal".equals(request)) {
-                exitSignal = buffer.getString();
-                notifyStateChanged();
-                return Result.ReplySuccess;
-            }
-            return Result.Unsupported;
-        }
-    }
-
 }

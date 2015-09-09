@@ -40,7 +40,9 @@ public interface Int2IntFunction {
      */
     int apply(int value);
 
+    // CHECKSTYLE:OFF
     final class Utils {
+    // CHECKSTYLE:ON
 
         private Utils() {
             throw new UnsupportedOperationException("No instance allowed");

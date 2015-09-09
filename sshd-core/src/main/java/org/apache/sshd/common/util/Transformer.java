@@ -58,7 +58,10 @@ public interface Transformer<I, O> {
      */
     O transform(I input);
 
+    // CHECKSTYLE:OFF
     final class Utils {
+    // CHECKSTYLE:ON
+
         @SuppressWarnings("rawtypes")
         private static final Transformer IDENTITY = new Transformer() {
             @Override
@@ -75,6 +78,5 @@ public interface Transformer<I, O> {
         public static <U extends V, V> Transformer<U, V> identity() {
             return (Transformer<U, V>) IDENTITY;
         }
-
     }
 }

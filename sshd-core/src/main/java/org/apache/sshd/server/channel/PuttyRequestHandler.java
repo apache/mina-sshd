@@ -18,17 +18,16 @@
  */
 package org.apache.sshd.server.channel;
 
+import org.apache.sshd.common.channel.AbstractChannelRequestHandler;
 import org.apache.sshd.common.channel.Channel;
-import org.apache.sshd.common.channel.ChannelRequestHandler;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
-import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
  * Handles Putty specific channel requests as indicated by
  * <A HREF="http://tartarus.org/~simon/putty-snapshots/htmldoc/AppendixF.html">Appendix F: SSH-2 names specified for PuTTY</A>
  */
-public class PuttyRequestHandler extends AbstractLoggingBean implements ChannelRequestHandler {
+public class PuttyRequestHandler extends AbstractChannelRequestHandler {
     public static final String REQUEST_SUFFIX = "@putty.projects.tartarus.org";
 
     public PuttyRequestHandler() {

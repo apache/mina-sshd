@@ -76,7 +76,7 @@ public interface SftpClient extends SubsystemClient {
     class Handle {
         private final byte[] id;
 
-        public Handle(byte[] id) {
+        Handle(byte[] id) {
             // clone the original so the handle is imutable
             this.id = ValidateUtils.checkNotNullAndNotEmpty(id, "No handle ID").clone();
         }
@@ -122,11 +122,13 @@ public interface SftpClient extends SubsystemClient {
         }
     }
 
+    // CHECKSTYLE:OFF
     abstract class CloseableHandle extends Handle implements Channel, Closeable {
         protected CloseableHandle(byte[] id) {
             super(id);
         }
     }
+    // CHECKSTYLE:ON
 
     class Attributes {
         // CHECKSTYLE:OFF
@@ -271,7 +273,7 @@ public interface SftpClient extends SubsystemClient {
         public Attributes attributes;
         // CHECKSTYLE:ON
 
-        public DirEntry(String filename, String longFilename, Attributes attributes) {
+        DirEntry(String filename, String longFilename, Attributes attributes) {
             this.filename = filename;
             this.longFilename = longFilename;
             this.attributes = attributes;

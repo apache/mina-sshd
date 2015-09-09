@@ -38,10 +38,10 @@ import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.channel.AbstractChannelRequestHandler;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
 import org.apache.sshd.common.channel.ChannelOutputStream;
-import org.apache.sshd.common.channel.ChannelRequestHandler;
 import org.apache.sshd.common.channel.PtyMode;
 import org.apache.sshd.common.file.FileSystemAware;
 import org.apache.sshd.common.file.FileSystemFactory;
@@ -670,8 +670,8 @@ public class ChannelSession extends AbstractServerChannel {
         }
     }
 
-    private class ChannelSessionRequestHandler implements ChannelRequestHandler {
-        public ChannelSessionRequestHandler() {
+    private class ChannelSessionRequestHandler extends AbstractChannelRequestHandler {
+        ChannelSessionRequestHandler() {
             super();
         }
 

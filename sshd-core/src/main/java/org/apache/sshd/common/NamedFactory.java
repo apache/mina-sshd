@@ -35,7 +35,9 @@ public interface NamedFactory<T> extends Factory<T>, NamedResource {
     /**
      * Utility class to help using NamedFactories
      */
+    // CHECKSTYLE:OFF
     final class Utils {
+    // CHECKSTYLE:ON
 
         private Utils() {
             throw new UnsupportedOperationException("No instance allowed");

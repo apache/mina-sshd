@@ -159,7 +159,7 @@ public abstract class AbstractResourceKeyPairProvider<R> extends AbstractKeyPair
         private KeyPair nextKeyPair;
         private boolean nextKeyPairSet;
 
-        public KeyPairIterator(Collection<? extends R> resources) {
+        KeyPairIterator(Collection<? extends R> resources) {
             iterator = resources.iterator();
         }
 

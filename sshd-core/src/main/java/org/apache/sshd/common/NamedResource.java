@@ -68,7 +68,9 @@ public interface NamedResource {
     /**
      * Utility class to help using {@link NamedResource}s
      */
+    // CHECKSTYLE:OFF
     final class Utils {
+    // CHECKSTYLE:ON
 
         private Utils() {
             throw new UnsupportedOperationException("No instance allowed");

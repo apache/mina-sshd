@@ -30,7 +30,9 @@ import java.util.List;
  */
 public interface BuiltinFactory<T> extends NamedFactory<T>, OptionalFeature {
 
+    // CHECKSTYLE:OFF
     final class Utils {
+    // CHECKSTYLE:ON
 
         private Utils() {
             throw new UnsupportedOperationException("No instance allowed");
@@ -46,6 +48,5 @@ public interface BuiltinFactory<T> extends NamedFactory<T>, OptionalFeature {
             }
             return avail;
         }
-
     }
 }

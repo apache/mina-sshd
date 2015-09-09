@@ -281,10 +281,10 @@ public final class SecurityUtils {
     /**
      * Named factory for the BouncyCastle <code>Random</code>
      */
-    private static final class BouncyCastleRandomFactory implements RandomFactory {
+    public static final class BouncyCastleRandomFactory implements RandomFactory {
         private static final BouncyCastleRandomFactory INSTANCE = new BouncyCastleRandomFactory();
 
-        private BouncyCastleRandomFactory() {
+        public BouncyCastleRandomFactory() {
             super();
         }
 
@@ -312,11 +312,11 @@ public final class SecurityUtils {
      *
      * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
      */
-    private static final class BouncyCastleRandom extends AbstractRandom {
+    public static final class BouncyCastleRandom extends AbstractRandom {
 
         private final RandomGenerator random;
 
-        public BouncyCastleRandom() {
+        BouncyCastleRandom() {
             ValidateUtils.checkTrue(isBouncyCastleRegistered(), "BouncyCastle not registered");
             this.random = new VMPCRandomGenerator();
             byte[] seed = new SecureRandom().generateSeed(8);

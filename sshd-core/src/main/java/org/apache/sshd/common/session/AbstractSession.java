@@ -428,7 +428,7 @@ public abstract class AbstractSession extends AbstractInnerCloseable implements 
         checkRekey();
     }
 
-    private void handleDisconnect(Buffer buffer) {
+    protected void handleDisconnect(Buffer buffer) {
         int code = buffer.getInt();
         String msg = buffer.getString();
         if (log.isDebugEnabled()) {
@@ -437,7 +437,7 @@ public abstract class AbstractSession extends AbstractInnerCloseable implements 
         close(true);
     }
 
-    private void handleServiceRequest(Buffer buffer) throws IOException {
+    protected void handleServiceRequest(Buffer buffer) throws IOException {
         String service = buffer.getString();
         log.debug("Received SSH_MSG_SERVICE_REQUEST '{}'", service);
         validateKexState(SshConstants.SSH_MSG_SERVICE_REQUEST, KexState.DONE);
@@ -454,13 +454,13 @@ public abstract class AbstractSession extends AbstractInnerCloseable implements 
         writePacket(response);
     }
 
-    private void handleServiceAccept() throws IOException {
+    protected void handleServiceAccept() throws IOException {
         log.debug("Received SSH_MSG_SERVICE_ACCEPT");
         validateKexState(SshConstants.SSH_MSG_SERVICE_ACCEPT, KexState.DONE);
         serviceAccept();
     }
 
-    private void handleKexInit(Buffer buffer) throws Exception {
+    protected void handleKexInit(Buffer buffer) throws Exception {
         log.debug("Received SSH_MSG_KEXINIT");
         receiveKexInit(buffer);
         if (kexState.compareAndSet(KexState.DONE, KexState.RUN)) {
@@ -479,7 +479,7 @@ public abstract class AbstractSession extends AbstractInnerCloseable implements 
         sendSessionEvent(SessionListener.Event.KexCompleted);
     }
 
-    private void handleNewKeys(int cmd) throws Exception {
+    protected void handleNewKeys(int cmd) throws Exception {
         log.debug("Received SSH_MSG_NEWKEYS");
         validateKexState(cmd, KexState.KEYS);
         receiveNewKeys();
@@ -745,7 +745,7 @@ public abstract class AbstractSession extends AbstractInnerCloseable implements 
      * @param buffer the buffer to encode
      * @throws IOException if an exception occurs during the encoding process
      */
-    private void encode(Buffer buffer) throws IOException {
+    protected void encode(Buffer buffer) throws IOException {
         try {
             // Check that the packet has some free space for the header
             if (buffer.rpos() < 5) {
@@ -1230,7 +1230,7 @@ public abstract class AbstractSession extends AbstractInnerCloseable implements 
     }
 
     /**
-     * Private method used while putting new keys into use that will resize the key used to
+     * Method used while putting new keys into use that will resize the key used to
      * initialize the cipher to the needed length.
      *
      * @param e         the key to resize
@@ -1241,7 +1241,7 @@ public abstract class AbstractSession extends AbstractInnerCloseable implements 
      * @return the resize key
      * @throws Exception if a problem occur while resizing the key
      */
-    private byte[] resizeKey(byte[] e, int blockSize, Digest hash, byte[] k, byte[] h) throws Exception {
+    protected byte[] resizeKey(byte[] e, int blockSize, Digest hash, byte[] k, byte[] h) throws Exception {
         while (blockSize > e.length) {
             Buffer buffer = new ByteArrayBuffer();
             buffer.putMPInt(k);

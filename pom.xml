@@ -440,10 +440,10 @@
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-checkstyle-plugin</artifactId>
-					<version>2.15</version>
+					<version>2.16</version>
 					<configuration>
 						<logViolationsToConsole>true</logViolationsToConsole>
-						<resourceExcludes>**/sshd-version.properties</resourceExcludes>
+						<resourceExcludes>**/*.properties</resourceExcludes>
 						<checkstyleRules>
 							<module name="Checker">
 								<!-- Checks whether files end with a new line.                        -->
@@ -471,6 +471,15 @@
 										<module name="JavadocStyle" />
 									-->
 
+									<!-- Check annotations conventions -->
+									<!-- See http://checkstyle.sourceforge.net/config_annotation.html -->
+								<module name="MissingOverride"/>
+								<module name="MissingDeprecated"/>
+								<module name="AnnotationLocation">
+									<property name="allowSamelineMultipleAnnotations" value="false"/>
+									<property name="allowSamelineSingleParameterlessAnnotation" value="false"/>
+									<property name="allowSamelineParameterizedAnnotation" value="false"/>
+								</module>
 
 									<!-- Checks for Naming Conventions.                  -->
 									<!-- See http://checkstyle.sf.net/config_naming.html -->
@@ -489,7 +498,6 @@
 								</module>
 								<module name="StaticVariableName" />
 								<module name="TypeName" />
-
 
 									<!-- Checks for imports                              -->
 									<!-- See http://checkstyle.sf.net/config_import.html -->
@@ -565,6 +573,9 @@
 								<module name="LeftCurly" />
 								<module name="NeedBraces" />
 								<module name="RightCurly" />
+								<module name="EmptyCatchBlock">
+									<property name="exceptionVariableName" value="expected|ignore"/>
+								</module>
 
 									<!-- Checks for common coding problems               -->
 									<!-- See http://checkstyle.sf.net/config_coding.html -->
@@ -716,6 +727,21 @@
 							</module>
 						</checkstyleRules>
 					</configuration>
+					<dependencies>
+							<!-- see http://checkstyle.sourceforge.net/ for latest version -->
+						<dependency>
+							<groupId>com.puppycrawl.tools</groupId>
+							<artifactId>checkstyle</artifactId>
+							<version>6.10.1</version>
+							<exclusions>
+								<!-- MCHECKSTYLE-156 -->
+								<exclusion>
+									<groupId>com.sun</groupId>
+									<artifactId>tools</artifactId>
+								</exclusion>
+							</exclusions>
+						</dependency>
+					</dependencies>
 				</plugin>
             </plugins>
         </pluginManagement>
