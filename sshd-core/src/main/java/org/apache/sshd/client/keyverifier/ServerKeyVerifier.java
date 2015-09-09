@@ -16,21 +16,29 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+package org.apache.sshd.client.keyverifier;
 
-package org.apache.sshd.client.subsystem;
+import java.net.SocketAddress;
+import java.security.PublicKey;
 
-import java.nio.channels.Channel;
-
-import org.apache.sshd.client.channel.ClientChannel;
-import org.apache.sshd.client.session.ClientSessionHolder;
-import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.client.session.ClientSession;
 
 /**
+ * The <code>ServerKeyVerifier</code> is used on the client side
+ * to authenticate the key provided by the server.
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface SubsystemClient extends ClientSessionHolder, NamedResource, Channel {
+public interface ServerKeyVerifier {
+
     /**
-     * @return The underlying {@link ClientChannel} used
+     * Verify that the server key provided is really the one of the host.
+     *
+     * @param sshClientSession the current session
+     * @param remoteAddress    the host
+     * @param serverKey        the presented key
+     * @return <code>true</code> if the key is accepted for the host
      */
-    ClientChannel getClientChannel();
+    boolean verifyServerKey(ClientSession sshClientSession, SocketAddress remoteAddress, PublicKey serverKey);
+
 }

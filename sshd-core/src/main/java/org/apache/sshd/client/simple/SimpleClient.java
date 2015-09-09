@@ -17,20 +17,22 @@
  * under the License.
  */
 
-package org.apache.sshd.client.subsystem;
+package org.apache.sshd.client.simple;
 
 import java.nio.channels.Channel;
 
-import org.apache.sshd.client.channel.ClientChannel;
-import org.apache.sshd.client.session.ClientSessionHolder;
-import org.apache.sshd.common.NamedResource;
-
 /**
+ * Provides a simplified and <U>synchronous</U> view of the available SSH client
+ * functionality. If more fine-grained control and configuration of the SSH client
+ * behavior and features is required then the {@link org.apache.sshd.client.SshClient} object should be used
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface SubsystemClient extends ClientSessionHolder, NamedResource, Channel {
-    /**
-     * @return The underlying {@link ClientChannel} used
-     */
-    ClientChannel getClientChannel();
+public interface SimpleClient
+        extends SimpleClientConfigurator,
+                SimpleSessionClient,
+                SimpleScpClient,
+                SimpleSftpClient,
+                Channel {
+    // marker interface
 }

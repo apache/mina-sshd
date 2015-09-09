@@ -45,11 +45,14 @@ public interface Channel extends ChannelListenerManager, Closeable {
      */
     int getRecipient();
 
+    /**
+     * @return The channel's underlying {@link Session}
+     */
+    Session getSession();
+
     Window getLocalWindow();
 
     Window getRemoteWindow();
-
-    Session getSession();
 
     void handleClose() throws IOException;
 

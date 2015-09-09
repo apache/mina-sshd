@@ -225,7 +225,9 @@ public class ServerTest extends BaseTestSupport {
             shell.setErr(err);
             shell.open().verify(9L, TimeUnit.SECONDS);
 
+            assertTrue("No changes in activated channels", channelListener.waitForModification(3L, TimeUnit.SECONDS));
             assertTrue("No activated server side channels", GenericUtils.size(channelListener.getActiveChannels()) > 0);
+            assertTrue("No changes in open channels", channelListener.waitForModification(3L, TimeUnit.SECONDS));
             assertTrue("No open server side channels", GenericUtils.size(channelListener.getOpenChannels()) > 0);
 
             int res = s.waitFor(ClientSession.CLOSED, 2 * IDLE_TIMEOUT);
@@ -289,7 +291,9 @@ public class ServerTest extends BaseTestSupport {
             shell.setOut(pos);
             shell.open().verify(5L, TimeUnit.SECONDS);
 
+            assertTrue("No changes in activated channels", channelListener.waitForModification(3L, TimeUnit.SECONDS));
             assertTrue("No activated server side channels", GenericUtils.size(channelListener.getActiveChannels()) > 0);
+            assertTrue("No changes in open channels", channelListener.waitForModification(3L, TimeUnit.SECONDS));
             assertTrue("No open server side channels", GenericUtils.size(channelListener.getOpenChannels()) > 0);
 
             try (AbstractSession serverSession = sshd.getActiveSessions().iterator().next();
@@ -533,7 +537,9 @@ public class ServerTest extends BaseTestSupport {
 
             shell.open().verify(5L, TimeUnit.SECONDS);
 
+            assertTrue("No changes in activated channels", channelListener.waitForModification(3L, TimeUnit.SECONDS));
             assertTrue("No activated server side channels", GenericUtils.size(channelListener.getActiveChannels()) > 0);
+            assertTrue("No changes in open channels", channelListener.waitForModification(3L, TimeUnit.SECONDS));
             assertTrue("No open server side channels", GenericUtils.size(channelListener.getOpenChannels()) > 0);
 
             shell.waitFor(ClientChannel.CLOSED, TimeUnit.SECONDS.toMillis(17L));
@@ -545,6 +551,7 @@ public class ServerTest extends BaseTestSupport {
             client.stop();
         }
 
+        assertTrue("No changes in closed channels", channelListener.waitForModification(3L, TimeUnit.SECONDS));
         assertTrue("Still activated server side channels", GenericUtils.isEmpty(channelListener.getActiveChannels()));
 
         Environment cmdEnv = envHolder.get();

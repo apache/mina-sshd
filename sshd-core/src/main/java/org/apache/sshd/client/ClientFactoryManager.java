@@ -24,6 +24,7 @@ import org.apache.sshd.client.auth.UserAuth;
 import org.apache.sshd.client.auth.UserInteraction;
 import org.apache.sshd.client.config.hosts.HostConfigEntryResolver;
 import org.apache.sshd.client.config.keys.ClientIdentityLoader;
+import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;

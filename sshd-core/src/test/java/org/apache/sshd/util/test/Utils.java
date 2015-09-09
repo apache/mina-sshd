@@ -20,6 +20,7 @@ package org.apache.sshd.util.test;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
@@ -27,6 +28,7 @@ import java.net.ServerSocket;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
@@ -54,6 +56,7 @@ import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.SecurityUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.pubkey.AcceptAllPublickeyAuthenticator;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
@@ -587,4 +590,19 @@ public class Utils {
         sshd.setCommandFactory(UnknownCommandFactory.INSTANCE);
         return sshd;
     }
+
+    /**
+     * @param path The {@link Path} to write the data to
+     * @param data The data to write (as UTF-8)
+     * @return The UTF-8 data bytes
+     * @throws IOException If failed to write
+     */
+    public static byte[] writeFile(Path path, String data) throws IOException {
+        try (OutputStream fos = Files.newOutputStream(path, IoUtils.EMPTY_OPEN_OPTIONS)) {
+            byte[] bytes = data.getBytes(StandardCharsets.UTF_8);
+            fos.write(bytes);
+            return bytes;
+        }
+    }
+
 }

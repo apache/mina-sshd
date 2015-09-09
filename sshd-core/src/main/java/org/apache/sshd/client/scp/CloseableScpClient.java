@@ -16,29 +16,17 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.client;
 
-import java.net.SocketAddress;
-import java.security.PublicKey;
+package org.apache.sshd.client.scp;
 
-import org.apache.sshd.client.session.ClientSession;
+import java.nio.channels.Channel;
 
 /**
- * The <code>ServerKeyVerifier</code> is used on the client side
- * to authenticate the key provided by the server.
+ * An {@link ScpClient} wrapper that also closes the underlying session
+ * when closed
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface ServerKeyVerifier {
-
-    /**
-     * Verify that the server key provided is really the one of the host.
-     *
-     * @param sshClientSession the current session
-     * @param remoteAddress    the host
-     * @param serverKey        the presented key
-     * @return <code>true</code> if the key is accepted for the host
-     */
-    boolean verifyServerKey(ClientSession sshClientSession, SocketAddress remoteAddress, PublicKey serverKey);
-
+public interface CloseableScpClient extends ScpClient, Channel {
+    // Marker interface
 }

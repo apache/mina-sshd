@@ -61,12 +61,15 @@ import org.apache.sshd.client.config.keys.ClientIdentityLoader;
 import org.apache.sshd.client.config.keys.DefaultClientIdentitiesWatcher;
 import org.apache.sshd.client.future.ConnectFuture;
 import org.apache.sshd.client.future.DefaultConnectFuture;
+import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.apache.sshd.client.session.ClientConnectionServiceFactory;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.ClientSessionCreator;
 import org.apache.sshd.client.session.ClientSessionImpl;
 import org.apache.sshd.client.session.ClientUserAuthServiceFactory;
 import org.apache.sshd.client.session.SessionFactory;
+import org.apache.sshd.client.simple.AbstractSimpleClientSessionCreator;
+import org.apache.sshd.client.simple.SimpleClient;
 import org.apache.sshd.common.AbstractFactoryManager;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.Factory;
@@ -432,13 +435,22 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     }
 
     protected ConnectFuture doConnect(
-            final String username, final SocketAddress address, final Collection<? extends KeyPair> identities, final boolean useDefaultIdentities)
+            String username, SocketAddress address, Collection<? extends KeyPair> identities,  boolean useDefaultIdentities)
                     throws IOException {
         if (connector == null) {
             throw new IllegalStateException("SshClient not started. Please call start() method before connecting to a server");
         }
-        final ConnectFuture connectFuture = new DefaultConnectFuture(null);
-        connector.connect(address).addListener(new SshFutureListener<IoConnectFuture>() {
+
+        ConnectFuture connectFuture = new DefaultConnectFuture(null);
+        SshFutureListener<IoConnectFuture> listener = createConnectCompletionListener(connectFuture, username, address, identities, useDefaultIdentities);
+        connector.connect(address).addListener(listener);
+        return connectFuture;
+    }
+
+    protected SshFutureListener<IoConnectFuture> createConnectCompletionListener(
+            final ConnectFuture connectFuture, final String username, final SocketAddress address,
+            final Collection<? extends KeyPair> identities, final boolean useDefaultIdentities) {
+        return new SshFutureListener<IoConnectFuture>() {
             @SuppressWarnings("synthetic-access")
             @Override
             public void operationComplete(IoConnectFuture future) {
@@ -470,9 +482,9 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                     connectFuture.setSession(session);
                 }
             }
-        });
-        return connectFuture;
+        };
     }
+
     protected IoConnector createConnector() {
         return getIoServiceFactory().createConnector(getSessionFactory());
     }
@@ -484,6 +496,65 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     @Override
     public String toString() {
         return "SshClient[" + Integer.toHexString(hashCode()) + "]";
+    }
+
+    /**
+     * Setup a default client, starts it and then wraps it as a {@link SimpleClient}
+     *
+     * @return The {@link SimpleClient} wrapper. <B>Note:</B> when the wrapper
+     * is closed the client is also stopped
+     * @see #setUpDefaultClient()
+     * @see #wrapAsSimpleClient(SshClient)
+     */
+    public static SimpleClient setUpDefaultSimpleClient() {
+        SshClient client = setUpDefaultClient();
+        client.start();
+        return wrapAsSimpleClient(client);
+    }
+
+    /**
+     * Wraps an {@link SshClient} instance as a {@link SimpleClient}
+     *
+     * @param client The client instance - never {@code null}. <B>Note:</B>
+     * client must be started <U>before</U> the simple client wrapper is used.
+     * @return The {@link SimpleClient} wrapper. <B>Note:</B> when the
+     * wrapper is closed the client is also stopped
+     */
+    public static SimpleClient wrapAsSimpleClient(final SshClient client) {
+        ValidateUtils.checkNotNull(client, "No client instance");
+        // wrap the client so that close() is also stop()
+        final java.nio.channels.Channel channel = new java.nio.channels.Channel() {
+            @Override
+            public boolean isOpen() {
+                return client.isOpen();
+            }
+
+            @Override
+            public void close() throws IOException {
+                Exception err = null;
+                try {
+                    client.close();
+                } catch (Exception e) {
+                    err = GenericUtils.accumulateException(err, e);
+                }
+
+                try {
+                    client.stop();
+                } catch (Exception e) {
+                    err = GenericUtils.accumulateException(err, e);
+                }
+
+                if (err != null) {
+                    if (err instanceof IOException) {
+                        throw (IOException) err;
+                    } else {
+                        throw new IOException(err);
+                    }
+                }
+            }
+        };
+
+        return AbstractSimpleClientSessionCreator.wrap(client, channel);
     }
 
     /**

@@ -22,7 +22,6 @@ import java.net.SocketAddress;
 import java.security.PublicKey;
 import java.util.Map;
 
-import org.apache.sshd.client.ServerKeyVerifier;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 

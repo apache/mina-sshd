@@ -29,6 +29,7 @@ import org.apache.sshd.client.config.keys.ClientIdentityLoader;
 import org.apache.sshd.client.kex.DHGClient;
 import org.apache.sshd.client.kex.DHGEXClient;
 import org.apache.sshd.client.keyverifier.AcceptAllServerKeyVerifier;
+import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.apache.sshd.common.BaseBuilder;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.channel.Channel;

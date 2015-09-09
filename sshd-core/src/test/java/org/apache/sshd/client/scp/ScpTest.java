@@ -141,7 +141,7 @@ public class ScpTest extends BaseTestSupport {
 
         Path localDir = assertHierarchyTargetFolderExists(scpRoot.resolve("local"));
         Path localFile = localDir.resolve("file.txt");
-        byte[] data = writeFile(localFile, getClass().getName() + "#" + getCurrentTestName() + IoUtils.EOL);
+        byte[] data = Utils.writeFile(localFile, getClass().getName() + "#" + getCurrentTestName() + IoUtils.EOL);
 
         Path remoteDir = assertHierarchyTargetFolderExists(scpRoot.resolve("remote"));
         Path remoteFile = remoteDir.resolve(localFile.getFileName().toString());
@@ -204,7 +204,7 @@ public class ScpTest extends BaseTestSupport {
 
         Path localDir = assertHierarchyTargetFolderExists(scpRoot.resolve("local"));
         Path localFile = localDir.resolve("file-1.txt");
-        byte[] data = writeFile(localFile, getClass().getName() + "#" + getCurrentTestName() + IoUtils.EOL);
+        byte[] data = Utils.writeFile(localFile, getClass().getName() + "#" + getCurrentTestName() + IoUtils.EOL);
 
         Path remoteDir = assertHierarchyTargetFolderExists(scpRoot.resolve("remote"));
         Path remoteFile = remoteDir.resolve(localFile.getFileName().toString());
@@ -256,11 +256,11 @@ public class ScpTest extends BaseTestSupport {
 
                 Path localDir = assertHierarchyTargetFolderExists(scpRoot.resolve("local"));
                 Path localFile = localDir.resolve("file.txt");
-                writeFile(localFile, data);
+                Utils.writeFile(localFile, data);
 
                 Path remoteDir = assertHierarchyTargetFolderExists(scpRoot.resolve("remote"));
                 Path remoteFile = remoteDir.resolve(localFile.getFileName());
-                writeFile(remoteFile, data + data);
+                Utils.writeFile(remoteFile, data + data);
 
                 String remotePath = Utils.resolveRelativeRemotePath(parentPath, remoteFile);
                 scp.upload(localFile.toString(), remotePath);
@@ -366,7 +366,7 @@ public class ScpTest extends BaseTestSupport {
                 session.auth().verify(5L, TimeUnit.SECONDS);
 
                 ScpClient scp = createScpClient(session);
-                writeFile(localOutFile, data);
+                Utils.writeFile(localOutFile, data);
 
                 assertFalse("Remote folder already exists: " + remoteDir, Files.exists(remoteDir));
 
@@ -413,7 +413,7 @@ public class ScpTest extends BaseTestSupport {
 
                 Path localDir = assertHierarchyTargetFolderExists(scpRoot.resolve("local"));
                 Path local1 = localDir.resolve("file-1.txt");
-                byte[] data = writeFile(local1, getClass().getName() + "#" + getCurrentTestName() + IoUtils.EOL);
+                byte[] data = Utils.writeFile(local1, getClass().getName() + "#" + getCurrentTestName() + IoUtils.EOL);
 
                 Path local2 = localDir.resolve("file-2.txt");
                 Files.write(local2, data);
@@ -495,7 +495,7 @@ public class ScpTest extends BaseTestSupport {
                 Path localDir = scpRoot.resolve("local");
                 Path localSubDir = assertHierarchyTargetFolderExists(localDir.resolve("dir"));
                 Path localSub1 = localSubDir.resolve("file-1.txt");
-                byte[] data = writeFile(localSub1, getClass().getName() + "#" + getCurrentTestName() + IoUtils.EOL);
+                byte[] data = Utils.writeFile(localSub1, getClass().getName() + "#" + getCurrentTestName() + IoUtils.EOL);
                 Path localSub2 = localSubDir.resolve("file-2.txt");
                 Files.write(localSub2, data);
 
@@ -534,7 +534,7 @@ public class ScpTest extends BaseTestSupport {
 
                 Path localDir = assertHierarchyTargetFolderExists(scpRoot.resolve("local"));
                 Path local1 = localDir.resolve("file-1.txt");
-                byte[] data = writeFile(local1, getClass().getName() + "#" + getCurrentTestName() + IoUtils.EOL);
+                byte[] data = Utils.writeFile(local1, getClass().getName() + "#" + getCurrentTestName() + IoUtils.EOL);
                 Path local2 = localDir.resolve("file-2.txt");
                 Files.write(local2, data);
 
@@ -573,7 +573,7 @@ public class ScpTest extends BaseTestSupport {
                 Path localDir = scpRoot.resolve("local");
                 Path localSubDir = assertHierarchyTargetFolderExists(localDir.resolve("dir"));
                 Path local1 = localDir.resolve("file-1.txt");
-                byte[] data = writeFile(local1, getClass().getName() + "#" + getCurrentTestName() + IoUtils.EOL);
+                byte[] data = Utils.writeFile(local1, getClass().getName() + "#" + getCurrentTestName() + IoUtils.EOL);
                 Path localSub2 = localSubDir.resolve("file-2.txt");
                 Files.write(localSub2, data);
 
@@ -623,7 +623,7 @@ public class ScpTest extends BaseTestSupport {
                 final long lastModMillis = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(1);
                 final long lastModSecs = TimeUnit.MILLISECONDS.toSeconds(lastModMillis);
                 Path local1 = localDir.resolve("file-1.txt");
-                byte[] data = writeFile(local1, getClass().getName() + "#" + getCurrentTestName() + IoUtils.EOL);
+                byte[] data = Utils.writeFile(local1, getClass().getName() + "#" + getCurrentTestName() + IoUtils.EOL);
 
                 File lclFile1 = local1.toFile();
                 boolean lcl1ModSet = lclFile1.setLastModified(lastModMillis);
@@ -729,14 +729,6 @@ public class ScpTest extends BaseTestSupport {
             }
         } else {
             assertEquals("Mismatched last modified time for " + file.getAbsolutePath(), expectedSeconds, actualSeconds);
-        }
-    }
-
-    private static byte[] writeFile(Path path, String data) throws IOException {
-        try (OutputStream fos = Files.newOutputStream(path)) {
-            byte[] bytes = data.getBytes(StandardCharsets.UTF_8);
-            fos.write(bytes);
-            return bytes;
         }
     }
 

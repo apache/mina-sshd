@@ -17,20 +17,14 @@
  * under the License.
  */
 
-package org.apache.sshd.client.subsystem;
-
-import java.nio.channels.Channel;
-
-import org.apache.sshd.client.channel.ClientChannel;
-import org.apache.sshd.client.session.ClientSessionHolder;
-import org.apache.sshd.common.NamedResource;
+package org.apache.sshd.client.session;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface SubsystemClient extends ClientSessionHolder, NamedResource, Channel {
+public interface ClientSessionHolder {
     /**
-     * @return The underlying {@link ClientChannel} used
+     * @return The underlying {@link ClientSession} used
      */
-    ClientChannel getClientChannel();
+    ClientSession getClientSession();
 }

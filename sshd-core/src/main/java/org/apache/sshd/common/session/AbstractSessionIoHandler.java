@@ -21,15 +21,17 @@ package org.apache.sshd.common.session;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.util.Readable;
+import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractSessionIoHandler implements IoHandler {
-
-    protected abstract AbstractSession createSession(IoSession ioSession) throws Exception;
+public abstract class AbstractSessionIoHandler extends AbstractLoggingBean implements IoHandler {
+    protected AbstractSessionIoHandler() {
+        super();
+    }
 
     @Override
     public void sessionCreated(IoSession ioSession) throws Exception {
@@ -57,4 +59,5 @@ public abstract class AbstractSessionIoHandler implements IoHandler {
         AbstractSession.getSession(ioSession).messageReceived(message);
     }
 
+    protected abstract AbstractSession createSession(IoSession ioSession) throws Exception;
 }

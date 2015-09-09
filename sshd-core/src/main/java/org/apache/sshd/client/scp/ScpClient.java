@@ -26,11 +26,12 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.sshd.client.session.ClientSessionHolder;
 import org.apache.sshd.common.scp.ScpTimestamp;
 
 /**
  */
-public interface ScpClient {
+public interface ScpClient extends ClientSessionHolder {
 
     enum Option {
         Recursive,

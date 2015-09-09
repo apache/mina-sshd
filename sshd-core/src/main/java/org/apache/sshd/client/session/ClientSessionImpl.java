@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.sshd.client.ClientFactoryManager;
-import org.apache.sshd.client.ServerKeyVerifier;
 import org.apache.sshd.client.auth.UserInteraction;
 import org.apache.sshd.client.channel.ChannelDirectTcpip;
 import org.apache.sshd.client.channel.ChannelExec;
@@ -39,6 +38,7 @@ import org.apache.sshd.client.channel.ChannelSubsystem;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.DefaultAuthFuture;
+import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.apache.sshd.client.scp.DefaultScpClient;
 import org.apache.sshd.client.scp.ScpClient;
 import org.apache.sshd.client.subsystem.sftp.DefaultSftpClient;

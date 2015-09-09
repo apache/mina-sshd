@@ -53,32 +53,19 @@ public class DefaultScpClient extends AbstractScpClient {
     }
 
     public DefaultScpClient(ClientSession clientSession, ScpTransferEventListener eventListener) {
-        this.clientSession = clientSession;
+        this.clientSession = ValidateUtils.checkNotNull(clientSession, "No client session");
         this.listener = (eventListener == null) ? ScpTransferEventListener.EMPTY : eventListener;
     }
 
     @Override
-    public void download(String remote, String local, Collection<Option> options) throws IOException {
-        local = ValidateUtils.checkNotNullAndNotEmpty(local, "Invalid argument local: %s", local);
-
-        FactoryManager manager = clientSession.getFactoryManager();
-        FileSystemFactory factory = manager.getFileSystemFactory();
-        FileSystem fs = factory.createFileSystem(clientSession);
-        try {
-            download(remote, fs, fs.getPath(local), options);
-        } finally {
-            try {
-                fs.close();
-            } catch (UnsupportedOperationException e) {
-                // Ignore
-            }
-        }
+    public ClientSession getClientSession() {
+        return clientSession;
     }
 
     @Override
     public void download(String remote, OutputStream local) throws IOException {
         String cmd = createReceiveCommand(remote, Collections.<Option>emptyList());
-        ChannelExec channel = openCommandChannel(clientSession, cmd);
+        ChannelExec channel = openCommandChannel(getClientSession(), cmd);
         try {
             // NOTE: we use a mock file system since we expect no invocations for it
             ScpHelper helper = new ScpHelper(channel.getInvertedOut(), channel.getInvertedIn(), new MockFileSystem(remote), listener);
@@ -91,7 +78,7 @@ public class DefaultScpClient extends AbstractScpClient {
     @Override
     protected void download(String remote, FileSystem fs, Path local, Collection<Option> options) throws IOException {
         String cmd = createReceiveCommand(remote, options);
-        ChannelExec channel = openCommandChannel(clientSession, cmd);
+        ChannelExec channel = openCommandChannel(getClientSession(), cmd);
         try {
             ScpHelper helper = new ScpHelper(channel.getInvertedOut(), channel.getInvertedIn(), fs, listener);
             helper.receive(local,
@@ -131,11 +118,12 @@ public class DefaultScpClient extends AbstractScpClient {
         }
 
         String cmd = createSendCommand(remote, options);
-        ChannelExec channel = openCommandChannel(clientSession, cmd);
+        ClientSession session = getClientSession();
+        ChannelExec channel = openCommandChannel(session, cmd);
         try {
-            FactoryManager manager = clientSession.getFactoryManager();
+            FactoryManager manager = session.getFactoryManager();
             FileSystemFactory factory = manager.getFileSystemFactory();
-            FileSystem fs = factory.createFileSystem(clientSession);
+            FileSystem fs = factory.createFileSystem(session);
             try {
                 ScpHelper helper = new ScpHelper(channel.getInvertedOut(), channel.getInvertedIn(), fs, listener);
                 executor.execute(helper, local, options);

@@ -39,6 +39,7 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.scp.ScpHelper;
 import org.apache.sshd.common.scp.ScpTimestamp;
 import org.apache.sshd.common.util.GenericUtils;
@@ -127,6 +128,25 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
         }
 
         download(remote, local.getFileSystem(), local, options);
+    }
+
+    @Override
+    public void download(String remote, String local, Collection<Option> options) throws IOException {
+        local = ValidateUtils.checkNotNullAndNotEmpty(local, "Invalid argument local: %s", local);
+
+        ClientSession session = getClientSession();
+        FactoryManager manager = session.getFactoryManager();
+        FileSystemFactory factory = manager.getFileSystemFactory();
+        FileSystem fs = factory.createFileSystem(session);
+        try {
+            download(remote, fs, fs.getPath(local), options);
+        } finally {
+            try {
+                fs.close();
+            } catch (UnsupportedOperationException e) {
+                // Ignore
+            }
+        }
     }
 
     protected abstract void download(String remote, FileSystem fs, Path local, Collection<Option> options) throws IOException;
