@@ -123,7 +123,7 @@ public class ChannelOutputStream extends OutputStream implements Channel {
             while (bufferLength > 0) {
                 Buffer buf = buffer;
                 int total = bufferLength;
-                int length = Math.min(Math.min(remoteWindow.waitForSpace(), total), remoteWindow.getPacketSize());
+                int length = Math.min(Math.min(remoteWindow.getSize(), total), remoteWindow.getPacketSize());
                 int pos = buf.wpos();
                 buf.wpos((cmd == SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA) ? 14 : 10);
                 buf.putInt(length);
