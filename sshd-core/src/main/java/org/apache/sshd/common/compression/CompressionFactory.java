@@ -28,3 +28,4 @@ import org.apache.sshd.common.BuiltinFactory;
 public interface CompressionFactory extends BuiltinFactory<Compression> {
 
 }
+//CHECKSTYLE:ON

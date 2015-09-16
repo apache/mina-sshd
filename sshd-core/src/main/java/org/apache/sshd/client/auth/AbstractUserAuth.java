@@ -16,26 +16,41 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.client.session;
 
-import java.io.IOException;
+package org.apache.sshd.client.auth;
 
-import org.apache.sshd.common.Service;
-import org.apache.sshd.common.auth.AbstractUserAuthServiceFactory;
-import org.apache.sshd.common.session.Session;
+import java.util.Collection;
+
+import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.client.session.ClientSessionHolder;
+import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ClientUserAuthServiceFactory extends AbstractUserAuthServiceFactory {
-    public static final ClientUserAuthServiceFactory INSTANCE = new ClientUserAuthServiceFactory();
+public abstract class AbstractUserAuth
+                extends AbstractLoggingBean
+                implements UserAuth, ClientSessionHolder {
+    private ClientSession session;
+    private String service;
 
-    public ClientUserAuthServiceFactory() {
+    protected AbstractUserAuth() {
         super();
     }
 
     @Override
-    public Service create(Session session) throws IOException {
-        return new ClientUserAuthService(session);
+    public ClientSession getClientSession() {
+        return session;
+    }
+
+    public String getService() {
+        return service;
+    }
+
+    @Override
+    public void init(ClientSession session, String service, Collection<?> identities) throws Exception {
+        this.session = ValidateUtils.checkNotNull(session, "No client session");
+        this.service = service;
     }
 }

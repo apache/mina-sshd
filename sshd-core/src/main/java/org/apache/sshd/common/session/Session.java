@@ -129,11 +129,21 @@ public interface Session extends SessionListenerManager, ChannelListenerManager,
      * Create a new buffer for the specified SSH packet and reserve the needed space
      * (5 bytes) for the packet header.
      *
-     * @param cmd           the SSH command
-     * @param estimatedSize estimated number of bytes the buffer will hold, 0 if unknown.
+     * @param cmd           The SSH command to initialize the buffer with
+     * @param estimatedSize Estimated number of bytes the buffer will hold, 0 if unknown.
      * @return a new buffer ready for write
+     * @see #prepareBuffer(byte, Buffer)
      */
     Buffer createBuffer(byte cmd, int estimatedSize);
+
+    /**
+     * Prepare a new &quot;clean&quot; buffer while reserving the needed space
+     * (5 bytes) for the packet header.
+     * @param cmd    The SSH command to initialize the buffer with
+     * @param buffer The {@link Buffer} instance to initialize
+     * @return The initialized buffer
+     */
+    Buffer prepareBuffer(byte cmd, Buffer buffer);
 
     /**
      * Encode and send the given buffer.

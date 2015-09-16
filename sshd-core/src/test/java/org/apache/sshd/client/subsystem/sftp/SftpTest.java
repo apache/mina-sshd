@@ -33,6 +33,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -934,12 +935,6 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         Path parentPath = targetPath.getParent();
         Path sourcePath = assertHierarchyTargetFolderExists(lclSftp).resolve("src.txt");
         String remSrcPath = "/" + Utils.resolveRelativeRemotePath(parentPath, sourcePath);
-        Path linkPath = lclSftp.resolve("link-" + sourcePath.getFileName());
-        if (Files.exists(linkPath, IoUtils.EMPTY_LINK_OPTIONS)) {
-            Files.delete(linkPath);
-        }
-
-        String remLinkPath = "/" + Utils.resolveRelativeRemotePath(parentPath, linkPath);
 
         String data = getCurrentTestName();
         ChannelSftp c = (ChannelSftp) session.openChannel(SftpConstants.SFTP_SUBSYSTEM_NAME);
@@ -951,9 +946,16 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             assertTrue("Source file not created: " + sourcePath, Files.exists(sourcePath));
             assertEquals("Mismatched stored data in " + remSrcPath, data, readFile(remSrcPath));
 
-            assertFalse("Target link exists before linking: " + linkPath, Files.exists(linkPath));
+            Path linkPath = lclSftp.resolve("link-" + sourcePath.getFileName());
+            String remLinkPath = "/" + Utils.resolveRelativeRemotePath(parentPath, linkPath);
+            LinkOption[] options = IoUtils.getLinkOptions(false);
+            if (Files.exists(linkPath, options)) {
+                Files.delete(linkPath);
+            }
+            assertFalse("Target link exists before linking: " + linkPath, Files.exists(linkPath, options));
             c.symlink(remSrcPath, remLinkPath);
-            assertTrue("Symlink not created: " + linkPath, Files.exists(linkPath));
+
+            assertTrue("Symlink not created: " + linkPath, Files.exists(linkPath, options));
             assertEquals("Mismatched link data in " + remLinkPath, data, readFile(remLinkPath));
 
             String str1 = c.readlink(remLinkPath);

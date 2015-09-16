@@ -24,6 +24,7 @@ import java.util.Iterator;
 
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.client.auth.UserAuthPublicKeyFactory;
+import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.ClientSessionImpl;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.config.keys.KeyUtils;
@@ -49,6 +50,8 @@ public class UserAuthAgent extends AbstractUserAuth {
     }
 
     protected void sendNextKey(PublicKey key) throws IOException {
+        ClientSession session = getClientSession();
+        String service = getService();
         try {
             log.debug("Send SSH_MSG_USERAUTH_REQUEST for publickey");
             Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST);
@@ -100,7 +103,11 @@ public class UserAuthAgent extends AbstractUserAuth {
                 return Result.Success;
             }
             if (cmd == SshConstants.SSH_MSG_USERAUTH_FAILURE) {
-                log.info("Received SSH_MSG_USERAUTH_FAILURE");
+                String methods = buffer.getString();
+                boolean partial = buffer.getBoolean();
+                if (log.isDebugEnabled()) {
+                    log.debug("Received SSH_MSG_USERAUTH_FAILURE - partial={}, methods={}", partial, methods);
+                }
                 if (keys.hasNext()) {
                     sendNextKey(keys.next().getFirst());
                     return Result.Continued;

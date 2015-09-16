@@ -28,3 +28,4 @@ import org.apache.sshd.common.Factory;
 public interface IoHandlerFactory extends Factory<IoHandler> {
 
 }
+//CHECKSTYLE:ON

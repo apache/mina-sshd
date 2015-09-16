@@ -215,13 +215,11 @@ public class PtyCapableChannelSession extends ChannelSession {
     }
 
     protected void doOpenPty() throws IOException {
-        Buffer buffer;
-
         if (agentForwarding) {
             if (log.isDebugEnabled()) {
                 log.debug("Send agent forwarding request - recipient={}", Integer.valueOf(recipient));
             }
-            buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST);
+            Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST);
             buffer.putInt(recipient);
             buffer.putString("auth-agent-req@openssh.com");
             buffer.putBoolean(false);
@@ -235,7 +233,7 @@ public class PtyCapableChannelSession extends ChannelSession {
                         ptyHeight, ptyWidth, ptyModes);
             }
 
-            buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST);
+            Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST);
             buffer.putInt(recipient);
             buffer.putString("pty-req");
             buffer.putBoolean(false);
@@ -260,12 +258,14 @@ public class PtyCapableChannelSession extends ChannelSession {
         if (GenericUtils.size(env) > 0) {
             log.debug("Send SSH_MSG_CHANNEL_REQUEST env: {}", env);
             for (Map.Entry<String, String> entry : env.entrySet()) {
-                buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST);
+                String key = entry.getKey();
+                String value = entry.getValue();
+                Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST, key.length() + value.length() + Integer.SIZE);
                 buffer.putInt(recipient);
                 buffer.putString("env");
                 buffer.putBoolean(false);
-                buffer.putString(entry.getKey());
-                buffer.putString(entry.getValue());
+                buffer.putString(key);
+                buffer.putString(value);
                 writePacket(buffer);
             }
         }

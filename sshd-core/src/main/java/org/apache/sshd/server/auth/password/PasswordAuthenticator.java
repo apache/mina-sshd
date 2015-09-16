@@ -33,6 +33,8 @@ public interface PasswordAuthenticator {
      * @param password The provided password
      * @param session  The {@link ServerSession} attempting the authentication
      * @return {@code true} indicating if authentication succeeded
+     * @throws PasswordChangeRequiredException If the password is expired or
+     * not strong enough to suit the server's policy
      */
-    boolean authenticate(String username, String password, ServerSession session);
+    boolean authenticate(String username, String password, ServerSession session) throws PasswordChangeRequiredException;
 }

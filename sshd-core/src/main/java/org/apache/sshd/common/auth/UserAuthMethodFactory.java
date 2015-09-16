@@ -16,26 +16,32 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.client.session;
 
-import java.io.IOException;
+package org.apache.sshd.common.auth;
 
-import org.apache.sshd.common.Service;
-import org.apache.sshd.common.auth.AbstractUserAuthServiceFactory;
-import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.NamedFactory;
 
 /**
+ * Represents a user authentication method
+ *
+ * @param <M> The authentication method factory type
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ClientUserAuthServiceFactory extends AbstractUserAuthServiceFactory {
-    public static final ClientUserAuthServiceFactory INSTANCE = new ClientUserAuthServiceFactory();
+// CHECKSTYLE:OFF
+public interface UserAuthMethodFactory<M> extends NamedFactory<M> {
+    /**
+     * Password authentication method name
+     */
+    String PASSWORD = "password";
 
-    public ClientUserAuthServiceFactory() {
-        super();
-    }
+    /**
+     * Public key authentication method name
+     */
+    String PUBLIC_KEY = "publickey";
 
-    @Override
-    public Service create(Session session) throws IOException {
-        return new ClientUserAuthService(session);
-    }
+    /**
+     * Keyboard interactive authentication method
+     */
+    String KB_INTERACTIVE = "keyboard-interactive";
 }
+//CHECKSTYLE:ON

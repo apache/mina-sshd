@@ -28,3 +28,4 @@ import org.apache.sshd.common.NamedFactory;
 public interface KeyExchangeFactory extends NamedFactory<KeyExchange> {
 
 }
+//CHECKSTYLE:ON

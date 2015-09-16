@@ -36,6 +36,7 @@ import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
 
@@ -111,7 +112,7 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
 
             log.debug("Send SSH_MSG_KEX_DH_GEX_INIT");
             Session session = getSession();
-            buffer = session.createBuffer(SshConstants.SSH_MSG_KEX_DH_GEX_INIT);
+            buffer = session.prepareBuffer(SshConstants.SSH_MSG_KEX_DH_GEX_INIT, BufferUtils.clear(buffer));
             buffer.putMPInt(e);
             session.writePacket(buffer);
             expected = SshConstants.SSH_MSG_KEX_DH_GEX_REPLY;

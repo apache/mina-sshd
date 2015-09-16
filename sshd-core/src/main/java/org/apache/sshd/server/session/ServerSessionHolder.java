@@ -16,26 +16,12 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.client.session;
 
-import java.io.IOException;
-
-import org.apache.sshd.common.Service;
-import org.apache.sshd.common.auth.AbstractUserAuthServiceFactory;
-import org.apache.sshd.common.session.Session;
+package org.apache.sshd.server.session;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ClientUserAuthServiceFactory extends AbstractUserAuthServiceFactory {
-    public static final ClientUserAuthServiceFactory INSTANCE = new ClientUserAuthServiceFactory();
-
-    public ClientUserAuthServiceFactory() {
-        super();
-    }
-
-    @Override
-    public Service create(Session session) throws IOException {
-        return new ClientUserAuthService(session);
-    }
+public interface ServerSessionHolder {
+    ServerSession getServerSession();
 }

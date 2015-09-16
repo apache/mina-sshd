@@ -21,16 +21,12 @@ package org.apache.sshd.client.auth;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class UserAuthKeyboardInteractiveFactory implements UserAuthFactory {
+public class UserAuthKeyboardInteractiveFactory extends AbstractUserAuthFactory {
+    public static final String NAME = KB_INTERACTIVE;
     public static final UserAuthKeyboardInteractiveFactory INSTANCE = new UserAuthKeyboardInteractiveFactory();
 
     public UserAuthKeyboardInteractiveFactory() {
-        super();
-    }
-
-    @Override
-    public String getName() {
-        return "keyboard-interactive";
+        super(NAME);
     }
 
     @Override

@@ -25,7 +25,6 @@ import org.apache.sshd.client.auth.UserInteraction;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.util.buffer.Buffer;
-
 import static org.apache.sshd.common.SshConstants.SSH_MSG_USERAUTH_FAILURE;
 import static org.apache.sshd.common.SshConstants.SSH_MSG_USERAUTH_INFO_REQUEST;
 import static org.apache.sshd.common.SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE;
@@ -48,6 +47,8 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
 
     @Override
     public Result next(Buffer buffer) throws IOException {
+        ClientSession session = getClientSession();
+        String service = getService();
         if (buffer == null) {
             log.debug("Send SSH_MSG_USERAUTH_REQUEST for password");
             buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST);
@@ -85,8 +86,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
                     } else {
                         UserInteraction ui = session.getFactoryManager().getUserInteraction();
                         if (ui != null) {
-                            String dest = session.getUsername() + "@" + session.getIoSession().getRemoteAddress().toString();
-                            rep = ui.interactive(dest, name, instruction, language_tag, prompt, echo);
+                            rep = ui.interactive(session, name, instruction, language_tag, prompt, echo);
                         }
                     }
                     if (rep == null) {
@@ -104,8 +104,14 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
                     log.debug("Received SSH_MSG_USERAUTH_SUCCESS");
                     return Result.Success;
                 case SSH_MSG_USERAUTH_FAILURE:
-                    log.debug("Received SSH_MSG_USERAUTH_FAILURE");
-                    return Result.Failure;
+                    {
+                        String methods = buffer.getString();
+                        boolean partial = buffer.getBoolean();
+                        if (log.isDebugEnabled()) {
+                            log.debug("Received SSH_MSG_USERAUTH_FAILURE - partial={}, methods={}", partial, methods);
+                        }
+                        return Result.Failure;
+                    }
                 default:
                     log.debug("Received unknown packet {}", Integer.valueOf(cmd));
                     return Result.Continued;

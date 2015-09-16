@@ -21,15 +21,21 @@ package org.apache.sshd;
 import java.io.IOException;
 import java.security.KeyPair;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.client.SshClient;
+import org.apache.sshd.client.auth.UserInteraction;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.session.ClientConnectionServiceFactory;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.FactoryManagerUtils;
+import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.auth.UserAuthMethodFactory;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.deprecated.ClientUserAuthServiceOld;
 import org.apache.sshd.deprecated.UserAuthKeyboardInteractive;
@@ -37,6 +43,10 @@ import org.apache.sshd.deprecated.UserAuthPassword;
 import org.apache.sshd.deprecated.UserAuthPublicKey;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.SshServer;
+import org.apache.sshd.server.auth.UserAuthPasswordFactory;
+import org.apache.sshd.server.auth.password.PasswordAuthenticator;
+import org.apache.sshd.server.auth.password.PasswordChangeRequiredException;
+import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.session.ServerSessionImpl;
 import org.apache.sshd.server.session.SessionFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
@@ -118,6 +128,103 @@ public class AuthenticationTest extends BaseTestSupport {
     }
 
     @Test
+    public void testChangePassword() throws Exception {
+        final PasswordAuthenticator delegate = sshd.getPasswordAuthenticator();
+        final AtomicInteger attemptsCount = new AtomicInteger(0);
+        sshd.setPasswordAuthenticator(new PasswordAuthenticator() {
+            @Override
+            public boolean authenticate(String username, String password, ServerSession session)
+                    throws PasswordChangeRequiredException {
+                if (attemptsCount.incrementAndGet() == 1) {
+                    throw new PasswordChangeRequiredException(attemptsCount.toString(), getCurrentTestName(), ServerFactoryManager.DEFAULT_WELCOME_BANNER_LANGUAGE);
+                }
+
+                return delegate.authenticate(username, password, session);
+            }
+        });
+
+        final AtomicInteger changesCount = new AtomicInteger(0);
+        sshd.setUserAuthFactories(Collections.<NamedFactory<org.apache.sshd.server.auth.UserAuth>>singletonList(
+            new org.apache.sshd.server.auth.UserAuthPasswordFactory() {
+                @Override
+                public org.apache.sshd.server.auth.UserAuth create() {
+                    return new org.apache.sshd.server.auth.UserAuthPassword() {
+                        @Override
+                        protected Boolean handleClientPasswordChangeRequest(
+                                Buffer buffer, ServerSession session, String username, String oldPassword, String newPassword)
+                                        throws Exception {
+                            if (changesCount.incrementAndGet() == 1) {
+                                assertNotEquals("Non-different passwords", oldPassword, newPassword);
+                                return checkPassword(buffer, session, username, newPassword);
+                            } else {
+                                return super.handleClientPasswordChangeRequest(buffer, session, username, oldPassword, newPassword);
+                            }
+                        }
+                    };
+                }
+            }
+        ));
+        FactoryManagerUtils.updateProperty(sshd, ServerFactoryManager.AUTH_METHODS, UserAuthPasswordFactory.NAME);
+
+        try (SshClient client = setupTestClient()) {
+            final AtomicInteger updatesCount = new AtomicInteger(0);
+            client.setUserInteraction(new UserInteraction() {
+                @Override
+                public void welcome(ClientSession session, String banner, String lang) {
+                    // ignored
+                }
+
+                @Override
+                public String[] interactive(ClientSession session, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
+                    throw new UnsupportedOperationException("Unexpected call");
+                }
+
+                @Override
+                public String getUpdatedPassword(ClientSession session, String prompt, String lang) {
+                    assertEquals("Mismatched prompt", getCurrentTestName(), prompt);
+                    assertEquals("Mismatched language", ServerFactoryManager.DEFAULT_WELCOME_BANNER_LANGUAGE, lang);
+                    assertEquals("Unexpected repeated call", 1, updatesCount.incrementAndGet());
+                    return getCurrentTestName();
+                }
+            });
+
+            final AtomicInteger sentCount = new AtomicInteger(0);
+            client.setUserAuthFactories(Collections.<NamedFactory<org.apache.sshd.client.auth.UserAuth>>singletonList(
+                new org.apache.sshd.client.auth.UserAuthPasswordFactory() {
+                    @Override
+                    public org.apache.sshd.client.auth.UserAuth create() {
+                        return new org.apache.sshd.client.auth.UserAuthPassword() {
+                            @Override
+                            protected void sendPassword(Buffer buffer, ClientSession session, String oldPassword, String newPassword) throws IOException {
+                                int count = sentCount.incrementAndGet();
+                                // 1st one is the original one (which is denied by the server)
+                                // 2nd one is the updated one retrieved from the user interaction
+                                if (count == 2) {
+                                    super.sendPassword(buffer, session, getClass().getName(), newPassword);
+                                } else {
+                                    super.sendPassword(buffer, session, oldPassword, newPassword);
+                                }
+                            }
+                        };
+                    }
+            }));
+            FactoryManagerUtils.updateProperty(client, ServerFactoryManager.AUTH_METHODS, UserAuthPasswordFactory.NAME);
+
+            client.start();
+
+            try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+                s.addPasswordIdentity(getCurrentTestName());
+                s.auth().verify(11L, TimeUnit.SECONDS);
+                assertEquals("No password change request generated", 2, attemptsCount.get());
+                assertEquals("No password change handled", 1, changesCount.get());
+                assertEquals("No user interaction invoked", 1, updatesCount.get());
+            } finally {
+                client.stop();
+            }
+        }
+    }
+
+    @Test
     public void testAuthPasswordOnly() throws Exception {
         try (SshClient client = setupTestClient()) {
             client.setServiceFactories(Arrays.asList(
@@ -149,8 +256,8 @@ public class AuthenticationTest extends BaseTestSupport {
                 s.waitFor(ClientSession.CLOSED | ClientSession.WAIT_AUTH, 0);
 
                 KeyPair pair = createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
-                assertAuthenticationResult("pubkey", authPublicKey(s, getCurrentTestName(), pair), false);
-                assertAuthenticationResult("password", authPassword(s, getCurrentTestName(), getCurrentTestName()), true);
+                assertAuthenticationResult(UserAuthMethodFactory.PUBLIC_KEY, authPublicKey(s, getCurrentTestName(), pair), false);
+                assertAuthenticationResult(UserAuthMethodFactory.PASSWORD, authPassword(s, getCurrentTestName(), getCurrentTestName()), true);
                 s.close(true);
             } finally {
                 client.stop();
@@ -171,10 +278,63 @@ public class AuthenticationTest extends BaseTestSupport {
                 s.waitFor(ClientSession.CLOSED | ClientSession.WAIT_AUTH, 0);
 
                 KeyPair pair = createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
-                assertAuthenticationResult("pubkey", authPublicKey(s, getCurrentTestName(), pair), false);
-                assertAuthenticationResult("interactive", authInteractive(s, getCurrentTestName(), getCurrentTestName()), true);
+                assertAuthenticationResult(UserAuthMethodFactory.PUBLIC_KEY, authPublicKey(s, getCurrentTestName(), pair), false);
+                assertAuthenticationResult(UserAuthMethodFactory.KB_INTERACTIVE, authInteractive(s, getCurrentTestName(), getCurrentTestName()), true);
 
                 s.close(true);
+            } finally {
+                client.stop();
+            }
+        }
+    }
+
+    @Test
+    public void testAuthPasswordChangeRequest() throws Exception {
+        final PasswordAuthenticator delegate = ValidateUtils.checkNotNull(sshd.getPasswordAuthenticator(), "No password authenticator");
+        final AtomicInteger attemptsCount = new AtomicInteger(0);
+        sshd.setPasswordAuthenticator(new PasswordAuthenticator() {
+            @Override
+            public boolean authenticate(String username, String password, ServerSession session)
+                    throws PasswordChangeRequiredException {
+                if (attemptsCount.incrementAndGet() == 1) {
+                    throw new PasswordChangeRequiredException(attemptsCount.toString(), getCurrentTestName(), ServerFactoryManager.DEFAULT_WELCOME_BANNER_LANGUAGE);
+                }
+
+                return delegate.authenticate(username, password, session);
+            }
+        });
+        FactoryManagerUtils.updateProperty(sshd, ServerFactoryManager.AUTH_METHODS, UserAuthPasswordFactory.NAME);
+
+        try (SshClient client = setupTestClient()) {
+            final AtomicInteger updatesCount = new AtomicInteger(0);
+            client.setUserInteraction(new UserInteraction() {
+                @Override
+                public void welcome(ClientSession session, String banner, String lang) {
+                    // ignored
+                }
+
+                @Override
+                public String[] interactive(ClientSession session, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
+                    throw new UnsupportedOperationException("Unexpected call");
+                }
+
+                @Override
+                public String getUpdatedPassword(ClientSession session, String prompt, String lang) {
+                    assertEquals("Mismatched prompt", getCurrentTestName(), prompt);
+                    assertEquals("Mismatched language", ServerFactoryManager.DEFAULT_WELCOME_BANNER_LANGUAGE, lang);
+                    assertEquals("Unexpected repeated call", 1, updatesCount.incrementAndGet());
+                    return getCurrentTestName();
+                }
+            });
+            FactoryManagerUtils.updateProperty(client, ServerFactoryManager.AUTH_METHODS, UserAuthPasswordFactory.NAME);
+
+            client.start();
+
+            try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+                s.addPasswordIdentity(getCurrentTestName());
+                s.auth().verify(11L, TimeUnit.SECONDS);
+                assertEquals("No password change request generated", 2, attemptsCount.get());
+                assertEquals("No user interaction invoked", 1, updatesCount.get());
             } finally {
                 client.stop();
             }

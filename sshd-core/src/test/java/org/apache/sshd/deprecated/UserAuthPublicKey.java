@@ -47,6 +47,8 @@ public class UserAuthPublicKey extends AbstractUserAuth {
 
     @Override
     public Result next(Buffer buffer) throws IOException {
+        ClientSession session = getClientSession();
+        String service = getService();
         if (buffer == null) {
             try {
                 log.debug("Send SSH_MSG_USERAUTH_REQUEST for publickey");
@@ -96,7 +98,11 @@ public class UserAuthPublicKey extends AbstractUserAuth {
                 return Result.Success;
             }
             if (cmd == SshConstants.SSH_MSG_USERAUTH_FAILURE) {
-                log.debug("Received SSH_MSG_USERAUTH_FAILURE");
+                String methods = buffer.getString();
+                boolean partial = buffer.getBoolean();
+                if (log.isDebugEnabled()) {
+                    log.debug("Received SSH_MSG_USERAUTH_FAILURE - partial={}, methods={}", partial, methods);
+                }
                 return Result.Failure;
             } else {
                 log.debug("Received unknown packet {}", Integer.valueOf(cmd));

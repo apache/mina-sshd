@@ -48,14 +48,34 @@ public interface ServerFactoryManager extends FactoryManager, KeyPairProviderHol
      * Key used to retrieve the value in the configuration properties map
      * of the maximum number of failed authentication requests before the
      * server closes the connection.
+     * @see #DEFAULT_MAX_AUTH_REQUESTS
      */
     String MAX_AUTH_REQUESTS = "max-auth-requests";
 
     /**
+     * Default value for {@link #MAX_AUTH_REQUESTS} if none configured
+     */
+    int DEFAULT_MAX_AUTH_REQUESTS = 20;
+
+    /**
      * Key used to retrieve the value of welcome banner that will be displayed
-     * when a user connects to the server.
+     * when a user connects to the server. If {@code null}/empty then no banner
+     * will be sent.
+     * @see <A HREF="https://www.ietf.org/rfc/rfc4252.txt">RFC-4252 section 5.4</A>
      */
     String WELCOME_BANNER = "welcome-banner";
+
+    /**
+     * Key used to denote the language code for the welcome banner (if such
+     * a banner is configured). If not set, then {@link #DEFAULT_WELCOME_BANNER_LANGUAGE}
+     * is used
+     */
+    String WELCOME_BANNER_LANGUAGE = "welcome-banner-language";
+
+    /**
+     * Default value for {@link #WELCOME_BANNER_LANGUAGE} is not overwritten
+     */
+    String DEFAULT_WELCOME_BANNER_LANGUAGE = "en";
 
     /**
      * This key is used when configuring multi-step authentications.

@@ -21,22 +21,17 @@ package org.apache.sshd.server.session;
 import java.io.IOException;
 
 import org.apache.sshd.common.Service;
-import org.apache.sshd.common.ServiceFactory;
+import org.apache.sshd.common.auth.AbstractUserAuthServiceFactory;
 import org.apache.sshd.common.session.Session;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ServerUserAuthServiceFactory implements ServiceFactory {
+public class ServerUserAuthServiceFactory extends AbstractUserAuthServiceFactory {
     public static final ServerUserAuthServiceFactory INSTANCE = new ServerUserAuthServiceFactory();
 
     public ServerUserAuthServiceFactory() {
         super();
-    }
-
-    @Override
-    public String getName() {
-        return "ssh-userauth";
     }
 
     @Override

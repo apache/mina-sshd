@@ -28,3 +28,4 @@ import org.apache.sshd.common.NamedFactory;
 public interface DigestFactory extends NamedFactory<Digest> {
 
 }
+//CHECKSTYLE:ON

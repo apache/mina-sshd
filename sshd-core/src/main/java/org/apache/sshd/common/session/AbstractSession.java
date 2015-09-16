@@ -449,7 +449,7 @@ public abstract class AbstractSession extends AbstractInnerCloseable implements 
             return;
         }
         log.debug("Accepted service {}", service);
-        Buffer response = createBuffer(SshConstants.SSH_MSG_SERVICE_ACCEPT);
+        Buffer response = prepareBuffer(SshConstants.SSH_MSG_SERVICE_ACCEPT, BufferUtils.clear(buffer));
         response.putString(service);
         writePacket(response);
     }
@@ -702,36 +702,33 @@ public abstract class AbstractSession extends AbstractInnerCloseable implements 
         return createBuffer(cmd, 0);
     }
 
-    /**
-     * Create a new buffer for the specified SSH packet and reserve the needed space
-     * (5 bytes) for the packet header.
-     *
-     * @param cmd the SSH command
-     * @param len estimated number of bytes the buffer will hold, 0 if unknown.
-     * @return a new buffer ready for write
-     */
     @Override
     public Buffer createBuffer(byte cmd, int len) {
-        Buffer buffer;
         if (len <= 0) {
-            buffer = new ByteArrayBuffer();
-        } else {
-            // Since the caller claims to know how many bytes they will need
-            // increase their request to account for our headers/footers if
-            // they actually send exactly this amount.
-            //
-            int bsize = outCipherSize;
-            len += 5;
-            int pad = (-len) & (bsize - 1);
-            if (pad < bsize) {
-                pad += bsize;
-            }
-            len = len + pad - 4;
-            if (outMac != null) {
-                len += outMac.getBlockSize();
-            }
-            buffer = new ByteArrayBuffer(new byte[Math.max(len, ByteArrayBuffer.DEFAULT_SIZE)], false);
+            return prepareBuffer(cmd, new ByteArrayBuffer());
         }
+
+        // Since the caller claims to know how many bytes they will need
+        // increase their request to account for our headers/footers if
+        // they actually send exactly this amount.
+        //
+        int bsize = outCipherSize;
+        len += 5;
+        int pad = (-len) & (bsize - 1);
+        if (pad < bsize) {
+            pad += bsize;
+        }
+        len = len + pad - 4;
+        if (outMac != null) {
+            len += outMac.getBlockSize();
+        }
+
+        return prepareBuffer(cmd, new ByteArrayBuffer(new byte[Math.max(len, ByteArrayBuffer.DEFAULT_SIZE)], false));
+    }
+
+    @Override
+    public Buffer prepareBuffer(byte cmd, Buffer buffer) {
+        ValidateUtils.checkNotNull(buffer, "No buffer to prepare");
         buffer.rpos(5);
         buffer.wpos(5);
         buffer.putByte(cmd);
@@ -1105,7 +1102,7 @@ public abstract class AbstractSession extends AbstractInnerCloseable implements 
      */
     protected void sendNewKeys() throws IOException {
         log.debug("Send SSH_MSG_NEWKEYS");
-        Buffer buffer = createBuffer(SshConstants.SSH_MSG_NEWKEYS);
+        Buffer buffer = createBuffer(SshConstants.SSH_MSG_NEWKEYS, Byte.SIZE);
         writePacket(buffer);
     }
 
@@ -1260,7 +1257,7 @@ public abstract class AbstractSession extends AbstractInnerCloseable implements 
     @Override
     public void disconnect(int reason, String msg) throws IOException {
         log.info("Disconnecting: {} - {}", reason, msg);
-        Buffer buffer = createBuffer(SshConstants.SSH_MSG_DISCONNECT);
+        Buffer buffer = createBuffer(SshConstants.SSH_MSG_DISCONNECT, msg.length() + Short.SIZE);
         buffer.putInt(reason);
         buffer.putString(msg);
         buffer.putString("");   // language...
@@ -1282,7 +1279,7 @@ public abstract class AbstractSession extends AbstractInnerCloseable implements 
      * @throws IOException if an error occurred sending the packet
      */
     protected void notImplemented() throws IOException {
-        Buffer buffer = createBuffer(SshConstants.SSH_MSG_UNIMPLEMENTED);
+        Buffer buffer = createBuffer(SshConstants.SSH_MSG_UNIMPLEMENTED, Byte.SIZE);
         buffer.putInt(seqi - 1);
         writePacket(buffer);
     }

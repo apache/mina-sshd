@@ -43,6 +43,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Int2IntFunction;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
 import org.apache.sshd.server.channel.OpenChannelException;
 import org.apache.sshd.server.x11.X11ForwardSupport;
@@ -359,7 +360,7 @@ public abstract class AbstractConnectionService extends AbstractInnerCloseable i
         log.debug("Received SSH_MSG_CHANNEL_OPEN {}", type);
 
         if (isClosing()) {
-            Buffer buf = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_FAILURE);
+            Buffer buf = session.prepareBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_FAILURE, BufferUtils.clear(buffer));
             buf.putInt(id);
             buf.putInt(SshConstants.SSH_OPEN_CONNECT_FAILED);
             buf.putString("SSH server is shutting down: " + type);
@@ -368,7 +369,7 @@ public abstract class AbstractConnectionService extends AbstractInnerCloseable i
             return;
         }
         if (!allowMoreSessions) {
-            Buffer buf = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_FAILURE);
+            Buffer buf = session.prepareBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_FAILURE, BufferUtils.clear(buffer));
             buf.putInt(id);
             buf.putInt(SshConstants.SSH_OPEN_CONNECT_FAILED);
             buf.putString("additional sessions disabled");
@@ -379,7 +380,7 @@ public abstract class AbstractConnectionService extends AbstractInnerCloseable i
 
         final Channel channel = NamedFactory.Utils.create(session.getFactoryManager().getChannelFactories(), type);
         if (channel == null) {
-            Buffer buf = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_FAILURE);
+            Buffer buf = session.prepareBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_FAILURE, BufferUtils.clear(buffer));
             buf.putInt(id);
             buf.putInt(SshConstants.SSH_OPEN_UNKNOWN_CHANNEL_TYPE);
             buf.putString("Unsupported channel type: " + type);
@@ -394,7 +395,7 @@ public abstract class AbstractConnectionService extends AbstractInnerCloseable i
             public void operationComplete(OpenFuture future) {
                 try {
                     if (future.isOpened()) {
-                        Buffer buf = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_CONFIRMATION);
+                        Buffer buf = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_CONFIRMATION, Integer.SIZE);
                         buf.putInt(id);
                         buf.putInt(channelId);
                         buf.putInt(channel.getLocalWindow().getSize());
@@ -403,7 +404,8 @@ public abstract class AbstractConnectionService extends AbstractInnerCloseable i
                     } else {
                         Throwable exception = future.getException();
                         if (exception != null) {
-                            Buffer buf = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_FAILURE);
+                            String message = exception.getMessage();
+                            Buffer buf = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN_FAILURE, message.length() + Long.SIZE);
                             buf.putInt(id);
                             if (exception instanceof OpenChannelException) {
                                 buf.putInt(((OpenChannelException) exception).getReasonCode());

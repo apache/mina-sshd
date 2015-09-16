@@ -28,3 +28,4 @@ import org.apache.sshd.common.BuiltinFactory;
 public interface MacFactory extends BuiltinFactory<Mac> {
 
 }
+//CHECKSTYLE:ON

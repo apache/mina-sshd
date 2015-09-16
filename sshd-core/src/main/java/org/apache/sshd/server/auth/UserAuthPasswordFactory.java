@@ -21,16 +21,12 @@ package org.apache.sshd.server.auth;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class UserAuthPasswordFactory implements UserAuthFactory {
+public class UserAuthPasswordFactory extends AbstractUserAuthFactory {
+    public static final String NAME = PASSWORD;
     public static final UserAuthPasswordFactory INSTANCE = new UserAuthPasswordFactory();
 
     public UserAuthPasswordFactory() {
-        super();
-    }
-
-    @Override
-    public String getName() {
-        return "password";
+        super(NAME);
     }
 
     @Override

@@ -29,3 +29,4 @@ import org.apache.sshd.server.Command;
 public interface SubsystemFactory extends NamedFactory<Command> {
 
 }
+//CHECKSTYLE:ON

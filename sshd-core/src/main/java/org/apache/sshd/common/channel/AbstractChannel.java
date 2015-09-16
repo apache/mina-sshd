@@ -306,7 +306,7 @@ public abstract class AbstractChannel
             } else if (!gracefulFuture.isClosed()) {
                 log.debug("Send SSH_MSG_CHANNEL_CLOSE on channel {}", AbstractChannel.this);
                 Session s = getSession();
-                Buffer buffer = s.createBuffer(SshConstants.SSH_MSG_CHANNEL_CLOSE);
+                Buffer buffer = s.createBuffer(SshConstants.SSH_MSG_CHANNEL_CLOSE, Short.SIZE);
                 buffer.putInt(getRecipient());
                 try {
                     long timeout = FactoryManagerUtils.getLongProperty(getSession(), FactoryManager.CHANNEL_CLOSE_TIMEOUT, DEFAULT_CHANNEL_CLOSE_TIMEOUT);
@@ -415,7 +415,7 @@ public abstract class AbstractChannel
         if (ex != 1) {
             log.debug("Send SSH_MSG_CHANNEL_FAILURE on channel {}", this);
             Session s = getSession();
-            buffer = s.createBuffer(SshConstants.SSH_MSG_CHANNEL_FAILURE);
+            buffer = s.prepareBuffer(SshConstants.SSH_MSG_CHANNEL_FAILURE, BufferUtils.clear(buffer));
             buffer.putInt(getRecipient());
             writePacket(buffer);
             return;
@@ -466,7 +466,7 @@ public abstract class AbstractChannel
     protected void sendEof() throws IOException {
         log.debug("Send SSH_MSG_CHANNEL_EOF on channel {}", this);
         Session s = getSession();
-        Buffer buffer = s.createBuffer(SshConstants.SSH_MSG_CHANNEL_EOF);
+        Buffer buffer = s.createBuffer(SshConstants.SSH_MSG_CHANNEL_EOF, Short.SIZE);
         buffer.putInt(getRecipient());
         writePacket(buffer);
     }
@@ -480,7 +480,7 @@ public abstract class AbstractChannel
             log.debug("Send SSH_MSG_CHANNEL_WINDOW_ADJUST (len={}) on channel {}", len, this);
         }
         Session s = getSession();
-        Buffer buffer = s.createBuffer(SshConstants.SSH_MSG_CHANNEL_WINDOW_ADJUST);
+        Buffer buffer = s.createBuffer(SshConstants.SSH_MSG_CHANNEL_WINDOW_ADJUST, Short.SIZE);
         buffer.putInt(getRecipient());
         buffer.putInt(len);
         writePacket(buffer);

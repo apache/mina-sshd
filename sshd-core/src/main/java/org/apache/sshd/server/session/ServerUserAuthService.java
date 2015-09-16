@@ -34,16 +34,17 @@ import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.closeable.AbstractCloseable;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.auth.UserAuth;
+import org.apache.sshd.server.auth.UserAuthNoneFactory;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ServerUserAuthService extends AbstractCloseable implements Service {
+public class ServerUserAuthService extends AbstractCloseable implements Service, ServerSessionHolder {
 
-    public static final int DEFAULT_MAX_AUTH_REQUESTS = 20;
     private final ServerSession session;
     private List<NamedFactory<UserAuth>> userAuthFactories;
     private List<List<String>> authMethods;
@@ -62,7 +63,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service 
         }
 
         this.session = (ServerSession) s;
-        maxAuthRequests = session.getIntProperty(ServerFactoryManager.MAX_AUTH_REQUESTS, DEFAULT_MAX_AUTH_REQUESTS);
+        maxAuthRequests = session.getIntProperty(ServerFactoryManager.MAX_AUTH_REQUESTS, ServerFactoryManager.DEFAULT_MAX_AUTH_REQUESTS);
 
         ServerFactoryManager manager = getFactoryManager();
         userAuthFactories = new ArrayList<>(manager.getUserAuthFactories());
@@ -101,6 +102,11 @@ public class ServerUserAuthService extends AbstractCloseable implements Service 
 
     @Override
     public ServerSession getSession() {
+        return getServerSession();
+    }
+
+    @Override
+    public ServerSession getServerSession() {
         return session;
     }
 
@@ -127,6 +133,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service 
                                 + username + ", " + service + ")");
                 return;
             }
+
             // TODO: verify that the service is supported
             this.authMethod = method;
             if (nbAuthRequests++ > maxAuthRequests) {
@@ -166,95 +173,129 @@ public class ServerUserAuthService extends AbstractCloseable implements Service 
         }
 
         if (authed == null) {
-            // authentication is still ongoing
-            log.debug("Authentication not finished");
-        } else if (authed) {
-            log.debug("Authentication succeeded");
-            String username = currentAuth.getUserName();
-
-            boolean success = false;
-            for (List<String> l : authMethods) {
-                if ((GenericUtils.size(l) > 0) && l.get(0).equals(authMethod)) {
-                    l.remove(0);
-                    success |= l.isEmpty();
-                }
-            }
-
-            if (success) {
-                FactoryManager manager = getFactoryManager();
-                Integer maxSessionCount = FactoryManagerUtils.getInteger(manager, ServerFactoryManager.MAX_CONCURRENT_SESSIONS);
-                if (maxSessionCount != null) {
-                    int currentSessionCount = session.getActiveSessionCountForUser(username);
-                    if (currentSessionCount >= maxSessionCount) {
-                        session.disconnect(SshConstants.SSH2_DISCONNECT_SERVICE_NOT_AVAILABLE,
-                                "Too many concurrent connections (" + currentSessionCount + ") - max. allowed: " + maxSessionCount);
-                        return;
-                    }
-                }
-
-                String welcomeBanner = FactoryManagerUtils.getString(manager, ServerFactoryManager.WELCOME_BANNER);
-                if (welcomeBanner != null) {
-                    buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_BANNER);
-                    buffer.putString(welcomeBanner);
-                    buffer.putString("en");
-                    session.writePacket(buffer);
-                }
-
-                buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_SUCCESS);
-                session.writePacket(buffer);
-                session.setUsername(username);
-                session.setAuthenticated();
-                session.startService(authService);
-                session.resetIdleTimeout();
-                log.info("Session {}@{} authenticated", username, session.getIoSession().getRemoteAddress());
-
-            } else {
-                buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_FAILURE);
-                StringBuilder sb = new StringBuilder();
-                for (List<String> l : authMethods) {
-                    if (GenericUtils.size(l) > 0) {
-                        if (sb.length() > 0) {
-                            sb.append(",");
-                        }
-                        sb.append(l.get(0));
-                    }
-                }
-                buffer.putString(sb.toString());
-                buffer.putBoolean(true);
-                session.writePacket(buffer);
-            }
-
-            currentAuth.destroy();
-            currentAuth = null;
+            handleAuthenticationInProgress(cmd, buffer);
+        } else if (authed.booleanValue()) {
+            handleAuthenticationSuccess(cmd, buffer);
         } else {
-            log.debug("Authentication failed");
+            handleAuthenticationFailure(cmd, buffer);
+        }
+    }
 
-            buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_FAILURE);
+    protected void handleAuthenticationInProgress(int cmd, Buffer buffer) throws Exception {
+        String username = (currentAuth == null) ? null : currentAuth.getUserName();
+        if (log.isDebugEnabled()) {
+            log.debug("handleAuthenticationInProgress({}@{})", username, session);
+        }
+    }
+
+    protected void handleAuthenticationSuccess(int cmd, Buffer buffer) throws Exception {
+        String username = ValidateUtils.checkNotNull(currentAuth, "No current auth").getUserName();
+        if (log.isDebugEnabled()) {
+            log.debug("handleAuthenticationSuccess({}@{})", username, session);
+        }
+
+        boolean success = false;
+        for (List<String> l : authMethods) {
+            if ((GenericUtils.size(l) > 0) && l.get(0).equals(authMethod)) {
+                l.remove(0);
+                success |= l.isEmpty();
+            }
+        }
+
+        if (success) {
+            FactoryManager manager = getFactoryManager();
+            Integer maxSessionCount = FactoryManagerUtils.getInteger(manager, ServerFactoryManager.MAX_CONCURRENT_SESSIONS);
+            if (maxSessionCount != null) {
+                int currentSessionCount = session.getActiveSessionCountForUser(username);
+                if (currentSessionCount >= maxSessionCount) {
+                    session.disconnect(SshConstants.SSH2_DISCONNECT_SERVICE_NOT_AVAILABLE,
+                            "Too many concurrent connections (" + currentSessionCount + ") - max. allowed: " + maxSessionCount);
+                    return;
+                }
+            }
+
+            /*
+             * TODO check if we can send the banner sooner. According to RFC-4252 section 5.4:
+             *
+             *      The SSH server may send an SSH_MSG_USERAUTH_BANNER message at any
+             *      time after this authentication protocol starts and before
+             *      authentication is successful.  This message contains text to be
+             *      displayed to the client user before authentication is attempted.
+             */
+            String welcomeBanner = FactoryManagerUtils.getString(manager, ServerFactoryManager.WELCOME_BANNER);
+            if (GenericUtils.length(welcomeBanner) > 0) {
+                String lang = FactoryManagerUtils.getStringProperty(manager,
+                                        ServerFactoryManager.WELCOME_BANNER_LANGUAGE,
+                                        ServerFactoryManager.DEFAULT_WELCOME_BANNER_LANGUAGE);
+                buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_BANNER, welcomeBanner.length() + lang.length() + Long.SIZE);
+                buffer.putString(welcomeBanner);
+                buffer.putString(lang);
+                session.writePacket(buffer);
+            }
+
+            buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_SUCCESS, Byte.SIZE);
+            session.writePacket(buffer);
+            session.setUsername(username);
+            session.setAuthenticated();
+            session.startService(authService);
+            session.resetIdleTimeout();
+            log.info("Session {}@{} authenticated", username, session.getIoSession().getRemoteAddress());
+        } else {
+            buffer = session.prepareBuffer(SshConstants.SSH_MSG_USERAUTH_FAILURE, BufferUtils.clear(buffer));
             StringBuilder sb = new StringBuilder();
             for (List<String> l : authMethods) {
                 if (GenericUtils.size(l) > 0) {
-                    String m = l.get(0);
-                    if (!"none".equals(m)) {
-                        if (sb.length() > 0) {
-                            sb.append(",");
-                        }
-                        sb.append(l.get(0));
+                    if (sb.length() > 0) {
+                        sb.append(",");
                     }
+                    sb.append(l.get(0));
                 }
             }
             buffer.putString(sb.toString());
-            buffer.putByte((byte) 0);
+            buffer.putBoolean(true);    // partial success ...
             session.writePacket(buffer);
+        }
 
-            if (currentAuth != null) {
+        try {
+            currentAuth.destroy();
+        } finally {
+            currentAuth = null;
+        }
+    }
+
+    protected void handleAuthenticationFailure(int cmd, Buffer buffer) throws Exception {
+        String username = (currentAuth == null) ? null : currentAuth.getUserName();
+        if (log.isDebugEnabled()) {
+            log.debug("handleAuthenticationFailure({}@{})", username, session);
+        }
+
+        buffer = session.prepareBuffer(SshConstants.SSH_MSG_USERAUTH_FAILURE, BufferUtils.clear(buffer));
+        StringBuilder sb = new StringBuilder((authMethods.size() + 1) * Byte.SIZE);
+        for (List<String> l : authMethods) {
+            if (GenericUtils.size(l) > 0) {
+                String m = l.get(0);
+                if (!UserAuthNoneFactory.NAME.equals(m)) {
+                    if (sb.length() > 0) {
+                        sb.append(",");
+                    }
+                    sb.append(m);
+                }
+            }
+        }
+        buffer.putString(sb.toString());
+        buffer.putBoolean(false);   // no partial success ...
+        session.writePacket(buffer);
+
+        if (currentAuth != null) {
+            try {
                 currentAuth.destroy();
+            } finally {
                 currentAuth = null;
             }
         }
     }
 
-    private ServerFactoryManager getFactoryManager() {
+    public ServerFactoryManager getFactoryManager() {
         return session.getFactoryManager();
     }
-
 }

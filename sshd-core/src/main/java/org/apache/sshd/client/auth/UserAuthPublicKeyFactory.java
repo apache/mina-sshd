@@ -21,17 +21,12 @@ package org.apache.sshd.client.auth;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class UserAuthPublicKeyFactory implements UserAuthFactory {
-    public static final String NAME = "publickey";
+public class UserAuthPublicKeyFactory extends AbstractUserAuthFactory {
+    public static final String NAME = PUBLIC_KEY;
     public static final UserAuthPublicKeyFactory INSTANCE = new UserAuthPublicKeyFactory();
 
     public UserAuthPublicKeyFactory() {
-        super();
-    }
-
-    @Override
-    public String getName() {
-        return NAME;
+        super(NAME);
     }
 
     @Override

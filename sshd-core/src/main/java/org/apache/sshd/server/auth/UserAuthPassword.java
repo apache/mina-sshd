@@ -18,10 +18,9 @@
  */
 package org.apache.sshd.server.auth;
 
-import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.util.buffer.Buffer;
-import org.apache.sshd.server.ServerFactoryManager;
-import org.apache.sshd.server.auth.password.PasswordAuthenticator;
+import org.apache.sshd.server.auth.password.PasswordChangeRequiredException;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
@@ -29,8 +28,7 @@ import org.apache.sshd.server.session.ServerSession;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class UserAuthPassword extends AbstractUserAuth {
-
+public class UserAuthPassword extends AbstractUserAuthPassword {
     public UserAuthPassword() {
         super();
     }
@@ -40,19 +38,52 @@ public class UserAuthPassword extends AbstractUserAuth {
         if (!init) {
             throw new IllegalStateException("Incomplete initialization");
         }
+
         boolean newPassword = buffer.getBoolean();
-        if (newPassword) {
-            throw new IllegalStateException("Password changes are not supported");
-        }
         String password = buffer.getString();
-        return checkPassword(session, username, password);
+        if (newPassword) {
+            return handleClientPasswordChangeRequest(buffer, getServerSession(), getUserName(), password, buffer.getString());
+        } else {
+            return checkPassword(buffer, getServerSession(), getUserName(), password);
+        }
     }
 
-    protected boolean checkPassword(ServerSession session, String username, String password) throws Exception {
-        ServerFactoryManager manager = session.getFactoryManager();
-        PasswordAuthenticator auth = ValidateUtils.checkNotNull(
-                manager.getPasswordAuthenticator(),
-                "No PasswordAuthenticator configured");
-        return auth.authenticate(username, password, session);
+    /**
+     * Invoked when the client sends a {@code SSH_MSG_USERAUTH_REQUEST} indicating
+     * a password change. Throws {@link UnsupportedOperationException} by default
+     *
+     * @param buffer The {@link Buffer} to re-use in order to respond
+     * @param session The associated {@link ServerSession}
+     * @param username The username
+     * @param oldPassword The old password
+     * @param newPassword The new password
+     * @return Password change and authentication result - {@code null} means
+     * authentication incomplete - i.e., handler has sent some extra query.
+     * @throws Exception If failed to handle the request.
+     */
+    protected Boolean handleClientPasswordChangeRequest(
+            Buffer buffer, ServerSession session, String username, String oldPassword, String newPassword)
+                        throws Exception {
+        throw new UnsupportedOperationException("Password change not supported");
     }
+
+    @Override
+    protected Boolean handleServerPasswordChangeRequest(
+            Buffer buffer, ServerSession session, String username, String password, PasswordChangeRequiredException e)
+                    throws Exception {
+        String prompt = e.getPrompt();
+        String lang = e.getLanguage();
+        if (log.isDebugEnabled()) {
+            log.debug("handlePasswordChangeRequest({}@{}) password change required - prompt={}, lang={}",
+                      username, session, prompt, lang);
+        }
+
+        buffer = session.prepareBuffer(SshConstants.SSH_MSG_USERAUTH_PASSWD_CHANGEREQ, buffer);
+        buffer.putString((prompt == null) ? "" : prompt);
+        buffer.putString((lang == null) ? "" : lang);
+        session.writePacket(buffer);
+        return null;    // authentication incomplete
+
+    }
+
 }

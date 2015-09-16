@@ -16,26 +16,31 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.client.session;
 
-import java.io.IOException;
+package org.apache.sshd.common.auth;
 
-import org.apache.sshd.common.Service;
-import org.apache.sshd.common.auth.AbstractUserAuthServiceFactory;
-import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.ServiceFactory;
+import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ClientUserAuthServiceFactory extends AbstractUserAuthServiceFactory {
-    public static final ClientUserAuthServiceFactory INSTANCE = new ClientUserAuthServiceFactory();
+public abstract class AbstractUserAuthServiceFactory extends AbstractLoggingBean implements ServiceFactory {
+    public static final String DEFAULT_NAME = "ssh-userauth";
 
-    public ClientUserAuthServiceFactory() {
-        super();
+    private final String name;
+
+    protected AbstractUserAuthServiceFactory() {
+        this(DEFAULT_NAME);
+    }
+
+    protected AbstractUserAuthServiceFactory(String name) {
+        this.name = ValidateUtils.checkNotNullAndNotEmpty(name, "No factory name");
     }
 
     @Override
-    public Service create(Session session) throws IOException {
-        return new ClientUserAuthService(session);
+    public final String getName() {
+        return name;
     }
 }

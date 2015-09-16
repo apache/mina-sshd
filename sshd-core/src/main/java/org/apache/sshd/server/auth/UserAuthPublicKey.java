@@ -25,9 +25,11 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
+import org.apache.sshd.server.session.ServerSession;
 
 /**
  * TODO Add javadoc
@@ -51,6 +53,7 @@ public class UserAuthPublicKey extends AbstractUserAuth {
         int len = buffer.getInt();
         buffer.wpos(buffer.rpos() + len);
         PublicKey key = buffer.getRawPublicKey();
+        ServerSession session = getServerSession();
         ServerFactoryManager manager = session.getFactoryManager();
         Signature verif = ValidateUtils.checkNotNull(
                 NamedFactory.Utils.create(manager.getSignatureFactories(), alg),
@@ -63,12 +66,12 @@ public class UserAuthPublicKey extends AbstractUserAuth {
 
         PublickeyAuthenticator authenticator =
                 ValidateUtils.checkNotNull(manager.getPublickeyAuthenticator(), "No PublickeyAuthenticator configured");
-        if (!authenticator.authenticate(username, key, session)) {
+        if (!authenticator.authenticate(getUserName(), key, session)) {
             return Boolean.FALSE;
         }
 
         if (!hasSig) {
-            Buffer buf = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_PK_OK);
+            Buffer buf = session.prepareBuffer(SshConstants.SSH_MSG_USERAUTH_PK_OK, BufferUtils.clear(buffer));
             buf.putString(alg);
             buf.putRawBytes(buffer.array(), oldPos, 4 + len);
             session.writePacket(buf);
@@ -77,8 +80,8 @@ public class UserAuthPublicKey extends AbstractUserAuth {
             Buffer buf = new ByteArrayBuffer();
             buf.putBytes(session.getKex().getH());
             buf.putByte(SshConstants.SSH_MSG_USERAUTH_REQUEST);
-            buf.putString(username);
-            buf.putString(service);
+            buf.putString(getUserName());
+            buf.putString(getService());
             buf.putString(UserAuthPublicKeyFactory.NAME);
             buf.putBoolean(true);
             buf.putString(alg);

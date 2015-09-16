@@ -102,9 +102,9 @@ public class ClientUserAuthServiceOld extends AbstractCloseable implements Servi
             String welcome = buffer.getString();
             String lang = buffer.getString();
             log.debug("Welcome banner[{}]: {}", lang, welcome);
-            UserInteraction ui = session.getFactoryManager().getUserInteraction();
+            UserInteraction ui = UserInteraction.Utils.resolveUserInteraction(session);
             if (ui != null) {
-                ui.welcome(welcome);
+                ui.welcome(getSession(), welcome, lang);
             }
         } else {
             buffer.rpos(buffer.rpos() - 1);

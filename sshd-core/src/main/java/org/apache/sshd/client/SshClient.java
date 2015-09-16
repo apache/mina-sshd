@@ -695,23 +695,33 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             client.start();
             client.setUserInteraction(new UserInteraction() {
                 @Override
-                public void welcome(String banner) {
+                public void welcome(ClientSession clientSession, String banner, String lang) {
                     stdout.println(banner);
                 }
 
                 @Override
-                public String[] interactive(String destination, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
+                public String[] interactive(ClientSession clientSession, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
                     int numPropmts = GenericUtils.length(prompt);
                     String[] answers = new String[numPropmts];
                     try {
                         for (int i = 0; i < numPropmts; i++) {
-                            stdout.print(prompt[i] + " ");
+                            stdout.append(prompt[i]).print(" ");
                             answers[i] = stdin.readLine();
                         }
                     } catch (IOException e) {
                         // ignored
                     }
                     return answers;
+                }
+
+                @Override
+                public String getUpdatedPassword(ClientSession clientSession, String prompt, String lang) {
+                    stdout.append(prompt).print(" ");
+                    try {
+                        return stdin.readLine();
+                    } catch (IOException e) {
+                        return null;
+                    }
                 }
             });
 

@@ -38,18 +38,16 @@ import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
-import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class UserAuthPublicKey extends AbstractLoggingBean implements UserAuth {
+public class UserAuthPublicKey extends AbstractUserAuth {
 
-    private ClientSession session;
-    private String service;
     private SshAgent agent;
     private Iterator<PublicKeyIdentity> keys;
     private PublicKeyIdentity current;
@@ -60,8 +58,8 @@ public class UserAuthPublicKey extends AbstractLoggingBean implements UserAuth {
 
     @Override
     public void init(ClientSession session, String service, Collection<?> identities) throws Exception {
-        this.session = session;
-        this.service = service;
+        super.init(session, service, identities);
+
         List<PublicKeyIdentity> ids = new ArrayList<>();
         for (Object o : identities) {
             if (o instanceof KeyPair) {
@@ -91,16 +89,23 @@ public class UserAuthPublicKey extends AbstractLoggingBean implements UserAuth {
 
     @Override
     public boolean process(Buffer buffer) throws Exception {
+        ClientSession session = getClientSession();
+        String username = session.getUsername();
+        String service = getService();
+
         // Send next key
         if (buffer == null) {
             if (keys.hasNext()) {
                 current = keys.next();
                 PublicKey key = current.getPublicKey();
                 String algo = KeyUtils.getKeyType(key);
-                log.debug("Send SSH_MSG_USERAUTH_REQUEST request publickey algo={}", algo);
+                if (log.isDebugEnabled()) {
+                    log.debug("process({}@{})[{}] Send SSH_MSG_USERAUTH_REQUEST request publickey algo={}",
+                              username, session, service, algo);
+                }
 
                 buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST);
-                buffer.putString(session.getUsername());
+                buffer.putString(username);
                 buffer.putString(service);
                 buffer.putString(UserAuthPublicKeyFactory.NAME);
                 buffer.putBoolean(false);
@@ -110,7 +115,9 @@ public class UserAuthPublicKey extends AbstractLoggingBean implements UserAuth {
                 return true;
             }
 
-            log.debug("No more keys to send");
+            if (log.isDebugEnabled()) {
+                log.debug("process({}@{})[{}] no more keys to send", username, session, service);
+            }
             return false;
         }
 
@@ -118,9 +125,13 @@ public class UserAuthPublicKey extends AbstractLoggingBean implements UserAuth {
         if (cmd == SshConstants.SSH_MSG_USERAUTH_PK_OK) {
             PublicKey key = current.getPublicKey();
             String algo = KeyUtils.getKeyType(key);
-            log.debug("Send SSH_MSG_USERAUTH_REQUEST reply publickey algo={}", algo);
-            buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST);
-            buffer.putString(session.getUsername());
+            if (log.isDebugEnabled()) {
+                log.debug("process({}@{})[{}] Send SSH_MSG_USERAUTH_REQUEST reply publickey algo={}",
+                          username, session, service, algo);
+            }
+
+            buffer = session.prepareBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST, BufferUtils.clear(buffer));
+            buffer.putString(username);
             buffer.putString(service);
             buffer.putString(UserAuthPublicKeyFactory.NAME);
             buffer.putBoolean(true);
@@ -130,7 +141,7 @@ public class UserAuthPublicKey extends AbstractLoggingBean implements UserAuth {
             Buffer bs = new ByteArrayBuffer();
             bs.putBytes(session.getKex().getH());
             bs.putByte(SshConstants.SSH_MSG_USERAUTH_REQUEST);
-            bs.putString(session.getUsername());
+            bs.putString(username);
             bs.putString(service);
             bs.putString(UserAuthPublicKeyFactory.NAME);
             bs.putBoolean(true);
@@ -147,7 +158,7 @@ public class UserAuthPublicKey extends AbstractLoggingBean implements UserAuth {
             return true;
         }
 
-        throw new IllegalStateException("Received unknown packet: cmd=" + cmd);
+        throw new IllegalStateException("process(" + username + "@" + session + ")[" + service + "] received unknown packet: cmd=" + cmd);
     }
 
     @Override

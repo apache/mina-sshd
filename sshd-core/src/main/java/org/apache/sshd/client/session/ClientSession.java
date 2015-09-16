@@ -101,8 +101,19 @@ public interface ClientSession extends Session, KeyPairProviderHolder {
      */
     KeyPair removePublicKeyIdentity(KeyPair kp);
 
+    /**
+     * @return The <U>specific</U> {@link UserInteraction} for this
+     * session. May be {@code null} indicating that the
+     * {@link ClientFactoryManager#getUserInteraction()} (if any) should
+     * be used
+     */
     UserInteraction getUserInteraction();
 
+    /**
+     * @param userInteraction The <U>specific</U> {@link UserInteraction} for this
+     * session. May be {@code null} indicating that the
+     * {@link ClientFactoryManager#getUserInteraction()} (if any) should be used
+     */
     void setUserInteraction(UserInteraction userInteraction);
 
     /**

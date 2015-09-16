@@ -44,7 +44,7 @@ import org.apache.sshd.common.util.closeable.AbstractCloseable;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ClientUserAuthService extends AbstractCloseable implements Service {
+public class ClientUserAuthService extends AbstractCloseable implements Service, ClientSessionHolder {
 
     /**
      * The AuthFuture that is being used by the current auth request.  This encodes the state.
@@ -92,7 +92,12 @@ public class ClientUserAuthService extends AbstractCloseable implements Service 
     }
 
     @Override
-    public ClientSessionImpl getSession() {
+    public ClientSession getSession() {
+        return getClientSession();
+    }
+
+    @Override
+    public ClientSession getClientSession() {
         return session;
     }
 
@@ -107,7 +112,8 @@ public class ClientUserAuthService extends AbstractCloseable implements Service 
         this.service = service;
 
         log.debug("Send SSH_MSG_USERAUTH_REQUEST for none");
-        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST);
+        String username = session.getUsername();
+        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST, username.length() + service.length() + Integer.SIZE);
         buffer.putString(session.getUsername());
         buffer.putString(service);
         buffer.putString("none");
@@ -121,15 +127,18 @@ public class ClientUserAuthService extends AbstractCloseable implements Service 
         if (this.authFuture.isSuccess()) {
             throw new IllegalStateException("UserAuth message delivered to authenticated client");
         } else if (this.authFuture.isDone()) {
-            log.debug("Ignoring random message");
+            if (log.isDebugEnabled()) {
+                log.debug("Ignoring random message - cmd={}", cmd);
+            }
             // ignore for now; TODO: random packets
         } else if (cmd == SshConstants.SSH_MSG_USERAUTH_BANNER) {
             String welcome = buffer.getString();
             String lang = buffer.getString();
             log.debug("Welcome banner(lang={}): {}", lang, welcome);
-            UserInteraction ui = session.getFactoryManager().getUserInteraction();
+
+            UserInteraction ui = UserInteraction.Utils.resolveUserInteraction(session);
             if (ui != null) {
-                ui.welcome(welcome);
+                ui.welcome(session, welcome, lang);
             }
         } else {
             buffer.rpos(buffer.rpos() - 1);
@@ -158,21 +167,13 @@ public class ClientUserAuthService extends AbstractCloseable implements Service 
             return;
         }
         if (cmd == SshConstants.SSH_MSG_USERAUTH_FAILURE) {
-            log.debug("Received SSH_MSG_USERAUTH_FAILURE");
             String mths = buffer.getString();
             boolean partial = buffer.getBoolean();
-            if (partial || serverMethods == null) {
-                serverMethods = Arrays.asList(mths.split(","));
-                if (log.isDebugEnabled()) {
-                    StringBuilder sb = new StringBuilder("Authentications that can continue: ");
-                    for (int i = 0; i < serverMethods.size(); i++) {
-                        if (i > 0) {
-                            sb.append(", ");
-                        }
-                        sb.append(serverMethods.get(i));
-                    }
-                    log.debug(sb.toString());
-                }
+            if (log.isDebugEnabled()) {
+                log.debug("Received SSH_MSG_USERAUTH_FAILURE - partial={}, methods={}", partial, mths);
+            }
+            if (partial || (serverMethods == null)) {
+                serverMethods = Arrays.asList(GenericUtils.split(mths, ','));
                 if (userAuth != null) {
                     userAuth.destroy();
                     userAuth = null;

@@ -29,10 +29,7 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
-import org.apache.sshd.common.util.logging.AbstractLoggingBean;
-
-import static org.apache.sshd.common.SshConstants.SSH_MSG_USERAUTH_INFO_REQUEST;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE;
+import org.apache.sshd.common.util.buffer.BufferUtils;
 
 /**
  * Manages a &quot;keyboard-interactive&quot; exchange according to
@@ -40,10 +37,8 @@ import static org.apache.sshd.common.SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class UserAuthKeyboardInteractive extends AbstractLoggingBean implements UserAuth {
+public class UserAuthKeyboardInteractive extends AbstractUserAuth {
 
-    private ClientSession session;
-    private String service;
     private Iterator<String> passwords;
     private String current;
     private int nbTrials;
@@ -55,20 +50,24 @@ public class UserAuthKeyboardInteractive extends AbstractLoggingBean implements 
 
     @Override
     public void init(ClientSession session, String service, Collection<?> identities) throws Exception {
-        this.session = session;
-        this.service = service;
+        super.init(session, service, identities);
+
         List<String> pwds = new ArrayList<>();
         for (Object o : identities) {
             if (o instanceof String) {
                 pwds.add((String) o);
             }
         }
-        this.passwords = pwds.iterator();
-        this.maxTrials = session.getIntProperty(ClientFactoryManager.PASSWORD_PROMPTS, ClientFactoryManager.DEFAULT_PASSWORD_PROMPTS);
+        passwords = pwds.iterator();
+        maxTrials = session.getIntProperty(ClientFactoryManager.PASSWORD_PROMPTS, ClientFactoryManager.DEFAULT_PASSWORD_PROMPTS);
     }
 
     @Override
     public boolean process(Buffer buffer) throws Exception {
+        ClientSession session = getClientSession();
+        String username = session.getUsername();
+        String service = getService();
+
         if (buffer == null) {
             if (passwords.hasNext()) {
                 current = passwords.next();
@@ -78,14 +77,15 @@ public class UserAuthKeyboardInteractive extends AbstractLoggingBean implements 
                 return false;
             }
 
-            String username = session.getUsername();
             if (log.isDebugEnabled()) {
-                log.debug("Send SSH_MSG_USERAUTH_REQUEST for keyboard-interactive - user={}, service={}", username, service);
+                log.debug("process({}@{})[{}] Send SSH_MSG_USERAUTH_REQUEST for keyboard-interactive",
+                          username, session, service);
             }
-            buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST);
-            buffer.putString(session.getUsername());
+            buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST,
+                                username.length() + service.length() + UserAuthKeyboardInteractiveFactory.NAME.length() + Integer.SIZE);
+            buffer.putString(username);
             buffer.putString(service);
-            buffer.putString("keyboard-interactive");
+            buffer.putString(UserAuthKeyboardInteractiveFactory.NAME);
             buffer.putString("");
             buffer.putString("");
             session.writePacket(buffer);
@@ -93,13 +93,18 @@ public class UserAuthKeyboardInteractive extends AbstractLoggingBean implements 
         }
 
         int cmd = buffer.getUByte();
-        if (cmd == SSH_MSG_USERAUTH_INFO_REQUEST) {
-            log.debug("Received SSH_MSG_USERAUTH_INFO_REQUEST");
+        if (cmd == SshConstants.SSH_MSG_USERAUTH_INFO_REQUEST) {
+            if (log.isDebugEnabled()) {
+                log.debug("process({}@{})[{}] Received SSH_MSG_USERAUTH_INFO_REQUEST for keyboard-interactive",
+                          username, session, service);
+            }
+
             String name = buffer.getString();
             String instruction = buffer.getString();
             String language_tag = buffer.getString();
-            if (log.isDebugEnabled()) {
-                log.debug("SSH_MSG_USERAUTH_INFO_REQUEST name={} instruction={} language={}", name, instruction, language_tag);
+            if (log.isTraceEnabled()) {
+                log.trace("process({}@{})[{}] SSH_MSG_USERAUTH_INFO_REQUEST name={} instruction={} language={}",
+                          username, session, service, name, instruction, language_tag);
             }
 
             int num = buffer.getInt();
@@ -111,9 +116,9 @@ public class UserAuthKeyboardInteractive extends AbstractLoggingBean implements 
                 echo[i] = buffer.getBoolean();
             }
 
-            if (log.isDebugEnabled()) {
-                log.debug("Prompt: {}", Arrays.toString(prompt));
-                log.debug("Echo: {}", echo);
+            if (log.isTraceEnabled()) {
+                log.trace("process({}@{})[{}] Prompt: {}", username, session, service, Arrays.toString(prompt));
+                log.trace("process({}@{})[{}] Echo: {}", username, session, service, Arrays.toString(echo));
             }
 
             String[] rep = getUserResponses(name, instruction, language_tag, prompt, echo);
@@ -123,7 +128,7 @@ public class UserAuthKeyboardInteractive extends AbstractLoggingBean implements 
 
             /*
              * According to RFC4256:
-             * 
+             *
              *      If the num-responses field does not match the num-prompts
              *      field in the request message, the server MUST send a failure
              *      message.
@@ -131,10 +136,11 @@ public class UserAuthKeyboardInteractive extends AbstractLoggingBean implements 
              * However it is the server's (!) responsibility to fail, so we only warn...
              */
             if (num != rep.length) {
-                log.warn("Mismatched prompts (" + num + ") vs. responses count (" + rep.length + ")");
+                log.warn("process({}@{}) Mismatched prompts ({}) vs. responses count ({})",
+                         username, session, num, rep.length);
             }
 
-            buffer = session.createBuffer(SSH_MSG_USERAUTH_INFO_RESPONSE);
+            buffer = session.prepareBuffer(SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE, BufferUtils.clear(buffer));
             buffer.putInt(rep.length);
             for (String r : rep) {
                 buffer.putString(r);
@@ -142,7 +148,7 @@ public class UserAuthKeyboardInteractive extends AbstractLoggingBean implements 
             session.writePacket(buffer);
             return true;
         }
-        throw new IllegalStateException("Received unknown packet: cmd=" + cmd);
+        throw new IllegalStateException("process(" + username + "@" + session + ")[" + service + ") received unknown packet: cmd=" + cmd);
     }
 
     protected String getCurrentPasswordCandidate() {
@@ -174,15 +180,10 @@ public class UserAuthKeyboardInteractive extends AbstractLoggingBean implements 
         if (useCurrentPassword(candidate, name, instruction, lang, prompt, echo)) {
             return new String[]{candidate};
         } else {
-            UserInteraction ui = session.getUserInteraction();
-            if (ui == null) {
-                ClientFactoryManager manager = session.getFactoryManager();
-                ui = manager.getUserInteraction();
-            }
-
+            ClientSession session = getClientSession();
+            UserInteraction ui = UserInteraction.Utils.resolveUserInteraction(session);
             if (ui != null) {
-                String dest = session.getUsername() + "@" + session.getIoSession().getRemoteAddress().toString();
-                return ui.interactive(dest, name, instruction, lang, prompt, echo);
+                return ui.interactive(session, name, instruction, lang, prompt, echo);
             }
         }
 
@@ -209,7 +210,6 @@ public class UserAuthKeyboardInteractive extends AbstractLoggingBean implements 
 
         return true;
     }
-
 
     @Override
     public void destroy() {

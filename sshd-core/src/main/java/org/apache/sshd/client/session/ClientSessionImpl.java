@@ -134,17 +134,18 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
         // manipulate it before the connection has even been established.  For instance, to
         // set the authPassword.
         List<ServiceFactory> factories = client.getServiceFactories();
-        if (GenericUtils.isEmpty(factories) || factories.size() > 2) {
-            throw new IllegalArgumentException("One or two services must be configured");
-        }
+        int numFactories = GenericUtils.size(factories);
+        ValidateUtils.checkTrue((numFactories > 0) && (numFactories <= 2), "One or two services must be configured: %d", numFactories);
+
         currentServiceFactory = factories.get(0);
         currentService = currentServiceFactory.create(this);
-        if (factories.size() > 1) {
+        if (numFactories > 1) {
             nextServiceFactory = factories.get(1);
             nextService = nextServiceFactory.create(this);
         } else {
             nextServiceFactory = null;
         }
+
         authFuture = new DefaultAuthFuture(lock);
         authFuture.setAuthed(false);
         sendClientIdentification();

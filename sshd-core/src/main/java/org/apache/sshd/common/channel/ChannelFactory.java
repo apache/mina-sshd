@@ -28,3 +28,4 @@ import org.apache.sshd.common.NamedFactory;
 public interface ChannelFactory extends NamedFactory<Channel> {
 
 }
+//CHECKSTYLE:ON

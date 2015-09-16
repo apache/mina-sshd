@@ -21,11 +21,8 @@ package org.apache.sshd.server.auth;
 import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
-import org.apache.sshd.server.ServerFactoryManager;
-import org.apache.sshd.server.auth.password.PasswordAuthenticator;
+import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
@@ -33,7 +30,7 @@ import org.apache.sshd.server.session.ServerSession;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class UserAuthKeyboardInteractive extends AbstractUserAuth {
+public class UserAuthKeyboardInteractive extends AbstractUserAuthPassword {
     // configuration parameters on the FactoryManager to configure the message values
     public static final String KB_INTERACTIVE_NAME_PROP = "kb-interactive-name";
     public static final String DEFAULT_KB_INTERACTIVE_NAME = "Password authentication";
@@ -52,9 +49,10 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
 
     @Override
     protected Boolean doAuth(Buffer buffer, boolean init) throws Exception {
+        ServerSession session = getServerSession();
         if (init) {
             // Prompt for password
-            buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_INFO_REQUEST);
+            buffer = session.prepareBuffer(SshConstants.SSH_MSG_USERAUTH_INFO_REQUEST, BufferUtils.clear(buffer));
             buffer.putString(getInteractionName());
             buffer.putString(getInteractionInstruction());
             buffer.putString(getInteractionLanguage());
@@ -71,7 +69,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
             int num = buffer.getInt();
             /*
              * According to RFC4256:
-             * 
+             *
              *      If the num-responses field does not match the num-prompts
              *      field in the request message, the server MUST send a failure
              *      message.
@@ -80,36 +78,27 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
                 throw new SshException("Expected 1 response from user but received " + num);
             }
             String password = buffer.getString();
-            return checkPassword(session, username, password);
+            return checkPassword(buffer, session, getUserName(), password);
         }
     }
 
     protected String getInteractionName() {
-        return FactoryManagerUtils.getStringProperty(session, KB_INTERACTIVE_NAME_PROP, DEFAULT_KB_INTERACTIVE_NAME);
+        return FactoryManagerUtils.getStringProperty(getServerSession(), KB_INTERACTIVE_NAME_PROP, DEFAULT_KB_INTERACTIVE_NAME);
     }
 
     protected String getInteractionInstruction() {
-        return FactoryManagerUtils.getStringProperty(session, KB_INTERACTIVE_INSTRUCTION_PROP, DEFAULT_KB_INTERACTIVE_INSTRUCTION);
+        return FactoryManagerUtils.getStringProperty(getServerSession(), KB_INTERACTIVE_INSTRUCTION_PROP, DEFAULT_KB_INTERACTIVE_INSTRUCTION);
     }
 
     protected String getInteractionLanguage() {
-        return FactoryManagerUtils.getStringProperty(session, KB_INTERACTIVE_LANG_PROP, DEFAULT_KB_INTERACTIVE_LANG);
+        return FactoryManagerUtils.getStringProperty(getServerSession(), KB_INTERACTIVE_LANG_PROP, DEFAULT_KB_INTERACTIVE_LANG);
     }
 
     protected String getInteractionPrompt() {
-        return FactoryManagerUtils.getStringProperty(session, KB_INTERACTIVE_PROMPT_PROP, DEFAULT_KB_INTERACTIVE_PROMPT);
+        return FactoryManagerUtils.getStringProperty(getServerSession(), KB_INTERACTIVE_PROMPT_PROP, DEFAULT_KB_INTERACTIVE_PROMPT);
     }
 
     protected boolean isInteractionPromptEchoEnabled() {
-        return FactoryManagerUtils.getBooleanProperty(session, KB_INTERACTIVE_ECHO_PROMPT_PROP, DEFAULT_KB_INTERACTIVE_ECHO_PROMPT);
-    }
-
-    protected boolean checkPassword(ServerSession session, String username, String password) throws Exception {
-        ServerFactoryManager manager = session.getFactoryManager();
-        PasswordAuthenticator auth = ValidateUtils.checkNotNull(
-                manager.getPasswordAuthenticator(),
-                "No PasswordAuthenticator configured",
-                GenericUtils.EMPTY_BYTE_ARRAY);
-        return auth.authenticate(username, password, session);
+        return FactoryManagerUtils.getBooleanProperty(getServerSession(), KB_INTERACTIVE_ECHO_PROMPT_PROP, DEFAULT_KB_INTERACTIVE_ECHO_PROMPT);
     }
 }

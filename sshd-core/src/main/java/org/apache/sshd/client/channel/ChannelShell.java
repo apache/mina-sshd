@@ -47,5 +47,4 @@ public class ChannelShell extends PtyCapableChannelSession {
 
         super.doOpen();
     }
-
 }

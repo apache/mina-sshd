@@ -20,6 +20,7 @@ package org.apache.sshd.server.auth.gss;
 
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -57,6 +58,7 @@ public class UserAuthGSS extends AbstractUserAuth {
      */
     @Override
     protected Boolean doAuth(Buffer buffer, boolean initial) throws Exception {
+        ServerSession session = getServerSession();
         GSSAuthenticator auth = getAuthenticator(session);
 
         if (initial) {
@@ -72,7 +74,7 @@ public class UserAuthGSS extends AbstractUserAuth {
 
                     // Validate initial user before proceeding
 
-                    if (!auth.validateInitialUser(session, username)) {
+                    if (!auth.validateInitialUser(session, getUserName())) {
                         return Boolean.FALSE;
                     }
 
@@ -87,9 +89,8 @@ public class UserAuthGSS extends AbstractUserAuth {
 
                     // Send the matching mechanism back to the client
 
-                    Buffer b = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_INFO_REQUEST);
                     byte[] out = oid.getDER();
-
+                    Buffer b = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_INFO_REQUEST, out.length + Integer.SIZE);
                     b.putBytes(out);
                     session.writePacket(b);
 
@@ -124,9 +125,9 @@ public class UserAuthGSS extends AbstractUserAuth {
 
                 msgbuf.putBytes(ValidateUtils.checkNotNullAndNotEmpty(session.getSessionId(), "No current session ID"));
                 msgbuf.putByte(SshConstants.SSH_MSG_USERAUTH_REQUEST);
-                msgbuf.putString(username);
-                msgbuf.putString(service);
-                msgbuf.putString("gssapi-with-mic");
+                msgbuf.putString(getUserName());
+                msgbuf.putString(getService());
+                msgbuf.putString(UserAuthGSSFactory.NAME);
 
                 byte[] msgbytes = msgbuf.getCompactData();
                 byte[] inmic = buffer.getBytes();
@@ -161,8 +162,8 @@ public class UserAuthGSS extends AbstractUserAuth {
 
                 // Send return token if necessary
 
-                if (out != null && out.length > 0) {
-                    Buffer b = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE);
+                if (GenericUtils.length(out) > 0) {
+                    Buffer b = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE, out.length + Integer.SIZE);
 
                     b.putBytes(out);
                     session.writePacket(b);
@@ -182,7 +183,7 @@ public class UserAuthGSS extends AbstractUserAuth {
      */
     @Override
     public String getUserName() {
-        return identity != null ? identity : username;
+        return identity != null ? identity : super.getUserName();
     }
 
     /**

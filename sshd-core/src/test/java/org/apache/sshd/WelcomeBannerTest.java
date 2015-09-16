@@ -37,10 +37,14 @@ import org.junit.runners.MethodSorters;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class WelcomeBannerTest extends BaseTestSupport {
 
-    private static final String WELCOME = "Welcome to SSHD";
+    private static final String WELCOME = "Welcome to SSHD WelcomeBannerTest";
 
     private SshServer sshd;
     private int port;
+
+    public WelcomeBannerTest() {
+        super();
+    }
 
     @Before
     public void setUp() throws Exception {
@@ -59,18 +63,32 @@ public class WelcomeBannerTest extends BaseTestSupport {
 
     @Test
     public void testBanner() throws Exception {
-        final AtomicReference<String> welcome = new AtomicReference<String>();
-
         try (SshClient client = setupTestClient()) {
+            final AtomicReference<String> welcomeHolder = new AtomicReference<>(null);
+            final AtomicReference<ClientSession> sessionHolder = new AtomicReference<>(null);
             client.setUserInteraction(new UserInteraction() {
                 @Override
-                public void welcome(String banner) {
-                    welcome.set(banner);
+                public void welcome(ClientSession session, String banner, String lang) {
+                    validateSession("welcome", session);
+                    assertNull("Multiple banner invocations", welcomeHolder.getAndSet(banner));
                 }
 
                 @Override
-                public String[] interactive(String destination, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
+                public String[] interactive(ClientSession session, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
+                    validateSession("interactive", session);
                     return null;
+                }
+
+                @Override
+                public String getUpdatedPassword(ClientSession clientSession, String prompt, String lang) {
+                    throw new UnsupportedOperationException("Unexpected call");
+                }
+
+                private void validateSession(String phase, ClientSession session) {
+                    ClientSession prev = sessionHolder.getAndSet(session);
+                    if (prev != null) {
+                        assertSame("Mismatched " + phase + " client session", prev, session);
+                    }
                 }
             });
             client.start();
@@ -78,8 +96,8 @@ public class WelcomeBannerTest extends BaseTestSupport {
             try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
                 session.addPasswordIdentity(getCurrentTestName());
                 session.auth().verify(5L, TimeUnit.SECONDS);
-                assertEquals(WELCOME, welcome.get());
-                session.close(true);
+                assertSame("Mismatched sessions", session, sessionHolder.get());
+                assertEquals("Mismatched banner", WELCOME, welcomeHolder.get());
             } finally {
                 client.stop();
             }

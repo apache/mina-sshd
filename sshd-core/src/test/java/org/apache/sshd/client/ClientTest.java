@@ -1047,17 +1047,32 @@ public class ClientTest extends BaseTestSupport {
         final int MAX_PROMPTS = 3;
         FactoryManagerUtils.updateProperty(client, ClientFactoryManager.PASSWORD_PROMPTS, MAX_PROMPTS);
 
-        client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthKeyboardInteractiveFactory()));
+        client.setUserAuthFactories(Collections.<NamedFactory<UserAuth>>singletonList(UserAuthKeyboardInteractiveFactory.INSTANCE));
+
+        final AtomicReference<ClientSession> interactionSessionHolder = new AtomicReference<>(null);
         client.setUserInteraction(new UserInteraction() {
             @Override
-            public void welcome(String banner) {
-                // ignored
+            public void welcome(ClientSession session, String banner, String lang) {
+                validateSession("welcome", session);
             }
 
             @Override
-            public String[] interactive(String destination, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
+            public String[] interactive(ClientSession session, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
+                validateSession("interactive", session);
                 count.incrementAndGet();
                 return new String[]{"bad"};
+            }
+
+            @Override
+            public String getUpdatedPassword(ClientSession session, String prompt, String lang) {
+                throw new UnsupportedOperationException("Unexpected call");
+            }
+
+            private void validateSession(String phase, ClientSession session) {
+                ClientSession prev = interactionSessionHolder.getAndSet(session);
+                if (prev != null) {
+                    assertSame("Mismatched " + phase + " client session", prev, session);
+                }
             }
         });
         client.start();
@@ -1082,23 +1097,27 @@ public class ClientTest extends BaseTestSupport {
         final int MAX_PROMPTS = 3;
         FactoryManagerUtils.updateProperty(client, ClientFactoryManager.PASSWORD_PROMPTS, MAX_PROMPTS);
 
-        client.setUserAuthFactories(Arrays
-                .<NamedFactory<UserAuth>>asList(UserAuthKeyboardInteractiveFactory.INSTANCE));
+        client.setUserAuthFactories(Collections.<NamedFactory<UserAuth>>singletonList(UserAuthKeyboardInteractiveFactory.INSTANCE));
         client.start();
 
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (final ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
             assertNotNull("Client session creation not signalled", clientSessionHolder.get());
             session.setUserInteraction(new UserInteraction() {
                 @Override
-                public void welcome(String banner) {
-                    // ignored
+                public void welcome(ClientSession clientSession, String banner, String lang) {
+                    assertSame("Mismatched welcome session", session, clientSession);
                 }
 
                 @Override
-                public String[] interactive(String destination, String name, String instruction, String lang,
-                                            String[] prompt, boolean[] echo) {
+                public String[] interactive(ClientSession clientSession, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
+                    assertSame("Mismatched interactive session", session, clientSession);
                     count.incrementAndGet();
                     return new String[]{getCurrentTestName()};
+                }
+
+                @Override
+                public String getUpdatedPassword(ClientSession clientSession, String prompt, String lang) {
+                    throw new UnsupportedOperationException("Unexpected call");
                 }
             });
 
@@ -1119,23 +1138,27 @@ public class ClientTest extends BaseTestSupport {
         final AtomicInteger count = new AtomicInteger();
         final int MAX_PROMPTS = 3;
         FactoryManagerUtils.updateProperty(client, ClientFactoryManager.PASSWORD_PROMPTS, MAX_PROMPTS);
-        client.setUserAuthFactories(Arrays
-                .<NamedFactory<UserAuth>>asList(new UserAuthKeyboardInteractiveFactory()));
+        client.setUserAuthFactories(Collections.<NamedFactory<UserAuth>>singletonList(UserAuthKeyboardInteractiveFactory.INSTANCE));
         client.start();
 
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+        try (final ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
             assertNotNull("Client session creation not signalled", clientSessionHolder.get());
             session.setUserInteraction(new UserInteraction() {
                 @Override
-                public void welcome(String banner) {
-                    // ignored
+                public void welcome(ClientSession clientSession, String banner, String lang) {
+                    assertSame("Mismatched welcome session", session, clientSession);
                 }
 
                 @Override
-                public String[] interactive(String destination, String name, String instruction, String lang,
-                                            String[] prompt, boolean[] echo) {
+                public String[] interactive(ClientSession clientSession, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
+                    assertSame("Mismatched interactive session", session, clientSession);
                     int attemptId = count.incrementAndGet();
                     return new String[]{"bad#" + attemptId};
+                }
+
+                @Override
+                public String getUpdatedPassword(ClientSession clientSession, String prompt, String lang) {
+                    throw new UnsupportedOperationException("Unexpected call");
                 }
             });
 

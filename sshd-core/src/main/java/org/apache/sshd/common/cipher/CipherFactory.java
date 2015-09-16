@@ -28,3 +28,4 @@ import org.apache.sshd.common.BuiltinFactory;
 public interface CipherFactory extends BuiltinFactory<Cipher> {
 
 }
+//CHECKSTYLE:ON

@@ -28,3 +28,4 @@ import org.apache.sshd.common.BuiltinFactory;
 public interface RandomFactory extends BuiltinFactory<Random> {
 
 }
+//CHECKSTYLE:ON

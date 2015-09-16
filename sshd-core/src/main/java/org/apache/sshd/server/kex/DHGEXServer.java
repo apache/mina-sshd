@@ -114,7 +114,7 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
             hash.init();
 
             log.debug("Send SSH_MSG_KEX_DH_GEX_GROUP");
-            buffer = session.createBuffer(SshConstants.SSH_MSG_KEX_DH_GEX_GROUP);
+            buffer = session.prepareBuffer(SshConstants.SSH_MSG_KEX_DH_GEX_GROUP, BufferUtils.clear(buffer));
             buffer.putMPInt(dh.getP());
             buffer.putMPInt(dh.getG());
             session.writePacket(buffer);
@@ -137,7 +137,7 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
             hash.init();
 
             log.debug("Send SSH_MSG_KEX_DH_GEX_GROUP");
-            buffer = session.createBuffer(SshConstants.SSH_MSG_KEX_DH_GEX_GROUP);
+            buffer = session.prepareBuffer(SshConstants.SSH_MSG_KEX_DH_GEX_GROUP, BufferUtils.clear(buffer));
             buffer.putMPInt(dh.getP());
             buffer.putMPInt(dh.getG());
             session.writePacket(buffer);

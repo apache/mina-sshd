@@ -22,6 +22,7 @@ import java.io.IOException;
 
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.auth.UserAuthMethodFactory;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
@@ -39,12 +40,14 @@ public class UserAuthPassword extends AbstractUserAuth {
 
     @Override
     public Result next(Buffer buffer) throws IOException {
+        ClientSession session = getClientSession();
+        String service = getService();
         if (buffer == null) {
             log.debug("Send SSH_MSG_USERAUTH_REQUEST for password");
             buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST);
             buffer.putString(session.getUsername());
             buffer.putString(service);
-            buffer.putString("password");
+            buffer.putString(UserAuthMethodFactory.PASSWORD);
             buffer.putBoolean(false);
             buffer.putString(password);
             session.writePacket(buffer);
@@ -56,7 +59,11 @@ public class UserAuthPassword extends AbstractUserAuth {
                 return Result.Success;
             }
             if (cmd == SshConstants.SSH_MSG_USERAUTH_FAILURE) {
-                log.debug("Received SSH_MSG_USERAUTH_FAILURE");
+                String methods = buffer.getString();
+                boolean partial = buffer.getBoolean();
+                if (log.isDebugEnabled()) {
+                    log.debug("Received SSH_MSG_USERAUTH_FAILURE - partial={}, methods={}", partial, methods);
+                }
                 return Result.Failure;
             } else {
                 if (log.isDebugEnabled()) {

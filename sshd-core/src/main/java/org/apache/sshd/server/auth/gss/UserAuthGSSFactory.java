@@ -25,6 +25,7 @@ import org.apache.sshd.server.auth.UserAuthFactory;
  * Factory class.
  */
 public class UserAuthGSSFactory implements UserAuthFactory {
+    public static final String NAME = "gssapi-with-mic";
     public static final UserAuthGSSFactory INSTANCE = new UserAuthGSSFactory();
 
     public UserAuthGSSFactory() {
@@ -37,8 +38,8 @@ public class UserAuthGSSFactory implements UserAuthFactory {
      * @return Tge name, always 'gssapi-with-mic' here.
      */
     @Override
-    public String getName() {
-        return "gssapi-with-mic";
+    public final String getName() {
+        return NAME;
     }
 
     /**

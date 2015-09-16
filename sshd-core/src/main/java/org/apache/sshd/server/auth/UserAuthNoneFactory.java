@@ -21,16 +21,12 @@ package org.apache.sshd.server.auth;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class UserAuthNoneFactory implements UserAuthFactory {
+public class UserAuthNoneFactory extends AbstractUserAuthFactory {
+    public static final String NAME = "none";
     public static final UserAuthNoneFactory INSTANCE = new UserAuthNoneFactory();
 
     public UserAuthNoneFactory() {
-        super();
-    }
-
-    @Override
-    public String getName() {
-        return "none";
+        super(NAME);
     }
 
     @Override

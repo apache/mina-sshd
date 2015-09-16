@@ -28,3 +28,4 @@ import org.apache.sshd.common.BuiltinFactory;
 public interface SignatureFactory extends BuiltinFactory<Signature> {
 
 }
+//CHECKSTYLE:ON

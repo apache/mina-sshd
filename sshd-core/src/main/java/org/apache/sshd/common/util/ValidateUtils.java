@@ -40,6 +40,11 @@ public final class ValidateUtils {
         return t;
     }
 
+    public static <T> T checkNotNull(T t, String message, long value) {
+        checkTrue(t != null, message, value);
+        return t;
+    }
+
     public static <T> T checkNotNull(T t, String message, Object... args) {
         checkTrue(t != null, message, args);
         return t;
@@ -90,6 +95,12 @@ public final class ValidateUtils {
     public static void checkTrue(boolean flag, String message) {
         if (!flag) {
             throwIllegalArgumentException(message, GenericUtils.EMPTY_OBJECT_ARRAY);
+        }
+    }
+
+    public static void checkTrue(boolean flag, String message, long value) {
+        if (!flag) {
+            throwIllegalArgumentException(message, value);
         }
     }
 

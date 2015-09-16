@@ -18,12 +18,13 @@
  */
 package org.apache.sshd.client.auth;
 
-import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.auth.UserAuthMethodFactory;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 // CHECKSTYLE:OFF
-public interface UserAuthFactory extends NamedFactory<UserAuth> {
+public interface UserAuthFactory extends UserAuthMethodFactory<UserAuth> {
 
 }
+//CHECKSTYLE:ON
