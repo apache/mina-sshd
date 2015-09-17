@@ -141,7 +141,7 @@ public abstract class MinaService extends AbstractCloseable implements org.apach
         if (intVal != null) {
             config.setSoLinger(intVal);
         }
-        boolVal = getBoolean(FactoryManager.SOCKET_LINGER);
+        boolVal = getBoolean(FactoryManager.TCP_NODELAY);
         if (boolVal != null) {
             config.setTcpNoDelay(boolVal);
         }
