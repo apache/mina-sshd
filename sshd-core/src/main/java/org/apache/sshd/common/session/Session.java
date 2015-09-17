@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.Service;
+import org.apache.sshd.common.auth.UsernameHolder;
 import org.apache.sshd.common.channel.ChannelListenerManager;
 import org.apache.sshd.common.future.KeyExchangeFuture;
 import org.apache.sshd.common.io.IoSession;
@@ -33,11 +34,12 @@ import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
- * Represents an SSH session
+ * Represents an SSH session. <B>Note:</B> the associated username for the session
+ * may be {@code null}/empty if the session is not yet authenticated
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface Session extends SessionListenerManager, ChannelListenerManager, Closeable {
+public interface Session extends SessionListenerManager, ChannelListenerManager, Closeable, UsernameHolder {
 
     /**
      * Timeout status.
@@ -67,14 +69,6 @@ public interface Session extends SessionListenerManager, ChannelListenerManager,
      * @return The old value of the attribute.  {@code null} if it is new.
      */
     <T, E extends T> T setAttribute(AttributeKey<T> key, E value);
-
-    /**
-     * Retrieve the name of the user authenticated on this session
-     * or null if the session has not been authenticated yet.
-     *
-     * @return the user name.
-     */
-    String getUsername();
 
     void setUsername(String username);
 

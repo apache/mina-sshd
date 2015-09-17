@@ -74,7 +74,7 @@ public class GitPackCommandTest extends BaseTestSupport {
                 Path localDir = localRootDir.resolve(serverDir.getFileName());
                 Utils.deleteRecursive(localDir);
                 Git.cloneRepository()
-                        .setURI("ssh://" + getCurrentTestName() + "@localhost:" + port + "/" + serverDir.getFileName())
+                        .setURI("ssh://" + getCurrentTestName() + "@" + TEST_LOCALHOST + ":" + port + "/" + serverDir.getFileName())
                         .setDirectory(localDir.toFile())
                         .call();
 

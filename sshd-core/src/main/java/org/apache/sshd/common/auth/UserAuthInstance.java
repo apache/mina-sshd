@@ -16,26 +16,25 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.client.auth;
 
-import java.util.Collection;
+package org.apache.sshd.common.auth;
 
-import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.client.session.ClientSessionHolder;
-import org.apache.sshd.common.auth.UserAuthInstance;
-import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.common.session.Session;
 
 /**
- * TODO Add javadoc
+ * Represents an authentication-in-progress tracker for a specific session
  *
+ * @param <S> The type of session being tracked by the instance
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface UserAuth extends ClientSessionHolder, UserAuthInstance<ClientSession> {
-
-    void init(ClientSession session, String service, Collection<?> identities) throws Exception;
-
-    boolean process(Buffer buffer) throws Exception;
-
-    void destroy();
-
+//CHECKSTYLE:OFF
+public interface UserAuthInstance<S extends Session> extends NamedResource {
+    /**
+     * @return The current session for which the authentication is being
+     * tracked. <B>Note:</B> may be {@code null} if the instance has not
+     * been initialized yet
+     */
+    S getSession();
 }
+//CHECKSTYLE:ON

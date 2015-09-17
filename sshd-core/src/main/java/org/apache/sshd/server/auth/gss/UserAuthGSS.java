@@ -41,7 +41,7 @@ import org.ietf.jgss.Oid;
  * <p>Several methods are available for overriding in specific circumstances.</p>
  */
 public class UserAuthGSS extends AbstractUserAuth {
-
+    public static final String NAME = UserAuthGSSFactory.NAME;
     // Oids for the Kerberos 5 mechanism and principal
 
     public static final Oid KRB5_MECH = createOID("1.2.840.113554.1.2.2");
@@ -52,6 +52,10 @@ public class UserAuthGSS extends AbstractUserAuth {
 
     // Identity from context
     private String identity;
+
+    public UserAuthGSS() {
+        super(NAME);
+    }
 
     /**
      * Handle the first authentication step.
@@ -74,7 +78,7 @@ public class UserAuthGSS extends AbstractUserAuth {
 
                     // Validate initial user before proceeding
 
-                    if (!auth.validateInitialUser(session, getUserName())) {
+                    if (!auth.validateInitialUser(session, getUsername())) {
                         return Boolean.FALSE;
                     }
 
@@ -109,7 +113,9 @@ public class UserAuthGSS extends AbstractUserAuth {
                         "Packet not supported by user authentication method: " + msg);
             }
 
-            log.debug("In krb5.next: msg = " + msg);
+            if (log.isDebugEnabled()) {
+                log.debug("doAuth({}@{}) In krb5.next: msg = {}", getUsername(), session, msg);
+            }
 
             // If the context is established, this must be a MIC message
 
@@ -125,22 +131,23 @@ public class UserAuthGSS extends AbstractUserAuth {
 
                 msgbuf.putBytes(ValidateUtils.checkNotNullAndNotEmpty(session.getSessionId(), "No current session ID"));
                 msgbuf.putByte(SshConstants.SSH_MSG_USERAUTH_REQUEST);
-                msgbuf.putString(getUserName());
+                msgbuf.putString(getUsername());
                 msgbuf.putString(getService());
-                msgbuf.putString(UserAuthGSSFactory.NAME);
+                msgbuf.putString(getName());
 
                 byte[] msgbytes = msgbuf.getCompactData();
                 byte[] inmic = buffer.getBytes();
 
                 try {
                     context.verifyMIC(inmic, 0, inmic.length, msgbytes, 0, msgbytes.length, new MessageProp(false));
-                    log.debug("MIC verified");
+                    if (log.isDebugEnabled()) {
+                        log.debug("doAuth({}@{}) MIC verified", getUsername(), session);
+                    }
                     return Boolean.TRUE;
                 } catch (GSSException e) {
-                    log.info("GSS verification error: {}", e.toString());
+                    log.info("doAuth({}@{}) GSS verification error: {}", getUsername(), session, e.toString());
                     return Boolean.FALSE;
                 }
-
             } else {
 
                 // Not established - new token to process
@@ -151,7 +158,7 @@ public class UserAuthGSS extends AbstractUserAuth {
 
                 // Validate identity if context is now established
 
-                if (established && identity == null) {
+                if (established && (identity == null)) {
                     identity = context.getSrcName().toString();
                     log.info("GSS identity is {}", identity);
 
@@ -175,15 +182,9 @@ public class UserAuthGSS extends AbstractUserAuth {
         }
     }
 
-    /**
-     * Get a user name which has been derived from the handshaking process, or the initial name if
-     * nothing has been found.
-     *
-     * @return The user name
-     */
     @Override
-    public String getUserName() {
-        return identity != null ? identity : super.getUserName();
+    public String getUsername() {
+        return identity != null ? identity : super.getUsername();
     }
 
     /**
@@ -195,7 +196,9 @@ public class UserAuthGSS extends AbstractUserAuth {
             try {
                 context.dispose();
             } catch (GSSException e) {
-                // ignore
+                if (log.isDebugEnabled()) {
+                    log.debug("Failed ({}) to dispose of context: {}", e.getClass().getSimpleName(), e.getMessage());
+                }
             } finally {
                 context = null;
             }

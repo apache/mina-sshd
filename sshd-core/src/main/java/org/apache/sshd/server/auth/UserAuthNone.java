@@ -26,14 +26,14 @@ import org.apache.sshd.common.util.buffer.Buffer;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class UserAuthNone extends AbstractUserAuth {
+    public static final String NAME = UserAuthNoneFactory.NAME;
 
     public UserAuthNone() {
-        super();
+        super(NAME);
     }
 
     @Override
     public Boolean doAuth(Buffer buffer, boolean init) {
         return Boolean.TRUE;
     }
-
 }

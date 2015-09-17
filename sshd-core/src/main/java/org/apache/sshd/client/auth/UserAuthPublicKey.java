@@ -28,15 +28,16 @@ import java.util.List;
 
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.SshAgentFactory;
+import org.apache.sshd.client.auth.pubkey.KeyAgentIdentity;
+import org.apache.sshd.client.auth.pubkey.KeyPairIdentity;
+import org.apache.sshd.client.auth.pubkey.PublicKeyIdentity;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
-import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.Pair;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -47,13 +48,14 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class UserAuthPublicKey extends AbstractUserAuth {
+    public static final String NAME = UserAuthPublicKeyFactory.NAME;
 
     private SshAgent agent;
     private Iterator<PublicKeyIdentity> keys;
     private PublicKeyIdentity current;
 
     public UserAuthPublicKey() {
-        super();
+        super(NAME);
     }
 
     @Override
@@ -99,15 +101,16 @@ public class UserAuthPublicKey extends AbstractUserAuth {
                 current = keys.next();
                 PublicKey key = current.getPublicKey();
                 String algo = KeyUtils.getKeyType(key);
+                String name = getName();
                 if (log.isDebugEnabled()) {
-                    log.debug("process({}@{})[{}] Send SSH_MSG_USERAUTH_REQUEST request publickey algo={}",
-                              username, session, service, algo);
+                    log.debug("process({}@{})[{}] Send SSH_MSG_USERAUTH_REQUEST request {} algo={}",
+                              username, session, service, name, algo);
                 }
 
                 buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST);
                 buffer.putString(username);
                 buffer.putString(service);
-                buffer.putString(UserAuthPublicKeyFactory.NAME);
+                buffer.putString(name);
                 buffer.putBoolean(false);
                 buffer.putString(algo);
                 buffer.putPublicKey(key);
@@ -125,25 +128,27 @@ public class UserAuthPublicKey extends AbstractUserAuth {
         if (cmd == SshConstants.SSH_MSG_USERAUTH_PK_OK) {
             PublicKey key = current.getPublicKey();
             String algo = KeyUtils.getKeyType(key);
+            String name = getName();
             if (log.isDebugEnabled()) {
-                log.debug("process({}@{})[{}] Send SSH_MSG_USERAUTH_REQUEST reply publickey algo={}",
-                          username, session, service, algo);
+                log.debug("process({}@{})[{}] Send SSH_MSG_USERAUTH_REQUEST reply {} algo={}",
+                          username, session, service, name, algo);
             }
 
             buffer = session.prepareBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST, BufferUtils.clear(buffer));
             buffer.putString(username);
             buffer.putString(service);
-            buffer.putString(UserAuthPublicKeyFactory.NAME);
+            buffer.putString(name);
             buffer.putBoolean(true);
             buffer.putString(algo);
             buffer.putPublicKey(key);
 
             Buffer bs = new ByteArrayBuffer();
-            bs.putBytes(session.getKex().getH());
+            KeyExchange kex = session.getKex();
+            bs.putBytes(kex.getH());
             bs.putByte(SshConstants.SSH_MSG_USERAUTH_REQUEST);
             bs.putString(username);
             bs.putString(service);
-            bs.putString(UserAuthPublicKeyFactory.NAME);
+            bs.putString(name);
             bs.putBoolean(true);
             bs.putString(algo);
             bs.putPublicKey(key);
@@ -171,58 +176,4 @@ public class UserAuthPublicKey extends AbstractUserAuth {
             }
         }
     }
-
-    interface PublicKeyIdentity {
-        PublicKey getPublicKey();
-
-        byte[] sign(byte[] data) throws Exception;
-    }
-
-    static class KeyAgentIdentity implements PublicKeyIdentity {
-        private final SshAgent agent;
-        private final PublicKey key;
-
-        KeyAgentIdentity(SshAgent agent, PublicKey key) {
-            this.agent = agent;
-            this.key = key;
-        }
-
-        @Override
-        public PublicKey getPublicKey() {
-            return key;
-        }
-
-        @Override
-        public byte[] sign(byte[] data) throws Exception {
-            return agent.sign(key, data);
-        }
-    }
-
-    static class KeyPairIdentity implements PublicKeyIdentity {
-        private final KeyPair pair;
-        private final FactoryManager manager;
-
-        KeyPairIdentity(FactoryManager manager, KeyPair pair) {
-            this.manager = manager;
-            this.pair = pair;
-        }
-
-        @Override
-        public PublicKey getPublicKey() {
-            return pair.getPublic();
-        }
-
-        @Override
-        public byte[] sign(byte[] data) throws Exception {
-            String keyType = KeyUtils.getKeyType(pair);
-            Signature verif = ValidateUtils.checkNotNull(
-                    NamedFactory.Utils.create(manager.getSignatureFactories(), keyType),
-                    "No signer could be located for key type=%s",
-                    keyType);
-            verif.initSigner(pair.getPrivate());
-            verif.update(data, 0, data.length);
-            return verif.sign();
-        }
-    }
-
 }

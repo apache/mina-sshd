@@ -22,21 +22,26 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.server.session.ServerSession;
-import org.apache.sshd.server.session.ServerSessionHolder;
 
 /**
  */
-public abstract class AbstractUserAuth extends AbstractLoggingBean implements UserAuth, ServerSessionHolder {
+public abstract class AbstractUserAuth extends AbstractLoggingBean implements UserAuth {
+    private final String name;
     private ServerSession session;
     private String service;
     private String username;
 
-    protected AbstractUserAuth() {
-        super();
+    protected AbstractUserAuth(String name) {
+        this.name = ValidateUtils.checkNotNullAndNotEmpty(name, "No name");
     }
 
     @Override
-    public String getUserName() {
+    public final String getName() {
+        return name;
+    }
+
+    @Override
+    public String getUsername() {
         return username;
     }
 
@@ -47,6 +52,11 @@ public abstract class AbstractUserAuth extends AbstractLoggingBean implements Us
     @Override
     public ServerSession getServerSession() {
         return session;
+    }
+
+    @Override
+    public ServerSession getSession() {
+        return getServerSession();
     }
 
     @Override
@@ -69,4 +79,8 @@ public abstract class AbstractUserAuth extends AbstractLoggingBean implements Us
 
     protected abstract Boolean doAuth(Buffer buffer, boolean init) throws Exception;
 
+    @Override
+    public String toString() {
+        return getName() + ": " + getSession() + "[" + getService() + "]";
+    }
 }

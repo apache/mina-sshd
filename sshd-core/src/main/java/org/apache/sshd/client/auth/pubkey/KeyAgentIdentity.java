@@ -16,26 +16,34 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.client.auth;
+package org.apache.sshd.client.auth.pubkey;
 
-import java.util.Collection;
+import java.security.PublicKey;
 
-import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.client.session.ClientSessionHolder;
-import org.apache.sshd.common.auth.UserAuthInstance;
-import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.agent.SshAgent;
+import org.apache.sshd.common.util.ValidateUtils;
 
 /**
- * TODO Add javadoc
+ * Uses an {@link SshAgent} to generate the identity signature
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface UserAuth extends ClientSessionHolder, UserAuthInstance<ClientSession> {
+public class KeyAgentIdentity implements PublicKeyIdentity {
+    private final SshAgent agent;
+    private final PublicKey key;
 
-    void init(ClientSession session, String service, Collection<?> identities) throws Exception;
+    public KeyAgentIdentity(SshAgent agent, PublicKey key) {
+        this.agent = ValidateUtils.checkNotNull(agent, "No signing agent");
+        this.key = ValidateUtils.checkNotNull(key, "No public key");
+    }
 
-    boolean process(Buffer buffer) throws Exception;
+    @Override
+    public PublicKey getPublicKey() {
+        return key;
+    }
 
-    void destroy();
-
+    @Override
+    public byte[] sign(byte[] data) throws Exception {
+        return agent.sign(key, data);
+    }
 }

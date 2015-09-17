@@ -37,36 +37,43 @@ import org.apache.sshd.server.session.ServerSession;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class UserAuthPublicKey extends AbstractUserAuth {
+    public static final String NAME = UserAuthPublicKeyFactory.NAME;
 
     public UserAuthPublicKey() {
-        super();
+        super(NAME);
     }
 
     @Override
     public Boolean doAuth(Buffer buffer, boolean init) throws Exception {
         ValidateUtils.checkTrue(init, "Instance not initialized");
+
         boolean hasSig = buffer.getBoolean();
         String alg = buffer.getString();
-
         int oldLim = buffer.wpos();
         int oldPos = buffer.rpos();
         int len = buffer.getInt();
         buffer.wpos(buffer.rpos() + len);
-        PublicKey key = buffer.getRawPublicKey();
+
         ServerSession session = getServerSession();
-        ServerFactoryManager manager = session.getFactoryManager();
-        Signature verif = ValidateUtils.checkNotNull(
+        ServerFactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No factory manager");
+        PublicKey key = buffer.getRawPublicKey();
+        Signature verifier = ValidateUtils.checkNotNull(
                 NamedFactory.Utils.create(manager.getSignatureFactories(), alg),
                 "No verifier located for algorithm=%s",
                 alg);
-        verif.initVerifier(key);
+        verifier.initVerifier(key);
         buffer.wpos(oldLim);
 
         byte[] sig = hasSig ? buffer.getBytes() : null;
+        PublickeyAuthenticator authenticator = manager.getPublickeyAuthenticator();
+        if (authenticator == null) {
+            if (log.isDebugEnabled()) {
+                log.debug("doAuth({}) no authenticator", session);
+            }
+            return false;
+        }
 
-        PublickeyAuthenticator authenticator =
-                ValidateUtils.checkNotNull(manager.getPublickeyAuthenticator(), "No PublickeyAuthenticator configured");
-        if (!authenticator.authenticate(getUserName(), key, session)) {
+        if (!authenticator.authenticate(getUsername(), key, session)) {
             return Boolean.FALSE;
         }
 
@@ -80,16 +87,16 @@ public class UserAuthPublicKey extends AbstractUserAuth {
             Buffer buf = new ByteArrayBuffer();
             buf.putBytes(session.getKex().getH());
             buf.putByte(SshConstants.SSH_MSG_USERAUTH_REQUEST);
-            buf.putString(getUserName());
+            buf.putString(getUsername());
             buf.putString(getService());
-            buf.putString(UserAuthPublicKeyFactory.NAME);
+            buf.putString(getName());
             buf.putBoolean(true);
             buf.putString(alg);
             buffer.rpos(oldPos);
             buffer.wpos(oldPos + 4 + len);
             buf.putBuffer(buffer);
-            verif.update(buf.array(), buf.rpos(), buf.available());
-            if (!verif.verify(sig)) {
+            verifier.update(buf.array(), buf.rpos(), buf.available());
+            if (!verifier.verify(sig)) {
                 throw new Exception("Key verification failed");
             }
             return Boolean.TRUE;

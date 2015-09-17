@@ -182,14 +182,14 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
     }
 
     protected void handleAuthenticationInProgress(int cmd, Buffer buffer) throws Exception {
-        String username = (currentAuth == null) ? null : currentAuth.getUserName();
+        String username = (currentAuth == null) ? null : currentAuth.getUsername();
         if (log.isDebugEnabled()) {
             log.debug("handleAuthenticationInProgress({}@{})", username, session);
         }
     }
 
     protected void handleAuthenticationSuccess(int cmd, Buffer buffer) throws Exception {
-        String username = ValidateUtils.checkNotNull(currentAuth, "No current auth").getUserName();
+        String username = ValidateUtils.checkNotNull(currentAuth, "No current auth").getUsername();
         if (log.isDebugEnabled()) {
             log.debug("handleAuthenticationSuccess({}@{})", username, session);
         }
@@ -264,7 +264,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
     }
 
     protected void handleAuthenticationFailure(int cmd, Buffer buffer) throws Exception {
-        String username = (currentAuth == null) ? null : currentAuth.getUserName();
+        String username = (currentAuth == null) ? null : currentAuth.getUsername();
         if (log.isDebugEnabled()) {
             log.debug("handleAuthenticationFailure({}@{})", username, session);
         }

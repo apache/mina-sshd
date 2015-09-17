@@ -96,6 +96,7 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.NoCloseOutputStream;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.SshServer;
+import org.apache.sshd.server.auth.keyboard.DefaultKeyboardInteractiveAuthenticator;
 import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
 import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.channel.ChannelSessionFactory;
@@ -503,7 +504,7 @@ public class ClientTest extends BaseTestSupport {
                 // That's ok, the channel is being closed by the other side
             }
             assertEquals(ClientChannel.CLOSED, channel.waitFor(ClientChannel.CLOSED, 0) & ClientChannel.CLOSED);
-            session.close(false).await();
+            assertTrue("Failed to close session on time", session.close(false).await(7L, TimeUnit.SECONDS));
         } finally {
             client.stop();
         }
@@ -614,7 +615,7 @@ public class ClientTest extends BaseTestSupport {
             channel.setOut(out);
             channel.setErr(err);
             channel.open().verify(5L, TimeUnit.SECONDS);
-            channel.close(false).await();
+            assertTrue("Failed to close channel on time", channel.close(false).await(7L, TimeUnit.SECONDS));
         } finally {
             client.stop();
         }
@@ -938,7 +939,7 @@ public class ClientTest extends BaseTestSupport {
     }
 
     @Test   // see SSHD-504
-    public void testKeyboardInteractivePasswordPromptLocationIndependence() throws Exception {
+    public void testDefaultKeyboardInteractivePasswordPromptLocationIndependence() throws Exception {
         final Collection<String> mismatchedPrompts = new LinkedList<String>();
         client.setUserAuthFactories(Arrays.<NamedFactory<UserAuth>>asList(new UserAuthKeyboardInteractiveFactory() {
             @Override
@@ -991,29 +992,21 @@ public class ClientTest extends BaseTestSupport {
                             }
                         }
                 ));
-        sshd.setUserAuthFactories(Arrays.<NamedFactory<org.apache.sshd.server.auth.UserAuth>>asList(
-                new org.apache.sshd.server.auth.UserAuthKeyboardInteractiveFactory() {
-                    private int xformerIndex;
+        sshd.setKeyboardInteractiveAuthenticator(new DefaultKeyboardInteractiveAuthenticator() {
+            private int xformerIndex;
 
-                    @Override
-                    public org.apache.sshd.server.auth.UserAuth create() {
-                        return new org.apache.sshd.server.auth.UserAuthKeyboardInteractive() {
-
-                            @SuppressWarnings("synthetic-access")
-                            @Override
-                            protected String getInteractionPrompt() {
-                                String original = super.getInteractionPrompt();
-                                if (xformerIndex < xformers.size()) {
-                                    Transformer<String, String> x = xformers.get(xformerIndex);
-                                    xformerIndex++;
-                                    return x.transform(original);
-                                } else {
-                                    return original;
-                                }
-                            }
-                        };
-                    }
-                }));
+            @Override
+            protected String getInteractionPrompt(ServerSession session) {
+                String original = super.getInteractionPrompt(session);
+                if (xformerIndex < xformers.size()) {
+                    Transformer<String, String> x = xformers.get(xformerIndex);
+                    xformerIndex++;
+                    return x.transform(original);
+                } else {
+                    return original;
+                }
+            }
+        });
 
         try {
             for (int index = 0; index < xformers.size(); index++) {
@@ -1042,15 +1035,14 @@ public class ClientTest extends BaseTestSupport {
     }
 
     @Test
-    public void testKeyboardInteractiveWithFailures() throws Exception {
-        final AtomicInteger count = new AtomicInteger();
-        final int MAX_PROMPTS = 3;
-        FactoryManagerUtils.updateProperty(client, ClientFactoryManager.PASSWORD_PROMPTS, MAX_PROMPTS);
-
+    public void testDefaultKeyboardInteractiveWithFailures() throws Exception {
         client.setUserAuthFactories(Collections.<NamedFactory<UserAuth>>singletonList(UserAuthKeyboardInteractiveFactory.INSTANCE));
 
+        final AtomicInteger count = new AtomicInteger();
         final AtomicReference<ClientSession> interactionSessionHolder = new AtomicReference<>(null);
         client.setUserInteraction(new UserInteraction() {
+            private final String[] BAD_RESPONSE = { "bad" };
+
             @Override
             public void welcome(ClientSession session, String banner, String lang) {
                 validateSession("welcome", session);
@@ -1060,7 +1052,7 @@ public class ClientTest extends BaseTestSupport {
             public String[] interactive(ClientSession session, String name, String instruction, String lang, String[] prompt, boolean[] echo) {
                 validateSession("interactive", session);
                 count.incrementAndGet();
-                return new String[]{"bad"};
+                return BAD_RESPONSE;
             }
 
             @Override
@@ -1075,13 +1067,17 @@ public class ClientTest extends BaseTestSupport {
                 }
             }
         });
+
+        final int MAX_PROMPTS = 3;
+        FactoryManagerUtils.updateProperty(client, ClientFactoryManager.PASSWORD_PROMPTS, MAX_PROMPTS);
+
         client.start();
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
             assertNotNull("Client session creation not signalled", clientSessionHolder.get());
 
             AuthFuture future = session.auth();
-            future.await();
+            assertTrue("Failed to complete authentication on time", future.await(15L, TimeUnit.SECONDS));
             assertTrue("Unexpected authentication success", future.isFailure());
             assertEquals("Mismatched authentication retry count", MAX_PROMPTS, count.get());
         } finally {
@@ -1092,7 +1088,7 @@ public class ClientTest extends BaseTestSupport {
     }
 
     @Test
-    public void testKeyboardInteractiveInSessionUserInteractive() throws Exception {
+    public void testDefaultKeyboardInteractiveInSessionUserInteractive() throws Exception {
         final AtomicInteger count = new AtomicInteger();
         final int MAX_PROMPTS = 3;
         FactoryManagerUtils.updateProperty(client, ClientFactoryManager.PASSWORD_PROMPTS, MAX_PROMPTS);
@@ -1122,7 +1118,7 @@ public class ClientTest extends BaseTestSupport {
             });
 
             AuthFuture future = session.auth();
-            future.await();
+            assertTrue("Failed to complete authentication on time", future.await(15L, TimeUnit.SECONDS));
             assertTrue("Authentication not marked as success", future.isSuccess());
             assertFalse("Authentication marked as failure", future.isFailure());
             assertEquals("Mismatched authentication attempts count", 1, count.get());

@@ -37,12 +37,13 @@ import org.apache.sshd.common.util.buffer.BufferUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class UserAuthPassword extends AbstractUserAuth {
+    public static final String NAME = UserAuthPasswordFactory.NAME;
 
     private Iterator<String> passwords;
     private String current;
 
     public UserAuthPassword() {
-        super();
+        super(NAME);
     }
 
     @Override
@@ -69,7 +70,7 @@ public class UserAuthPassword extends AbstractUserAuth {
             if (passwords.hasNext()) {
                 current = passwords.next();
                 buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST,
-                                    username.length() + service.length() + UserAuthPasswordFactory.NAME.length() + current.length() + Integer.SIZE);
+                                    username.length() + service.length() + getName().length() + current.length() + Integer.SIZE);
                 sendPassword(buffer, session, current, current);
                 return true;
             }
@@ -121,16 +122,17 @@ public class UserAuthPassword extends AbstractUserAuth {
     protected void sendPassword(Buffer buffer, ClientSession session, String oldPassword, String newPassword) throws IOException {
         String username = session.getUsername();
         String service = getService();
+        String name = getName();
         boolean modified = !Objects.equals(oldPassword, newPassword);
         if (log.isDebugEnabled()) {
-            log.debug("sendPassword({}@{})[{}] send SSH_MSG_USERAUTH_REQUEST for password - modified={}",
-                      username, session, service, modified);
+            log.debug("sendPassword({}@{})[{}] send SSH_MSG_USERAUTH_REQUEST for {} - modified={}",
+                      username, session, service, name, modified);
         }
 
         buffer = session.prepareBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST, BufferUtils.clear(buffer));
         buffer.putString(username);
         buffer.putString(service);
-        buffer.putString(UserAuthPasswordFactory.NAME);
+        buffer.putString(name);
         buffer.putBoolean(modified);
         // see RFC-4252 section 8
         buffer.putString(oldPassword);

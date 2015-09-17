@@ -105,7 +105,7 @@ public class CipherTest extends BaseTestSupport {
         Assume.assumeTrue("No internal support for " + builtInCipher.getName(), builtInCipher.isSupported() && checkCipher(jschCipher.getName()));
 
         try (SshServer sshd = setupTestServer()) {
-            sshd.setCipherFactories(Arrays.<NamedFactory<org.apache.sshd.common.cipher.Cipher>>asList(builtInCipher));
+            sshd.setCipherFactories(Collections.<NamedFactory<org.apache.sshd.common.cipher.Cipher>>singletonList(builtInCipher));
             sshd.start();
 
             try {

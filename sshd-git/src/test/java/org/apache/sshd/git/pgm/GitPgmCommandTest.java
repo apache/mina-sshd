@@ -48,7 +48,7 @@ public class GitPgmCommandTest extends BaseTestSupport {
     }
 
     @Test
-    public void testGitpgm() throws Exception {
+    public void testGitPgm() throws Exception {
         Path targetParent = detectTargetFolder().getParent();
         Path serverDir = getTempTargetRelativeFile(getClass().getSimpleName());
 

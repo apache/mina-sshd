@@ -26,6 +26,7 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.keyprovider.KeyPairProviderHolder;
 import org.apache.sshd.server.auth.UserAuth;
 import org.apache.sshd.server.auth.gss.GSSAuthenticator;
+import org.apache.sshd.server.auth.keyboard.KeyboardInteractiveAuthenticator;
 import org.apache.sshd.server.auth.password.PasswordAuthenticator;
 import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
 
@@ -144,6 +145,16 @@ public interface ServerFactoryManager extends FactoryManager, KeyPairProviderHol
      * @return the <code>PasswordAuthenticator</code> or {@code null}
      */
     PasswordAuthenticator getPasswordAuthenticator();
+
+    /**
+     * Retrieve the <code>KeyboardInteractiveAuthenticator</code> to be used by
+     * the SSH server. If no authenticator has been configured (i.e. this method returns
+     * {@code null}), then client authentication requests based on this method
+     * will be rejected.
+     *
+     * @return The {@link KeyboardInteractiveAuthenticator} or {@code null}
+     */
+    KeyboardInteractiveAuthenticator getKeyboardInteractiveAuthenticator();
 
     /**
      * Retrieve the <code>GSSAuthenticator</code> to be used by the SSH server.

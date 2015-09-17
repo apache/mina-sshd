@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.Collection;
 
+import org.apache.sshd.common.auth.UsernameHolder;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
@@ -40,7 +41,7 @@ import org.apache.sshd.server.session.ServerSession;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class DefaultAuthorizedKeysAuthenticator extends AuthorizedKeysAuthenticator {
+public class DefaultAuthorizedKeysAuthenticator extends AuthorizedKeysAuthenticator implements UsernameHolder {
 
     /**
      * The default instance that enforces the same permissions regime as {@code OpenSSH}
@@ -81,6 +82,7 @@ public class DefaultAuthorizedKeysAuthenticator extends AuthorizedKeysAuthentica
         this.strict = strict;
     }
 
+    @Override
     public final String getUsername() {
         return user;
     }

@@ -38,11 +38,18 @@ public interface AuthFuture extends SshFuture<AuthFuture>, VerifiableFuture<Auth
 
     /**
      * @return <code>true</code> if the authentication operation is finished successfully.
+     * <B>Note:</B> calling this method while the operation is in progress
+     * returns {@code false}. Should check {@link #isDone()} in order to
+     * ensure that the result is valid.
      */
     boolean isSuccess();
 
     /**
      * @return <code>false</code> if the authentication operation failed.
+     * <B>Note:</B> the operation is considered failed if an exception
+     * is received instead of a success/fail response code or the operation
+     * is in progress. Should check {@link #isDone()} in order to
+     * ensure that the result is valid.
      */
     boolean isFailure();
 

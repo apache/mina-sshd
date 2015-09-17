@@ -19,7 +19,10 @@
 package org.apache.sshd.server.auth;
 
 import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.server.ServerFactoryManager;
+import org.apache.sshd.server.auth.password.PasswordAuthenticator;
 import org.apache.sshd.server.auth.password.PasswordChangeRequiredException;
 import org.apache.sshd.server.session.ServerSession;
 
@@ -28,23 +31,62 @@ import org.apache.sshd.server.session.ServerSession;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class UserAuthPassword extends AbstractUserAuthPassword {
+public class UserAuthPassword extends AbstractUserAuth {
+    public static final String NAME = UserAuthPasswordFactory.NAME;
+
     public UserAuthPassword() {
-        super();
+        super(NAME);
     }
 
     @Override
     public Boolean doAuth(Buffer buffer, boolean init) throws Exception {
-        if (!init) {
-            throw new IllegalStateException("Incomplete initialization");
-        }
+        ValidateUtils.checkTrue(init, "Instance not initialized");
 
         boolean newPassword = buffer.getBoolean();
         String password = buffer.getString();
         if (newPassword) {
-            return handleClientPasswordChangeRequest(buffer, getServerSession(), getUserName(), password, buffer.getString());
+            return handleClientPasswordChangeRequest(buffer, getServerSession(), getUsername(), password, buffer.getString());
         } else {
-            return checkPassword(buffer, getServerSession(), getUserName(), password);
+            return checkPassword(buffer, getServerSession(), getUsername(), password);
+        }
+    }
+
+    /**
+     * Invokes the configured {@link PasswordAuthenticator} and returns the result.
+     * If {@link PasswordChangeRequiredException} thrown by the authenticator then
+     * {@link #handleServerPasswordChangeRequest(Buffer, ServerSession, String, String, PasswordChangeRequiredException)}
+     * is invoked
+     *
+     * @param buffer   The received {@link Buffer} to be re-used if need to send
+     *                 a password change request
+     * @param session  The {@link ServerSession} through which the request was received
+     * @param username The username
+     * @param password The password
+     * @return The authentication result - if {@code null} then exception was handled
+     * internally and authentication is still in progress
+     * @throws Exception If internal error during authentication (exception for
+     * {@link PasswordChangeRequiredException} which is handled internally)
+     * @see #handleServerPasswordChangeRequest(Buffer, ServerSession, String, String, PasswordChangeRequiredException)
+     */
+    protected Boolean checkPassword(Buffer buffer, ServerSession session, String username, String password) throws Exception {
+        ServerFactoryManager manager = ValidateUtils.checkNotNull(
+                session.getFactoryManager(),
+                "No ServerFactoryManager configured");
+        PasswordAuthenticator auth = manager.getPasswordAuthenticator();
+        if (auth == null) {
+            if (log.isDebugEnabled()) {
+                log.debug("checkPassword({}) no password authenticator", session);
+            }
+            return false;
+        }
+
+        try {
+            return auth.authenticate(username, password, session);
+        } catch (PasswordChangeRequiredException e) {
+            if (log.isDebugEnabled()) {
+                log.debug("checkPassword({}) password change required: {}", session, e.getMessage());
+            }
+            return handleServerPasswordChangeRequest(buffer, session, username, password, e);
         }
     }
 
@@ -67,23 +109,34 @@ public class UserAuthPassword extends AbstractUserAuthPassword {
         throw new UnsupportedOperationException("Password change not supported");
     }
 
-    @Override
+    /**
+     * Invoked by {@link #checkPassword(Buffer, ServerSession, String, String)}
+     * when a {@link PasswordChangeRequiredException} was thrown by the authenticator.
+     * By default it re-throws the original exception.
+     *
+     * @param buffer   The received {@link Buffer} to be re-used if need to send
+     *                 a password change request
+     * @param session  The {@link ServerSession} through which the request was received
+     * @param username The username
+     * @param password The (rejected) password
+     * @param e        The original thrown exception
+     * @return {@code null} by default to indicate incomplete authentication
+     * @throws Exception If failed to dispatch the message
+     */
     protected Boolean handleServerPasswordChangeRequest(
             Buffer buffer, ServerSession session, String username, String password, PasswordChangeRequiredException e)
-                    throws Exception {
+                throws Exception {
         String prompt = e.getPrompt();
         String lang = e.getLanguage();
         if (log.isDebugEnabled()) {
-            log.debug("handlePasswordChangeRequest({}@{}) password change required - prompt={}, lang={}",
-                      username, session, prompt, lang);
+            log.debug("handlePasswordChangeRequest({}) password change required - prompt={}, lang={}",
+                      session, prompt, lang);
         }
 
         buffer = session.prepareBuffer(SshConstants.SSH_MSG_USERAUTH_PASSWD_CHANGEREQ, buffer);
-        buffer.putString((prompt == null) ? "" : prompt);
-        buffer.putString((lang == null) ? "" : lang);
+        buffer.putString(prompt);
+        buffer.putString(lang);
         session.writePacket(buffer);
         return null;    // authentication incomplete
-
     }
-
 }

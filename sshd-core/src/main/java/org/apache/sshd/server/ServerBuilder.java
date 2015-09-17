@@ -31,6 +31,8 @@ import org.apache.sshd.common.kex.DHFactory;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.util.Transformer;
+import org.apache.sshd.server.auth.keyboard.DefaultKeyboardInteractiveAuthenticator;
+import org.apache.sshd.server.auth.keyboard.KeyboardInteractiveAuthenticator;
 import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
 import org.apache.sshd.server.channel.ChannelSessionFactory;
 import org.apache.sshd.server.config.keys.DefaultAuthorizedKeysAuthenticator;
@@ -76,11 +78,18 @@ public class ServerBuilder extends BaseBuilder<SshServer, ServerBuilder> {
         ));
 
     public static final PublickeyAuthenticator DEFAULT_PUBLIC_KEY_AUTHENTICATOR = DefaultAuthorizedKeysAuthenticator.INSTANCE;
+    public static final KeyboardInteractiveAuthenticator DEFAULT_INTERACTIVE_AUTHENTICATOR = DefaultKeyboardInteractiveAuthenticator.INSTANCE;
 
     protected PublickeyAuthenticator pubkeyAuthenticator;
+    protected KeyboardInteractiveAuthenticator interactiveAuthenticator;
 
     public ServerBuilder() {
         super();
+    }
+
+    public ServerBuilder interactiveAuthenticator(KeyboardInteractiveAuthenticator auth) {
+        interactiveAuthenticator = auth;
+        return this;
     }
 
     public ServerBuilder publickeyAuthenticator(PublickeyAuthenticator auth) {
@@ -108,6 +117,10 @@ public class ServerBuilder extends BaseBuilder<SshServer, ServerBuilder> {
             pubkeyAuthenticator = DEFAULT_PUBLIC_KEY_AUTHENTICATOR;
         }
 
+        if (interactiveAuthenticator == null) {
+            interactiveAuthenticator = DEFAULT_INTERACTIVE_AUTHENTICATOR;
+        }
+
         if (factory == null) {
             factory = SshServer.DEFAULT_SSH_SERVER_FACTORY;
         }
@@ -119,6 +132,7 @@ public class ServerBuilder extends BaseBuilder<SshServer, ServerBuilder> {
     public SshServer build(boolean isFillWithDefaultValues) {
         SshServer server = super.build(isFillWithDefaultValues);
         server.setPublickeyAuthenticator(pubkeyAuthenticator);
+        server.setKeyboardInteractiveAuthenticator(interactiveAuthenticator);
         return server;
     }
 

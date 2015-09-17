@@ -16,26 +16,27 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.client.auth;
+package org.apache.sshd.client.auth.pubkey;
 
-import java.util.Collection;
-
-import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.client.session.ClientSessionHolder;
-import org.apache.sshd.common.auth.UserAuthInstance;
-import org.apache.sshd.common.util.buffer.Buffer;
+import java.security.PublicKey;
 
 /**
- * TODO Add javadoc
+ * Represents a public key identity
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface UserAuth extends ClientSessionHolder, UserAuthInstance<ClientSession> {
+public interface PublicKeyIdentity {
+    /**
+     * @return The {@link PublicKey} identity value
+     */
+    PublicKey getPublicKey();
 
-    void init(ClientSession session, String service, Collection<?> identities) throws Exception;
-
-    boolean process(Buffer buffer) throws Exception;
-
-    void destroy();
-
+    /**
+     * Proves the public key identity by signing the given data
+     *
+     * @param data Data to sign
+     * @return Signed data - using the identity
+     * @throws Exception If failed to sign the data
+     */
+    byte[] sign(byte[] data) throws Exception;
 }

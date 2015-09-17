@@ -16,26 +16,16 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.client.auth;
 
-import java.util.Collection;
-
-import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.client.session.ClientSessionHolder;
-import org.apache.sshd.common.auth.UserAuthInstance;
-import org.apache.sshd.common.util.buffer.Buffer;
+package org.apache.sshd.common.auth;
 
 /**
- * TODO Add javadoc
- *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface UserAuth extends ClientSessionHolder, UserAuthInstance<ClientSession> {
-
-    void init(ClientSession session, String service, Collection<?> identities) throws Exception;
-
-    boolean process(Buffer buffer) throws Exception;
-
-    void destroy();
-
+public interface UsernameHolder {
+    /**
+     * @return The attached username - may be {@code null}/empty if holder
+     * not yet initialized
+     */
+    String getUsername();
 }

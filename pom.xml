@@ -385,8 +385,6 @@
 							<exclude>src/test/resources/**</exclude>
 							<exclude>**/stty-output-*.txt</exclude>
 							<exclude>**/big-msg.txt</exclude>
-							<exclude>sshd-sftp/**</exclude>
-							<exclude>sshd-pam/**</exclude>
 								<!-- Eclipse files -->
 							<exclude>.metadata/**</exclude>
 							<exclude>.recommenders/**</exclude>

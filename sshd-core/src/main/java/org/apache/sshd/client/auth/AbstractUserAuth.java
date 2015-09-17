@@ -22,26 +22,34 @@ package org.apache.sshd.client.auth;
 import java.util.Collection;
 
 import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.client.session.ClientSessionHolder;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractUserAuth
-                extends AbstractLoggingBean
-                implements UserAuth, ClientSessionHolder {
+public abstract class AbstractUserAuth extends AbstractLoggingBean implements UserAuth {
+    private final String name;
     private ClientSession session;
     private String service;
 
-    protected AbstractUserAuth() {
-        super();
+    protected AbstractUserAuth(String name) {
+        this.name = ValidateUtils.checkNotNullAndNotEmpty(name, "No name");
     }
 
     @Override
     public ClientSession getClientSession() {
         return session;
+    }
+
+    @Override
+    public ClientSession getSession() {
+        return getClientSession();
+    }
+
+    @Override
+    public final String getName() {
+        return name;
     }
 
     public String getService() {
@@ -51,6 +59,11 @@ public abstract class AbstractUserAuth
     @Override
     public void init(ClientSession session, String service, Collection<?> identities) throws Exception {
         this.session = ValidateUtils.checkNotNull(session, "No client session");
-        this.service = service;
+        this.service = ValidateUtils.checkNotNullAndNotEmpty(service, "No service");
+    }
+
+    @Override
+    public String toString() {
+        return getName() + ": " + getSession() + "[" + getService() + "]";
     }
 }

@@ -64,7 +64,11 @@ public class DefaultAuthFuture extends DefaultVerifiableSshFuture<AuthFuture> im
     @Override   // TODO for JDK-8 make this a default method
     public boolean isFailure() {
         Object v = getValue();
-        return (v instanceof Boolean) && (!((Boolean) v).booleanValue());
+        if (v instanceof Boolean) {
+            return !((Boolean) v).booleanValue();
+        } else {
+            return true;
+        }
     }
 
     @Override   // TODO for JDK-8 make this a default method

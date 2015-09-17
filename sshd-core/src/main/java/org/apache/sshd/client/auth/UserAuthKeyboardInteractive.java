@@ -26,8 +26,10 @@ import java.util.List;
 
 import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 
@@ -38,14 +40,47 @@ import org.apache.sshd.common.util.buffer.BufferUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class UserAuthKeyboardInteractive extends AbstractUserAuth {
+    public static final String NAME = UserAuthKeyboardInteractiveFactory.NAME;
+
+    public static final String INTERACTIVE_LANGUAGE_TAG = "kb-client-interactive-language-tag";
+
+    /*
+     * As per RFC-4256:
+     *
+     *      The language tag is deprecated and SHOULD be the empty string.  It
+     *      may be removed in a future revision of this specification.  Instead,
+     *      the server SHOULD select the language to be used based on the tags
+     *      communicated during key exchange
+     */
+    public static final String DEFAULT_INTERACTIVE_LANGUAGE_TAG = "";
+
+    public static final String INTERACTIVE_SUBMETHODS = "kb-client-interactive-sub-methods";
+
+    /*
+     * As per RFC-4256:
+     *
+     *      The submethods field is included so the user can give a hint of which
+     *      actual methods he wants to use.  It is a comma-separated list of
+     *      authentication submethods (software or hardware) that the user
+     *      prefers.  If the client has knowledge of the submethods preferred by
+     *      the user, presumably through a configuration setting, it MAY use the
+     *      submethods field to pass this information to the server.  Otherwise,
+     *      it MUST send the empty string.
+     *
+     *      The actual names of the submethods is something the user and the
+     *      server need to agree upon.
+     *
+     *      Server interpretation of the submethods field is implementation-
+     *      dependent.
+     */
+    public static final String DEFAULT_INTERACTIVE_SUBMETHODS = "";
 
     private Iterator<String> passwords;
-    private String current;
-    private int nbTrials;
     private int maxTrials;
+    private int nbTrials;
 
     public UserAuthKeyboardInteractive() {
-        super();
+        super(NAME);
     }
 
     @Override
@@ -60,6 +95,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
         }
         passwords = pwds.iterator();
         maxTrials = session.getIntProperty(ClientFactoryManager.PASSWORD_PROMPTS, ClientFactoryManager.DEFAULT_PASSWORD_PROMPTS);
+        ValidateUtils.checkTrue(maxTrials > 0, "Non-positive max. trials: %d", maxTrials);
     }
 
     @Override
@@ -69,42 +105,43 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
         String service = getService();
 
         if (buffer == null) {
-            if (passwords.hasNext()) {
-                current = passwords.next();
-            } else if (nbTrials++ < maxTrials) {
-                current = null;
-            } else {
-                return false;
-            }
-
+            String name = getName();
             if (log.isDebugEnabled()) {
-                log.debug("process({}@{})[{}] Send SSH_MSG_USERAUTH_REQUEST for keyboard-interactive",
-                          username, session, service);
+                log.debug("process({}@{})[{}] Send SSH_MSG_USERAUTH_REQUEST for {}",
+                          username, session, service, name);
             }
             buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_REQUEST,
-                                username.length() + service.length() + UserAuthKeyboardInteractiveFactory.NAME.length() + Integer.SIZE);
+                                username.length() + service.length() + name.length() + Integer.SIZE);
             buffer.putString(username);
             buffer.putString(service);
-            buffer.putString(UserAuthKeyboardInteractiveFactory.NAME);
-            buffer.putString("");
-            buffer.putString("");
+            buffer.putString(name);
+            buffer.putString(getExchangeLanguageTag(session));
+            buffer.putString(getExchangeSubMethods(session));
             session.writePacket(buffer);
             return true;
         }
 
         int cmd = buffer.getUByte();
         if (cmd == SshConstants.SSH_MSG_USERAUTH_INFO_REQUEST) {
+            nbTrials++;
+            if (nbTrials > maxTrials) {
+                if (log.isDebugEnabled()) {
+                    log.debug("process({})[{}] Reject SSH_MSG_USERAUTH_INFO_REQUEST for {} num. trials ({}) exceeds max({})",
+                              session, service, getName(), nbTrials, maxTrials);
+                }
+                return false;
+            }
+
             if (log.isDebugEnabled()) {
-                log.debug("process({}@{})[{}] Received SSH_MSG_USERAUTH_INFO_REQUEST for keyboard-interactive",
-                          username, session, service);
+                log.debug("process({})[{}] Received SSH_MSG_USERAUTH_INFO_REQUEST for {}", session, service, getName());
             }
 
             String name = buffer.getString();
             String instruction = buffer.getString();
             String language_tag = buffer.getString();
             if (log.isTraceEnabled()) {
-                log.trace("process({}@{})[{}] SSH_MSG_USERAUTH_INFO_REQUEST name={} instruction={} language={}",
-                          username, session, service, name, instruction, language_tag);
+                log.trace("process({})[{}] SSH_MSG_USERAUTH_INFO_REQUEST name={} instruction={} language={}",
+                          session, service, name, instruction, language_tag);
             }
 
             int num = buffer.getInt();
@@ -117,8 +154,8 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
             }
 
             if (log.isTraceEnabled()) {
-                log.trace("process({}@{})[{}] Prompt: {}", username, session, service, Arrays.toString(prompt));
-                log.trace("process({}@{})[{}] Echo: {}", username, session, service, Arrays.toString(echo));
+                log.trace("process({})[{}] Prompt: {}", session, service, Arrays.toString(prompt));
+                log.trace("process({})[{}] Echo: {}", session, service, Arrays.toString(echo));
             }
 
             String[] rep = getUserResponses(name, instruction, language_tag, prompt, echo);
@@ -136,8 +173,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
              * However it is the server's (!) responsibility to fail, so we only warn...
              */
             if (num != rep.length) {
-                log.warn("process({}@{}) Mismatched prompts ({}) vs. responses count ({})",
-                         username, session, num, rep.length);
+                log.warn("process({}) Mismatched prompts ({}) vs. responses count ({})", session, num, rep.length);
             }
 
             buffer = session.prepareBuffer(SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE, BufferUtils.clear(buffer));
@@ -148,11 +184,23 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
             session.writePacket(buffer);
             return true;
         }
-        throw new IllegalStateException("process(" + username + "@" + session + ")[" + service + ") received unknown packet: cmd=" + cmd);
+        throw new IllegalStateException("process(" + session + ")[" + service + ") received unknown packet: cmd=" + cmd);
+    }
+
+    protected String getExchangeLanguageTag(ClientSession session) {
+        return FactoryManagerUtils.getStringProperty(session, INTERACTIVE_LANGUAGE_TAG, DEFAULT_INTERACTIVE_LANGUAGE_TAG);
+    }
+
+    protected String getExchangeSubMethods(ClientSession session) {
+        return FactoryManagerUtils.getStringProperty(session, INTERACTIVE_SUBMETHODS, DEFAULT_INTERACTIVE_SUBMETHODS);
     }
 
     protected String getCurrentPasswordCandidate() {
-        return current;
+        if ((passwords != null) && passwords.hasNext()) {
+            return passwords.next();
+        } else {
+            return null;
+        }
     }
 
     /**

@@ -159,13 +159,13 @@ public class ServerTest extends BaseTestSupport {
             AuthFuture authFuture;
             do {
                 nbTrials++;
-                assertTrue(nbTrials < 100);
+                assertTrue("Number of trials below max.", nbTrials < 100);
                 authFuture = s.getService(ClientUserAuthServiceOld.class)
                         .auth(new org.apache.sshd.deprecated.UserAuthPassword(s, "ssh-connection", "buggy"));
-                assertTrue("Authentication wait failed", authFuture.await(5000));
+                assertTrue("Authentication wait failed", authFuture.await(5L, TimeUnit.SECONDS));
                 assertTrue("Authentication not done", authFuture.isDone());
                 assertFalse("Authentication unexpectedly successful", authFuture.isSuccess());
-            } while (authFuture.isFailure());
+            } while (authFuture.getException() == null);
 
             assertNotNull("Missing auth future exception", authFuture.getException());
             assertTrue("Number trials (" + nbTrials + ") below min.=" + MAX_AUTH_REQUESTS, nbTrials > MAX_AUTH_REQUESTS);

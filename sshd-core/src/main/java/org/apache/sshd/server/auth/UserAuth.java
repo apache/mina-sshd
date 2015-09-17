@@ -18,15 +18,18 @@
  */
 package org.apache.sshd.server.auth;
 
+import org.apache.sshd.common.auth.UserAuthInstance;
+import org.apache.sshd.common.auth.UsernameHolder;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.server.session.ServerSession;
+import org.apache.sshd.server.session.ServerSessionHolder;
 
 /**
  * Server side authentication mechanism.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface UserAuth {
+public interface UserAuth extends ServerSessionHolder, UserAuthInstance<ServerSession>, UsernameHolder {
 
     /**
      * Try to authenticate the user.
@@ -54,15 +57,6 @@ public interface UserAuth {
      * @throws Exception if the authentication fails
      */
     Boolean next(Buffer buffer) throws Exception;
-
-    /**
-     * Get a user name which has been derived from the handshaking process, or the initial name if
-     * nothing has been found.
-     *
-     * @return The user name
-     * @throws Exception if the request fails
-     */
-    String getUserName() throws Exception;
 
     /**
      * Free any system resources used by the module.

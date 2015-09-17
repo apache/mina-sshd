@@ -523,7 +523,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
             for (;;) {
                 int cond = 0;
                 if (closeFuture.isClosed()) {
-                    cond |= ClientSession.CLOSED;
+                    cond |= CLOSED;
                 }
                 if (authed) { // authFuture.isSuccess()
                     cond |= AUTHED;

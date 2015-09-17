@@ -99,29 +99,31 @@ public class ProxyTest extends BaseTestSupport {
     @Test
     public void testSocksProxy() throws Exception {
         try (ClientSession session = createNativeSession()) {
-            SshdSocketAddress dynamic = session.startDynamicPortForwarding(new SshdSocketAddress(TEST_LOCALHOST, 0));
-
             String expected = getCurrentTestName();
             byte[] bytes = expected.getBytes(StandardCharsets.UTF_8);
             byte[] buf = new byte[bytes.length + Long.SIZE];
-            for (int i = 0; i < 10; i++) {
-                try (Socket s = new Socket(new Proxy(Proxy.Type.SOCKS, new InetSocketAddress(TEST_LOCALHOST, dynamic.getPort())))) {
-                    s.connect(new InetSocketAddress(TEST_LOCALHOST, echoPort));
-                    s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(10L));
+            SshdSocketAddress dynamic = session.startDynamicPortForwarding(new SshdSocketAddress(TEST_LOCALHOST, 0));
 
-                    try (OutputStream sockOut = s.getOutputStream();
-                         InputStream sockIn = s.getInputStream()) {
+            try {
+                for (int i = 0; i < 10; i++) {
+                    try (Socket s = new Socket(new Proxy(Proxy.Type.SOCKS, new InetSocketAddress(TEST_LOCALHOST, dynamic.getPort())))) {
+                        s.connect(new InetSocketAddress(TEST_LOCALHOST, echoPort));
+                        s.setSoTimeout((int) TimeUnit.SECONDS.toMillis(10L));
 
-                        sockOut.write(bytes);
-                        sockOut.flush();
+                        try (OutputStream sockOut = s.getOutputStream();
+                             InputStream sockIn = s.getInputStream()) {
 
-                        int l = sockIn.read(buf);
-                        assertEquals("Mismatched data at iteration " + i, expected, new String(buf, 0, l));
+                            sockOut.write(bytes);
+                            sockOut.flush();
+
+                            int l = sockIn.read(buf);
+                            assertEquals("Mismatched data at iteration " + i, expected, new String(buf, 0, l));
+                        }
                     }
                 }
+            } finally {
+                session.stopDynamicPortForwarding(dynamic);
             }
-
-            session.stopDynamicPortForwarding(dynamic);
 
             try {
                 try (Socket s = new Socket(new Proxy(Proxy.Type.SOCKS, new InetSocketAddress(TEST_LOCALHOST, dynamic.getPort())))) {
@@ -133,8 +135,6 @@ public class ProxyTest extends BaseTestSupport {
             } catch (IOException e) {
                 // expected
             }
-
-            session.close(false).await();
         }
     }
 

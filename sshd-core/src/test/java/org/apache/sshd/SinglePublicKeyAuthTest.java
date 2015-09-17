@@ -33,8 +33,8 @@ import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.SshServer;
-import org.apache.sshd.server.auth.CachingPublicKeyAuthenticator;
 import org.apache.sshd.server.auth.UserAuthPublicKeyFactory;
+import org.apache.sshd.server.auth.pubkey.CachingPublicKeyAuthenticator;
 import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.server.session.ServerSession;
@@ -94,8 +94,9 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
             @SuppressWarnings("synthetic-access")
             @Override
             public boolean authenticate(String username, PublicKey key, ServerSession session) {
-                count.putIfAbsent(KeyUtils.getFingerPrint(key), new AtomicInteger());
-                count.get(KeyUtils.getFingerPrint(key)).incrementAndGet();
+                String fp = KeyUtils.getFingerPrint(key);
+                count.putIfAbsent(fp, new AtomicInteger());
+                count.get(fp).incrementAndGet();
                 return key.equals(pairRsa.getPublic());
             }
         });
@@ -109,19 +110,21 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
                 session.addPublicKeyIdentity(pairRsa);
                 session.auth().verify(5L, TimeUnit.SECONDS);
 
-                assertEquals(2, count.size());
-                assertTrue(count.containsKey(KeyUtils.getFingerPrint(pairRsaBad.getPublic())));
-                assertTrue(count.containsKey(KeyUtils.getFingerPrint(pairRsa.getPublic())));
-                assertEquals(1, count.get(KeyUtils.getFingerPrint(pairRsaBad.getPublic())).get());
-                assertEquals(1, count.get(KeyUtils.getFingerPrint(pairRsa.getPublic())).get());
-                client.close(false).await();
+                assertEquals("Mismatched authentication invocations count", 2, count.size());
+
+                String fpBad = KeyUtils.getFingerPrint(pairRsaBad.getPublic());
+                String fpGood = KeyUtils.getFingerPrint(pairRsa.getPublic());
+                assertTrue("Missing bad public key", count.containsKey(fpBad));
+                assertTrue("Missing good public key", count.containsKey(fpGood));
+                assertEquals("Mismatched bad key authentication attempts", 1, count.get(fpBad).get());
+                assertEquals("Mismatched good key authentication attempts", 1, count.get(fpGood).get());
             } finally {
                 client.stop();
             }
         }
 
-        Thread.sleep(100);
-        assertTrue(auth.getCache().isEmpty());
+        Thread.sleep(100L);
+        assertTrue("Cache not empty", auth.getCache().isEmpty());
     }
 
     @Test
@@ -131,8 +134,9 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
             @SuppressWarnings("synthetic-access")
             @Override
             public boolean authenticate(String username, PublicKey key, ServerSession session) {
-                count.putIfAbsent(KeyUtils.getFingerPrint(key), new AtomicInteger());
-                count.get(KeyUtils.getFingerPrint(key)).incrementAndGet();
+                String fp = KeyUtils.getFingerPrint(key);
+                count.putIfAbsent(fp, new AtomicInteger());
+                count.get(fp).incrementAndGet();
                 return key.equals(pairRsa.getPublic());
             }
         };

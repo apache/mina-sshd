@@ -18,11 +18,18 @@
  */
 package org.apache.sshd.server.auth;
 
-import org.apache.sshd.common.FactoryManagerUtils;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
+import org.apache.sshd.server.ServerFactoryManager;
+import org.apache.sshd.server.auth.keyboard.InteractiveChallenge;
+import org.apache.sshd.server.auth.keyboard.KeyboardInteractiveAuthenticator;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
@@ -30,35 +37,39 @@ import org.apache.sshd.server.session.ServerSession;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class UserAuthKeyboardInteractive extends AbstractUserAuthPassword {
-    // configuration parameters on the FactoryManager to configure the message values
-    public static final String KB_INTERACTIVE_NAME_PROP = "kb-interactive-name";
-    public static final String DEFAULT_KB_INTERACTIVE_NAME = "Password authentication";
-    public static final String KB_INTERACTIVE_INSTRUCTION_PROP = "kb-interactive-instruction";
-    public static final String DEFAULT_KB_INTERACTIVE_INSTRUCTION = "";
-    public static final String KB_INTERACTIVE_LANG_PROP = "kb-interactive-language";
-    public static final String DEFAULT_KB_INTERACTIVE_LANG = "en-US";
-    public static final String KB_INTERACTIVE_PROMPT_PROP = "kb-interactive-prompt";
-    public static final String DEFAULT_KB_INTERACTIVE_PROMPT = "Password: ";
-    public static final String KB_INTERACTIVE_ECHO_PROMPT_PROP = "kb-interactive-echo-prompt";
-    public static final boolean DEFAULT_KB_INTERACTIVE_ECHO_PROMPT = false;
+public class UserAuthKeyboardInteractive extends AbstractUserAuth {
+    public static final String NAME = UserAuthKeyboardInteractiveFactory.NAME;
 
     public UserAuthKeyboardInteractive() {
-        super();
+        super(NAME);
     }
 
     @Override
     protected Boolean doAuth(Buffer buffer, boolean init) throws Exception {
         ServerSession session = getServerSession();
+        ServerFactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No factory manager");
+        KeyboardInteractiveAuthenticator auth = manager.getKeyboardInteractiveAuthenticator();
         if (init) {
+            String lang = buffer.getString();
+            String subMethods = buffer.getString();
+            if (auth == null) {
+                if (log.isDebugEnabled()) {
+                    log.debug("doAuth({}) no interactive authenticator to generate challenge", session);
+                }
+                return false;
+            }
+
+            InteractiveChallenge challenge = auth.generateChallenge(session, getUsername(), lang, subMethods);
+            if (challenge == null) {
+                if (log.isDebugEnabled()) {
+                    log.debug("doAuth({}) no interactive challenge generated", session);
+                }
+                return false;
+            }
+
             // Prompt for password
             buffer = session.prepareBuffer(SshConstants.SSH_MSG_USERAUTH_INFO_REQUEST, BufferUtils.clear(buffer));
-            buffer.putString(getInteractionName());
-            buffer.putString(getInteractionInstruction());
-            buffer.putString(getInteractionLanguage());
-            buffer.putInt(1);
-            buffer.putString(getInteractionPrompt());
-            buffer.putBoolean(isInteractionPromptEchoEnabled());
+            challenge.append(buffer);
             session.writePacket(buffer);
             return null;
         } else {
@@ -66,39 +77,21 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuthPassword {
             if (cmd != SshConstants.SSH_MSG_USERAUTH_INFO_RESPONSE) {
                 throw new SshException("Received unexpected message: " + cmd);
             }
+
             int num = buffer.getInt();
-            /*
-             * According to RFC4256:
-             *
-             *      If the num-responses field does not match the num-prompts
-             *      field in the request message, the server MUST send a failure
-             *      message.
-             */
-            if (num != 1) {
-                throw new SshException("Expected 1 response from user but received " + num);
+            List<String> responses = (num <= 0) ? Collections.<String>emptyList() : new ArrayList<String>(num);
+            for (int index = 0; index < num; index++) {
+                responses.add(buffer.getString());
             }
-            String password = buffer.getString();
-            return checkPassword(buffer, session, getUserName(), password);
+
+            if (auth == null) {
+                if (log.isDebugEnabled()) {
+                    log.debug("doAuth({}) no interactive authenticator to validate responses", session);
+                }
+                return false;
+            }
+
+            return auth.authenticate(session, getUsername(), responses);
         }
-    }
-
-    protected String getInteractionName() {
-        return FactoryManagerUtils.getStringProperty(getServerSession(), KB_INTERACTIVE_NAME_PROP, DEFAULT_KB_INTERACTIVE_NAME);
-    }
-
-    protected String getInteractionInstruction() {
-        return FactoryManagerUtils.getStringProperty(getServerSession(), KB_INTERACTIVE_INSTRUCTION_PROP, DEFAULT_KB_INTERACTIVE_INSTRUCTION);
-    }
-
-    protected String getInteractionLanguage() {
-        return FactoryManagerUtils.getStringProperty(getServerSession(), KB_INTERACTIVE_LANG_PROP, DEFAULT_KB_INTERACTIVE_LANG);
-    }
-
-    protected String getInteractionPrompt() {
-        return FactoryManagerUtils.getStringProperty(getServerSession(), KB_INTERACTIVE_PROMPT_PROP, DEFAULT_KB_INTERACTIVE_PROMPT);
-    }
-
-    protected boolean isInteractionPromptEchoEnabled() {
-        return FactoryManagerUtils.getBooleanProperty(getServerSession(), KB_INTERACTIVE_ECHO_PROMPT_PROP, DEFAULT_KB_INTERACTIVE_ECHO_PROMPT);
     }
 }

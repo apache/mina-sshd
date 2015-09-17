@@ -87,6 +87,10 @@ public class PortForwardingTest extends BaseTestSupport {
     private IoAcceptor acceptor;
     private SshClient client;
 
+    public PortForwardingTest() {
+        super();
+    }
+
     @Before
     public void setUp() throws Exception {
         sshd = setupTestServer();
@@ -211,9 +215,9 @@ public class PortForwardingTest extends BaseTestSupport {
                 int n = input.read(buf);
                 String res = new String(buf, 0, n, StandardCharsets.UTF_8);
                 assertEquals("Mismatched data", expected, res);
+            } finally {
+                session.delPortForwardingR(forwardedPort);
             }
-
-            session.delPortForwardingR(forwardedPort);
         } finally {
             session.disconnect();
         }
@@ -248,8 +252,9 @@ public class PortForwardingTest extends BaseTestSupport {
                 int n = input.read(buf);
                 String res = new String(buf, 0, n, StandardCharsets.UTF_8);
                 assertEquals("Mismatched data", expected, res);
+            } finally {
+                session.delPortForwardingR(TEST_LOCALHOST, forwardedPort);
             }
-            session.delPortForwardingR(TEST_LOCALHOST, forwardedPort);
         } finally {
             session.disconnect();
         }
@@ -277,10 +282,9 @@ public class PortForwardingTest extends BaseTestSupport {
                 int n = input.read(buf);
                 String res = new String(buf, 0, n);
                 assertEquals("Mismatched data", expected, res);
+            } finally {
+                session.stopRemotePortForwarding(remote);
             }
-
-            session.stopRemotePortForwarding(remote);
-            session.close(false).await();
         }
     }
 
@@ -309,10 +313,9 @@ public class PortForwardingTest extends BaseTestSupport {
                     String res = new String(buf, 0, n);
                     assertEquals("Mismatched data at iteration #" + i, expected, res);
                 }
+            } finally {
+                session.stopRemotePortForwarding(remote);
             }
-
-            session.stopRemotePortForwarding(remote);
-            session.close(false).await();
         }
     }
 
@@ -339,9 +342,9 @@ public class PortForwardingTest extends BaseTestSupport {
                 int n = input.read(buf);
                 String res = new String(buf, 0, n);
                 assertEquals("Mismatched data", expected, res);
+            } finally {
+                session.delPortForwardingL(forwardedPort);
             }
-
-            session.delPortForwardingL(forwardedPort);
         } finally {
             session.disconnect();
         }
@@ -370,10 +373,9 @@ public class PortForwardingTest extends BaseTestSupport {
                 int n = input.read(buf);
                 String res = new String(buf, 0, n);
                 assertEquals("Mismatched data", expected, res);
+            } finally {
+                session.stopLocalPortForwarding(bound);
             }
-
-            session.stopLocalPortForwarding(bound);
-            session.close(false).await();
         }
     }
 
@@ -388,21 +390,19 @@ public class PortForwardingTest extends BaseTestSupport {
 
             SshdSocketAddress bound2 = session.startLocalPortForwarding(local, remote);
             session.stopLocalPortForwarding(bound2);
-
-            session.close(false).await();
         }
     }
 
     @Test
     public void testLocalForwardingNativeBigPayload() throws Exception {
         try (ClientSession session = createNativeSession()) {
-            SshdSocketAddress local = new SshdSocketAddress("", 0);
-            SshdSocketAddress remote = new SshdSocketAddress(TEST_LOCALHOST, echoPort);
-            SshdSocketAddress bound = session.startLocalPortForwarding(local, remote);
-
             String expected = getCurrentTestName();
             byte[] bytes = expected.getBytes(StandardCharsets.UTF_8);
             byte[] buf = new byte[bytes.length + Long.SIZE];
+
+            SshdSocketAddress local = new SshdSocketAddress("", 0);
+            SshdSocketAddress remote = new SshdSocketAddress(TEST_LOCALHOST, echoPort);
+            SshdSocketAddress bound = session.startLocalPortForwarding(local, remote);
             try (Socket s = new Socket(bound.getHostName(), bound.getPort());
                  OutputStream output = s.getOutputStream();
                  InputStream input = s.getInputStream()) {
@@ -417,10 +417,9 @@ public class PortForwardingTest extends BaseTestSupport {
                     String res = new String(buf, 0, n);
                     assertEquals("Mismatched data at iteration #" + i, expected, res);
                 }
+            } finally {
+                session.stopLocalPortForwarding(bound);
             }
-
-            session.stopLocalPortForwarding(bound);
-            session.close(false).await();
         }
     }
 
@@ -448,12 +447,10 @@ public class PortForwardingTest extends BaseTestSupport {
                 }
                 channel.close(false);
             }
-
-            session.close(false).await();
         }
     }
 
-    @Test(timeout = 30000)
+    @Test(timeout = 45000)
     public void testRemoteForwardingWithDisconnect() throws Exception {
         Session session = createSession();
         try {

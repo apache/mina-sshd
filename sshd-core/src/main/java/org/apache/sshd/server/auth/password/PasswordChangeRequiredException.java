@@ -41,19 +41,19 @@ public class PasswordChangeRequiredException extends RuntimeException {
 
     public PasswordChangeRequiredException(String message, String prompt, String lang, Throwable cause) {
         super(message, cause);
-        this.prompt = (prompt == null) ? "" : prompt;
-        this.lang = (lang == null) ? "" : lang;
+        this.prompt = prompt;
+        this.lang = lang;
     }
 
     /**
-     * @return The prompt to show to the user - may be empty
+     * @return The prompt to show to the user - may be {@code null}/empty
      */
     public final String getPrompt() {
         return prompt;
     }
 
     /**
-     * @return The language code for the prompt - may be empty
+     * @return The language code for the prompt - may be {@code null}/empty
      */
     public final String getLanguage() {
         return lang;

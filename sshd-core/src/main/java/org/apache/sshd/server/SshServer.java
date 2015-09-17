@@ -50,6 +50,7 @@ import org.apache.sshd.server.auth.UserAuthPasswordFactory;
 import org.apache.sshd.server.auth.UserAuthPublicKeyFactory;
 import org.apache.sshd.server.auth.gss.GSSAuthenticator;
 import org.apache.sshd.server.auth.gss.UserAuthGSSFactory;
+import org.apache.sshd.server.auth.keyboard.KeyboardInteractiveAuthenticator;
 import org.apache.sshd.server.auth.password.PasswordAuthenticator;
 import org.apache.sshd.server.auth.pubkey.AcceptAllPublickeyAuthenticator;
 import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
@@ -129,6 +130,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     protected List<NamedFactory<Command>> subsystemFactories;
     protected PasswordAuthenticator passwordAuthenticator;
     protected PublickeyAuthenticator publickeyAuthenticator;
+    protected KeyboardInteractiveAuthenticator interactiveAuthenticator;
     protected GSSAuthenticator gssAuthenticator;
 
     public SshServer() {
@@ -216,6 +218,15 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
 
     public void setPublickeyAuthenticator(PublickeyAuthenticator publickeyAuthenticator) {
         this.publickeyAuthenticator = publickeyAuthenticator;
+    }
+
+    @Override
+    public KeyboardInteractiveAuthenticator getKeyboardInteractiveAuthenticator() {
+        return interactiveAuthenticator;
+    }
+
+    public void setKeyboardInteractiveAuthenticator(KeyboardInteractiveAuthenticator interactiveAuthenticator) {
+        this.interactiveAuthenticator = interactiveAuthenticator;
     }
 
     @Override

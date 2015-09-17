@@ -64,7 +64,7 @@ public interface ClientFactoryManager extends FactoryManager {
     String PREFERRED_AUTHS = "preferred-auths";
 
     /**
-     * Specifies the number of password prompts before giving up.
+     * Specifies the number of interactive prompts before giving up.
      * The argument to this keyword must be an integer.
      */
     String PASSWORD_PROMPTS = "password-prompts";
