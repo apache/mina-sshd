@@ -597,7 +597,7 @@ public class PortForwardingTest extends BaseTestSupport {
 
         ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshPort).verify(7L, TimeUnit.SECONDS).getSession();
         session.addPasswordIdentity(getCurrentTestName());
-        session.auth().verify();
+        session.auth().verify(11L, TimeUnit.SECONDS);
         return session;
     }
 }

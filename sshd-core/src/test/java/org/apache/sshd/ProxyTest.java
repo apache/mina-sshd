@@ -145,9 +145,9 @@ public class ProxyTest extends BaseTestSupport {
         client.setTcpipForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
         client.start();
 
-        ClientSession session = client.connect("sshd", TEST_LOCALHOST, sshPort).verify(7L, TimeUnit.SECONDS).getSession();
-        session.addPasswordIdentity("sshd");
-        session.auth().verify();
+        ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshPort).verify(7L, TimeUnit.SECONDS).getSession();
+        session.addPasswordIdentity(getCurrentTestName());
+        session.auth().verify(11L, TimeUnit.SECONDS);
         return session;
     }
 }

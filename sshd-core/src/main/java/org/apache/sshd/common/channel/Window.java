@@ -44,11 +44,11 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
     private final AtomicInteger waitingCount = new AtomicInteger(0);
     private final AtomicBoolean closed = new AtomicBoolean(false);
     private final AtomicBoolean initialized = new AtomicBoolean(false);
+    private final AtomicInteger sizeHolder = new AtomicInteger(0);
     private final AbstractChannel channel;
     private final Object lock;
     private final String suffix;
 
-    private int size;
     private int maxSize;
     private int packetSize;
     private Map<String, ?> props = Collections.<String, Object>emptyMap();
@@ -65,7 +65,7 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
 
     public int getSize() {
         synchronized (lock) {
-            return size;
+            return sizeHolder.get();
         }
     }
 
@@ -96,11 +96,10 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
         ValidateUtils.checkTrue(packetSize > 0, "Illegal packet size: %d", packetSize);
 
         synchronized (lock) {
-            this.size = size;
             this.maxSize = size;
             this.packetSize = packetSize;
             this.props = (props == null) ? Collections.<String, Object>emptyMap() : props;
-            lock.notifyAll();
+            updateSize(size);
         }
 
         if (initialized.getAndSet(true)) {
@@ -125,13 +124,12 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
              *      of up to 2^32 - 1 bytes.  The window MUST NOT be increased above
              *      2^32 - 1 bytes.
              */
-            expandedSize = size + window;
+            expandedSize = sizeHolder.get() + window;
             if (expandedSize > Integer.MAX_VALUE) {
-                size = Integer.MAX_VALUE;
+                updateSize(Integer.MAX_VALUE);
             } else {
-                size = (int) expandedSize;
+                updateSize((int) expandedSize);
             }
-            lock.notifyAll();
         }
 
         if (expandedSize > Integer.MAX_VALUE) {
@@ -147,9 +145,9 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
 
         int remainLen;
         synchronized (lock) {
-            remainLen = size - len;
+            remainLen = sizeHolder.get() - len;
             if (remainLen >= 0) {
-                size = remainLen;
+                updateSize(remainLen);
             }
         }
 
@@ -183,10 +181,11 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
         int adjustSize = -1;
         synchronized (lock) {
             // TODO make the adjust factor configurable via FactoryManager property
+            int size = sizeHolder.get();
             if (size < (maxFree / 2)) {
                 adjustSize = maxFree - size;
                 channel.sendWindowAdjust(adjustSize);
-                size = maxFree;
+                updateSize(maxFree);
             }
         }
 
@@ -202,10 +201,10 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
         checkInitialized("waitAndConsume");
 
         synchronized (lock) {
-            while (isOpen() && (size < len)) {
+            while (isOpen() && (sizeHolder.get() < len)) {
                 int waiters = waitingCount.incrementAndGet();
                 if (log.isDebugEnabled()) {
-                    log.debug("waitAndConsume({}) - requested={}, available={}, waiters={}", this, len, size, waiters);
+                    log.debug("waitAndConsume({}) - requested={}, available={}, waiters={}", this, len, sizeHolder, waiters);
                 }
 
                 long nanoStart = System.nanoTime();
@@ -217,7 +216,7 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
                     waiters = waitingCount.decrementAndGet();
                     if (log.isTraceEnabled()) {
                         log.debug("waitAndConsume({}) - requested={}, available={}, waiters={} - ended after {} nanos",
-                                  this, len, size, waiters, nanoDuration);
+                                  this, len, sizeHolder, waiters, nanoDuration);
                     }
                 }
             }
@@ -227,7 +226,7 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
             }
 
             if (log.isDebugEnabled()) {
-                log.debug("waitAndConsume({}) - requested={}, available={}", this, len, size);
+                log.debug("waitAndConsume({}) - requested={}, available={}", this, len, sizeHolder);
             }
 
             consume(len);
@@ -245,7 +244,7 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
         checkInitialized("waitForSpace");
 
         synchronized (lock) {
-            while (isOpen() && (size <= 0)) {
+            while (isOpen() && (sizeHolder.get() <= 0)) {
                 int waiters = waitingCount.incrementAndGet();
                 if (log.isDebugEnabled()) {
                     log.debug("waitForSpace({}) - waiters={}", this, waiters);
@@ -269,10 +268,16 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
             }
 
             if (log.isDebugEnabled()) {
-                log.debug("waitForSpace({}) available: {}", this, size);
+                log.debug("waitForSpace({}) available: {}", this, sizeHolder);
             }
-            return size;
+            return sizeHolder.get();
         }
+    }
+
+    protected void updateSize(int size) {
+        ValidateUtils.checkTrue(size >= 0, "Invalid size: %d", size);
+        this.sizeHolder.set(size);
+        lock.notifyAll();
     }
 
     protected void checkInitialized(String location) {

@@ -59,6 +59,14 @@ public class GitSshdSessionFactory extends SshSessionFactory {
     public static final String AUTH_TIMEOUT_PROP = "git-ssh-connect-timeout";
     public static final long DEFAULT_AUTH_TIMEOUT = TimeUnit.SECONDS.toMillis(15L);
 
+    /**
+     * Property used to configure the SSHD {@link org.apache.sshd.common.FactoryManager} with
+     * the default timeout (millis) to open a channel to the remote SSH server.
+     * If not specified then {@link #DEFAULT_CHANNEL_OPEN__TIMEOUT);
+     */
+    public static final String CHANNEL_OPEN_TIMEOUT_PROPT = "git-ssh-channel-open-timeout";
+    public static final long DEFAULT_CHANNEL_OPEN_TIMEOUT = TimeUnit.SECONDS.toMillis(7L);
+
     public GitSshdSessionFactory() {
         super();
     }
@@ -97,7 +105,6 @@ public class GitSshdSessionFactory extends SshSessionFactory {
                         pass2 = pwdItem.getValue();
                     }
                 }
-
             }
 
             client = createClient();
@@ -118,7 +125,7 @@ public class GitSshdSessionFactory extends SshSessionFactory {
         @Override
         public Process exec(String commandName, int timeout) throws IOException {
             final ChannelExec channel = session.createExecChannel(commandName);
-            channel.open().verify();
+            channel.open().verify(FactoryManagerUtils.getLongProperty(client, CHANNEL_OPEN_TIMEOUT_PROPT, DEFAULT_CHANNEL_OPEN_TIMEOUT));
             return new Process() {
                 @Override
                 public OutputStream getOutputStream() {
@@ -157,6 +164,5 @@ public class GitSshdSessionFactory extends SshSessionFactory {
         public void disconnect() {
             client.close(true);
         }
-
     }
 }

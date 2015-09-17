@@ -69,6 +69,10 @@ public class WindowAdjustTest extends BaseTestSupport {
     private SshServer sshServer;
     private int port;
 
+    public WindowAdjustTest() {
+        super();
+    }
+
     @Before
     public void setUp() throws Exception {
         sshServer = setupTestServer();
@@ -95,15 +99,15 @@ public class WindowAdjustTest extends BaseTestSupport {
         }
     }
 
-    @Test(timeout = 2L * 60L * 1000L)
+    @Test(timeout = 5L * 60L * 1000L)
     public void testTrafficHeavyLoad() throws Exception {
 
         try (SshClient client = setupTestClient()) {
             client.start();
 
-            try (final ClientSession session = client.connect("admin", TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
-                session.addPasswordIdentity("admin");
-                session.auth().verify();
+            try (final ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+                session.addPasswordIdentity(getCurrentTestName());
+                session.auth().verify(11L, TimeUnit.SECONDS);
 
                 try (final ClientChannel channel = session.createShellChannel()) {
                     channel.setOut(new VerifyingOutputStream(channel, END_FILE));
