@@ -33,6 +33,7 @@ import java.util.TreeMap;
 
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.client.subsystem.sftp.SftpClient.Attributes;
 import org.apache.sshd.client.subsystem.sftp.extensions.openssh.OpenSSHStatExtensionInfo;
 import org.apache.sshd.client.subsystem.sftp.extensions.openssh.OpenSSHStatPathExtension;
 import org.apache.sshd.common.NamedResource;
@@ -66,6 +67,8 @@ public class SftpCommand implements Channel {
                 new CdCommandExecutor(),
                 new MkdirCommandExecutor(),
                 new LsCommandExecutor(),
+                new LStatCommandExecutor(),
+                new ReadLinkCommandExecutor(),
                 new RmCommandExecutor(),
                 new RmdirCommandExecutor(),
                 new RenameCommandExecutor(),
@@ -139,6 +142,19 @@ public class SftpCommand implements Channel {
         } else {
             return cwd + "/" + pathArg;
         }
+    }
+
+    protected <A extends Appendable> A appendFileAttributes(A stdout, SftpClient sftp, String path, Attributes attrs) throws IOException {
+        stdout.append('\t').append(Long.toString(attrs.size))
+              .append('\t').append(SftpFileSystemProvider.getRWXPermissions(attrs.perms));
+        if (attrs.isSymbolicLink()) {
+            String linkValue = sftp.readLink(path);
+            stdout.append(" => ")
+                  .append('(').append(attrs.isDirectory() ? "dir" : "file").append(')')
+                  .append(' ').append(linkValue);
+        }
+
+        return stdout;
     }
 
     public String getCurrentRemoteDirectory() {
@@ -314,10 +330,9 @@ public class SftpCommand implements Channel {
             SftpClient sftp = getClient();
             for (SftpClient.DirEntry entry : sftp.readDir(path)) {
                 SftpClient.Attributes attrs = entry.attributes;
-                stdout.append('\t').append(entry.filename)
-                        .append('\t').append(Long.toString(attrs.size))
-                        .append('\t').println(SftpFileSystemProvider.getRWXPermissions(attrs.perms));
+                appendFileAttributes(stdout.append('\t').append(entry.filename), sftp, path + "/" + entry.filename, attrs).println();
             }
+
             return false;
         }
     }
@@ -390,7 +405,7 @@ public class SftpCommand implements Channel {
             OpenSSHStatPathExtension ext = sftp.getExtension(OpenSSHStatPathExtension.class);
             ValidateUtils.checkTrue(ext.isSupported(), "Extension not supported by server: %s", ext.getName());
 
-            OpenSSHStatExtensionInfo info = ext.stat(GenericUtils.trimToEmpty(comps[0]));
+            OpenSSHStatExtensionInfo info = ext.stat(resolveRemotePath(GenericUtils.trimToEmpty(comps[0])));
             Field[] fields = info.getClass().getFields();
             for (Field f : fields) {
                 String name = f.getName();
@@ -407,6 +422,43 @@ public class SftpCommand implements Channel {
         }
     }
 
+    private class LStatCommandExecutor implements CommandExecutor {
+        @Override
+        public String getName() {
+            return "lstat";
+        }
+
+        @Override
+        public boolean executeCommand(String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr) throws Exception {
+            String[] comps = GenericUtils.split(args, ' ');
+            ValidateUtils.checkTrue(GenericUtils.length(comps) <= 1, "Invalid number of arguments: %s", args);
+
+            String path = GenericUtils.trimToEmpty(resolveRemotePath(args));
+            SftpClient client = getClient();
+            Attributes attrs = client.lstat(path);
+            appendFileAttributes(stdout, client, path, attrs).println();
+            return false;
+        }
+    }
+
+    private class ReadLinkCommandExecutor implements CommandExecutor {
+        @Override
+        public String getName() {
+            return "readlink";
+        }
+
+        @Override
+        public boolean executeCommand(String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr) throws Exception {
+            String[] comps = GenericUtils.split(args, ' ');
+            ValidateUtils.checkTrue(GenericUtils.length(comps) <= 1, "Invalid number of arguments: %s", args);
+
+            String path = GenericUtils.trimToEmpty(resolveRemotePath(args));
+            SftpClient client = getClient();
+            String linkData = client.readLink(path);
+            stdout.append('\t').println(linkData);
+            return false;
+        }
+    }
     private class HelpCommandExecutor implements CommandExecutor {
         @Override
         public String getName() {
