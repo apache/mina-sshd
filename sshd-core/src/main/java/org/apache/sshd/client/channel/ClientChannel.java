@@ -21,6 +21,8 @@ package org.apache.sshd.client.channel;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Collection;
+import java.util.Set;
 
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.channel.Channel;
@@ -41,14 +43,16 @@ public interface ClientChannel extends Channel {
     String CHANNEL_SHELL = "shell";
     String CHANNEL_SUBSYSTEM = "subsystem";
 
-    int TIMEOUT = 0x0001;
-    int CLOSED = 0x0002;
-    int STDOUT_DATA = 0x0004;
-    int STDERR_DATA = 0x0008;
-    int EOF = 0x0010;
-    int EXIT_STATUS = 0x0020;
-    int EXIT_SIGNAL = 0x0040;
-    int OPENED = 0x0080;
+    enum ClientChannelEvent {
+        TIMEOUT,
+        CLOSED,
+        STDOUT_DATA,
+        STDERR_DATA,
+        EOF,
+        EXIT_STATUS,
+        EXIT_SIGNAL,
+        OPENED;
+    }
 
     enum Streaming {
         Async,
@@ -95,7 +99,15 @@ public interface ClientChannel extends Channel {
 
     OpenFuture open() throws IOException;
 
-    int waitFor(int mask, long timeout);
+    /**
+     * Waits until any of the specified events in the mask is signaled
+     *
+     * @param mask The {@link ClientChannelEvent}s mask
+     * @param timeout The timeout to wait (msec.) - if non-positive then forever
+     * @return The actual signaled event - includes {@link ClientChannelEvent#TIMEOUT}
+     * if timeout expired before the expected event was signalled
+     */
+    Set<ClientChannelEvent> waitFor(Collection<ClientChannelEvent> mask, long timeout);
 
     @Override
     CloseFuture close(boolean immediate);

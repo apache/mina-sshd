@@ -21,7 +21,9 @@ package org.apache.sshd.client.session;
 import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.security.KeyPair;
+import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.auth.UserInteraction;
@@ -69,11 +71,12 @@ import org.apache.sshd.common.session.Session;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface ClientSession extends Session, KeyPairProviderHolder {
-
-    int TIMEOUT = 0x0001;
-    int CLOSED = 0x0002;
-    int WAIT_AUTH = 0x0004;
-    int AUTHED = 0x0008;
+    enum ClientSessionEvent {
+        TIMEOUT,
+        CLOSED,
+        WAIT_AUTH,
+        AUTHED;
+    }
 
     /**
      * @param password Password to be added - may not be {@code null}/empty
@@ -313,15 +316,15 @@ public interface ClientSession extends Session, KeyPairProviderHolder {
     void stopDynamicPortForwarding(SshdSocketAddress local) throws IOException;
 
     /**
-     * Wait for a specific state.
+     * Wait for any one of a specific state to be signaled.
      *
-     * @param mask    The request mask
+     * @param mask    The request {@link ClientSessionEvent}s mask
      * @param timeout Wait time in milliseconds - non-positive means forever
      * @return The actual state that was detected either due to the mask
-     * yielding non-zero state or due to timeout (in which case the {@link #TIMEOUT}
-     * bit is set)
+     * yielding one of the states or due to timeout (in which case the {@link ClientSessionEvent#TIMEOUT}
+     * value is set)
      */
-    int waitFor(int mask, long timeout);
+    Set<ClientSessionEvent> waitFor(Collection<ClientSessionEvent> mask, long timeout);
 
     /**
      * Access to the metadata.

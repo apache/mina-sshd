@@ -21,6 +21,8 @@ package org.apache.sshd.git.transport;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Collection;
+import java.util.EnumSet;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.SshClient;
@@ -144,9 +146,14 @@ public class GitSshdSessionFactory extends SshSessionFactory {
 
                 @Override
                 public int waitFor() throws InterruptedException {
-                    return channel.waitFor(ClientChannel.CLOSED, 0);
+                    Collection<ClientChannel.ClientChannelEvent> res =
+                            channel.waitFor(EnumSet.of(ClientChannel.ClientChannelEvent.CLOSED), Long.MAX_VALUE);
+                    if (res.contains(ClientChannel.ClientChannelEvent.CLOSED)) {
+                        return 0;
+                    } else {
+                        return (-1);
+                    }
                 }
-
                 @Override
                 public int exitValue() {
                     Integer status = ValidateUtils.checkNotNull(channel.getExitStatus(), "No channel status available");

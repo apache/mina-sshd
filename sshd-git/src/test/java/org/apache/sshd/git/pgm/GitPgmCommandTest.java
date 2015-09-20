@@ -21,6 +21,8 @@ package org.apache.sshd.git.pgm;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.EnumSet;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.SshClient;
@@ -97,8 +99,10 @@ public class GitPgmCommandTest extends BaseTestSupport {
             channel.setOut(System.out);
             channel.setErr(System.err);
             channel.open().verify(11L, TimeUnit.SECONDS);
-            int mask = channel.waitFor(ClientChannel.CLOSED, TimeUnit.MINUTES.toMillis(1L));
-            assertEquals("Command not completed on time: " + command, ClientChannel.CLOSED, ClientChannel.CLOSED & mask);
+
+            Collection<ClientChannel.ClientChannelEvent> result =
+                    channel.waitFor(EnumSet.of(ClientChannel.ClientChannelEvent.CLOSED), TimeUnit.MINUTES.toMillis(1L));
+            assertTrue("Command '" + command + "'not completed on time: " + result, result.contains(ClientChannel.ClientChannelEvent.CLOSED));
 
             Integer status = channel.getExitStatus();
             if (status != null) {

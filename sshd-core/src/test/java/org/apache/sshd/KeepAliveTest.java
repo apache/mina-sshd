@@ -19,6 +19,8 @@
 package org.apache.sshd;
 
 import java.io.ByteArrayOutputStream;
+import java.util.Collection;
+import java.util.EnumSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -80,10 +82,11 @@ public class KeepAliveTest extends BaseTestSupport {
             session.auth().verify(5L, TimeUnit.SECONDS);
 
             try (ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL)) {
-                int state = channel.waitFor(ClientChannel.CLOSED, WAIT);
-                assertEquals("Wrong channel state", ClientChannel.CLOSED | ClientChannel.EOF, state);
-
-                channel.close(false);
+                Collection<ClientChannel.ClientChannelEvent> result =
+                        channel.waitFor(EnumSet.of(ClientChannel.ClientChannelEvent.CLOSED), WAIT);
+                assertTrue("Wrong channel state: " + result,
+                           result.containsAll(
+                                   EnumSet.of(ClientChannel.ClientChannelEvent.CLOSED, ClientChannel.ClientChannelEvent.EOF)));
             }
         } finally {
             client.stop();
@@ -101,10 +104,9 @@ public class KeepAliveTest extends BaseTestSupport {
             session.auth().verify(5L, TimeUnit.SECONDS);
 
             try (ClientChannel channel = session.createChannel(ClientChannel.CHANNEL_SHELL)) {
-                int state = channel.waitFor(ClientChannel.CLOSED, WAIT);
-                assertEquals("Wrong channel state", ClientChannel.TIMEOUT, state);
-
-                channel.close(false);
+                Collection<ClientChannel.ClientChannelEvent> result =
+                        channel.waitFor(EnumSet.of(ClientChannel.ClientChannelEvent.CLOSED), WAIT);
+                assertTrue("Wrong channel state: " + result, result.contains(ClientChannel.ClientChannelEvent.TIMEOUT));
             }
         } finally {
             client.stop();
@@ -131,10 +133,13 @@ public class KeepAliveTest extends BaseTestSupport {
                 channel.open().verify(9L, TimeUnit.SECONDS);
 
                 assertTrue("Latch time out", TestEchoShell.latch.await(10L, TimeUnit.SECONDS));
-                int state = channel.waitFor(ClientChannel.CLOSED, WAIT);
-                assertEquals("Wrong channel state", ClientChannel.CLOSED | ClientChannel.EOF | ClientChannel.OPENED, state);
-
-                channel.close(false);
+                Collection<ClientChannel.ClientChannelEvent> result =
+                        channel.waitFor(EnumSet.of(ClientChannel.ClientChannelEvent.CLOSED), WAIT);
+                assertTrue("Wrong channel state: " + result,
+                           result.containsAll(
+                               EnumSet.of(ClientChannel.ClientChannelEvent.CLOSED,
+                                          ClientChannel.ClientChannelEvent.EOF,
+                                          ClientChannel.ClientChannelEvent.OPENED)));
             }
         } finally {
             TestEchoShell.latch = null;

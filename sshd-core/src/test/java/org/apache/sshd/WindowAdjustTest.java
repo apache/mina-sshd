@@ -24,7 +24,9 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Collection;
 import java.util.Deque;
+import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.concurrent.TimeUnit;
 
@@ -114,9 +116,10 @@ public class WindowAdjustTest extends BaseTestSupport {
                     channel.setErr(new NoCloseOutputStream(System.err));
                     channel.open();
 
-                    channel.waitFor(ClientChannel.CLOSED, 0);
+                    Collection<ClientChannel.ClientChannelEvent> result =
+                            channel.waitFor(EnumSet.of(ClientChannel.ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(15L));
+                    assertFalse("Timeout while waiting for channel closure", result.contains(ClientChannel.ClientChannelEvent.TIMEOUT));
                 }
-                session.close(true);
             } finally {
                 client.stop();
             }

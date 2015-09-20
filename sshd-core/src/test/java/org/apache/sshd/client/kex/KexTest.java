@@ -26,6 +26,7 @@ import java.io.PipedOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.ClientBuilder;
@@ -128,7 +129,9 @@ public class KexTest extends BaseTestSupport {
                         teeOut.write("exit\n".getBytes(StandardCharsets.UTF_8));
                         teeOut.flush();
 
-                        channel.waitFor(ClientChannel.CLOSED, 0);
+                        Collection<ClientChannel.ClientChannelEvent> result =
+                                channel.waitFor(EnumSet.of(ClientChannel.ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(15L));
+                        assertFalse("Timeout while waiting for channel closure", result.contains(ClientChannel.ClientChannelEvent.TIMEOUT));
                     }
                 } finally {
                     client.stop();

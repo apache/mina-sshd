@@ -21,6 +21,10 @@ package org.apache.sshd.client.channel;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -187,36 +191,39 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     }
 
     @Override
-    public int waitFor(int mask, long timeout) {
+    public Set<ClientChannelEvent> waitFor(Collection<ClientChannelEvent> mask, long timeout) {
+        ValidateUtils.checkNotNull(mask, "No mask specified");
         long t = 0;
         synchronized (lock) {
-            for (;;) {
-                int cond = 0;
+            for (Set<ClientChannelEvent> cond = EnumSet.noneOf(ClientChannelEvent.class);; cond.clear()) {
                 if (openFuture != null && openFuture.isOpened()) {
-                    cond |= ClientChannel.OPENED;
+                    cond.add(ClientChannelEvent.OPENED);
                 }
                 if (closeFuture.isClosed()) {
-                    cond |= ClientChannel.CLOSED | ClientChannel.EOF;
+                    cond.add(ClientChannelEvent.CLOSED);
+                    cond.add(ClientChannelEvent.EOF);
                 }
                 if (isEofSignalled()) {
-                    cond |= ClientChannel.EOF;
+                    cond.add(ClientChannelEvent.EOF);
                 }
                 if (exitStatusHolder.get() != null) {
                     if (log.isDebugEnabled()) {
-                        log.debug("waitFor({}) mask=0x{} - exit status={}", this, Integer.toHexString(mask), exitStatusHolder);
+                        log.debug("waitFor({}) mask={} - exit status={}", this, mask, exitStatusHolder);
                     }
-                    cond |= ClientChannel.EXIT_STATUS;
+                    cond.add(ClientChannelEvent.EXIT_STATUS);
                 }
                 if (exitSignalHolder.get() != null) {
                     if (log.isDebugEnabled()) {
-                        log.debug("waitFor({}) mask=0x{} - exit signal={}", this, Integer.toHexString(mask), exitSignalHolder);
+                        log.debug("waitFor({}) mask={} - exit signal={}", this, mask, exitSignalHolder);
                     }
-                    cond |= ClientChannel.EXIT_SIGNAL;
+                    cond.add(ClientChannelEvent.EXIT_SIGNAL);
                 }
-                if ((cond & mask) != 0) {
+
+                boolean nothingInCommon = Collections.disjoint(mask, cond);
+                if (!nothingInCommon) {
                     if (log.isTraceEnabled()) {
-                        log.trace("WaitFor call returning on channel {}, mask=0x{}, cond=0x{}",
-                                  this, Integer.toHexString(mask), Integer.toHexString(cond));
+                        log.trace("WaitFor call returning on channel {}, mask={}, cond={}",
+                                  this, mask, cond);
                     }
                     return cond;
                 }
@@ -228,9 +235,9 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
                         timeout = t - System.currentTimeMillis();
                         if (timeout <= 0L) {
                             if (log.isTraceEnabled()) {
-                                log.trace("WaitFor call timeout on channel {}, mask=0x{}", this, Integer.toHexString(mask));
+                                log.trace("WaitFor call timeout on channel {}, mask={}", this, mask);
                             }
-                            cond |= ClientChannel.TIMEOUT;
+                            cond.add(ClientChannelEvent.TIMEOUT);
                             return cond;
                         }
                     }
@@ -257,7 +264,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
                     long nanoEnd = System.nanoTime();
                     long nanoDuration = nanoEnd - nanoStart;
                     if (log.isTraceEnabled()) {
-                        log.trace("waitFor({}) mask={} - ignoring interrupted exception after {} nanos", this, Integer.toHexString(mask), nanoDuration);
+                        log.trace("waitFor({}) mask={} - ignoring interrupted exception after {} nanos", this, mask, nanoDuration);
                     }
                 }
             }

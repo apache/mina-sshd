@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -414,8 +415,8 @@ public class DefaultTcpipForwarder extends AbstractInnerCloseable implements Tcp
             TcpipClientChannel channel = (TcpipClientChannel) session.getAttribute(TcpipClientChannel.class);
             Buffer buffer = new ByteArrayBuffer();
             buffer.putBuffer(message);
-            channel.waitFor(ClientChannel.OPENED | ClientChannel.CLOSED, Long.MAX_VALUE);
-            
+            channel.waitFor(EnumSet.of(ClientChannel.ClientChannelEvent.OPENED, ClientChannel.ClientChannelEvent.CLOSED), Long.MAX_VALUE);
+
             OutputStream outputStream = channel.getInvertedIn();
             outputStream.write(buffer.array(), buffer.rpos(), buffer.available());
             outputStream.flush();

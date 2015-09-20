@@ -21,7 +21,9 @@ package org.apache.sshd.common.auth;
 import java.io.IOException;
 import java.security.KeyPair;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -121,7 +123,10 @@ public class AuthenticationTest extends BaseTestSupport {
             client.start();
 
             try (ClientSession s = client.connect(null, TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
-                s.waitFor(ClientSession.CLOSED | ClientSession.WAIT_AUTH, 0);
+                Collection<ClientSession.ClientSessionEvent> mask =
+                        EnumSet.of(ClientSession.ClientSessionEvent.CLOSED, ClientSession.ClientSessionEvent.WAIT_AUTH);
+                Collection<ClientSession.ClientSessionEvent> result = s.waitFor(mask, TimeUnit.SECONDS.toMillis(11L));
+                assertFalse("Timeout while waiting on session events", result.contains(ClientSession.ClientSessionEvent.TIMEOUT));
 
                 for (String username : new String[]{"user1", "user2"}) {
                     assertAuthenticationResult(username, authPassword(s, username, "the-password"), false);
@@ -129,7 +134,8 @@ public class AuthenticationTest extends BaseTestSupport {
 
                 // Note that WAIT_AUTH flag should be false, but since the internal
                 // authentication future is not updated, it's still returned
-                assertEquals("Mismatched client session close mask", ClientSession.CLOSED | ClientSession.WAIT_AUTH, s.waitFor(ClientSession.CLOSED, 1000));
+                result = s.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED), TimeUnit.SECONDS.toMillis(3L));
+                assertTrue("Mismatched client session close mask: " + result, result.containsAll(mask));
             } finally {
                 client.stop();
             }
@@ -243,9 +249,11 @@ public class AuthenticationTest extends BaseTestSupport {
             client.start();
 
             try (ClientSession s = client.connect(null, TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
-                s.waitFor(ClientSession.CLOSED | ClientSession.WAIT_AUTH, 0);
+                Collection<ClientSession.ClientSessionEvent> result =
+                        s.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED, ClientSession.ClientSessionEvent.WAIT_AUTH),
+                        TimeUnit.SECONDS.toMillis(11L));
+                assertFalse("Timeout while waiting for session", result.contains(ClientSession.ClientSessionEvent.TIMEOUT));
                 assertAuthenticationResult(getCurrentTestName(), authPassword(s, getCurrentTestName(), getCurrentTestName()), false);
-                s.close(true);
             } finally {
                 client.stop();
             }
@@ -262,12 +270,14 @@ public class AuthenticationTest extends BaseTestSupport {
             client.start();
 
             try (ClientSession s = client.connect(null, TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
-                s.waitFor(ClientSession.CLOSED | ClientSession.WAIT_AUTH, 0);
+                Collection<ClientSession.ClientSessionEvent> result =
+                        s.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED, ClientSession.ClientSessionEvent.WAIT_AUTH),
+                        TimeUnit.SECONDS.toMillis(11L));
+                assertFalse("Timeout while waiting for session", result.contains(ClientSession.ClientSessionEvent.TIMEOUT));
 
                 KeyPair pair = createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
                 assertAuthenticationResult(UserAuthMethodFactory.PUBLIC_KEY, authPublicKey(s, getCurrentTestName(), pair), false);
                 assertAuthenticationResult(UserAuthMethodFactory.PASSWORD, authPassword(s, getCurrentTestName(), getCurrentTestName()), true);
-                s.close(true);
             } finally {
                 client.stop();
             }
@@ -322,13 +332,14 @@ public class AuthenticationTest extends BaseTestSupport {
             client.start();
 
             try (ClientSession s = client.connect(null, TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
-                s.waitFor(ClientSession.CLOSED | ClientSession.WAIT_AUTH, 0);
+                Collection<ClientSession.ClientSessionEvent> result =
+                        s.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED, ClientSession.ClientSessionEvent.WAIT_AUTH),
+                        TimeUnit.SECONDS.toMillis(11L));
+                assertFalse("Timeout while waiting for session", result.contains(ClientSession.ClientSessionEvent.TIMEOUT));
 
                 KeyPair pair = createTestHostKeyProvider().loadKey(KeyPairProvider.SSH_RSA);
                 assertAuthenticationResult(UserAuthMethodFactory.PUBLIC_KEY, authPublicKey(s, getCurrentTestName(), pair), false);
                 assertAuthenticationResult(UserAuthMethodFactory.KB_INTERACTIVE, authInteractive(s, getCurrentTestName(), getCurrentTestName()), true);
-
-                s.close(true);
             } finally {
                 client.stop();
             }

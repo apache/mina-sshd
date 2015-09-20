@@ -23,11 +23,15 @@ import java.net.SocketAddress;
 import java.nio.file.FileSystem;
 import java.security.KeyPair;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.auth.UserInteraction;
@@ -517,27 +521,30 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
     }
 
     @Override
-    public int waitFor(int mask, long timeout) {
+    public Set<ClientSessionEvent> waitFor(Collection<ClientSessionEvent> mask, long timeout) {
+        ValidateUtils.checkNotNull(mask, "No mask specified");
         long t = 0L;
         synchronized (lock) {
-            for (;;) {
-                int cond = 0;
+            for (Set<ClientSessionEvent> cond = EnumSet.noneOf(ClientSessionEvent.class);; cond.clear()) {
                 if (closeFuture.isClosed()) {
-                    cond |= CLOSED;
+                    cond.add(ClientSessionEvent.CLOSED);
                 }
                 if (authed) { // authFuture.isSuccess()
-                    cond |= AUTHED;
+                    cond.add(ClientSessionEvent.AUTHED);
                 }
                 if (KexState.DONE.equals(kexState.get()) && authFuture.isFailure()) {
-                    cond |= WAIT_AUTH;
+                    cond.add(ClientSessionEvent.WAIT_AUTH);
                 }
-                if ((cond & mask) != 0) {
+
+                boolean nothingInCommon = Collections.disjoint(cond, mask);
+                if (!nothingInCommon) {
                     if (log.isTraceEnabled()) {
-                        log.trace("WaitFor call returning on session {}, mask=0x{}, cond=0x{}",
-                                  this, Integer.toHexString(mask), Integer.toHexString(cond));
+                        log.trace("WaitFor call returning on session {}, mask={}, cond={}",
+                                  this, mask, cond);
                     }
                     return cond;
                 }
+
                 if (timeout > 0L) {
                     if (t == 0L) {
                         t = System.currentTimeMillis() + timeout;
@@ -545,9 +552,9 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
                         timeout = t - System.currentTimeMillis();
                         if (timeout <= 0L) {
                             if (log.isTraceEnabled()) {
-                                log.trace("WaitFor call timeout on session {}, mask=0x{}", this, Integer.toHexString(mask));
+                                log.trace("WaitFor call timeout on session {}, mask={}", this, mask);
                             }
-                            cond |= TIMEOUT;
+                            cond.add(ClientSessionEvent.TIMEOUT);
                             return cond;
                         }
                     }
@@ -574,7 +581,7 @@ public class ClientSessionImpl extends AbstractSession implements ClientSession 
                     long nanoEnd = System.nanoTime();
                     long nanoDuration = nanoEnd - nanoStart;
                     if (log.isTraceEnabled()) {
-                        log.trace("waitFor({}) mask={} - ignoring interrupted exception after {} nanos", this, Integer.toHexString(mask), nanoDuration);
+                        log.trace("waitFor({}) mask={} - ignoring interrupted exception after {} nanos", this, mask, nanoDuration);
                     }
                 }
             }

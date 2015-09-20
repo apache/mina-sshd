@@ -37,6 +37,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -882,7 +883,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                             channel.setOut(new NoCloseOutputStream(System.out));
                             channel.setErr(new NoCloseOutputStream(System.err));
                             channel.open().await(); // TODO use verify and a configurable timeout
-                            channel.waitFor(ClientChannel.CLOSED, 0);
+                            channel.waitFor(EnumSet.of(ClientChannel.ClientChannelEvent.CLOSED), 0);
                         } finally {
                             channel.close();
                         }

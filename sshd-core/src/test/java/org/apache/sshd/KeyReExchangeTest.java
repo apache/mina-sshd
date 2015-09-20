@@ -28,6 +28,8 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -270,10 +272,9 @@ public class KeyReExchangeTest extends BaseTestSupport {
                     teeOut.write("exit\n".getBytes(StandardCharsets.UTF_8));
                     teeOut.flush();
 
-                    channel.waitFor(ClientChannel.CLOSED, 0);
-
-                    channel.close(false);
-
+                    Collection<ClientChannel.ClientChannelEvent> result =
+                            channel.waitFor(EnumSet.of(ClientChannel.ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(15L));
+                    assertFalse("Timeout while waiting for channel closure", result.contains(ClientChannel.ClientChannelEvent.TIMEOUT));
                     assertArrayEquals("Mismatched sent data content", sent.toByteArray(), out.toByteArray());
                 }
             } finally {
@@ -349,9 +350,9 @@ public class KeyReExchangeTest extends BaseTestSupport {
                     teeOut.write("exit\n".getBytes(StandardCharsets.UTF_8));
                     teeOut.flush();
 
-                    channel.waitFor(ClientChannel.CLOSED, 0);
-
-                    channel.close(false);
+                    Collection<ClientChannel.ClientChannelEvent> result =
+                            channel.waitFor(EnumSet.of(ClientChannel.ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(15L));
+                    assertFalse("Timeout while waiting for channel closure", result.contains(ClientChannel.ClientChannelEvent.TIMEOUT));
 
                     assertTrue("Expected rekeying", exchanges.get() > 0);
                     assertEquals("Mismatched sent data length", sent.toByteArray().length, out.toByteArray().length);
@@ -443,9 +444,9 @@ public class KeyReExchangeTest extends BaseTestSupport {
                     teeOut.write("exit\n".getBytes(StandardCharsets.UTF_8));
                     teeOut.flush();
 
-                    channel.waitFor(ClientChannel.CLOSED, 0);
-
-                    channel.close(false);
+                    Collection<ClientChannel.ClientChannelEvent> result =
+                            channel.waitFor(EnumSet.of(ClientChannel.ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(15L));
+                    assertFalse("Timeout while waiting for channel closure", result.contains(ClientChannel.ClientChannelEvent.TIMEOUT));
 
                     assertTrue("Expected rekeying", exchanges.get() > 0);
                     assertEquals("Mismatched sent data length", sent.toByteArray().length, out.toByteArray().length);

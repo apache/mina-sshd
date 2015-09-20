@@ -23,6 +23,8 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -140,7 +142,9 @@ public class LoadTest extends BaseTestSupport {
                             pipedIn.flush();
                         }
 
-                        channel.waitFor(ClientChannel.CLOSED, 0);
+                        Collection<ClientChannel.ClientChannelEvent> result =
+                                channel.waitFor(EnumSet.of(ClientChannel.ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(15L));
+                        assertFalse("Timeout while waiting for channel closure", result.contains(ClientChannel.ClientChannelEvent.TIMEOUT));
                     } finally {
                         channel.close(false);
                     }

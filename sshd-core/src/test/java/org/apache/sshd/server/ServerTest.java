@@ -28,11 +28,13 @@ import java.io.StreamCorruptedException;
 import java.net.SocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -128,15 +130,15 @@ public class ServerTest extends BaseTestSupport {
 
         try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
             int nbTrials = 0;
-            int res = 0;
-            while ((res & ClientSession.CLOSED) == 0) {
+            Collection<ClientSession.ClientSessionEvent> res = Collections.emptySet();
+            Collection<ClientSession.ClientSessionEvent> mask =
+                    EnumSet.of(ClientSession.ClientSessionEvent.CLOSED, ClientSession.ClientSessionEvent.WAIT_AUTH);
+            while (!res.contains(ClientSession.ClientSessionEvent.CLOSED)) {
                 nbTrials++;
                 s.getService(ClientUserAuthServiceOld.class)
                         .auth(new org.apache.sshd.deprecated.UserAuthPassword(s, "ssh-connection", "buggy"));
-                res = s.waitFor(ClientSession.CLOSED | ClientSession.WAIT_AUTH, TimeUnit.SECONDS.toMillis(5L));
-                if (res == ClientSession.TIMEOUT) {
-                    throw new TimeoutException("Client session timeout signalled");
-                }
+                res = s.waitFor(mask, TimeUnit.SECONDS.toMillis(5L));
+                assertFalse("Timeout signalled", res.contains(ClientSession.ClientSessionEvent.TIMEOUT));
             }
             assertTrue("Number trials (" + nbTrials + ") below min.=" + MAX_AUTH_REQUESTS, nbTrials > MAX_AUTH_REQUESTS);
         } finally {
@@ -181,8 +183,9 @@ public class ServerTest extends BaseTestSupport {
 
         client.start();
         try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
-            int res = s.waitFor(ClientSession.CLOSED, 2 * AUTH_TIMEOUT);
-            assertEquals("Session should be closed", ClientSession.CLOSED | ClientSession.WAIT_AUTH, res);
+            Collection<ClientSession.ClientSessionEvent> res = s.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED), 2L * AUTH_TIMEOUT);
+            assertTrue("Session should be closed: " + res,
+                       res.containsAll(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED, ClientSession.ClientSessionEvent.WAIT_AUTH)));
         } finally {
             client.stop();
         }
@@ -230,8 +233,10 @@ public class ServerTest extends BaseTestSupport {
             assertTrue("No changes in open channels", channelListener.waitForModification(3L, TimeUnit.SECONDS));
             assertTrue("No open server side channels", GenericUtils.size(channelListener.getOpenChannels()) > 0);
 
-            int res = s.waitFor(ClientSession.CLOSED, 2 * IDLE_TIMEOUT);
-            assertEquals("Session should be closed", ClientSession.CLOSED | ClientSession.AUTHED, res);
+            Collection<ClientSession.ClientSessionEvent> res =
+                    s.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED), 2L * IDLE_TIMEOUT);
+            assertTrue("Session should be closed and authenticated: " + res,
+                       res.containsAll(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED, ClientSession.ClientSessionEvent.AUTHED)));
         } finally {
             client.stop();
         }
@@ -542,7 +547,9 @@ public class ServerTest extends BaseTestSupport {
             assertTrue("No changes in open channels", channelListener.waitForModification(3L, TimeUnit.SECONDS));
             assertTrue("No open server side channels", GenericUtils.size(channelListener.getOpenChannels()) > 0);
 
-            shell.waitFor(ClientChannel.CLOSED, TimeUnit.SECONDS.toMillis(17L));
+            Collection<ClientChannel.ClientChannelEvent> result =
+                    shell.waitFor(EnumSet.of(ClientChannel.ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(17L));
+            assertFalse("Channel close timeout", result.contains(ClientChannel.ClientChannelEvent.TIMEOUT));
 
             Integer status = shell.getExitStatus();
             assertNotNull("No exit status", status);
