@@ -190,13 +190,25 @@ public final class IoUtils {
             perms.add(PosixFilePermission.OTHERS_WRITE);
         }
 
-        if (f.canExecute() || (OsUtils.isWin32() && isWindowsExecutable(f.getName()))) {
+        if (isExecutable(f)) {
             perms.add(PosixFilePermission.OWNER_EXECUTE);
             perms.add(PosixFilePermission.GROUP_EXECUTE);
             perms.add(PosixFilePermission.OTHERS_EXECUTE);
         }
 
         return perms;
+    }
+
+    public static boolean isExecutable(File f) {
+        if (f == null) {
+            return false;
+        }
+
+        if (OsUtils.isWin32()) {
+            return isWindowsExecutable(f.getName());
+        } else {
+            return f.canExecute();
+        }
     }
 
     /**
