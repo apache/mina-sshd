@@ -51,5 +51,4 @@ public class GitPackCommandFactory implements CommandFactory {
             return new UnknownCommand(command);
         }
     }
-
 }

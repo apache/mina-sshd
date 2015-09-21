@@ -28,6 +28,7 @@ import org.apache.sshd.server.command.UnknownCommand;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class GitPgmCommandFactory implements CommandFactory {
+    public static final String GIT_COMMAND_PREFIX = "git ";
 
     private final String rootDir;
     private final CommandFactory delegate;
@@ -43,8 +44,8 @@ public class GitPgmCommandFactory implements CommandFactory {
 
     @Override
     public Command createCommand(String command) {
-        if (command.startsWith("git ")) {
-            return new GitPgmCommand(rootDir, command.substring("git ".length()));
+        if (command.startsWith(GIT_COMMAND_PREFIX)) {
+            return new GitPgmCommand(rootDir, command.substring(GIT_COMMAND_PREFIX.length()));
         } else if (delegate != null) {
             return delegate.createCommand(command);
         } else {
