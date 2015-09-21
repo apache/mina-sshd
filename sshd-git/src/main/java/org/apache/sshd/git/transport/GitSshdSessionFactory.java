@@ -151,7 +151,7 @@ public class GitSshdSessionFactory extends SshSessionFactory {
                     if (res.contains(ClientChannel.ClientChannelEvent.CLOSED)) {
                         return 0;
                     } else {
-                        return (-1);
+                        return -1;
                     }
                 }
                 @Override

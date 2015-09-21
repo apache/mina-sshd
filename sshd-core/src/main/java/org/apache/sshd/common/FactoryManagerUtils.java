@@ -22,6 +22,7 @@ package org.apache.sshd.common;
 import java.util.Map;
 import java.util.Objects;
 
+import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 
@@ -32,6 +33,18 @@ public final class FactoryManagerUtils {
 
     private FactoryManagerUtils() {
         throw new UnsupportedOperationException("No instance allowed");
+    }
+
+    /**
+     * @param channel      The {@link Channel} instance
+     * @param name         The property name
+     * @param defaultValue The default value to return if the specified property
+     *                     does not exist in the properties map
+     * @return The resolved property
+     * @throws NumberFormatException if malformed value
+     */
+    public static long getLongProperty(Channel channel, String name, long defaultValue) {
+        return getLongProperty(channel.getSession(), name, defaultValue);
     }
 
     /**
@@ -78,6 +91,16 @@ public final class FactoryManagerUtils {
     }
 
     /**
+     * @param channel The {@link Channel} instance
+     * @param name    The property name
+     * @return The {@link Long} value or {@code null} if property not found or empty string
+     * @throws NumberFormatException if malformed value
+     */
+    public static Long getLong(Channel channel, String name) {
+        return getLong(channel.getSession(), name);
+    }
+
+    /**
      * @param session The {@link Session} instance
      * @param name    The property name
      * @return The {@link Long} value or {@code null} if property not found or empty string
@@ -115,8 +138,12 @@ public final class FactoryManagerUtils {
         }
     }
 
+    public static Object updateProperty(Channel channel, String name, long value) {
+        return updateProperty(channel.getSession(), name, value);
+    }
+
     public static Object updateProperty(Session session, String name, long value) {
-        return updateProperty(session, name, Long.toString(value));
+        return updateProperty(session.getFactoryManager(), name, value);
     }
 
     public static Object updateProperty(FactoryManager manager, String name, long value) {
@@ -125,6 +152,10 @@ public final class FactoryManagerUtils {
 
     public static Object updateProperty(Map<String, Object> props, String name, long value) {
         return updateProperty(props, name, Long.valueOf(value));
+    }
+
+    public static int getIntProperty(Channel channel, String name, int defaultValue) {
+        return getIntProperty(channel.getSession(), name, defaultValue);
     }
 
     public static int getIntProperty(Session session, String name, int defaultValue) {
@@ -146,6 +177,10 @@ public final class FactoryManagerUtils {
         }
     }
 
+    public static Integer getInteger(Channel channel, String name) {
+        return getInteger(channel.getSession(), name);
+    }
+
     public static Integer getInteger(Session session, String name) {
         return getInteger(session.getFactoryManager(), name);
     }
@@ -165,6 +200,10 @@ public final class FactoryManagerUtils {
         }
     }
 
+    public static Object updateProperty(Channel channel, String name, int value) {
+        return updateProperty(channel.getSession(), name, value);
+    }
+
     public static Object updateProperty(Session session, String name, int value) {
         return updateProperty(session.getFactoryManager(), name, value);
     }
@@ -175,6 +214,10 @@ public final class FactoryManagerUtils {
 
     public static Object updateProperty(Map<String, Object> props, String name, int value) {
         return updateProperty(props, name, Integer.valueOf(value));
+    }
+
+    public static boolean getBooleanProperty(Channel channel, String name, boolean defaultValue) {
+        return getBooleanProperty(channel.getSession(), name, defaultValue);
     }
 
     public static boolean getBooleanProperty(Session session, String name, boolean defaultValue) {
@@ -192,6 +235,10 @@ public final class FactoryManagerUtils {
         } else {
             return value;
         }
+    }
+
+    public static Boolean getBoolean(Channel channel, String name) {
+        return getBoolean(channel.getSession(), name);
     }
 
     public static Boolean getBoolean(Session session, String name) {
@@ -213,6 +260,10 @@ public final class FactoryManagerUtils {
         }
     }
 
+    public static Object updateProperty(Channel channel, String name, boolean value) {
+        return updateProperty(channel.getSession(), name, value);
+    }
+
     public static Object updateProperty(Session session, String name, boolean value) {
         return updateProperty(session.getFactoryManager(), name, value);
     }
@@ -225,16 +276,24 @@ public final class FactoryManagerUtils {
         return updateProperty(props, name, Boolean.valueOf(value));
     }
 
+    public static String getString(Channel channel, String name) {
+        return getString(channel.getSession(), name);
+    }
+
     public static String getString(Session session, String name) {
-        return getStringProperty(session, name, null);
+        return getString(session.getFactoryManager(), name);
+    }
+
+    public static String getString(FactoryManager manager, String name) {
+        return getString(manager.getProperties(), name);
+    }
+
+    public static String getStringProperty(Channel channel, String name, String defaultValue) {
+        return getStringProperty(channel.getSession(), name, defaultValue);
     }
 
     public static String getStringProperty(Session session, String name, String defaultValue) {
         return getStringProperty(session.getFactoryManager(), name, defaultValue);
-    }
-
-    public static String getString(FactoryManager manager, String name) {
-        return getStringProperty(manager, name, null);
     }
 
     public static String getStringProperty(FactoryManager manager, String name, String defaultValue) {
@@ -253,6 +312,10 @@ public final class FactoryManagerUtils {
         } else {
             return s;
         }
+    }
+
+    public static Object updateProperty(Channel channel, String name, Object value) {
+        return updateProperty(channel.getSession(), name, value);
     }
 
     public static Object updateProperty(Session session, String name, Object value) {

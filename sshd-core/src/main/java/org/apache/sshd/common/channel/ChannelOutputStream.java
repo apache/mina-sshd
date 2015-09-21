@@ -22,9 +22,11 @@ import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.nio.channels.Channel;
-
+import java.util.concurrent.TimeUnit;
+import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.slf4j.Logger;
 
@@ -34,9 +36,15 @@ import org.slf4j.Logger;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ChannelOutputStream extends OutputStream implements Channel {
+    /**
+     * Configure max. wait time (millis) to wait for space to become available
+     */
+    public static final String WAIT_FOR_SPACE_TIMEOUT = "channel-output-wait-for-space-timeout";
+    public static final long DEFAULT_WAIT_FOR_SPACE_TIMEOUT = TimeUnit.SECONDS.toMillis(30L);
 
     private final AbstractChannel channel;
     private final Window remoteWindow;
+    private final long maxWaitTimeout;
     private final Logger log;
     private final byte cmd;
     private final byte[] b = new byte[1];
@@ -47,9 +55,15 @@ public class ChannelOutputStream extends OutputStream implements Channel {
     private boolean noDelay;
 
     public ChannelOutputStream(AbstractChannel channel, Window remoteWindow, Logger log, byte cmd) {
-        this.channel = channel;
-        this.remoteWindow = remoteWindow;
-        this.log = log;
+        this(channel, remoteWindow, FactoryManagerUtils.getLongProperty(channel, WAIT_FOR_SPACE_TIMEOUT, DEFAULT_WAIT_FOR_SPACE_TIMEOUT), log, cmd);
+    }
+
+    public ChannelOutputStream(AbstractChannel channel, Window remoteWindow, long maxWaitTimeout, Logger log, byte cmd) {
+        this.channel = ValidateUtils.checkNotNull(channel, "No channel");
+        this.remoteWindow = ValidateUtils.checkNotNull(remoteWindow, "No remote window");
+        ValidateUtils.checkTrue(maxWaitTimeout > 0L, "Non-positive max. wait time: %d", maxWaitTimeout);
+        this.maxWaitTimeout = maxWaitTimeout;
+        this.log = ValidateUtils.checkNotNull(log, "No logger");
         this.cmd = cmd;
         newBuffer(0);
     }
@@ -93,7 +107,7 @@ public class ChannelOutputStream extends OutputStream implements Channel {
                     flush();
                 } else {
                     try {
-                        remoteWindow.waitForSpace();
+                        remoteWindow.waitForSpace(maxWaitTimeout);
                     } catch (WindowClosedException e) {
                         closed = true;
                         throw e;
@@ -123,7 +137,8 @@ public class ChannelOutputStream extends OutputStream implements Channel {
             while (bufferLength > 0) {
                 Buffer buf = buffer;
                 int total = bufferLength;
-                int length = Math.min(Math.min(remoteWindow.waitForSpace(), total), remoteWindow.getPacketSize());
+                int available = remoteWindow.waitForSpace(maxWaitTimeout);
+                int length = Math.min(Math.min(available, total), remoteWindow.getPacketSize());
                 int pos = buf.wpos();
                 buf.wpos((cmd == SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA) ? 14 : 10);
                 buf.putInt(length);
@@ -137,7 +152,7 @@ public class ChannelOutputStream extends OutputStream implements Channel {
                     bufferLength = leftover;
                 }
                 lastSize = length;
-                remoteWindow.waitAndConsume(length);
+                remoteWindow.waitAndConsume(length, maxWaitTimeout);
                 if (log.isDebugEnabled()) {
                     log.debug("Send {} on channel {}",
                             (cmd == SshConstants.SSH_MSG_CHANNEL_DATA) ? "SSH_MSG_CHANNEL_DATA" : "SSH_MSG_CHANNEL_EXTENDED_DATA",

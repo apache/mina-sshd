@@ -20,14 +20,17 @@ package org.apache.sshd.common.channel;
 
 import java.io.IOException;
 import java.io.StreamCorruptedException;
+import java.net.SocketTimeoutException;
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.util.Predicate;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
@@ -41,7 +44,18 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class Window extends AbstractLoggingBean implements java.nio.channels.Channel {
-    private final AtomicInteger waitingCount = new AtomicInteger(0);
+    /**
+     * Default {@link Predicate} used to test if space became available
+     */
+    public static final Predicate<Window> SPACE_AVAILABLE_PREDICATE = new Predicate<Window>() {
+        @SuppressWarnings("synthetic-access")
+        @Override
+        public boolean evaluate(Window input) {
+            // NOTE: we do not call "getSize()" on purpose in order to avoid the lock
+            return input.sizeHolder.get() > 0;
+        }
+    };
+
     private final AtomicBoolean closed = new AtomicBoolean(false);
     private final AtomicBoolean initialized = new AtomicBoolean(false);
     private final AtomicInteger sizeHolder = new AtomicInteger(0);
@@ -196,34 +210,30 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
         }
     }
 
-    public void waitAndConsume(int len) throws InterruptedException, WindowClosedException {
+    /**
+     * Waits for enough data to become available to consume the specified size
+     *
+     * @param len Size of data to consume
+     * @param maxWaitTime ax. time (millis) to wait for enough data to become available
+     * @throws InterruptedException If interrupted while waiting
+     * @throws WindowClosedException If window closed while waiting
+     * @throws SocketTimeoutException If timeout expired before enough data became available
+     * @see #waitForCondition(Predicate, long)
+     * @see #consume(int)
+     */
+    public void waitAndConsume(final int len, long maxWaitTime) throws InterruptedException, WindowClosedException, SocketTimeoutException {
         ValidateUtils.checkTrue(len >= 0, "Negative wait consume length: %d", len);
         checkInitialized("waitAndConsume");
 
         synchronized (lock) {
-            while (isOpen() && (sizeHolder.get() < len)) {
-                int waiters = waitingCount.incrementAndGet();
-                if (log.isDebugEnabled()) {
-                    log.debug("waitAndConsume({}) - requested={}, available={}, waiters={}", this, len, sizeHolder, waiters);
+            waitForCondition(new Predicate<Window>() {
+                @SuppressWarnings("synthetic-access")
+                @Override
+                public boolean evaluate(Window input) {
+                    // NOTE: we do not call "getSize()" on purpose in order to avoid the lock
+                    return input.sizeHolder.get() >= len;
                 }
-
-                long nanoStart = System.nanoTime();
-                try {
-                    lock.wait();
-                } finally {
-                    long nanoEnd = System.nanoTime();
-                    long nanoDuration = nanoEnd - nanoStart;
-                    waiters = waitingCount.decrementAndGet();
-                    if (log.isTraceEnabled()) {
-                        log.debug("waitAndConsume({}) - requested={}, available={}, waiters={} - ended after {} nanos",
-                                  this, len, sizeHolder, waiters, nanoDuration);
-                    }
-                }
-            }
-
-            if (!isOpen()) {
-                throw new WindowClosedException(toString());
-            }
+            }, maxWaitTime);
 
             if (log.isDebugEnabled()) {
                 log.debug("waitAndConsume({}) - requested={}, available={}", this, len, sizeHolder);
@@ -234,44 +244,70 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
     }
 
     /**
-     * Waits (forever) until some data becomes available
+     * Waits until some data becomes available or timeout expires
      *
+     * @param maxWaitTime Max. time (millis) to wait for space to become available
      * @return Amount of available data - always positive
      * @throws InterruptedException If interrupted while waiting
      * @throws WindowClosedException If window closed while waiting
+     * @throws SocketTimeoutException If timeout expired before space became available
+     * @see #waitForCondition(Predicate, long)
      */
-    public int waitForSpace() throws InterruptedException, WindowClosedException {
+    public int waitForSpace(long maxWaitTime) throws InterruptedException, WindowClosedException, SocketTimeoutException {
         checkInitialized("waitForSpace");
 
         synchronized (lock) {
-            while (isOpen() && (sizeHolder.get() <= 0)) {
-                int waiters = waitingCount.incrementAndGet();
-                if (log.isDebugEnabled()) {
-                    log.debug("waitForSpace({}) - waiters={}", this, waiters);
-                }
-
-                long nanoStart = System.nanoTime();
-                try {
-                    lock.wait();
-                } finally {
-                    long nanoEnd = System.nanoTime();
-                    long nanoDuration = nanoEnd - nanoStart;
-                    waiters = waitingCount.decrementAndGet();
-                    if (log.isTraceEnabled()) {
-                        log.debug("waitForSpace({}) - waiters={} - ended after {} nanos", this, waiters, nanoDuration);
-                    }
-                }
-            }
-
-            if (!isOpen()) {
-                throw new WindowClosedException(toString());
-            }
-
+            waitForCondition(SPACE_AVAILABLE_PREDICATE, maxWaitTime);
             if (log.isDebugEnabled()) {
                 log.debug("waitForSpace({}) available: {}", this, sizeHolder);
             }
             return sizeHolder.get();
         }
+    }
+
+    /**
+     * Waits up to a specified amount of time for a condition to be satisfied and
+     * signaled via the lock. <B>Note:</B> assumes that lock is acquired when this
+     * method is called.
+     *
+     * @param predicate The {@link Predicate} to check if the condition has been
+     * satisfied - the argument to the predicate is {@code this} reference
+     * @param maxWaitTime Max. time (millis) to wait for the condition to be satisfied
+     * @throws WindowClosedException If window closed while waiting
+     * @throws InterruptedException If interrupted while waiting
+     * @throws SocketTimeoutException If timeout expired before condition was satisfied
+     * @see #isOpen()
+     */
+    protected void waitForCondition(Predicate<? super Window> predicate, long maxWaitTime)
+            throws WindowClosedException, InterruptedException, SocketTimeoutException {
+        ValidateUtils.checkNotNull(predicate, "No condition");
+        ValidateUtils.checkTrue(maxWaitTime > 0, "Non-positive max. wait time: %d", maxWaitTime);
+
+        long maxWaitNanos = TimeUnit.MILLISECONDS.toNanos(maxWaitTime);
+        long remWaitNanos = maxWaitNanos;
+        // The loop takes care of spurious wakeups
+        while (isOpen() && (remWaitNanos > 0L)) {
+            if (predicate.evaluate(this)) {
+                return;
+            }
+
+            long curWaitMillis = TimeUnit.NANOSECONDS.toMillis(remWaitNanos);
+            long nanoWaitStart = System.nanoTime();
+            if (curWaitMillis > 0L) {
+                lock.wait(curWaitMillis);
+            } else {    // only nanoseconds remaining
+                lock.wait(0L, (int) remWaitNanos);
+            }
+            long nanoWaitEnd = System.nanoTime();
+            long nanoWaitDuration = nanoWaitEnd - nanoWaitStart;
+            remWaitNanos -= nanoWaitDuration;
+        }
+
+        if (!isOpen()) {
+            throw new WindowClosedException(toString());
+        }
+
+        throw new SocketTimeoutException("waitForCondition(" + this + ") timeout exceeded: " + maxWaitTime);
     }
 
     protected void updateSize(int size) {
@@ -298,14 +334,8 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
         }
 
         // just in case someone is still waiting
-        int waiters;
         synchronized (lock) {
-            waiters = waitingCount.get();
             lock.notifyAll();
-        }
-
-        if (log.isDebugEnabled()) {
-            log.debug("close({}) waiters={}", this, waiters);
         }
     }
 
