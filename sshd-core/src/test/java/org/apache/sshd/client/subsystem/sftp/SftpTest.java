@@ -55,7 +55,7 @@ import org.apache.sshd.client.subsystem.sftp.extensions.BuiltinSftpClientExtensi
 import org.apache.sshd.client.subsystem.sftp.extensions.SftpClientExtension;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.FactoryManagerUtils;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.session.Session;
@@ -196,7 +196,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                     byte[] actual = new byte[expected.length];
                     int maxAllowed = actual.length / 4;
                     // allow less than actual
-                    FactoryManagerUtils.updateProperty(sshd, SftpSubsystem.MAX_PACKET_LENGTH_PROP, maxAllowed);
+                    PropertyResolverUtils.updateProperty(sshd, SftpSubsystem.MAX_PACKET_LENGTH_PROP, maxAllowed);
                     try(CloseableHandle handle = sftp.open(file, OpenMode.Read)) {
                         int readLen = sftp.read(handle, 0L, actual);
                         assertEquals("Mismatched read len", maxAllowed, readLen);

@@ -27,14 +27,17 @@ import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.agent.SshAgentServer;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.server.session.ServerSession;
 
+/**
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ */
 public class ProxyAgentFactory implements SshAgentFactory {
 
     private final Map<String, AgentServerProxy> proxies = new ConcurrentHashMap<>();
@@ -50,7 +53,7 @@ public class ProxyAgentFactory implements SshAgentFactory {
 
     @Override
     public SshAgent createClient(FactoryManager manager) throws IOException {
-        String proxyId = FactoryManagerUtils.getString(manager, SshAgent.SSH_AUTHSOCKET_ENV_NAME);
+        String proxyId = PropertyResolverUtils.getString(manager, SshAgent.SSH_AUTHSOCKET_ENV_NAME);
         if (GenericUtils.isEmpty(proxyId)) {
             throw new IllegalStateException("No " + SshAgent.SSH_AUTHSOCKET_ENV_NAME + " environment variable set");
         }

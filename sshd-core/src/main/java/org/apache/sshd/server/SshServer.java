@@ -32,8 +32,8 @@ import java.util.Map;
 import org.apache.sshd.common.AbstractFactoryManager;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.Factory;
-import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoServiceFactory;
@@ -465,7 +465,7 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
 
         SshServer sshd = SshServer.setUpDefaultServer();
         Map<String, Object> props = sshd.getProperties();
-        FactoryManagerUtils.updateProperty(props, ServerFactoryManager.WELCOME_BANNER, "Welcome to SSHD\n");
+        PropertyResolverUtils.updateProperty(sshd, ServerFactoryManager.WELCOME_BANNER, "Welcome to SSHD\n");
         props.putAll(options);
         sshd.setPort(port);
 

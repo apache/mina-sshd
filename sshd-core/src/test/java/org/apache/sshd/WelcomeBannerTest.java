@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.auth.UserInteraction;
 import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.common.FactoryManagerUtils;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
@@ -49,7 +49,7 @@ public class WelcomeBannerTest extends BaseTestSupport {
     @Before
     public void setUp() throws Exception {
         sshd = setupTestServer();
-        FactoryManagerUtils.updateProperty(sshd, ServerFactoryManager.WELCOME_BANNER, WELCOME);
+        PropertyResolverUtils.updateProperty(sshd, ServerFactoryManager.WELCOME_BANNER, WELCOME);
         sshd.start();
         port = sshd.getPort();
     }

@@ -96,6 +96,7 @@ public abstract class AbstractServerChannel extends AbstractChannel implements S
                 log.debug("Send SSH_MSG_CHANNEL_REQUEST exit-status on channel {}", Integer.valueOf(id));
             }
 
+            Session session = getSession();
             Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST, Long.SIZE);
             buffer.putInt(recipient);
             buffer.putString("exit-status");

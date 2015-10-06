@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.auth.UsernameHolder;
 import org.apache.sshd.common.channel.ChannelListenerManager;
@@ -39,7 +40,12 @@ import org.apache.sshd.common.util.buffer.Buffer;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface Session extends SessionListenerManager, ChannelListenerManager, Closeable, UsernameHolder {
+public interface Session
+        extends SessionListenerManager,
+                ChannelListenerManager,
+                PropertyResolver,
+                Closeable,
+                UsernameHolder {
 
     /**
      * Timeout status.
@@ -47,7 +53,7 @@ public interface Session extends SessionListenerManager, ChannelListenerManager,
     enum TimeoutStatus {
         NoTimeout,
         AuthTimeout,
-        IdleTimeout
+        IdleTimeout;
     }
 
     /**
@@ -100,15 +106,6 @@ public interface Session extends SessionListenerManager, ChannelListenerManager,
      * parameter or no negotiated value
      */
     String getNegotiatedKexParameter(KexProposalOption paramType);
-
-    /**
-     * Retrieve a configuration property as an integer
-     *
-     * @param name         the name of the property
-     * @param defaultValue the default value
-     * @return the value of the configuration property or the default value if not found
-     */
-    int getIntProperty(String name, int defaultValue);
 
     /**
      * Create a new buffer for the specified SSH packet and reserve the needed space

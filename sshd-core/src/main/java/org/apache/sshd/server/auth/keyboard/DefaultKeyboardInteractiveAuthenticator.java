@@ -21,7 +21,7 @@ package org.apache.sshd.server.auth.keyboard;
 
 import java.util.List;
 
-import org.apache.sshd.common.FactoryManagerUtils;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -96,22 +96,22 @@ public class DefaultKeyboardInteractiveAuthenticator
     }
 
     protected String getInteractionName(ServerSession session) {
-        return FactoryManagerUtils.getStringProperty(session, KB_INTERACTIVE_NAME_PROP, DEFAULT_KB_INTERACTIVE_NAME);
+        return PropertyResolverUtils.getStringProperty(session, KB_INTERACTIVE_NAME_PROP, DEFAULT_KB_INTERACTIVE_NAME);
     }
 
     protected String getInteractionInstruction(ServerSession session) {
-        return FactoryManagerUtils.getStringProperty(session, KB_INTERACTIVE_INSTRUCTION_PROP, DEFAULT_KB_INTERACTIVE_INSTRUCTION);
+        return PropertyResolverUtils.getStringProperty(session, KB_INTERACTIVE_INSTRUCTION_PROP, DEFAULT_KB_INTERACTIVE_INSTRUCTION);
     }
 
     protected String getInteractionLanguage(ServerSession session) {
-        return FactoryManagerUtils.getStringProperty(session, KB_INTERACTIVE_LANG_PROP, DEFAULT_KB_INTERACTIVE_LANG);
+        return PropertyResolverUtils.getStringProperty(session, KB_INTERACTIVE_LANG_PROP, DEFAULT_KB_INTERACTIVE_LANG);
     }
 
     protected String getInteractionPrompt(ServerSession session) {
-        return FactoryManagerUtils.getStringProperty(session, KB_INTERACTIVE_PROMPT_PROP, DEFAULT_KB_INTERACTIVE_PROMPT);
+        return PropertyResolverUtils.getStringProperty(session, KB_INTERACTIVE_PROMPT_PROP, DEFAULT_KB_INTERACTIVE_PROMPT);
     }
 
     protected boolean isInteractionPromptEchoEnabled(ServerSession session) {
-        return FactoryManagerUtils.getBooleanProperty(session, KB_INTERACTIVE_ECHO_PROMPT_PROP, DEFAULT_KB_INTERACTIVE_ECHO_PROMPT);
+        return PropertyResolverUtils.getBooleanProperty(session, KB_INTERACTIVE_ECHO_PROMPT_PROP, DEFAULT_KB_INTERACTIVE_ECHO_PROMPT);
     }
 }

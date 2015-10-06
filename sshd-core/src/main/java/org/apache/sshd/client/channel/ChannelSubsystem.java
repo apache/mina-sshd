@@ -23,6 +23,7 @@ import java.io.IOException;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 
@@ -53,7 +54,9 @@ public class ChannelSubsystem extends ChannelSession {
 
     @Override
     protected void doOpen() throws IOException {
-        log.debug("Send SSH_MSG_CHANNEL_REQUEST exec");
+        log.debug("Send SSH_MSG_CHANNEL_REQUEST exec on {}", this);
+
+        Session session = getSession();
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST);
         buffer.putInt(recipient);
         buffer.putString("subsystem");

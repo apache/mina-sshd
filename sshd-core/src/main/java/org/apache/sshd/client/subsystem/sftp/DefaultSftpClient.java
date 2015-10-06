@@ -36,7 +36,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.sshd.client.channel.ChannelSubsystem;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.common.FactoryManagerUtils;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.extensions.ParserUtils;
@@ -69,7 +69,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
     private final Map<String, byte[]> exposedExtensions = Collections.unmodifiableMap(extensions);
 
     public DefaultSftpClient(ClientSession clientSession) throws IOException {
-        this.clientSession = ValidateUtils.checkNotNull(clientSession, "No client session", GenericUtils.EMPTY_OBJECT_ARRAY);
+        this.clientSession = ValidateUtils.checkNotNull(clientSession, "No client session");
         this.channel = clientSession.createSubsystemChannel(SftpConstants.SFTP_SUBSYSTEM_NAME);
         this.channel.setOut(new OutputStream() {
             @Override
@@ -83,7 +83,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
             }
         });
         this.channel.setErr(new ByteArrayOutputStream(Byte.MAX_VALUE));
-        this.channel.open().verify(FactoryManagerUtils.getLongProperty(clientSession, SFTP_CHANNEL_OPEN_TIMEOUT, DEFAULT_CHANNEL_OPEN_TIMEOUT));
+        this.channel.open().verify(PropertyResolverUtils.getLongProperty(clientSession, SFTP_CHANNEL_OPEN_TIMEOUT, DEFAULT_CHANNEL_OPEN_TIMEOUT));
         this.channel.onClose(new Runnable() {
             @SuppressWarnings("synthetic-access")
             @Override

@@ -27,9 +27,10 @@ import java.security.KeyPair;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.kex.DHFactory;
@@ -48,6 +49,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.server.ServerFactoryManager;
+import org.apache.sshd.server.session.ServerSession;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -97,8 +99,9 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
     public boolean next(Buffer buffer) throws Exception {
         int cmd = buffer.getUByte();
 
+        ServerSession session = getServerSession();
         if (cmd == SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST_OLD && expected == SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST) {
-            log.debug("Received SSH_MSG_KEX_DH_GEX_REQUEST_OLD");
+            log.debug("Received SSH_MSG_KEX_DH_GEX_REQUEST_OLD on {}", session);
             oldRequest = true;
             min = 1024;
             prf = buffer.getInt();
@@ -113,7 +116,7 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
             hash = dh.getHash();
             hash.init();
 
-            log.debug("Send SSH_MSG_KEX_DH_GEX_GROUP");
+            log.debug("Send SSH_MSG_KEX_DH_GEX_GROUP on {}", session);
             buffer = session.prepareBuffer(SshConstants.SSH_MSG_KEX_DH_GEX_GROUP, BufferUtils.clear(buffer));
             buffer.putMPInt(dh.getP());
             buffer.putMPInt(dh.getG());
@@ -123,7 +126,7 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
             return false;
         }
         if (cmd == SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST && expected == SshConstants.SSH_MSG_KEX_DH_GEX_REQUEST) {
-            log.debug("Received SSH_MSG_KEX_DH_GEX_REQUEST");
+            log.debug("Received SSH_MSG_KEX_DH_GEX_REQUEST on {}", session);
             min = buffer.getInt();
             prf = buffer.getInt();
             max = buffer.getInt();
@@ -136,7 +139,7 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
             hash = dh.getHash();
             hash.init();
 
-            log.debug("Send SSH_MSG_KEX_DH_GEX_GROUP");
+            log.debug("Send SSH_MSG_KEX_DH_GEX_GROUP on {}", session);
             buffer = session.prepareBuffer(SshConstants.SSH_MSG_KEX_DH_GEX_GROUP, BufferUtils.clear(buffer));
             buffer.putMPInt(dh.getP());
             buffer.putMPInt(dh.getG());
@@ -151,7 +154,7 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
         }
 
         if (cmd == SshConstants.SSH_MSG_KEX_DH_GEX_INIT) {
-            log.debug("Received SSH_MSG_KEX_DH_GEX_INIT");
+            log.debug("Received SSH_MSG_KEX_DH_GEX_INIT on {}", session);
             e = buffer.getMPIntAsBytes();
             dh.setF(e);
             k = dh.getK();
@@ -199,14 +202,14 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
             buffer.putBytes(sig.sign());
             sigH = buffer.getCompactData();
 
-            if (log.isDebugEnabled()) {
-                log.debug("K_S:  {}", BufferUtils.printHex(k_s));
-                log.debug("f:    {}", BufferUtils.printHex(f));
-                log.debug("sigH: {}", BufferUtils.printHex(sigH));
+            if (log.isTraceEnabled()) {
+                log.trace("{}[K_S]:  {}", session, BufferUtils.printHex(k_s));
+                log.trace("{}[f]:    {}", session, BufferUtils.printHex(f));
+                log.trace("{}[sigH]: {}", session, BufferUtils.printHex(sigH));
             }
 
             // Send response
-            log.debug("Send SSH_MSG_KEX_DH_GEX_REPLY");
+            log.debug("Send SSH_MSG_KEX_DH_GEX_REPLY on {}", session);
             buffer.clear();
             buffer.rpos(5);
             buffer.wpos(5);
@@ -248,16 +251,22 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
             log.warn("No suitable primes found, defaulting to DHG1");
             return getDH(new BigInteger(DHGroupData.getP1()), new BigInteger(DHGroupData.getG()));
         }
-        Random random = session.getFactoryManager().getRandomFactory().create();
+
+        ServerSession session = getServerSession();
+        FactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No factory manager");
+        Factory<Random> factory = ValidateUtils.checkNotNull(manager.getRandomFactory(), "No random factory");
+        Random random = factory.create();
         int which = random.random(selected.size());
         Moduli.DhGroup group = selected.get(which);
         return getDH(group.p, group.g);
     }
 
     protected List<Moduli.DhGroup> loadModuliGroups() throws IOException {
+        ServerSession session = getServerSession();
+        String moduliStr = PropertyResolverUtils.getString(session, ServerFactoryManager.MODULI_URL);
+
         List<Moduli.DhGroup> groups = null;
         URL moduli;
-        String moduliStr = FactoryManagerUtils.getString(session, ServerFactoryManager.MODULI_URL);
         if (!GenericUtils.isEmpty(moduliStr)) {
             try {
                 moduli = new URL(moduliStr);

@@ -29,7 +29,8 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.FactoryManagerUtils;
+import org.apache.sshd.common.PropertyResolver;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -40,8 +41,6 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ChannelPipedInputStream extends InputStream implements ChannelPipedSink {
-    public static final long DEFAULT_TIMEOUT = 0L;
-
     private final Window localWindow;
     private final Buffer buffer = new ByteArrayBuffer();
     private final byte[] b = new byte[1];
@@ -60,9 +59,13 @@ public class ChannelPipedInputStream extends InputStream implements ChannelPiped
 
     private long timeout;
 
-    public ChannelPipedInputStream(Window localWindow) {
+    public ChannelPipedInputStream(PropertyResolver resolver, Window localWindow) {
+        this(localWindow, PropertyResolverUtils.getLongProperty(resolver, FactoryManager.WINDOW_TIMEOUT, FactoryManager.DEFAULT_WINDOW_TIMEOUT));
+    }
+
+    public ChannelPipedInputStream(Window localWindow, long windowTimeout) {
         this.localWindow = ValidateUtils.checkNotNull(localWindow, "No local window provided");
-        this.timeout = FactoryManagerUtils.getLongProperty(localWindow.getProperties(), FactoryManager.WINDOW_TIMEOUT, DEFAULT_TIMEOUT);
+        this.timeout = windowTimeout;
     }
 
     @Override

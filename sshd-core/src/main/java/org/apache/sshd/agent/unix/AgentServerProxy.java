@@ -27,7 +27,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.agent.SshAgentServer;
-import org.apache.sshd.common.FactoryManagerUtils;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
@@ -105,10 +105,10 @@ public class AgentServerProxy extends AbstractLoggingBean implements SshAgentSer
                                 }
 
                                 Session session = AgentServerProxy.this.service.getSession();
-                                Socket.timeoutSet(clientSock, FactoryManagerUtils.getIntProperty(session, AUTH_SOCKET_TIMEOUT, DEFAULT_AUTH_SOCKET_TIMEOUT));
+                                Socket.timeoutSet(clientSock, PropertyResolverUtils.getIntProperty(session, AUTH_SOCKET_TIMEOUT, DEFAULT_AUTH_SOCKET_TIMEOUT));
                                 AgentForwardedChannel channel = new AgentForwardedChannel(clientSock);
                                 AgentServerProxy.this.service.registerChannel(channel);
-                                channel.open().verify(FactoryManagerUtils.getLongProperty(session, CHANNEL_OPEN_TIMEOUT_PROP, DEFAULT_CHANNEL_OPEN_TIMEOUT));
+                                channel.open().verify(PropertyResolverUtils.getLongProperty(session, CHANNEL_OPEN_TIMEOUT_PROP, DEFAULT_CHANNEL_OPEN_TIMEOUT));
                             } catch (Exception e) {
                                 if (isOpen()) {
                                     log.info(e.getClass().getSimpleName() + " while authentication forwarding: " + e.getMessage(), e);

@@ -48,7 +48,7 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.ClientSessionImpl;
 import org.apache.sshd.client.session.SessionFactory;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.FactoryManagerUtils;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.TestChannelListener;
@@ -120,7 +120,7 @@ public class ServerTest extends BaseTestSupport {
     @Test
     public void testFailAuthenticationWithWaitFor() throws Exception {
         final int MAX_AUTH_REQUESTS = 10;
-        FactoryManagerUtils.updateProperty(sshd, ServerFactoryManager.MAX_AUTH_REQUESTS, MAX_AUTH_REQUESTS);
+        PropertyResolverUtils.updateProperty(sshd, ServerFactoryManager.MAX_AUTH_REQUESTS, MAX_AUTH_REQUESTS);
 
         client.setServiceFactories(Arrays.asList(
                 new ClientUserAuthServiceOld.Factory(),
@@ -149,7 +149,7 @@ public class ServerTest extends BaseTestSupport {
     @Test
     public void testFailAuthenticationWithFuture() throws Exception {
         final int MAX_AUTH_REQUESTS = 10;
-        FactoryManagerUtils.updateProperty(sshd, ServerFactoryManager.MAX_AUTH_REQUESTS, MAX_AUTH_REQUESTS);
+        PropertyResolverUtils.updateProperty(sshd, ServerFactoryManager.MAX_AUTH_REQUESTS, MAX_AUTH_REQUESTS);
 
         client.setServiceFactories(Arrays.asList(
                 new ClientUserAuthServiceOld.Factory(),
@@ -179,7 +179,7 @@ public class ServerTest extends BaseTestSupport {
     @Test
     public void testAuthenticationTimeout() throws Exception {
         final long AUTH_TIMEOUT = TimeUnit.SECONDS.toMillis(5L);
-        FactoryManagerUtils.updateProperty(sshd, FactoryManager.AUTH_TIMEOUT, AUTH_TIMEOUT);
+        PropertyResolverUtils.updateProperty(sshd, FactoryManager.AUTH_TIMEOUT, AUTH_TIMEOUT);
 
         client.start();
         try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
@@ -196,7 +196,7 @@ public class ServerTest extends BaseTestSupport {
         final CountDownLatch latch = new CountDownLatch(1);
         TestEchoShell.latch = new CountDownLatch(1);
         final long IDLE_TIMEOUT = 2500;
-        FactoryManagerUtils.updateProperty(sshd, FactoryManager.IDLE_TIMEOUT, IDLE_TIMEOUT);
+        PropertyResolverUtils.updateProperty(sshd, FactoryManager.IDLE_TIMEOUT, IDLE_TIMEOUT);
 
         sshd.addSessionListener(new SessionListener() {
             @Override
@@ -259,10 +259,10 @@ public class ServerTest extends BaseTestSupport {
         sshd.setCommandFactory(new StreamCommand.Factory());
 
         final long IDLE_TIMEOUT_VALUE = TimeUnit.SECONDS.toMillis(5L);
-        FactoryManagerUtils.updateProperty(sshd, FactoryManager.IDLE_TIMEOUT, IDLE_TIMEOUT_VALUE);
+        PropertyResolverUtils.updateProperty(sshd, FactoryManager.IDLE_TIMEOUT, IDLE_TIMEOUT_VALUE);
 
         final long DISCONNECT_TIMEOUT_VALUE = TimeUnit.SECONDS.toMillis(2L);
-        FactoryManagerUtils.updateProperty(sshd, FactoryManager.DISCONNECT_TIMEOUT, DISCONNECT_TIMEOUT_VALUE);
+        PropertyResolverUtils.updateProperty(sshd, FactoryManager.DISCONNECT_TIMEOUT, DISCONNECT_TIMEOUT_VALUE);
 
         sshd.addSessionListener(new SessionListener() {
             @Override
@@ -697,7 +697,7 @@ public class ServerTest extends BaseTestSupport {
 
     public static void main(String[] args) throws Exception {
         SshServer sshd = Utils.setupTestServer(ServerTest.class);
-        FactoryManagerUtils.updateProperty(sshd, FactoryManager.IDLE_TIMEOUT, TimeUnit.SECONDS.toMillis(10L));
+        PropertyResolverUtils.updateProperty(sshd, FactoryManager.IDLE_TIMEOUT, TimeUnit.SECONDS.toMillis(10L));
         sshd.setPort(8001);
         sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(new SftpSubsystemFactory()));
         sshd.setCommandFactory(new ScpCommandFactory());

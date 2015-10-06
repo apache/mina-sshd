@@ -30,6 +30,7 @@ import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.io.IoSession;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
@@ -86,6 +87,7 @@ public class TcpipClientChannel extends AbstractClientChannel {
         openFuture = new DefaultOpenFuture(lock);
         log.debug("Send SSH_MSG_CHANNEL_OPEN on channel {}", this);
 
+        Session session = getSession();
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN);
         buffer.putString(type);
         buffer.putInt(id);

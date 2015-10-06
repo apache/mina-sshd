@@ -32,6 +32,7 @@ import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.channel.ChannelPipedInputStream;
 import org.apache.sshd.common.channel.ChannelPipedOutputStream;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
@@ -66,11 +67,13 @@ public class ChannelDirectTcpip extends AbstractClientChannel {
         if (closeFuture.isClosed()) {
             throw new SshException("Session has been closed");
         }
+
         openFuture = new DefaultOpenFuture(lock);
         if (log.isDebugEnabled()) {
             log.debug("Send SSH_MSG_CHANNEL_OPEN on channel {}", Integer.valueOf(id));
         }
 
+        Session session = getSession();
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN);
         buffer.putString(type);
         buffer.putInt(id);
@@ -92,7 +95,7 @@ public class ChannelDirectTcpip extends AbstractClientChannel {
         } else {
             out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA);
             invertedIn = out;
-            ChannelPipedInputStream pis = new ChannelPipedInputStream(localWindow);
+            ChannelPipedInputStream pis = new ChannelPipedInputStream(this, localWindow);
             pipe = new ChannelPipedOutputStream(pis);
             in = pis;
             invertedOut = in;

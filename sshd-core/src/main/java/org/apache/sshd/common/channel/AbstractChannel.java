@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -30,7 +32,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.FactoryManagerUtils;
+import org.apache.sshd.common.PropertyResolver;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultCloseFuture;
@@ -59,11 +62,6 @@ public abstract class AbstractChannel
         extends AbstractInnerCloseable
         implements Channel, ExecutorServiceConfigurer {
 
-    public static final int DEFAULT_WINDOW_SIZE = 0x200000;
-    public static final int DEFAULT_PACKET_SIZE = 0x8000;
-
-    public static final long DEFAULT_CHANNEL_CLOSE_TIMEOUT = TimeUnit.SECONDS.toMillis(5L);
-
     /**
      * Default growth factor function used to resize response buffers
      */
@@ -78,7 +76,6 @@ public abstract class AbstractChannel
     protected final Window localWindow;
     protected final Window remoteWindow;
     protected ConnectionService service;
-    protected Session session;
     protected int id;
     protected int recipient;
     protected final AtomicBoolean eof = new AtomicBoolean(false);
@@ -90,6 +87,9 @@ public abstract class AbstractChannel
      */
     protected final Collection<ChannelListener> channelListeners = new CopyOnWriteArraySet<>();
     protected final ChannelListener channelListenerProxy;
+
+    private Session session;
+    private final Map<String, Object> properties = new ConcurrentHashMap<>();
 
     protected AbstractChannel(boolean client) {
         this("", client);
@@ -129,6 +129,11 @@ public abstract class AbstractChannel
     @Override
     public Session getSession() {
         return session;
+    }
+
+    @Override
+    public PropertyResolver getParentPropertyResolver() {
+        return getSession();
     }
 
     @Override
@@ -304,32 +309,35 @@ public abstract class AbstractChannel
             if (immediately) {
                 gracefulFuture.setClosed();
             } else if (!gracefulFuture.isClosed()) {
-                log.debug("Send SSH_MSG_CHANNEL_CLOSE on channel {}", AbstractChannel.this);
+                final Channel channel = AbstractChannel.this;
+                log.debug("Send SSH_MSG_CHANNEL_CLOSE on channel {}", channel);
+
                 Session s = getSession();
                 Buffer buffer = s.createBuffer(SshConstants.SSH_MSG_CHANNEL_CLOSE, Short.SIZE);
                 buffer.putInt(getRecipient());
+
                 try {
-                    long timeout = FactoryManagerUtils.getLongProperty(getSession(), FactoryManager.CHANNEL_CLOSE_TIMEOUT, DEFAULT_CHANNEL_CLOSE_TIMEOUT);
-                    session.writePacket(buffer, timeout, TimeUnit.MILLISECONDS).addListener(new SshFutureListener<IoWriteFuture>() {
+                    long timeout = PropertyResolverUtils.getLongProperty(channel, FactoryManager.CHANNEL_CLOSE_TIMEOUT, FactoryManager.DEFAULT_CHANNEL_CLOSE_TIMEOUT);
+                    s.writePacket(buffer, timeout, TimeUnit.MILLISECONDS).addListener(new SshFutureListener<IoWriteFuture>() {
                         @SuppressWarnings("synthetic-access")
                         @Override
                         public void operationComplete(IoWriteFuture future) {
                             if (future.isWritten()) {
-                                log.debug("Message SSH_MSG_CHANNEL_CLOSE written on channel {}", AbstractChannel.this);
+                                log.debug("Message SSH_MSG_CHANNEL_CLOSE written on channel {}", channel);
                                 if (gracefulState.compareAndSet(GracefulState.Opened, GracefulState.CloseSent)) {
                                     // Waiting for CLOSE message to come back from the remote side
                                 } else if (gracefulState.compareAndSet(GracefulState.CloseReceived, GracefulState.Closed)) {
                                     gracefulFuture.setClosed();
                                 }
                             } else {
-                                log.debug("Failed to write SSH_MSG_CHANNEL_CLOSE on channel {}", AbstractChannel.this);
-                                AbstractChannel.this.close(true);
+                                log.debug("Failed to write SSH_MSG_CHANNEL_CLOSE on channel {}", channel);
+                                channel.close(true);
                             }
                         }
                     });
                 } catch (IOException e) {
-                    log.debug("Exception caught while writing SSH_MSG_CHANNEL_CLOSE packet on channel " + AbstractChannel.this, e);
-                    AbstractChannel.this.close(true);
+                    log.debug("Exception caught while writing SSH_MSG_CHANNEL_CLOSE packet on channel " + channel, e);
+                    channel.close(true);
                 }
             }
 
@@ -471,8 +479,13 @@ public abstract class AbstractChannel
         writePacket(buffer);
     }
 
+    @Override
+    public Map<String, Object> getProperties() {
+        return properties;
+    }
+
     protected void configureWindow() {
-        localWindow.init(getSession());
+        localWindow.init(this);
     }
 
     protected void sendWindowAdjust(int len) throws IOException {

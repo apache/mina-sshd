@@ -66,8 +66,9 @@ import java.util.concurrent.Future;
 
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.PropertyResolver;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.config.VersionProperties;
 import org.apache.sshd.common.digest.BuiltinDigests;
 import org.apache.sshd.common.digest.Digest;
@@ -95,81 +96,6 @@ import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
 import org.apache.sshd.server.SessionAware;
 import org.apache.sshd.server.session.ServerSession;
-
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.ACE4_APPEND_DATA;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.ACE4_READ_ATTRIBUTES;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.ACE4_READ_DATA;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.ACE4_WRITE_ATTRIBUTES;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.ACE4_WRITE_DATA;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.EXT_NEWLINE;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.EXT_SUPPORTED;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.EXT_SUPPORTED2;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.EXT_VENDOR_ID;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.EXT_VERSIONS;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SFTP_V3;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SFTP_V4;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SFTP_V5;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SFTP_V6;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FILEXFER_ATTR_ACCESSTIME;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FILEXFER_ATTR_ALL;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FILEXFER_ATTR_BITS;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FILEXFER_ATTR_CREATETIME;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FILEXFER_ATTR_MODIFYTIME;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FILEXFER_ATTR_OWNERGROUP;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FILEXFER_ATTR_PERMISSIONS;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FILEXFER_ATTR_SIZE;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXF_ACCESS_DISPOSITION;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXF_APPEND;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXF_APPEND_DATA;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXF_APPEND_DATA_ATOMIC;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXF_CREAT;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXF_CREATE_NEW;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXF_CREATE_TRUNCATE;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXF_EXCL;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXF_OPEN_EXISTING;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXF_OPEN_OR_CREATE;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXF_READ;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXF_TRUNC;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXF_TRUNCATE_EXISTING;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXF_WRITE;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_ATTRS;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_BLOCK;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_CLOSE;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_DATA;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_EXTENDED;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_EXTENDED_REPLY;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_FSETSTAT;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_FSTAT;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_HANDLE;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_INIT;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_LINK;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_LSTAT;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_MKDIR;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_NAME;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_OPEN;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_OPENDIR;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_READ;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_READDIR;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_READLINK;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_REALPATH;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_REALPATH_STAT_ALWAYS;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_REALPATH_STAT_IF;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_REMOVE;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_RENAME;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_RENAME_ATOMIC;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_RENAME_OVERWRITE;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_RMDIR;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_SETSTAT;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_STAT;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_STATUS;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_SYMLINK;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_UNBLOCK;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_VERSION;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FXP_WRITE;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FX_FAILURE;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FX_NO_MATCHING_BYTE_RANGE_LOCK;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FX_OK;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FX_OP_UNSUPPORTED;
 
 /**
  * SFTP subsystem
@@ -211,8 +137,8 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
      */
     public static final String SFTP_VERSION = "sftp-version";
 
-    public static final int LOWER_SFTP_IMPL = SFTP_V3; // Working implementation from v3
-    public static final int HIGHER_SFTP_IMPL = SFTP_V6; //  .. up to
+    public static final int LOWER_SFTP_IMPL = SftpConstants.SFTP_V3; // Working implementation from v3
+    public static final int HIGHER_SFTP_IMPL = SftpConstants.SFTP_V6; //  .. up to
     public static final String ALL_SFTP_IMPL;
 
     /**
@@ -376,11 +302,11 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         Factory<? extends Random> factory = manager.getRandomFactory();
         this.randomizer = factory.create();
 
-        this.fileHandleSize = FactoryManagerUtils.getIntProperty(manager, FILE_HANDLE_SIZE, DEFAULT_FILE_HANDLE_SIZE);
+        this.fileHandleSize = PropertyResolverUtils.getIntProperty(session, FILE_HANDLE_SIZE, DEFAULT_FILE_HANDLE_SIZE);
         ValidateUtils.checkTrue(this.fileHandleSize >= MIN_FILE_HANDLE_SIZE, "File handle size too small: %d", this.fileHandleSize);
         ValidateUtils.checkTrue(this.fileHandleSize <= MAX_FILE_HANDLE_SIZE, "File handle size too big: %d", this.fileHandleSize);
 
-        this.maxFileHandleRounds = FactoryManagerUtils.getIntProperty(manager, MAX_FILE_HANDLE_RAND_ROUNDS, DEFAULT_FILE_HANDLE_ROUNDS);
+        this.maxFileHandleRounds = PropertyResolverUtils.getIntProperty(session, MAX_FILE_HANDLE_RAND_ROUNDS, DEFAULT_FILE_HANDLE_ROUNDS);
         ValidateUtils.checkTrue(this.maxFileHandleRounds >= MIN_FILE_HANDLE_ROUNDS, "File handle rounds too small: %d", this.maxFileHandleRounds);
         ValidateUtils.checkTrue(this.maxFileHandleRounds <= MAX_FILE_HANDLE_ROUNDS, "File handle rounds too big: %d", this.maxFileHandleRounds);
 
@@ -485,81 +411,81 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         }
 
         switch (type) {
-            case SSH_FXP_INIT:
+            case SftpConstants.SSH_FXP_INIT:
                 doInit(buffer, id);
                 break;
-            case SSH_FXP_OPEN:
+            case SftpConstants.SSH_FXP_OPEN:
                 doOpen(buffer, id);
                 break;
-            case SSH_FXP_CLOSE:
+            case SftpConstants.SSH_FXP_CLOSE:
                 doClose(buffer, id);
                 break;
-            case SSH_FXP_READ:
+            case SftpConstants.SSH_FXP_READ:
                 doRead(buffer, id);
                 break;
-            case SSH_FXP_WRITE:
+            case SftpConstants.SSH_FXP_WRITE:
                 doWrite(buffer, id);
                 break;
-            case SSH_FXP_LSTAT:
+            case SftpConstants.SSH_FXP_LSTAT:
                 doLStat(buffer, id);
                 break;
-            case SSH_FXP_FSTAT:
+            case SftpConstants.SSH_FXP_FSTAT:
                 doFStat(buffer, id);
                 break;
-            case SSH_FXP_SETSTAT:
+            case SftpConstants.SSH_FXP_SETSTAT:
                 doSetStat(buffer, id);
                 break;
-            case SSH_FXP_FSETSTAT:
+            case SftpConstants.SSH_FXP_FSETSTAT:
                 doFSetStat(buffer, id);
                 break;
-            case SSH_FXP_OPENDIR:
+            case SftpConstants.SSH_FXP_OPENDIR:
                 doOpenDir(buffer, id);
                 break;
-            case SSH_FXP_READDIR:
+            case SftpConstants.SSH_FXP_READDIR:
                 doReadDir(buffer, id);
                 break;
-            case SSH_FXP_REMOVE:
+            case SftpConstants.SSH_FXP_REMOVE:
                 doRemove(buffer, id);
                 break;
-            case SSH_FXP_MKDIR:
+            case SftpConstants.SSH_FXP_MKDIR:
                 doMakeDirectory(buffer, id);
                 break;
-            case SSH_FXP_RMDIR:
+            case SftpConstants.SSH_FXP_RMDIR:
                 doRemoveDirectory(buffer, id);
                 break;
-            case SSH_FXP_REALPATH:
+            case SftpConstants.SSH_FXP_REALPATH:
                 doRealPath(buffer, id);
                 break;
-            case SSH_FXP_STAT:
+            case SftpConstants.SSH_FXP_STAT:
                 doStat(buffer, id);
                 break;
-            case SSH_FXP_RENAME:
+            case SftpConstants.SSH_FXP_RENAME:
                 doRename(buffer, id);
                 break;
-            case SSH_FXP_READLINK:
+            case SftpConstants.SSH_FXP_READLINK:
                 doReadLink(buffer, id);
                 break;
-            case SSH_FXP_SYMLINK:
+            case SftpConstants.SSH_FXP_SYMLINK:
                 doSymLink(buffer, id);
                 break;
-            case SSH_FXP_LINK:
+            case SftpConstants.SSH_FXP_LINK:
                 doLink(buffer, id);
                 break;
-            case SSH_FXP_BLOCK:
+            case SftpConstants.SSH_FXP_BLOCK:
                 doBlock(buffer, id);
                 break;
-            case SSH_FXP_UNBLOCK:
+            case SftpConstants.SSH_FXP_UNBLOCK:
                 doUnblock(buffer, id);
                 break;
-            case SSH_FXP_EXTENDED:
+            case SftpConstants.SSH_FXP_EXTENDED:
                 doExtended(buffer, id);
                 break;
             default:
                 log.warn("Unknown command type received: {}", Integer.valueOf(type));
-                sendStatus(BufferUtils.clear(buffer), id, SSH_FX_OP_UNSUPPORTED, "Command " + type + " is unsupported or not implemented");
+                sendStatus(BufferUtils.clear(buffer), id, SftpConstants.SSH_FX_OP_UNSUPPORTED, "Command " + type + " is unsupported or not implemented");
         }
 
-        if (type != SSH_FXP_INIT) {
+        if (type != SftpConstants.SSH_FXP_INIT) {
             requestsCount++;
         }
     }
@@ -604,7 +530,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                 break;
             default:
                 log.info("Received unsupported SSH_FXP_EXTENDED({})", extension);
-                sendStatus(BufferUtils.clear(buffer), id, SSH_FX_OP_UNSUPPORTED, "Command SSH_FXP_EXTENDED(" + extension + ") is unsupported or not implemented");
+                sendStatus(BufferUtils.clear(buffer), id, SftpConstants.SSH_FX_OP_UNSUPPORTED, "Command SSH_FXP_EXTENDED(" + extension + ") is unsupported or not implemented");
                 break;
         }
     }
@@ -620,7 +546,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         }
 
         buffer.clear();
-        buffer.putByte((byte) SSH_FXP_EXTENDED_REPLY);
+        buffer.putByte((byte) SftpConstants.SSH_FXP_EXTENDED_REPLY);
         buffer.putInt(id);
         SpaceAvailableExtensionInfo.encode(buffer, info);
         send(buffer);
@@ -651,7 +577,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             return;
         }
 
-        sendStatus(BufferUtils.clear(buffer), id, SSH_FX_OK, "");
+        sendStatus(BufferUtils.clear(buffer), id, SftpConstants.SSH_FX_OK, "");
     }
 
     protected void doTextSeek(int id, String handle, long line) throws IOException {
@@ -674,7 +600,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             return;
         }
 
-        sendStatus(BufferUtils.clear(buffer), id, SSH_FX_OK, "");
+        sendStatus(BufferUtils.clear(buffer), id, SftpConstants.SSH_FX_OK, "");
     }
 
     protected void doOpenSSHFsync(int id, String handle) throws IOException {
@@ -697,7 +623,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         int blockSize = buffer.getInt();
         try {
             buffer.clear();
-            buffer.putByte((byte) SSH_FXP_EXTENDED_REPLY);
+            buffer.putByte((byte) SftpConstants.SSH_FXP_EXTENDED_REPLY);
             buffer.putInt(id);
             buffer.putString(SftpConstants.EXT_CHECK_FILE);
             doCheckFileHash(id, targetType, target, Arrays.asList(algos), startOffset, length, blockSize, buffer);
@@ -725,7 +651,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
              *       the server MUST return STATUS_PERMISSION_DENIED.
              */
             int access = fileHandle.getAccessMask();
-            if ((access & ACE4_READ_DATA) == 0) {
+            if ((access & SftpConstants.ACE4_READ_DATA) == 0) {
                 throw new AccessDeniedException("File not opened for read: " + path);
             }
         } else {
@@ -870,7 +796,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         }
 
         buffer.clear();
-        buffer.putByte((byte) SSH_FXP_EXTENDED_REPLY);
+        buffer.putByte((byte) SftpConstants.SSH_FXP_EXTENDED_REPLY);
         buffer.putInt(id);
         buffer.putString(targetType);
         buffer.putBytes(hashValue);
@@ -897,7 +823,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
              *      was opened
              */
             int access = fileHandle.getAccessMask();
-            if ((access & ACE4_READ_DATA) == 0) {
+            if ((access & SftpConstants.ACE4_READ_DATA) == 0) {
                 throw new AccessDeniedException("File not opened for read: " + path);
             }
         } else {
@@ -1028,7 +954,9 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
          * channel.
          */
         if (requestsCount > 0L) {
-            sendStatus(BufferUtils.clear(buffer), id, SSH_FX_FAILURE, "Version selection not the 1st request for proposal = " + proposed);
+            sendStatus(BufferUtils.clear(buffer), id,
+                       SftpConstants.SSH_FX_FAILURE,
+                       "Version selection not the 1st request for proposal = " + proposed);
             session.close(true);
             return;
         }
@@ -1043,9 +971,9 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         }
         if (result) {
             version = Integer.parseInt(proposed);
-            sendStatus(BufferUtils.clear(buffer), id, SSH_FX_OK, "");
+            sendStatus(BufferUtils.clear(buffer), id, SftpConstants.SSH_FX_OK, "");
         } else {
-            sendStatus(BufferUtils.clear(buffer), id, SSH_FX_FAILURE, "Unsupported version " + proposed);
+            sendStatus(BufferUtils.clear(buffer), id, SftpConstants.SSH_FX_FAILURE, "Unsupported version " + proposed);
             session.close(true);
         }
     }
@@ -1074,7 +1002,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         }
 
         int value = digit - '0';
-        String all = checkVersionCompatibility(buffer, id, value, SSH_FX_FAILURE);
+        String all = checkVersionCompatibility(buffer, id, value, SftpConstants.SSH_FX_FAILURE);
         if (GenericUtils.isEmpty(all)) {    // validation failed
             return null;
         } else {
@@ -1102,7 +1030,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         int hig = HIGHER_SFTP_IMPL;
         String available = ALL_SFTP_IMPL;
         // check if user wants to use a specific version
-        Integer sftpVersion = FactoryManagerUtils.getInteger(session, SFTP_VERSION);
+        Integer sftpVersion = PropertyResolverUtils.getInteger(session, SFTP_VERSION);
         if (sftpVersion != null) {
             int forcedValue = sftpVersion;
             if ((forcedValue < LOWER_SFTP_IMPL) || (forcedValue > HIGHER_SFTP_IMPL)) {
@@ -1139,7 +1067,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             return;
         }
 
-        sendStatus(BufferUtils.clear(buffer), id, SSH_FX_OK, "");
+        sendStatus(BufferUtils.clear(buffer), id, SftpConstants.SSH_FX_OK, "");
     }
 
     protected void doBlock(int id, String handle, long offset, long length, int mask) throws IOException {
@@ -1165,7 +1093,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             return;
         }
 
-        sendStatus(BufferUtils.clear(buffer), id, found ? SSH_FX_OK : SSH_FX_NO_MATCHING_BYTE_RANGE_LOCK, "");
+        sendStatus(BufferUtils.clear(buffer), id, found ? SftpConstants.SSH_FX_OK : SftpConstants.SSH_FX_NO_MATCHING_BYTE_RANGE_LOCK, "");
     }
 
     protected boolean doUnblock(int id, String handle, long offset, long length) throws IOException {
@@ -1196,7 +1124,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             return;
         }
 
-        sendStatus(BufferUtils.clear(buffer), id, SSH_FX_OK, "");
+        sendStatus(BufferUtils.clear(buffer), id, SftpConstants.SSH_FX_OK, "");
     }
 
     protected void doLink(int id, String targetPath, String linkPath, boolean symLink) throws IOException {
@@ -1216,7 +1144,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             return;
         }
 
-        sendStatus(BufferUtils.clear(buffer), id, SSH_FX_OK, "");
+        sendStatus(BufferUtils.clear(buffer), id, SftpConstants.SSH_FX_OK, "");
     }
 
     protected void doSymLink(int id, String targetPath, String linkPath) throws IOException {
@@ -1267,7 +1195,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         String oldPath = buffer.getString();
         String newPath = buffer.getString();
         int flags = 0;
-        if (version >= SFTP_V5) {
+        if (version >= SftpConstants.SFTP_V5) {
             flags = buffer.getInt();
         }
         try {
@@ -1277,7 +1205,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             return;
         }
 
-        sendStatus(BufferUtils.clear(buffer), id, SSH_FX_OK, "");
+        sendStatus(BufferUtils.clear(buffer), id, SftpConstants.SSH_FX_OK, "");
     }
 
     protected void doRename(int id, String oldPath, String newPath, int flags) throws IOException {
@@ -1289,10 +1217,10 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         Collection<CopyOption> opts = Collections.emptyList();
         if (flags != 0) {
             opts = new ArrayList<>();
-            if ((flags & SSH_FXP_RENAME_ATOMIC) == SSH_FXP_RENAME_ATOMIC) {
+            if ((flags & SftpConstants.SSH_FXP_RENAME_ATOMIC) == SftpConstants.SSH_FXP_RENAME_ATOMIC) {
                 opts.add(StandardCopyOption.ATOMIC_MOVE);
             }
-            if ((flags & SSH_FXP_RENAME_OVERWRITE) == SSH_FXP_RENAME_OVERWRITE) {
+            if ((flags & SftpConstants.SSH_FXP_RENAME_OVERWRITE) == SftpConstants.SSH_FXP_RENAME_OVERWRITE) {
                 opts.add(StandardCopyOption.REPLACE_EXISTING);
             }
         }
@@ -1320,7 +1248,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             return;
         }
 
-        sendStatus(BufferUtils.clear(buffer), id, SSH_FX_OK, "");
+        sendStatus(BufferUtils.clear(buffer), id, SftpConstants.SSH_FX_OK, "");
     }
 
     @SuppressWarnings("resource")
@@ -1338,7 +1266,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         FileHandle srcHandle = validateHandle(readHandle, rh, FileHandle.class);
         Path srcPath = srcHandle.getFile();
         int srcAccess = srcHandle.getAccessMask();
-        if ((srcAccess & ACE4_READ_DATA) != ACE4_READ_DATA) {
+        if ((srcAccess & SftpConstants.ACE4_READ_DATA) != SftpConstants.ACE4_READ_DATA) {
             throw new AccessDeniedException("File not opened for read: " + srcPath);
         }
 
@@ -1359,7 +1287,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
 
         FileHandle dstHandle = inPlaceCopy ? srcHandle : validateHandle(writeHandle, wh, FileHandle.class);
         int dstAccess = dstHandle.getAccessMask();
-        if ((dstAccess & ACE4_WRITE_DATA) != ACE4_WRITE_DATA) {
+        if ((dstAccess & SftpConstants.ACE4_WRITE_DATA) != SftpConstants.ACE4_WRITE_DATA) {
             throw new AccessDeniedException("File not opened for write: " + srcHandle);
         }
 
@@ -1409,7 +1337,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             return;
         }
 
-        sendStatus(BufferUtils.clear(buffer), id, SSH_FX_OK, "");
+        sendStatus(BufferUtils.clear(buffer), id, SftpConstants.SSH_FX_OK, "");
     }
 
     protected void doCopyFile(int id, String srcFile, String dstFile, boolean overwriteDestination) throws IOException {
@@ -1432,8 +1360,8 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
 
     protected void doStat(Buffer buffer, int id) throws IOException {
         String path = buffer.getString();
-        int flags = SSH_FILEXFER_ATTR_ALL;
-        if (version >= SFTP_V4) {
+        int flags = SftpConstants.SSH_FILEXFER_ATTR_ALL;
+        if (version >= SftpConstants.SFTP_V4) {
             flags = buffer.getInt();
         }
 
@@ -1468,7 +1396,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         Pair<Path, Boolean> result;
         try {
             LinkOption[] options = IoUtils.getLinkOptions(false);
-            if (version < SFTP_V6) {
+            if (version < SftpConstants.SFTP_V6) {
                 /*
                  * See http://www.openssh.com/txt/draft-ietf-secsh-filexfer-02.txt:
                  *
@@ -1494,9 +1422,9 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
 
                 Path p = result.getFirst();
                 Boolean status = result.getSecond();
-                if (control == SSH_FXP_REALPATH_STAT_IF) {
+                if (control == SftpConstants.SSH_FXP_REALPATH_STAT_IF) {
                     if (status == null) {
-                        attrs = handleUnknownStatusFileAttributes(p, SSH_FILEXFER_ATTR_ALL, options);
+                        attrs = handleUnknownStatusFileAttributes(p, SftpConstants.SSH_FILEXFER_ATTR_ALL, options);
                     } else if (status) {
                         try {
                             attrs = getAttributes(p, IoUtils.getLinkOptions(false));
@@ -1511,9 +1439,9 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                             log.debug("Dummy attributes for non-existing file: " + p);
                         }
                     }
-                } else if (control == SSH_FXP_REALPATH_STAT_ALWAYS) {
+                } else if (control == SftpConstants.SSH_FXP_REALPATH_STAT_ALWAYS) {
                     if (status == null) {
-                        attrs = handleUnknownStatusFileAttributes(p, SSH_FILEXFER_ATTR_ALL, options);
+                        attrs = handleUnknownStatusFileAttributes(p, SftpConstants.SSH_FILEXFER_ATTR_ALL, options);
                     } else if (status) {
                         attrs = getAttributes(p, options);
                     } else {
@@ -1576,7 +1504,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             return;
         }
 
-        sendStatus(BufferUtils.clear(buffer), id, SSH_FX_OK, "");
+        sendStatus(BufferUtils.clear(buffer), id, SftpConstants.SSH_FX_OK, "");
     }
 
     protected void doRemoveDirectory(int id, String path, LinkOption... options) throws IOException {
@@ -1599,7 +1527,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             return;
         }
 
-        sendStatus(BufferUtils.clear(buffer), id, SSH_FX_OK, "");
+        sendStatus(BufferUtils.clear(buffer), id, SftpConstants.SSH_FX_OK, "");
     }
 
     protected void doMakeDirectory(int id, String path, Map<String, ?> attrs, LinkOption... options) throws IOException {
@@ -1634,7 +1562,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             return;
         }
 
-        sendStatus(BufferUtils.clear(buffer), id, SSH_FX_OK, "");
+        sendStatus(BufferUtils.clear(buffer), id, SftpConstants.SSH_FX_OK, "");
     }
 
     protected void doRemove(int id, String path, LinkOption... options) throws IOException {
@@ -1689,12 +1617,12 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                 // large size or have a timeout to occur.
 
                 reply = BufferUtils.clear(buffer);
-                reply.putByte((byte) SSH_FXP_NAME);
+                reply.putByte((byte) SftpConstants.SSH_FXP_NAME);
                 reply.putInt(id);
                 int lenPos = reply.wpos();
                 reply.putInt(0);
 
-                int count = doReadDir(id, dh, reply, FactoryManagerUtils.getIntProperty(session, MAX_PACKET_LENGTH_PROP, DEFAULT_MAX_PACKET_LENGTH));
+                int count = doReadDir(id, dh, reply, PropertyResolverUtils.getIntProperty(session, MAX_PACKET_LENGTH_PROP, DEFAULT_MAX_PACKET_LENGTH));
                 BufferUtils.updateLengthPlaceholder(reply, lenPos, count);
                 if (log.isDebugEnabled()) {
                     log.debug("doReadDir({})[{}] - sent {} entries", handle, h, count);
@@ -1764,7 +1692,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             return;
         }
 
-        sendStatus(BufferUtils.clear(buffer), id, SSH_FX_OK, "");
+        sendStatus(BufferUtils.clear(buffer), id, SftpConstants.SSH_FX_OK, "");
     }
 
     protected void doFSetStat(int id, String handle, Map<String, ?> attrs) throws IOException {
@@ -1786,7 +1714,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             return;
         }
 
-        sendStatus(BufferUtils.clear(buffer), id, SSH_FX_OK, "");
+        sendStatus(BufferUtils.clear(buffer), id, SftpConstants.SSH_FX_OK, "");
     }
 
     protected void doSetStat(int id, String path, Map<String, ?> attrs) throws IOException {
@@ -1797,8 +1725,8 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
 
     protected void doFStat(Buffer buffer, int id) throws IOException {
         String handle = buffer.getString();
-        int flags = SSH_FILEXFER_ATTR_ALL;
-        if (version >= SFTP_V4) {
+        int flags = SftpConstants.SSH_FILEXFER_ATTR_ALL;
+        if (version >= SftpConstants.SFTP_V4) {
             flags = buffer.getInt();
         }
 
@@ -1824,8 +1752,8 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
 
     protected void doLStat(Buffer buffer, int id) throws IOException {
         String path = buffer.getString();
-        int flags = SSH_FILEXFER_ATTR_ALL;
-        if (version >= SFTP_V4) {
+        int flags = SftpConstants.SSH_FILEXFER_ATTR_ALL;
+        if (version >= SftpConstants.SFTP_V4) {
             flags = buffer.getInt();
         }
 
@@ -1860,7 +1788,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             return;
         }
 
-        sendStatus(BufferUtils.clear(buffer), id, SSH_FX_OK, "");
+        sendStatus(BufferUtils.clear(buffer), id, SftpConstants.SSH_FX_OK, "");
     }
 
     protected void doWrite(int id, String handle, long offset, int length, byte[] data, int doff, int remaining) throws IOException {
@@ -1890,7 +1818,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         String handle = buffer.getString();
         long offset = buffer.getLong();
         int requestedLength = buffer.getInt();
-        int maxAllowed = FactoryManagerUtils.getIntProperty(session, MAX_PACKET_LENGTH_PROP, DEFAULT_MAX_PACKET_LENGTH);
+        int maxAllowed = PropertyResolverUtils.getIntProperty(session, MAX_PACKET_LENGTH_PROP, DEFAULT_MAX_PACKET_LENGTH);
         int readLen = Math.min(requestedLength, maxAllowed);
 
         if (log.isTraceEnabled()) {
@@ -1904,7 +1832,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             buffer.clear();
             buffer.ensureCapacity(readLen + Long.SIZE /* the header */, Int2IntFunction.IDENTITY);
 
-            buffer.putByte((byte) SSH_FXP_DATA);
+            buffer.putByte((byte) SftpConstants.SSH_FXP_DATA);
             buffer.putInt(id);
             int lenPos = buffer.wpos();
             buffer.putInt(0);
@@ -1945,7 +1873,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             return;
         }
 
-        sendStatus(BufferUtils.clear(buffer), id, SSH_FX_OK, "", "");
+        sendStatus(BufferUtils.clear(buffer), id, SftpConstants.SSH_FX_OK, "", "");
     }
 
     protected void doClose(int id, String handle) throws IOException {
@@ -1960,50 +1888,50 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
          * Be consistent with FileChannel#open - if no mode specified then READ is assumed
          */
         int access = 0;
-        if (version >= SFTP_V5) {
+        if (version >= SftpConstants.SFTP_V5) {
             access = buffer.getInt();
             if (access == 0) {
-                access = ACE4_READ_DATA | ACE4_READ_ATTRIBUTES;
+                access = SftpConstants.ACE4_READ_DATA | SftpConstants.ACE4_READ_ATTRIBUTES;
             }
         }
 
         int pflags = buffer.getInt();
         if (pflags == 0) {
-            pflags = SSH_FXF_READ;
+            pflags = SftpConstants.SSH_FXF_READ;
         }
 
-        if (version < SFTP_V5) {
+        if (version < SftpConstants.SFTP_V5) {
             int flags = pflags;
             pflags = 0;
-            switch (flags & (SSH_FXF_READ | SSH_FXF_WRITE)) {
-                case SSH_FXF_READ:
-                    access |= ACE4_READ_DATA | ACE4_READ_ATTRIBUTES;
+            switch (flags & (SftpConstants.SSH_FXF_READ | SftpConstants.SSH_FXF_WRITE)) {
+                case SftpConstants.SSH_FXF_READ:
+                    access |= SftpConstants.ACE4_READ_DATA | SftpConstants.ACE4_READ_ATTRIBUTES;
                     break;
-                case SSH_FXF_WRITE:
-                    access |= ACE4_WRITE_DATA | ACE4_WRITE_ATTRIBUTES;
+                case SftpConstants.SSH_FXF_WRITE:
+                    access |= SftpConstants.ACE4_WRITE_DATA | SftpConstants.ACE4_WRITE_ATTRIBUTES;
                     break;
                 default:
-                    access |= ACE4_READ_DATA | ACE4_READ_ATTRIBUTES;
-                    access |= ACE4_WRITE_DATA | ACE4_WRITE_ATTRIBUTES;
+                    access |= SftpConstants.ACE4_READ_DATA | SftpConstants.ACE4_READ_ATTRIBUTES;
+                    access |= SftpConstants.ACE4_WRITE_DATA | SftpConstants.ACE4_WRITE_ATTRIBUTES;
                     break;
             }
-            if ((flags & SSH_FXF_APPEND) != 0) {
-                access |= ACE4_APPEND_DATA;
-                pflags |= SSH_FXF_APPEND_DATA | SSH_FXF_APPEND_DATA_ATOMIC;
+            if ((flags & SftpConstants.SSH_FXF_APPEND) != 0) {
+                access |= SftpConstants.ACE4_APPEND_DATA;
+                pflags |= SftpConstants.SSH_FXF_APPEND_DATA | SftpConstants.SSH_FXF_APPEND_DATA_ATOMIC;
             }
-            if ((flags & SSH_FXF_CREAT) != 0) {
-                if ((flags & SSH_FXF_EXCL) != 0) {
-                    pflags |= SSH_FXF_CREATE_NEW;
-                } else if ((flags & SSH_FXF_TRUNC) != 0) {
-                    pflags |= SSH_FXF_CREATE_TRUNCATE;
+            if ((flags & SftpConstants.SSH_FXF_CREAT) != 0) {
+                if ((flags & SftpConstants.SSH_FXF_EXCL) != 0) {
+                    pflags |= SftpConstants.SSH_FXF_CREATE_NEW;
+                } else if ((flags & SftpConstants.SSH_FXF_TRUNC) != 0) {
+                    pflags |= SftpConstants.SSH_FXF_CREATE_TRUNCATE;
                 } else {
-                    pflags |= SSH_FXF_OPEN_OR_CREATE;
+                    pflags |= SftpConstants.SSH_FXF_OPEN_OR_CREATE;
                 }
             } else {
-                if ((flags & SSH_FXF_TRUNC) != 0) {
-                    pflags |= SSH_FXF_TRUNCATE_EXISTING;
+                if ((flags & SftpConstants.SSH_FXF_TRUNC) != 0) {
+                    pflags |= SftpConstants.SSH_FXF_TRUNCATE_EXISTING;
                 } else {
-                    pflags |= SSH_FXF_OPEN_EXISTING;
+                    pflags |= SftpConstants.SSH_FXF_OPEN_EXISTING;
                 }
             }
         }
@@ -2035,7 +1963,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                     path, Integer.toHexString(access), Integer.toHexString(pflags), attrs);
         }
         int curHandleCount = handles.size();
-        int maxHandleCount = FactoryManagerUtils.getIntProperty(session, MAX_OPEN_HANDLES_PER_SESSION, DEFAULT_MAX_OPEN_HANDLES);
+        int maxHandleCount = PropertyResolverUtils.getIntProperty(session, MAX_OPEN_HANDLES_PER_SESSION, DEFAULT_MAX_OPEN_HANDLES);
         if (curHandleCount > maxHandleCount) {
             throw new IllegalStateException("Too many open handles: current=" + curHandleCount + ", max.=" + maxHandleCount);
         }
@@ -2073,7 +2001,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             log.debug("Received SSH_FXP_INIT (version={})", Integer.valueOf(id));
         }
 
-        String all = checkVersionCompatibility(buffer, id, id, SSH_FX_OP_UNSUPPORTED);
+        String all = checkVersionCompatibility(buffer, id, id, SftpConstants.SSH_FX_OP_UNSUPPORTED);
         if (GenericUtils.isEmpty(all)) { // i.e. validation failed
             return;
         }
@@ -2086,7 +2014,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
 
         buffer.clear();
 
-        buffer.putByte((byte) SSH_FXP_VERSION);
+        buffer.putByte((byte) SftpConstants.SSH_FXP_VERSION);
         buffer.putInt(version);
         appendExtensions(buffer, all);
 
@@ -2126,7 +2054,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     }
 
     protected List<OpenSSHExtension> resolveOpenSSHExtensions() {
-        String value = FactoryManagerUtils.getString(session, OPENSSH_EXTENSIONS_PROP);
+        String value = PropertyResolverUtils.getString(session, OPENSSH_EXTENSIONS_PROP);
         if (value == null) {    // No override
             return DEFAULT_OPEN_SSH_EXTENSIONS;
         }
@@ -2155,7 +2083,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     }
 
     protected Collection<String> getSupportedClientExtensions() {
-        String value = FactoryManagerUtils.getString(session, CLIENT_EXTENSIONS_PROP);
+        String value = PropertyResolverUtils.getString(session, CLIENT_EXTENSIONS_PROP);
         if (value == null) {
             return DEFAULT_SUPPORTED_CLIENT_EXTENSIONS;
         }
@@ -2178,7 +2106,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
      * @see SftpConstants#EXT_VERSIONS
      */
     protected void appendVersionsExtension(Buffer buffer, String value) {
-        buffer.putString(EXT_VERSIONS);
+        buffer.putString(SftpConstants.EXT_VERSIONS);
         buffer.putString(value);
     }
 
@@ -2192,7 +2120,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
      * @see SftpConstants#EXT_NEWLINE
      */
     protected void appendNewlineExtension(Buffer buffer, String value) {
-        buffer.putString(EXT_NEWLINE);
+        buffer.putString(SftpConstants.EXT_NEWLINE);
         buffer.putString(value);
     }
 
@@ -2207,14 +2135,15 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
      * @see <A HREF="http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/draft-ietf-secsh-filexfer-09.txt">DRAFT 09 - section 4.4</A>
      */
     protected void appendVendorIdExtension(Buffer buffer, Map<String, ?> versionProperties) {
-        buffer.putString(EXT_VENDOR_ID);
+        buffer.putString(SftpConstants.EXT_VENDOR_ID);
 
+        PropertyResolver resolver = PropertyResolverUtils.toPropertyResolver(Collections.unmodifiableMap(versionProperties));
         // placeholder for length
         int lenPos = buffer.wpos();
         buffer.putInt(0);
-        buffer.putString(FactoryManagerUtils.getStringProperty(versionProperties, "groupId", getClass().getPackage().getName()));   // vendor-name
-        buffer.putString(FactoryManagerUtils.getStringProperty(versionProperties, "artifactId", getClass().getSimpleName()));       // product-name
-        buffer.putString(FactoryManagerUtils.getStringProperty(versionProperties, "version", FactoryManager.DEFAULT_VERSION));      // product-version
+        buffer.putString(PropertyResolverUtils.getStringProperty(resolver, "groupId", getClass().getPackage().getName()));   // vendor-name
+        buffer.putString(PropertyResolverUtils.getStringProperty(resolver, "artifactId", getClass().getSimpleName()));       // product-name
+        buffer.putString(PropertyResolverUtils.getStringProperty(resolver, "version", FactoryManager.DEFAULT_VERSION));      // product-version
         buffer.putLong(0L); // product-build-number
         BufferUtils.updateLengthPlaceholder(buffer, lenPos);
     }
@@ -2229,20 +2158,20 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
      *               - may be {@code null}/empty
      */
     protected void appendSupportedExtension(Buffer buffer, Collection<String> extras) {
-        buffer.putString(EXT_SUPPORTED);
+        buffer.putString(SftpConstants.EXT_SUPPORTED);
 
         int lenPos = buffer.wpos();
         buffer.putInt(0); // length placeholder
         // supported-attribute-mask
-        buffer.putInt(SSH_FILEXFER_ATTR_SIZE | SSH_FILEXFER_ATTR_PERMISSIONS
-                | SSH_FILEXFER_ATTR_ACCESSTIME | SSH_FILEXFER_ATTR_CREATETIME
-                | SSH_FILEXFER_ATTR_MODIFYTIME | SSH_FILEXFER_ATTR_OWNERGROUP
-                | SSH_FILEXFER_ATTR_BITS);
+        buffer.putInt(SftpConstants.SSH_FILEXFER_ATTR_SIZE | SftpConstants.SSH_FILEXFER_ATTR_PERMISSIONS
+                | SftpConstants.SSH_FILEXFER_ATTR_ACCESSTIME | SftpConstants.SSH_FILEXFER_ATTR_CREATETIME
+                | SftpConstants.SSH_FILEXFER_ATTR_MODIFYTIME | SftpConstants.SSH_FILEXFER_ATTR_OWNERGROUP
+                | SftpConstants.SSH_FILEXFER_ATTR_BITS);
         // TODO: supported-attribute-bits
         buffer.putInt(0);
         // supported-open-flags
-        buffer.putInt(SSH_FXF_READ | SSH_FXF_WRITE | SSH_FXF_APPEND
-                | SSH_FXF_CREAT | SSH_FXF_TRUNC | SSH_FXF_EXCL);
+        buffer.putInt(SftpConstants.SSH_FXF_READ | SftpConstants.SSH_FXF_WRITE | SftpConstants.SSH_FXF_APPEND
+                | SftpConstants.SSH_FXF_CREAT | SftpConstants.SSH_FXF_TRUNC | SftpConstants.SSH_FXF_EXCL);
         // TODO: supported-access-mask
         buffer.putInt(0);
         // max-read-size
@@ -2265,19 +2194,19 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
      * @see <A HREF="https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#page-10">DRAFT 13 section 5.4</A>
      */
     protected void appendSupported2Extension(Buffer buffer, Collection<String> extras) {
-        buffer.putString(EXT_SUPPORTED2);
+        buffer.putString(SftpConstants.EXT_SUPPORTED2);
 
         int lenPos = buffer.wpos();
         buffer.putInt(0); // length placeholder
         // supported-attribute-mask
-        buffer.putInt(SSH_FILEXFER_ATTR_SIZE | SSH_FILEXFER_ATTR_PERMISSIONS
-                | SSH_FILEXFER_ATTR_ACCESSTIME | SSH_FILEXFER_ATTR_CREATETIME
-                | SSH_FILEXFER_ATTR_MODIFYTIME | SSH_FILEXFER_ATTR_OWNERGROUP
-                | SSH_FILEXFER_ATTR_BITS);
+        buffer.putInt(SftpConstants.SSH_FILEXFER_ATTR_SIZE | SftpConstants.SSH_FILEXFER_ATTR_PERMISSIONS
+                | SftpConstants.SSH_FILEXFER_ATTR_ACCESSTIME | SftpConstants.SSH_FILEXFER_ATTR_CREATETIME
+                | SftpConstants.SSH_FILEXFER_ATTR_MODIFYTIME | SftpConstants.SSH_FILEXFER_ATTR_OWNERGROUP
+                | SftpConstants.SSH_FILEXFER_ATTR_BITS);
         // TODO: supported-attribute-bits
         buffer.putInt(0);
         // supported-open-flags
-        buffer.putInt(SSH_FXF_ACCESS_DISPOSITION | SSH_FXF_APPEND_DATA);
+        buffer.putInt(SftpConstants.SSH_FXF_ACCESS_DISPOSITION | SftpConstants.SSH_FXF_APPEND_DATA);
         // TODO: supported-access-mask
         buffer.putInt(0);
         // max-read-size
@@ -2295,21 +2224,21 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     }
 
     protected void sendHandle(Buffer buffer, int id, String handle) throws IOException {
-        buffer.putByte((byte) SSH_FXP_HANDLE);
+        buffer.putByte((byte) SftpConstants.SSH_FXP_HANDLE);
         buffer.putInt(id);
         buffer.putString(handle);
         send(buffer);
     }
 
     protected void sendAttrs(Buffer buffer, int id, Map<String, ?> attributes) throws IOException {
-        buffer.putByte((byte) SSH_FXP_ATTRS);
+        buffer.putByte((byte) SftpConstants.SSH_FXP_ATTRS);
         buffer.putInt(id);
         writeAttrs(buffer, attributes);
         send(buffer);
     }
 
     protected void sendPath(Buffer buffer, int id, Path f, Map<String, ?> attrs) throws IOException {
-        buffer.putByte((byte) SSH_FXP_NAME);
+        buffer.putByte((byte) SftpConstants.SSH_FXP_NAME);
         buffer.putInt(id);
         buffer.putInt(1);   // one reply
 
@@ -2323,11 +2252,11 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         }
         buffer.putString(normalizedPath);
 
-        if (version == SFTP_V3) {
+        if (version == SftpConstants.SFTP_V3) {
             f = resolveFile(normalizedPath);
             buffer.putString(getLongName(f, attrs));
             buffer.putInt(0);   // no flags
-        } else if (version >= SFTP_V4) {
+        } else if (version >= SftpConstants.SFTP_V4) {
             writeAttrs(buffer, attrs);
         } else {
             throw new IllegalStateException("sendPath(" + f + ") unsupported version: " + version);
@@ -2338,12 +2267,12 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     protected void sendLink(Buffer buffer, int id, String link) throws IOException {
         //in case we are running on Windows
         String unixPath = link.replace(File.separatorChar, '/');
-        buffer.putByte((byte) SSH_FXP_NAME);
+        buffer.putByte((byte) SftpConstants.SSH_FXP_NAME);
         buffer.putInt(id);
         buffer.putInt(1);   // one response
 
         buffer.putString(unixPath);
-        if (version == SFTP_V3) {
+        if (version == SftpConstants.SFTP_V3) {
             buffer.putString(unixPath);
         }
 
@@ -2397,10 +2326,10 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
      * @throws IOException If failed to generate the entry data
      */
     protected void writeDirEntry(int id, DirectoryHandle dir, Buffer buffer, int index, Path f, String shortName, LinkOption... options) throws IOException {
-        Map<String, ?> attrs = resolveFileAttributes(f, SSH_FILEXFER_ATTR_ALL, options);
+        Map<String, ?> attrs = resolveFileAttributes(f, SftpConstants.SSH_FILEXFER_ATTR_ALL, options);
 
         buffer.putString(shortName);
-        if (version == SFTP_V3) {
+        if (version == SftpConstants.SFTP_V3) {
             String longName = getLongName(f, options);
             buffer.putString(longName);
             if (log.isTraceEnabled()) {
@@ -2532,7 +2461,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     }
 
     protected Map<String, Object> getAttributes(Path file, LinkOption... options) throws IOException {
-        return getAttributes(file, SSH_FILEXFER_ATTR_ALL, options);
+        return getAttributes(file, SftpConstants.SSH_FILEXFER_ATTR_ALL, options);
     }
 
     protected Map<String, Object> handleUnknownStatusFileAttributes(Path file, int flags, LinkOption... options) throws IOException {
@@ -2871,7 +2800,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             log.debug("Send SSH_FXP_STATUS (substatus={}, lang={}, msg={})", substatus, lang, msg);
         }
 
-        buffer.putByte((byte) SSH_FXP_STATUS);
+        buffer.putByte((byte) SftpConstants.SSH_FXP_STATUS);
         buffer.putInt(id);
         buffer.putInt(substatus);
         buffer.putString(msg);

@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.FactoryManagerUtils;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoService;
@@ -179,7 +179,7 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
     }
 
     public void startReading() {
-        startReading(FactoryManagerUtils.getIntProperty(manager, FactoryManager.NIO2_READ_BUFFER_SIZE, DEFAULT_READBUF_SIZE));
+        startReading(PropertyResolverUtils.getIntProperty(manager, FactoryManager.NIO2_READ_BUFFER_SIZE, DEFAULT_READBUF_SIZE));
     }
 
     public void startReading(int bufSize) {

@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.FactoryManagerUtils;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoService;
 import org.apache.sshd.common.io.IoSession;
@@ -78,7 +78,7 @@ public abstract class Nio2Service extends AbstractInnerCloseable implements IoSe
     }
 
     protected <T> void setOption(NetworkChannel socket, String property, SocketOption<T> option, T defaultValue) throws IOException {
-        String valStr = FactoryManagerUtils.getString(manager, property);
+        String valStr = PropertyResolverUtils.getString(manager, property);
         T val = defaultValue;
         if (!GenericUtils.isEmpty(valStr)) {
             Class<T> type = option.type();

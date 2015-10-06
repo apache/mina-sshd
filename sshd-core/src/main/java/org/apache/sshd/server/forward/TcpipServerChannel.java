@@ -301,6 +301,7 @@ public class TcpipServerChannel extends AbstractServerChannel {
                 try {
                     localWindow.consumeAndCheck(len);
                 } catch (IOException e) {
+                    Session session = getSession();
                     session.exceptionCaught(e);
                 }
             }

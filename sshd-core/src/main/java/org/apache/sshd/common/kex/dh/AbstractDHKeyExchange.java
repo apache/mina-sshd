@@ -30,7 +30,6 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  */
 public abstract class AbstractDHKeyExchange extends AbstractLoggingBean implements KeyExchange {
 
-    protected AbstractSession session;
     protected byte[] v_s;
     protected byte[] v_c;
     protected byte[] i_s;
@@ -40,6 +39,8 @@ public abstract class AbstractDHKeyExchange extends AbstractLoggingBean implemen
     protected byte[] f;
     protected byte[] k;
     protected byte[] h;
+
+    private AbstractSession session;
 
     protected AbstractDHKeyExchange() {
         super();

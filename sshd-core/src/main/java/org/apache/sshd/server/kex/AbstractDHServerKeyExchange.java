@@ -25,27 +25,31 @@ import org.apache.sshd.common.kex.dh.AbstractDHKeyExchange;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.server.session.ServerSession;
+import org.apache.sshd.server.session.ServerSessionHolder;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractDHServerKeyExchange extends AbstractDHKeyExchange {
-
-    protected ServerSession session;
+public abstract class AbstractDHServerKeyExchange extends AbstractDHKeyExchange implements ServerSessionHolder {
 
     protected AbstractDHServerKeyExchange() {
         super();
     }
 
     @Override
+    public ServerSession getServerSession() {
+        return (ServerSession) super.getSession();
+    }
+
+    @Override
     public void init(AbstractSession s, byte[] v_s, byte[] v_c, byte[] i_s, byte[] i_c) throws Exception {
         super.init(s, v_s, v_c, i_s, i_c);
         ValidateUtils.checkTrue(s instanceof ServerSession, "Using a server side KeyExchange on a client");
-        session = (ServerSession) s;
     }
 
     @Override
     public PublicKey getServerKey() {
+        ServerSession session = getServerSession();
         return ValidateUtils.checkNotNull(session.getHostKey(), "No server key pair available").getPublic();
     }
 }

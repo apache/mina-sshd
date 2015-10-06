@@ -26,7 +26,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -35,7 +34,7 @@ import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.FactoryManagerUtils;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.cipher.Cipher;
@@ -117,9 +116,8 @@ public class LoadTest extends BaseTestSupport {
 
     protected void runClient(String msg) throws Exception {
         try (SshClient client = setupTestClient()) {
-            Map<String, Object> props = client.getProperties();
-            FactoryManagerUtils.updateProperty(props, FactoryManager.MAX_PACKET_SIZE, 1024 * 16);
-            FactoryManagerUtils.updateProperty(props, FactoryManager.WINDOW_SIZE, 1024 * 8);
+            PropertyResolverUtils.updateProperty(client, FactoryManager.MAX_PACKET_SIZE, 1024 * 16);
+            PropertyResolverUtils.updateProperty(client, FactoryManager.WINDOW_SIZE, 1024 * 8);
             client.setKeyExchangeFactories(Arrays.asList(
                     ClientBuilder.DH2KEX.transform(BuiltinDHFactories.dhg1)));
             client.setCipherFactories(Arrays.<NamedFactory<Cipher>>asList(BuiltinCiphers.blowfishcbc));

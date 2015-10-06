@@ -928,7 +928,7 @@
                 <executions>
                     <execution>
                         <id>verify-style</id>
-                        <phase>process-classes</phase>
+                        <phase>validate</phase>
                         <goals>
                             <goal>check</goal>
                         </goals>

@@ -36,7 +36,7 @@ import org.apache.sshd.client.auth.UserInteraction;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.session.ClientConnectionServiceFactory;
 import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.common.FactoryManagerUtils;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
@@ -82,8 +82,8 @@ public class AuthenticationTest extends BaseTestSupport {
     @Before
     public void setUp() throws Exception {
         sshd = setupTestServer();
-        FactoryManagerUtils.updateProperty(sshd, ServerFactoryManager.WELCOME_BANNER, WELCOME);
-        FactoryManagerUtils.updateProperty(sshd, ServerFactoryManager.AUTH_METHODS, "publickey,password publickey,keyboard-interactive");
+        PropertyResolverUtils.updateProperty(sshd, ServerFactoryManager.WELCOME_BANNER, WELCOME);
+        PropertyResolverUtils.updateProperty(sshd, ServerFactoryManager.AUTH_METHODS, "publickey,password publickey,keyboard-interactive");
         sshd.setSessionFactory(new SessionFactory(sshd) {
             @Override
             protected ServerSessionImpl doCreateSession(IoSession ioSession) throws Exception {
@@ -179,7 +179,7 @@ public class AuthenticationTest extends BaseTestSupport {
                 }
             }
         ));
-        FactoryManagerUtils.updateProperty(sshd, ServerFactoryManager.AUTH_METHODS, UserAuthPasswordFactory.NAME);
+        PropertyResolverUtils.updateProperty(sshd, ServerFactoryManager.AUTH_METHODS, UserAuthPasswordFactory.NAME);
 
         try (SshClient client = setupTestClient()) {
             final AtomicInteger updatesCount = new AtomicInteger(0);
@@ -223,7 +223,7 @@ public class AuthenticationTest extends BaseTestSupport {
                         };
                     }
             }));
-            FactoryManagerUtils.updateProperty(client, ServerFactoryManager.AUTH_METHODS, UserAuthPasswordFactory.NAME);
+            PropertyResolverUtils.updateProperty(client, ServerFactoryManager.AUTH_METHODS, UserAuthPasswordFactory.NAME);
 
             client.start();
 
@@ -296,13 +296,13 @@ public class AuthenticationTest extends BaseTestSupport {
                 @Override
                 public InteractiveChallenge generateChallenge(ServerSession session, String username, String lang, String subMethods) {
                     assertEquals("Mismatched user language",
-                            FactoryManagerUtils.getStringProperty(
+                            PropertyResolverUtils.getStringProperty(
                                     client,
                                     org.apache.sshd.client.auth.UserAuthKeyboardInteractive.INTERACTIVE_LANGUAGE_TAG,
                                     org.apache.sshd.client.auth.UserAuthKeyboardInteractive.DEFAULT_INTERACTIVE_LANGUAGE_TAG),
                             lang);
                     assertEquals("Mismatched client sub-methods",
-                            FactoryManagerUtils.getStringProperty(
+                            PropertyResolverUtils.getStringProperty(
                                     client,
                                     org.apache.sshd.client.auth.UserAuthKeyboardInteractive.INTERACTIVE_SUBMETHODS,
                                     org.apache.sshd.client.auth.UserAuthKeyboardInteractive.DEFAULT_INTERACTIVE_SUBMETHODS),
@@ -367,7 +367,7 @@ public class AuthenticationTest extends BaseTestSupport {
             challenge.addPrompt(prompt, (GenericUtils.size(challenge.getPrompts()) & 0x1) != 0);
         }
 
-        FactoryManagerUtils.updateProperty(sshd, ServerFactoryManager.AUTH_METHODS, UserAuthKeyboardInteractiveFactory.NAME);
+        PropertyResolverUtils.updateProperty(sshd, ServerFactoryManager.AUTH_METHODS, UserAuthKeyboardInteractiveFactory.NAME);
         final AtomicInteger genCount = new AtomicInteger(0);
         final AtomicInteger authCount = new AtomicInteger(0);
         sshd.setKeyboardInteractiveAuthenticator(new KeyboardInteractiveAuthenticator() {
@@ -393,7 +393,7 @@ public class AuthenticationTest extends BaseTestSupport {
                 return true;
             }
         });
-        FactoryManagerUtils.updateProperty(sshd, ServerFactoryManager.AUTH_METHODS, UserAuthKeyboardInteractiveFactory.NAME);
+        PropertyResolverUtils.updateProperty(sshd, ServerFactoryManager.AUTH_METHODS, UserAuthKeyboardInteractiveFactory.NAME);
 
         try (SshClient client = setupTestClient()) {
             final AtomicInteger interactiveCount = new AtomicInteger(0);
@@ -430,7 +430,7 @@ public class AuthenticationTest extends BaseTestSupport {
                     throw new UnsupportedOperationException("Unexpected call");
                 }
             });
-            FactoryManagerUtils.updateProperty(client, ServerFactoryManager.AUTH_METHODS, UserAuthKeyboardInteractiveFactory.NAME);
+            PropertyResolverUtils.updateProperty(client, ServerFactoryManager.AUTH_METHODS, UserAuthKeyboardInteractiveFactory.NAME);
 
             client.start();
 
@@ -460,7 +460,7 @@ public class AuthenticationTest extends BaseTestSupport {
                 return delegate.authenticate(username, password, session);
             }
         });
-        FactoryManagerUtils.updateProperty(sshd, ServerFactoryManager.AUTH_METHODS, UserAuthPasswordFactory.NAME);
+        PropertyResolverUtils.updateProperty(sshd, ServerFactoryManager.AUTH_METHODS, UserAuthPasswordFactory.NAME);
 
         try (SshClient client = setupTestClient()) {
             final AtomicInteger updatesCount = new AtomicInteger(0);
@@ -483,7 +483,7 @@ public class AuthenticationTest extends BaseTestSupport {
                     return getCurrentTestName();
                 }
             });
-            FactoryManagerUtils.updateProperty(client, ServerFactoryManager.AUTH_METHODS, UserAuthPasswordFactory.NAME);
+            PropertyResolverUtils.updateProperty(client, ServerFactoryManager.AUTH_METHODS, UserAuthPasswordFactory.NAME);
 
             client.start();
 

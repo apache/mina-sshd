@@ -28,9 +28,9 @@ import org.apache.sshd.client.auth.UserAuth;
 import org.apache.sshd.client.auth.UserInteraction;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.DefaultAuthFuture;
-import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
@@ -74,7 +74,7 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
         authFactories = manager.getUserAuthFactories();
         clientMethods = new ArrayList<>();
 
-        String prefs = FactoryManagerUtils.getString(manager, ClientFactoryManager.PREFERRED_AUTHS);
+        String prefs = PropertyResolverUtils.getString(session, ClientFactoryManager.PREFERRED_AUTHS);
         if (!GenericUtils.isEmpty(prefs)) {
             for (String pref : prefs.split(",")) {
                 NamedFactory<UserAuth> factory = NamedResource.Utils.findByName(pref, String.CASE_INSENSITIVE_ORDER, authFactories);

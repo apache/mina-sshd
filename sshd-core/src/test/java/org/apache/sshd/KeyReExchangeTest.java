@@ -39,7 +39,7 @@ import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.common.FactoryManagerUtils;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.future.KeyExchangeFuture;
@@ -84,10 +84,10 @@ public class KeyReExchangeTest extends BaseTestSupport {
     protected void setUp(long bytesLimit, long timeLimit) throws Exception {
         sshd = setupTestServer();
         if (bytesLimit > 0L) {
-            FactoryManagerUtils.updateProperty(sshd, ServerFactoryManager.REKEY_BYTES_LIMIT, bytesLimit);
+            PropertyResolverUtils.updateProperty(sshd, ServerFactoryManager.REKEY_BYTES_LIMIT, bytesLimit);
         }
         if (timeLimit > 0L) {
-            FactoryManagerUtils.updateProperty(sshd, ServerFactoryManager.REKEY_TIME_LIMIT, timeLimit);
+            PropertyResolverUtils.updateProperty(sshd, ServerFactoryManager.REKEY_TIME_LIMIT, timeLimit);
         }
 
         sshd.start();

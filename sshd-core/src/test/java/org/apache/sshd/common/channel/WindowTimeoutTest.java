@@ -24,6 +24,7 @@ import java.net.SocketTimeoutException;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.client.future.OpenFuture;
+import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.After;
@@ -86,7 +87,7 @@ public class WindowTimeoutTest extends BaseTestSupport {
     @Test
     public void testWindowWaitForSpaceTimeout() throws Exception {
         try(Window window = channel.getLocalWindow()) {
-            window.init(AbstractChannel.DEFAULT_WINDOW_SIZE, AbstractChannel.DEFAULT_PACKET_SIZE, null);
+            window.init(FactoryManager.DEFAULT_WINDOW_SIZE, FactoryManager.DEFAULT_MAX_PACKET_SIZE, null);
             window.consume(window.getSize());
             assertEquals("Window not empty", 0, window.getSize());
 
@@ -115,7 +116,7 @@ public class WindowTimeoutTest extends BaseTestSupport {
     @Test
     public void testWindowWaitAndConsumeTimeout() throws Exception {
         try(Window window = channel.getLocalWindow()) {
-            window.init(AbstractChannel.DEFAULT_WINDOW_SIZE, AbstractChannel.DEFAULT_PACKET_SIZE, null);
+            window.init(FactoryManager.DEFAULT_WINDOW_SIZE, FactoryManager.DEFAULT_MAX_PACKET_SIZE, null);
 
             long waitStart = System.nanoTime();
             try

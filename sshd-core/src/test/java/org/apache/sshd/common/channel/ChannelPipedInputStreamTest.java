@@ -23,6 +23,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.BogusChannel;
 import org.junit.FixMethodOrder;
@@ -66,9 +67,10 @@ public class ChannelPipedInputStreamTest extends BaseTestSupport {
     }
 
     private static ChannelPipedInputStream createTestStream() {
-        Window window = new Window(new BogusChannel(), null, true, true);
-        window.init(Collections.<String,Object>emptyMap());
-        return new ChannelPipedInputStream(window);
+        AbstractChannel channel = new BogusChannel();
+        Window window = new Window(channel, null, true, true);
+        window.init(PropertyResolverUtils.toPropertyResolver(Collections.<String, Object>emptyMap()));
+        return new ChannelPipedInputStream(channel, window);
     }
 
     private static void assertStreamEquals(byte[] expected, byte[] read) {

@@ -29,7 +29,7 @@ import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.FactoryManagerUtils;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
@@ -59,7 +59,7 @@ public class KeepAliveTest extends BaseTestSupport {
     @Before
     public void setUp() throws Exception {
         sshd = setupTestServer();
-        FactoryManagerUtils.updateProperty(sshd, FactoryManager.IDLE_TIMEOUT, TIMEOUT);
+        PropertyResolverUtils.updateProperty(sshd, FactoryManager.IDLE_TIMEOUT, TIMEOUT);
         sshd.setShellFactory(new TestEchoShellFactory());
         sshd.start();
         port = sshd.getPort();
@@ -96,7 +96,7 @@ public class KeepAliveTest extends BaseTestSupport {
     @Test
     public void testClientWithHeartBeat() throws Exception {
         SshClient client = setupTestClient();
-        FactoryManagerUtils.updateProperty(client, ClientFactoryManager.HEARTBEAT_INTERVAL, HEARTBEAT);
+        PropertyResolverUtils.updateProperty(client, ClientFactoryManager.HEARTBEAT_INTERVAL, HEARTBEAT);
         client.start();
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {

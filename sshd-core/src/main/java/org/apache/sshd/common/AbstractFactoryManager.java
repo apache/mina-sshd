@@ -19,9 +19,9 @@
 package org.apache.sshd.common;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -64,7 +64,6 @@ public abstract class AbstractFactoryManager
         extends AbstractInnerCloseable
         implements FactoryManager, KeyPairProviderHolder {
 
-    protected Map<String, Object> properties = new HashMap<>();
     protected IoServiceFactoryFactory ioServiceFactoryFactory;
     protected IoServiceFactory ioServiceFactory;
     protected List<NamedFactory<KeyExchange>> keyExchangeFactories;
@@ -89,6 +88,7 @@ public abstract class AbstractFactoryManager
     protected final Collection<ChannelListener> channelListeners = new CopyOnWriteArraySet<>();
     protected final ChannelListener channelListenerProxy;
 
+    private final Map<String, Object> properties = new ConcurrentHashMap<>();
     private KeyPairProvider keyPairProvider;
 
     protected AbstractFactoryManager() {
@@ -183,13 +183,14 @@ public abstract class AbstractFactoryManager
         return properties;
     }
 
-    public void setProperties(Map<String, Object> properties) {
-        this.properties = ValidateUtils.checkNotNull(properties, "Null properties not allowed");
+    @Override
+    public PropertyResolver getParentPropertyResolver() {
+        return null;
     }
 
     @Override
     public String getVersion() {
-        return FactoryManagerUtils.getStringProperty(VersionProperties.getVersionProperties(), "sshd-version", DEFAULT_VERSION).toUpperCase();
+        return PropertyResolverUtils.getStringProperty(VersionProperties.getVersionProperties(), "sshd-version", DEFAULT_VERSION).toUpperCase();
     }
 
     @Override
@@ -202,7 +203,7 @@ public abstract class AbstractFactoryManager
     }
 
     public int getNioWorkers() {
-        int nb = FactoryManagerUtils.getIntProperty(this, NIO_WORKERS, DEFAULT_NIO_WORKERS);
+        int nb = PropertyResolverUtils.getIntProperty(this, NIO_WORKERS, DEFAULT_NIO_WORKERS);
         if (nb > 0) {
             return nb;
         } else {    // it may have been configured to a negative value
@@ -212,9 +213,9 @@ public abstract class AbstractFactoryManager
 
     public void setNioWorkers(int nioWorkers) {
         if (nioWorkers > 0) {
-            FactoryManagerUtils.updateProperty(this, NIO_WORKERS, nioWorkers);
+            PropertyResolverUtils.updateProperty(this, NIO_WORKERS, nioWorkers);
         } else {
-            FactoryManagerUtils.updateProperty(this, NIO_WORKERS, null);
+            PropertyResolverUtils.updateProperty(this, NIO_WORKERS, null);
         }
     }
 

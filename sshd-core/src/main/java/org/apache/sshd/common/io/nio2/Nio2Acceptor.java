@@ -32,7 +32,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.FactoryManagerUtils;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoHandler;
@@ -48,7 +48,7 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
     public Nio2Acceptor(FactoryManager manager, IoHandler handler, AsynchronousChannelGroup group) {
         super(manager, handler, group);
         channels = new ConcurrentHashMap<SocketAddress, AsynchronousServerSocketChannel>();
-        backlog = FactoryManagerUtils.getIntProperty(manager, FactoryManager.SOCKET_BACKLOG, DEFAULT_BACKLOG);
+        backlog = PropertyResolverUtils.getIntProperty(manager, FactoryManager.SOCKET_BACKLOG, DEFAULT_BACKLOG);
     }
 
     @Override

@@ -32,6 +32,7 @@ import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -56,7 +57,9 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
         ChannelListener listener = getChannelListenerProxy();
         try {
             out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA);
-            FactoryManager manager = session.getFactoryManager();
+
+            Session session = getSession();
+            FactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No factory manager");
             SshAgentFactory factory = ValidateUtils.checkNotNull(manager.getAgentFactory(), "No agent factory");
             agent = factory.createClient(manager);
             client = new AgentClient();

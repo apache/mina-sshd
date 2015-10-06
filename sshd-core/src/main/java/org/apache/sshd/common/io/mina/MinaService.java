@@ -32,7 +32,7 @@ import org.apache.mina.transport.socket.SocketSessionConfig;
 import org.apache.mina.transport.socket.nio.NioSession;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.FactoryManagerUtils;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.util.closeable.AbstractCloseable;
 
 /**
@@ -151,11 +151,11 @@ public abstract class MinaService extends AbstractCloseable implements org.apach
     }
 
     protected Integer getInteger(String property) {
-        return FactoryManagerUtils.getInteger(manager, property);
+        return PropertyResolverUtils.getInteger(manager, property);
     }
 
     protected Boolean getBoolean(String property) {
-        return FactoryManagerUtils.getBoolean(manager, property);
+        return PropertyResolverUtils.getBoolean(manager, property);
     }
 
 }

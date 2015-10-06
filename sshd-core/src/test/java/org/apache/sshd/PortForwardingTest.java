@@ -50,7 +50,7 @@ import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ChannelDirectTcpip;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.FactoryManagerUtils;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.forward.TcpipForwarder;
 import org.apache.sshd.common.forward.TcpipForwarderFactory;
@@ -94,8 +94,8 @@ public class PortForwardingTest extends BaseTestSupport {
     @Before
     public void setUp() throws Exception {
         sshd = setupTestServer();
-        FactoryManagerUtils.updateProperty(sshd, FactoryManager.WINDOW_SIZE, 2048);
-        FactoryManagerUtils.updateProperty(sshd, FactoryManager.MAX_PACKET_SIZE, 256);
+        PropertyResolverUtils.updateProperty(sshd, FactoryManager.WINDOW_SIZE, 2048);
+        PropertyResolverUtils.updateProperty(sshd, FactoryManager.MAX_PACKET_SIZE, 256);
         sshd.setTcpipForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
         sshd.start();
 
@@ -590,8 +590,8 @@ public class PortForwardingTest extends BaseTestSupport {
 
     protected ClientSession createNativeSession() throws Exception {
         client = setupTestClient();
-        FactoryManagerUtils.updateProperty(client, FactoryManager.WINDOW_SIZE, 2048);
-        FactoryManagerUtils.updateProperty(client, FactoryManager.MAX_PACKET_SIZE, 256);
+        PropertyResolverUtils.updateProperty(client, FactoryManager.WINDOW_SIZE, 2048);
+        PropertyResolverUtils.updateProperty(client, FactoryManager.MAX_PACKET_SIZE, 256);
         client.setTcpipForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
         client.start();
 

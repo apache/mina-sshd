@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.agent.SshAgent;
@@ -35,8 +36,8 @@ import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.AbstractChannelRequestHandler;
 import org.apache.sshd.common.channel.Channel;
@@ -48,6 +49,7 @@ import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -75,8 +77,6 @@ import org.apache.sshd.server.x11.X11ForwardSupport;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ChannelSession extends AbstractServerChannel {
-
-    public static final long DEFAULT_COMMAND_EXIT_TIMEOUT = 5000;
 
     protected static class StandardEnvironment implements Environment {
 
@@ -240,13 +240,17 @@ public class ChannelSession extends AbstractServerChannel {
                     }
                 };
 
-                FactoryManager manager = getSession().getFactoryManager();
-                long timeout = FactoryManagerUtils.getLongProperty(manager, ServerFactoryManager.COMMAND_EXIT_TIMEOUT, DEFAULT_COMMAND_EXIT_TIMEOUT);
+                ChannelSession channel = ChannelSession.this;
+                long timeout = PropertyResolverUtils.getLongProperty(
+                        channel, ServerFactoryManager.COMMAND_EXIT_TIMEOUT, ServerFactoryManager.DEFAULT_COMMAND_EXIT_TIMEOUT);
                 if (log.isDebugEnabled()) {
-                    log.debug("Wait {} ms for shell to exit cleanly", Long.valueOf(timeout));
+                    log.debug("Wait {} ms for shell to exit cleanly on {}", Long.valueOf(timeout), channel);
                 }
 
-                manager.getScheduledExecutorService().schedule(task, timeout, TimeUnit.MILLISECONDS);
+                Session s = channel.getSession();
+                FactoryManager manager = ValidateUtils.checkNotNull(s.getFactoryManager(), "No factory manager");
+                ScheduledExecutorService scheduler = ValidateUtils.checkNotNull(manager.getScheduledExecutorService(), "No scheduling service");
+                scheduler.schedule(task, timeout, TimeUnit.MILLISECONDS);
                 commandExitFuture.addListener(new SshFutureListener<CloseFuture>() {
                     @Override
                     public void operationComplete(CloseFuture future) {
@@ -532,17 +536,18 @@ public class ChannelSession extends AbstractServerChannel {
 
     protected void prepareCommand() throws IOException {
         // Add the user
+        Session session = getSession();
         addEnvVariable(Environment.ENV_USER, session.getUsername());
         // If the shell wants to be aware of the session, let's do that
         if (command instanceof SessionAware) {
-            ((SessionAware) command).setSession((ServerSession) getSession());
+            ((SessionAware) command).setSession((ServerSession) session);
         }
         if (command instanceof ChannelSessionAware) {
             ((ChannelSessionAware) command).setChannelSession(this);
         }
         // If the shell wants to be aware of the file system, let's do that too
         if (command instanceof FileSystemAware) {
-            ServerFactoryManager manager = ((ServerSession) getSession()).getFactoryManager();
+            ServerFactoryManager manager = ((ServerSession) session).getFactoryManager();
             FileSystemFactory factory = manager.getFileSystemFactory();
             ((FileSystemAware) command).setFileSystem(factory.createFileSystem(session));
         }
@@ -571,7 +576,7 @@ public class ChannelSession extends AbstractServerChannel {
                 setDataReceiver(recv);
                 ((AsyncCommand) command).setIoInputStream(recv.getIn());
             } else {
-                PipeDataReceiver recv = new PipeDataReceiver(localWindow);
+                PipeDataReceiver recv = new PipeDataReceiver(this, localWindow);
                 setDataReceiver(recv);
                 command.setInputStream(recv.getIn());
             }
@@ -608,7 +613,9 @@ public class ChannelSession extends AbstractServerChannel {
     }
 
     protected boolean handleAgentForwarding(Buffer buffer) throws IOException {
+        Session session = getSession();
         ValidateUtils.checkTrue(session instanceof ServerSession, "Session not a server one");
+
         FactoryManager manager = session.getFactoryManager();
         ForwardingFilter filter = manager.getTcpipForwardingFilter();
         SshAgentFactory factory = manager.getAgentFactory();
@@ -625,7 +632,9 @@ public class ChannelSession extends AbstractServerChannel {
     }
 
     protected boolean handleX11Forwarding(Buffer buffer) throws IOException {
+        Session session = getSession();
         ValidateUtils.checkTrue(session instanceof ServerSession, "Session not a server one");
+
         FactoryManager manager = session.getFactoryManager();
         ForwardingFilter filter = manager.getTcpipForwardingFilter();
         if ((filter == null) || (!filter.canForwardX11(session))) {

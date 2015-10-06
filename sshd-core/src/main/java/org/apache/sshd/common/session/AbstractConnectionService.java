@@ -30,8 +30,8 @@ import org.apache.sshd.client.channel.AbstractClientChannel;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.Channel;
@@ -47,20 +47,6 @@ import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
 import org.apache.sshd.server.channel.OpenChannelException;
 import org.apache.sshd.server.x11.X11ForwardSupport;
-
-import static org.apache.sshd.common.SshConstants.SSH_MSG_CHANNEL_CLOSE;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_CHANNEL_DATA;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_CHANNEL_EOF;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_CHANNEL_FAILURE;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_CHANNEL_OPEN;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_CHANNEL_OPEN_CONFIRMATION;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_CHANNEL_OPEN_FAILURE;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_CHANNEL_REQUEST;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_CHANNEL_WINDOW_ADJUST;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_GLOBAL_REQUEST;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_REQUEST_FAILURE;
-import static org.apache.sshd.common.SshConstants.SSH_MSG_REQUEST_SUCCESS;
 
 /**
  * Base implementation of ConnectionService.
@@ -147,7 +133,7 @@ public abstract class AbstractConnectionService extends AbstractInnerCloseable i
 
     @Override
     public int registerChannel(Channel channel) throws IOException {
-        int maxChannels = FactoryManagerUtils.getIntProperty(session, MAX_CONCURRENT_CHANNELS_PROP, DEFAULT_MAX_CHANNELS);
+        int maxChannels = PropertyResolverUtils.getIntProperty(session, MAX_CONCURRENT_CHANNELS_PROP, DEFAULT_MAX_CHANNELS);
         int curSize = channels.size();
         if (curSize > maxChannels) {
             throw new IllegalStateException("Currently active channels (" + curSize + ") at max.: " + maxChannels);
@@ -182,43 +168,43 @@ public abstract class AbstractConnectionService extends AbstractInnerCloseable i
     @Override
     public void process(int cmd, Buffer buffer) throws Exception {
         switch (cmd) {
-            case SSH_MSG_CHANNEL_OPEN:
+            case SshConstants.SSH_MSG_CHANNEL_OPEN:
                 channelOpen(buffer);
                 break;
-            case SSH_MSG_CHANNEL_OPEN_CONFIRMATION:
+            case SshConstants.SSH_MSG_CHANNEL_OPEN_CONFIRMATION:
                 channelOpenConfirmation(buffer);
                 break;
-            case SSH_MSG_CHANNEL_OPEN_FAILURE:
+            case SshConstants.SSH_MSG_CHANNEL_OPEN_FAILURE:
                 channelOpenFailure(buffer);
                 break;
-            case SSH_MSG_CHANNEL_REQUEST:
+            case SshConstants.SSH_MSG_CHANNEL_REQUEST:
                 channelRequest(buffer);
                 break;
-            case SSH_MSG_CHANNEL_DATA:
+            case SshConstants.SSH_MSG_CHANNEL_DATA:
                 channelData(buffer);
                 break;
-            case SSH_MSG_CHANNEL_EXTENDED_DATA:
+            case SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA:
                 channelExtendedData(buffer);
                 break;
-            case SSH_MSG_CHANNEL_FAILURE:
+            case SshConstants.SSH_MSG_CHANNEL_FAILURE:
                 channelFailure(buffer);
                 break;
-            case SSH_MSG_CHANNEL_WINDOW_ADJUST:
+            case SshConstants.SSH_MSG_CHANNEL_WINDOW_ADJUST:
                 channelWindowAdjust(buffer);
                 break;
-            case SSH_MSG_CHANNEL_EOF:
+            case SshConstants.SSH_MSG_CHANNEL_EOF:
                 channelEof(buffer);
                 break;
-            case SSH_MSG_CHANNEL_CLOSE:
+            case SshConstants.SSH_MSG_CHANNEL_CLOSE:
                 channelClose(buffer);
                 break;
-            case SSH_MSG_GLOBAL_REQUEST:
+            case SshConstants.SSH_MSG_GLOBAL_REQUEST:
                 globalRequest(buffer);
                 break;
-            case SSH_MSG_REQUEST_SUCCESS:
+            case SshConstants.SSH_MSG_REQUEST_SUCCESS:
                 requestSuccess(buffer);
                 break;
-            case SSH_MSG_REQUEST_FAILURE:
+            case SshConstants.SSH_MSG_REQUEST_FAILURE:
                 requestFailure(buffer);
                 break;
             default:

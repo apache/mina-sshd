@@ -19,6 +19,7 @@
 package org.apache.sshd.server;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
@@ -38,13 +39,16 @@ import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
  */
 public interface ServerFactoryManager extends FactoryManager, KeyPairProviderHolder {
     /**
-     * Key used to retrieve the value of the maximum concurrent open session count per username
+     * Key used to retrieve the value of the maximum concurrent open session count per username.
+     * If not set, then unlimited
      */
     String MAX_CONCURRENT_SESSIONS = "max-concurrent-sessions";
+
     /**
      * Key used to retrieve the value of the server identification string if not default.
      */
     String SERVER_IDENTIFICATION = "server-identification";
+
     /**
      * Key used to retrieve the value in the configuration properties map
      * of the maximum number of failed authentication requests before the
@@ -96,8 +100,14 @@ public interface ServerFactoryManager extends FactoryManager, KeyPairProviderHol
      * Key used to configure the timeout used when receiving a close request
      * on a channel to wait until the command cleanly exits after setting
      * an EOF on the input stream. In milliseconds.
+     * @see #DEFAULT_COMMAND_EXIT_TIMEOUT
      */
     String COMMAND_EXIT_TIMEOUT = "command-exit-timeout";
+
+    /**
+     * Default {@link #COMMAND_EXIT_TIMEOUT} if not set
+     */
+    long DEFAULT_COMMAND_EXIT_TIMEOUT = TimeUnit.SECONDS.toMillis(5L);
 
     /**
      * Key re-exchange will be automatically performed after the session

@@ -30,6 +30,7 @@ import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.channel.ChannelPipedInputStream;
 import org.apache.sshd.common.channel.ChannelPipedOutputStream;
 import org.apache.sshd.common.future.CloseFuture;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 
 /**
@@ -57,6 +58,7 @@ public class ChannelSession extends AbstractClientChannel {
                     try {
                         sendEof();
                     } catch (IOException e) {
+                        Session session = getSession();
                         session.exceptionCaught(e);
                     }
                     return super.doCloseGracefully();
@@ -67,13 +69,13 @@ public class ChannelSession extends AbstractClientChannel {
         } else {
             invertedIn = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA);
             if (out == null) {
-                ChannelPipedInputStream pis = new ChannelPipedInputStream(localWindow);
+                ChannelPipedInputStream pis = new ChannelPipedInputStream(this, localWindow);
                 ChannelPipedOutputStream pos = new ChannelPipedOutputStream(pis);
                 out = pos;
                 invertedOut = pis;
             }
             if (err == null) {
-                ChannelPipedInputStream pis = new ChannelPipedInputStream(localWindow);
+                ChannelPipedInputStream pis = new ChannelPipedInputStream(this, localWindow);
                 ChannelPipedOutputStream pos = new ChannelPipedOutputStream(pis);
                 err = pos;
                 invertedErr = pis;
@@ -132,6 +134,7 @@ public class ChannelSession extends AbstractClientChannel {
             byte[] buffer = new byte[remoteWindow.getPacketSize()];
             while (!closeFuture.isClosed()) {
                 int len = securedRead(in, buffer, 0, buffer.length);
+                Session session = getSession();
                 session.resetIdleTimeout();
                 if (len > 0) {
                     invertedIn.write(buffer, 0, len);

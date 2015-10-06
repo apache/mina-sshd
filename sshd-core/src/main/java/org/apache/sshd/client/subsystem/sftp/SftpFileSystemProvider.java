@@ -67,8 +67,8 @@ import java.util.concurrent.TimeUnit;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.subsystem.sftp.SftpClient.Attributes;
-import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.FactoryManagerUtils;
+import org.apache.sshd.common.PropertyResolver;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.config.SshConfigFileReader;
 import org.apache.sshd.common.io.IoSession;
@@ -151,9 +151,11 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         String userInfo = ValidateUtils.checkNotNullAndNotEmpty(uri.getUserInfo(), "UserInfo not provided");
         String[] ui = GenericUtils.split(userInfo, ':');
         ValidateUtils.checkTrue(GenericUtils.length(ui) == 2, "Invalid user info: %s", userInfo);
+
         String username = ui[0];
         String password = ui[1];
         String id = getFileSystemIdentifier(host, port, username);
+        PropertyResolver resolver = PropertyResolverUtils.toPropertyResolver(Collections.unmodifiableMap(env));
 
         SftpFileSystem fileSystem;
         synchronized (fileSystems) {
@@ -165,10 +167,10 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             ClientSession session = null;
             try {
                 session = client.connect(username, host, port)
-                        .verify(FactoryManagerUtils.getLongProperty(env, CONNECT_TIME_PROP_NAME, DEFAULT_CONNECT_TIME))
+                        .verify(PropertyResolverUtils.getLongProperty(resolver, CONNECT_TIME_PROP_NAME, DEFAULT_CONNECT_TIME))
                         .getSession();
                 session.addPasswordIdentity(password);
-                session.auth().verify(FactoryManagerUtils.getLongProperty(env, AUTH_TIME_PROP_NAME, DEFAULT_AUTH_TIME));
+                session.auth().verify(PropertyResolverUtils.getLongProperty(resolver, AUTH_TIME_PROP_NAME, DEFAULT_AUTH_TIME));
 
                 fileSystem = new SftpFileSystem(this, id, session, getSftpVersionSelector());
                 fileSystems.put(id, fileSystem);
@@ -196,8 +198,8 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             }
         }
 
-        fileSystem.setReadBufferSize(FactoryManagerUtils.getIntProperty(env, READ_BUFFER_PROP_NAME, DEFAULT_READ_BUFFER_SIZE));
-        fileSystem.setWriteBufferSize(FactoryManagerUtils.getIntProperty(env, WRITE_BUFFER_PROP_NAME, DEFAULT_WRITE_BUFFER_SIZE));
+        fileSystem.setReadBufferSize(PropertyResolverUtils.getIntProperty(resolver, READ_BUFFER_PROP_NAME, DEFAULT_READ_BUFFER_SIZE));
+        fileSystem.setWriteBufferSize(PropertyResolverUtils.getIntProperty(resolver, WRITE_BUFFER_PROP_NAME, DEFAULT_WRITE_BUFFER_SIZE));
         return fileSystem;
     }
 
@@ -212,9 +214,8 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             fileSystems.put(id, fileSystem);
         }
 
-        FactoryManager manager = session.getFactoryManager();
-        fileSystem.setReadBufferSize(FactoryManagerUtils.getIntProperty(manager, READ_BUFFER_PROP_NAME, DEFAULT_READ_BUFFER_SIZE));
-        fileSystem.setWriteBufferSize(FactoryManagerUtils.getIntProperty(manager, WRITE_BUFFER_PROP_NAME, DEFAULT_WRITE_BUFFER_SIZE));
+        fileSystem.setReadBufferSize(PropertyResolverUtils.getIntProperty(session, READ_BUFFER_PROP_NAME, DEFAULT_READ_BUFFER_SIZE));
+        fileSystem.setWriteBufferSize(PropertyResolverUtils.getIntProperty(session, WRITE_BUFFER_PROP_NAME, DEFAULT_WRITE_BUFFER_SIZE));
         return fileSystem;
     }
 

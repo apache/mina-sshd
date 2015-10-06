@@ -19,8 +19,8 @@
 package org.apache.sshd.common;
 
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.agent.SshAgentFactory;
 import org.apache.sshd.common.channel.Channel;
@@ -45,65 +45,107 @@ import org.apache.sshd.server.forward.ForwardingFilter;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface FactoryManager extends SessionListenerManager, ChannelListenerManager {
+public interface FactoryManager extends SessionListenerManager, ChannelListenerManager, PropertyResolver {
 
     /**
-     * Key used to retrieve the value of the window size in the
+     * Key used to retrieve the value of the channel window size in the
      * configuration properties map.
+     * @see #DEFAULT_WINDOW_SIZE
      */
     String WINDOW_SIZE = "window-size";
+
+    /**
+     * Default {@link #WINDOW_SIZE} if none set
+     */
+    int DEFAULT_WINDOW_SIZE = 0x200000;
 
     /**
      * Key used to retrieve timeout (msec.) to wait for data to
      * become available when reading from a channel. If not set
      * or non-positive then infinite value is assumed
+     * @see #DEFAULT_WINDOW_TIMEOUT
      */
     String WINDOW_TIMEOUT = "window-timeout";
 
+    /**
+     * Default {@link #WINDOW_TIMEOUT} value
+     */
+    long DEFAULT_WINDOW_TIMEOUT = 0L;
 
     /**
      * Key used to retrieve the value of the maximum packet size
      * in the configuration properties map.
+     * @see #DEFAULT_MAX_PACKET_SIZE
      */
     String MAX_PACKET_SIZE = "packet-size";
 
     /**
+     * Default {@link #MAX_PACKET_SIZE} if none set
+     */
+    int DEFAULT_MAX_PACKET_SIZE = 0x8000;
+
+    /**
      * Number of NIO worker threads to use.
+     * @see #DEFAULT_NIO_WORKERS
      */
     String NIO_WORKERS = "nio-workers";
 
     /**
-     * Default number of worker threads to use.
+     * Default number of worker threads to use if none set.
      */
     int DEFAULT_NIO_WORKERS = Runtime.getRuntime().availableProcessors() + 1;
 
     /**
      * Key used to retrieve the value of the timeout after which
      * it will close the connection if the other side has not been
-     * authenticated.
+     * authenticated - in milliseconds.
+     * @see #DEFAULT_AUTH_TIMEOUT
      */
     String AUTH_TIMEOUT = "auth-timeout";
 
     /**
+     * Default value for {@link #AUTH_TIMEOUT} if none set
+     */
+    long DEFAULT_AUTH_TIMEOUT = TimeUnit.MINUTES.toMillis(2L);
+
+    /**
      * Key used to retrieve the value of idle timeout after which
-     * it will close the connection.  In milliseconds.
+     * it will close the connection - in milliseconds.
+     * @see #DEFAULT_AUTH_TIMEOUT
      */
     String IDLE_TIMEOUT = "idle-timeout";
+
+    /**
+     * Default value for {@link #IDLE_TIMEOUT} if none set
+     */
+    long DEFAULT_IDLE_TIMEOUT = TimeUnit.MINUTES.toMillis(10L);
 
     /**
      * Key used to retrieve the value of the disconnect timeout which
      * is used when a disconnection is attempted.  If the disconnect
      * message has not been sent before the timeout, the underlying socket
-     * will be forcibly closed.
+     * will be forcibly closed - in milliseconds.
+     * @see #DEFAULT_DISCONNECT_TIMEOUT
      */
     String DISCONNECT_TIMEOUT = "disconnect-timeout";
+
+    /**
+     * Default value for {@link #DISCONNECT_TIMEOUT} if none set
+     */
+    long DEFAULT_DISCONNECT_TIMEOUT = TimeUnit.SECONDS.toMillis(10L);
 
     /**
      * Key used to configure the timeout used when writing a close request
      * on a channel. If the message can not be written before the specified
      * timeout elapses, the channel will be immediately closed. In milliseconds.
+     * @see #DEFAULT_AUTH_TIMEOUT
      */
     String CHANNEL_CLOSE_TIMEOUT = "channel-close-timeout";
+
+    /**
+     * Default {@link #CHANNEL_CLOSE_TIMEOUT} value if none set
+     */
+    long DEFAULT_CHANNEL_CLOSE_TIMEOUT = TimeUnit.SECONDS.toMillis(5L);
 
     /**
      * Socket backlog.
@@ -158,27 +200,6 @@ public interface FactoryManager extends SessionListenerManager, ChannelListenerM
      * version information cannot be accessed
      */
     String DEFAULT_VERSION = "SSHD-UNKNOWN";
-
-    /**
-     * <P>A map of properties that can be used to configure the SSH server
-     * or client.  This map will never be changed by either the server or
-     * client and is not supposed to be changed at runtime (changes are not
-     * bound to have any effect on a running client or server), though it may
-     * affect the creation of sessions later as these values are usually not
-     * cached.</P>
-     *
-     * <P><B>Note:</B> the <U>type</U> of the mapped property should match the
-     * expected configuration value type - {@code Long, Integer, Boolean,
-     * String}, etc.... If it doesn't, the {@code toString()} result of the
-     * mapped value is used to convert it to the required type. E.g., if
-     * the mapped value is the <U>string</U> &quot;1234&quot; and the expected
-     * value is a {@code long} then it will be parsed into one. Also, if
-     * the mapped value is an {@code Integer} but a {@code long} is expected,
-     * then it will be converted into one.</P>
-     *
-     * @return a valid <code>Map</code> containing configuration values, never {@code null}
-     */
-    Map<String, Object> getProperties();
 
     /**
      * An upper case string identifying the version of the software used on

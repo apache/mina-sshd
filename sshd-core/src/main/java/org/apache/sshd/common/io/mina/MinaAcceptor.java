@@ -31,7 +31,7 @@ import org.apache.mina.core.service.IoService;
 import org.apache.mina.transport.socket.nio.NioSession;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.FactoryManagerUtils;
+import org.apache.sshd.common.PropertyResolverUtils;
 
 /**
  */
@@ -48,8 +48,8 @@ public class MinaAcceptor extends MinaService implements org.apache.sshd.common.
     public MinaAcceptor(FactoryManager manager, org.apache.sshd.common.io.IoHandler handler, IoProcessor<NioSession> ioProcessor) {
         super(manager, handler, ioProcessor);
 
-        backlog = FactoryManagerUtils.getIntProperty(manager, FactoryManager.SOCKET_BACKLOG, DEFAULT_BACKLOG);
-        reuseAddress = FactoryManagerUtils.getBooleanProperty(manager, FactoryManager.SOCKET_REUSEADDR, DEFAULT_REUSE_ADDRESS);
+        backlog = PropertyResolverUtils.getIntProperty(manager, FactoryManager.SOCKET_BACKLOG, DEFAULT_BACKLOG);
+        reuseAddress = PropertyResolverUtils.getBooleanProperty(manager, FactoryManager.SOCKET_REUSEADDR, DEFAULT_REUSE_ADDRESS);
     }
 
     protected IoAcceptor createAcceptor() {

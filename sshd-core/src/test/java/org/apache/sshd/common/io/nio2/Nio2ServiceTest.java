@@ -23,7 +23,7 @@ import java.net.Socket;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.FactoryManagerUtils;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.FixMethodOrder;
@@ -42,12 +42,12 @@ public class Nio2ServiceTest extends BaseTestSupport {
     @Test   // see SSHD-554
     public void testSetSocketOptions() throws Exception {
         try(SshServer sshd = setupTestServer()) {
-            FactoryManagerUtils.updateProperty(sshd, FactoryManager.SOCKET_KEEPALIVE, true);
-            FactoryManagerUtils.updateProperty(sshd, FactoryManager.SOCKET_LINGER, 5);
-            FactoryManagerUtils.updateProperty(sshd, FactoryManager.SOCKET_RCVBUF, 1024);
-            FactoryManagerUtils.updateProperty(sshd, FactoryManager.SOCKET_REUSEADDR, true);
-            FactoryManagerUtils.updateProperty(sshd, FactoryManager.SOCKET_SNDBUF, 1024);
-            FactoryManagerUtils.updateProperty(sshd, FactoryManager.TCP_NODELAY, true);
+            PropertyResolverUtils.updateProperty(sshd, FactoryManager.SOCKET_KEEPALIVE, true);
+            PropertyResolverUtils.updateProperty(sshd, FactoryManager.SOCKET_LINGER, 5);
+            PropertyResolverUtils.updateProperty(sshd, FactoryManager.SOCKET_RCVBUF, 1024);
+            PropertyResolverUtils.updateProperty(sshd, FactoryManager.SOCKET_REUSEADDR, true);
+            PropertyResolverUtils.updateProperty(sshd, FactoryManager.SOCKET_SNDBUF, 1024);
+            PropertyResolverUtils.updateProperty(sshd, FactoryManager.TCP_NODELAY, true);
 
             sshd.start();
 

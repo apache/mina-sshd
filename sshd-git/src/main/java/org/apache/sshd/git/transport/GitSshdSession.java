@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.common.FactoryManagerUtils;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.eclipse.jgit.transport.CredentialItem;
 import org.eclipse.jgit.transport.CredentialsProvider;
@@ -87,7 +87,7 @@ public class GitSshdSession extends AbstractLoggingBean implements RemoteSession
         client.start();
 
         session = client.connect(user, host, port)
-                        .verify(FactoryManagerUtils.getLongProperty(client, CONNECT_TIMEOUT_PROP, DEFAULT_CONNECT_TIMEOUT))
+                        .verify(PropertyResolverUtils.getLongProperty(client, CONNECT_TIMEOUT_PROP, DEFAULT_CONNECT_TIMEOUT))
                         .getSession();
         if (log.isDebugEnabled()) {
             log.debug("Connected to {}:{}", host, port);
@@ -98,7 +98,7 @@ public class GitSshdSession extends AbstractLoggingBean implements RemoteSession
         if (pass2 != null) {
             session.addPasswordIdentity(new String(pass2));
         }
-        session.auth().verify(FactoryManagerUtils.getLongProperty(session, AUTH_TIMEOUT_PROP, DEFAULT_AUTH_TIMEOUT));
+        session.auth().verify(PropertyResolverUtils.getLongProperty(session, AUTH_TIMEOUT_PROP, DEFAULT_AUTH_TIMEOUT));
         if (log.isDebugEnabled()) {
             log.debug("Authenticated: {}", session);
         }
@@ -111,7 +111,7 @@ public class GitSshdSession extends AbstractLoggingBean implements RemoteSession
         }
 
         ChannelExec channel = session.createExecChannel(commandName);
-        channel.open().verify(FactoryManagerUtils.getLongProperty(channel, CHANNEL_OPEN_TIMEOUT_PROPT, DEFAULT_CHANNEL_OPEN_TIMEOUT));
+        channel.open().verify(PropertyResolverUtils.getLongProperty(channel, CHANNEL_OPEN_TIMEOUT_PROPT, DEFAULT_CHANNEL_OPEN_TIMEOUT));
         return new GitSshdSessionProcess(channel, commandName, timeout);
     }
 

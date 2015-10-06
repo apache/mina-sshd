@@ -26,7 +26,7 @@ import java.util.List;
 
 import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.common.FactoryManagerUtils;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -94,7 +94,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
             }
         }
         passwords = pwds.iterator();
-        maxTrials = session.getIntProperty(ClientFactoryManager.PASSWORD_PROMPTS, ClientFactoryManager.DEFAULT_PASSWORD_PROMPTS);
+        maxTrials = PropertyResolverUtils.getIntProperty(session, ClientFactoryManager.PASSWORD_PROMPTS, ClientFactoryManager.DEFAULT_PASSWORD_PROMPTS);
         ValidateUtils.checkTrue(maxTrials > 0, "Non-positive max. trials: %d", maxTrials);
     }
 
@@ -188,11 +188,11 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
     }
 
     protected String getExchangeLanguageTag(ClientSession session) {
-        return FactoryManagerUtils.getStringProperty(session, INTERACTIVE_LANGUAGE_TAG, DEFAULT_INTERACTIVE_LANGUAGE_TAG);
+        return PropertyResolverUtils.getStringProperty(session, INTERACTIVE_LANGUAGE_TAG, DEFAULT_INTERACTIVE_LANGUAGE_TAG);
     }
 
     protected String getExchangeSubMethods(ClientSession session) {
-        return FactoryManagerUtils.getStringProperty(session, INTERACTIVE_SUBMETHODS, DEFAULT_INTERACTIVE_SUBMETHODS);
+        return PropertyResolverUtils.getStringProperty(session, INTERACTIVE_SUBMETHODS, DEFAULT_INTERACTIVE_SUBMETHODS);
     }
 
     protected String getCurrentPasswordCandidate() {

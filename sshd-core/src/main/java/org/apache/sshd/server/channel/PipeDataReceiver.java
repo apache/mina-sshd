@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.channel.ChannelPipedInputStream;
 import org.apache.sshd.common.channel.ChannelPipedOutputStream;
 import org.apache.sshd.common.channel.Window;
@@ -38,8 +39,8 @@ public class PipeDataReceiver extends AbstractLoggingBean implements ChannelData
     private InputStream in;
     private OutputStream out;
 
-    public PipeDataReceiver(Window localWindow) {
-        ChannelPipedInputStream in = new ChannelPipedInputStream(localWindow);
+    public PipeDataReceiver(PropertyResolver resolver, Window localWindow) {
+        ChannelPipedInputStream in = new ChannelPipedInputStream(resolver, localWindow);
         this.in = in;
         this.out = new ChannelPipedOutputStream(in);
         if (log != null && log.isTraceEnabled()) {

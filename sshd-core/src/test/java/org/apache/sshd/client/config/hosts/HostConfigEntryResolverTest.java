@@ -36,7 +36,7 @@ import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.config.keys.ClientIdentityLoader;
 import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.common.FactoryManagerUtils;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyUtils;
@@ -142,7 +142,7 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
                 throw new FileNotFoundException("Unknown location: " + location);
             }
         });
-        FactoryManagerUtils.updateProperty(client, ClientFactoryManager.IGNORE_INVALID_IDENTITIES, false);
+        PropertyResolverUtils.updateProperty(client, ClientFactoryManager.IGNORE_INVALID_IDENTITIES, false);
 
         final String HOST = getClass().getSimpleName();
         final HostConfigEntry entry = new HostConfigEntry(HOST, TEST_LOCALHOST, port, USER);
@@ -212,7 +212,7 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
                 throw new FileNotFoundException("Unknown location: " + location);
             }
         });
-        FactoryManagerUtils.updateProperty(client, ClientFactoryManager.IGNORE_INVALID_IDENTITIES, false);
+        PropertyResolverUtils.updateProperty(client, ClientFactoryManager.IGNORE_INVALID_IDENTITIES, false);
 
         final Collection<KeyPair> clientIdentities = Collections.singletonList(defaultIdentity);
         client.setKeyPairProvider(new AbstractKeyPairProvider() {

@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -50,7 +51,7 @@ public class ChannelSessionTest extends BaseTestSupport {
 
         try (ChannelSession channelSession = new ChannelSession() {
                 {
-                    this.remoteWindow.init(Collections.<String,Object>emptyMap());
+                    this.remoteWindow.init(PropertyResolverUtils.toPropertyResolver(Collections.<String,Object>emptyMap()));
                 }
         }) {
             final AtomicBoolean expanded = new AtomicBoolean(false);

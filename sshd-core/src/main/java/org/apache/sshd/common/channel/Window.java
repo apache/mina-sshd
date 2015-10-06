@@ -28,8 +28,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.FactoryManagerUtils;
-import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.PropertyResolver;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.util.Predicate;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
@@ -43,7 +43,7 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class Window extends AbstractLoggingBean implements java.nio.channels.Channel {
+public class Window extends AbstractLoggingBean implements java.nio.channels.Channel, PropertyResolver {
     /**
      * Default {@link Predicate} used to test if space became available
      */
@@ -65,7 +65,7 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
 
     private int maxSize;
     private int packetSize;
-    private Map<String, ?> props = Collections.<String, Object>emptyMap();
+    private Map<String, Object> props = Collections.<String, Object>emptyMap();
 
     public Window(AbstractChannel channel, Object lock, boolean client, boolean local) {
         this.channel = ValidateUtils.checkNotNull(channel, "No channel provided");
@@ -73,8 +73,14 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
         this.suffix = ": " + (client ? "client" : "server") + " " + (local ? "local " : "remote") + " window";
     }
 
-    public Map<String, ?> getProperties() {
+    @Override
+    public Map<String, Object> getProperties() {
         return props;
+    }
+
+    @Override
+    public PropertyResolver getParentPropertyResolver() {
+        return channel;
     }
 
     public int getSize() {
@@ -91,21 +97,13 @@ public class Window extends AbstractLoggingBean implements java.nio.channels.Cha
         return packetSize;
     }
 
-    public void init(Session session) {
-        init(session.getFactoryManager());
+    public void init(PropertyResolver resolver) {
+        init(PropertyResolverUtils.getIntProperty(resolver, FactoryManager.WINDOW_SIZE, FactoryManager.DEFAULT_WINDOW_SIZE),
+             PropertyResolverUtils.getIntProperty(resolver, FactoryManager.MAX_PACKET_SIZE, FactoryManager.DEFAULT_MAX_PACKET_SIZE),
+             resolver.getProperties());
     }
 
-    public void init(FactoryManager manager) {
-        init(manager.getProperties());
-    }
-
-    public void init(Map<String, ?> props) {
-        init(FactoryManagerUtils.getIntProperty(props, FactoryManager.WINDOW_SIZE, AbstractChannel.DEFAULT_WINDOW_SIZE),
-             FactoryManagerUtils.getIntProperty(props, FactoryManager.MAX_PACKET_SIZE, AbstractChannel.DEFAULT_PACKET_SIZE),
-             props);
-    }
-
-    public void init(int size, int packetSize, Map<String, ?> props) {
+    public void init(int size, int packetSize, Map<String, Object> props) {
         ValidateUtils.checkTrue(size >= 0, "Illegal initial size: %d", size);
         ValidateUtils.checkTrue(packetSize > 0, "Illegal packet size: %d", packetSize);
 

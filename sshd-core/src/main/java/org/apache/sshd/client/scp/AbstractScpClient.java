@@ -37,7 +37,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.FactoryManagerUtils;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.scp.ScpHelper;
@@ -237,8 +237,7 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
     }
 
     protected ChannelExec openCommandChannel(ClientSession session, String cmd) throws IOException {
-        FactoryManager manager = ValidateUtils.checkNotNull(session, "No session for command: %s", cmd).getFactoryManager();
-        long waitTimeout = FactoryManagerUtils.getLongProperty(manager, SCP_EXEC_CHANNEL_OPEN_TIMEOUT, DEFAULT_EXEC_CHANNEL_OPEN_TIMEOUT);
+        long waitTimeout = PropertyResolverUtils.getLongProperty(session, SCP_EXEC_CHANNEL_OPEN_TIMEOUT, DEFAULT_EXEC_CHANNEL_OPEN_TIMEOUT);
         ChannelExec channel = session.createExecChannel(cmd);
 
         long startTime = System.nanoTime();

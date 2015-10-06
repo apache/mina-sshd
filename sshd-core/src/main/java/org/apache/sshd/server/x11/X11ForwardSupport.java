@@ -29,7 +29,7 @@ import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.FactoryManagerUtils;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.ChannelOutputStream;
@@ -152,7 +152,7 @@ public class X11ForwardSupport extends AbstractInnerCloseable implements IoHandl
         ChannelForwardedX11 channel = new ChannelForwardedX11(session);
         session.setAttribute(ChannelForwardedX11.class, channel);
         this.service.registerChannel(channel);
-        channel.open().verify(FactoryManagerUtils.getLongProperty(this.service.getSession(), CHANNEL_OPEN_TIMEOUT_PROP, DEFAULT_CHANNEL_OPEN_TIMEOUT));
+        channel.open().verify(PropertyResolverUtils.getLongProperty(channel, CHANNEL_OPEN_TIMEOUT_PROP, DEFAULT_CHANNEL_OPEN_TIMEOUT));
     }
 
     @Override
@@ -168,7 +168,7 @@ public class X11ForwardSupport extends AbstractInnerCloseable implements IoHandl
         ChannelForwardedX11 channel = (ChannelForwardedX11) session.getAttribute(ChannelForwardedX11.class);
         Buffer buffer = new ByteArrayBuffer();
         buffer.putBuffer(message);
-        
+
         OutputStream outputStream = channel.getInvertedIn();
         outputStream.write(buffer.array(), buffer.rpos(), buffer.available());
         outputStream.flush();
@@ -195,9 +195,12 @@ public class X11ForwardSupport extends AbstractInnerCloseable implements IoHandl
                 throw new SshException("Session has been closed");
             }
             openFuture = new DefaultOpenFuture(lock);
+
+            Session session = getSession();
             if (log.isDebugEnabled()) {
-                log.debug("Send SSH_MSG_CHANNEL_OPEN on channel {}", Integer.valueOf(id));
+                log.debug("Send SSH_MSG_CHANNEL_OPEN on {} channel {}", session, Integer.valueOf(id));
             }
+
             Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN);
             buffer.putString(type);
             buffer.putInt(id);

@@ -21,6 +21,7 @@ package org.apache.sshd.client.channel;
 import java.io.IOException;
 
 import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
@@ -38,7 +39,9 @@ public class ChannelShell extends PtyCapableChannelSession {
     protected void doOpen() throws IOException {
         doOpenPty();
 
-        log.debug("Send SSH_MSG_CHANNEL_REQUEST shell");
+        log.debug("Send SSH_MSG_CHANNEL_REQUEST shell on {}", this);
+
+        Session session = getSession();
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST);
         buffer.putInt(recipient);
         buffer.putString("shell");

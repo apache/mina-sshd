@@ -74,8 +74,8 @@ import org.apache.sshd.client.simple.SimpleClient;
 import org.apache.sshd.common.AbstractFactoryManager;
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.Factory;
-import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.SshdSocketAddress;
 import org.apache.sshd.common.channel.Channel;
@@ -402,7 +402,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         }
 
         List<KeyPair> ids = new ArrayList<>(locations.size());
-        boolean ignoreNonExisting = FactoryManagerUtils.getBooleanProperty(this, IGNORE_INVALID_IDENTITIES, DEFAULT_IGNORE_INVALID_IDENTITIES);
+        boolean ignoreNonExisting = PropertyResolverUtils.getBooleanProperty(this, IGNORE_INVALID_IDENTITIES, DEFAULT_IGNORE_INVALID_IDENTITIES);
         ClientIdentityLoader loader = ValidateUtils.checkNotNull(getClientIdentityLoader(), "No ClientIdentityLoader");
         FilePasswordProvider provider = ValidateUtils.checkNotNull(getFilePasswordProvider(), "No FilePasswordProvider");
         for (String l : locations) {

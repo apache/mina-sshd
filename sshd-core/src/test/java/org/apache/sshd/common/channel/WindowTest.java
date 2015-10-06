@@ -36,7 +36,7 @@ import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.FactoryManagerUtils;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.Service;
@@ -149,8 +149,8 @@ public class WindowTest extends BaseTestSupport {
     @Test
     public void testWindowConsumptionWithInvertedStreams() throws Exception {
         sshd.setShellFactory(new AsyncEchoShellFactory());
-        FactoryManagerUtils.updateProperty(sshd, FactoryManager.WINDOW_SIZE, 1024);
-        FactoryManagerUtils.updateProperty(client, FactoryManager.WINDOW_SIZE, 1024);
+        PropertyResolverUtils.updateProperty(sshd, FactoryManager.WINDOW_SIZE, 1024);
+        PropertyResolverUtils.updateProperty(client, FactoryManager.WINDOW_SIZE, 1024);
         client.start();
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
@@ -196,8 +196,8 @@ public class WindowTest extends BaseTestSupport {
     @Test
     public void testWindowConsumptionWithDirectStreams() throws Exception {
         sshd.setShellFactory(new AsyncEchoShellFactory());
-        FactoryManagerUtils.updateProperty(sshd, FactoryManager.WINDOW_SIZE, 1024);
-        FactoryManagerUtils.updateProperty(client, FactoryManager.WINDOW_SIZE, 1024);
+        PropertyResolverUtils.updateProperty(sshd, FactoryManager.WINDOW_SIZE, 1024);
+        PropertyResolverUtils.updateProperty(client, FactoryManager.WINDOW_SIZE, 1024);
 
         client.start();
 
@@ -250,8 +250,8 @@ public class WindowTest extends BaseTestSupport {
     @Test
     public void testWindowConsumptionWithAsyncStreams() throws Exception {
         sshd.setShellFactory(new AsyncEchoShellFactory());
-        FactoryManagerUtils.updateProperty(sshd, FactoryManager.WINDOW_SIZE, 1024);
-        FactoryManagerUtils.updateProperty(client, FactoryManager.WINDOW_SIZE, 1024);
+        PropertyResolverUtils.updateProperty(sshd, FactoryManager.WINDOW_SIZE, 1024);
+        PropertyResolverUtils.updateProperty(client, FactoryManager.WINDOW_SIZE, 1024);
 
         client.start();
 

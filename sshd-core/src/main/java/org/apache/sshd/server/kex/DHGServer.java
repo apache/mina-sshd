@@ -35,6 +35,7 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.server.session.ServerSession;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -85,12 +86,12 @@ public class DHGServer extends AbstractDHServerKeyExchange {
             throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
                     "Protocol error: expected packet " + SshConstants.SSH_MSG_KEXDH_INIT + ", got " + cmd);
         }
-        log.debug("Received SSH_MSG_KEXDH_INIT");
+        ServerSession session = getServerSession();
+        log.debug("Received SSH_MSG_KEXDH_INIT on {}", session);
         e = buffer.getMPIntAsBytes();
         dh.setF(e);
         k = dh.getK();
 
-        byte[] k_s;
         KeyPair kp = ValidateUtils.checkNotNull(session.getHostKey(), "No server key pair available");
         String algo = session.getNegotiatedKexParameter(KexProposalOption.SERVERKEYS);
         FactoryManager manager = session.getFactoryManager();
@@ -102,7 +103,7 @@ public class DHGServer extends AbstractDHServerKeyExchange {
 
         buffer = new ByteArrayBuffer();
         buffer.putRawPublicKey(kp.getPublic());
-        k_s = buffer.getCompactData();
+        byte[] k_s = buffer.getCompactData();
 
         buffer.clear();
         buffer.putBytes(v_c);
@@ -123,14 +124,14 @@ public class DHGServer extends AbstractDHServerKeyExchange {
         buffer.putBytes(sig.sign());
         sigH = buffer.getCompactData();
 
-        if (log.isDebugEnabled()) {
-            log.debug("K_S:  {}", BufferUtils.printHex(k_s));
-            log.debug("f:    {}", BufferUtils.printHex(f));
-            log.debug("sigH: {}", BufferUtils.printHex(sigH));
+        if (log.isTraceEnabled()) {
+            log.trace("{}[K_S]:  {}", session, BufferUtils.printHex(k_s));
+            log.trace("{}[f]:    {}", session, BufferUtils.printHex(f));
+            log.trace("{}[sigH]: {}", session, BufferUtils.printHex(sigH));
         }
 
         // Send response
-        log.debug("Send SSH_MSG_KEXDH_REPLY");
+        log.debug("Send SSH_MSG_KEXDH_REPLY on {}", session);
         buffer.clear();
         buffer.rpos(5);
         buffer.wpos(5);

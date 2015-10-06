@@ -64,9 +64,9 @@ import org.apache.sshd.client.subsystem.SubsystemClient;
 import org.apache.sshd.client.subsystem.sftp.SftpClient;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.SshConstants;
@@ -225,6 +225,84 @@ public class ClientTest extends BaseTestSupport {
             client.stop();
         }
         clientSessionHolder.set(null);  // just making sure
+    }
+
+    @Test
+    public void testPropertyResolutionHierarchy() throws Exception {
+        final String SESSION_PROP_NAME = getCurrentTestName() + "-session";
+        final AtomicReference<Object> sessionConfigValueHolder = new AtomicReference<>(null);
+        client.addSessionListener(new SessionListener() {
+            @Override
+            public void sessionEvent(Session session, Event event) {
+                updateSessionConfigProperty(session, event);
+            }
+
+            @Override
+            public void sessionCreated(Session session) {
+                updateSessionConfigProperty(session, "sessionCreated");
+            }
+
+            @Override
+            public void sessionClosed(Session session) {
+                updateSessionConfigProperty(session, "sessionClosed");
+            }
+
+            private void updateSessionConfigProperty(Session session, Object value) {
+                PropertyResolverUtils.updateProperty(session, SESSION_PROP_NAME, value);
+                sessionConfigValueHolder.set(value);
+            }
+        });
+
+        final String CHANNEL_PROP_NAME = getCurrentTestName() + "-channel";
+        final AtomicReference<Object> channelConfigValueHolder = new AtomicReference<>(null);
+        client.addChannelListener(new ChannelListener() {
+            @Override
+            public void channelOpenSuccess(Channel channel) {
+                updateChannelConfigProperty(channel, "channelOpenSuccess");
+            }
+
+            @Override
+            public void channelOpenFailure(Channel channel, Throwable reason) {
+                updateChannelConfigProperty(channel, "channelOpenFailure");
+            }
+
+            @Override
+            public void channelInitialized(Channel channel) {
+                updateChannelConfigProperty(channel, "channelInitialized");
+            }
+
+            @Override
+            public void channelClosed(Channel channel) {
+                updateChannelConfigProperty(channel, "channelClosed");
+            }
+
+            private void updateChannelConfigProperty(Channel channel, Object value) {
+                PropertyResolverUtils.updateProperty(channel, CHANNEL_PROP_NAME, value);
+                channelConfigValueHolder.set(value);
+            }
+        });
+        client.start();
+
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(7L, TimeUnit.SECONDS).getSession()) {
+            assertSame("Session established", sessionConfigValueHolder.get(), PropertyResolverUtils.getObject(session, SESSION_PROP_NAME));
+            session.addPasswordIdentity(getCurrentTestName());
+            session.auth().verify(5L, TimeUnit.SECONDS);
+            assertSame("Session authenticated", sessionConfigValueHolder.get(), PropertyResolverUtils.getObject(session, SESSION_PROP_NAME));
+
+            try (ChannelExec channel = session.createExecChannel(getCurrentTestName());
+                 OutputStream stdout = new NoCloseOutputStream(System.out);
+                 OutputStream stderr = new NoCloseOutputStream(System.err)) {
+                assertSame("Channel created", channelConfigValueHolder.get(), PropertyResolverUtils.getObject(channel, CHANNEL_PROP_NAME));
+                assertNull("Direct channel created session prop", PropertyResolverUtils.getObject(channel.getProperties(), SESSION_PROP_NAME));
+                assertSame("Indirect channel created session prop", sessionConfigValueHolder.get(), PropertyResolverUtils.getObject(channel, SESSION_PROP_NAME));
+
+                channel.setOut(stdout);
+                channel.setErr(stderr);
+                channel.open().verify(9L, TimeUnit.SECONDS);
+            }
+        } finally {
+            client.stop();
+        }
     }
 
     @Test
@@ -389,10 +467,10 @@ public class ClientTest extends BaseTestSupport {
 
     @Test
     public void testAsyncClient() throws Exception {
-        FactoryManagerUtils.updateProperty(sshd, FactoryManager.WINDOW_SIZE, 1024);
+        PropertyResolverUtils.updateProperty(sshd, FactoryManager.WINDOW_SIZE, 1024);
         sshd.setShellFactory(new AsyncEchoShellFactory());
 
-        FactoryManagerUtils.updateProperty(client, FactoryManager.WINDOW_SIZE, 1024);
+        PropertyResolverUtils.updateProperty(client, FactoryManager.WINDOW_SIZE, 1024);
         client.start();
 
         try (ClientSession session = createTestClientSession();
@@ -1083,7 +1161,7 @@ public class ClientTest extends BaseTestSupport {
         });
 
         final int MAX_PROMPTS = 3;
-        FactoryManagerUtils.updateProperty(client, ClientFactoryManager.PASSWORD_PROMPTS, MAX_PROMPTS);
+        PropertyResolverUtils.updateProperty(client, ClientFactoryManager.PASSWORD_PROMPTS, MAX_PROMPTS);
 
         client.start();
 
@@ -1105,7 +1183,7 @@ public class ClientTest extends BaseTestSupport {
     public void testDefaultKeyboardInteractiveInSessionUserInteractive() throws Exception {
         final AtomicInteger count = new AtomicInteger();
         final int MAX_PROMPTS = 3;
-        FactoryManagerUtils.updateProperty(client, ClientFactoryManager.PASSWORD_PROMPTS, MAX_PROMPTS);
+        PropertyResolverUtils.updateProperty(client, ClientFactoryManager.PASSWORD_PROMPTS, MAX_PROMPTS);
 
         client.setUserAuthFactories(Collections.<NamedFactory<UserAuth>>singletonList(UserAuthKeyboardInteractiveFactory.INSTANCE));
         client.start();
@@ -1147,7 +1225,7 @@ public class ClientTest extends BaseTestSupport {
     public void testKeyboardInteractiveInSessionUserInteractiveFailure() throws Exception {
         final AtomicInteger count = new AtomicInteger();
         final int MAX_PROMPTS = 3;
-        FactoryManagerUtils.updateProperty(client, ClientFactoryManager.PASSWORD_PROMPTS, MAX_PROMPTS);
+        PropertyResolverUtils.updateProperty(client, ClientFactoryManager.PASSWORD_PROMPTS, MAX_PROMPTS);
         client.setUserAuthFactories(Collections.<NamedFactory<UserAuth>>singletonList(UserAuthKeyboardInteractiveFactory.INSTANCE));
         client.start();
 

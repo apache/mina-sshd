@@ -23,10 +23,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
@@ -63,14 +62,14 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
         }
 
         this.session = (ServerSession) s;
-        maxAuthRequests = session.getIntProperty(ServerFactoryManager.MAX_AUTH_REQUESTS, ServerFactoryManager.DEFAULT_MAX_AUTH_REQUESTS);
+        maxAuthRequests = PropertyResolverUtils.getIntProperty(session, ServerFactoryManager.MAX_AUTH_REQUESTS, ServerFactoryManager.DEFAULT_MAX_AUTH_REQUESTS);
 
         ServerFactoryManager manager = getFactoryManager();
         userAuthFactories = new ArrayList<>(manager.getUserAuthFactories());
         // Get authentication methods
         authMethods = new ArrayList<>();
 
-        String mths = FactoryManagerUtils.getString(manager, ServerFactoryManager.AUTH_METHODS);
+        String mths = PropertyResolverUtils.getString(session, ServerFactoryManager.AUTH_METHODS);
         if (GenericUtils.isEmpty(mths)) {
             for (NamedFactory<UserAuth> uaf : manager.getUserAuthFactories()) {
                 authMethods.add(new ArrayList<>(Collections.singletonList(uaf.getName())));
@@ -203,8 +202,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
         }
 
         if (success) {
-            FactoryManager manager = getFactoryManager();
-            Integer maxSessionCount = FactoryManagerUtils.getInteger(manager, ServerFactoryManager.MAX_CONCURRENT_SESSIONS);
+            Integer maxSessionCount = PropertyResolverUtils.getInteger(session, ServerFactoryManager.MAX_CONCURRENT_SESSIONS);
             if (maxSessionCount != null) {
                 int currentSessionCount = session.getActiveSessionCountForUser(username);
                 if (currentSessionCount >= maxSessionCount) {
@@ -222,9 +220,9 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
              *      authentication is successful.  This message contains text to be
              *      displayed to the client user before authentication is attempted.
              */
-            String welcomeBanner = FactoryManagerUtils.getString(manager, ServerFactoryManager.WELCOME_BANNER);
+            String welcomeBanner = PropertyResolverUtils.getString(session, ServerFactoryManager.WELCOME_BANNER);
             if (GenericUtils.length(welcomeBanner) > 0) {
-                String lang = FactoryManagerUtils.getStringProperty(manager,
+                String lang = PropertyResolverUtils.getStringProperty(session,
                                         ServerFactoryManager.WELCOME_BANNER_LANGUAGE,
                                         ServerFactoryManager.DEFAULT_WELCOME_BANNER_LANGUAGE);
                 buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_BANNER, welcomeBanner.length() + lang.length() + Long.SIZE);

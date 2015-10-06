@@ -27,7 +27,7 @@ import java.util.concurrent.Future;
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
-import org.apache.sshd.common.FactoryManagerUtils;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.channel.ChannelOutputStream;
@@ -78,7 +78,7 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
         ChannelListener listener = getChannelListenerProxy();
         try {
             out = new ChannelOutputStream(this, remoteWindow, log, SshConstants.SSH_MSG_CHANNEL_DATA);
-            authSocket = FactoryManagerUtils.getString(session, SshAgent.SSH_AUTHSOCKET_ENV_NAME);
+            authSocket = PropertyResolverUtils.getString(this, SshAgent.SSH_AUTHSOCKET_ENV_NAME);
             pool = Pool.create(AprLibrary.getInstance().getRootPool());
             handle = Local.create(authSocket, pool);
             int result = Local.connect(handle, 0);
@@ -90,7 +90,7 @@ public class ChannelAgentForwarding extends AbstractServerChannel {
             forwardService = (service == null) ? ThreadUtils.newSingleThreadExecutor("ChannelAgentForwarding[" + authSocket + "]") : service;
             shutdownForwarder = (service == forwardService) ? isShutdownOnExit() : true;
 
-            final int copyBufSize = FactoryManagerUtils.getIntProperty(getSession(), FORWARDER_BUFFER_SIZE, DEFAULT_FORWARDER_BUF_SIZE);
+            final int copyBufSize = PropertyResolverUtils.getIntProperty(this, FORWARDER_BUFFER_SIZE, DEFAULT_FORWARDER_BUF_SIZE);
             ValidateUtils.checkTrue(copyBufSize >= MIN_FORWARDER_BUF_SIZE, "Copy buf size below min.: %d", copyBufSize);
             ValidateUtils.checkTrue(copyBufSize <= MAX_FORWARDER_BUF_SIZE, "Copy buf size above max.: %d", copyBufSize);
 

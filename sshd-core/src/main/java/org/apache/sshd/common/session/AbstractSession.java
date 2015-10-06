@@ -37,9 +37,10 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.common.PropertyResolver;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
@@ -60,6 +61,7 @@ import org.apache.sshd.common.mac.Mac;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.Pair;
 import org.apache.sshd.common.util.Readable;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -166,12 +168,9 @@ public abstract class AbstractSession extends AbstractInnerCloseable implements 
     protected final AtomicReference<Buffer> requestResult = new AtomicReference<>();
     protected final Map<AttributeKey<?>, Object> attributes = new ConcurrentHashMap<>();
 
-    // Session timeout
-    protected long authTimeoutTimestamp;
-    protected long idleTimeoutTimestamp;
-    protected long authTimeoutMs = TimeUnit.MINUTES.toMillis(2);          // 2 minutes in milliseconds
-    protected long idleTimeoutMs = TimeUnit.MINUTES.toMillis(10);         // 10 minutes in milliseconds
-    protected long disconnectTimeoutMs = TimeUnit.SECONDS.toMillis(10);   // 10 seconds in milliseconds
+    // Session timeout measurements
+    protected long authTimeoutStart = System.currentTimeMillis();
+    protected long idleTimeoutStart = System.currentTimeMillis();
     protected final AtomicReference<TimeoutStatus> timeoutStatus = new AtomicReference<>(TimeoutStatus.NoTimeout);
 
     //
@@ -190,6 +189,7 @@ public abstract class AbstractSession extends AbstractInnerCloseable implements 
      * The factory manager used to retrieve factories of Ciphers, Macs and other objects
      */
     private final FactoryManager factoryManager;
+    private final Map<String, Object> properties = new ConcurrentHashMap<>();
 
     /**
      * Create a new session.
@@ -198,7 +198,7 @@ public abstract class AbstractSession extends AbstractInnerCloseable implements 
      * @param factoryManager the factory manager
      * @param ioSession      the underlying MINA session
      */
-    public AbstractSession(boolean isServer, FactoryManager factoryManager, IoSession ioSession) {
+    protected AbstractSession(boolean isServer, FactoryManager factoryManager, IoSession ioSession) {
         this.isServer = isServer;
         this.factoryManager = ValidateUtils.checkNotNull(factoryManager, "No factory manager provided", GenericUtils.EMPTY_OBJECT_ARRAY);
         this.ioSession = ioSession;
@@ -207,11 +207,7 @@ public abstract class AbstractSession extends AbstractInnerCloseable implements 
         sessionListenerProxy = EventListenerUtils.proxyWrapper(SessionListener.class, loader, sessionListeners);
         channelListenerProxy = EventListenerUtils.proxyWrapper(ChannelListener.class, loader, channelListeners);
 
-        random = factoryManager.getRandomFactory().create();
-        authTimeoutMs = getLongProperty(FactoryManager.AUTH_TIMEOUT, authTimeoutMs);
-        authTimeoutTimestamp = System.currentTimeMillis() + authTimeoutMs;
-        idleTimeoutMs = getLongProperty(FactoryManager.IDLE_TIMEOUT, idleTimeoutMs);
-        disconnectTimeoutMs = getLongProperty(FactoryManager.DISCONNECT_TIMEOUT, disconnectTimeoutMs);
+        random = ValidateUtils.checkNotNull(factoryManager.getRandomFactory(), "No random factory").create();
     }
 
     /**
@@ -284,6 +280,16 @@ public abstract class AbstractSession extends AbstractInnerCloseable implements 
     @Override
     public FactoryManager getFactoryManager() {
         return factoryManager;
+    }
+
+    @Override
+    public PropertyResolver getParentPropertyResolver() {
+        return getFactoryManager();
+    }
+
+    @Override
+    public Map<String, Object> getProperties() {
+        return properties;
     }
 
     @Override
@@ -1260,9 +1266,10 @@ public abstract class AbstractSession extends AbstractInnerCloseable implements 
         Buffer buffer = createBuffer(SshConstants.SSH_MSG_DISCONNECT, msg.length() + Short.SIZE);
         buffer.putInt(reason);
         buffer.putString(msg);
-        buffer.putString("");   // language...
+        buffer.putString("");   // TODO configure language...
         // Write the packet with a timeout to ensure a timely close of the session
         // in case the consumer does not read packets anymore.
+        long disconnectTimeoutMs = PropertyResolverUtils.getLongProperty(this, FactoryManager.DISCONNECT_TIMEOUT, FactoryManager.DEFAULT_DISCONNECT_TIMEOUT);
         writePacket(buffer, disconnectTimeoutMs, TimeUnit.MILLISECONDS).addListener(new SshFutureListener<IoWriteFuture>() {
             @Override
             public void operationComplete(IoWriteFuture future) {
@@ -1371,36 +1378,6 @@ public abstract class AbstractSession extends AbstractInnerCloseable implements 
             requestResult.set(null);
             resetIdleTimeout();
             requestResult.notify();
-        }
-    }
-
-    /**
-     * Retrieve a configuration property as an integer
-     *
-     * @param name         the name of the property
-     * @param defaultValue the default value
-     * @return the value of the configuration property or the default value if not found
-     */
-    @Override
-    public int getIntProperty(String name, int defaultValue) {
-        try {
-            return FactoryManagerUtils.getIntProperty(factoryManager, name, defaultValue);
-        } catch (Exception e) {
-            if (log.isDebugEnabled()) {
-                log.debug("getIntProperty(" + name + ") failed (" + e.getClass().getSimpleName() + ") to retrieve: " + e.getMessage());
-            }
-            return defaultValue;
-        }
-    }
-
-    public long getLongProperty(String name, long defaultValue) {
-        try {
-            return FactoryManagerUtils.getLongProperty(factoryManager, name, defaultValue);
-        } catch (Exception e) {
-            if (log.isDebugEnabled()) {
-                log.debug("getLongProperty(" + name + ") failed (" + e.getClass().getSimpleName() + ") to retrieve: " + e.getMessage());
-            }
-            return defaultValue;
         }
     }
 
@@ -1611,54 +1588,92 @@ public abstract class AbstractSession extends AbstractInnerCloseable implements 
      * timed out, a DISCONNECT message will be sent.
      *
      * @throws IOException If failed to check
+     * @see #checkAuthenticationTimeout(long, long)
+     * @see #checkIdleTimeout(long, long)
      */
     protected void checkForTimeouts() throws IOException {
-        if (!isClosing()) {
-            long now = System.currentTimeMillis();
-            if ((!authed) && (authTimeoutMs > 0L) && (now > authTimeoutTimestamp)) {
-                timeoutStatus.set(TimeoutStatus.AuthTimeout);
-                disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "Session has timed out waiting for authentication after " + authTimeoutMs + " ms.");
-            }
-            if ((idleTimeoutMs > 0) && (idleTimeoutTimestamp > 0L) && (now > idleTimeoutTimestamp)) {
-                timeoutStatus.set(TimeoutStatus.AuthTimeout);
-                disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "User session has timed out idling after " + idleTimeoutMs + " ms.");
-            }
+        if (isClosing()) {
+            log.debug("checkForTimeouts({}) session closing", this);
+            return;
+        }
+
+        long now = System.currentTimeMillis();
+        Pair<TimeoutStatus, String> result = checkAuthenticationTimeout(now, getAuthTimeout());
+        if (result == null) {
+            result = checkIdleTimeout(now, getIdleTimeout());
+        }
+
+        TimeoutStatus status = (result == null) ? TimeoutStatus.NoTimeout : result.getFirst();
+        if ((status == null) || TimeoutStatus.NoTimeout.equals(status)) {
+            return;
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug("checkForTimeouts({}) disconnect - reason={}", this, status);
+        }
+
+        timeoutStatus.set(status);
+        disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, result.getSecond());
+    }
+
+    /**
+     * Checks if authentication timeout expired
+     *
+     * @param now           The current time in millis
+     * @param authTimeoutMs The configured timeout in millis - if non-positive
+     *                      then no timeout
+     * @return A {@link Pair} specifying the timeout status and disconnect reason
+     * message if timeout expired, {@code null} or {@link TimeoutStatus#NoTimeout}
+     * if no timeout occurred
+     * @see #getAuthTimeout()
+     */
+    protected Pair<TimeoutStatus, String> checkAuthenticationTimeout(long now, long authTimeoutMs) {
+        long authDiff = now - authTimeoutStart;
+        if ((!authed) && (authTimeoutMs > 0L) && (authDiff > authTimeoutMs)) {
+            return new Pair<TimeoutStatus, String>(TimeoutStatus.AuthTimeout, "Session has timed out waiting for authentication after " + authTimeoutMs + " ms.");
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * Checks if idle timeout expired
+     *
+     * @param now           The current time in millis
+     * @param authTimeoutMs The configured timeout in millis - if non-positive
+     *                      then no timeout
+     * @return A {@link Pair} specifying the timeout status and disconnect reason
+     * message if timeout expired, {@code null} or {@link TimeoutStatus#NoTimeout}
+     * if no timeout occurred
+     * @see #getIdleTimeout()
+     */
+    protected Pair<TimeoutStatus, String> checkIdleTimeout(long now, long idleTimeoutMs) {
+        long idleDiff = now - idleTimeoutStart;
+        if ((idleTimeoutMs > 0L) && (idleDiff > idleTimeoutMs)) {
+            return new Pair<TimeoutStatus, String>(TimeoutStatus.IdleTimeout, "User session has timed out idling after " + idleTimeoutMs + " ms.");
+        } else {
+            return null;
         }
     }
 
     @Override
     public void resetIdleTimeout() {
-        this.idleTimeoutTimestamp = System.currentTimeMillis() + idleTimeoutMs;
+        this.idleTimeoutStart = System.currentTimeMillis();
     }
 
-    /**
-     * Check if timeout has occurred.
-     *
-     * @return The {@link TimeoutStatus}
-     */
     @Override
     public TimeoutStatus getTimeoutStatus() {
         return timeoutStatus.get();
     }
 
-    /**
-     * What is timeout value in milliseconds for authentication stage
-     *
-     * @return The timeout value in milliseconds for authentication stage
-     */
     @Override
     public long getAuthTimeout() {
-        return authTimeoutMs;
+        return PropertyResolverUtils.getLongProperty(this, FactoryManager.AUTH_TIMEOUT, FactoryManager.DEFAULT_AUTH_TIMEOUT);
     }
 
-    /**
-     * What is timeout value in milliseconds for communication
-     *
-     * @return The timeout value in milliseconds for communication
-     */
     @Override
     public long getIdleTimeout() {
-        return idleTimeoutMs;
+        return PropertyResolverUtils.getLongProperty(this, FactoryManager.IDLE_TIMEOUT, FactoryManager.DEFAULT_IDLE_TIMEOUT);
     }
 
     @Override

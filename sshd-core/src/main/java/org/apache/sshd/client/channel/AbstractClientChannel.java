@@ -278,6 +278,8 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
         }
         openFuture = new DefaultOpenFuture(lock);
         log.debug("Send SSH_MSG_CHANNEL_OPEN on channel {}", this);
+
+        Session session = getSession();
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_OPEN);
         buffer.putString(type);
         buffer.putInt(id);
@@ -296,8 +298,8 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
     public void handleOpenSuccess(int recipient, int rwSize, int packetSize, Buffer buffer) {
         this.recipient = recipient;
 
-        Session s = getSession();
-        FactoryManager manager = ValidateUtils.checkNotNull(s.getFactoryManager(), "No factory manager");
+        Session session = getSession();
+        FactoryManager manager = ValidateUtils.checkNotNull(session.getFactoryManager(), "No factory manager");
         this.remoteWindow.init(rwSize, packetSize, manager.getProperties());
         ChannelListener listener = getChannelListenerProxy();
         try {

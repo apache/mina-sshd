@@ -23,7 +23,7 @@ import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.nio.channels.Channel;
 import java.util.concurrent.TimeUnit;
-import org.apache.sshd.common.FactoryManagerUtils;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -55,7 +55,7 @@ public class ChannelOutputStream extends OutputStream implements Channel {
     private boolean noDelay;
 
     public ChannelOutputStream(AbstractChannel channel, Window remoteWindow, Logger log, byte cmd) {
-        this(channel, remoteWindow, FactoryManagerUtils.getLongProperty(channel, WAIT_FOR_SPACE_TIMEOUT, DEFAULT_WAIT_FOR_SPACE_TIMEOUT), log, cmd);
+        this(channel, remoteWindow, PropertyResolverUtils.getLongProperty(channel, WAIT_FOR_SPACE_TIMEOUT, DEFAULT_WAIT_FOR_SPACE_TIMEOUT), log, cmd);
     }
 
     public ChannelOutputStream(AbstractChannel channel, Window remoteWindow, long maxWaitTimeout, Logger log, byte cmd) {

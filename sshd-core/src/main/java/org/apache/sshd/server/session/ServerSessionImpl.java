@@ -26,8 +26,8 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.FactoryManagerUtils;
 import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
@@ -58,8 +58,8 @@ public class ServerSessionImpl extends AbstractSession implements ServerSession 
 
     public ServerSessionImpl(ServerFactoryManager server, IoSession ioSession) throws Exception {
         super(true, server, ioSession);
-        maxBytes = Math.max(32, getLongProperty(ServerFactoryManager.REKEY_BYTES_LIMIT, maxBytes));
-        maxKeyInterval = getLongProperty(ServerFactoryManager.REKEY_TIME_LIMIT, maxKeyInterval);
+        maxBytes = Math.max(32, PropertyResolverUtils.getLongProperty(this, ServerFactoryManager.REKEY_BYTES_LIMIT, maxBytes));
+        maxKeyInterval = PropertyResolverUtils.getLongProperty(this, ServerFactoryManager.REKEY_TIME_LIMIT, maxKeyInterval);
         log.info("Server session created from {}", ioSession.getRemoteAddress());
         sendServerIdentification();
     }
@@ -101,7 +101,7 @@ public class ServerSessionImpl extends AbstractSession implements ServerSession 
 
     protected void sendServerIdentification() {
         FactoryManager manager = getFactoryManager();
-        String ident = FactoryManagerUtils.getString(manager, ServerFactoryManager.SERVER_IDENTIFICATION);
+        String ident = PropertyResolverUtils.getString(manager, ServerFactoryManager.SERVER_IDENTIFICATION);
         if (GenericUtils.isEmpty(ident)) {
             serverVersion = DEFAULT_SSH_VERSION_PREFIX + manager.getVersion();
         } else {
