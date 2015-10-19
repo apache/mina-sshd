@@ -83,6 +83,9 @@ import org.junit.runners.MethodSorters;
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
 
+/**
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class SftpTest extends AbstractSftpClientTestSupport {
 

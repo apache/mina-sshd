@@ -23,9 +23,12 @@ import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.nio.channels.Channel;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.slf4j.Logger;
@@ -48,8 +51,8 @@ public class ChannelOutputStream extends OutputStream implements Channel {
     private final Logger log;
     private final byte cmd;
     private final byte[] b = new byte[1];
+    private final AtomicBoolean closedState = new AtomicBoolean(false);
     private Buffer buffer;
-    private boolean closed;
     private int bufferLength;
     private int lastSize;
     private boolean noDelay;
@@ -78,7 +81,7 @@ public class ChannelOutputStream extends OutputStream implements Channel {
 
     @Override
     public boolean isOpen() {
-        return !closed;
+        return !closedState.get();
     }
 
     @Override
@@ -90,9 +93,10 @@ public class ChannelOutputStream extends OutputStream implements Channel {
     @Override
     public synchronized void write(byte[] buf, int s, int l) throws IOException {
         if (!isOpen()) {
-            throw new SshException("write(len=" + l + ") channel already closed");
+            throw new SshException("write(" + this + ") len=" + l + " - channel already closed");
         }
 
+        Session session = channel.getSession();
         while (l > 0) {
             // The maximum amount we should admit without flushing again
             // is enough to make up one full packet within our allowed
@@ -100,21 +104,26 @@ public class ChannelOutputStream extends OutputStream implements Channel {
             // packet we sent to allow the producer to race ahead and fill
             // out the next packet before we block and wait for space to
             // become available again.
-            //
             int l2 = Math.min(l, Math.min(remoteWindow.getSize() + lastSize, remoteWindow.getPacketSize()) - bufferLength);
             if (l2 <= 0) {
                 if (bufferLength > 0) {
                     flush();
                 } else {
+                    session.resetIdleTimeout();
                     try {
                         remoteWindow.waitForSpace(maxWaitTimeout);
                     } catch (WindowClosedException e) {
-                        closed = true;
+                        if (!closedState.getAndSet(true)) {
+                            if (log.isDebugEnabled()) {
+                                log.debug("write({})[len={}] closing due to window closed", this, l);
+                            }
+                        }
                         throw e;
                     } catch (InterruptedException e) {
-                        throw (IOException) new InterruptedIOException("Interrupted while waiting for remote space").initCause(e);
+                        throw (IOException) new InterruptedIOException("Interrupted while waiting for remote space on write len=" + l + " to " + this).initCause(e);
                     }
                 }
+                session.resetIdleTimeout();
                 continue;
             }
             buffer.putRawBytes(buf, s, l2);
@@ -122,19 +131,25 @@ public class ChannelOutputStream extends OutputStream implements Channel {
             s += l2;
             l -= l2;
         }
-        if (noDelay) {
+
+        if (isNoDelay()) {
             flush();
+        } else {
+            session.resetIdleTimeout();
         }
     }
 
     @Override
     public synchronized void flush() throws IOException {
         if (!isOpen()) {
-            throw new SshException("flush(length=" + bufferLength + ") - stream is already closed");
+            throw new SshException("flush(" + this + ") length=" + bufferLength + " - stream is already closed");
         }
 
         try {
+            Session session = channel.getSession();
             while (bufferLength > 0) {
+                session.resetIdleTimeout();
+
                 Buffer buf = buffer;
                 int total = bufferLength;
                 int available = remoteWindow.waitForSpace(maxWaitTimeout);
@@ -152,16 +167,22 @@ public class ChannelOutputStream extends OutputStream implements Channel {
                     bufferLength = leftover;
                 }
                 lastSize = length;
+
+                session.resetIdleTimeout();
                 remoteWindow.waitAndConsume(length, maxWaitTimeout);
-                if (log.isDebugEnabled()) {
-                    log.debug("Send {} on channel {}",
-                            (cmd == SshConstants.SSH_MSG_CHANNEL_DATA) ? "SSH_MSG_CHANNEL_DATA" : "SSH_MSG_CHANNEL_EXTENDED_DATA",
-                            Integer.valueOf(channel.getId()));
+                if (log.isTraceEnabled()) {
+                    log.trace("Send {} on channel {}",
+                              (cmd == SshConstants.SSH_MSG_CHANNEL_DATA) ? "SSH_MSG_CHANNEL_DATA" : "SSH_MSG_CHANNEL_EXTENDED_DATA",
+                              channel);
                 }
                 channel.writePacket(buf);
             }
         } catch (WindowClosedException e) {
-            closed = true;
+            if (!closedState.getAndSet(true)) {
+                if (log.isDebugEnabled()) {
+                    log.debug("flush({}) closing due to window closed", this);
+                }
+            }
             throw e;
         } catch (Exception e) {
             if (e instanceof IOException) {
@@ -175,16 +196,26 @@ public class ChannelOutputStream extends OutputStream implements Channel {
     @Override
     public synchronized void close() throws IOException {
         if (isOpen()) {
+            if (log.isTraceEnabled()) {
+                log.trace("close({}) closing", this);
+            }
+
             try {
                 flush();
             } finally {
-                closed = true;
+                closedState.set(true);
             }
         }
     }
 
-    private void newBuffer(int size) {
-        buffer = channel.getSession().createBuffer(cmd, size <= 0 ? 0 : 12 + size);
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "[" + channel + "]";
+    }
+
+    protected void newBuffer(int size) {
+        Session session = channel.getSession();
+        buffer = session.createBuffer(cmd, size <= 0 ? 12 : 12 + size);
         buffer.putInt(channel.getRecipient());
         if (cmd == SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA) {
             buffer.putInt(1);
@@ -192,5 +223,4 @@ public class ChannelOutputStream extends OutputStream implements Channel {
         buffer.putInt(0);
         bufferLength = 0;
     }
-
 }

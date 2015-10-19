@@ -111,7 +111,7 @@ public interface FactoryManager extends SessionListenerManager, ChannelListenerM
     /**
      * Key used to retrieve the value of idle timeout after which
      * it will close the connection - in milliseconds.
-     * @see #DEFAULT_AUTH_TIMEOUT
+     * @see #DEFAULT_IDLE_TIMEOUT
      */
     String IDLE_TIMEOUT = "idle-timeout";
 

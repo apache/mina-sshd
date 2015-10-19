@@ -139,6 +139,7 @@ public class ChannelPipedInputStream extends InputStream implements ChannelPiped
                     throw (IOException) new InterruptedIOException("Interrupted at cycle #" + index + " while waiting for data to become available").initCause(e);
                 }
             }
+
             if (len > buffer.available()) {
                 len = buffer.available();
             }
