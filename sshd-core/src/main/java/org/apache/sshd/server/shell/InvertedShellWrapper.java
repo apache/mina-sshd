@@ -24,6 +24,10 @@ import java.io.OutputStream;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 
+import org.apache.sshd.common.PropertyResolverUtils;
+import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.io.IoUtils;
+import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.Environment;
@@ -40,12 +44,24 @@ import org.apache.sshd.server.session.ServerSession;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class InvertedShellWrapper implements Command, SessionAware {
+public class InvertedShellWrapper extends AbstractLoggingBean implements Command, SessionAware {
 
     /**
-     * default buffer size for the IO pumps.
+     * Default buffer size for the IO pumps.
      */
-    public static final int DEFAULT_BUFFER_SIZE = 8192;
+    public static final int DEFAULT_BUFFER_SIZE = IoUtils.DEFAULT_COPY_SIZE;
+
+    /**
+     * Value used to control the &quot;busy-wait&quot; sleep time (millis) on
+     * the pumping loop if nothing was pumped - must be <U>positive</U>
+     * @see #DEFAULT_PUMP_SLEEP_TIME
+     */
+    public static final String PUMP_SLEEP_TIME = "inverted-shell-wrapper-pump-sleep";
+
+    /**
+     * Default value for {@link #PUMP_SLEEP_TIME} if none set
+     */
+    public static final long DEFAULT_PUMP_SLEEP_TIME = 1L;
 
     private final InvertedShell shell;
     private final Executor executor;
@@ -58,31 +74,44 @@ public class InvertedShellWrapper implements Command, SessionAware {
     private InputStream shellErr;
     private ExitCallback callback;
     private boolean shutdownExecutor;
+    private long pumpSleepTime = DEFAULT_PUMP_SLEEP_TIME;
 
+    /**
+     * Auto-allocates an {@link Executor} in order to create the streams pump thread
+     * and uses the {@link #DEFAULT_BUFFER_SIZE}
+     *
+     * @param shell The {@link InvertedShell}
+     * @see #InvertedShellWrapper(InvertedShell, int)
+     */
     public InvertedShellWrapper(InvertedShell shell) {
         this(shell, DEFAULT_BUFFER_SIZE);
     }
 
-    public InvertedShellWrapper(InvertedShell shell, Executor executor) {
-        this(shell, executor, DEFAULT_BUFFER_SIZE);
-    }
-
+    /**
+     * Auto-allocates an {@link Executor} in order to create the streams pump thread
+     *
+     * @param shell      The {@link InvertedShell}
+     * @param bufferSize Buffer size to use - must be above min. size ({@link Byte#SIZE})
+     * @see #InvertedShellWrapper(InvertedShell, Executor, boolean, int)
+     */
     public InvertedShellWrapper(InvertedShell shell, int bufferSize) {
-        this(shell,
-                ThreadUtils.newSingleThreadExecutor("shell[" + Integer.toHexString(shell.hashCode()) + "]"),
-                true,
-                bufferSize);
+        this(shell, null, true, bufferSize);
     }
 
-    public InvertedShellWrapper(InvertedShell shell, Executor executor, int bufferSize) {
-        this(shell, executor, false, bufferSize);
-    }
-
+    /**
+     * @param shell            The {@link InvertedShell}
+     * @param executor         The {@link Executor} to use in order to create the streams pump thread.
+     *                         If {@code null} one is auto-allocated and shutdown when wrapper is {@link #destroy()}-ed.
+     * @param shutdownExecutor If {@code true} the executor is shut down when shell wrapper is {@link #destroy()}-ed.
+     *                         Ignored if executor service auto-allocated
+     * @param bufferSize       Buffer size to use - must be above min. size ({@link Byte#SIZE})
+     */
     public InvertedShellWrapper(InvertedShell shell, Executor executor, boolean shutdownExecutor, int bufferSize) {
-        this.shell = shell;
-        this.executor = executor;
+        this.shell = ValidateUtils.checkNotNull(shell, "No shell");
+        this.executor = (executor == null) ? ThreadUtils.newSingleThreadExecutor("shell[0x" + Integer.toHexString(shell.hashCode()) + "]") : executor;
+        ValidateUtils.checkTrue(bufferSize > Byte.SIZE, "Copy buffer size too small: %d", bufferSize);
         this.bufferSize = bufferSize;
-        this.shutdownExecutor = shutdownExecutor;
+        this.shutdownExecutor = (executor == null) ? true : shutdownExecutor;
     }
 
     @Override
@@ -107,6 +136,9 @@ public class InvertedShellWrapper implements Command, SessionAware {
 
     @Override
     public void setSession(ServerSession session) {
+        pumpSleepTime = PropertyResolverUtils.getLongProperty(session, PUMP_SLEEP_TIME, DEFAULT_PUMP_SLEEP_TIME);
+        ValidateUtils.checkTrue(pumpSleepTime > 0L, "Invalid " + PUMP_SLEEP_TIME + ": %d", pumpSleepTime);
+
         if (shell instanceof SessionAware) {
             ((SessionAware) shell).setSession(session);
         }
@@ -130,7 +162,7 @@ public class InvertedShellWrapper implements Command, SessionAware {
     @Override
     public synchronized void destroy() {
         shell.destroy();
-        if (shutdownExecutor && executor instanceof ExecutorService) {
+        if (shutdownExecutor && (executor instanceof ExecutorService)) {
             ((ExecutorService) executor).shutdown();
         }
     }
@@ -140,8 +172,7 @@ public class InvertedShellWrapper implements Command, SessionAware {
             // Use a single thread to correctly sequence the output and error streams.
             // If any bytes are available from the output stream, send them first, then
             // check the error stream, or wait until more data is available.
-            byte[] buffer = new byte[bufferSize];
-            for (;;) {
+            for (byte[] buffer = new byte[bufferSize];;) {
                 if (pumpStream(in, shellIn, buffer)) {
                     continue;
                 }
@@ -158,15 +189,20 @@ public class InvertedShellWrapper implements Command, SessionAware {
                 // Sleep a bit.  This is not very good, as it consumes CPU, but the
                 // input streams are not selectable for nio, and any other blocking
                 // method would consume at least two threads
-                Thread.sleep(1);
+                Thread.sleep(pumpSleepTime);
             }
         } catch (Exception e) {
             shell.destroy();
-            callback.onExit(shell.exitValue());
+
+            int exitValue = shell.exitValue();
+            if (log.isDebugEnabled()) {
+                log.debug(e.getClass().getSimpleName() + " while pumping the streams (exit=" + exitValue + "): " + e.getMessage(), e);
+            }
+            callback.onExit(exitValue, e.getClass().getSimpleName());
         }
     }
 
-    private boolean pumpStream(InputStream in, OutputStream out, byte[] buffer) throws IOException {
+    protected boolean pumpStream(InputStream in, OutputStream out, byte[] buffer) throws IOException {
         int available = in.available();
         if (available > 0) {
             int len = in.read(buffer);
@@ -180,5 +216,4 @@ public class InvertedShellWrapper implements Command, SessionAware {
         }
         return false;
     }
-
 }

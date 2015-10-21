@@ -23,19 +23,34 @@ import org.apache.sshd.server.ExitCallback;
 public class BogusExitCallback implements ExitCallback {
 
     private boolean exited;
+    private int exitValue;
+    private String exitMessage;
+
+    public BogusExitCallback() {
+        super();
+    }
 
     @Override
     public void onExit(int exitValue) {
-        this.exited = true;
+        onExit(exitValue, String.valueOf(exitValue));
     }
 
     @Override
     public void onExit(int exitValue, String exitMessage) {
         this.exited = true;
+        this.exitValue = exitValue;
+        this.exitMessage = exitMessage;
     }
 
     public boolean isExited() {
         return exited;
     }
 
+    public int getExitValue() {
+        return exitValue;
+    }
+
+    public String getExitMessage() {
+        return exitMessage;
+    }
 }
