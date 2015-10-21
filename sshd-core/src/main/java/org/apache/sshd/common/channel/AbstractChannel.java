@@ -67,7 +67,7 @@ public abstract class AbstractChannel
      */
     public static final Int2IntFunction RESPONSE_BUFFER_GROWTH_FACTOR = Int2IntFunction.Utils.add(Byte.SIZE);
 
-    protected static enum GracefulState {
+    protected enum GracefulState {
         Opened, CloseSent, CloseReceived, Closed
     }
 

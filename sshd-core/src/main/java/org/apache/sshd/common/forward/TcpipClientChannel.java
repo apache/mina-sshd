@@ -44,7 +44,7 @@ public class TcpipClientChannel extends AbstractClientChannel {
     /**
      * Type of channel being created
      */
-    public static enum Type {
+    public enum Type {
         Direct,
         Forwarded
     }

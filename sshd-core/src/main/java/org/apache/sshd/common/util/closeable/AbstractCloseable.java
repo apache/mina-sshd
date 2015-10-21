@@ -32,7 +32,7 @@ import org.apache.sshd.common.future.SshFutureListener;
  */
 public abstract class AbstractCloseable extends IoBaseCloseable {
 
-    public static enum State {
+    public enum State {
         Opened, Graceful, Immediate, Closed
     }
 
