@@ -55,7 +55,7 @@ public class GitSshdSession extends AbstractLoggingBean implements RemoteSession
     /**
      * Property used to configure the SSHD {@link org.apache.sshd.common.FactoryManager} with
      * the default timeout (millis) to open a channel to the remote SSH server.
-     * If not specified then {@link #DEFAULT_CHANNEL_OPEN__TIMEOUT) is used.
+     * If not specified then {@link #DEFAULT_CHANNEL_OPEN__TIMEOUT} is used.
      */
     public static final String CHANNEL_OPEN_TIMEOUT_PROPT = "git-ssh-channel-open-timeout";
     public static final long DEFAULT_CHANNEL_OPEN_TIMEOUT = TimeUnit.SECONDS.toMillis(7L);

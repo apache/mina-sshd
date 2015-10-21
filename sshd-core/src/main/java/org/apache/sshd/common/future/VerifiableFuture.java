@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
  * method returns without an exception then the operation was completed
  * <U>successfully</U>
  *
+ * @param <T> Type of verification result
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface VerifiableFuture<T> {

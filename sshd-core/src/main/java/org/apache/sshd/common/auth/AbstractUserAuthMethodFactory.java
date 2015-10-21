@@ -23,6 +23,7 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
+ * @param <M> Type of user authentication method
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractUserAuthMethodFactory<M> extends AbstractLoggingBean implements UserAuthMethodFactory<M> {

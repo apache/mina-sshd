@@ -23,22 +23,24 @@ import java.util.Objects;
 /**
  * Represents a pair of values
  *
+ * @param <F> First value type
+ * @param <S> Second value type
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class Pair<U, V> {
-    private final U first;
-    private final V second;
+public class Pair<F, S> {
+    private final F first;
+    private final S second;
 
-    public Pair(U first, V second) {
+    public Pair(F first, S second) {
         this.first = first;
         this.second = second;
     }
 
-    public U getFirst() {
+    public F getFirst() {
         return first;
     }
 
-    public V getSecond() {
+    public S getSecond() {
         return second;
     }
 

@@ -23,6 +23,7 @@ package org.apache.sshd.common.future;
  * (it may be an SSH session or an SSH channel).
  * Can be listened for completion using a {@link SshFutureListener}.
  *
+ * @param <T> Type of future
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface SshFuture<T extends SshFuture> extends WaitableFuture {

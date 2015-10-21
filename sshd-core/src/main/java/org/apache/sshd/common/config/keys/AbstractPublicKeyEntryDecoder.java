@@ -43,6 +43,10 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 
 /**
+ * Useful base class implementation for a decoder of an {@code OpenSSH} encoded key data
+ *
+ * @param <PUB> Type of {@link PublicKey}
+ * @param <PRV> Type of {@link PrivateKey}
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractPublicKeyEntryDecoder<PUB extends PublicKey, PRV extends PrivateKey>

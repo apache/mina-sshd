@@ -30,6 +30,7 @@ import org.apache.sshd.common.util.GenericUtils;
  * be un-modifiable, so it is recommended to avoid attempting changing the, returned
  * list(s)
  *
+ * @param <E> Type of list item
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class ListParseResult<E> {

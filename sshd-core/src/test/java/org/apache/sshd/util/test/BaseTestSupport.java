@@ -141,7 +141,7 @@ public abstract class BaseTestSupport extends Assert {
      * @param comps The path components - ignored if {@code null}/empty
      * @return The {@link Path} representing the result - same as target folder if no components
      * @see #TEMP_SUBFOLDER_NAME
-     * @see #getTempTargetFolder();
+     * @see #getTempTargetFolder()
      */
     protected Path getTempTargetRelativeFile(Collection<String> comps) {
         return Utils.resolve(getTempTargetFolder(), comps);

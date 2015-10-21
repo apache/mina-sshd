@@ -50,6 +50,8 @@ import org.apache.sshd.server.forward.RejectAllForwardingFilter;
 /**
  * Base class for dedicated client/server instance builders
  *
+ * @param <T> Type of {@link AbstractFactoryManager} being built
+ * @param <S> Type of builder
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder<T, S>> implements ObjectBuilder<T> {

@@ -24,6 +24,7 @@ import java.util.EventListener;
  * Something interested in being notified when the completion
  * of an asynchronous SSH operation : {@link SshFuture}.
  *
+ * @param <T> type of future
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @SuppressWarnings("rawtypes")

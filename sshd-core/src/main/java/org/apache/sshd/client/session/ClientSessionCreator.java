@@ -45,7 +45,7 @@ public interface ClientSessionCreator {
      * Resolves the <U>effective</U> {@link HostConfigEntry} and connects to it
      *
      * @param username The intended username
-     * @param address The intended {@link SocketAddress] - never {@code null}. If
+     * @param address The intended {@link SocketAddress} - never {@code null}. If
      * this is an {@link java.net.InetSocketAddress} then the <U>effective</U> {@link HostConfigEntry}
      * is resolved and used.
      * @return A {@link ConnectFuture}

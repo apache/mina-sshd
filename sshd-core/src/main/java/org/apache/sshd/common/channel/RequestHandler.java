@@ -28,6 +28,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
 /**
  * A global request handler.
  *
+ * @param <T> Request type
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface RequestHandler<T> {
@@ -37,7 +38,7 @@ public interface RequestHandler<T> {
         Replied,
         ReplySuccess,
         ReplyFailure;
-        
+
         public static final Set<Result> VALUES =
                 Collections.unmodifiableSet(EnumSet.allOf(Result.class));
 
@@ -50,13 +51,13 @@ public interface RequestHandler<T> {
             if (GenericUtils.isEmpty(name)) {
                 return null;
             }
-            
+
             for (Result r : VALUES) {
                 if (name.equalsIgnoreCase(r.name())) {
                     return r;
                 }
             }
-            
+
             return null;
         }
     }

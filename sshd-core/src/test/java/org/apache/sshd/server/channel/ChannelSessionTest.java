@@ -41,7 +41,7 @@ public class ChannelSessionTest extends BaseTestSupport {
         super();
     }
 
-    /**
+    /*
      * Test whether onWindowExpanded is called from server session
      */
     @Test

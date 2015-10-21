@@ -24,6 +24,8 @@ import java.util.List;
 import org.apache.sshd.common.Factory;
 
 /**
+ * @param <T> Result type
+ * @param <F> Factory type
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class FactoriesListParseResult<T, F extends Factory<T>> extends ListParseResult<F> {

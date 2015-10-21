@@ -28,6 +28,8 @@ import org.apache.sshd.common.util.GenericUtils;
 /**
  * Holds the result of parsing a list of {@link NamedFactory}ies
  *
+ * @param <T> Result type
+ * @param <F> Factory type
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class NamedFactoriesListParseResult<T, F extends NamedFactory<T>>

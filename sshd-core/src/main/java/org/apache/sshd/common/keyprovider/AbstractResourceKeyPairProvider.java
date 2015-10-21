@@ -37,6 +37,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
+ * @param <R> Type of resource from which the {@link KeyPair} is generated
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractResourceKeyPairProvider<R> extends AbstractKeyPairProvider {

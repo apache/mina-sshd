@@ -248,7 +248,7 @@ public class HostConfigEntry implements Cloneable, UsernameHolder {
     }
 
     /**
-     * @param path A {@link File{ that contains an identity key - never {@code null}
+     * @param file A {@link File} that contains an identity key - never {@code null}
      */
     public void addIdentity(File file) {
         addIdentity(ValidateUtils.checkNotNull(file, "No file").toPath());
@@ -265,7 +265,7 @@ public class HostConfigEntry implements Cloneable, UsernameHolder {
     /**
      * Adds a path to an identity file
      *
-     * @param id The identity path to add - never {@code null{
+     * @param id The identity path to add - never {@code null}
      */
     public void addIdentity(String id) {
         String path = ValidateUtils.checkNotNullAndNotEmpty(id, "No identity provided");
@@ -302,7 +302,7 @@ public class HostConfigEntry implements Cloneable, UsernameHolder {
 
     /**
      * @param name Property name - never {@code null}/empty
-     * @param value Property value - {@code null} if no such property
+     * @return Property value or {@code null}  if no such property
      * @see #getProperty(String, String)
      */
     public String getProperty(String name) {
@@ -413,7 +413,7 @@ public class HostConfigEntry implements Cloneable, UsernameHolder {
     }
 
     /**
-     * @param name The global user name - ignored if {@code null}/empty or
+     * @param user The global user name - ignored if {@code null}/empty or
      * already have a configured user
      * @return {@code true} if updated the username
      */

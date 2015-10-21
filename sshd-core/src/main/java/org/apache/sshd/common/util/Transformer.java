@@ -22,6 +22,8 @@ package org.apache.sshd.common.util;
 import java.util.Objects;
 
 /**
+ * @param <I> Input type
+ * @param <O> Output type
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface Transformer<I, O> {

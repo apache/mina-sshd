@@ -28,6 +28,7 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.util.Set;
 
 /**
+ * @param <T> Type of information being extracted
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface FileInfoExtractor<T> {
@@ -38,7 +39,7 @@ public interface FileInfoExtractor<T> {
                 return Files.exists(file, options);
             }
         };
-   
+
     FileInfoExtractor<Boolean> ISDIR = new FileInfoExtractor<Boolean>() {
             @Override
             public Boolean infoOf(Path file, LinkOption... options) throws IOException {
@@ -79,7 +80,7 @@ public interface FileInfoExtractor<T> {
         public FileTime infoOf(Path file, LinkOption... options) throws IOException {
             return Files.getLastModifiedTime(file, options);
         }
-        
+
     };
 
     T infoOf(Path file, LinkOption ... options) throws IOException;

@@ -25,6 +25,8 @@ import org.apache.sshd.common.util.ValidateUtils;
 /**
  * An abstract base factory of sessions.
  *
+ * @param <M> Type of {@link FactoryManager}
+ * @param <S> Type of {@link AbstractSession}
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractSessionFactory<M extends FactoryManager, S extends AbstractSession> extends AbstractSessionIoHandler {

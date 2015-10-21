@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * @param <T> Type of future
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class DefaultVerifiableSshFuture<T extends SshFuture> extends DefaultSshFuture<T>implements VerifiableFuture<T> {

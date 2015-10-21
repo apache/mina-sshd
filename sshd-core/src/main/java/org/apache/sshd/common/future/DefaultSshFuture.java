@@ -26,6 +26,7 @@ import org.apache.sshd.common.util.ValidateUtils;
 /**
  * A default implementation of {@link SshFuture}.
  *
+ * @param <T> Type of future
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class DefaultSshFuture<T extends SshFuture> extends AbstractSshFuture<T> {

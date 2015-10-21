@@ -29,6 +29,7 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
+ * @param <T> Type of future
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractSshFuture<T extends SshFuture> extends AbstractLoggingBean implements SshFuture<T> {

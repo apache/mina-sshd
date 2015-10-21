@@ -245,7 +245,7 @@ public class ServerTest extends BaseTestSupport {
         assertTrue("Shell latch not signalled in time", TestEchoShell.latch.await(1L, TimeUnit.SECONDS));
     }
 
-    /**
+    /*
      * The scenario is the following:
      * - create a command that sends continuous data to the client
      * - the client does not read the data, filling the ssh window and the tcp socket
