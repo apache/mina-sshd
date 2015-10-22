@@ -36,9 +36,11 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.Vector;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -831,12 +833,40 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         try {
             URI url = getClass().getClassLoader().getResource(SshClient.class.getName().replace('.', '/') + ".class").toURI();
             URI base = new File(System.getProperty("user.dir")).getAbsoluteFile().toURI();
-            String path = new File(base.relativize(url).getPath()).getParent() + "/";
+            File baseDir = new File(base.relativize(url).getPath());
+            String path = baseDir.getParent() + "/";
             path = path.replace('\\', '/');
+
             Vector<?> res = c.ls(path);
-            for (Object f : res) {
-                System.out.append('\t').println(f.toString());
+            File dir = baseDir.getParentFile();
+            Collection<String> expNames = OsUtils.isUNIX()
+                                        ? new LinkedList<String>()
+                                        : new TreeSet<String>(String.CASE_INSENSITIVE_ORDER)
+                                        ;
+            String[] names = dir.list();
+            if (GenericUtils.length(names) > 0) {
+                for (String n : names) {
+                    if (".".equals(n) || "..".equals(n)) {
+                        continue;
+                    }
+
+                    assertTrue("Failed to accumulate " + n, expNames.add(n));
+                }
             }
+
+            for (Object f : res) {
+                System.out.append('\t').println(f);
+
+                ChannelSftp.LsEntry entry = (ChannelSftp.LsEntry) f;
+                String name = entry.getFilename();
+                if (".".equals(name) || "..".equals(name)) {
+                    continue;
+                }
+
+                assertTrue("Entry not found: " + name, expNames.remove(name));
+            }
+
+            assertTrue("Un-listed names: " + expNames, GenericUtils.isEmpty(expNames));
         } finally {
             c.disconnect();
         }

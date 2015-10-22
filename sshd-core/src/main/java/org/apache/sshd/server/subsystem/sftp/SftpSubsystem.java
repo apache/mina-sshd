@@ -1687,7 +1687,8 @@ public class SftpSubsystem
         try {
             DirectoryHandle dh = validateHandle(handle, h, DirectoryHandle.class);
             if (dh.isDone()) {
-                throw new EOFException("Directory reading is done");
+                sendStatus(BufferUtils.clear(buffer), id, SftpConstants.SSH_FX_EOF, "Directory reading is done");
+                return;
             }
 
             Path file = dh.getFile();
@@ -1728,7 +1729,8 @@ public class SftpSubsystem
             } else {
                 // empty directory
                 dh.markDone();
-                throw new EOFException("Empty directory");
+                sendStatus(BufferUtils.clear(buffer), id, SftpConstants.SSH_FX_EOF, "Empty directory");
+                return;
             }
 
             ValidateUtils.checkNotNull(reply, "No reply buffer created");
