@@ -61,6 +61,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
@@ -78,6 +79,7 @@ import org.apache.sshd.common.subsystem.sftp.SftpConstants;
 import org.apache.sshd.common.subsystem.sftp.extensions.SpaceAvailableExtensionInfo;
 import org.apache.sshd.common.subsystem.sftp.extensions.openssh.AbstractOpenSSHExtensionParser.OpenSSHExtension;
 import org.apache.sshd.common.subsystem.sftp.extensions.openssh.FsyncExtensionParser;
+import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.Int2IntFunction;
 import org.apache.sshd.common.util.OsUtils;
@@ -96,13 +98,16 @@ import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
 import org.apache.sshd.server.SessionAware;
 import org.apache.sshd.server.session.ServerSession;
+import org.apache.sshd.server.session.ServerSessionHolder;
 
 /**
  * SFTP subsystem
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SftpSubsystem extends AbstractLoggingBean implements Command, Runnable, SessionAware, FileSystemAware {
+public class SftpSubsystem
+        extends AbstractLoggingBean
+        implements Command, Runnable, SessionAware, FileSystemAware, ServerSessionHolder, SftpEventListenerManager {
 
     /**
      * Properties key for the maximum of available open handles per session.
@@ -138,7 +143,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     public static final String SFTP_VERSION = "sftp-version";
 
     public static final int LOWER_SFTP_IMPL = SftpConstants.SFTP_V3; // Working implementation from v3
-    public static final int HIGHER_SFTP_IMPL = SftpConstants.SFTP_V6; //  .. up to
+    public static final int HIGHER_SFTP_IMPL = SftpConstants.SFTP_V6; //  .. up to and including
     public static final String ALL_SFTP_IMPL;
 
     /**
@@ -245,7 +250,6 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     protected Random randomizer;
     protected int fileHandleSize = DEFAULT_FILE_HANDLE_SIZE;
     protected int maxFileHandleRounds = DEFAULT_FILE_HANDLE_ROUNDS;
-    protected ServerSession session;
     protected boolean closed;
     protected ExecutorService executors;
     protected boolean shutdownExecutor;
@@ -257,8 +261,11 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     protected int version;
     protected final Map<String, byte[]> extensions = new HashMap<>();
     protected final Map<String, Handle> handles = new HashMap<>();
-
     protected final UnsupportedAttributePolicy unsupportedAttributePolicy;
+
+    private ServerSession serverSession;
+    private final Collection<SftpEventListener> sftpEventListeners = new CopyOnWriteArraySet<>();
+    private final SftpEventListener sftpEventListenerProxy;
 
     /**
      * @param executorService The {@link ExecutorService} to be used by
@@ -280,10 +287,8 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             shutdownExecutor = shutdownOnExit;
         }
 
-        if (policy == null) {
-            throw new IllegalArgumentException("No policy provided");
-        }
-        unsupportedAttributePolicy = policy;
+        unsupportedAttributePolicy = ValidateUtils.checkNotNull(policy, "No policy provided");
+        sftpEventListenerProxy = EventListenerUtils.proxyWrapper(SftpEventListener.class, getClass().getClassLoader(), sftpEventListeners);
     }
 
     public int getVersion() {
@@ -295,8 +300,23 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     }
 
     @Override
+    public SftpEventListener getSftpEventListenerProxy() {
+        return sftpEventListenerProxy;
+    }
+
+    @Override
+    public boolean addSftpEventListener(SftpEventListener listener) {
+        return sftpEventListeners.add(ValidateUtils.checkNotNull(listener, "No listener"));
+    }
+
+    @Override
+    public boolean removeSftpEventListener(SftpEventListener listener) {
+        return sftpEventListeners.remove(listener);
+    }
+
+    @Override
     public void setSession(ServerSession session) {
-        this.session = session;
+        this.serverSession = session;
 
         FactoryManager manager = session.getFactoryManager();
         Factory<? extends Random> factory = manager.getRandomFactory();
@@ -313,6 +333,11 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         if (workBuf.length < this.fileHandleSize) {
             workBuf = new byte[this.fileHandleSize];
         }
+    }
+
+    @Override
+    public ServerSession getServerSession() {
+        return serverSession;
     }
 
     @Override
@@ -948,6 +973,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
 
     protected void doVersionSelect(Buffer buffer, int id) throws IOException {
         String proposed = buffer.getString();
+        ServerSession session = getServerSession();
         /*
          * The 'version-select' MUST be the first request from the client to the
          * server; if it is not, the server MUST fail the request and close the
@@ -1030,6 +1056,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         int hig = HIGHER_SFTP_IMPL;
         String available = ALL_SFTP_IMPL;
         // check if user wants to use a specific version
+        ServerSession session = getServerSession();
         Integer sftpVersion = PropertyResolverUtils.getInteger(session, SFTP_VERSION);
         if (sftpVersion != null) {
             int forcedValue = sftpVersion;
@@ -1043,7 +1070,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
 
         if (log.isTraceEnabled()) {
             log.trace("checkVersionCompatibility(id={}) - proposed={}, available={}",
-                    id, proposed, available);
+                      id, proposed, available);
         }
 
         if ((proposed < low) || (proposed > hig)) {
@@ -1078,7 +1105,16 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         }
 
         FileHandle fileHandle = validateHandle(handle, p, FileHandle.class);
-        fileHandle.lock(offset, length, mask);
+        SftpEventListener listener = getSftpEventListenerProxy();
+        ServerSession session = getServerSession();
+        listener.blocking(session, handle, fileHandle, offset, length, mask);
+        try {
+            fileHandle.lock(offset, length, mask);
+            listener.blocked(session, handle, fileHandle, offset, length, mask, null);
+        } catch (IOException | RuntimeException e) {
+            listener.blocked(session, handle, fileHandle, offset, length, mask, e);
+            throw e;
+        }
     }
 
     protected void doUnblock(Buffer buffer, int id) throws IOException {
@@ -1104,7 +1140,17 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         }
 
         FileHandle fileHandle = validateHandle(handle, p, FileHandle.class);
-        return fileHandle.unlock(offset, length);
+        SftpEventListener listener = getSftpEventListenerProxy();
+        ServerSession session = getServerSession();
+        listener.unblocking(session, handle, fileHandle, offset, length);
+        try {
+            boolean result = fileHandle.unlock(offset, length);
+            listener.unblocked(session, handle, fileHandle, offset, length, Boolean.valueOf(result), null);
+            return result;
+        } catch (IOException | RuntimeException e) {
+            listener.unblocked(session, handle, fileHandle, offset, length, null, e);
+            throw e;
+        }
     }
 
     protected void doLink(Buffer buffer, int id) throws IOException {
@@ -1159,10 +1205,19 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                       id, linkPath, link, targetPath, target, symLink);
         }
 
-        if (symLink) {
-            Files.createSymbolicLink(link, target);
-        } else {
-            Files.createLink(link, target);
+        SftpEventListener listener = getSftpEventListenerProxy();
+        ServerSession session = getServerSession();
+        listener.linking(session, link, target, symLink);
+        try {
+            if (symLink) {
+                Files.createSymbolicLink(link, target);
+            } else {
+                Files.createLink(link, target);
+            }
+            listener.linked(session, link, target, symLink, null);
+        } catch (IOException | RuntimeException e) {
+            listener.linked(session, link, target, symLink, e);
+            throw e;
         }
     }
 
@@ -1231,7 +1286,17 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     protected void doRename(int id, String oldPath, String newPath, Collection<CopyOption> opts) throws IOException {
         Path o = resolveFile(oldPath);
         Path n = resolveFile(newPath);
-        Files.move(o, n, GenericUtils.isEmpty(opts) ? IoUtils.EMPTY_COPY_OPTIONS : opts.toArray(new CopyOption[opts.size()]));
+        SftpEventListener listener = getSftpEventListenerProxy();
+        ServerSession session = getServerSession();
+
+        listener.moving(session, o, n, opts);
+        try {
+            Files.move(o, n, GenericUtils.isEmpty(opts) ? IoUtils.EMPTY_COPY_OPTIONS : opts.toArray(new CopyOption[opts.size()]));
+            listener.moved(session, o, n, opts, null);
+        } catch (IOException | RuntimeException e) {
+            listener.moved(session, o, n, opts, e);
+            throw e;
+        }
     }
 
     // see https://tools.ietf.org/html/draft-ietf-secsh-filexfer-extensions-00#section-7
@@ -1511,9 +1576,29 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         Path p = resolveFile(path);
         log.debug("Received SSH_FXP_RMDIR (path={})[{}]", path, p);
         if (Files.isDirectory(p, options)) {
-            Files.delete(p);
+            doRemove(id, p);
         } else {
             throw new NotDirectoryException(p.toString());
+        }
+    }
+
+    /**
+     * Called when need to delete a file / directory - also informs the {@link SftpEventListener}
+     *
+     * @param id Deletion request ID
+     * @param p {@link Path} to delete
+     * @throws IOException If failed to delete
+     */
+    protected void doRemove(int id, Path p) throws IOException {
+        SftpEventListener listener = getSftpEventListenerProxy();
+        ServerSession session = getServerSession();
+        listener.removing(session, p);
+        try {
+            Files.delete(p);
+            listener.removed(session, p, null);
+        } catch (IOException | RuntimeException e) {
+            listener.removed(session, p, e);
+            throw e;
         }
     }
 
@@ -1548,8 +1633,17 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                 throw new FileNotFoundException(p.toString() + " already exists as a file");
             }
         } else {
-            Files.createDirectory(p);
-            setAttributes(p, attrs);
+            SftpEventListener listener = getSftpEventListenerProxy();
+            ServerSession session = getServerSession();
+            listener.creating(session, p, attrs);
+            try {
+                Files.createDirectory(p);
+                doSetAttributes(p, attrs);
+                listener.created(session, p, attrs, null);
+            } catch (IOException | RuntimeException e) {
+                listener.created(session, p, attrs, e);
+                throw e;
+            }
         }
     }
 
@@ -1580,7 +1674,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         } else if (Files.isDirectory(p, options)) {
             throw new FileNotFoundException(p.toString() + " is as a folder");
         } else {
-            Files.delete(p);
+            doRemove(id, p);
         }
     }
 
@@ -1622,7 +1716,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                 int lenPos = reply.wpos();
                 reply.putInt(0);
 
-                int count = doReadDir(id, dh, reply, PropertyResolverUtils.getIntProperty(session, MAX_PACKET_LENGTH_PROP, DEFAULT_MAX_PACKET_LENGTH));
+                int count = doReadDir(id, handle, dh, reply, PropertyResolverUtils.getIntProperty(getServerSession(), MAX_PACKET_LENGTH_PROP, DEFAULT_MAX_PACKET_LENGTH));
                 BufferUtils.updateLengthPlaceholder(reply, lenPos, count);
                 if (log.isDebugEnabled()) {
                     log.debug("doReadDir({})[{}] - sent {} entries", handle, h, count);
@@ -1677,7 +1771,10 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             throw new AccessDeniedException("Not readable: " + p);
         } else {
             String handle = generateFileHandle(p);
-            handles.put(handle, new DirectoryHandle(p));
+            DirectoryHandle dirHandle = new DirectoryHandle(p);
+            SftpEventListener listener = getSftpEventListenerProxy();
+            listener.open(getServerSession(), handle, dirHandle);
+            handles.put(handle, dirHandle);
             return handle;
         }
     }
@@ -1701,7 +1798,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             log.debug("Received SSH_FXP_FSETSTAT (handle={}[{}], attrs={})", handle, h, attrs);
         }
 
-        setAttributes(validateHandle(handle, h, Handle.class).getFile(), attrs);
+        doSetAttributes(validateHandle(handle, h, Handle.class).getFile(), attrs);
     }
 
     protected void doSetStat(Buffer buffer, int id) throws IOException {
@@ -1720,7 +1817,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     protected void doSetStat(int id, String path, Map<String, ?> attrs) throws IOException {
         log.debug("Received SSH_FXP_SETSTAT (path={}, attrs={})", path, attrs);
         Path p = resolveFile(path);
-        setAttributes(p, attrs);
+        doSetAttributes(p, attrs);
     }
 
     protected void doFStat(Buffer buffer, int id) throws IOException {
@@ -1812,13 +1909,16 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         } else {
             fh.write(data, doff, length, offset);
         }
+
+        SftpEventListener listener = getSftpEventListenerProxy();
+        listener.write(getServerSession(), handle, fh, offset, data, doff, length);
     }
 
     protected void doRead(Buffer buffer, int id) throws IOException {
         String handle = buffer.getString();
         long offset = buffer.getLong();
         int requestedLength = buffer.getInt();
-        int maxAllowed = PropertyResolverUtils.getIntProperty(session, MAX_PACKET_LENGTH_PROP, DEFAULT_MAX_PACKET_LENGTH);
+        int maxAllowed = PropertyResolverUtils.getIntProperty(getServerSession(), MAX_PACKET_LENGTH_PROP, DEFAULT_MAX_PACKET_LENGTH);
         int readLen = Math.min(requestedLength, maxAllowed);
 
         if (log.isTraceEnabled()) {
@@ -1858,10 +1958,13 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             log.debug("Received SSH_FXP_READ (handle={}[{}], offset={}, length={})",
                     handle, h, offset, length);
         }
-        ValidateUtils.checkTrue(length > 0, "Invalid read length: %d", length);
-        FileHandle fh = validateHandle(handle, h, FileHandle.class);
 
-        return fh.read(data, doff, length, offset);
+        ValidateUtils.checkTrue(length > 0L, "Invalid read length: %d", length);
+        FileHandle fh = validateHandle(handle, h, FileHandle.class);
+        int readLen = fh.read(data, doff, length, offset);
+        SftpEventListener listener = getSftpEventListenerProxy();
+        listener.read(getServerSession(), handle, fh, offset, data, doff, length, readLen);
+        return readLen;
     }
 
     protected void doClose(Buffer buffer, int id) throws IOException {
@@ -1880,6 +1983,9 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         Handle h = handles.remove(handle);
         log.debug("Received SSH_FXP_CLOSE (handle={}[{}])", handle, h);
         validateHandle(handle, h, Handle.class).close();
+
+        SftpEventListener listener = getSftpEventListenerProxy();
+        listener.close(getServerSession(), handle, h);
     }
 
     protected void doOpen(Buffer buffer, int id) throws IOException {
@@ -1963,14 +2069,17 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
                     path, Integer.toHexString(access), Integer.toHexString(pflags), attrs);
         }
         int curHandleCount = handles.size();
-        int maxHandleCount = PropertyResolverUtils.getIntProperty(session, MAX_OPEN_HANDLES_PER_SESSION, DEFAULT_MAX_OPEN_HANDLES);
+        int maxHandleCount = PropertyResolverUtils.getIntProperty(getServerSession(), MAX_OPEN_HANDLES_PER_SESSION, DEFAULT_MAX_OPEN_HANDLES);
         if (curHandleCount > maxHandleCount) {
             throw new IllegalStateException("Too many open handles: current=" + curHandleCount + ", max.=" + maxHandleCount);
         }
 
         Path file = resolveFile(path);
         String handle = generateFileHandle(file);
-        handles.put(handle, new FileHandle(this, file, pflags, access, attrs));
+        FileHandle fileHandle = new FileHandle(this, file, pflags, access, attrs);
+        SftpEventListener listener = getSftpEventListenerProxy();
+        listener.open(getServerSession(), handle, fileHandle);
+        handles.put(handle, fileHandle);
         return handle;
     }
 
@@ -2005,6 +2114,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         if (GenericUtils.isEmpty(all)) { // i.e. validation failed
             return;
         }
+
         version = id;
         while (buffer.available() > 0) {
             String name = buffer.getString();
@@ -2017,6 +2127,9 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         buffer.putByte((byte) SftpConstants.SSH_FXP_VERSION);
         buffer.putInt(version);
         appendExtensions(buffer, all);
+
+        SftpEventListener listener = getSftpEventListenerProxy();
+        listener.initialized(getServerSession(), version);
 
         send(buffer);
     }
@@ -2054,7 +2167,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     }
 
     protected List<OpenSSHExtension> resolveOpenSSHExtensions() {
-        String value = PropertyResolverUtils.getString(session, OPENSSH_EXTENSIONS_PROP);
+        String value = PropertyResolverUtils.getString(getServerSession(), OPENSSH_EXTENSIONS_PROP);
         if (value == null) {    // No override
             return DEFAULT_OPEN_SSH_EXTENSIONS;
         }
@@ -2083,7 +2196,7 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     }
 
     protected Collection<String> getSupportedClientExtensions() {
-        String value = PropertyResolverUtils.getString(session, CLIENT_EXTENSIONS_PROP);
+        String value = PropertyResolverUtils.getString(getServerSession(), CLIENT_EXTENSIONS_PROP);
         if (value == null) {
             return DEFAULT_SUPPORTED_CLIENT_EXTENSIONS;
         }
@@ -2288,36 +2401,42 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
 
     /**
      * @param id      Request id
+     * @param handle  The (opaque) handle assigned to this directory
      * @param dir     The {@link DirectoryHandle}
      * @param buffer  The {@link Buffer} to write the results
      * @param maxSize Max. buffer size
      * @return Number of written entries
      * @throws IOException If failed to generate an entry
      */
-    protected int doReadDir(int id, DirectoryHandle dir, Buffer buffer, int maxSize) throws IOException {
+    protected int doReadDir(int id, String handle, DirectoryHandle dir, Buffer buffer, int maxSize) throws IOException {
         int nb = 0;
         LinkOption[] options = IoUtils.getLinkOptions(false);
+        Map<String, Path> entries = new TreeMap<>();
         while ((dir.isSendDot() || dir.isSendDotDot() || dir.hasNext()) && (buffer.wpos() < maxSize)) {
             if (dir.isSendDot()) {
-                writeDirEntry(id, dir, buffer, nb, dir.getFile(), ".", options);
+                writeDirEntry(id, dir, entries, buffer, nb, dir.getFile(), ".", options);
                 dir.markDotSent();    // do not send it again
             } else if (dir.isSendDotDot()) {
-                writeDirEntry(id, dir, buffer, nb, dir.getFile().getParent(), "..", options);
+                writeDirEntry(id, dir, entries, buffer, nb, dir.getFile().getParent(), "..", options);
                 dir.markDotDotSent(); // do not send it again
             } else {
                 Path f = dir.next();
-                writeDirEntry(id, dir, buffer, nb, f, getShortName(f), options);
+                writeDirEntry(id, dir, entries, buffer, nb, f, getShortName(f), options);
             }
 
             nb++;
         }
 
+        SftpEventListener listener = getSftpEventListenerProxy();
+        listener.read(getServerSession(), handle, dir, entries);
         return nb;
     }
 
     /**
      * @param id        Request id
      * @param dir       The {@link DirectoryHandle}
+     * @param entries   An in / out {@link Map} for updating the written entry -
+     *                  key = short name, value = entry {@link Path}
      * @param buffer    The {@link Buffer} to write the results
      * @param index     Zero-based index of the entry to be written
      * @param f         The entry {@link Path}
@@ -2325,8 +2444,10 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
      * @param options   The {@link LinkOption}s to use for querying the entry-s attributes
      * @throws IOException If failed to generate the entry data
      */
-    protected void writeDirEntry(int id, DirectoryHandle dir, Buffer buffer, int index, Path f, String shortName, LinkOption... options) throws IOException {
+    protected void writeDirEntry(int id, DirectoryHandle dir, Map<String, Path> entries, Buffer buffer, int index, Path f, String shortName, LinkOption... options)
+            throws IOException {
         Map<String, ?> attrs = resolveFileAttributes(f, SftpConstants.SSH_FILEXFER_ATTR_ALL, options);
+        entries.put(shortName, f);
 
         buffer.putString(shortName);
         if (version == SftpConstants.SFTP_V3) {
@@ -2634,7 +2755,20 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
         return Collections.emptyMap();
     }
 
-    protected void setAttributes(Path file, Map<String, ?> attributes) throws IOException {
+    protected void doSetAttributes(Path file, Map<String, ?> attributes) throws IOException {
+        SftpEventListener listener = getSftpEventListenerProxy();
+        ServerSession session = getServerSession();
+        listener.modifyingAttributes(session, file, attributes);
+        try {
+            setFileAttributes(file, attributes);
+            listener.modifiedAttributes(session, file, attributes, null);
+        } catch (IOException | RuntimeException e) {
+            listener.modifiedAttributes(session, file, attributes, e);
+            throw e;
+        }
+    }
+
+    protected void setFileAttributes(Path file, Map<String, ?> attributes) throws IOException {
         Set<String> unsupported = new HashSet<>();
         for (String attribute : attributes.keySet()) {
             String view = null;
@@ -2765,6 +2899,8 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
     }
 
     /**
+     * Makes sure that the local handle is not null and of the specified type
+     *
      * @param <H>    The generic handle type
      * @param handle The original handle id
      * @param h      The resolved {@link Handle} instance
@@ -2823,6 +2959,13 @@ public class SftpSubsystem extends AbstractLoggingBean implements Command, Runna
             }
 
             closed = true;
+
+            try {
+                SftpEventListener listener = getSftpEventListenerProxy();
+                listener.destroying(getServerSession());
+            } catch (Exception e) {
+                log.warn("Failed (" + e.getClass().getSimpleName() + ") to announce destruction event: " + e.getMessage(), e);
+            }
 
             // if thread has not completed, cancel it
             if ((pendingFuture != null) && (!pendingFuture.isDone())) {

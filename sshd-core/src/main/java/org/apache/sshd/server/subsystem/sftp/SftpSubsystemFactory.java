@@ -19,10 +19,13 @@
 
 package org.apache.sshd.server.subsystem.sftp;
 
+import java.util.Collection;
 import java.util.concurrent.ExecutorService;
 
 import org.apache.sshd.common.subsystem.sftp.SftpConstants;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ObjectBuilder;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.threads.ExecutorServiceConfigurer;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.subsystem.SubsystemFactory;
@@ -30,36 +33,49 @@ import org.apache.sshd.server.subsystem.SubsystemFactory;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SftpSubsystemFactory implements SubsystemFactory, Cloneable, ExecutorServiceConfigurer {
+public class SftpSubsystemFactory extends AbstractSftpEventListenerManager implements SubsystemFactory, ExecutorServiceConfigurer, SftpEventListenerManager {
     public static final String NAME = SftpConstants.SFTP_SUBSYSTEM_NAME;
     public static final UnsupportedAttributePolicy DEFAULT_POLICY = UnsupportedAttributePolicy.Warn;
 
-    public static class Builder implements ObjectBuilder<SftpSubsystemFactory> {
-        private final SftpSubsystemFactory factory = new SftpSubsystemFactory();
+    public static class Builder extends AbstractSftpEventListenerManager implements ObjectBuilder<SftpSubsystemFactory> {
+        private ExecutorService executors;
+        private boolean shutdownExecutor;
+        private UnsupportedAttributePolicy policy = DEFAULT_POLICY;
 
         public Builder() {
             super();
         }
 
         public Builder withExecutorService(ExecutorService service) {
-            factory.setExecutorService(service);
+            executors = service;
             return this;
         }
 
         public Builder withShutdownOnExit(boolean shutdown) {
-            factory.setShutdownOnExit(shutdown);
+            shutdownExecutor = shutdown;
             return this;
         }
 
         public Builder withUnsupportedAttributePolicy(UnsupportedAttributePolicy p) {
-            factory.setUnsupportedAttributePolicy(p);
+            policy = ValidateUtils.checkNotNull(p, "No policy");
             return this;
         }
 
         @Override
         public SftpSubsystemFactory build() {
-            // return a clone so that each invocation returns a different instance - avoid shared instances
-            return factory.clone();
+            SftpSubsystemFactory factory = new SftpSubsystemFactory();
+            factory.setExecutorService(executors);
+            factory.setShutdownOnExit(shutdownExecutor);
+            factory.setUnsupportedAttributePolicy(policy);
+
+            Collection<? extends SftpEventListener> listeners = getRegisteredListeners();
+            if (GenericUtils.size(listeners) > 0) {
+                for (SftpEventListener l : listeners) {
+                    factory.addSftpEventListener(l);
+                }
+            }
+
+            return factory;
         }
     }
 
@@ -111,29 +127,22 @@ public class SftpSubsystemFactory implements SubsystemFactory, Cloneable, Execut
 
     /**
      * @param p The {@link UnsupportedAttributePolicy} to use if failed to access
-     *          some local file attributes
+     *          some local file attributes - never {@code null}
      */
     public void setUnsupportedAttributePolicy(UnsupportedAttributePolicy p) {
-        if (p == null) {
-            throw new IllegalArgumentException("No policy provided");
-        }
-
-        policy = p;
+        policy = ValidateUtils.checkNotNull(p, "No policy");
     }
 
     @Override
     public Command create() {
-        return new SftpSubsystem(getExecutorService(), isShutdownOnExit(), getUnsupportedAttributePolicy());
-    }
-
-    @Override
-    public SftpSubsystemFactory clone() {
-        try {
-            return getClass().cast(super.clone());  // shallow clone is good enough
-        } catch (CloneNotSupportedException e) {
-            throw new UnsupportedOperationException("Unexpected clone exception", e);   // unexpected since we implement cloneable
+        SftpSubsystem subsystem = new SftpSubsystem(getExecutorService(), isShutdownOnExit(), getUnsupportedAttributePolicy());
+        Collection<? extends SftpEventListener> listeners = getRegisteredListeners();
+        if (GenericUtils.size(listeners) > 0) {
+            for (SftpEventListener l : listeners) {
+                subsystem.addSftpEventListener(l);
+            }
         }
+
+        return subsystem;
     }
-
-
 }

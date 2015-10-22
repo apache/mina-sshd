@@ -21,11 +21,13 @@ package org.apache.sshd.server.subsystem.sftp;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class Handle implements java.io.Closeable {
+public abstract class Handle implements java.nio.channels.Channel {
+    private final AtomicBoolean closed = new AtomicBoolean(false);
     private Path file;
 
     protected Handle(Path file) {
@@ -37,8 +39,15 @@ public abstract class Handle implements java.io.Closeable {
     }
 
     @Override
+    public boolean isOpen() {
+        return !closed.get();
+    }
+
+    @Override
     public void close() throws IOException {
-        // ignored
+        if (!closed.getAndSet(true)) {
+            return; // debug breakpoint
+        }
     }
 
     @Override

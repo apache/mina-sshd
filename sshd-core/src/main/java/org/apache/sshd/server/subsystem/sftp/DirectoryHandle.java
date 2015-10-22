@@ -88,6 +88,7 @@ public class DirectoryHandle extends Handle implements Iterator<Path> {
 
     @Override
     public void close() throws IOException {
+        super.close();
         markDone(); // just making sure
         ds.close();
     }

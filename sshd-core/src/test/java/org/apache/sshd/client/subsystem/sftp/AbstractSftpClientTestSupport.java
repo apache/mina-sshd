@@ -22,7 +22,6 @@ package org.apache.sshd.client.subsystem.sftp;
 import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Collections;
 
 import org.apache.sshd.client.subsystem.sftp.extensions.SftpClientExtension;
@@ -59,7 +58,7 @@ public abstract class AbstractSftpClientTestSupport extends BaseTestSupport {
 
     protected void setupServer() throws Exception {
         sshd = setupTestServer();
-        sshd.setSubsystemFactories(Arrays.<NamedFactory<Command>>asList(new SftpSubsystemFactory()));
+        sshd.setSubsystemFactories(Collections.<NamedFactory<Command>>singletonList(new SftpSubsystemFactory()));
         sshd.setCommandFactory(new ScpCommandFactory());
         sshd.setFileSystemFactory(fileSystemFactory);
         sshd.start();

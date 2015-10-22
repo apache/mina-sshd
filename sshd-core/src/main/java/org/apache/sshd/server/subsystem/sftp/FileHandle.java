@@ -111,7 +111,7 @@ public class FileHandle extends Handle {
             channel = FileChannel.open(file, options, attributes);
         } catch (UnsupportedOperationException e) {
             channel = FileChannel.open(file, options);
-            sftpSubsystem.setAttributes(file, attrs);
+            sftpSubsystem.doSetAttributes(file, attrs);
         }
         this.fileChannel = channel;
         this.pos = 0;
@@ -170,8 +170,12 @@ public class FileHandle extends Handle {
 
     @Override
     public void close() throws IOException {
+        super.close();
+
         FileChannel channel = getFileChannel();
-        channel.close();
+        if (channel.isOpen()) {
+            channel.close();
+        }
     }
 
     public void lock(long offset, long length, int mask) throws IOException {

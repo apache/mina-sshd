@@ -18,11 +18,6 @@
  */
 package org.apache.sshd.client.subsystem.sftp;
 
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FX_FILE_ALREADY_EXISTS;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.SSH_FX_NO_SUCH_FILE;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IRUSR;
-import static org.apache.sshd.common.subsystem.sftp.SftpConstants.S_IWUSR;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -31,6 +26,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.CopyOption;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
@@ -46,6 +42,8 @@ import java.util.Set;
 import java.util.Vector;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
@@ -55,6 +53,7 @@ import org.apache.sshd.client.subsystem.sftp.extensions.BuiltinSftpClientExtensi
 import org.apache.sshd.client.subsystem.sftp.extensions.SftpClientExtension;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.random.Random;
@@ -66,9 +65,17 @@ import org.apache.sshd.common.subsystem.sftp.extensions.SupportedParser.Supporte
 import org.apache.sshd.common.subsystem.sftp.extensions.openssh.AbstractOpenSSHExtensionParser.OpenSSHExtension;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.IoUtils;
+import org.apache.sshd.server.Command;
+import org.apache.sshd.server.session.ServerSession;
+import org.apache.sshd.server.subsystem.sftp.DirectoryHandle;
+import org.apache.sshd.server.subsystem.sftp.FileHandle;
+import org.apache.sshd.server.subsystem.sftp.Handle;
+import org.apache.sshd.server.subsystem.sftp.SftpEventListener;
 import org.apache.sshd.server.subsystem.sftp.SftpSubsystem;
+import org.apache.sshd.server.subsystem.sftp.SftpSubsystemFactory;
 import org.apache.sshd.util.test.JSchLogger;
 import org.apache.sshd.util.test.SimpleUserInfo;
 import org.apache.sshd.util.test.Utils;
@@ -79,6 +86,8 @@ import org.junit.FixMethodOrder;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
@@ -390,7 +399,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
                     // NOTE: on Windows files are always readable
                     int perms = sftp.stat(file).perms;
-                    int permsMask = S_IWUSR | (isWindows ? 0 : S_IRUSR);
+                    int permsMask = SftpConstants.S_IWUSR | (isWindows ? 0 : SftpConstants.S_IRUSR);
                     assertEquals("Mismatched permissions for " + file + ": 0x" + Integer.toHexString(perms), 0, (perms & permsMask));
 
                     javaFile.setWritable(true, false);
@@ -443,6 +452,177 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     @Test
     public void testClient() throws Exception {
+        List<NamedFactory<Command>> factories = sshd.getSubsystemFactories();
+        assertEquals("Mismatched subsystem factories count", 1, GenericUtils.size(factories));
+
+        NamedFactory<Command> f = factories.get(0);
+        assertObjectInstanceOf("Not an SFTP subsystem factory", SftpSubsystemFactory.class, f);
+
+        SftpSubsystemFactory factory = (SftpSubsystemFactory) f;
+        final AtomicInteger versionHolder = new AtomicInteger(-1);
+        final AtomicInteger openCount = new AtomicInteger(0);
+        final AtomicInteger closeCount = new AtomicInteger(0);
+        final AtomicLong readSize = new AtomicLong(0L);
+        final AtomicLong writeSize = new AtomicLong(0L);
+        final AtomicInteger entriesCount = new AtomicInteger(0);
+        final AtomicInteger creatingCount = new AtomicInteger(0);
+        final AtomicInteger createdCount = new AtomicInteger(0);
+        final AtomicInteger removingCount = new AtomicInteger(0);
+        final AtomicInteger removedCount = new AtomicInteger(0);
+        final AtomicInteger modifyingCount = new AtomicInteger(0);
+        final AtomicInteger modifiedCount = new AtomicInteger(0);
+        factory.addSftpEventListener(new SftpEventListener() {
+            private final Logger log = LoggerFactory.getLogger(SftpEventListener.class);
+
+            @Override
+            public void initialized(ServerSession session, int version) {
+                log.info("initialized(" + session + ") version: " + version);
+                assertTrue("Initialized version below minimum", version >= SftpSubsystem.LOWER_SFTP_IMPL);
+                assertTrue("Initialized version above maximum", version <= SftpSubsystem.HIGHER_SFTP_IMPL);
+                assertTrue("Initializion re-called", versionHolder.getAndSet(version) < 0);
+            }
+
+            @Override
+            public void destroying(ServerSession session) {
+                log.info("destroying(" + session + ")");
+                assertTrue("Initialization method not called", versionHolder.get() > 0);
+            }
+
+            @Override
+            public void write(ServerSession session, String remoteHandle, FileHandle localHandle, long offset, byte[] data, int dataOffset, int dataLen) {
+                writeSize.addAndGet(dataLen);
+                if (log.isDebugEnabled()) {
+                    log.debug("write(" + session + ")[" + localHandle.getFile() + "] offset=" + offset + ", requested=" + dataLen);
+                }
+            }
+
+            @Override
+            public void removing(ServerSession session, Path path) {
+                removingCount.incrementAndGet();
+                log.info("removing(" + session + ") " + path);
+            }
+
+            @Override
+            public void removed(ServerSession session, Path path, Throwable thrown) {
+                removedCount.incrementAndGet();
+                log.info("removed(" + session + ") " + path
+                       + ((thrown == null) ? "" : (": " + thrown.getClass().getSimpleName() + ": " + thrown.getMessage())));
+            }
+
+            @Override
+            public void modifyingAttributes(ServerSession session, Path path, Map<String, ?> attrs) {
+                modifyingCount.incrementAndGet();
+                log.info("modifyingAttributes(" + session + ") " + path);
+            }
+
+            @Override
+            public void modifiedAttributes(ServerSession session, Path path, Map<String, ?> attrs, Throwable thrown) {
+                modifiedCount.incrementAndGet();
+                log.info("modifiedAttributes(" + session + ") " + path
+                       + ((thrown == null) ? "" : (": " + thrown.getClass().getSimpleName() + ": " + thrown.getMessage())));
+            }
+
+            @Override
+            public void read(ServerSession session, String remoteHandle, FileHandle localHandle, long offset, byte[] data, int dataOffset, int dataLen, int readLen) {
+                readSize.addAndGet(readLen);
+                if (log.isDebugEnabled()) {
+                    log.debug("read(" + session + ")[" + localHandle.getFile() + "] offset=" + offset + ", requested=" + dataLen + ", read=" + readLen);
+                }
+            }
+
+            @Override
+            public void read(ServerSession session, String remoteHandle, DirectoryHandle localHandle, Map<String, Path> entries) {
+                int numEntries = GenericUtils.size(entries);
+                entriesCount.addAndGet(numEntries);
+
+                if (log.isDebugEnabled()) {
+                    log.debug("read(" + session + ")[" + localHandle.getFile() + "] " + numEntries + " entries");
+                }
+
+                if ((numEntries > 0) && log.isTraceEnabled()) {
+                    for (Map.Entry<String, Path> ee : entries.entrySet()) {
+                        log.trace("read(" + session + ")[" + localHandle.getFile() + "] " + ee.getKey() + " - " + ee.getValue());
+                    }
+                }
+            }
+
+            @Override
+            public void open(ServerSession session, String remoteHandle, Handle localHandle) {
+                Path path = localHandle.getFile();
+                log.info("open(" + session + ")[" + remoteHandle + "] " + (Files.isDirectory(path) ? "directory" : "file") + " " + path);
+                openCount.incrementAndGet();
+            }
+
+            @Override
+            public void moving(ServerSession session, Path srcPath, Path dstPath, Collection<CopyOption> opts) {
+                log.info("moving(" + session + ")[" + opts + "]" + srcPath + " => " + dstPath);
+            }
+
+            @Override
+            public void moved(ServerSession session, Path srcPath, Path dstPath, Collection<CopyOption> opts, Throwable thrown) {
+                log.info("moved(" + session + ")[" + opts + "]" + srcPath + " => " + dstPath
+                       + ((thrown == null) ? "" : (": " + thrown.getClass().getSimpleName() + ": " + thrown.getMessage())));
+            }
+
+            @Override
+            public void linking(ServerSession session, Path src, Path target, boolean symLink) {
+                log.info("linking(" + session + ")[" + symLink + "]" + src + " => " + target);
+            }
+
+            @Override
+            public void linked(ServerSession session, Path src, Path target, boolean symLink, Throwable thrown) {
+                log.info("linked(" + session + ")[" + symLink + "]" + src + " => " + target
+                      + ((thrown == null) ? "" : (": " + thrown.getClass().getSimpleName() + ": " + thrown.getMessage())));
+            }
+
+            @Override
+            public void creating(ServerSession session, Path path, Map<String, ?> attrs) {
+                creatingCount.incrementAndGet();
+                log.info("creating(" + session + ") " + (Files.isDirectory(path) ? "directory" : "file") + " " + path);
+            }
+
+            @Override
+            public void created(ServerSession session, Path path, Map<String, ?> attrs, Throwable thrown) {
+                createdCount.incrementAndGet();
+                log.info("created(" + session + ") " + (Files.isDirectory(path) ? "directory" : "file") + " " + path
+                       + ((thrown == null) ? "" : (": " + thrown.getClass().getSimpleName() + ": " + thrown.getMessage())));
+            }
+
+            @Override
+            public void blocking(ServerSession session, String remoteHandle, FileHandle localHandle, long offset, long length, int mask) {
+                log.info("blocking(" + session + ")[" + localHandle.getFile() + "]"
+                       + " offset=" + offset + ", length=" + length + ", mask=0x" + Integer.toHexString(mask));
+            }
+
+            @Override
+            public void blocked(ServerSession session, String remoteHandle, FileHandle localHandle,
+                                long offset, long length, int mask, Throwable thrown) {
+                log.info("blocked(" + session + ")[" + localHandle.getFile() + "]"
+                       + " offset=" + offset + ", length=" + length + ", mask=0x" + Integer.toHexString(mask)
+                       + ((thrown == null) ? "" : (": " + thrown.getClass().getSimpleName() + ": " + thrown.getMessage())));
+            }
+
+            @Override
+            public void unblocking(ServerSession session, String remoteHandle, FileHandle localHandle, long offset, long length) {
+                log.info("unblocking(" + session + ")[" + localHandle.getFile() + "] offset=" + offset + ", length=" + length);
+            }
+
+            @Override
+            public void unblocked(ServerSession session, String remoteHandle, FileHandle localHandle,
+                                  long offset, long length, Boolean result, Throwable thrown) {
+                log.info("unblocked(" + session + ")[" + localHandle.getFile() + "]"
+                        + " offset=" + offset + ", length=" + length + ", result=" + result
+                        + ((thrown == null) ? "" : (": " + thrown.getClass().getSimpleName() + ": " + thrown.getMessage())));
+            }
+
+            @Override
+            public void close(ServerSession session, String remoteHandle, Handle localHandle) {
+                Path path = localHandle.getFile();
+                log.info("close(" + session + ")[" + remoteHandle + "] " + (Files.isDirectory(path) ? "directory" : "file") + " " + path);
+                closeCount.incrementAndGet();
+            }
+        });
+
         try (SshClient client = setupTestClient()) {
             client.start();
 
@@ -451,8 +631,20 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                 session.auth().verify(5L, TimeUnit.SECONDS);
 
                 try (SftpClient sftp = session.createSftpClient()) {
+                    assertEquals("Mismatched negotiated version", sftp.getVersion(), versionHolder.get());
                     testClient(client, sftp);
                 }
+
+                assertEquals("Mismatched open/close count", openCount.get(), closeCount.get());
+                assertTrue("No entries read", entriesCount.get() > 0);
+                assertTrue("No data read", readSize.get() > 0L);
+                assertTrue("No data written", writeSize.get() > 0L);
+                assertEquals("Mismatched removal counts", removingCount.get(), removedCount.get());
+                assertTrue("No removals signalled", removedCount.get() > 0);
+                assertEquals("Mismatched creation counts", creatingCount.get(), createdCount.get());
+                assertTrue("No creations signalled", creatingCount.get() > 0);
+                assertEquals("Mismatched modification counts", modifyingCount.get(), modifiedCount.get());
+                assertTrue("No modifications signalled", modifiedCount.get() > 0);
             } finally {
                 client.stop();
             }
@@ -681,7 +873,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                         sftp.rename(file2Path, file3Path);
                         fail("Unxpected rename success of " + file2Path + " => " + file3Path);
                     } catch (org.apache.sshd.client.subsystem.sftp.SftpException e) {
-                        assertEquals("Mismatched status for failed rename of " + file2Path + " => " + file3Path, SSH_FX_NO_SUCH_FILE, e.getStatus());
+                        assertEquals("Mismatched status for failed rename of " + file2Path + " => " + file3Path, SftpConstants.SSH_FX_NO_SUCH_FILE, e.getStatus());
                     }
 
                     try (OutputStream os = sftp.write(file2Path, SftpClient.MIN_WRITE_BUFFER_SIZE)) {
@@ -692,7 +884,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                         sftp.rename(file1Path, file2Path);
                         fail("Unxpected rename success of " + file1Path + " => " + file2Path);
                     } catch (org.apache.sshd.client.subsystem.sftp.SftpException e) {
-                        assertEquals("Mismatched status for failed rename of " + file1Path + " => " + file2Path, SSH_FX_FILE_ALREADY_EXISTS, e.getStatus());
+                        assertEquals("Mismatched status for failed rename of " + file1Path + " => " + file2Path, SftpConstants.SSH_FX_FILE_ALREADY_EXISTS, e.getStatus());
                     }
 
                     sftp.rename(file1Path, file2Path, SftpClient.CopyMode.Overwrite);
@@ -918,6 +1110,126 @@ public class SftpTest extends AbstractSftpClientTestSupport {
     public void testCreateSymbolicLink() throws Exception {
         // Do not execute on windows as the file system does not support symlinks
         Assume.assumeTrue("Skip non-Unix O/S", OsUtils.isUNIX());
+        List<NamedFactory<Command>> factories = sshd.getSubsystemFactories();
+        assertEquals("Mismatched subsystem factories count", 1, GenericUtils.size(factories));
+
+        NamedFactory<Command> f = factories.get(0);
+        assertObjectInstanceOf("Not an SFTP subsystem factory", SftpSubsystemFactory.class, f);
+
+        SftpSubsystemFactory factory = (SftpSubsystemFactory) f;
+        final AtomicReference<LinkData> linkDataHolder = new AtomicReference<>();
+        factory.addSftpEventListener(new SftpEventListener() {
+            @Override
+            public void write(ServerSession session, String remoteHandle, FileHandle localHandle, long offset, byte[] data, int dataOffset, int dataLen) {
+                // ignored
+            }
+
+            @Override
+            public void removing(ServerSession session, Path path) {
+                // ignored
+            }
+
+            @Override
+            public void removed(ServerSession session, Path path, Throwable thrown) {
+                // ignored
+            }
+
+            @Override
+            public void read(ServerSession session, String remoteHandle, FileHandle localHandle, long offset, byte[] data, int dataOffset, int dataLen, int readLen) {
+                // ignored
+            }
+
+            @Override
+            public void read(ServerSession session, String remoteHandle, DirectoryHandle localHandle, Map<String, Path> entries) {
+                // ignored
+            }
+
+            @Override
+            public void open(ServerSession session, String remoteHandle, Handle localHandle) {
+                // ignored
+            }
+
+            @Override
+            public void modifyingAttributes(ServerSession session, Path path, Map<String, ?> attrs) {
+                // ignored
+            }
+
+            @Override
+            public void modifiedAttributes(ServerSession session, Path path, Map<String, ?> attrs, Throwable thrown) {
+                // ignored
+            }
+
+            @Override
+            public void blocking(ServerSession session, String remoteHandle, FileHandle localHandle, long offset, long length, int mask) {
+                // ignored
+            }
+
+            @Override
+            public void blocked(ServerSession session, String remoteHandle, FileHandle localHandle, long offset, long length, int mask, Throwable thrown) {
+                // ignored
+            }
+
+            @Override
+            public void unblocking(ServerSession session, String remoteHandle, FileHandle localHandle, long offset, long length) {
+                // ignored
+            }
+
+            @Override
+            public void unblocked(ServerSession session, String remoteHandle, FileHandle localHandle,
+                                  long offset, long length, Boolean result, Throwable thrown) {
+                // ignored
+            }
+
+            @Override
+            public void moving(ServerSession session, Path srcPath, Path dstPath, Collection<CopyOption> opts) {
+                // ignored
+            }
+
+            @Override
+            public void moved(ServerSession session, Path srcPath, Path dstPath, Collection<CopyOption> opts, Throwable thrown) {
+                // ignored
+            }
+
+            @Override
+            public void linking(ServerSession session, Path src, Path target, boolean symLink) {
+                assertNull("Multiple linking calls", linkDataHolder.getAndSet(new LinkData(src, target, symLink)));
+            }
+
+            @Override
+            public void linked(ServerSession session, Path src, Path target, boolean symLink, Throwable thrown) {
+                LinkData data = linkDataHolder.get();
+                assertNotNull("No previous linking call", data);
+                assertSame("Mismatched source", data.getSource(), src);
+                assertSame("Mismatched target", data.getTarget(), target);
+                assertEquals("Mismatched link type", data.isSymLink(), symLink);
+                assertNull("Unexpected failure", thrown);
+            }
+
+            @Override
+            public void initialized(ServerSession session, int version) {
+                // ignored
+            }
+
+            @Override
+            public void destroying(ServerSession session) {
+                // ignored
+            }
+
+            @Override
+            public void creating(ServerSession session, Path path, Map<String, ?> attrs) {
+                // ignored
+            }
+
+            @Override
+            public void created(ServerSession session, Path path, Map<String, ?> attrs, Throwable thrown) {
+                // ignored
+            }
+
+            @Override
+            public void close(ServerSession session, String remoteHandle, Handle localHandle) {
+                // ignored
+            }
+        });
 
         Path targetPath = detectTargetFolder();
         Path lclSftp = Utils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
@@ -956,6 +1268,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                 Files.delete(linkPath);
             }
             assertFalse("Target link exists before linking: " + linkPath, Files.exists(linkPath, options));
+
             c.symlink(remSrcPath, remLinkPath);
 
             assertTrue("Symlink not created: " + linkPath, Files.exists(linkPath, options));
@@ -967,6 +1280,8 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         } finally {
             c.disconnect();
         }
+
+        assertNotNull("No symlink signalled", linkDataHolder.getAndSet(null));
     }
 
     protected String readFile(String path) throws Exception {
@@ -1004,5 +1319,34 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             sb.append((char) ((i % 10) + '0'));
         }
         return sb.toString();
+    }
+
+    static class LinkData {
+        private final Path source;
+        private final Path target;
+        private final boolean symLink;
+
+        LinkData(Path src, Path target, boolean symLink) {
+            this.source = ValidateUtils.checkNotNull(src, "No source");
+            this.target = ValidateUtils.checkNotNull(target, "No target");
+            this.symLink = symLink;
+        }
+
+        public Path getSource() {
+            return source;
+        }
+
+        public Path getTarget() {
+            return target;
+        }
+
+        public boolean isSymLink() {
+            return symLink;
+        }
+
+        @Override
+        public String toString() {
+            return (isSymLink() ? "Symbolic" : "Hard") + " " + getSource() + " => " + getTarget();
+        }
     }
 }
